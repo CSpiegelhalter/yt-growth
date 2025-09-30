@@ -1,7 +1,17 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
+from app.db.models import Channel, UserChannel
 
 router = APIRouter()
+
+# TODO: Use this to ensure user has access to audit
+def _authorize_channel(db, user_id, channel_id_str):
+    ch = db.query(Channel).filter_by(channel_id=channel_id_str).first()
+    if not ch: raise HTTPException(404, "Channel not found")
+    link = db.query(UserChannel).filter_by(user_id=user_id, channel_id=ch.id).first()
+    if not link: raise HTTPException(403, "Not linked to this channel")
+    return ch
+
 
 @router.post("/{channel_id}/refresh")
 def refresh_channel(channel_id: str, days: int = 90):

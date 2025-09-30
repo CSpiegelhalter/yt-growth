@@ -7,17 +7,24 @@ services:
       POSTGRES_PASSWORD: yt
       POSTGRES_DB: yt
     ports: ["5432:5432"]
-    volumes: [pgdata:/var/lib/postgresql/data]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
   api:
     build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports: ["8000:8000"]
     env_file:
-      - ./.env.local        # dev-only
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
+      - ./.env.local
+    volumes:
+      # mount your local source into the same path the image uses (/app)
+      - ./:/app
     depends_on: [db]
+    # optional niceties
+    environment:
+      PYTHONUNBUFFERED: "1"
+    tty: true
+    stdin_open: true
 
-volumes: { pgdata: {} }
+volumes:
+  pgdata: {}

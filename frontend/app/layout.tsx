@@ -1,4 +1,4 @@
-export const metadata = { title: 'YT Growth', description: 'YouTube channel growth tool' };
+export const metadata = { title: 'YouTube Growth', description: 'YouTube channel growth tool' };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
