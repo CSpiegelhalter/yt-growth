@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Channel {
+  id               Int       @id @default(autoincrement())
+  userId           Int
+  youtubeChannelId String    @db.VarChar(128)
+  title            String?   @db.VarChar(255)
+  thumbnailUrl     String?
+  connectedAt      DateTime  @default(now()) @db.Timestamptz(6)
+  lastSyncedAt     DateTime? @db.Timestamptz(6)
+  syncStatus       String    @default("idle") @db.VarChar(32)
+  syncError        String?
+  User             User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_channel_user")
+  Video            Video[]
+
+  @@unique([userId, youtubeChannelId], map: "uq_channel_owner_youtube")
+  @@index([userId], map: "idx_channel_user")
+}
+
+model GoogleAccount {
+  id                Int       @id @default(autoincrement())
+  userId            Int
+  provider          String    @default("google") @db.VarChar(50)
+  providerAccountId String    @db.VarChar(255)
+  refreshTokenEnc   String?
+  scopes            String?
+  tokenExpiresAt    DateTime? @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @db.Timestamptz(6)
+  User              User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_google_user")
+
+  @@unique([provider, providerAccountId], map: "uq_google_provider_account")
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  email         String          @unique(map: "uq_user_email") @db.VarChar(255)
+  name          String?         @db.VarChar(255)
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime        @default(now()) @db.Timestamptz(6)
+  passwordHash  String?         @db.VarChar(255)
+  Channel       Channel[]
+  GoogleAccount GoogleAccount[]
+
+  @@index([email], map: "idx_user_email")
+}
+
+model Video {
+  id             Int       @id @default(autoincrement())
+  channelId      Int
+  youtubeVideoId String    @db.VarChar(128)
+  title          String?   @db.VarChar(255)
+  publishedAt    DateTime? @db.Timestamptz(6)
+  durationSec    Int?
+  tags           String?
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @db.Timestamptz(6)
+  Channel        Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_video_channel")
+
+  @@unique([channelId, youtubeVideoId], map: "uq_video_channel_youtube")
+  @@index([channelId], map: "idx_video_channel")
+}

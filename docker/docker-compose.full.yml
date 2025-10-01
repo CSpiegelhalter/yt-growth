@@ -1,0 +1,27 @@
+services:
+  api:
+    profiles: ["python"]
+    build:
+      context: ../apps/backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgres://app:app@postgres:5432/appdb?sslmode=disable
+      # POINT to localstack endpoints if using SQS locally
+    ports: ["8001:8001"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+
+  worker:
+    profiles: ["python"]
+    build:
+      context: ../apps/backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgres://app:app@postgres:5432/appdb?sslmode=disable
+      # SQS queue URL, etc.
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: python -m app.worker

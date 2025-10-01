@@ -1,0 +1,56 @@
+name: yt-growth
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d appdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    depends_on: [postgres]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dev@local
+      PGADMIN_DEFAULT_PASSWORD: dev
+    ports: ["5050:80"]
+
+  # Optional: local redis for caching/queues/etc.
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+
+  # Optional: LocalStack for mocking AWS (SQS/S3 if you want)
+  localstack:
+    image: localstack/localstack:3
+    environment:
+      SERVICES: sqs,s3,secretsmanager,sts
+    ports: ["4566:4566"]
+    volumes:
+      - localstack:/var/lib/localstack
+
+  # Atlas runner to diff/apply migrations locally
+  atlas:
+    image: arigaio/atlas:latest
+    working_dir: /work
+    volumes:
+      - ../infra/db:/work
+    environment:
+      DEV_DATABASE_URL: postgres://app:app@postgres:5432/appdb?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Run ad-hoc: `docker compose run --rm atlas migrate apply --env dev`
+
+volumes:
+  pgdata:
+  localstack:
