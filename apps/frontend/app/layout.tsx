@@ -1,14 +1,20 @@
-export const metadata = { title: 'YouTube Growth', description: 'YouTube channel growth tool' };
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+import { Header } from "@/components/Header";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth"; 
+
+export const metadata = {
+  title: "YouTube Growth",
+  description: "YouTube channel growth tool",
+};
+
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session =  await getServerSession(authOptions)
   return (
     <html lang="en">
-      <body style={{ fontFamily: 'system-ui, sans-serif', margin: 0 }}>
+      <body>
         <div style={{ maxWidth: 960, margin: '0 auto', padding: 24 }}>
-          <header style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 24 }}>
-            <a href="/">Home</a>
-            <a href="/dashboard">Dashboard</a>
-            <a href="/channels">Channels</a>
-          </header>
+          <Header session={session} />
           {children}
         </div>
       </body>

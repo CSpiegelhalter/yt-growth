@@ -1,10 +1,9 @@
 // apps/frontend/app/api/integrations/google/callback/route.ts
+export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma";
 
-export const runtime = "nodejs";
-
-async function exchangeCodeForTokens(code: string) {
+async function exchangeCode(code: string) {
   const params = new URLSearchParams({
     code,
     client_id: process.env.GOOGLE_CLIENT_ID!,
@@ -18,68 +17,60 @@ async function exchangeCodeForTokens(code: string) {
     body: params.toString(),
   });
   if (!res.ok) throw new Error("Token exchange failed");
-  return (await res.json()) as {
+  return res.json() as Promise<{
     access_token: string;
     refresh_token?: string;
     expires_in: number;
     scope?: string;
     id_token?: string;
-  };
+  }>;
 }
 
-async function getGoogleUser(accessToken: string) {
+async function getUserInfo(accessToken: string) {
   const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) throw new Error("Failed to fetch userinfo");
-  return (await res.json()) as { sub: string; email?: string; name?: string; picture?: string };
+  if (!res.ok) throw new Error("userinfo fetch failed");
+  return res.json() as Promise<{ sub: string; email?: string; name?: string }>;
 }
 
 export async function GET(req: NextRequest) {
-  try {
-    const url = new URL(req.url);
-    const code = url.searchParams.get("code");
-    const state = url.searchParams.get("state");
-    if (!code || !state) throw new Error("Missing code/state");
+  const url = new URL(req.url);
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  if (!code || !state) return NextResponse.redirect(new URL("/integrations/error?m=missing", process.env.NEXT_PUBLIC_WEB_URL));
 
-    // Resolve state → userId
-    const stateRow = await prisma.job.findFirst({ where: { type: "google_oauth_state", status: state } });
-    if (!stateRow) throw new Error("Invalid state");
-    const { userId } = JSON.parse(stateRow.payloadJSON as string) as { userId: number };
-    await prisma.job.delete({ where: { id: stateRow.id } }); // consume state
-
-    // Exchange code → tokens
-    const tok = await exchangeCodeForTokens(code);
-    const me = await getGoogleUser(tok.access_token);
-
-    const providerAccountId = me.sub;
-    const tokenExpiresAt = new Date(Date.now() + tok.expires_in * 1000);
-    const scopes = tok.scope ?? "";
-
-    // Upsert GoogleAccount
-    await prisma.googleAccount.upsert({
-      where: {
-        provider_providerAccountId: { provider: "google", providerAccountId },
-      },
-      update: {
-        userId,
-        tokenExpiresAt,
-        scopes,
-        ...(tok.refresh_token ? { refreshTokenEnc: tok.refresh_token } : {}),
-        updatedAt: new Date(),
-      },
-      create: {
-        userId,
-        provider: "google",
-        providerAccountId,
-        refreshTokenEnc: tok.refresh_token ?? null,
-        scopes,
-        tokenExpiresAt,
-      },
-    });
-
-    return NextResponse.redirect(new URL("/channels", process.env.NEXT_PUBLIC_WEB_URL));
-  } catch (e: any) {
-    return NextResponse.redirect(new URL(`/integrations/error?m=${encodeURIComponent(e.message || "failed")}`, process.env.NEXT_PUBLIC_WEB_URL));
+  const row = await prisma.oAuthState.findUnique({ where: { state } });
+  if (!row || row.expiresAt < new Date()) {
+    return NextResponse.redirect(new URL("/integrations/error?m=state", process.env.NEXT_PUBLIC_WEB_URL));
   }
+  // consume state
+  await prisma.oAuthState.delete({ where: { state } });
+
+  const tok = await exchangeCode(code);
+  const me  = await getUserInfo(tok.access_token);
+  const providerAccountId = me.sub;
+  const tokenExpiresAt = new Date(Date.now() + tok.expires_in * 1000);
+  const scopes = tok.scope ?? "";
+
+  await prisma.googleAccount.upsert({
+    where: { provider_providerAccountId: { provider: "google", providerAccountId } },
+    update: {
+      userId: row.userId,
+      tokenExpiresAt,
+      scopes,
+      ...(tok.refresh_token ? { refreshTokenEnc: tok.refresh_token } : {}),
+      updatedAt: new Date(),
+    },
+    create: {
+      userId: row.userId,
+      provider: "google",
+      providerAccountId,
+      refreshTokenEnc: tok.refresh_token ?? null,
+      scopes,
+      tokenExpiresAt,
+    },
+  });
+
+  return NextResponse.redirect(new URL("/channels", process.env.NEXT_PUBLIC_WEB_URL));
 }
