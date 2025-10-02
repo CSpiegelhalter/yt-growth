@@ -225,3 +225,38 @@ table "Video" {
     on_delete   = CASCADE
   }
 }
+
+table "OAuthState" {
+  schema = schema.public
+
+  column "id" {
+    type = serial
+    null = false
+  }
+  column "state" {
+    type = varchar(128)
+    null = false
+  }
+  column "userId" {
+    type = int
+    null = false
+  }
+  column "createdAt" {
+    type = timestamptz
+    null = false
+    default = sql("now()")
+  }
+  column "expiresAt" {
+    type = timestamptz
+    null = false
+  }
+
+  primary_key { columns = [column.id] }
+  unique "uq_oauthstate_state" { columns = [column.state] }
+
+  foreign_key "fk_oauthstate_user" {
+    columns     = [column.userId]
+    ref_columns = [table.User.column.id]
+    on_delete   = CASCADE
+  }
+}
