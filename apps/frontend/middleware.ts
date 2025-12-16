@@ -8,8 +8,9 @@ export const config = {
   matcher: [
     "/dashboard/:path*",     // protect dashboard
     "/channels/:path*",      // protect channels
-    "/audit/:path*",
-    "/profile/:path*",
+    "/audit/:path*",         // protect audit pages
+    "/profile/:path*",       // protect profile
     "/api/private/:path*",   // protect private APIs
+    "/api/me/:path*",        // protect user APIs
   ],
 };

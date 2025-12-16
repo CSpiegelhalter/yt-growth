@@ -7,28 +7,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Channel {
-  id                    Int             @id @default(autoincrement())
-  userId                Int
-  youtubeChannelId      String          @db.VarChar(128)
-  title                 String?         @db.VarChar(255)
-  thumbnailUrl          String?
-  connectedAt           DateTime        @default(now()) @db.Timestamptz(6)
-  lastSyncedAt          DateTime?       @db.Timestamptz(6)
-  lastRetentionSyncedAt DateTime?       @db.Timestamptz(6)
-  lastPlanGeneratedAt   DateTime?       @db.Timestamptz(6)
-  lastSubscriberAuditAt DateTime?       @db.Timestamptz(6)
-  syncStatus            String          @default("idle") @db.VarChar(32)
-  syncError             String?
-  User                  User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_channel_user")
-  Video                 Video[]
-  Plan                  Plan[]
-  RetentionBlob         RetentionBlob[]
-  VideoMetric           VideoMetric[]
-  Subscription          Subscription[]
+model User {
+  id            Int             @id @default(autoincrement())
+  email         String          @unique(map: "uq_user_email") @db.VarChar(255)
+  name          String?         @db.VarChar(255)
+  passwordHash  String?         @db.VarChar(255)
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  Channel       Channel[]
+  GoogleAccount GoogleAccount[]
+  OAuthState    OAuthState[]
+  Subscription  Subscription?
+  Plan          Plan[]
 
-  @@unique([userId, youtubeChannelId], map: "uq_channel_owner_youtube")
-  @@index([userId], map: "idx_channel_user")
+  @@index([email], map: "idx_user_email")
+}
+
+model Subscription {
+  id                   Int       @id @default(autoincrement())
+  userId               Int       @unique
+  stripeCustomerId     String?   @db.VarChar(255)
+  stripeSubscriptionId String?   @db.VarChar(255)
+  status               String    @default("inactive") @db.VarChar(32) // active, past_due, canceled, inactive
+  plan                 String    @default("free") @db.VarChar(32) // free, pro, team
+  currentPeriodEnd     DateTime? @db.Timestamptz(6)
+  channelLimit         Int       @default(1)
+  createdAt            DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  User                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId], map: "idx_subscription_stripe_customer")
+  @@index([stripeSubscriptionId], map: "idx_subscription_stripe_sub")
 }
 
 model GoogleAccount {
@@ -40,52 +49,115 @@ model GoogleAccount {
   scopes            String?
   tokenExpiresAt    DateTime? @db.Timestamptz(6)
   createdAt         DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt         DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
   User              User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_google_user")
 
   @@unique([provider, providerAccountId], map: "uq_google_provider_account")
 }
 
-model User {
-  id            Int             @id @default(autoincrement())
-  email         String          @unique(map: "uq_user_email") @db.VarChar(255)
-  name          String?         @db.VarChar(255)
-  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime        @default(now()) @db.Timestamptz(6)
-  passwordHash  String?         @db.VarChar(255)
-  Channel       Channel[]
-  GoogleAccount GoogleAccount[]
-  OAuthState    OAuthState[]
-  Plan          Plan[]
-  RetentionBlob RetentionBlob[]
-  VideoMetric   VideoMetric[]
-  Subscription  Subscription[]
-  videos        Video[]
+model Channel {
+  id               Int             @id @default(autoincrement())
+  userId           Int
+  youtubeChannelId String          @db.VarChar(128)
+  title            String?         @db.VarChar(255)
+  thumbnailUrl     String?
+  connectedAt      DateTime        @default(now()) @db.Timestamptz(6)
+  lastSyncedAt     DateTime?       @db.Timestamptz(6)
+  syncStatus       String          @default("idle") @db.VarChar(32)
+  syncError        String?
+  User             User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_channel_user")
+  Video            Video[]
+  Plan             Plan[]
+  RetentionBlob    RetentionBlob[]
+  VideoMetrics     VideoMetrics[]
 
-  @@index([email], map: "idx_user_email")
+  @@unique([userId, youtubeChannelId], map: "uq_channel_owner_youtube")
+  @@index([userId], map: "idx_channel_user")
 }
 
 model Video {
-  id                  Int             @id @default(autoincrement())
-  channelId           Int
-  userId              Int
-  youtubeVideoId      String          @db.VarChar(128)
-  title               String?         @db.VarChar(255)
-  publishedAt         DateTime?       @db.Timestamptz(6)
-  durationSec         Int?
-  tags                String?
-  thumbnailUrl        String?
-  lastMetricsSyncedAt DateTime?       @db.Timestamptz(6)
-  createdAt           DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt           DateTime        @default(now()) @db.Timestamptz(6)
-  Channel             Channel         @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_video_channel")
-  User                User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_video_user")
-  RetentionBlob       RetentionBlob[]
-  VideoMetric         VideoMetric[]
+  id             Int             @id @default(autoincrement())
+  channelId      Int
+  youtubeVideoId String          @db.VarChar(128)
+  title          String?         @db.VarChar(512)
+  description    String?
+  publishedAt    DateTime?       @db.Timestamptz(6)
+  durationSec    Int?
+  tags           String?
+  thumbnailUrl   String?
+  createdAt      DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  Channel        Channel         @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_video_channel")
+  RetentionBlob  RetentionBlob[]
+  VideoMetrics   VideoMetrics?
 
   @@unique([channelId, youtubeVideoId], map: "uq_video_channel_youtube")
   @@index([channelId], map: "idx_video_channel")
-  @@index([userId], map: "idx_video_user")
+  @@index([publishedAt], map: "idx_video_published")
+}
+
+model VideoMetrics {
+  id                      Int      @id @default(autoincrement())
+  videoId                 Int      @unique
+  channelId               Int
+  views                   Int      @default(0)
+  likes                   Int      @default(0)
+  comments                Int      @default(0)
+  shares                  Int      @default(0)
+  subscribersGained       Int      @default(0)
+  subscribersLost         Int      @default(0)
+  estimatedMinutesWatched Int      @default(0)
+  averageViewDuration     Float    @default(0)
+  averageViewPercentage   Float    @default(0)
+  fetchedAt               DateTime @default(now()) @db.Timestamptz(6)
+  cachedUntil             DateTime @db.Timestamptz(6)
+  Video                   Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  Channel                 Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId], map: "idx_video_metrics_channel")
+  @@index([cachedUntil], map: "idx_video_metrics_cached")
+}
+
+model RetentionBlob {
+  id           Int      @id @default(autoincrement())
+  videoId      Int
+  channelId    Int
+  // JSON array of {elapsedRatio, audienceWatchRatio}
+  dataJson     String   @db.Text
+  // Computed cliff analysis result
+  cliffTimeSec Int?
+  cliffReason  String?  @db.VarChar(32) // crossed_50, steepest_drop
+  cliffSlope   Float?
+  fetchedAt    DateTime @default(now()) @db.Timestamptz(6)
+  cachedUntil  DateTime @db.Timestamptz(6)
+  Video        Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  Channel      Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId], map: "uq_retention_video")
+  @@index([channelId], map: "idx_retention_channel")
+  @@index([cachedUntil], map: "idx_retention_cached")
+}
+
+model Plan {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  channelId      Int
+  // Input context snapshot
+  inputsJson     String   @db.Text
+  // Generated plan content (markdown)
+  outputMarkdown String   @db.Text
+  // LLM metadata
+  modelVersion   String?  @db.VarChar(64)
+  tokensUsed     Int?
+  // Caching
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  cachedUntil    DateTime @db.Timestamptz(6)
+  User           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Channel        Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_plan_user")
+  @@index([channelId], map: "idx_plan_channel")
+  @@index([createdAt], map: "idx_plan_created")
 }
 
 model OAuthState {
@@ -95,79 +167,4 @@ model OAuthState {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   expiresAt DateTime @db.Timestamptz(6)
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_oauthstate_user")
-}
-
-model Subscription {
-  id                   Int       @id @default(autoincrement())
-  userId               Int
-  channelId            Int?
-  stripeCustomerId     String?   @unique(map: "uq_subscription_customer")
-  stripeSubscriptionId String?   @unique(map: "uq_subscription_subid")
-  status               String    @default("inactive") @db.VarChar(32)
-  currentPeriodEnd     DateTime? @db.Timestamptz(6)
-  createdAt            DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt            DateTime  @updatedAt @db.Timestamptz(6)
-  User                 User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_subscription_user")
-  Channel              Channel?  @relation(fields: [channelId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_subscription_channel")
-
-  @@index([userId], map: "idx_subscription_user")
-}
-
-model Plan {
-  id             Int       @id @default(autoincrement())
-  userId         Int
-  channelId      Int
-  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
-  inputsJson     Json?
-  outputMarkdown String
-  modelVersion   String?   @db.VarChar(64)
-  cachedUntil    DateTime? @db.Timestamptz(6)
-  User           User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_plan_user")
-  Channel        Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_plan_channel")
-
-  @@index([userId], map: "idx_plan_user")
-  @@index([channelId], map: "idx_plan_channel")
-}
-
-model RetentionBlob {
-  id           Int      @id @default(autoincrement())
-  userId       Int
-  channelId    Int
-  videoId      Int
-  fetchedAt    DateTime @default(now()) @db.Timestamptz(6)
-  cliffTimeSec Int?
-  cliffReason  String?  @db.VarChar(32)
-  slope        Float?
-  contextJson  Json?
-  points       Json
-  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_retention_user")
-  Channel      Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_retention_channel")
-  Video        Video    @relation(fields: [videoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_retention_video")
-
-  @@index([channelId], map: "idx_retention_channel")
-  @@index([videoId], map: "idx_retention_video")
-  @@index([userId], map: "idx_retention_user")
-}
-
-model VideoMetric {
-  id                      Int       @id @default(autoincrement())
-  userId                  Int
-  channelId               Int
-  videoId                 Int
-  periodStart             DateTime? @db.Timestamptz(6)
-  periodEnd               DateTime? @db.Timestamptz(6)
-  viewCount               Int?
-  likeCount               Int?
-  commentCount            Int?
-  subscribersGained       Int?
-  estimatedMinutesWatched Int?
-  averageViewDuration     Int?
-  fetchedAt               DateTime  @default(now()) @db.Timestamptz(6)
-  User                    User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_videometric_user")
-  Channel                 Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_videometric_channel")
-  Video                   Video     @relation(fields: [videoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_videometric_video")
-
-  @@unique([videoId, periodStart, periodEnd], map: "uq_videometric_period")
-  @@index([channelId], map: "idx_videometric_channel")
-  @@index([userId], map: "idx_videometric_user")
 }

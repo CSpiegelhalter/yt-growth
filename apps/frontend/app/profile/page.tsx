@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import styles from "./style.module.css"; // duplicate or share with dashboard if you like
-import { Me, Channel } from "@/types/api";
+import type { Me, Channel } from "@/types/api";
 import AccountStats from "@/components/dashboard/AccountStats";
-import ErrorAlert from "@/components/dashboard/ErrorAlert";
 import BillingCTA from "@/components/dashboard/BillingCTA";
+import ErrorAlert from "@/components/dashboard/ErrorAlert";
 
 export default function ProfilePage() {
   const [me, setMe] = useState<Me | null>(null);
@@ -13,89 +12,216 @@ export default function ProfilePage() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const [mRes, cRes] = await Promise.all([
-        fetch("/api/me", { cache: "no-store" }),
-        fetch("/api/me/channels", { cache: "no-store" }),
-      ]);
-      if (!mRes.ok) throw new Error("Failed to load /api/me");
-      if (!cRes.ok) throw new Error("Failed to load /api/me/channels");
-      const [m, c] = await Promise.all([mRes.json(), cRes.json()]);
-      setMe(m);
-      setChannels(c);
-    } catch (e: any) {
-      setErr(e.message || "Failed to load profile");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setErr(null);
+      try {
+        const [mRes, cRes] = await Promise.all([
+          fetch("/api/me", { cache: "no-store" }),
+          fetch("/api/me/channels", { cache: "no-store" }),
+        ]);
+        if (!mRes.ok) throw new Error("Failed to load /api/me");
+        if (!cRes.ok) throw new Error("Failed to load /api/me/channels");
+        const [m, c] = await Promise.all([mRes.json(), cRes.json()]);
+        setMe(m);
+        setChannels(c);
+      } catch (e: unknown) {
+        setErr(e instanceof Error ? e.message : "Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
+    };
     load();
   }, []);
 
-  const startCheckout = async () => {
-    setErr(null);
-    try {
-      const r = await fetch("/api/integrations/stripe/checkout", { method: "POST" });
-      if (!r.ok) throw new Error("Failed to start checkout");
-      const { url } = await r.json();
-      window.location.href = url;
-    } catch (e: any) {
-      setErr(e.message || "Unable to start checkout");
-    }
-  };
-
-  const openBilling = async () => {
-    setErr(null);
-    try {
-      const r = await fetch("/api/integrations/stripe/billing-portal", { method: "POST" });
-      if (!r.ok) throw new Error("Failed to open billing portal");
-      const { url } = await r.json();
-      window.location.href = url;
-    } catch (e: any) {
-      setErr(e.message || "Unable to open billing portal");
-    }
-  };
+  const isSubscribed = me?.subscription?.isActive ?? false;
 
   return (
-    <main className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.h1}>Profile</h1>
-          <p className={styles.subtle}>
-            View your account details and connections.
-          </p>
-        </div>
+    <main style={{ maxWidth: 800, margin: "0 auto", padding: "0" }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: 700, margin: 0 }}>
+          Profile
+        </h1>
+        <p style={{ color: "#64748b", marginTop: 4, fontSize: "0.875rem" }}>
+          Manage your account and subscription
+        </p>
       </div>
 
       {err && <ErrorAlert message={err} />}
 
-      <section className={styles.section}>
-        <h2 className={styles.h2}>Account</h2>
-        <AccountStats me={me} channelCount={channels.length} />
-        <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-          <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={openBilling}>
-            Manage billing
-          </button>
-          <button className={styles.btn} onClick={startCheckout}>
-            Subscribe
-          </button>
+      {loading ? (
+        <div
+          style={{
+            background: "#f8fafc",
+            padding: 24,
+            borderRadius: 16,
+            textAlign: "center",
+            color: "#64748b",
+          }}
+        >
+          Loading...
         </div>
-        {me?.plan === "free" && (
-          <div style={{ marginTop: 12 }}>
-            <BillingCTA
-              status={me.status}
-              onSubscribe={startCheckout}
-              text="Upgrade to access Decide-for-Me plans, retention cliffs, and subscriber audits."
-            />
-          </div>
-        )}
-      </section>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {/* Account Info */}
+          <section
+            style={{
+              background: "#fff",
+              border: "1px solid #e2e8f0",
+              borderRadius: 16,
+              padding: 24,
+            }}
+          >
+            <h2 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: 16 }}>
+              Account Information
+            </h2>
+            <AccountStats me={me} channelCount={channels.length} />
+          </section>
 
+          {/* Subscription */}
+          <section>
+            <h2
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: 600,
+                marginBottom: 16,
+              }}
+            >
+              Subscription
+            </h2>
+            <BillingCTA
+              isSubscribed={isSubscribed}
+              plan={me?.plan ?? "free"}
+              status={me?.status ?? "inactive"}
+              currentPeriodEnd={me?.subscription?.currentPeriodEnd ?? null}
+            />
+          </section>
+
+          {/* Connected Channels */}
+          <section
+            style={{
+              background: "#fff",
+              border: "1px solid #e2e8f0",
+              borderRadius: 16,
+              padding: 24,
+            }}
+          >
+            <h2 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: 16 }}>
+              Connected Channels
+            </h2>
+            {channels.length === 0 ? (
+              <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
+                No channels connected yet.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {channels.map((ch) => (
+                  <div
+                    key={ch.channel_id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: 12,
+                      background: "#f8fafc",
+                      borderRadius: 10,
+                    }}
+                  >
+                    {ch.thumbnailUrl && (
+                      <img
+                        src={ch.thumbnailUrl}
+                        alt=""
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontWeight: 500,
+                          fontSize: "0.875rem",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {ch.title ?? "Untitled Channel"}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                        {ch.videoCount ?? 0} videos • {ch.planCount ?? 0} plans
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        padding: "2px 8px",
+                        fontSize: "0.75rem",
+                        fontWeight: 500,
+                        borderRadius: 9999,
+                        background:
+                          ch.syncStatus === "idle" ? "#d1fae5" : "#fef3c7",
+                        color:
+                          ch.syncStatus === "idle" ? "#065f46" : "#92400e",
+                      }}
+                    >
+                      {ch.syncStatus}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Danger Zone */}
+          <section
+            style={{
+              background: "#fff",
+              border: "1px solid #fecaca",
+              borderRadius: 16,
+              padding: 24,
+            }}
+          >
+            <h2
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: 600,
+                marginBottom: 8,
+                color: "#991b1b",
+              }}
+            >
+              Danger Zone
+            </h2>
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "0.875rem",
+                marginBottom: 16,
+              }}
+            >
+              These actions are irreversible. Please be certain.
+            </p>
+            <button
+              style={{
+                padding: "8px 16px",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                color: "#dc2626",
+                background: "none",
+                border: "1px solid #dc2626",
+                borderRadius: 8,
+                cursor: "pointer",
+              }}
+              onClick={() => alert("Account deletion would be handled here")}
+            >
+              Delete Account
+            </button>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

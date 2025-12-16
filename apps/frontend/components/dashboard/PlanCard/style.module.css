@@ -1,45 +1,204 @@
-@import url("../ChannelCard/style.module.css");
-
 .card {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 12px 14px;
-  background: #fff;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-lg, 16px);
+  padding: var(--space-md, 16px);
+  margin-bottom: var(--space-md, 16px);
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: var(--space-lg, 24px);
+  }
 }
 
 .header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  flex-direction: column;
+  gap: var(--space-md, 16px);
+  margin-bottom: var(--space-md, 16px);
+}
+
+@media (min-width: 640px) {
+  .header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
 }
 
 .title {
-  font-weight: 700;
-}
-
-.subtle {
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.body {
-  white-space: pre-wrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  background: #f8fafc;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  font-size: 1.125rem;
+  font-weight: 600;
   margin: 0;
 }
 
-.btn {
-  appearance: none;
-  border: 1px solid #111827;
-  background: #111827;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 8px;
-  cursor: pointer;
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #64748b);
+  margin-top: 4px;
 }
+
+.badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnPrimary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btnSuccess {
+  background: #059669;
+  border-color: #059669;
+  color: white;
+}
+
+.locked {
+  text-align: center;
+  padding: var(--space-lg, 24px);
+  background: #f8fafc;
+  border-radius: var(--radius-md, 10px);
+}
+
+.locked p {
+  margin-bottom: var(--space-md, 16px);
+  color: var(--color-text-secondary, #64748b);
+}
+
+.empty {
+  padding: var(--space-md, 16px);
+  background: #f8fafc;
+  border-radius: var(--radius-md, 10px);
+  color: var(--color-text-secondary, #64748b);
+  text-align: center;
+}
+
+.content {
+  position: relative;
+}
+
+.collapsed {
+  max-height: 300px;
+  overflow: hidden;
+  position: relative;
+}
+
+.collapsed::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(transparent, var(--color-surface, #fff));
+  pointer-events: none;
+}
+
+.expanded {
+  max-height: none;
+}
+
+.toggleBtn {
+  display: block;
+  width: 100%;
+  padding: var(--space-sm, 8px);
+  margin-top: var(--space-sm, 8px);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-primary, #2563eb);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+}
+
+.toggleBtn:hover {
+  text-decoration: underline;
+}
+
+.markdown h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: var(--space-lg, 24px) 0 var(--space-sm, 8px);
+  padding-top: var(--space-md, 16px);
+  border-top: 1px solid var(--color-border, #e2e8f0);
+}
+
+.markdown h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.markdown h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: var(--space-md, 16px) 0 var(--space-xs, 4px);
+}
+
+.markdown p {
+  margin-bottom: var(--space-sm, 8px);
+  line-height: 1.6;
+}
+
+.markdown li {
+  margin-bottom: var(--space-xs, 4px);
+  padding-left: var(--space-sm, 8px);
+}
+
+.markdown strong {
+  font-weight: 600;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 6px;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+

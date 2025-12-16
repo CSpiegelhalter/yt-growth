@@ -1,56 +1,47 @@
-import Stripe from "stripe";
-import { z } from "zod";
-import { prisma } from "@/prisma";
-import { asApiResponse } from "@/lib/http";
-import { requireUserContext } from "@/lib/server-user";
+/**
+ * POST /api/integrations/stripe/checkout
+ *
+ * Create a Stripe Checkout session for subscription.
+ *
+ * Auth: Required
+ * Rate limit: 3 per minute per user
+ */
+import { NextRequest } from "next/server";
+import { getCurrentUser } from "@/lib/user";
+import { createCheckoutSession } from "@/lib/stripe";
+import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-06-20" });
-
-const bodySchema = z
-  .object({
-    priceId: z.string().optional(),
-  })
-  .optional();
-
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const ctx = await requireUserContext();
-    const parsed = bodySchema.safeParse(await req.json().catch(() => ({} as any)));
-    const priceId = parsed.success ? parsed.data?.priceId : undefined;
-    const targetPrice = priceId ?? process.env.STRIPE_PRICE_ID;
-    if (!targetPrice) throw new Error("Missing STRIPE_PRICE_ID");
-
-    let subscription = await prisma.subscription.findFirst({
-      where: { userId: ctx.user.id },
-      orderBy: { createdAt: "desc" },
-    });
-
-    let customerId = subscription?.stripeCustomerId;
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: ctx.user.email ?? undefined,
-        metadata: { userId: String(ctx.user.id) },
-      });
-      customerId = customer.id;
-      subscription = await prisma.subscription.create({
-        data: { userId: ctx.user.id, stripeCustomerId: customerId, status: "inactive" },
-      });
+    // Auth check
+    const user = await getCurrentUser();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer: customerId,
-      line_items: [{ price: targetPrice, quantity: 1 }],
-      success_url: process.env.STRIPE_SUCCESS_URL!,
-      cancel_url: process.env.STRIPE_CANCEL_URL!,
-      subscription_data: {
-        metadata: { userId: String(ctx.user.id) },
-      },
-      metadata: { userId: String(ctx.user.id) },
-    });
+    // Rate limit check
+    const rateKey = rateLimitKey("checkout", user.id);
+    const rateResult = checkRateLimit(rateKey, RATE_LIMITS.checkout);
+    if (!rateResult.success) {
+      return Response.json(
+        {
+          error: "Too many checkout attempts. Please try again later.",
+          resetAt: new Date(rateResult.resetAt),
+        },
+        { status: 429 }
+      );
+    }
 
-    return Response.json({ url: session.url });
-  } catch (err) {
-    return asApiResponse(err);
+    // Create checkout session
+    const { url } = await createCheckoutSession(user.id, user.email);
+
+    return Response.json({ url });
+  } catch (err: any) {
+    console.error("Checkout error:", err);
+    return Response.json(
+      { error: "Failed to create checkout session", detail: err.message },
+      { status: 500 }
+    );
   }
 }
+

@@ -1,117 +1,216 @@
-import { prisma } from "@/prisma";
-import { ApiError, asApiResponse } from "@/lib/http";
-import { requireUserContext } from "@/lib/server-user";
-import { listRecentVideos, fetchVideoMetrics } from "@/lib/google-client";
+/**
+ * POST /api/me/channels/[channelId]/sync
+ *
+ * Sync last 10 videos for a channel from YouTube Data API.
+ * Also fetches metrics from YouTube Analytics API.
+ *
+ * Auth: Required
+ * Subscription: Not required (free users can sync)
+ * Rate limit: 10 per hour per channel
+ * Caching: Updates lastSyncedAt, short-circuits if synced within 5 minutes
+ */
+import { NextRequest } from "next/server";
 import { z } from "zod";
+import { prisma } from "@/prisma";
+import { getCurrentUser } from "@/lib/user";
+import { getGoogleAccount, fetchChannelVideos, fetchVideoMetrics } from "@/lib/youtube-api";
+import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
-const bodySchema = z.object({ force: z.boolean().optional() }).optional();
+const ParamsSchema = z.object({
+  channelId: z.string().min(1),
+});
 
-export async function POST(req: Request, { params }: { params: { channelId: string } }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { channelId: string } }
+) {
   try {
-    const { user } = await requireUserContext();
-    const channelId = Number(params.channelId);
-    const channel = await prisma.channel.findUnique({ where: { id: channelId } });
-    if (!channel || channel.userId !== user.id) throw new ApiError(404, "Channel not found");
-
-    const parsed = bodySchema.safeParse(await req.json().catch(() => ({} as any)));
-    const force = parsed.success ? parsed.data?.force : false;
-    const now = new Date();
-    if (!force && channel.lastSyncedAt && now.getTime() - channel.lastSyncedAt.getTime() < 12 * 60 * 60 * 1000) {
-      return Response.json({ cached: true, lastSyncedAt: channel.lastSyncedAt });
+    // Auth check
+    const user = await getCurrentUser();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await prisma.channel.update({
-      where: { id: channel.id },
-      data: { syncStatus: "running", syncError: null },
+    // Validate params
+    const parsed = ParamsSchema.safeParse(params);
+    if (!parsed.success) {
+      return Response.json({ error: "Invalid channel ID" }, { status: 400 });
+    }
+
+    const { channelId } = parsed.data;
+
+    // Get channel and verify ownership
+    const channel = await prisma.channel.findFirst({
+      where: {
+        youtubeChannelId: channelId,
+        userId: user.id,
+      },
     });
 
-    const videos = await listRecentVideos(user.id, channel.youtubeChannelId);
-
-    const videoRecords = [];
-    for (const v of videos) {
-      const record = await prisma.video.upsert({
-        where: { channelId_youtubeVideoId: { channelId: channel.id, youtubeVideoId: v.videoId } },
-        update: {
-          title: v.title,
-          publishedAt: v.publishedAt ?? undefined,
-          durationSec: v.durationSec ?? undefined,
-          tags: v.tags ?? undefined,
-          thumbnailUrl: v.thumbnailUrl ?? undefined,
-          userId: user.id,
-          updatedAt: now,
-        },
-        create: {
-          channelId: channel.id,
-          userId: user.id,
-          youtubeVideoId: v.videoId,
-          title: v.title,
-          publishedAt: v.publishedAt ?? undefined,
-          durationSec: v.durationSec ?? undefined,
-          tags: v.tags ?? undefined,
-          thumbnailUrl: v.thumbnailUrl ?? undefined,
-          lastMetricsSyncedAt: now,
-        },
-      });
-      videoRecords.push(record);
+    if (!channel) {
+      return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    const videoIds = videoRecords.map((v) => v.youtubeVideoId);
-    const metrics = await fetchVideoMetrics(user.id, channel.youtubeChannelId, videoIds);
-    for (const m of metrics) {
-      const video = videoRecords.find((v) => v.youtubeVideoId === m.videoId);
-      if (!video) continue;
-      await prisma.videoMetric.upsert({
-        where: {
-          videoId_periodStart_periodEnd: {
-            videoId: video.id,
-            periodStart: m.periodStart,
-            periodEnd: m.periodEnd,
+    // Check if recently synced (within 5 minutes)
+    if (channel.lastSyncedAt) {
+      const minsSinceSync = (Date.now() - channel.lastSyncedAt.getTime()) / 60000;
+      if (minsSinceSync < 5) {
+        return Response.json({
+          message: "Channel recently synced",
+          lastSyncedAt: channel.lastSyncedAt,
+          nextSyncAvailableAt: new Date(channel.lastSyncedAt.getTime() + 5 * 60000),
+        });
+      }
+    }
+
+    // Rate limit check
+    const rateKey = rateLimitKey("videoSync", channel.id);
+    const rateResult = checkRateLimit(rateKey, RATE_LIMITS.videoSync);
+    if (!rateResult.success) {
+      return Response.json(
+        {
+          error: "Rate limit exceeded",
+          resetAt: new Date(rateResult.resetAt),
+        },
+        { status: 429 }
+      );
+    }
+
+    // Get Google account
+    const ga = await getGoogleAccount(user.id);
+    if (!ga) {
+      return Response.json({ error: "Google account not connected" }, { status: 400 });
+    }
+
+    // Update sync status
+    await prisma.channel.update({
+      where: { id: channel.id },
+      data: { syncStatus: "running" },
+    });
+
+    try {
+      // Fetch videos from YouTube
+      const videos = await fetchChannelVideos(ga, channelId, 10);
+
+      // Upsert videos
+      for (const v of videos) {
+        await prisma.video.upsert({
+          where: {
+            channelId_youtubeVideoId: {
+              channelId: channel.id,
+              youtubeVideoId: v.videoId,
+            },
           },
-        },
-        update: {
-          viewCount: m.viewCount,
-          likeCount: m.likeCount,
-          commentCount: m.commentCount,
-          subscribersGained: m.subscribersGained,
-          estimatedMinutesWatched: m.estimatedMinutesWatched,
-          averageViewDuration: m.averageViewDuration,
-          fetchedAt: now,
-        },
-        create: {
-          userId: user.id,
+          update: {
+            title: v.title,
+            description: v.description,
+            publishedAt: new Date(v.publishedAt),
+            durationSec: v.durationSec,
+            tags: v.tags,
+            thumbnailUrl: v.thumbnailUrl,
+          },
+          create: {
+            channelId: channel.id,
+            youtubeVideoId: v.videoId,
+            title: v.title,
+            description: v.description,
+            publishedAt: new Date(v.publishedAt),
+            durationSec: v.durationSec,
+            tags: v.tags,
+            thumbnailUrl: v.thumbnailUrl,
+          },
+        });
+      }
+
+      // Fetch metrics for videos
+      const videoIds = videos.map((v) => v.videoId);
+      const endDate = new Date().toISOString().split("T")[0];
+      const startDate = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+      const metrics = await fetchVideoMetrics(ga, channelId, videoIds, startDate, endDate);
+
+      // Get video DB IDs
+      const dbVideos = await prisma.video.findMany({
+        where: {
           channelId: channel.id,
-          videoId: video.id,
-          viewCount: m.viewCount,
-          likeCount: m.likeCount,
-          commentCount: m.commentCount,
-          subscribersGained: m.subscribersGained,
-          estimatedMinutesWatched: m.estimatedMinutesWatched,
-          averageViewDuration: m.averageViewDuration,
-          periodStart: m.periodStart,
-          periodEnd: m.periodEnd,
-          fetchedAt: now,
+          youtubeVideoId: { in: videoIds },
+        },
+        select: { id: true, youtubeVideoId: true },
+      });
+
+      const videoIdMap = new Map(dbVideos.map((v) => [v.youtubeVideoId, v.id]));
+
+      // Upsert metrics
+      const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours
+      for (const m of metrics) {
+        const videoDbId = videoIdMap.get(m.videoId);
+        if (!videoDbId) continue;
+
+        await prisma.videoMetrics.upsert({
+          where: { videoId: videoDbId },
+          update: {
+            views: m.views,
+            likes: m.likes,
+            comments: m.comments,
+            shares: m.shares,
+            subscribersGained: m.subscribersGained,
+            subscribersLost: m.subscribersLost,
+            estimatedMinutesWatched: m.estimatedMinutesWatched,
+            averageViewDuration: m.averageViewDuration,
+            averageViewPercentage: m.averageViewPercentage,
+            fetchedAt: new Date(),
+            cachedUntil,
+          },
+          create: {
+            videoId: videoDbId,
+            channelId: channel.id,
+            views: m.views,
+            likes: m.likes,
+            comments: m.comments,
+            shares: m.shares,
+            subscribersGained: m.subscribersGained,
+            subscribersLost: m.subscribersLost,
+            estimatedMinutesWatched: m.estimatedMinutesWatched,
+            averageViewDuration: m.averageViewDuration,
+            averageViewPercentage: m.averageViewPercentage,
+            cachedUntil,
+          },
+        });
+      }
+
+      // Update channel sync status
+      await prisma.channel.update({
+        where: { id: channel.id },
+        data: {
+          lastSyncedAt: new Date(),
+          syncStatus: "idle",
+          syncError: null,
         },
       });
-      await prisma.video.update({
-        where: { id: video.id },
-        data: { lastMetricsSyncedAt: now },
-      });
-    }
 
-    await prisma.channel.update({
-      where: { id: channel.id },
-      data: { lastSyncedAt: now, syncStatus: "idle", syncError: null },
-    });
-
-    return Response.json({ synced: videos.length, metrics: metrics.length, lastSyncedAt: now });
-  } catch (err) {
-    const channelId = Number(params.channelId);
-    if (Number.isFinite(channelId)) {
-      await prisma.channel.updateMany({
-        where: { id: channelId },
-        data: { syncStatus: "error", syncError: err instanceof Error ? err.message : String(err) },
+      return Response.json({
+        success: true,
+        videosCount: videos.length,
+        metricsCount: metrics.length,
+        lastSyncedAt: new Date(),
       });
+    } catch (err: any) {
+      // Update channel with error
+      await prisma.channel.update({
+        where: { id: channel.id },
+        data: {
+          syncStatus: "error",
+          syncError: err.message,
+        },
+      });
+      throw err;
     }
-    return asApiResponse(err);
+  } catch (err: any) {
+    console.error("Sync error:", err);
+    return Response.json(
+      { error: "Sync failed", detail: err.message },
+      { status: 500 }
+    );
   }
 }
+

@@ -1,34 +1,64 @@
+/**
+ * GET /api/me/channels
+ *
+ * Get all channels for the current user.
+ *
+ * Auth: Required
+ */
 import { prisma } from "@/prisma";
-import { asApiResponse } from "@/lib/http";
-import { requireUserContext } from "@/lib/server-user";
+import { getCurrentUser } from "@/lib/user";
 
 export async function GET() {
   try {
-    const { user } = await requireUserContext();
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const channels = await prisma.channel.findMany({
       where: { userId: user.id },
       orderBy: [{ connectedAt: "desc" }],
+      select: {
+        id: true,
+        youtubeChannelId: true,
+        title: true,
+        thumbnailUrl: true,
+        connectedAt: true,
+        lastSyncedAt: true,
+        syncStatus: true,
+        syncError: true,
+        _count: {
+          select: {
+            Video: true,
+            Plan: true,
+          },
+        },
+      },
     });
 
-    return Response.json(
-      channels.map((c) => ({
-        id: c.id,
-        youtubeChannelId: c.youtubeChannelId,
-        title: c.title,
-        thumbnailUrl: c.thumbnailUrl,
-        connectedAt: c.connectedAt,
-        lastSyncedAt: c.lastSyncedAt,
-        lastRetentionSyncedAt: c.lastRetentionSyncedAt,
-        lastPlanGeneratedAt: c.lastPlanGeneratedAt,
-        lastSubscriberAuditAt: c.lastSubscriberAuditAt,
-        syncStatus: c.syncStatus,
-        syncError: c.syncError,
-      })),
-      {
-        headers: { "cache-control": "no-store" },
-      }
-    );
+    // Transform to expected format
+    const transformed = channels.map((ch) => ({
+      channel_id: ch.youtubeChannelId,
+      id: ch.id,
+      title: ch.title,
+      thumbnailUrl: ch.thumbnailUrl,
+      connectedAt: ch.connectedAt,
+      lastSyncedAt: ch.lastSyncedAt,
+      syncStatus: ch.syncStatus,
+      syncError: ch.syncError,
+      videoCount: ch._count.Video,
+      planCount: ch._count.Plan,
+    }));
+
+    return Response.json(transformed, {
+      headers: { "cache-control": "no-store" },
+    });
   } catch (err: any) {
-    return asApiResponse(err);
+    console.error("Get channels error:", err);
+    return Response.json(
+      { error: "Server error", detail: String(err) },
+      { status: 500 }
+    );
   }
 }

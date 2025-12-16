@@ -1,45 +1,114 @@
+/**
+ * API type definitions
+ */
+
 export type Me = {
   id: number;
   email: string;
-  plan: "free" | "pro" | string;
-  status: "active" | "trialing" | "past_due" | "canceled" | string;
+  name: string | null;
+  plan: "free" | "pro" | "team" | string;
+  status: "active" | "past_due" | "canceled" | "inactive" | string;
   channel_limit: number;
+  subscription: {
+    isActive: boolean;
+    currentPeriodEnd: string | null;
+  };
 };
 
 export type Channel = {
+  channel_id: string;
   id: number;
-  youtubeChannelId: string;
-  title?: string | null;
-  thumbnailUrl?: string | null;
-  lastSyncedAt?: string | null;
-  lastRetentionSyncedAt?: string | null;
-  lastPlanGeneratedAt?: string | null;
-  lastSubscriberAuditAt?: string | null;
-  syncStatus?: string | null;
-  syncError?: string | null;
+  title: string | null;
+  thumbnailUrl: string | null;
+  connectedAt: string;
+  lastSyncedAt: string | null;
+  syncStatus: string;
+  syncError: string | null;
+  videoCount: number;
+  planCount: number;
+};
+
+export type Video = {
+  id: number;
+  youtubeVideoId: string;
+  title: string | null;
+  publishedAt: string | null;
+  thumbnailUrl: string | null;
+};
+
+export type VideoWithRetention = Video & {
+  retention: {
+    hasData: boolean;
+    cliffTimeSec?: number | null;
+    cliffTimestamp?: string | null;
+    cliffReason?: string | null;
+    cliffSlope?: number | null;
+    fetchedAt?: string;
+    cachedUntil?: string;
+    error?: string;
+  };
 };
 
 export type Plan = {
   id: number;
-  channelId: number;
-  createdAt: string;
   outputMarkdown: string;
-  cachedUntil?: string | null;
+  createdAt: string;
+  cachedUntil: string;
+  fromCache?: boolean;
+  isCached?: boolean;
+  tokensUsed?: number | null;
+  modelVersion?: string | null;
 };
 
-export type RetentionRow = {
+export type SubscriberMagnetVideo = {
   videoId: string;
-  title?: string | null;
-  durationSec?: number | null;
-  cliffTimeSec?: number | null;
-  cliffReason?: string | null;
-  context?: Array<{ second: number; ratio: number }> | null;
-};
-
-export type SubscriberMagnetRow = {
-  videoId?: string;
   title: string;
   views: number;
   subscribersGained: number;
   subsPerThousand: number;
+  publishedAt: string | null;
+  thumbnailUrl: string | null;
+};
+
+export type SubscriberAuditResponse = {
+  channelId: string;
+  topVideos: SubscriberMagnetVideo[];
+  analysis: string | null;
+  stats: {
+    totalVideosAnalyzed: number;
+    avgSubsPerThousand: number;
+    totalSubscribersGained: number;
+    totalViews: number;
+  };
+  fetchedAt: string;
+};
+
+export type RetentionResponse = {
+  channelId: string;
+  videos: VideoWithRetention[];
+  fetchedAt: string;
+};
+
+export type PlansResponse = {
+  plans: Plan[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+};
+
+export type SyncResponse = {
+  success: boolean;
+  videosCount: number;
+  metricsCount: number;
+  lastSyncedAt: string;
+};
+
+export type ApiError = {
+  error: string;
+  code?: string;
+  detail?: string;
+  resetAt?: string;
 };

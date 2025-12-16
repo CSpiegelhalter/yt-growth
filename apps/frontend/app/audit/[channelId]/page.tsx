@@ -1,188 +1,342 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import styles from "./style.module.css";
+import { useEffect, useState, useCallback } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import type {
+  Channel,
+  Me,
+  VideoWithRetention,
+  SubscriberMagnetVideo,
+  Plan,
+} from "@/types/api";
 import RetentionTable from "@/components/dashboard/RetentionTable";
 import SubscriberMagnetTable from "@/components/dashboard/SubscriberMagnetTable";
 import PlanCard from "@/components/dashboard/PlanCard";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
-import BillingCTA from "@/components/dashboard/BillingCTA";
-import { Plan, RetentionRow, SubscriberMagnetRow } from "@/types/api";
 
-export default function AuditPage({ params }: { params: { channelId: string } }) {
-  const channelId = params.channelId;
-  const searchParams = useSearchParams();
-  const [tab, setTab] = useState<string>(searchParams.get("tab") ?? "retention");
-  const [retention, setRetention] = useState<RetentionRow[]>([]);
-  const [hypothesis, setHypothesis] = useState<string>("");
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [subs, setSubs] = useState<SubscriberMagnetRow[]>([]);
-  const [subsSummary, setSubsSummary] = useState("");
-  const [err, setErr] = useState<string | null>(null);
+type Tab = "retention" | "subscribers" | "plans";
+
+export default function AuditPage() {
+  const params = useParams();
+  const channelId = params.channelId as string;
+
+  const [me, setMe] = useState<Me | null>(null);
+  const [channel, setChannel] = useState<Channel | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("retention");
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const loadRetention = async (force = false) => {
-    const r = await fetch(
-      `/api/me/channels/${channelId}/retention${force ? "?force=1" : ""}`,
-      { cache: "no-store" }
-    );
-    if (r.status === 402) throw new Error("Subscription required for retention");
-    if (!r.ok) throw new Error("Failed to load retention");
-    const body = await r.json();
-    setRetention(body.items ?? []);
-    setHypothesis(body.hypothesis ?? "");
-  };
+  // Data for each tab
+  const [retentionVideos, setRetentionVideos] = useState<VideoWithRetention[]>([]);
+  const [retentionLoading, setRetentionLoading] = useState(false);
+  const [retentionFetched, setRetentionFetched] = useState(false);
 
-  const loadPlans = async () => {
-    const r = await fetch(`/api/me/channels/${channelId}/plans`, { cache: "no-store" });
-    if (r.status === 402) throw new Error("Subscription required for plans");
-    if (!r.ok) throw new Error("Failed to load plans");
-    const body = await r.json();
-    setPlans(body.plans ?? []);
-  };
+  const [subscriberVideos, setSubscriberVideos] = useState<SubscriberMagnetVideo[]>([]);
+  const [subscriberAnalysis, setSubscriberAnalysis] = useState<string | null>(null);
+  const [subscriberLoading, setSubscriberLoading] = useState(false);
+  const [subscriberFetched, setSubscriberFetched] = useState(false);
 
-  const loadSubs = async () => {
-    const r = await fetch(`/api/me/channels/${channelId}/subscriber-audit`, { cache: "no-store" });
-    if (r.status === 402) throw new Error("Subscription required for subscriber audit");
-    if (!r.ok) throw new Error("Failed to load subscriber audit");
-    const body = await r.json();
-    setSubs(body.items ?? []);
-    setSubsSummary(body.summary ?? "");
-  };
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [plansFetched, setPlansFetched] = useState(false);
+  const [latestPlan, setLatestPlan] = useState<Plan | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      await Promise.all([loadRetention(), loadPlans(), loadSubs()]);
-    } catch (e: any) {
-      setErr(e.message || "Failed to load audit");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isSubscribed = me?.subscription?.isActive ?? false;
 
+  // Load initial data
   useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [meRes, channelRes] = await Promise.all([
+          fetch("/api/me", { cache: "no-store" }),
+          fetch(`/api/me/channels`, { cache: "no-store" }),
+        ]);
+
+        if (!meRes.ok) throw new Error("Failed to load user");
+        const meData = await meRes.json();
+        setMe(meData);
+
+        if (channelRes.ok) {
+          const channels = await channelRes.json();
+          const ch = channels.find(
+            (c: Channel) => c.channel_id === channelId
+          );
+          setChannel(ch || null);
+        }
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    };
     load();
   }, [channelId]);
 
+  // Lazy load retention data
+  const loadRetention = useCallback(async () => {
+    if (retentionFetched || retentionLoading || !isSubscribed) return;
+
+    setRetentionLoading(true);
+    try {
+      const res = await fetch(`/api/me/channels/${channelId}/retention`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to load retention");
+      }
+      const data = await res.json();
+      setRetentionVideos(data.videos || []);
+      setRetentionFetched(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load retention");
+    } finally {
+      setRetentionLoading(false);
+    }
+  }, [channelId, retentionFetched, retentionLoading, isSubscribed]);
+
+  // Lazy load subscriber data
+  const loadSubscribers = useCallback(async () => {
+    if (subscriberFetched || subscriberLoading || !isSubscribed) return;
+
+    setSubscriberLoading(true);
+    try {
+      const res = await fetch(`/api/me/channels/${channelId}/subscriber-audit`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to load subscriber audit");
+      }
+      const data = await res.json();
+      setSubscriberVideos(data.topVideos || []);
+      setSubscriberAnalysis(data.analysis);
+      setSubscriberFetched(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load subscriber audit");
+    } finally {
+      setSubscriberLoading(false);
+    }
+  }, [channelId, subscriberFetched, subscriberLoading, isSubscribed]);
+
+  // Lazy load plans
+  const loadPlans = useCallback(async () => {
+    if (plansFetched || plansLoading) return;
+
+    setPlansLoading(true);
+    try {
+      const res = await fetch(`/api/me/channels/${channelId}/plans?limit=10`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to load plans");
+      }
+      const data = await res.json();
+      setPlans(data.plans || []);
+      if (data.plans && data.plans.length > 0) {
+        setLatestPlan(data.plans[0]);
+      }
+      setPlansFetched(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load plans");
+    } finally {
+      setPlansLoading(false);
+    }
+  }, [channelId, plansFetched, plansLoading]);
+
+  // Load data when tab changes
   useEffect(() => {
-    setTab(searchParams.get("tab") ?? "retention");
-  }, [searchParams]);
+    if (activeTab === "retention" && !retentionFetched) {
+      loadRetention();
+    } else if (activeTab === "subscribers" && !subscriberFetched) {
+      loadSubscribers();
+    } else if (activeTab === "plans" && !plansFetched) {
+      loadPlans();
+    }
+  }, [
+    activeTab,
+    retentionFetched,
+    subscriberFetched,
+    plansFetched,
+    loadRetention,
+    loadSubscribers,
+    loadPlans,
+  ]);
 
-  const refreshRetention = async () => {
-    setBusy("retention");
+  const generatePlan = async () => {
+    setError(null);
     try {
-      await loadRetention(true);
-    } catch (e: any) {
-      setErr(e.message || "Failed to refresh retention");
-    } finally {
-      setBusy(null);
+      const res = await fetch(`/api/me/channels/${channelId}/plan/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate plan");
+      }
+      setLatestPlan(data.plan);
+      setPlans([data.plan, ...plans]);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to generate plan");
     }
   };
 
-  const regeneratePlan = async () => {
-    setBusy("plan");
-    setErr(null);
-    try {
-      const r = await fetch(`/api/me/channels/${channelId}/plan/generate`, { method: "POST" });
-      if (r.status === 402) throw new Error("Subscription required for plans");
-      if (!r.ok) throw new Error("Failed to generate plan");
-      await loadPlans();
-    } catch (e: any) {
-      setErr(e.message || "Failed to generate plan");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const startCheckout = async () => {
-    setBusy("billing");
-    setErr(null);
-    try {
-      const r = await fetch("/api/integrations/stripe/checkout", { method: "POST" });
-      if (!r.ok) throw new Error("Failed to start checkout");
-      const { url } = await r.json();
-      window.location.href = url;
-    } catch (e: any) {
-      setErr(e.message || "Unable to start checkout");
-    } finally {
-      setBusy(null);
-    }
-  };
+  if (loading) {
+    return (
+      <main style={{ padding: "24px" }}>
+        <div style={{ textAlign: "center", color: "#64748b" }}>Loading...</div>
+      </main>
+    );
+  }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.h1}>Audit</h1>
-          <p className={styles.subtle}>Retention cliffs, plans, and subscriber magnets.</p>
-        </div>
-        <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${tab === "retention" ? styles.tabActive : ""}`}
-            onClick={() => {
-              setTab("retention");
-              window.history.replaceState(null, "", `?tab=retention`);
-            }}
-          >
-            Retention
-          </button>
-          <button
-            className={`${styles.tab} ${tab === "plan" ? styles.tabActive : ""}`}
-            onClick={() => {
-              setTab("plan");
-              window.history.replaceState(null, "", `?tab=plan`);
-            }}
-          >
-            Decide-for-Me
-          </button>
-          <button
-            className={`${styles.tab} ${tab === "subscribers" ? styles.tabActive : ""}`}
-            onClick={() => {
-              setTab("subscribers");
-              window.history.replaceState(null, "", `?tab=subscribers`);
-            }}
-          >
-            Subscriber magnets
-          </button>
-        </div>
+    <main style={{ padding: "0", maxWidth: 1040, margin: "0 auto" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <Link
+          href="/dashboard"
+          style={{
+            fontSize: "0.875rem",
+            color: "#64748b",
+            textDecoration: "none",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            marginBottom: 8,
+          }}
+        >
+          ← Back to Dashboard
+        </Link>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: 700, margin: 0 }}>
+          Channel Audit
+        </h1>
+        {channel && (
+          <p style={{ color: "#64748b", marginTop: 4 }}>{channel.title}</p>
+        )}
       </div>
 
-      {err && <ErrorAlert message={err} />}
+      {error && <ErrorAlert message={error} />}
 
-      {!loading && err?.toLowerCase().includes("subscription") && (
-        <BillingCTA status="inactive" onSubscribe={startCheckout} busy={busy === "billing"} text={err} />
+      {/* Subscription gate */}
+      {!isSubscribed && (
+        <div
+          style={{
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            padding: 16,
+            borderRadius: 10,
+            marginBottom: 24,
+          }}
+        >
+          <p style={{ margin: 0, marginBottom: 8 }}>
+            🔒 Upgrade to Pro to access full audit features
+          </p>
+          <a
+            href="/api/integrations/stripe/checkout"
+            style={{
+              display: "inline-block",
+              padding: "8px 16px",
+              background: "#2563eb",
+              color: "white",
+              borderRadius: 8,
+              textDecoration: "none",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+            }}
+          >
+            Subscribe Now
+          </a>
+        </div>
       )}
 
-      {!loading && tab === "retention" && (
+      {/* Tabs */}
+      <div
+        style={{
+          display: "flex",
+          gap: 4,
+          borderBottom: "1px solid #e2e8f0",
+          marginBottom: 24,
+          overflowX: "auto",
+        }}
+      >
+        {[
+          { id: "retention" as Tab, label: "📉 Retention Cliffs" },
+          { id: "subscribers" as Tab, label: "🧲 Subscriber Magnets" },
+          { id: "plans" as Tab, label: "📋 Plans" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              padding: "8px 16px",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              color: activeTab === tab.id ? "#2563eb" : "#64748b",
+              background: "none",
+              border: "none",
+              borderBottom:
+                activeTab === tab.id ? "2px solid #2563eb" : "2px solid transparent",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      {activeTab === "retention" && (
         <RetentionTable
-          rows={retention}
-          hypothesis={hypothesis}
-          onRefresh={refreshRetention}
-          busy={busy === "retention"}
+          videos={retentionVideos}
+          loading={retentionLoading}
         />
       )}
 
-      {!loading && tab === "plan" && (
-        <>
-          {plans[0] ? (
-            <PlanCard plan={plans[0]} onRegenerate={regeneratePlan} busy={busy === "plan"} />
-          ) : (
-            <BillingCTA
-              status="inactive"
-              onSubscribe={startCheckout}
-              busy={busy === "billing"}
-              text="Generate your first Decide-for-Me plan to see topics, titles, and tags."
-            />
-          )}
-        </>
+      {activeTab === "subscribers" && (
+        <SubscriberMagnetTable
+          videos={subscriberVideos}
+          analysis={subscriberAnalysis}
+          loading={subscriberLoading}
+        />
       )}
 
-      {!loading && tab === "subscribers" && (
-        <SubscriberMagnetTable rows={subs} summary={subsSummary} />
+      {activeTab === "plans" && (
+        <div>
+          <PlanCard
+            plan={latestPlan}
+            channelId={channelId}
+            isSubscribed={isSubscribed}
+            onGenerate={generatePlan}
+            loading={plansLoading}
+          />
+
+          {plans.length > 1 && (
+            <div style={{ marginTop: 24 }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
+                Plan History
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {plans.slice(1).map((plan) => (
+                  <div
+                    key={plan.id}
+                    style={{
+                      padding: 12,
+                      background: "#f8fafc",
+                      borderRadius: 8,
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500 }}>
+                      Plan #{plan.id}
+                    </span>
+                    <span style={{ color: "#64748b", marginLeft: 8 }}>
+                      {new Date(plan.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </main>
   );

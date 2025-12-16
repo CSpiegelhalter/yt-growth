@@ -1,23 +1,92 @@
+/**
+ * GET /api/me/channels/[channelId]/plans
+ *
+ * Get plan history for a channel.
+ *
+ * Auth: Required
+ * Subscription: Not required (can view history even if subscription lapses)
+ */
+import { NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/prisma";
-import { ApiError, asApiResponse } from "@/lib/http";
-import { ensureSubscribed, requireUserContext } from "@/lib/server-user";
+import { getCurrentUser } from "@/lib/user";
 
-export async function GET(_: Request, { params }: { params: { channelId: string } }) {
+const ParamsSchema = z.object({
+  channelId: z.string().min(1),
+});
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { channelId: string } }
+) {
   try {
-    const ctx = await requireUserContext();
-    ensureSubscribed(ctx.isSubscribed);
+    // Auth check
+    const user = await getCurrentUser();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const channelId = Number(params.channelId);
-    const channel = await prisma.channel.findUnique({ where: { id: channelId } });
-    if (!channel || channel.userId !== ctx.user.id) throw new ApiError(404, "Channel not found");
+    // Validate params
+    const parsed = ParamsSchema.safeParse(params);
+    if (!parsed.success) {
+      return Response.json({ error: "Invalid channel ID" }, { status: 400 });
+    }
 
-    const plans = await prisma.plan.findMany({
-      where: { channelId, userId: ctx.user.id },
-      orderBy: { createdAt: "desc" },
-      take: 20,
+    const { channelId } = parsed.data;
+
+    // Get channel and verify ownership
+    const channel = await prisma.channel.findFirst({
+      where: {
+        youtubeChannelId: channelId,
+        userId: user.id,
+      },
     });
-    return Response.json({ plans });
-  } catch (err) {
-    return asApiResponse(err);
+
+    if (!channel) {
+      return Response.json({ error: "Channel not found" }, { status: 404 });
+    }
+
+    // Get plans with pagination
+    const url = new URL(req.url);
+    const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "10", 10), 50);
+    const offset = parseInt(url.searchParams.get("offset") ?? "0", 10);
+
+    const [plans, total] = await Promise.all([
+      prisma.plan.findMany({
+        where: { channelId: channel.id },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        skip: offset,
+        select: {
+          id: true,
+          outputMarkdown: true,
+          modelVersion: true,
+          tokensUsed: true,
+          createdAt: true,
+          cachedUntil: true,
+        },
+      }),
+      prisma.plan.count({ where: { channelId: channel.id } }),
+    ]);
+
+    return Response.json({
+      plans: plans.map((p) => ({
+        ...p,
+        isCached: p.cachedUntil > new Date(),
+      })),
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + plans.length < total,
+      },
+    });
+  } catch (err: any) {
+    console.error("Plans fetch error:", err);
+    return Response.json(
+      { error: "Failed to fetch plans", detail: err.message },
+      { status: 500 }
+    );
   }
 }
+

@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: yt-growth-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: yt_growth
+      POSTGRES_PASSWORD: yt_growth_dev
+      POSTGRES_DB: yt_growth
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yt_growth -d yt_growth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    name: yt-growth-postgres-data
+

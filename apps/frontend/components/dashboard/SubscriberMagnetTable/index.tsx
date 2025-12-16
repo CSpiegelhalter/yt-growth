@@ -1,48 +1,73 @@
-import s from "./style.module.css";
-import { SubscriberMagnetRow } from "@/types/api";
+"use client";
 
-export default function SubscriberMagnetTable({
-  rows,
-  summary,
-}: {
-  rows: SubscriberMagnetRow[];
-  summary?: string;
-}) {
+import s from "./style.module.css";
+import type { SubscriberMagnetVideo } from "@/types/api";
+
+type Props = {
+  videos: SubscriberMagnetVideo[];
+  analysis: string | null;
+  loading?: boolean;
+};
+
+export default function SubscriberMagnetTable({ videos, analysis, loading = false }: Props) {
+  if (loading) {
+    return (
+      <div className={s.card}>
+        <h3 className={s.title}>🧲 Subscriber Magnets</h3>
+        <div className={s.skeleton} style={{ height: 200 }} />
+      </div>
+    );
+  }
+
+  if (videos.length === 0) {
+    return (
+      <div className={s.card}>
+        <h3 className={s.title}>🧲 Subscriber Magnets</h3>
+        <p className={s.empty}>No subscriber data available. Sync your channel first.</p>
+      </div>
+    );
+  }
+
   return (
     <div className={s.card}>
-      <div className={s.header}>
-        <div className={s.title}>Subscriber magnet audit</div>
-        <div className={s.subtle}>Top 3 videos by subs gained per 1k views.</div>
+      <h3 className={s.title}>🧲 Subscriber Magnets</h3>
+      <p className={s.subtitle}>
+        Videos that convert viewers to subscribers - learn from your best performers
+      </p>
+
+      <div className={s.grid}>
+        {videos.map((video, index) => (
+          <div key={video.videoId} className={s.videoCard}>
+            <div className={s.rank}>#{index + 1}</div>
+            <div className={s.videoInfo}>
+              <h4 className={s.videoTitle}>{video.title}</h4>
+              <div className={s.stats}>
+                <span className={s.stat}>
+                  <strong>{video.subsPerThousand}</strong> subs/1k views
+                </span>
+                <span className={s.stat}>
+                  {video.views.toLocaleString()} views
+                </span>
+                <span className={s.stat}>
+                  +{video.subscribersGained.toLocaleString()} subs
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
-      <table className={s.table}>
-        <thead>
-          <tr>
-            <th>Video</th>
-            <th>Views</th>
-            <th>Subs gained</th>
-            <th>Subs / 1k views</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={4} className={s.subtle}>
-                No data yet. Run a sync first.
-              </td>
-            </tr>
-          ) : (
-            rows.map((r) => (
-              <tr key={r.videoId ?? r.title}>
-                <td>{r.title}</td>
-                <td>{r.views}</td>
-                <td>{r.subscribersGained}</td>
-                <td>{r.subsPerThousand.toFixed(2)}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-      {summary && <div className={s.summary}>{summary}</div>}
+
+      {analysis && (
+        <div className={s.analysis}>
+          <h4 className={s.analysisTitle}>📊 Pattern Analysis</h4>
+          <div className={s.analysisContent}>
+            {analysis.split('\n').map((line, i) => (
+              <p key={i}>{line}</p>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
