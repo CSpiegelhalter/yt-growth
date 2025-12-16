@@ -1,24 +1,34 @@
-// app/api/me/channels/route.ts
+import { prisma } from "@/prisma";
+import { asApiResponse } from "@/lib/http";
+import { requireUserContext } from "@/lib/server-user";
+
 export async function GET() {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE!;
   try {
-    const res = await fetch(`${apiBase}/me/channels`, {
-      // Route handler runs server-side, so no CORS issues.
-      // If/when you add Cognito, attach Authorization: Bearer <id_token> here.
-      // headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
+    const { user } = await requireUserContext();
+    const channels = await prisma.channel.findMany({
+      where: { userId: user.id },
+      orderBy: [{ connectedAt: "desc" }],
     });
 
-    // Pass through backend status codes
-    const body = await res.text();
-    return new Response(body, {
-      status: res.status,
-      headers: { "content-type": res.headers.get("content-type") || "application/json" },
-    });
+    return Response.json(
+      channels.map((c) => ({
+        id: c.id,
+        youtubeChannelId: c.youtubeChannelId,
+        title: c.title,
+        thumbnailUrl: c.thumbnailUrl,
+        connectedAt: c.connectedAt,
+        lastSyncedAt: c.lastSyncedAt,
+        lastRetentionSyncedAt: c.lastRetentionSyncedAt,
+        lastPlanGeneratedAt: c.lastPlanGeneratedAt,
+        lastSubscriberAuditAt: c.lastSubscriberAuditAt,
+        syncStatus: c.syncStatus,
+        syncError: c.syncError,
+      })),
+      {
+        headers: { "cache-control": "no-store" },
+      }
+    );
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: "Upstream error", detail: String(err) }), {
-      status: 502,
-      headers: { "content-type": "application/json" },
-    });
+    return asApiResponse(err);
   }
 }

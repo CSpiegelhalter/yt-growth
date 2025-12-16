@@ -1,18 +1,27 @@
-// app/api/me/channels/[channelId]/route.ts
+import { prisma } from "@/prisma";
+import { asApiResponse, ApiError } from "@/lib/http";
+import { requireUserContext } from "@/lib/server-user";
+
 export async function DELETE(_: Request, { params }: { params: { channelId: string } }) {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE!;
-    try {
-      const res = await fetch(`${apiBase}/me/channels/${params.channelId}`, { method: "DELETE" });
-      const body = await res.text();
-      return new Response(body, {
-        status: res.status,
-        headers: { "content-type": res.headers.get("content-type") || "application/json" },
-      });
-    } catch (err: any) {
-      return new Response(JSON.stringify({ error: "Upstream error", detail: String(err) }), {
-        status: 502,
-        headers: { "content-type": "application/json" },
-      });
-    }
+  try {
+    const { user } = await requireUserContext();
+    const channelId = Number(params.channelId);
+    const channel = await prisma.channel.findUnique({ where: { id: channelId } });
+    if (!channel || channel.userId !== user.id) throw new ApiError(404, "Channel not found");
+
+    await prisma.$transaction([
+      prisma.retentionBlob.deleteMany({ where: { channelId } }),
+      prisma.videoMetric.deleteMany({ where: { channelId } }),
+      prisma.plan.deleteMany({ where: { channelId } }),
+      prisma.video.deleteMany({ where: { channelId } }),
+      prisma.subscription.updateMany({
+        where: { channelId },
+        data: { channelId: null },
+      }),
+      prisma.channel.delete({ where: { id: channelId } }),
+    ]);
+    return Response.json({ ok: true });
+  } catch (err) {
+    return asApiResponse(err);
   }
-  
+}

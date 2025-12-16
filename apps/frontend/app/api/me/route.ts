@@ -1,17 +1,14 @@
 // app/api/me/route.ts
+import { asApiResponse } from "@/lib/http";
+import { publicMePayload, requireUserContext } from "@/lib/server-user";
+
 export async function GET() {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE!;
   try {
-    const res = await fetch(`${apiBase}/me`, { cache: "no-store" });
-    const body = await res.text();
-    return new Response(body, {
-      status: res.status,
-      headers: { "content-type": res.headers.get("content-type") || "application/json" },
+    const ctx = await requireUserContext();
+    return Response.json(publicMePayload(ctx), {
+      headers: { "cache-control": "no-store" },
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: "Upstream error", detail: String(err) }), {
-      status: 502,
-      headers: { "content-type": "application/json" },
-    });
+    return asApiResponse(err);
   }
 }
