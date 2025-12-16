@@ -1,0 +1,78 @@
+.h2 {
+    font-size: 20px;
+    margin: 16px 0;
+}
+
+.h3 {
+    margin: 0 0 6px 0;
+}
+
+.subtle {
+    color: #586174;
+}
+
+.rowBetween {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card {
+    border: 1px solid #e7eaf0;
+    border-radius: 12px;
+    padding: 14px;
+    background: #fff;
+}
+
+.cardGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
+}
+
+.empty {
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 24px;
+    background: #fafafa;
+    text-align: center;
+}
+
+.btn {
+    appearance: none;
+    border: 1px solid #ddd;
+    background: #fff;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: transform .06s ease, box-shadow .12s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, .06);
+}
+
+.btnPrimary {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+}
+
+.btnSecondary {
+    background: #f5f5f5;
+}
+
+.btnDisabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btnLink {
+    background: transparent;
+    border: none;
+    color: #2563eb;
+    padding: 0;
+    text-decoration: none;
+}

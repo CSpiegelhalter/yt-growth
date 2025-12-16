@@ -1,0 +1,44 @@
+@import url("../../dashboard/style.module.css");
+
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.h1 {
+  font-size: 28px;
+  margin: 0;
+}
+
+.subtle {
+  color: #586174;
+  margin-top: 4px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.tab {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.tabActive {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}

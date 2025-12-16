@@ -1,0 +1,45 @@
+@import url("../ChannelCard/style.module.css");
+
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-weight: 700;
+}
+
+.subtle {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.body {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  margin: 0;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid #111827;
+  background: #111827;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}

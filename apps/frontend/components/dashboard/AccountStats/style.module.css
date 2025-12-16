@@ -1,0 +1,31 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.stat {
+    border: 1px solid #e7eaf0;
+    padding: 14px;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.statLabel {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.statValue {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111;
+}
+
+.tone-ok .statValue {
+    color: #0a7a40;
+}
+
+.tone-warn .statValue {
+    color: #9a3412;
+}

@@ -1,0 +1,53 @@
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.h1 {
+  font-size: 28px;
+  margin: 0;
+}
+
+.subtle {
+  color: #586174;
+  margin-top: 4px;
+}
+
+.section {
+  margin-top: 28px;
+}
+
+.h2 {
+  font-size: 20px;
+  margin: 16px 0;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid #ddd;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: transform .06s ease, box-shadow .12s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .06);
+}
+
+.btnPrimary {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
