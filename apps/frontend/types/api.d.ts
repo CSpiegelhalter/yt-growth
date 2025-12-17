@@ -49,9 +49,50 @@ export type VideoWithRetention = Video & {
   };
 };
 
+export type PlanTopic = {
+  id: string;
+  title: string;
+  why: string;
+  confidence: "high" | "medium" | "exploratory";
+  angles: string[];
+  hooks: string[];
+  titles: Array<{ text: string; tags?: string[] }>;
+  keywords: string[];
+  thumbnail: {
+    overlayText?: string;
+    layout?: string;
+    notes: string[];
+    avoid: string[];
+  };
+};
+
+export type PlanNicheInsights = {
+  whatIsWorkingNow: string[];
+  formatsToCopy: string[];
+  doDont: { do: string[]; dont: string[] };
+};
+
+export type PlanSimilarExample = {
+  channelId: string;
+  channelTitle: string;
+  examples: Array<{
+    videoId: string;
+    title: string;
+    thumbnailUrl?: string;
+    whyItWorked: string[];
+  }>;
+};
+
+export type PlanOutputJson = {
+  topics: PlanTopic[];
+  nicheInsights: PlanNicheInsights;
+  similarChannelExamples?: PlanSimilarExample[];
+};
+
 export type Plan = {
   id: number;
   outputMarkdown: string;
+  outputJson?: PlanOutputJson | null;
   createdAt: string;
   cachedUntil: string;
   fromCache?: boolean;
@@ -68,19 +109,70 @@ export type SubscriberMagnetVideo = {
   subsPerThousand: number;
   publishedAt: string | null;
   thumbnailUrl: string | null;
+  durationSec?: number | null;
+  viewsPerDay?: number;
+  avdSec?: number | null;
+  apv?: number | null;
+  insight?: {
+    whyItConverts: string[];
+    stealThis: string[];
+    hookIdea: string[];
+  };
+};
+
+export type PatternAnalysisJson = {
+  summary: string;
+  commonPatterns: string[];
+  ctaPatterns: string[];
+  formatPatterns: string[];
+  nextExperiments: string[];
+  hooksToTry: string[];
 };
 
 export type SubscriberAuditResponse = {
   channelId: string;
-  topVideos: SubscriberMagnetVideo[];
-  analysis: string | null;
+  range: "7d" | "28d";
+  generatedAt: string;
+  cachedUntil: string;
+  videos: SubscriberMagnetVideo[];
+  patternAnalysis: {
+    analysisJson: PatternAnalysisJson | null;
+    analysisMarkdownFallback: string | null;
+  };
   stats: {
     totalVideosAnalyzed: number;
     avgSubsPerThousand: number;
     totalSubscribersGained: number;
     totalViews: number;
   };
-  fetchedAt: string;
+};
+
+export type SimilarChannel = {
+  channelId: string;
+  channelTitle: string;
+  channelThumbnailUrl: string | null;
+  similarityScore: number;
+  recentWinners: Array<{
+    videoId: string;
+    title: string;
+    publishedAt: string;
+    thumbnailUrl: string | null;
+    views: number;
+    viewsPerDay: number;
+  }>;
+};
+
+export type SimilarChannelsResponse = {
+  channelId: string;
+  range: "7d" | "14d";
+  generatedAt: string;
+  cachedUntil: string;
+  similarChannels: SimilarChannel[];
+  insights: {
+    whatTheyreDoing: string[];
+    ideasToSteal: string[];
+    formatsToTry: string[];
+  };
 };
 
 export type RetentionResponse = {

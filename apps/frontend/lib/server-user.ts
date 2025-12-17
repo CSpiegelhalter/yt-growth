@@ -13,10 +13,10 @@ export async function requireUserContext() {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { Subscription: { orderBy: { createdAt: "desc" }, take: 1 } },
+    include: { Subscription: true },
   });
   if (!user) throw new ApiError(401, "Unauthorized");
-  const subscription = user.Subscription[0] ?? null;
+  const subscription = user.Subscription ?? null;
   const isSubscribed = subscription ? ACTIVE_SUB_STATUSES.includes(subscription.status) : false;
 
   return { user, subscription, isSubscribed };

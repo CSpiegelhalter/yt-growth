@@ -1,0 +1,122 @@
+{
+  "channelId": "DEMO_CHANNEL",
+  "demo": true,
+  "range": "7d",
+  "generatedAt": "2024-12-15T10:00:00Z",
+  "cachedUntil": "2024-12-16T10:00:00Z",
+  "similarChannels": [
+    {
+      "channelId": "similar-ch-1",
+      "channelTitle": "Creator Academy",
+      "thumbnailUrl": "https://yt3.googleusercontent.com/demo1",
+      "subscriberCount": 245000,
+      "videoCount": 312,
+      "recentWinners": [
+        {
+          "videoId": "winner-1-1",
+          "title": "YouTube Changed Everything (Again) - What You Need to Know",
+          "views": 89500,
+          "publishedAt": "2024-12-12T15:00:00Z",
+          "thumbnailUrl": "https://i.ytimg.com/vi/winner1/mqdefault.jpg",
+          "durationSec": 542
+        },
+        {
+          "videoId": "winner-1-2",
+          "title": "The Simple Thumbnail Trick That 10x'd My CTR",
+          "views": 67200,
+          "publishedAt": "2024-12-09T18:00:00Z",
+          "thumbnailUrl": "https://i.ytimg.com/vi/winner2/mqdefault.jpg",
+          "durationSec": 389
+        }
+      ]
+    },
+    {
+      "channelId": "similar-ch-2",
+      "channelTitle": "Growth Lab",
+      "thumbnailUrl": "https://yt3.googleusercontent.com/demo2",
+      "subscriberCount": 178000,
+      "videoCount": 198,
+      "recentWinners": [
+        {
+          "videoId": "winner-2-1",
+          "title": "I Asked AI to Write My Scripts for a Week",
+          "views": 145000,
+          "publishedAt": "2024-12-11T12:00:00Z",
+          "thumbnailUrl": "https://i.ytimg.com/vi/winner3/mqdefault.jpg",
+          "durationSec": 723
+        },
+        {
+          "videoId": "winner-2-2",
+          "title": "The YouTube Analytics Metric Nobody Talks About",
+          "views": 52300,
+          "publishedAt": "2024-12-08T14:30:00Z",
+          "thumbnailUrl": "https://i.ytimg.com/vi/winner4/mqdefault.jpg",
+          "durationSec": 456
+        }
+      ]
+    },
+    {
+      "channelId": "similar-ch-3",
+      "channelTitle": "Video Boss",
+      "thumbnailUrl": "https://yt3.googleusercontent.com/demo3",
+      "subscriberCount": 89000,
+      "videoCount": 156,
+      "recentWinners": [
+        {
+          "videoId": "winner-3-1",
+          "title": "Stop Making These Rookie Editing Mistakes",
+          "views": 34500,
+          "publishedAt": "2024-12-13T10:00:00Z",
+          "thumbnailUrl": "https://i.ytimg.com/vi/winner5/mqdefault.jpg",
+          "durationSec": 612
+        }
+      ]
+    },
+    {
+      "channelId": "similar-ch-4",
+      "channelTitle": "Content Kings",
+      "thumbnailUrl": "https://yt3.googleusercontent.com/demo4",
+      "subscriberCount": 312000,
+      "videoCount": 425,
+      "recentWinners": [
+        {
+          "videoId": "winner-4-1",
+          "title": "How This Creator Went From 0 to 1M in 8 Months",
+          "views": 234000,
+          "publishedAt": "2024-12-10T16:00:00Z",
+          "thumbnailUrl": "https://i.ytimg.com/vi/winner6/mqdefault.jpg",
+          "durationSec": 845
+        },
+        {
+          "videoId": "winner-4-2",
+          "title": "The Perfect Upload Schedule (Data from 1000 Channels)",
+          "views": 98700,
+          "publishedAt": "2024-12-07T11:00:00Z",
+          "thumbnailUrl": "https://i.ytimg.com/vi/winner7/mqdefault.jpg",
+          "durationSec": 534
+        }
+      ]
+    }
+  ],
+  "insights": {
+    "whatTheyreDoing": [
+      "Posting 2-3 times per week consistently",
+      "Using specific numbers and data in titles",
+      "Covering algorithm updates quickly",
+      "Creating AI and tool-focused content"
+    ],
+    "ideasToSteal": [
+      "Case study format with specific growth numbers",
+      "Algorithm update reaction videos",
+      "'I tried X for Y days' experiment format",
+      "Data-driven content with large sample sizes"
+    ],
+    "formatsToTry": [
+      "Weekly news/update roundup",
+      "Tool comparison and review videos",
+      "Behind-the-scenes workflow content",
+      "Collaboration with smaller creators"
+    ]
+  }
+}
+

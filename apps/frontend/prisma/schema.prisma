@@ -146,6 +146,8 @@ model Plan {
   inputsJson     String   @db.Text
   // Generated plan content (markdown)
   outputMarkdown String   @db.Text
+  // Generated plan content (structured JSON)
+  outputJson     String?  @db.Text
   // LLM metadata
   modelVersion   String?  @db.VarChar(64)
   tokensUsed     Int?

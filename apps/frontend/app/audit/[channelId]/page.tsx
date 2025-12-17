@@ -1,21 +1,25 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import type {
   Channel,
   Me,
-  VideoWithRetention,
   SubscriberMagnetVideo,
   Plan,
+  SimilarChannelsResponse,
+  PatternAnalysisJson,
 } from "@/types/api";
+import { useRetention } from "@/lib/use-retention";
 import RetentionTable from "@/components/dashboard/RetentionTable";
 import SubscriberMagnetTable from "@/components/dashboard/SubscriberMagnetTable";
 import PlanCard from "@/components/dashboard/PlanCard";
+import SimilarChannelsSection from "@/components/dashboard/SimilarChannels";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
+import s from "./style.module.css";
 
-type Tab = "retention" | "subscribers" | "plans";
+type Tab = "retention" | "subscribers" | "similar" | "plans";
 
 export default function AuditPage() {
   const params = useParams();
@@ -27,25 +31,44 @@ export default function AuditPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Data for each tab
-  const [retentionVideos, setRetentionVideos] = useState<VideoWithRetention[]>([]);
-  const [retentionLoading, setRetentionLoading] = useState(false);
-  const [retentionFetched, setRetentionFetched] = useState(false);
-
-  const [subscriberVideos, setSubscriberVideos] = useState<SubscriberMagnetVideo[]>([]);
-  const [subscriberAnalysis, setSubscriberAnalysis] = useState<string | null>(null);
-  const [subscriberLoading, setSubscriberLoading] = useState(false);
-  const [subscriberFetched, setSubscriberFetched] = useState(false);
-
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [plansLoading, setPlansLoading] = useState(false);
-  const [plansFetched, setPlansFetched] = useState(false);
-  const [latestPlan, setLatestPlan] = useState<Plan | null>(null);
-
   const isSubscribed = me?.subscription?.isActive ?? false;
 
-  // Load initial data
+  // Use the retention hook with proper deduping
+  const retention = useRetention(channelId, {
+    fetchOnMount: activeTab === "retention",
+    isSubscribed,
+  });
+
+  // Subscriber audit state with ref-based deduping
+  const [subscriberVideos, setSubscriberVideos] = useState<SubscriberMagnetVideo[]>([]);
+  const [subscriberAnalysis, setSubscriberAnalysis] = useState<{
+    analysisJson: PatternAnalysisJson | null;
+    analysisMarkdownFallback: string | null;
+  } | null>(null);
+  const [subscriberLoading, setSubscriberLoading] = useState(false);
+  const [subscriberLastUpdated, setSubscriberLastUpdated] = useState<string | null>(null);
+  const [subscriberIsDemo, setSubscriberIsDemo] = useState(false);
+  const subscriberFetchedRef = useRef(false);
+  const subscriberInFlightRef = useRef(false);
+
+  // Similar channels state
+  const [similarChannels, setSimilarChannels] = useState<SimilarChannelsResponse | null>(null);
+  const [similarLoading, setSimilarLoading] = useState(false);
+  const [similarIsDemo, setSimilarIsDemo] = useState(false);
+  const similarFetchedRef = useRef(false);
+  const similarInFlightRef = useRef(false);
+
+  // Plans state with ref-based deduping
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [latestPlan, setLatestPlan] = useState<Plan | null>(null);
+  const plansFetchedRef = useRef(false);
+  const plansInFlightRef = useRef(false);
+
+  // Load initial data (me + channel)
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
       setLoading(true);
       try {
@@ -53,6 +76,8 @@ export default function AuditPage() {
           fetch("/api/me", { cache: "no-store" }),
           fetch(`/api/me/channels`, { cache: "no-store" }),
         ]);
+
+        if (cancelled) return;
 
         if (!meRes.ok) throw new Error("Failed to load user");
         const meData = await meRes.json();
@@ -66,62 +91,93 @@ export default function AuditPage() {
           setChannel(ch || null);
         }
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Failed to load data");
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load data");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [channelId]);
 
-  // Lazy load retention data
-  const loadRetention = useCallback(async () => {
-    if (retentionFetched || retentionLoading || !isSubscribed) return;
-
-    setRetentionLoading(true);
-    try {
-      const res = await fetch(`/api/me/channels/${channelId}/retention`);
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to load retention");
-      }
-      const data = await res.json();
-      setRetentionVideos(data.videos || []);
-      setRetentionFetched(true);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load retention");
-    } finally {
-      setRetentionLoading(false);
+  // Load subscriber audit data
+  const loadSubscribers = useCallback(async (params?: { range?: "7d" | "28d"; sort?: string }) => {
+    if (subscriberInFlightRef.current || (!params && subscriberFetchedRef.current) || !isSubscribed) {
+      return;
     }
-  }, [channelId, retentionFetched, retentionLoading, isSubscribed]);
 
-  // Lazy load subscriber data
-  const loadSubscribers = useCallback(async () => {
-    if (subscriberFetched || subscriberLoading || !isSubscribed) return;
-
+    subscriberInFlightRef.current = true;
     setSubscriberLoading(true);
+
     try {
-      const res = await fetch(`/api/me/channels/${channelId}/subscriber-audit`);
+      const queryParams = new URLSearchParams();
+      if (params?.range) queryParams.set("range", params.range);
+      if (params?.sort) queryParams.set("sort", params.sort);
+      
+      const url = `/api/me/channels/${channelId}/subscriber-audit${queryParams.toString() ? `?${queryParams}` : ""}`;
+      const res = await fetch(url);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to load subscriber audit");
       }
       const data = await res.json();
-      setSubscriberVideos(data.topVideos || []);
-      setSubscriberAnalysis(data.analysis);
-      setSubscriberFetched(true);
+      setSubscriberVideos(data.videos || []);
+      setSubscriberAnalysis(data.patternAnalysis || null);
+      setSubscriberLastUpdated(data.generatedAt || null);
+      setSubscriberIsDemo(Boolean(data.demo));
+      subscriberFetchedRef.current = true;
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load subscriber audit");
     } finally {
+      subscriberInFlightRef.current = false;
       setSubscriberLoading(false);
     }
-  }, [channelId, subscriberFetched, subscriberLoading, isSubscribed]);
+  }, [channelId, isSubscribed]);
 
-  // Lazy load plans
+  // Load similar channels data
+  const loadSimilarChannels = useCallback(async (range?: "7d" | "14d") => {
+    if (similarInFlightRef.current || (!range && similarFetchedRef.current) || !isSubscribed) {
+      return;
+    }
+
+    similarInFlightRef.current = true;
+    setSimilarLoading(true);
+
+    try {
+      const url = `/api/me/channels/${channelId}/similar${range ? `?range=${range}` : ""}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to load similar channels");
+      }
+      const data = await res.json();
+      setSimilarChannels(data);
+      setSimilarIsDemo(Boolean(data.demo));
+      similarFetchedRef.current = true;
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load similar channels");
+    } finally {
+      similarInFlightRef.current = false;
+      setSimilarLoading(false);
+    }
+  }, [channelId, isSubscribed]);
+
+  // Load plans data
   const loadPlans = useCallback(async () => {
-    if (plansFetched || plansLoading) return;
+    if (plansInFlightRef.current || plansFetchedRef.current) {
+      return;
+    }
 
+    plansInFlightRef.current = true;
     setPlansLoading(true);
+
     try {
       const res = await fetch(`/api/me/channels/${channelId}/plans?limit=10`);
       if (!res.ok) {
@@ -133,150 +189,99 @@ export default function AuditPage() {
       if (data.plans && data.plans.length > 0) {
         setLatestPlan(data.plans[0]);
       }
-      setPlansFetched(true);
+      plansFetchedRef.current = true;
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load plans");
     } finally {
+      plansInFlightRef.current = false;
       setPlansLoading(false);
     }
-  }, [channelId, plansFetched, plansLoading]);
+  }, [channelId]);
 
-  // Load data when tab changes
+  // Load data when tab changes (only once per tab)
   useEffect(() => {
-    if (activeTab === "retention" && !retentionFetched) {
-      loadRetention();
-    } else if (activeTab === "subscribers" && !subscriberFetched) {
+    if (activeTab === "subscribers" && !subscriberFetchedRef.current) {
       loadSubscribers();
-    } else if (activeTab === "plans" && !plansFetched) {
+    } else if (activeTab === "similar" && !similarFetchedRef.current) {
+      loadSimilarChannels();
+    } else if (activeTab === "plans" && !plansFetchedRef.current) {
       loadPlans();
     }
-  }, [
-    activeTab,
-    retentionFetched,
-    subscriberFetched,
-    plansFetched,
-    loadRetention,
-    loadSubscribers,
-    loadPlans,
-  ]);
+    // Note: retention is handled by useRetention hook automatically
+  }, [activeTab, loadSubscribers, loadSimilarChannels, loadPlans]);
 
-  const generatePlan = async () => {
+  const generatePlan = async (options?: { mode?: "default" | "more" }) => {
     setError(null);
     try {
       const res = await fetch(`/api/me/channels/${channelId}/plan/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ mode: options?.mode ?? "default" }),
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "Failed to generate plan");
       }
       setLatestPlan(data.plan);
-      setPlans([data.plan, ...plans]);
+      if (!options?.mode || options.mode === "default") {
+        setPlans([data.plan, ...plans]);
+      } else {
+        // Update existing plan in list
+        setPlans(plans.map((p) => (p.id === data.plan.id ? data.plan : p)));
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to generate plan");
     }
   };
 
+  // Combine errors from retention hook
+  const displayError = error || retention.error;
+
   if (loading) {
     return (
-      <main style={{ padding: "24px" }}>
-        <div style={{ textAlign: "center", color: "#64748b" }}>Loading...</div>
+      <main className={s.main}>
+        <div className={s.loadingState}>Loading...</div>
       </main>
     );
   }
 
   return (
-    <main style={{ padding: "0", maxWidth: 1040, margin: "0 auto" }}>
+    <main className={s.main}>
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <Link
-          href="/dashboard"
-          style={{
-            fontSize: "0.875rem",
-            color: "#64748b",
-            textDecoration: "none",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            marginBottom: 8,
-          }}
-        >
+      <div className={s.headerSection}>
+        <Link href="/dashboard" className={s.backLink}>
           ← Back to Dashboard
         </Link>
-        <h1 style={{ fontSize: "1.75rem", fontWeight: 700, margin: 0 }}>
-          Channel Audit
-        </h1>
-        {channel && (
-          <p style={{ color: "#64748b", marginTop: 4 }}>{channel.title}</p>
-        )}
+        <h1 className={s.pageTitle}>Channel Audit</h1>
+        {channel && <p className={s.channelName}>{channel.title}</p>}
       </div>
 
-      {error && <ErrorAlert message={error} />}
+      {displayError && <ErrorAlert message={displayError} />}
 
       {/* Subscription gate */}
       {!isSubscribed && (
-        <div
-          style={{
-            background: "#fffbeb",
-            border: "1px solid #fde68a",
-            padding: 16,
-            borderRadius: 10,
-            marginBottom: 24,
-          }}
-        >
-          <p style={{ margin: 0, marginBottom: 8 }}>
+        <div className={s.subscriptionBanner}>
+          <p className={s.bannerText}>
             🔒 Upgrade to Pro to access full audit features
           </p>
-          <a
-            href="/api/integrations/stripe/checkout"
-            style={{
-              display: "inline-block",
-              padding: "8px 16px",
-              background: "#2563eb",
-              color: "white",
-              borderRadius: 8,
-              textDecoration: "none",
-              fontSize: "0.875rem",
-              fontWeight: 500,
-            }}
-          >
+          <a href="/api/integrations/stripe/checkout" className={s.bannerBtn}>
             Subscribe Now
           </a>
         </div>
       )}
 
       {/* Tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: 4,
-          borderBottom: "1px solid #e2e8f0",
-          marginBottom: 24,
-          overflowX: "auto",
-        }}
-      >
+      <div className={s.tabsContainer}>
         {[
-          { id: "retention" as Tab, label: "📉 Retention Cliffs" },
-          { id: "subscribers" as Tab, label: "🧲 Subscriber Magnets" },
-          { id: "plans" as Tab, label: "📋 Plans" },
+          { id: "retention" as Tab, label: "📉 Retention" },
+          { id: "subscribers" as Tab, label: "🧲 Magnets" },
+          { id: "similar" as Tab, label: "🔍 Similar" },
+          { id: "plans" as Tab, label: "💡 Ideas" },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: "8px 16px",
-              fontSize: "0.875rem",
-              fontWeight: 500,
-              color: activeTab === tab.id ? "#2563eb" : "#64748b",
-              background: "none",
-              border: "none",
-              borderBottom:
-                activeTab === tab.id ? "2px solid #2563eb" : "2px solid transparent",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
+            className={`${s.tab} ${activeTab === tab.id ? s.tabActive : ""}`}
           >
             {tab.label}
           </button>
@@ -284,60 +289,77 @@ export default function AuditPage() {
       </div>
 
       {/* Tab content */}
-      {activeTab === "retention" && (
-        <RetentionTable
-          videos={retentionVideos}
-          loading={retentionLoading}
-        />
-      )}
+      <div className={s.tabContent}>
+        {activeTab === "retention" && (
+          <div>
+            <RetentionTable
+              videos={retention.videos}
+              loading={retention.loading}
+              isDemo={retention.isDemo}
+            />
+            {retention.isStale && isSubscribed && (
+              <button onClick={() => retention.refresh()} className={s.refreshBtn}>
+                Refresh Data
+              </button>
+            )}
+          </div>
+        )}
 
-      {activeTab === "subscribers" && (
-        <SubscriberMagnetTable
-          videos={subscriberVideos}
-          analysis={subscriberAnalysis}
-          loading={subscriberLoading}
-        />
-      )}
-
-      {activeTab === "plans" && (
-        <div>
-          <PlanCard
-            plan={latestPlan}
-            channelId={channelId}
+        {activeTab === "subscribers" && (
+          <SubscriberMagnetTable
+            videos={subscriberVideos}
+            patternAnalysis={subscriberAnalysis}
+            loading={subscriberLoading}
+            onRefresh={(params) => loadSubscribers(params)}
+            lastUpdated={subscriberLastUpdated}
             isSubscribed={isSubscribed}
-            onGenerate={generatePlan}
-            loading={plansLoading}
+            isDemo={subscriberIsDemo}
           />
+        )}
 
-          {plans.length > 1 && (
-            <div style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
-                Plan History
-              </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {plans.slice(1).map((plan) => (
-                  <div
-                    key={plan.id}
-                    style={{
-                      padding: 12,
-                      background: "#f8fafc",
-                      borderRadius: 8,
-                      fontSize: "0.875rem",
-                    }}
-                  >
-                    <span style={{ fontWeight: 500 }}>
-                      Plan #{plan.id}
-                    </span>
-                    <span style={{ color: "#64748b", marginLeft: 8 }}>
-                      {new Date(plan.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                ))}
+        {activeTab === "similar" && (
+          <SimilarChannelsSection
+            data={similarChannels}
+            loading={similarLoading}
+            onRefresh={(range) => loadSimilarChannels(range)}
+            isSubscribed={isSubscribed}
+            isDemo={similarIsDemo}
+          />
+        )}
+
+        {activeTab === "plans" && (
+          <div>
+            <PlanCard
+              plan={latestPlan}
+              channelId={channelId}
+              channelName={channel?.title ?? undefined}
+              isSubscribed={isSubscribed}
+              onGenerate={generatePlan}
+              loading={plansLoading}
+            />
+
+            {plans.length > 1 && (
+              <div className={s.planHistory}>
+                <h3 className={s.historyTitle}>Plan History</h3>
+                <div className={s.historyList}>
+                  {plans.slice(1).map((plan) => (
+                    <button
+                      key={plan.id}
+                      className={s.historyItem}
+                      onClick={() => setLatestPlan(plan)}
+                    >
+                      <span className={s.historyLabel}>Plan #{plan.id}</span>
+                      <span className={s.historyDate}>
+                        {new Date(plan.createdAt).toLocaleDateString()}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </main>
   );
 }

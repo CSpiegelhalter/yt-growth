@@ -7,7 +7,6 @@ import { Me, Channel, Plan } from "@/types/api";
 import ChannelsSection from "@/components/dashboard/ChannelSection";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
 import PlanCard from "@/components/dashboard/PlanCard";
-import BillingCTA from "@/components/dashboard/BillingCTA";
 
 export default function DashboardPage() {
   const searchParams = useSearchParams();
@@ -22,7 +21,10 @@ export default function DashboardPage() {
 
   const canAddAnother = useMemo(() => {
     if (!me) return false;
-    return channels.length < (me.channel_limit ?? 1) && me.subscription?.isActive !== false;
+    return (
+      channels.length < (me.channel_limit ?? 1) &&
+      me.subscription?.isActive !== false
+    );
   }, [me, channels]);
 
   const isSubscribed = useMemo(() => {
@@ -54,7 +56,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     load();
-    
+
     // Check for checkout success
     const checkout = searchParams.get("checkout");
     if (checkout === "success") {
@@ -70,7 +72,7 @@ export default function DashboardPage() {
   // Load latest plan when channel is selected
   useEffect(() => {
     if (!selectedChannel) return;
-    
+
     fetch(`/api/me/channels/${selectedChannel.channel_id}/plans?limit=1`)
       .then((r) => r.json())
       .then((data) => {
@@ -119,21 +121,30 @@ export default function DashboardPage() {
     }
   };
 
-  const generatePlan = async () => {
+  const generatePlan = async (options?: { mode?: "default" | "more" }) => {
     if (!selectedChannel) return;
     setErr(null);
     try {
-      const r = await fetch(`/api/me/channels/${selectedChannel.channel_id}/plan/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+      const mode = options?.mode ?? "default";
+      const r = await fetch(
+        `/api/me/channels/${selectedChannel.channel_id}/plan/generate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode }),
+        }
+      );
       const data = await r.json();
       if (!r.ok) {
         throw new Error(data.error || "Failed to generate plan");
       }
+      // Update plan state - API returns merged plan for both modes
       setLatestPlan(data.plan);
-      setSuccess("Plan generated successfully!");
+      if (mode === "more" && data.newTopics?.length > 0) {
+        setSuccess(`Added ${data.newTopics.length} new topic ideas!`);
+      } else if (mode === "default") {
+        setSuccess("Plan generated successfully!");
+      }
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Failed to generate plan");
     }
@@ -144,11 +155,15 @@ export default function DashboardPage() {
       <div className={styles.header}>
         <div>
           <h1 className={styles.h1}>Dashboard</h1>
-          <p className={styles.subtle}>Manage your channels and generate content plans.</p>
+          <p className={styles.subtle}>
+            Manage your channels and generate content plans.
+          </p>
         </div>
         <div>
           <button
-            onClick={() => (window.location.href = "/api/integrations/google/start")}
+            onClick={() =>
+              (window.location.href = "/api/integrations/google/start")
+            }
             className={`${styles.btn} ${styles.btnPrimary}`}
             disabled={!me || !canAddAnother}
             title={
@@ -178,9 +193,11 @@ export default function DashboardPage() {
               channels={channels}
               loading={loading}
               canAddAnother={canAddAnother}
-              onConnect={() => (window.location.href = "/api/integrations/google/start")}
+              onConnect={() =>
+                (window.location.href = "/api/integrations/google/start")
+              }
               onUnlink={unlink}
-              onRefresh={syncChannel}
+              onSync={syncChannel}
               busyId={busy}
             />
           </section>
@@ -190,6 +207,7 @@ export default function DashboardPage() {
               <PlanCard
                 plan={latestPlan}
                 channelId={selectedChannel.channel_id}
+                channelName={selectedChannel.title ?? undefined}
                 isSubscribed={isSubscribed}
                 onGenerate={generatePlan}
                 loading={loading}
@@ -198,14 +216,24 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Right column: Billing */}
+        {/* Right column: Quick Actions (no plan details here) */}
         <div className={styles.sideCol}>
-          <BillingCTA
-            isSubscribed={isSubscribed}
-            plan={me?.plan ?? "free"}
-            status={me?.status ?? "inactive"}
-            currentPeriodEnd={me?.subscription?.currentPeriodEnd ?? null}
-          />
+          {/* Subscribe CTA - only when not subscribed */}
+          {!isSubscribed && (
+            <div className={styles.subscribeCta}>
+              <h3 className={styles.h3}>🔓 Unlock All Features</h3>
+              <p className={styles.ctaDesc}>
+                Subscribe to access AI-powered insights, retention analysis, and
+                more.
+              </p>
+              <a
+                href="/api/integrations/stripe/checkout"
+                className={`${styles.btn} ${styles.btnPrimary}`}
+              >
+                Subscribe Now
+              </a>
+            </div>
+          )}
 
           {selectedChannel && (
             <div className={styles.quickLinks}>
@@ -215,6 +243,9 @@ export default function DashboardPage() {
                 className={styles.quickLink}
               >
                 📊 View Full Audit
+              </a>
+              <a href="/profile" className={styles.quickLink}>
+                ⚙️ Manage Subscription
               </a>
               {selectedChannel.lastSyncedAt && (
                 <p className={styles.lastUpdated}>

@@ -158,3 +158,23 @@
   color: var(--color-text-secondary, #64748b);
   margin-top: var(--space-sm, 8px);
 }
+
+/* Subscribe CTA (simplified - no plan details) */
+.subscribeCta {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #7dd3fc;
+  border-radius: var(--radius-lg, 16px);
+  padding: var(--space-lg, 24px) var(--space-md, 16px);
+  text-align: center;
+}
+
+.subscribeCta .h3 {
+  margin-bottom: var(--space-sm, 8px);
+}
+
+.ctaDesc {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #64748b);
+  margin-bottom: var(--space-md, 16px);
+  line-height: 1.5;
+}

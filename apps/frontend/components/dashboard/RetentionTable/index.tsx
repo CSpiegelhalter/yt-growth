@@ -6,14 +6,28 @@ import type { VideoWithRetention } from "@/types/api";
 type Props = {
   videos: VideoWithRetention[];
   loading?: boolean;
+  isDemo?: boolean;
 };
 
-export default function RetentionTable({ videos, loading = false }: Props) {
+/**
+ * RetentionTable - Displays retention cliff data for videos
+ * Mobile-first design with card view on small screens
+ */
+export default function RetentionTable({ videos, loading = false, isDemo = false }: Props) {
   if (loading) {
     return (
       <div className={s.card}>
-        <h3 className={s.title}>📉 Retention Cliffs</h3>
-        <div className={s.skeleton} style={{ height: 200 }} />
+        <div className={s.header}>
+          <h3 className={s.title}>📉 Retention Cliffs</h3>
+        </div>
+        <div className={s.skeletonList}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className={s.skeletonItem}>
+              <div className={s.skeleton} style={{ height: 16, width: "60%" }} />
+              <div className={s.skeleton} style={{ height: 14, width: "30%", marginTop: 8 }} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -21,18 +35,54 @@ export default function RetentionTable({ videos, loading = false }: Props) {
   if (videos.length === 0) {
     return (
       <div className={s.card}>
-        <h3 className={s.title}>📉 Retention Cliffs</h3>
-        <p className={s.empty}>No retention data available. Sync your channel first.</p>
+        <div className={s.header}>
+          <h3 className={s.title}>📉 Retention Cliffs</h3>
+        </div>
+        <div className={s.emptyState}>
+          <div className={s.emptyIcon}>📊</div>
+          <p className={s.emptyTitle}>No retention data yet</p>
+          <p className={s.emptyDesc}>Sync your channel to analyze where viewers drop off in your videos.</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className={s.card}>
-      <h3 className={s.title}>📉 Retention Cliffs</h3>
-      <p className={s.subtitle}>
-        Points where viewers drop off - fix these to improve watch time
-      </p>
+      <div className={s.header}>
+        <div className={s.headerTop}>
+          <h3 className={s.title}>📉 Retention Cliffs</h3>
+          {isDemo && <span className={s.demoBadge}>Demo Data</span>}
+        </div>
+        <p className={s.subtitle}>Fix these drop-off points to boost watch time</p>
+      </div>
+
+      {/* Mobile: Card view */}
+      <div className={s.mobileList}>
+        {videos.map((video) => (
+          <div key={video.youtubeVideoId} className={s.videoCard}>
+            <div className={s.videoTitle} title={video.title ?? undefined}>
+              {video.title ?? "Untitled"}
+            </div>
+            <div className={s.videoMeta}>
+              {video.retention.hasData && video.retention.cliffTimestamp ? (
+                <>
+                  <span className={s.timestamp}>
+                    ⏱ {video.retention.cliffTimestamp}
+                  </span>
+                  <span className={`${s.badge} ${getBadgeClass(video.retention.cliffReason, s)}`}>
+                    {formatReason(video.retention.cliffReason)}
+                  </span>
+                </>
+              ) : (
+                <span className={s.noData}>No data available</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: Table view */}
       <div className={s.tableWrapper}>
         <table className={s.table}>
           <thead>
@@ -46,17 +96,15 @@ export default function RetentionTable({ videos, loading = false }: Props) {
             {videos.map((video) => (
               <tr key={video.youtubeVideoId}>
                 <td>
-                  <div className={s.videoCell}>
-                    <span className={s.videoTitle} title={video.title ?? undefined}>
-                      {video.title ?? "Untitled"}
-                    </span>
-                  </div>
+                  <span className={s.tableTitle} title={video.title ?? undefined}>
+                    {video.title ?? "Untitled"}
+                  </span>
                 </td>
                 <td>
                   {video.retention.hasData && video.retention.cliffTimestamp ? (
                     <span className={s.timestamp}>{video.retention.cliffTimestamp}</span>
                   ) : (
-                    <span className={s.na}>N/A</span>
+                    <span className={s.noData}>N/A</span>
                   )}
                 </td>
                 <td>
@@ -65,7 +113,7 @@ export default function RetentionTable({ videos, loading = false }: Props) {
                       {formatReason(video.retention.cliffReason)}
                     </span>
                   ) : (
-                    <span className={s.na}>—</span>
+                    <span className={s.noData}>—</span>
                   )}
                 </td>
               </tr>
@@ -77,7 +125,8 @@ export default function RetentionTable({ videos, loading = false }: Props) {
   );
 }
 
-function formatReason(reason: string): string {
+function formatReason(reason: string | null | undefined): string {
+  if (!reason) return "Unknown";
   switch (reason) {
     case "crossed_50":
       return "Below 50%";
@@ -88,7 +137,8 @@ function formatReason(reason: string): string {
   }
 }
 
-function getBadgeClass(reason: string, s: Record<string, string>): string {
+function getBadgeClass(reason: string | null | undefined, s: Record<string, string>): string {
+  if (!reason) return "";
   switch (reason) {
     case "crossed_50":
       return s.badgeWarning;
@@ -98,4 +148,3 @@ function getBadgeClass(reason: string, s: Record<string, string>): string {
       return "";
   }
 }
-

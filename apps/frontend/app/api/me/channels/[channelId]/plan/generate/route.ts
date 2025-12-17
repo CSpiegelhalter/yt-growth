@@ -8,13 +8,17 @@
  * Subscription: Required
  * Rate limit: 5 per hour per user
  * Caching: Saves Plan record with 24h TTL
+ *
+ * Query params:
+ * - mode: "default" | "more" (default: generate new plan, more: add topics to existing)
+ * - limit: number of topics to generate (default: 5, max: 15)
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
 import { getCurrentUserWithSubscription, hasActiveSubscription } from "@/lib/user";
 import { getGoogleAccount, searchCompetitorVideos } from "@/lib/youtube-api";
-import { generateDecideForMePlan } from "@/lib/llm";
+import { generateDecideForMePlan, generateMoreTopics } from "@/lib/llm";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
 const ParamsSchema = z.object({
@@ -24,7 +28,9 @@ const ParamsSchema = z.object({
 const BodySchema = z.object({
   nicheKeywords: z.array(z.string()).optional(),
   competitorChannelIds: z.array(z.string()).optional(),
-}).optional();
+  mode: z.enum(["default", "more"]).optional().default("default"),
+  limit: z.number().min(1).max(15).optional().default(5),
+});
 
 export async function POST(
   req: NextRequest,
@@ -54,12 +60,17 @@ export async function POST(
     const { channelId } = parsed.data;
 
     // Parse body
-    let body: z.infer<typeof BodySchema> = {};
+    let body: z.infer<typeof BodySchema>;
     try {
-      body = BodySchema.parse(await req.json());
+      const jsonBody = await req.json();
+      body = BodySchema.parse(jsonBody);
     } catch {
-      // Body is optional
+      // Use defaults if body parsing fails
+      body = { mode: "default", limit: 5 };
     }
+
+    const mode = body.mode ?? "default";
+    const topicLimit = body.limit ?? 5;
 
     // Rate limit check
     const rateKey = rateLimitKey("planGeneration", user.id);
@@ -105,16 +116,30 @@ export async function POST(
       orderBy: { createdAt: "desc" },
     });
 
-    if (recentPlan) {
+    // If mode=default and we have a cached plan, return it
+    if (mode === "default" && recentPlan) {
+      // Parse outputJson if stored as string
+      let outputJson = null;
+      if (recentPlan.outputJson) {
+        try {
+          outputJson = typeof recentPlan.outputJson === "string"
+            ? JSON.parse(recentPlan.outputJson)
+            : recentPlan.outputJson;
+        } catch {
+          outputJson = null;
+        }
+      }
+
       return Response.json({
         plan: {
           id: recentPlan.id,
           outputMarkdown: recentPlan.outputMarkdown,
+          outputJson,
           createdAt: recentPlan.createdAt,
           cachedUntil: recentPlan.cachedUntil,
           fromCache: true,
         },
-        message: "Returning cached plan. New plans can be generated after cache expires.",
+        message: "Returning cached plan. Use mode=more to generate additional topics.",
       });
     }
 
@@ -143,6 +168,59 @@ export async function POST(
         .map(([tag]) => tag);
     }
 
+    // Mode: "more" - add topics to existing plan
+    if (mode === "more" && recentPlan?.outputJson) {
+      let existingJson: { topics?: Array<{ title: string }> } | null = null;
+      try {
+        existingJson = typeof recentPlan.outputJson === "string"
+          ? JSON.parse(recentPlan.outputJson)
+          : recentPlan.outputJson as { topics?: Array<{ title: string }> };
+      } catch {
+        existingJson = null;
+      }
+
+      const existingTopics = existingJson?.topics?.map((t) => t.title) ?? [];
+
+      const moreResult = await generateMoreTopics({
+        channelTitle: channel.title ?? "Your Channel",
+        existingTopics,
+        nicheKeywords,
+        count: Math.min(topicLimit, 5),
+      });
+
+      // Merge new topics into existing plan
+      const updatedJson = {
+        ...existingJson,
+        topics: [...(existingJson?.topics ?? []), ...moreResult.topics],
+      };
+
+      // Update the plan in DB
+      const updatedPlan = await prisma.plan.update({
+        where: { id: recentPlan.id },
+        data: {
+          outputJson: JSON.stringify(updatedJson),
+          tokensUsed: (recentPlan.tokensUsed ?? 0) + moreResult.tokensUsed,
+        },
+      });
+
+      return Response.json({
+        plan: {
+          id: updatedPlan.id,
+          outputMarkdown: updatedPlan.outputMarkdown,
+          outputJson: updatedJson,
+          createdAt: updatedPlan.createdAt,
+          cachedUntil: updatedPlan.cachedUntil,
+          fromCache: false,
+          tokensUsed: updatedPlan.tokensUsed,
+        },
+        newTopics: moreResult.topics,
+        rateLimit: {
+          remaining: rateResult.remaining,
+          resetAt: new Date(rateResult.resetAt),
+        },
+      });
+    }
+
     // Fetch competitor videos
     let competitorTitles: string[] = [];
     if (nicheKeywords.length > 0) {
@@ -161,13 +239,14 @@ export async function POST(
       }
     }
 
-    // Generate plan using LLM
+    // Generate plan using LLM (new JSON format)
     const llmResult = await generateDecideForMePlan({
       channelTitle: channel.title ?? "Your Channel",
       recentVideoTitles,
       topPerformingTitles,
       nicheKeywords,
       competitorTitles,
+      topicCount: topicLimit,
     });
 
     // Save plan
@@ -183,7 +262,8 @@ export async function POST(
           nicheKeywords,
           competitorTitles,
         }),
-        outputMarkdown: llmResult.content,
+        outputMarkdown: llmResult.markdown,
+        outputJson: llmResult.json ? JSON.stringify(llmResult.json) : null,
         modelVersion: llmResult.model,
         tokensUsed: llmResult.tokensUsed,
         cachedUntil,
@@ -194,22 +274,24 @@ export async function POST(
       plan: {
         id: plan.id,
         outputMarkdown: plan.outputMarkdown,
+        outputJson: llmResult.json,
         createdAt: plan.createdAt,
         cachedUntil: plan.cachedUntil,
         fromCache: false,
         tokensUsed: plan.tokensUsed,
+        modelVersion: plan.modelVersion,
       },
       rateLimit: {
         remaining: rateResult.remaining,
         resetAt: new Date(rateResult.resetAt),
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Plan generation error:", err);
     return Response.json(
-      { error: "Failed to generate plan", detail: err.message },
+      { error: "Failed to generate plan", detail: message },
       { status: 500 }
     );
   }
 }
-

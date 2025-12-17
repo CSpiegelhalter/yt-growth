@@ -16,19 +16,12 @@ export async function POST(req: NextRequest) {
     const result = await handleStripeWebhook(payload, signature);
 
     return Response.json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Webhook error:", err);
     return Response.json(
-      { error: "Webhook handling failed", detail: err.message },
+      { error: "Webhook handling failed", detail: message },
       { status: 400 }
     );
   }
 }
-
-// Stripe webhooks need the raw body, so disable body parsing
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-

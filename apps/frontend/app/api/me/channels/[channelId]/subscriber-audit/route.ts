@@ -1,28 +1,47 @@
 /**
  * GET /api/me/channels/[channelId]/subscriber-audit
  *
- * Get top 3 videos by subscribers gained per 1k views with pattern analysis.
+ * Get videos ranked by subscriber conversion rate with pattern analysis.
  * This is a PAID feature - requires active subscription.
  *
  * Auth: Required
  * Subscription: Required
- * Caching: Uses video metrics cache (12h)
+ * Caching: 12-24h
+ *
+ * Query params:
+ * - range: "7d" | "28d" (default: "28d")
+ * - limit: number (default: 20, max: 50)
+ * - sort: "subs_per_1k" | "views_per_day" | "apv" | "avd" (default: "subs_per_1k")
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
 import { getCurrentUserWithSubscription, hasActiveSubscription } from "@/lib/user";
 import { calcSubsPerThousandViews } from "@/lib/retention";
-import { generateSubscriberMagnetAnalysis } from "@/lib/llm";
+import { generateSubscriberMagnetAnalysisJson } from "@/lib/llm";
+import { isDemoMode, getDemoData } from "@/lib/demo-fixtures";
+import type { PatternAnalysisJson, SubscriberMagnetVideo } from "@/types/api";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
+});
+
+const QuerySchema = z.object({
+  range: z.enum(["7d", "28d"]).default("28d"),
+  limit: z.coerce.number().min(1).max(50).default(20),
+  sort: z.enum(["subs_per_1k", "views_per_day", "apv", "avd"]).default("subs_per_1k"),
 });
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { channelId: string } }
 ) {
+  // Return demo data if demo mode is enabled
+  if (isDemoMode()) {
+    const demoData = getDemoData("subscriber-audit");
+    return Response.json({ ...(demoData as object), demo: true });
+  }
+
   try {
     // Auth check
     const user = await getCurrentUserWithSubscription();
@@ -39,12 +58,26 @@ export async function GET(
     }
 
     // Validate params
-    const parsed = ParamsSchema.safeParse(params);
-    if (!parsed.success) {
+    const parsedParams = ParamsSchema.safeParse(params);
+    if (!parsedParams.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }
 
-    const { channelId } = parsed.data;
+    const { channelId } = parsedParams.data;
+
+    // Parse query params
+    const url = new URL(req.url);
+    const queryResult = QuerySchema.safeParse({
+      range: url.searchParams.get("range") ?? "28d",
+      limit: url.searchParams.get("limit") ?? "20",
+      sort: url.searchParams.get("sort") ?? "subs_per_1k",
+    });
+
+    if (!queryResult.success) {
+      return Response.json({ error: "Invalid query parameters" }, { status: 400 });
+    }
+
+    const { range, limit, sort } = queryResult.data;
 
     // Get channel and verify ownership
     const channel = await prisma.channel.findFirst({
@@ -58,87 +91,140 @@ export async function GET(
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
+    // Calculate date range
+    const rangeDays = range === "7d" ? 7 : 28;
+    const rangeStart = new Date();
+    rangeStart.setDate(rangeStart.getDate() - rangeDays);
+
     // Get videos with metrics
     const videos = await prisma.video.findMany({
       where: {
         channelId: channel.id,
         VideoMetrics: { isNot: null },
+        publishedAt: { gte: rangeStart },
       },
       include: {
         VideoMetrics: true,
       },
       orderBy: { publishedAt: "desc" },
-      take: 50, // Look at last 50 videos
+      take: 50,
     });
 
     if (videos.length === 0) {
       return Response.json({
-        topVideos: [],
-        analysis: null,
-        message: "No video metrics found. Please sync the channel first.",
+        channelId,
+        range,
+        generatedAt: new Date().toISOString(),
+        cachedUntil: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+        videos: [],
+        patternAnalysis: { analysisJson: null, analysisMarkdownFallback: null },
+        stats: {
+          totalVideosAnalyzed: 0,
+          avgSubsPerThousand: 0,
+          totalSubscribersGained: 0,
+          totalViews: 0,
+        },
       });
     }
 
-    // Calculate subs per 1k views and sort
-    const videosWithSubs = videos
+    // Calculate metrics for each video
+    const now = new Date();
+    const videosWithMetrics: SubscriberMagnetVideo[] = videos
       .filter((v) => v.VideoMetrics && v.VideoMetrics.views > 0)
-      .map((v) => ({
-        videoId: v.youtubeVideoId,
-        title: v.title ?? "Untitled",
-        views: v.VideoMetrics!.views,
-        subscribersGained: v.VideoMetrics!.subscribersGained,
-        subsPerThousand: calcSubsPerThousandViews(
-          v.VideoMetrics!.subscribersGained,
-          v.VideoMetrics!.views
-        ),
-        publishedAt: v.publishedAt,
-        thumbnailUrl: v.thumbnailUrl,
-      }))
-      .sort((a, b) => b.subsPerThousand - a.subsPerThousand);
+      .map((v) => {
+        const metrics = v.VideoMetrics!;
+        const daysSincePublished = v.publishedAt
+          ? Math.max(1, Math.floor((now.getTime() - new Date(v.publishedAt).getTime()) / (1000 * 60 * 60 * 24)))
+          : 1;
 
-    const topVideos = videosWithSubs.slice(0, 3);
+        return {
+          videoId: v.youtubeVideoId,
+          title: v.title ?? "Untitled",
+          views: metrics.views,
+          subscribersGained: metrics.subscribersGained,
+          subsPerThousand: calcSubsPerThousandViews(metrics.subscribersGained, metrics.views),
+          publishedAt: v.publishedAt?.toISOString() ?? null,
+          thumbnailUrl: v.thumbnailUrl,
+          durationSec: v.durationSec,
+          viewsPerDay: Math.round(metrics.views / daysSincePublished),
+          avdSec: metrics.averageViewDuration ? Math.round(metrics.averageViewDuration) : null,
+          apv: metrics.averageViewPercentage ?? null,
+        };
+      });
 
-    // Generate pattern analysis if we have top videos
-    let analysis: string | null = null;
-    if (topVideos.length > 0) {
+    // Sort based on query param
+    const sortFn = {
+      subs_per_1k: (a: SubscriberMagnetVideo, b: SubscriberMagnetVideo) => b.subsPerThousand - a.subsPerThousand,
+      views_per_day: (a: SubscriberMagnetVideo, b: SubscriberMagnetVideo) => (b.viewsPerDay ?? 0) - (a.viewsPerDay ?? 0),
+      apv: (a: SubscriberMagnetVideo, b: SubscriberMagnetVideo) => (b.apv ?? 0) - (a.apv ?? 0),
+      avd: (a: SubscriberMagnetVideo, b: SubscriberMagnetVideo) => (b.avdSec ?? 0) - (a.avdSec ?? 0),
+    }[sort];
+
+    videosWithMetrics.sort(sortFn);
+    const topVideos = videosWithMetrics.slice(0, limit);
+
+    // Generate pattern analysis (JSON format)
+    let analysisJson: PatternAnalysisJson | null = null;
+    let analysisMarkdownFallback: string | null = null;
+
+    if (topVideos.length >= 3) {
       try {
-        const llmResult = await generateSubscriberMagnetAnalysis(
-          topVideos.map((v) => ({
+        const llmResult = await generateSubscriberMagnetAnalysisJson(
+          topVideos.slice(0, 10).map((v) => ({
             title: v.title,
             subsPerThousand: v.subsPerThousand,
             views: v.views,
+            viewsPerDay: v.viewsPerDay ?? 0,
           }))
         );
-        analysis = llmResult.content;
+        analysisJson = llmResult.json;
+        analysisMarkdownFallback = llmResult.markdown;
       } catch (err) {
         console.warn("Failed to generate subscriber analysis:", err);
-        analysis = null;
       }
     }
 
-    // Calculate channel averages for context
-    const totalSubs = videosWithSubs.reduce((sum, v) => sum + v.subscribersGained, 0);
-    const totalViews = videosWithSubs.reduce((sum, v) => sum + v.views, 0);
+    // Calculate channel averages
+    const totalSubs = videosWithMetrics.reduce((sum, v) => sum + v.subscribersGained, 0);
+    const totalViews = videosWithMetrics.reduce((sum, v) => sum + v.views, 0);
     const avgSubsPerThousand = calcSubsPerThousandViews(totalSubs, totalViews);
+
+    const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours
 
     return Response.json({
       channelId,
-      topVideos,
-      analysis,
+      range,
+      generatedAt: new Date().toISOString(),
+      cachedUntil: cachedUntil.toISOString(),
+      videos: topVideos,
+      patternAnalysis: {
+        analysisJson,
+        analysisMarkdownFallback,
+      },
       stats: {
-        totalVideosAnalyzed: videosWithSubs.length,
+        totalVideosAnalyzed: videosWithMetrics.length,
         avgSubsPerThousand,
         totalSubscribersGained: totalSubs,
         totalViews,
       },
-      fetchedAt: new Date(),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Subscriber audit error:", err);
+    
+    // Return demo data as fallback on error
+    const demoData = getDemoData("subscriber-audit");
+    if (demoData) {
+      return Response.json({
+        ...(demoData as object),
+        demo: true,
+        error: "Using demo data - actual fetch failed",
+      });
+    }
+    
     return Response.json(
-      { error: "Failed to fetch subscriber audit", detail: err.message },
+      { error: "Failed to fetch subscriber audit", detail: message },
       { status: 500 }
     );
   }
 }
-

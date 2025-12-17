@@ -490,6 +490,68 @@ npm run db:up
 
 ---
 
+## 🎨 UX Polish (December 2024)
+
+### PlanCard Redesign
+The `components/dashboard/PlanCard` was completely redesigned as a mobile-first "consultant deliverable":
+
+- **Structured parsing**: New `lib/plan-parser.ts` extracts structured data from LLM markdown
+- **Hero section**: Best video topic prominently displayed with copy button
+- **Title options**: Tappable cards with rationale tags and individual copy buttons  
+- **Thumbnail recipe**: Visual guidance in a highlighted box
+- **Keywords**: Chip-style tags with copy-all and individual copy
+- **Checklist**: Day-grouped tasks for easy execution
+- **Copy functionality**: Toast notifications via `components/ui/Toast.tsx`
+
+### Component Polish
+- **EmptyState**: Beautiful empty state with feature highlights
+- **RetentionTable**: Mobile card view + desktop table view
+- **Profile page**: Consistent styling with CSS modules
+
+### Design System
+- Mobile-first (360px baseline)
+- Touch targets ≥ 44px
+- Consistent spacing, typography, and radius
+- Skeleton loaders for all async states
+- Toast notifications for copy feedback
+
+---
+
+## 🔧 Fix Log (Recent Changes)
+
+### December 2024 Fixes
+
+**FIX 1: Audit page infinite retention loop**
+- **Problem**: `app/audit/[channelId]/page.tsx` was calling the retention endpoint in an infinite loop
+- **Cause**: `useCallback` dependencies included state values that changed on every render
+- **Solution**: Created `lib/use-retention.ts` hook with ref-based request deduping and AbortController
+- **Test**: Added `lib/__tests__/use-retention.test.ts` to verify single-fetch behavior
+
+**FIX 2: Header shows Login/Signup even when logged in**
+- **Problem**: Header component showed wrong auth state
+- **Solution**: Updated `components/Header.tsx` with proper client-side hydration handling and cleaner CSS
+
+**FIX 3 & 4: Dashboard/ChannelSection/ChannelCard prop mismatch**
+- **Problem**: Dashboard passed `onRefresh` but `ChannelsSection` expected `onSync`; `ChannelsSection` passed `onSync` but `ChannelCard` expected `onRefresh`
+- **Solution**: Standardized on `onSync` prop name across all components
+
+**FIX 5: Prisma schema validation**
+- **Status**: Schema is valid for Prisma 5.22.0
+- **Note**: The "datasource url no longer supported" error is from Prisma 7. This project uses Prisma 5.x where the current schema syntax is correct.
+
+**Additional fixes (pre-existing issues)**:
+- Fixed `lib/server-user.ts`: Subscription relation query (one-to-one, not one-to-many)
+- Fixed `app/api/integrations/stripe/billing-portal/route.ts`: Use shared `lib/stripe.ts` helper
+- Fixed `app/api/integrations/stripe/webhook/route.ts`: Removed deprecated `export const config` syntax
+- Fixed `lib/retention.test.ts`: Corrected test data for steepest_drop scenario
+
+**Verification**:
+- ✅ `npm run typecheck` - Passes
+- ✅ `npm run test` - All 21 tests pass
+- ✅ `npm run build` - Builds successfully
+
+---
+
 ## 📝 License
 
 Private - All rights reserved.

@@ -19,7 +19,9 @@ type GoogleAccount = {
 /**
  * Get Google account for a user
  */
-export async function getGoogleAccount(userId: number): Promise<GoogleAccount | null> {
+export async function getGoogleAccount(
+  userId: number
+): Promise<GoogleAccount | null> {
   return prisma.googleAccount.findFirst({ where: { userId } });
 }
 
@@ -49,7 +51,8 @@ export async function fetchChannelVideos(
     }>;
   }>(ga, channelUrl.toString());
 
-  const uploadsPlaylistId = channelData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+  const uploadsPlaylistId =
+    channelData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
   if (!uploadsPlaylistId) {
     throw new Error("Could not find uploads playlist for channel");
   }
@@ -72,7 +75,8 @@ export async function fetchChannelVideos(
     }>;
   }>(ga, playlistUrl.toString());
 
-  const videoIds = playlistData.items?.map((i) => i.contentDetails.videoId) ?? [];
+  const videoIds =
+    playlistData.items?.map((i) => i.contentDetails.videoId) ?? [];
   if (videoIds.length === 0) return [];
 
   // Fetch video details (duration, tags)
@@ -106,7 +110,10 @@ export async function fetchChannelVideos(
     publishedAt: v.snippet.publishedAt,
     durationSec: parseDuration(v.contentDetails.duration),
     tags: v.snippet.tags?.join(",") ?? null,
-    thumbnailUrl: v.snippet.thumbnails?.high?.url ?? v.snippet.thumbnails?.default?.url ?? null,
+    thumbnailUrl:
+      v.snippet.thumbnails?.high?.url ??
+      v.snippet.thumbnails?.default?.url ??
+      null,
     views: parseInt(v.statistics.viewCount ?? "0", 10),
     likes: parseInt(v.statistics.likeCount ?? "0", 10),
     comments: parseInt(v.statistics.commentCount ?? "0", 10),
@@ -132,7 +139,10 @@ export async function fetchVideoMetrics(
   url.searchParams.set("ids", `channel==${channelId}`);
   url.searchParams.set("startDate", startDate);
   url.searchParams.set("endDate", endDate);
-  url.searchParams.set("metrics", "views,likes,comments,shares,subscribersGained,subscribersLost,estimatedMinutesWatched,averageViewDuration,averageViewPercentage");
+  url.searchParams.set(
+    "metrics",
+    "views,likes,comments,shares,subscribersGained,subscribersLost,estimatedMinutesWatched,averageViewDuration,averageViewPercentage"
+  );
   url.searchParams.set("dimensions", "video");
   url.searchParams.set("filters", `video==${videoIds.join(",")}`);
   url.searchParams.set("sort", "-views");
@@ -241,6 +251,142 @@ export async function searchCompetitorVideos(
   }));
 }
 
+/**
+ * Search for channels similar to the given channel based on keywords
+ */
+export async function searchSimilarChannels(
+  ga: GoogleAccount,
+  keywords: string[],
+  maxResults: number = 10
+): Promise<SimilarChannelResult[]> {
+  // TEST_MODE: Return fixture data
+  if (process.env.TEST_MODE === "1") {
+    return getTestModeSimilarChannels(keywords);
+  }
+
+  const query = keywords.slice(0, 3).join(" ");
+  const url = new URL(`${YOUTUBE_DATA_API}/search`);
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("type", "channel");
+  url.searchParams.set("q", query);
+  url.searchParams.set("maxResults", String(maxResults));
+  url.searchParams.set("relevanceLanguage", "en");
+
+  const data = await googleFetchWithAutoRefresh<{
+    items: Array<{
+      id: { channelId: string };
+      snippet: {
+        title: string;
+        description: string;
+        thumbnails: { medium?: { url: string }; default?: { url: string } };
+      };
+    }>;
+  }>(ga, url.toString());
+
+  return (data.items ?? []).map((i) => ({
+    channelId: i.id.channelId,
+    channelTitle: i.snippet.title,
+    description: i.snippet.description,
+    thumbnailUrl:
+      i.snippet.thumbnails?.medium?.url ??
+      i.snippet.thumbnails?.default?.url ??
+      null,
+  }));
+}
+
+/**
+ * Fetch recent videos from a channel (for similar channel analysis)
+ */
+export async function fetchRecentChannelVideos(
+  ga: GoogleAccount,
+  channelId: string,
+  publishedAfter: string,
+  maxResults: number = 10
+): Promise<RecentVideoResult[]> {
+  // TEST_MODE: Return fixture data
+  if (process.env.TEST_MODE === "1") {
+    return getTestModeRecentVideos(channelId);
+  }
+
+  const url = new URL(`${YOUTUBE_DATA_API}/search`);
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("type", "video");
+  url.searchParams.set("channelId", channelId);
+  url.searchParams.set("publishedAfter", publishedAfter);
+  url.searchParams.set("order", "viewCount");
+  url.searchParams.set("maxResults", String(maxResults));
+
+  const searchData = await googleFetchWithAutoRefresh<{
+    items: Array<{
+      id: { videoId: string };
+      snippet: {
+        title: string;
+        publishedAt: string;
+        thumbnails: { medium?: { url: string }; default?: { url: string } };
+      };
+    }>;
+  }>(ga, url.toString());
+
+  const videoIds = searchData.items?.map((i) => i.id.videoId) ?? [];
+  if (videoIds.length === 0) return [];
+
+  // Fetch view counts
+  const videosUrl = new URL(`${YOUTUBE_DATA_API}/videos`);
+  videosUrl.searchParams.set("part", "statistics");
+  videosUrl.searchParams.set("id", videoIds.join(","));
+
+  const statsData = await googleFetchWithAutoRefresh<{
+    items: Array<{
+      id: string;
+      statistics: { viewCount: string };
+    }>;
+  }>(ga, videosUrl.toString());
+
+  const statsMap = new Map<string, number>();
+  (statsData.items ?? []).forEach((item) => {
+    statsMap.set(item.id, parseInt(item.statistics.viewCount ?? "0", 10));
+  });
+
+  return (searchData.items ?? []).map((i) => {
+    const views = statsMap.get(i.id.videoId) ?? 0;
+    const publishedAt = i.snippet.publishedAt;
+    const daysSince = Math.max(
+      1,
+      Math.floor(
+        (Date.now() - new Date(publishedAt).getTime()) / (1000 * 60 * 60 * 24)
+      )
+    );
+
+    return {
+      videoId: i.id.videoId,
+      title: i.snippet.title,
+      publishedAt,
+      thumbnailUrl:
+        i.snippet.thumbnails?.medium?.url ??
+        i.snippet.thumbnails?.default?.url ??
+        null,
+      views,
+      viewsPerDay: Math.round(views / daysSince),
+    };
+  });
+}
+
+export type SimilarChannelResult = {
+  channelId: string;
+  channelTitle: string;
+  description: string;
+  thumbnailUrl: string | null;
+};
+
+export type RecentVideoResult = {
+  videoId: string;
+  title: string;
+  publishedAt: string;
+  thumbnailUrl: string | null;
+  views: number;
+  viewsPerDay: number;
+};
+
 // Types
 export type YouTubeVideo = {
   videoId: string;
@@ -298,7 +444,8 @@ function getTestModeVideos(channelId: string): YouTubeVideo[] {
     {
       videoId: "test-video-1",
       title: "Building a SaaS in 24 Hours",
-      description: "I challenged myself to build a complete SaaS product in 24 hours...",
+      description:
+        "I challenged myself to build a complete SaaS product in 24 hours...",
       publishedAt: "2024-01-15T10:00:00Z",
       durationSec: 1245,
       tags: "saas,startup,coding",
@@ -322,7 +469,8 @@ function getTestModeVideos(channelId: string): YouTubeVideo[] {
     {
       videoId: "test-video-3",
       title: "The BEST VS Code Setup for 2024",
-      description: "My complete VS Code configuration for maximum productivity...",
+      description:
+        "My complete VS Code configuration for maximum productivity...",
       publishedAt: "2024-01-01T10:00:00Z",
       durationSec: 720,
       tags: "vscode,productivity,coding",
@@ -363,7 +511,10 @@ function getTestModeRetention(videoId: string): RetentionPoint[] {
     } else {
       retention = 0.6 - (ratio - 0.3) * 0.7; // Gradual decline
     }
-    retention = Math.max(0.1, Math.min(1.0, retention + (Math.random() - 0.5) * 0.05));
+    retention = Math.max(
+      0.1,
+      Math.min(1.0, retention + (Math.random() - 0.5) * 0.05)
+    );
     points.push({ elapsedRatio: ratio, audienceWatchRatio: retention });
   }
   return points;
@@ -392,3 +543,72 @@ function getTestModeCompetitors(query: string): CompetitorVideo[] {
   ];
 }
 
+function getTestModeSimilarChannels(
+  keywords: string[]
+): SimilarChannelResult[] {
+  return [
+    {
+      channelId: "similar-1",
+      channelTitle: "CodeMaster Pro",
+      description:
+        "Full-stack development tutorials and career advice for developers.",
+      thumbnailUrl: "https://yt3.ggpht.com/channel1/photo.jpg",
+    },
+    {
+      channelId: "similar-2",
+      channelTitle: "DevLife Daily",
+      description:
+        "Day in the life of a software engineer + coding challenges.",
+      thumbnailUrl: "https://yt3.ggpht.com/channel2/photo.jpg",
+    },
+    {
+      channelId: "similar-3",
+      channelTitle: "Tech Interview Prep",
+      description:
+        "System design, algorithms, and interview tips for FAANG companies.",
+      thumbnailUrl: "https://yt3.ggpht.com/channel3/photo.jpg",
+    },
+    {
+      channelId: "similar-4",
+      channelTitle: "Indie Hacker Hub",
+      description: "Build in public, SaaS development, and startup stories.",
+      thumbnailUrl: "https://yt3.ggpht.com/channel4/photo.jpg",
+    },
+    {
+      channelId: "similar-5",
+      channelTitle: "Frontend Focused",
+      description: "React, TypeScript, and modern web development tutorials.",
+      thumbnailUrl: "https://yt3.ggpht.com/channel5/photo.jpg",
+    },
+  ];
+}
+
+function getTestModeRecentVideos(channelId: string): RecentVideoResult[] {
+  const now = Date.now();
+  return [
+    {
+      videoId: `${channelId}-vid-1`,
+      title: "I Built a $10K/mo SaaS in 30 Days",
+      publishedAt: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      thumbnailUrl: "https://i.ytimg.com/vi/recent1/mqdefault.jpg",
+      views: 45000,
+      viewsPerDay: 22500,
+    },
+    {
+      videoId: `${channelId}-vid-2`,
+      title: "Why Every Developer Needs This Tool",
+      publishedAt: new Date(now - 4 * 24 * 60 * 60 * 1000).toISOString(),
+      thumbnailUrl: "https://i.ytimg.com/vi/recent2/mqdefault.jpg",
+      views: 32000,
+      viewsPerDay: 8000,
+    },
+    {
+      videoId: `${channelId}-vid-3`,
+      title: "The Future of Web Development (2024)",
+      publishedAt: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(),
+      thumbnailUrl: "https://i.ytimg.com/vi/recent3/mqdefault.jpg",
+      views: 28000,
+      viewsPerDay: 4667,
+    },
+  ];
+}

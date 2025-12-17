@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { Providers } from "@/components/Providers";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import "@/app/globals.css";
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
   },
   description:
     "AI-powered YouTube growth tools. Get personalized video plans, retention analysis, and subscriber insights to grow your channel faster.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  ),
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -55,10 +58,12 @@ export default async function RootLayout({
         <meta name="theme-color" content="#2563eb" />
       </head>
       <body>
-        <div className="container">
-          <Header session={session} />
-          {children}
-        </div>
+        <Providers>
+          <div className="container">
+            <Header session={session} />
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   );

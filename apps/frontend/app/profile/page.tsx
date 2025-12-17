@@ -5,6 +5,7 @@ import type { Me, Channel } from "@/types/api";
 import AccountStats from "@/components/dashboard/AccountStats";
 import BillingCTA from "@/components/dashboard/BillingCTA";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
+import styles from "./style.module.css";
 
 export default function ProfilePage() {
   const [me, setMe] = useState<Me | null>(null);
@@ -37,191 +38,108 @@ export default function ProfilePage() {
 
   const isSubscribed = me?.subscription?.isActive ?? false;
 
+  if (loading) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Profile</h1>
+          <p className={styles.subtitle}>Manage your account and subscription</p>
+        </div>
+        <div className={styles.loadingState}>
+          <div className={styles.spinner} />
+          <span>Loading profile...</span>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main style={{ maxWidth: 800, margin: "0 auto", padding: "0" }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: "1.75rem", fontWeight: 700, margin: 0 }}>
-          Profile
-        </h1>
-        <p style={{ color: "#64748b", marginTop: 4, fontSize: "0.875rem" }}>
-          Manage your account and subscription
-        </p>
+    <main className={styles.page}>
+      {/* Page Header */}
+      <div className={styles.header}>
+        <h1 className={styles.title}>Profile</h1>
+        <p className={styles.subtitle}>Manage your account and subscription</p>
       </div>
 
       {err && <ErrorAlert message={err} />}
 
-      {loading ? (
-        <div
-          style={{
-            background: "#f8fafc",
-            padding: 24,
-            borderRadius: 16,
-            textAlign: "center",
-            color: "#64748b",
-          }}
-        >
-          Loading...
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          {/* Account Info */}
-          <section
-            style={{
-              background: "#fff",
-              border: "1px solid #e2e8f0",
-              borderRadius: 16,
-              padding: 24,
-            }}
-          >
-            <h2 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: 16 }}>
-              Account Information
-            </h2>
-            <AccountStats me={me} channelCount={channels.length} />
-          </section>
+      <div className={styles.grid}>
+        {/* Account Info */}
+        <section className={styles.card}>
+          <h2 className={styles.cardTitle}>Account Information</h2>
+          <AccountStats me={me} channelCount={channels.length} />
+        </section>
 
-          {/* Subscription */}
-          <section>
-            <h2
-              style={{
-                fontSize: "1.125rem",
-                fontWeight: 600,
-                marginBottom: 16,
-              }}
-            >
-              Subscription
-            </h2>
-            <BillingCTA
-              isSubscribed={isSubscribed}
-              plan={me?.plan ?? "free"}
-              status={me?.status ?? "inactive"}
-              currentPeriodEnd={me?.subscription?.currentPeriodEnd ?? null}
-            />
-          </section>
+        {/* Subscription */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Subscription</h2>
+          <BillingCTA
+            isSubscribed={isSubscribed}
+            plan={me?.plan ?? "free"}
+            status={me?.status ?? "inactive"}
+            currentPeriodEnd={me?.subscription?.currentPeriodEnd ?? null}
+          />
+        </section>
 
-          {/* Connected Channels */}
-          <section
-            style={{
-              background: "#fff",
-              border: "1px solid #e2e8f0",
-              borderRadius: 16,
-              padding: 24,
-            }}
-          >
-            <h2 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: 16 }}>
-              Connected Channels
-            </h2>
-            {channels.length === 0 ? (
-              <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
-                No channels connected yet.
-              </p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {channels.map((ch) => (
-                  <div
-                    key={ch.channel_id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: 12,
-                      background: "#f8fafc",
-                      borderRadius: 10,
-                    }}
-                  >
-                    {ch.thumbnailUrl && (
-                      <img
-                        src={ch.thumbnailUrl}
-                        alt=""
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: "50%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontWeight: 500,
-                          fontSize: "0.875rem",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {ch.title ?? "Untitled Channel"}
-                      </div>
-                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                        {ch.videoCount ?? 0} videos • {ch.planCount ?? 0} plans
-                      </div>
+        {/* Connected Channels */}
+        <section className={styles.card}>
+          <h2 className={styles.cardTitle}>Connected Channels</h2>
+          {channels.length === 0 ? (
+            <div className={styles.emptyChannels}>
+              <span className={styles.emptyIcon}>📺</span>
+              <p>No channels connected yet.</p>
+              <a href="/dashboard" className={styles.linkBtn}>
+                Go to Dashboard →
+              </a>
+            </div>
+          ) : (
+            <div className={styles.channelList}>
+              {channels.map((ch) => (
+                <div key={ch.channel_id} className={styles.channelItem}>
+                  {ch.thumbnailUrl && (
+                    <img
+                      src={ch.thumbnailUrl}
+                      alt=""
+                      className={styles.channelThumb}
+                    />
+                  )}
+                  <div className={styles.channelInfo}>
+                    <div className={styles.channelName}>
+                      {ch.title ?? "Untitled Channel"}
                     </div>
-                    <span
-                      style={{
-                        padding: "2px 8px",
-                        fontSize: "0.75rem",
-                        fontWeight: 500,
-                        borderRadius: 9999,
-                        background:
-                          ch.syncStatus === "idle" ? "#d1fae5" : "#fef3c7",
-                        color:
-                          ch.syncStatus === "idle" ? "#065f46" : "#92400e",
-                      }}
-                    >
-                      {ch.syncStatus}
-                    </span>
+                    <div className={styles.channelStats}>
+                      {ch.videoCount ?? 0} videos • {ch.planCount ?? 0} plans
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
+                  <span
+                    className={`${styles.statusBadge} ${
+                      ch.syncStatus === "idle"
+                        ? styles.statusSuccess
+                        : styles.statusWarning
+                    }`}
+                  >
+                    {ch.syncStatus}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
-          {/* Danger Zone */}
-          <section
-            style={{
-              background: "#fff",
-              border: "1px solid #fecaca",
-              borderRadius: 16,
-              padding: 24,
-            }}
+        {/* Danger Zone */}
+        <section className={styles.dangerCard}>
+          <h2 className={styles.dangerTitle}>Danger Zone</h2>
+          <p className={styles.dangerDesc}>
+            These actions are irreversible. Please be certain.
+          </p>
+          <button
+            className={styles.dangerBtn}
+            onClick={() => alert("Account deletion would be handled here")}
           >
-            <h2
-              style={{
-                fontSize: "1.125rem",
-                fontWeight: 600,
-                marginBottom: 8,
-                color: "#991b1b",
-              }}
-            >
-              Danger Zone
-            </h2>
-            <p
-              style={{
-                color: "#64748b",
-                fontSize: "0.875rem",
-                marginBottom: 16,
-              }}
-            >
-              These actions are irreversible. Please be certain.
-            </p>
-            <button
-              style={{
-                padding: "8px 16px",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                color: "#dc2626",
-                background: "none",
-                border: "1px solid #dc2626",
-                borderRadius: 8,
-                cursor: "pointer",
-              }}
-              onClick={() => alert("Account deletion would be handled here")}
-            >
-              Delete Account
-            </button>
-          </section>
-        </div>
-      )}
+            Delete Account
+          </button>
+        </section>
+      </div>
     </main>
   );
 }

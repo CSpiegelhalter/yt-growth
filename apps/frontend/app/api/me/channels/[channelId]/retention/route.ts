@@ -8,14 +8,20 @@
  * Subscription: Required
  * Rate limit: 20 per hour per channel
  * Caching: 12-24 hours
+ *
+ * Demo mode: Returns fixture data when NEXT_PUBLIC_DEMO_MODE=1 or on API failure
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
-import { getCurrentUserWithSubscription, hasActiveSubscription } from "@/lib/user";
+import {
+  getCurrentUserWithSubscription,
+  hasActiveSubscription,
+} from "@/lib/user";
 import { getGoogleAccount, fetchRetentionCurve } from "@/lib/youtube-api";
 import { computeRetentionCliff, formatTimestamp } from "@/lib/retention";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { isDemoMode, getDemoData } from "@/lib/demo-fixtures";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -25,6 +31,12 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { channelId: string } }
 ) {
+  // Return demo data if demo mode is enabled
+  if (isDemoMode()) {
+    const demoData = getDemoData("retention");
+    return Response.json({ ...(demoData as object), demo: true });
+  }
+
   try {
     // Auth check
     const user = await getCurrentUserWithSubscription();
@@ -96,7 +108,10 @@ export async function GET(
     // Get Google account
     const ga = await getGoogleAccount(user.id);
     if (!ga) {
-      return Response.json({ error: "Google account not connected" }, { status: 400 });
+      return Response.json(
+        { error: "Google account not connected" },
+        { status: 400 }
+      );
     }
 
     // Check for cached retention data
@@ -109,15 +124,21 @@ export async function GET(
     });
 
     const cachedVideoIds = new Set(existingRetention.map((r) => r.videoId));
-    const videosToFetch = channel.Video.filter((v) => !cachedVideoIds.has(v.id));
+    const videosToFetch = channel.Video.filter(
+      (v) => !cachedVideoIds.has(v.id)
+    );
 
     // Fetch retention for uncached videos
     const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours
 
     for (const video of videosToFetch) {
       try {
-        const points = await fetchRetentionCurve(ga, channelId, video.youtubeVideoId);
-        
+        const points = await fetchRetentionCurve(
+          ga,
+          channelId,
+          video.youtubeVideoId
+        );
+
         // Compute cliff
         const cliff = computeRetentionCliff(video.durationSec ?? 0, points);
 
@@ -142,7 +163,10 @@ export async function GET(
           },
         });
       } catch (err) {
-        console.error(`Failed to fetch retention for video ${video.youtubeVideoId}:`, err);
+        console.error(
+          `Failed to fetch retention for video ${video.youtubeVideoId}:`,
+          err
+        );
         // Continue with other videos
       }
     }
@@ -191,10 +215,20 @@ export async function GET(
     });
   } catch (err: any) {
     console.error("Retention error:", err);
+
+    // Return demo data as fallback on error
+    const demoData = getDemoData("retention");
+    if (demoData) {
+      return Response.json({
+        ...(demoData as object),
+        demo: true,
+        error: "Using demo data - actual fetch failed",
+      });
+    }
+
     return Response.json(
       { error: "Failed to fetch retention data", detail: err.message },
       { status: 500 }
     );
   }
 }
-

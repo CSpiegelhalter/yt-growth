@@ -1,0 +1,257 @@
+/* ================================
+   Header - Mobile First
+   ================================ */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  position: relative;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--color-text, #1e293b);
+  text-decoration: none;
+}
+
+.logoIcon {
+  font-size: 1.5rem;
+}
+
+.logoText {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .logoText {
+    display: inline;
+  }
+}
+
+/* Desktop Navigation */
+.desktopNav {
+  display: none;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .desktopNav {
+    display: flex;
+  }
+}
+
+.navLink {
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #64748b);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.navLink:hover {
+  background: #f8fafc;
+  color: var(--color-text, #1e293b);
+}
+
+/* Auth Section */
+.authSection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Auth Buttons (logged out) */
+.loginBtn {
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #64748b);
+  text-decoration: none;
+  border-radius: 8px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.loginBtn:hover {
+  background: #f8fafc;
+  color: var(--color-text, #1e293b);
+}
+
+.signupBtn {
+  padding: 10px 18px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 10px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.signupBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+/* User Menu Button (logged in) */
+.userMenuBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #f8fafc;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 24px;
+  cursor: pointer;
+  min-height: 44px;
+  transition: all 0.15s;
+}
+
+.userMenuBtn:hover {
+  background: #f1f5f9;
+  border-color: var(--color-text-secondary, #94a3b8);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.userName {
+  font-size: 0.875rem;
+  color: var(--color-text, #1e293b);
+  display: none;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .userName {
+    display: block;
+  }
+}
+
+.menuChevron {
+  font-size: 0.5rem;
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+/* Dropdown Menu */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: white;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  padding: 8px;
+  animation: dropdownIn 0.15s ease-out;
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownEmail {
+  padding: 12px 14px;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #94a3b8);
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  font-size: 0.875rem;
+  color: var(--color-text, #1e293b);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.15s;
+  min-height: 44px;
+}
+
+.dropdownItem:hover {
+  background: #f8fafc;
+}
+
+.dropdownItemIcon {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: var(--color-border, #e2e8f0);
+  margin: 8px 0;
+}
+
+.dropdownSignout {
+  color: #dc2626;
+}
+
+.dropdownSignout:hover {
+  background: #fef2f2;
+}
+
+/* Backdrop */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+/* Placeholder (during SSR) */
+.placeholder {
+  width: 100px;
+  height: 44px;
+}
+
+@media (min-width: 640px) {
+  .placeholder {
+    width: 140px;
+  }
+}
+

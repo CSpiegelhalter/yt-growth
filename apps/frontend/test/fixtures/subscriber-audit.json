@@ -1,0 +1,162 @@
+{
+  "channelId": "DEMO_CHANNEL",
+  "demo": true,
+  "range": "28d",
+  "generatedAt": "2024-12-15T10:00:00Z",
+  "cachedUntil": "2024-12-16T10:00:00Z",
+  "videos": [
+    {
+      "videoId": "demo-sub-1",
+      "title": "The #1 Mistake New Creators Make (And The Fix)",
+      "views": 45230,
+      "subscribersGained": 892,
+      "subsPerThousand": 19.7,
+      "publishedAt": "2024-12-10T14:00:00Z",
+      "thumbnailUrl": "https://i.ytimg.com/vi/demo/mqdefault.jpg",
+      "durationSec": 485,
+      "viewsPerDay": 9046,
+      "avdSec": 245,
+      "apv": 50.5,
+      "insight": {
+        "whatWorked": "Strong promise + specific outcome in title",
+        "stealThis": [
+          "Lead with the problem, not the solution",
+          "Use 'The #1' framing for credibility"
+        ],
+        "hookIdea": [
+          "Start with a relatable failure story",
+          "Promise the specific fix within the first 10 seconds"
+        ]
+      }
+    },
+    {
+      "videoId": "demo-sub-2",
+      "title": "I Tried the Viral Algorithm Hack for 30 Days",
+      "views": 78450,
+      "subscribersGained": 1245,
+      "subsPerThousand": 15.9,
+      "publishedAt": "2024-12-05T12:00:00Z",
+      "thumbnailUrl": "https://i.ytimg.com/vi/demo2/mqdefault.jpg",
+      "durationSec": 892,
+      "viewsPerDay": 7845,
+      "avdSec": 312,
+      "apv": 35.0,
+      "insight": {
+        "whatWorked": "Experiment format + time constraint creates curiosity",
+        "stealThis": [
+          "Use time-bound experiments (7 days, 30 days)",
+          "Include 'viral' or trending terms"
+        ],
+        "hookIdea": [
+          "Show quick before/after results upfront",
+          "Mention the exact number of views/subs gained"
+        ]
+      }
+    },
+    {
+      "videoId": "demo-sub-3",
+      "title": "How to Edit Videos 10x Faster (My Exact Workflow)",
+      "views": 32100,
+      "subscribersGained": 456,
+      "subsPerThousand": 14.2,
+      "publishedAt": "2024-12-08T18:30:00Z",
+      "thumbnailUrl": "https://i.ytimg.com/vi/demo3/mqdefault.jpg",
+      "durationSec": 1120,
+      "viewsPerDay": 4586,
+      "avdSec": 425,
+      "apv": 38.0,
+      "insight": {
+        "whatWorked": "Specific multiplier (10x) + 'exact workflow' builds trust",
+        "stealThis": [
+          "Use specific numbers instead of vague claims",
+          "Add 'My Exact' or 'Step by Step' for authority"
+        ],
+        "hookIdea": [
+          "Demo the workflow speed in first 15 seconds",
+          "Mention the time you'll save them"
+        ]
+      }
+    },
+    {
+      "videoId": "demo-sub-4",
+      "title": "Why I Quit My 9-5 to Become a Full-Time Creator",
+      "views": 52800,
+      "subscribersGained": 634,
+      "subsPerThousand": 12.0,
+      "publishedAt": "2024-11-28T16:00:00Z",
+      "thumbnailUrl": "https://i.ytimg.com/vi/demo4/mqdefault.jpg",
+      "durationSec": 645,
+      "viewsPerDay": 3109,
+      "avdSec": 298,
+      "apv": 46.2,
+      "insight": {
+        "whatWorked": "Personal story + relatable dream resonates emotionally",
+        "stealThis": [
+          "Share vulnerable moments to build connection",
+          "Tie personal story to viewer's aspirations"
+        ],
+        "hookIdea": [
+          "Start with the moment of decision",
+          "Show the 'before' life briefly"
+        ]
+      }
+    },
+    {
+      "videoId": "demo-sub-5",
+      "title": "The Tools I Use to Run My YouTube Business",
+      "views": 28900,
+      "subscribersGained": 312,
+      "subsPerThousand": 10.8,
+      "publishedAt": "2024-11-25T10:00:00Z",
+      "thumbnailUrl": "https://i.ytimg.com/vi/demo5/mqdefault.jpg",
+      "durationSec": 780,
+      "viewsPerDay": 1445,
+      "avdSec": 356,
+      "apv": 45.6,
+      "insight": {
+        "whatWorked": "'Tools I Use' + 'business' frames channel as professional",
+        "stealThis": [
+          "Position yourself as running a business, not just a hobby",
+          "List format promises clear value"
+        ],
+        "hookIdea": [
+          "Tease the most unusual/unexpected tool first",
+          "Mention how much these tools make/save you"
+        ]
+      }
+    }
+  ],
+  "patternAnalysis": {
+    "analysisJson": {
+      "summary": "Your top converting videos share a common pattern: specific outcomes + personal authority. Videos with numbers in titles (10x, #1, 30 days) consistently outperform vague promises.",
+      "topPatterns": [
+        "Specific numbers in titles (10x, #1, 30 days)",
+        "Problem-first framing",
+        "Personal experience indicators ('My', 'I Tried', 'Why I')"
+      ],
+      "titleFormulas": [
+        "The #1 [Problem] [Audience] Make (And [Solution])",
+        "I Tried [Viral Thing] for [Time Period]",
+        "How to [Outcome] [Multiplier] ([Your Method])"
+      ],
+      "hookPatterns": [
+        "Lead with relatable failure or pain point",
+        "Show quick proof/results in first 10 seconds",
+        "Make a specific promise with timeline"
+      ],
+      "recommendations": [
+        "Double down on experiment/challenge formats",
+        "Always include specific numbers in titles",
+        "Lead hooks with the problem, not the solution"
+      ]
+    },
+    "analysisMarkdownFallback": "## Pattern Analysis\n\n### What's Working\nYour top converting videos share specific outcomes + personal authority.\n\n### Title Formulas\n- The #1 [Problem] [Audience] Make\n- I Tried [Thing] for [Time]\n\n### Recommendations\n1. Double down on experiment formats\n2. Use specific numbers\n3. Lead with problems"
+  },
+  "stats": {
+    "totalVideosAnalyzed": 5,
+    "avgSubsPerThousand": 14.5,
+    "totalSubscribersGained": 3539,
+    "totalViews": 237480
+  }
+}
+

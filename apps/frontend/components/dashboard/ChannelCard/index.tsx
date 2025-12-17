@@ -4,17 +4,22 @@ import Link from "next/link";
 import s from "./style.module.css";
 import { Channel } from "@/types/api";
 
+type ChannelCardProps = {
+  channel: Channel;
+  busy: boolean;
+  onUnlink: () => void;
+  onSync: () => void;
+};
+
+/**
+ * Card displaying a single YouTube channel with sync/unlink actions.
+ */
 export default function ChannelCard({
   channel,
   busy,
   onUnlink,
-  onRefresh,
-}: {
-  channel: Channel;
-  busy: boolean;
-  onUnlink: () => void;
-  onRefresh: () => void;
-}) {
+  onSync,
+}: ChannelCardProps) {
   return (
     <div className={s.card}>
       <div className={s.header}>
@@ -61,7 +66,7 @@ export default function ChannelCard({
         </Link>
         <div className={s.actionButtons}>
           <button
-            onClick={onRefresh}
+            onClick={onSync}
             className={`${s.btn} ${s.btnSecondary}`}
             disabled={busy}
           >
