@@ -29,6 +29,9 @@ export async function GET() {
       subscription: {
         isActive: subscription.isActive,
         currentPeriodEnd: subscription.currentPeriodEnd,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        cancelAt: subscription.cancelAt,
+        canceledAt: subscription.canceledAt,
       },
     };
 

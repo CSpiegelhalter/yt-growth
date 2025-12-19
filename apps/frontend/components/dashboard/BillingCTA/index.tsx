@@ -8,6 +8,8 @@ type Props = {
   plan: string;
   status: string;
   currentPeriodEnd: string | null;
+  cancelAtPeriodEnd?: boolean;
+  cancelAt?: string | null;
 };
 
 export default function BillingCTA({
@@ -15,6 +17,8 @@ export default function BillingCTA({
   plan,
   status,
   currentPeriodEnd,
+  cancelAtPeriodEnd,
+  cancelAt,
 }: Props) {
   const [loading, setLoading] = useState(false);
 
@@ -57,10 +61,12 @@ export default function BillingCTA({
           </div>
         </div>
         <div className={s.details}>
-          {currentPeriodEnd && (
+          {(cancelAt || currentPeriodEnd) && (
             <p className={s.meta}>
-              Next billing date:{" "}
-              {new Date(currentPeriodEnd).toLocaleDateString()}
+              {cancelAt || cancelAtPeriodEnd
+                ? "Cancels on: "
+                : "Next billing date: "}
+              {new Date(cancelAt ?? currentPeriodEnd!).toLocaleDateString()}
             </p>
           )}
           <ul className={s.features}>

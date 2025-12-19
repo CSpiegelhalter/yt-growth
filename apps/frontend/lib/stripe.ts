@@ -30,11 +30,60 @@ type StripeSubscription = {
   status: string;
   customer: string;
   billing_cycle_anchor: number;
+  cancel_at?: number | null;
+  current_period_end?: number;
+  cancel_at_period_end?: boolean;
+  canceled_at?: number | null;
   plan: {
     interval: string;
     interval_count: number;
   };
 };
+
+function safeDateFromUnixSeconds(sec: unknown): Date | null {
+  if (typeof sec !== "number" || !Number.isFinite(sec) || sec <= 0) return null;
+  const d = new Date(sec * 1000);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+function minDate(a: Date | null, b: Date | null): Date | null {
+  if (a && b) return a.getTime() <= b.getTime() ? a : b;
+  return a ?? b;
+}
+
+function computePeriodEndFromAnchor(sub: StripeSubscription): Date | null {
+  if (typeof sub.billing_cycle_anchor !== "number") return null;
+  const d = new Date(sub.billing_cycle_anchor * 1000);
+  if (!Number.isFinite(d.getTime())) return null;
+
+  const interval = sub.plan?.interval;
+  const intervalCount = sub.plan?.interval_count ?? 1;
+
+  if (interval === "month") d.setMonth(d.getMonth() + intervalCount);
+  else if (interval === "year") d.setFullYear(d.getFullYear() + intervalCount);
+  else if (interval === "week") d.setDate(d.getDate() + 7 * intervalCount);
+  else if (interval === "day") d.setDate(d.getDate() + intervalCount);
+  return d;
+}
+
+function normalizeDbStatus(stripeStatus: string | undefined): string {
+  const s = (stripeStatus ?? "").toLowerCase();
+  if (s === "active" || s === "trialing") return "active";
+  if (s === "past_due") return "past_due";
+  if (s === "canceled" || s === "unpaid" || s === "incomplete_expired")
+    return "canceled";
+  return "inactive";
+}
+
+function isEntitledFromStripe(
+  sub: StripeSubscription,
+  periodEnd: Date | null
+): boolean {
+  if (!periodEnd) return false;
+  if (periodEnd.getTime() <= Date.now()) return false;
+  const s = (sub.status ?? "").toLowerCase();
+  return ["active", "trialing", "past_due", "canceled", "unpaid"].includes(s);
+}
 
 /**
  * Make a Stripe API request
@@ -240,24 +289,37 @@ export async function handleStripeWebhook(
         customer: sub.customer,
         billing_cycle_anchor: sub.billing_cycle_anchor,
         plan: sub.plan,
+        cancel_at: sub.cancel_at,
+        current_period_end: sub.current_period_end,
+        cancel_at_period_end: sub.cancel_at_period_end,
       });
 
-      // Calculate period end from billing_cycle_anchor + plan interval
-      const periodEndDate = new Date(sub.billing_cycle_anchor * 1000);
-      const interval = sub.plan.interval;
-      const intervalCount = sub.plan.interval_count;
+      // Prefer Stripe's authoritative current_period_end when present.
+      const periodEndDate =
+        safeDateFromUnixSeconds(sub.current_period_end) ??
+        computePeriodEndFromAnchor(sub);
 
-      if (interval === "month") {
-        periodEndDate.setMonth(periodEndDate.getMonth() + intervalCount);
-      } else if (interval === "year") {
-        periodEndDate.setFullYear(periodEndDate.getFullYear() + intervalCount);
-      } else if (interval === "week") {
-        periodEndDate.setDate(periodEndDate.getDate() + 7 * intervalCount);
-      } else if (interval === "day") {
-        periodEndDate.setDate(periodEndDate.getDate() + intervalCount);
+      if (!periodEndDate) {
+        console.error(
+          `[Stripe Webhook] Could not compute period end for subscription ${sub.id}`
+        );
+        break;
       }
 
-      console.log(`[Stripe Webhook] Period end:`, periodEndDate);
+      const cancelAtPeriodEnd = Boolean(sub.cancel_at_period_end);
+      const cancelAt = safeDateFromUnixSeconds(sub.cancel_at ?? undefined);
+      const canceledAt = safeDateFromUnixSeconds(sub.canceled_at ?? undefined);
+      const effectiveEnd = minDate(cancelAt, periodEndDate);
+      const entitled = isEntitledFromStripe(sub, effectiveEnd);
+      const dbStatus = normalizeDbStatus(sub.status);
+
+      console.log(`[Stripe Webhook] Period end:`, periodEndDate, {
+        entitled,
+        dbStatus,
+        cancelAtPeriodEnd,
+        cancelAt,
+        effectiveEnd,
+      });
 
       // Update or create the subscription record
       const result = await prisma.subscription.upsert({
@@ -265,19 +327,25 @@ export async function handleStripeWebhook(
         update: {
           stripeCustomerId: String(sub.customer),
           stripeSubscriptionId: subscriptionId,
-          status: "active",
-          plan: "pro",
-          channelLimit: 5,
+          status: dbStatus,
+          plan: entitled ? "pro" : "free",
+          channelLimit: entitled ? 5 : 1,
           currentPeriodEnd: periodEndDate,
+          cancelAtPeriodEnd,
+          cancelAt,
+          canceledAt,
         },
         create: {
           userId,
           stripeCustomerId: String(sub.customer),
           stripeSubscriptionId: subscriptionId,
-          status: "active",
-          plan: "pro",
-          channelLimit: 5,
+          status: dbStatus,
+          plan: entitled ? "pro" : "free",
+          channelLimit: entitled ? 5 : 1,
           currentPeriodEnd: periodEndDate,
+          cancelAtPeriodEnd,
+          cancelAt,
+          canceledAt,
         },
       });
 
@@ -295,42 +363,88 @@ export async function handleStripeWebhook(
     case "customer.subscription.deleted": {
       const sub = event.data.object as StripeSubscription;
       const customerId = sub.customer;
-
-      const subscription = await prisma.subscription.findFirst({
-        where: { stripeCustomerId: customerId },
+      if (process.env.NODE_ENV !== "production") {
+        console.log("sub", sub);
+      }
+      console.log(`[Stripe Webhook] ${eventType}:`, {
+        stripeSubscriptionId: sub.id,
+        stripeStatus: sub.status,
+        stripeCustomerId: customerId,
+        cancel_at: sub.cancel_at,
+        cancel_at_period_end: sub.cancel_at_period_end,
+        canceled_at: sub.canceled_at,
+        current_period_end: sub.current_period_end,
+        billing_cycle_anchor: sub.billing_cycle_anchor,
+        // NOTE: For some webhook payloads, plan may not be present at the root.
+        plan: sub.plan,
       });
 
-      if (subscription) {
-        const status =
-          sub.status === "active"
-            ? "active"
-            : sub.status === "past_due"
-            ? "past_due"
-            : "canceled";
-        const plan = status === "active" ? "pro" : "free";
-        const channelLimit = status === "active" ? 5 : 1;
+      const existing = await prisma.subscription.findFirst({
+        where: {
+          OR: [
+            { stripeCustomerId: String(customerId) },
+            { stripeSubscriptionId: String(sub.id) },
+          ],
+        },
+      });
 
-        // Calculate period end from billing_cycle_anchor
-        const updatePeriodEnd = new Date(sub.billing_cycle_anchor * 1000);
-        if (sub.plan.interval === "month") {
-          updatePeriodEnd.setMonth(
-            updatePeriodEnd.getMonth() + sub.plan.interval_count
-          );
-        } else if (sub.plan.interval === "year") {
-          updatePeriodEnd.setFullYear(
-            updatePeriodEnd.getFullYear() + sub.plan.interval_count
-          );
-        }
+      const periodEndDate =
+        safeDateFromUnixSeconds(sub.current_period_end) ??
+        computePeriodEndFromAnchor(sub);
+      const cancelAt = safeDateFromUnixSeconds(sub.cancel_at ?? undefined);
+      const cancelAtPeriodEnd = Boolean(sub.cancel_at_period_end);
+      const canceledAt = safeDateFromUnixSeconds(sub.canceled_at ?? undefined);
+      const effectiveEnd = minDate(cancelAt, periodEndDate);
+      const entitled = isEntitledFromStripe(sub, effectiveEnd);
+      const dbStatus = normalizeDbStatus(sub.status);
 
+      console.log(`[Stripe Webhook] ${eventType} computed:`, {
+        foundDbRow: Boolean(existing),
+        dbRow: existing
+          ? {
+              id: existing.id,
+              userId: existing.userId,
+              stripeCustomerId: existing.stripeCustomerId,
+              stripeSubscriptionId: existing.stripeSubscriptionId,
+              status: existing.status,
+              plan: existing.plan,
+              currentPeriodEnd: existing.currentPeriodEnd,
+              cancelAtPeriodEnd: (existing as any).cancelAtPeriodEnd,
+              cancelAt: (existing as any).cancelAt,
+              canceledAt: (existing as any).canceledAt,
+            }
+          : null,
+        computed: {
+          dbStatus,
+          entitled,
+          periodEndIso: periodEndDate ? periodEndDate.toISOString() : null,
+          cancelAtPeriodEnd,
+          cancelAtIso: cancelAt ? cancelAt.toISOString() : null,
+          effectiveEndIso: effectiveEnd ? effectiveEnd.toISOString() : null,
+          canceledAtIso: canceledAt ? canceledAt.toISOString() : null,
+        },
+      });
+
+      if (existing) {
         await prisma.subscription.update({
-          where: { id: subscription.id },
+          where: { id: existing.id },
           data: {
-            status,
-            plan,
-            channelLimit,
-            currentPeriodEnd: updatePeriodEnd,
+            status: dbStatus,
+            plan: entitled ? "pro" : "free",
+            channelLimit: entitled ? 5 : 1,
+            currentPeriodEnd: periodEndDate ?? existing.currentPeriodEnd,
+            cancelAtPeriodEnd,
+            cancelAt,
+            canceledAt,
+            stripeSubscriptionId:
+              existing.stripeSubscriptionId ?? String(sub.id),
           },
         });
+      } else {
+        console.log(
+          `[Stripe Webhook] subscription update/delete: no matching DB row`,
+          { customerId, stripeSubscriptionId: sub.id, dbStatus }
+        );
       }
       break;
     }
@@ -358,6 +472,9 @@ export async function getSubscriptionStatus(userId: number): Promise<{
   plan: string;
   channelLimit: number;
   currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+  cancelAt: Date | null;
+  canceledAt: Date | null;
   isActive: boolean;
 }> {
   const subscription = await prisma.subscription.findUnique({
@@ -370,15 +487,37 @@ export async function getSubscriptionStatus(userId: number): Promise<{
       plan: "free",
       channelLimit: 1,
       currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      cancelAt: null,
+      canceledAt: null,
       isActive: false,
     };
   }
+
+  const now = Date.now();
+  const effectiveEnd =
+    subscription.cancelAt && subscription.currentPeriodEnd
+      ? subscription.cancelAt.getTime() <=
+        subscription.currentPeriodEnd.getTime()
+        ? subscription.cancelAt
+        : subscription.currentPeriodEnd
+      : subscription.cancelAt ?? subscription.currentPeriodEnd;
+  const isActive =
+    subscription.plan !== "free" &&
+    (effectiveEnd
+      ? effectiveEnd.getTime() > now
+      : subscription.status === "active" ||
+        subscription.status === "trialing" ||
+        subscription.status === "past_due");
 
   return {
     status: subscription.status,
     plan: subscription.plan,
     channelLimit: subscription.channelLimit,
     currentPeriodEnd: subscription.currentPeriodEnd,
-    isActive: subscription.status === "active" && subscription.plan !== "free",
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd ?? false,
+    cancelAt: subscription.cancelAt,
+    canceledAt: subscription.canceledAt,
+    isActive,
   };
 }

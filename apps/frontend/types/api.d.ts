@@ -12,6 +12,9 @@ export type Me = {
   subscription: {
     isActive: boolean;
     currentPeriodEnd: string | null;
+    cancelAtPeriodEnd?: boolean;
+    cancelAt?: string | null;
+    canceledAt?: string | null;
   };
 };
 
@@ -251,12 +254,22 @@ export type ApiError = {
 
 export type IdeaHook = {
   text: string;
-  typeTags: Array<"shock" | "curiosity" | "contrarian" | "story" | "tutorial" | "promise">;
+  typeTags: Array<
+    "shock" | "curiosity" | "contrarian" | "story" | "tutorial" | "promise"
+  >;
 };
 
 export type IdeaTitle = {
   text: string;
-  styleTags: Array<"outcome" | "timebound" | "contrarian" | "specific" | "authority" | "personal" | "challenge">;
+  styleTags: Array<
+    | "outcome"
+    | "timebound"
+    | "contrarian"
+    | "specific"
+    | "authority"
+    | "personal"
+    | "challenge"
+  >;
   basedOnVideoId?: string;
   basedOnChannel?: string;
 };
@@ -394,11 +407,11 @@ export type CompetitorVideo = {
   };
   derived: {
     viewsPerDay: number;
-    velocity24h?: number;       // Views gained in last 24h (from snapshots)
-    velocity7d?: number;        // Views gained in last 7d (from snapshots)
-    acceleration24h?: number;   // Change in velocity (needs 3+ snapshots)
+    velocity24h?: number; // Views gained in last 24h (from snapshots)
+    velocity7d?: number; // Views gained in last 7d (from snapshots)
+    acceleration24h?: number; // Change in velocity (needs 3+ snapshots)
     engagementPerView?: number; // (likes + comments) / views
-    outlierScore?: number;      // Z-score vs cohort baseline
+    outlierScore?: number; // Z-score vs cohort baseline
     dataStatus?: "ready" | "building"; // "building" if insufficient snapshots
   };
   similarityScore?: number;
@@ -423,7 +436,7 @@ export type CompetitorCommentsAnalysis = {
     publishedAt: string;
   }>;
   sentiment: {
-    positive: number;  // 0-100 percentage
+    positive: number; // 0-100 percentage
     neutral: number;
     negative: number;
   };
@@ -432,8 +445,8 @@ export type CompetitorCommentsAnalysis = {
     count: number;
     examples: string[];
   }>;
-  viewerLoved: string[];     // What viewers loved
-  viewerAskedFor: string[];  // What viewers asked for next
+  viewerLoved: string[]; // What viewers loved
+  viewerAskedFor: string[]; // What viewers asked for next
   hookInspiration: string[]; // Short quotes to use as hook inspiration
   commentsDisabled?: boolean;
   error?: string;
@@ -557,7 +570,12 @@ export type BaselineComparison = {
   engagementPerView: ZScoreResult;
   sharesPer1k: ZScoreResult;
   healthScore: number;
-  healthLabel: "Excellent" | "Good" | "Average" | "Below Average" | "Needs Work";
+  healthLabel:
+    | "Excellent"
+    | "Good"
+    | "Average"
+    | "Below Average"
+    | "Needs Work";
 };
 
 export type VideoInsightsLLM = {
@@ -604,8 +622,18 @@ export type VideoInsightsResponse = {
   comparison: BaselineComparison;
   levers: {
     retention: { grade: string; color: string; reason: string; action: string };
-    conversion: { grade: string; color: string; reason: string; action: string };
-    engagement: { grade: string; color: string; reason: string; action: string };
+    conversion: {
+      grade: string;
+      color: string;
+      reason: string;
+      action: string;
+    };
+    engagement: {
+      grade: string;
+      color: string;
+      reason: string;
+      action: string;
+    };
   };
   llmInsights: VideoInsightsLLM | null;
   cachedUntil: string;

@@ -17,6 +17,9 @@ export type AuthUserWithSubscription = AuthUser & {
     plan: string;
     channelLimit: number;
     currentPeriodEnd: Date | null;
+    cancelAt?: Date | null;
+    cancelAtPeriodEnd?: boolean;
+    canceledAt?: Date | null;
   } | null;
 };
 
@@ -26,15 +29,18 @@ export type AuthUserWithSubscription = AuthUser & {
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const session = await getServerSession(authOptions);
-  const sessionUser = session?.user as { id?: string | number; email?: string } | null;
+  const sessionUser = session?.user as {
+    id?: string | number;
+    email?: string;
+  } | null;
   if (!sessionUser) return null;
 
   const idAsNumber =
     typeof sessionUser.id === "string"
       ? Number(sessionUser.id)
       : typeof sessionUser.id === "number"
-        ? sessionUser.id
-        : undefined;
+      ? sessionUser.id
+      : undefined;
 
   let user = null;
   if (Number.isFinite(idAsNumber)) {
@@ -66,6 +72,9 @@ export async function getCurrentUserWithSubscription(): Promise<AuthUserWithSubs
       plan: true,
       channelLimit: true,
       currentPeriodEnd: true,
+      cancelAtPeriodEnd: true,
+      cancelAt: true,
+      canceledAt: true,
     },
   });
 
@@ -79,7 +88,28 @@ export function hasActiveSubscription(
   subscription: AuthUserWithSubscription["subscription"]
 ): boolean {
   if (!subscription) return false;
-  return subscription.status === "active" && subscription.plan !== "free";
+  if (subscription.plan === "free") return false;
+
+  // If Stripe gave us a period end, treat this as the source of truth:
+  // user remains entitled until `currentPeriodEnd`, even if they canceled in the portal.
+  const effectiveEnd =
+    subscription.cancelAt && subscription.currentPeriodEnd
+      ? subscription.cancelAt.getTime() <=
+        subscription.currentPeriodEnd.getTime()
+        ? subscription.cancelAt
+        : subscription.currentPeriodEnd
+      : subscription.cancelAt ?? subscription.currentPeriodEnd;
+
+  if (effectiveEnd) {
+    return effectiveEnd.getTime() > Date.now();
+  }
+
+  // Fallback for older rows without a period end.
+  return (
+    subscription.status === "active" ||
+    subscription.status === "trialing" ||
+    subscription.status === "past_due"
+  );
 }
 
 /**
@@ -116,4 +146,3 @@ export async function requireSubscribedUser(): Promise<AuthUserWithSubscription>
   }
   return user;
 }
-

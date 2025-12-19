@@ -5,6 +5,29 @@ import { ApiError } from "@/lib/http";
 
 const ACTIVE_SUB_STATUSES = ["active", "trialing", "past_due"];
 
+function isEntitled(subscription: any): boolean {
+  if (!subscription) return false;
+  if (subscription.plan === "free") return false;
+
+  const cancelAt =
+    subscription.cancelAt instanceof Date ? subscription.cancelAt : null;
+  const currentPeriodEnd =
+    subscription.currentPeriodEnd instanceof Date
+      ? subscription.currentPeriodEnd
+      : null;
+  const effectiveEnd =
+    cancelAt && currentPeriodEnd
+      ? cancelAt.getTime() <= currentPeriodEnd.getTime()
+        ? cancelAt
+        : currentPeriodEnd
+      : cancelAt ?? currentPeriodEnd;
+
+  if (effectiveEnd) {
+    return effectiveEnd.getTime() > Date.now();
+  }
+  return ACTIVE_SUB_STATUSES.includes(subscription.status);
+}
+
 export async function requireUserContext() {
   const session = await getServerSession(authOptions);
   const userIdRaw = (session?.user as any)?.id;
@@ -17,7 +40,7 @@ export async function requireUserContext() {
   });
   if (!user) throw new ApiError(401, "Unauthorized");
   const subscription = user.Subscription ?? null;
-  const isSubscribed = subscription ? ACTIVE_SUB_STATUSES.includes(subscription.status) : false;
+  const isSubscribed = isEntitled(subscription);
 
   return { user, subscription, isSubscribed };
 }
@@ -30,7 +53,9 @@ export function channelLimitForUser(isSubscribed: boolean) {
   return isSubscribed ? 5 : 1;
 }
 
-export function publicMePayload(ctx: Awaited<ReturnType<typeof requireUserContext>>) {
+export function publicMePayload(
+  ctx: Awaited<ReturnType<typeof requireUserContext>>
+) {
   return {
     id: ctx.user.id,
     email: ctx.user.email,

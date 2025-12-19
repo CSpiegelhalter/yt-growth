@@ -31,6 +31,9 @@ model Subscription {
   status               String    @default("inactive") @db.VarChar(32) // active, past_due, canceled, inactive
   plan                 String    @default("free") @db.VarChar(32) // free, pro, team
   currentPeriodEnd     DateTime? @db.Timestamptz(6)
+  cancelAtPeriodEnd    Boolean   @default(false)
+  cancelAt             DateTime? @db.Timestamptz(6)
+  canceledAt           DateTime? @db.Timestamptz(6)
   channelLimit         Int       @default(1)
   createdAt            DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt            DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
@@ -176,21 +179,21 @@ model OAuthState {
 // ============================================
 
 model CompetitorVideo {
-  id              String                     @id @default(uuid()) @db.Uuid
-  videoId         String                     @unique @db.VarChar(32) // YouTube video ID
-  channelId       String                     @db.VarChar(64)         // YouTube channel ID
-  channelTitle    String                     @db.VarChar(255)
-  title           String                     @db.VarChar(512)
-  description     String?                    @db.Text
-  publishedAt     DateTime                   @db.Timestamptz(6)
+  id              String                    @id @default(uuid()) @db.Uuid
+  videoId         String                    @unique @db.VarChar(32) // YouTube video ID
+  channelId       String                    @db.VarChar(64) // YouTube channel ID
+  channelTitle    String                    @db.VarChar(255)
+  title           String                    @db.VarChar(512)
+  description     String?                   @db.Text
+  publishedAt     DateTime                  @db.Timestamptz(6)
   durationSec     Int?
   thumbnailUrl    String?
-  tags            String[]                   @default([])
-  categoryId      String?                    @db.VarChar(32)
-  topicDetails    Json?                      // topicDetails from YouTube API
-  lastFetchedAt   DateTime                   @default(now()) @db.Timestamptz(6)
-  createdAt       DateTime                   @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime                   @default(now()) @updatedAt @db.Timestamptz(6)
+  tags            String[]                  @default([])
+  categoryId      String?                   @db.VarChar(32)
+  topicDetails    Json? // topicDetails from YouTube API
+  lastFetchedAt   DateTime                  @default(now()) @db.Timestamptz(6)
+  createdAt       DateTime                  @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime                  @default(now()) @updatedAt @db.Timestamptz(6)
   Snapshots       CompetitorVideoSnapshot[]
   CommentAnalysis CompetitorVideoComments?
 
@@ -216,12 +219,12 @@ model CompetitorVideoComments {
   id              String          @id @default(uuid()) @db.Uuid
   videoId         String          @unique @db.VarChar(32) // YouTube video ID
   capturedAt      DateTime        @default(now()) @db.Timestamptz(6)
-  topCommentsJson Json?           // Array of top comments for reference
-  analysisJson    Json?           // LLM analysis result: sentiment, themes, quotes
-  sentimentPos    Float?          // Percentage positive
-  sentimentNeu    Float?          // Percentage neutral
-  sentimentNeg    Float?          // Percentage negative
-  themesJson      Json?           // Array of extracted themes
+  topCommentsJson Json? // Array of top comments for reference
+  analysisJson    Json? // LLM analysis result: sentiment, themes, quotes
+  sentimentPos    Float? // Percentage positive
+  sentimentNeu    Float? // Percentage neutral
+  sentimentNeg    Float? // Percentage negative
+  themesJson      Json? // Array of extracted themes
   Video           CompetitorVideo @relation(fields: [videoId], references: [videoId], onDelete: Cascade)
 
   @@index([capturedAt], map: "idx_competitor_comments_captured")
@@ -232,32 +235,32 @@ model CompetitorVideoComments {
 // ============================================
 
 model OwnedVideoAnalyticsDay {
-  id                        String   @id @default(uuid()) @db.Uuid
-  userId                    Int
-  channelId                 Int
-  videoId                   String   @db.VarChar(32) // YouTube video ID
-  date                      DateTime @db.Date        // YYYY-MM-DD
-  views                     Int      @default(0)
-  engagedViews              Int?
-  comments                  Int?
-  likes                     Int?
-  shares                    Int?
-  estimatedMinutesWatched   Int?
-  averageViewDuration       Int?     // seconds
-  averageViewPercentage     Float?
-  subscribersGained         Int?
-  subscribersLost           Int?
-  videosAddedToPlaylists    Int?
+  id                         String   @id @default(uuid()) @db.Uuid
+  userId                     Int
+  channelId                  Int
+  videoId                    String   @db.VarChar(32) // YouTube video ID
+  date                       DateTime @db.Date // YYYY-MM-DD
+  views                      Int      @default(0)
+  engagedViews               Int?
+  comments                   Int?
+  likes                      Int?
+  shares                     Int?
+  estimatedMinutesWatched    Int?
+  averageViewDuration        Int? // seconds
+  averageViewPercentage      Float?
+  subscribersGained          Int?
+  subscribersLost            Int?
+  videosAddedToPlaylists     Int?
   videosRemovedFromPlaylists Int?
   // Monetization (may be null if not monetized)
-  estimatedRevenue          Float?
-  estimatedAdRevenue        Float?
-  grossRevenue              Float?
-  monetizedPlaybacks        Int?
-  playbackBasedCpm          Float?
-  adImpressions             Int?
-  cpm                       Float?
-  createdAt                 DateTime @default(now()) @db.Timestamptz(6)
+  estimatedRevenue           Float?
+  estimatedAdRevenue         Float?
+  grossRevenue               Float?
+  monetizedPlaybacks         Int?
+  playbackBasedCpm           Float?
+  adImpressions              Int?
+  cpm                        Float?
+  createdAt                  DateTime @default(now()) @db.Timestamptz(6)
 
   @@unique([userId, channelId, videoId, date], map: "uq_owned_analytics_day")
   @@index([videoId, date(sort: Desc)], map: "idx_owned_analytics_video_date")
@@ -269,9 +272,9 @@ model OwnedVideoInsightsCache {
   userId      Int
   channelId   Int
   videoId     String   @db.VarChar(32) // YouTube video ID
-  range       String   @db.VarChar(8)  // "7d", "28d", "90d"
-  derivedJson Json?                    // Derived metrics + baselines
-  llmJson     Json?                    // LLM-generated insights
+  range       String   @db.VarChar(8) // "7d", "28d", "90d"
+  derivedJson Json? // Derived metrics + baselines
+  llmJson     Json? // LLM-generated insights
   cachedUntil DateTime @db.Timestamptz(6)
   updatedAt   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
