@@ -9,6 +9,7 @@ type Props = {
   data: SimilarChannelsResponse | null;
   loading?: boolean;
   onRefresh?: (range: "7d" | "14d") => void;
+  onLoadMore?: (channelId: string) => Promise<void>;
   isSubscribed?: boolean;
   isDemo?: boolean;
 };
@@ -17,12 +18,14 @@ export default function SimilarChannelsSection({
   data,
   loading = false,
   onRefresh,
+  onLoadMore,
   isSubscribed = true,
   isDemo = false,
 }: Props) {
   const [selectedChannelIndex, setSelectedChannelIndex] = useState<number | null>(null);
   const [range, setRange] = useState<"7d" | "14d">("7d");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState<string | null>(null);
 
   const handleCopy = useCallback(async (text: string, id: string) => {
     const success = await copyToClipboard(text);
@@ -36,6 +39,16 @@ export default function SimilarChannelsSection({
     setRange(newRange);
     onRefresh?.(newRange);
   };
+
+  const handleLoadMore = useCallback(async (channelId: string) => {
+    if (!onLoadMore || loadingMore) return;
+    setLoadingMore(channelId);
+    try {
+      await onLoadMore(channelId);
+    } finally {
+      setLoadingMore(null);
+    }
+  }, [onLoadMore, loadingMore]);
 
   const selectedChannel = selectedChannelIndex !== null 
     ? data?.similarChannels[selectedChannelIndex] 
@@ -65,7 +78,11 @@ export default function SimilarChannelsSection({
     return (
       <div className={s.card}>
         <div className={s.lockedState}>
-          <div className={s.lockedIcon}>🔍</div>
+          <div className={s.lockedIcon}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
           <h3 className={s.lockedTitle}>Unlock Competitor Insights</h3>
           <p className={s.lockedDesc}>
             See what similar channels are doing, their recent successful videos, and ideas to steal.
@@ -83,7 +100,11 @@ export default function SimilarChannelsSection({
     return (
       <div className={s.card}>
         <div className={s.emptyState}>
-          <div className={s.emptyIcon}>🔎</div>
+          <div className={s.emptyIcon}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
           <h3 className={s.emptyTitle}>No Similar Channels Found</h3>
           <p className={s.emptyDesc}>
             Upload more videos to help us find channels in your niche.
@@ -134,7 +155,11 @@ export default function SimilarChannelsSection({
                   loading="lazy"
                 />
               ) : (
-                <div className={s.channelThumbPlaceholder}>📺</div>
+                <div className={s.channelThumbPlaceholder}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </div>
               )}
               <span className={s.channelName}>{channel.channelTitle}</span>
               <span className={s.channelScore}>
@@ -151,6 +176,8 @@ export default function SimilarChannelsSection({
           channel={selectedChannel}
           onCopy={handleCopy}
           copiedId={copiedId}
+          onLoadMore={() => handleLoadMore(selectedChannel.channelId)}
+          loadingMore={loadingMore === selectedChannel.channelId}
         />
       )}
 
@@ -178,10 +205,14 @@ function ChannelDetails({
   channel,
   onCopy,
   copiedId,
+  onLoadMore,
+  loadingMore,
 }: {
   channel: SimilarChannel;
   onCopy: (text: string, id: string) => void;
   copiedId: string | null;
+  onLoadMore?: () => void;
+  loadingMore?: boolean;
 }) {
   if (channel.recentWinners.length === 0) {
     return (
@@ -219,7 +250,11 @@ function ChannelDetails({
                 loading="lazy"
               />
             ) : (
-              <div className={s.videoThumbPlaceholder}>📹</div>
+              <div className={s.videoThumbPlaceholder}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </div>
             )}
             <div className={s.videoInfo}>
               <h5 className={s.videoTitle}>{video.title}</h5>
@@ -238,6 +273,25 @@ function ChannelDetails({
           </div>
         ))}
       </div>
+
+      {/* Load More Winners Button */}
+      {onLoadMore && (
+        <button
+          type="button"
+          className={s.loadMoreBtn}
+          onClick={onLoadMore}
+          disabled={loadingMore}
+        >
+          {loadingMore ? (
+            <>
+              <span className={s.spinner} />
+              Loading...
+            </>
+          ) : (
+            "Load More Winners"
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -268,7 +322,7 @@ function InsightsSection({
   return (
     <div className={s.insightsSection}>
       <div className={s.insightsHeader}>
-        <h4 className={s.insightsTitle}>💡 Insights</h4>
+        <h4 className={s.insightsTitle}>Insights</h4>
         <button
           className={s.copyInsightsBtn}
           onClick={() => onCopy(`• ${allInsights}`, "all-insights")}
@@ -281,7 +335,7 @@ function InsightsSection({
       <div className={s.insightsGrid}>
         {insights.whatTheyreDoing.length > 0 && (
           <div className={s.insightBlock}>
-            <h5 className={s.insightBlockTitle}>🎯 What They&apos;re Doing</h5>
+            <h5 className={s.insightBlockTitle}>What They&apos;re Doing</h5>
             <ul className={s.insightList}>
               {insights.whatTheyreDoing.map((item, i) => (
                 <li key={i}>{item}</li>
@@ -292,7 +346,7 @@ function InsightsSection({
 
         {insights.ideasToSteal.length > 0 && (
           <div className={s.insightBlock}>
-            <h5 className={s.insightBlockTitle}>🔥 Ideas to Steal</h5>
+            <h5 className={s.insightBlockTitle}>Ideas to Steal</h5>
             <ul className={s.insightList}>
               {insights.ideasToSteal.map((item, i) => (
                 <li key={i}>{item}</li>
@@ -303,7 +357,7 @@ function InsightsSection({
 
         {insights.formatsToTry.length > 0 && (
           <div className={s.insightBlock}>
-            <h5 className={s.insightBlockTitle}>🎬 Formats to Try</h5>
+            <h5 className={s.insightBlockTitle}>Formats to Try</h5>
             <ul className={s.insightList}>
               {insights.formatsToTry.map((item, i) => (
                 <li key={i}>{item}</li>

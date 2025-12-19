@@ -132,7 +132,18 @@ export default function PlanCard({
     return (
       <div className={s.card}>
         <div className={s.lockedState}>
-          <div className={s.lockedIcon}>💡</div>
+          <div className={s.lockedIcon}>
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </div>
           <h3 className={s.lockedTitle}>Unlock the Idea Engine</h3>
           <p className={s.lockedDesc}>
             Get AI-generated video ideas with titles, hooks, angles, and
@@ -151,7 +162,18 @@ export default function PlanCard({
     return (
       <div className={s.card}>
         <div className={s.emptyState}>
-          <div className={s.emptyIcon}>🎬</div>
+          <div className={s.emptyIcon}>
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </div>
           <h3 className={s.emptyTitle}>Your Idea Engine</h3>
           <p className={s.emptyDesc}>
             Generate multiple video topic ideas with titles, hooks, angles, and
@@ -231,7 +253,18 @@ export default function PlanCard({
     return (
       <div className={s.card}>
         <div className={s.emptyState}>
-          <div className={s.emptyIcon}>🎬</div>
+          <div className={s.emptyIcon}>
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </div>
           <h3 className={s.emptyTitle}>Your Idea Engine</h3>
           <p className={s.emptyDesc}>
             Generate multiple video topic ideas with titles, hooks, angles, and
@@ -334,7 +367,7 @@ export default function PlanCard({
             {/* Titles */}
             <AccordionSection
               title="Title Options"
-              icon="📝"
+              icon=""
               count={selectedTopic.titles.length}
               isOpen={expandedSection === "titles"}
               onToggle={() =>
@@ -373,7 +406,7 @@ export default function PlanCard({
             {/* Hooks */}
             <AccordionSection
               title="Opening Hooks"
-              icon="🪝"
+              icon=""
               count={selectedTopic.hooks.length}
               isOpen={expandedSection === "hooks"}
               onToggle={() =>
@@ -399,7 +432,7 @@ export default function PlanCard({
             {/* Angles */}
             <AccordionSection
               title="Angles to Explore"
-              icon="🎯"
+              icon=""
               count={selectedTopic.angles.length}
               isOpen={expandedSection === "angles"}
               onToggle={() =>
@@ -420,7 +453,7 @@ export default function PlanCard({
             {/* Keywords */}
             <AccordionSection
               title="Keywords & Tags"
-              icon="🏷️"
+              icon=""
               count={selectedTopic.keywords.length}
               isOpen={expandedSection === "keywords"}
               onToggle={() =>
@@ -458,9 +491,12 @@ export default function PlanCard({
             </AccordionSection>
 
             {/* Thumbnail */}
+            {/* TODO: Future enhancement - autogenerate thumbnails using AI.
+                For now, we show references from similar winners, overlay text suggestions,
+                and composition guidance. See README for planned enhancements. */}
             <AccordionSection
               title="Thumbnail Recipe"
-              icon="🖼️"
+              icon=""
               isOpen={expandedSection === "thumbnail"}
               onToggle={() =>
                 setExpandedSection(
@@ -590,7 +626,7 @@ function AccordionSection({
   return (
     <div className={`${s.accordion} ${isOpen ? s.accordionOpen : ""}`}>
       <button className={s.accordionHeader} onClick={onToggle} type="button">
-        <span className={s.accordionIcon}>{icon}</span>
+        {icon && <span className={s.accordionIcon}>{icon}</span>}
         <span className={s.accordionTitle}>{title}</span>
         {count !== undefined && (
           <span className={s.accordionCount}>{count}</span>
@@ -609,7 +645,7 @@ function NicheInsightsSection({
 }) {
   return (
     <section className={s.insightsSection}>
-      <h3 className={s.insightsTitle}>📊 Niche Insights</h3>
+      <h3 className={s.insightsTitle}>Niche Insights</h3>
 
       <div className={s.insightsGrid}>
         {insights.whatIsWorkingNow.length > 0 && (

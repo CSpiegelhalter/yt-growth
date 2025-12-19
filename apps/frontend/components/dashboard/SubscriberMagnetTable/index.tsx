@@ -75,9 +75,9 @@ export default function SubscriberMagnetTable({
       <div className={s.card}>
         <div className={s.header}>
           <div>
-            <h3 className={s.title}>Subscriber Magnets</h3>
+            <h3 className={s.title}>Subscriber Drivers</h3>
             <p className={s.subtitle}>
-              Videos that convert views → subscribers unusually well.
+              These videos turn viewers into subscribers at a higher rate than your average.
             </p>
           </div>
         </div>
@@ -107,7 +107,11 @@ export default function SubscriberMagnetTable({
     return (
       <div className={s.card}>
         <div className={s.lockedState}>
-          <div className={s.lockedIcon}>🔒</div>
+          <div className={s.lockedIcon}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+          </div>
           <h3 className={s.lockedTitle}>Unlock Subscriber Insights</h3>
           <p className={s.lockedDesc}>
             Discover which videos convert viewers into subscribers and learn
@@ -126,7 +130,11 @@ export default function SubscriberMagnetTable({
     return (
       <div className={s.card}>
         <div className={s.emptyState}>
-          <div className={s.emptyIcon}>📊</div>
+          <div className={s.emptyIcon}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
           <h3 className={s.emptyTitle}>No Subscriber Data Yet</h3>
           <p className={s.emptyDesc}>
             Sync your channel to see which videos are best at converting viewers
@@ -147,11 +155,11 @@ export default function SubscriberMagnetTable({
       <div className={s.header}>
         <div className={s.headerText}>
           <div className={s.headerTop}>
-            <h3 className={s.title}>Subscriber Magnets</h3>
+            <h3 className={s.title}>Subscriber Drivers</h3>
             {isDemo && <span className={s.demoBadge}>Demo Data</span>}
           </div>
           <p className={s.subtitle}>
-            Videos that convert views → subscribers unusually well.
+            These videos turn viewers into subscribers at a higher rate than your average.
           </p>
         </div>
         <div className={s.controls}>
@@ -224,7 +232,7 @@ export default function SubscriberMagnetTable({
       {/* Fallback to markdown if no JSON */}
       {!analysis && patternAnalysis?.analysisMarkdownFallback && (
         <div className={s.analysisFallback}>
-          <h4 className={s.sectionTitle}>📊 Pattern Analysis</h4>
+          <h4 className={s.sectionTitle}>Pattern Analysis</h4>
           <div className={s.markdownContent}>
             {patternAnalysis.analysisMarkdownFallback
               .split("\n")
@@ -268,7 +276,11 @@ function VideoCard({
             loading="lazy"
           />
         ) : (
-          <div className={s.thumbnailPlaceholder}>📹</div>
+          <div className={s.thumbnailPlaceholder}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+          </div>
         )}
         <div className={s.videoInfo}>
           <h4 className={s.videoTitle}>{video.title}</h4>
@@ -329,7 +341,7 @@ function VideoCard({
             <div className={s.insightSection}>
               {(video.insight.whyItConverts?.length ?? 0) > 0 && (
                 <div className={s.insightBlock}>
-                  <h5 className={s.insightTitle}>💡 Why it converts</h5>
+                  <h5 className={s.insightTitle}>Why it converts</h5>
                   <ul className={s.insightList}>
                     {video.insight.whyItConverts?.map((item, i) => (
                       <li key={i}>{item}</li>
@@ -339,7 +351,7 @@ function VideoCard({
               )}
               {(video.insight.stealThis?.length ?? 0) > 0 && (
                 <div className={s.insightBlock}>
-                  <h5 className={s.insightTitle}>🎯 Steal this pattern</h5>
+                  <h5 className={s.insightTitle}>Steal this pattern</h5>
                   <ul className={s.insightList}>
                     {video.insight.stealThis?.map((item, i) => (
                       <li key={i}>{item}</li>
@@ -363,7 +375,7 @@ function VideoCard({
               )}
               {(video.insight.hookIdea?.length ?? 0) > 0 && (
                 <div className={s.insightBlock}>
-                  <h5 className={s.insightTitle}>🪝 Hook ideas</h5>
+                  <h5 className={s.insightTitle}>Hook ideas</h5>
                   <ul className={s.insightList}>
                     {video.insight.hookIdea?.map((item, i) => (
                       <li key={i}>{item}</li>
@@ -432,7 +444,7 @@ function PatternAnalysisSection({
   return (
     <div className={s.analysisSection}>
       <div className={s.analysisSectionHeader}>
-        <h4 className={s.sectionTitle}>📊 Pattern Analysis</h4>
+        <h4 className={s.sectionTitle}>Pattern Analysis</h4>
         <button
           className={s.copyBtn}
           onClick={() => onCopy(allInsights, "all-insights")}
@@ -448,26 +460,23 @@ function PatternAnalysisSection({
         <AnalysisBlock
           title="What these videos have in common"
           items={commonPatterns}
-          icon="🔗"
         />
         <AnalysisBlock
           title="Winning CTA patterns"
           items={ctaPatterns}
-          icon="📢"
           asChips
         />
         <AnalysisBlock
           title="Topic formats that convert"
           items={formatPatterns}
-          icon="🎬"
           asChips
         />
-        <AnalysisBlock title="Try next" items={nextExperiments} icon="🚀" />
+        <AnalysisBlock title="Try next" items={nextExperiments} />
       </div>
 
       {hooksToTry.length > 0 && (
         <div className={s.hooksSection}>
-          <h5 className={s.hooksTitle}>🪝 Hooks to try</h5>
+          <h5 className={s.hooksTitle}>Hooks to try</h5>
           <div className={s.hooksList}>
             {hooksToTry.map((hook, i) => (
               <div key={i} className={s.hookCard}>
@@ -492,21 +501,17 @@ function PatternAnalysisSection({
 function AnalysisBlock({
   title,
   items,
-  icon,
   asChips = false,
 }: {
   title: string;
   items: string[];
-  icon: string;
   asChips?: boolean;
 }) {
   if (items.length === 0) return null;
 
   return (
     <div className={s.analysisBlock}>
-      <h5 className={s.analysisBlockTitle}>
-        <span className={s.blockIcon}>{icon}</span> {title}
-      </h5>
+      <h5 className={s.analysisBlockTitle}>{title}</h5>
       {asChips ? (
         <div className={s.chipList}>
           {items.map((item, i) => (

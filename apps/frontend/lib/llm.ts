@@ -278,7 +278,7 @@ function generatePlanMarkdown(plan: PlanOutputJson): string {
   let md = "";
 
   for (const topic of plan.topics) {
-    md += `## 🎯 ${topic.title}\n`;
+    md += `## ${topic.title}\n`;
     md += `${topic.why}\n\n`;
     md += `**Confidence:** ${topic.confidence}\n\n`;
 
@@ -317,7 +317,7 @@ function generatePlanMarkdown(plan: PlanOutputJson): string {
   }
 
   if (plan.nicheInsights) {
-    md += `## 📊 Niche Insights\n\n`;
+    md += `## Niche Insights\n\n`;
 
     if (plan.nicheInsights.whatIsWorkingNow.length > 0) {
       md += `### What's Working Now\n`;
@@ -585,6 +585,397 @@ Analyze what's working for these similar channels.`;
     whatTheyreDoing: ["Unable to generate insights"],
     ideasToSteal: [],
     formatsToTry: [],
+  };
+}
+
+/**
+ * Generate deep analysis for a trending video.
+ */
+export async function generateTrendingVideoAnalysis(
+  video: {
+    videoId: string;
+    title: string;
+    channelTitle: string;
+    viewCount: number;
+    viewsPerDay: number;
+  },
+  userChannelTitle: string
+): Promise<{
+  whatItsAbout: string;
+  whyTrending: string[];
+  whatTheyDidWell: string[];
+  themesToRemix: Array<{ theme: string; why: string }>;
+  titlePatterns: string[];
+  hookPatterns: string[];
+  thumbnailPatterns: string[];
+  remixIdeasForYou: Array<{
+    title: string;
+    hook: string;
+    overlayText: string;
+    angle: string;
+  }>;
+}> {
+  const systemPrompt = `You are a YouTube growth strategist. Analyze a trending video and provide actionable insights.
+
+Return ONLY valid JSON:
+{
+  "whatItsAbout": "One sentence summary of the video content",
+  "whyTrending": ["Reason 1", "Reason 2", "Reason 3"],
+  "whatTheyDidWell": ["Thing 1", "Thing 2", "Thing 3"],
+  "themesToRemix": [
+    { "theme": "Theme name", "why": "Why this resonates" }
+  ],
+  "titlePatterns": ["Pattern 1", "Pattern 2"],
+  "hookPatterns": ["Hook pattern 1", "Hook pattern 2"],
+  "thumbnailPatterns": ["Thumbnail pattern 1", "Thumbnail pattern 2"],
+  "remixIdeasForYou": [
+    {
+      "title": "Your remix title idea",
+      "hook": "Opening hook for the video",
+      "overlayText": "3-4 words for thumbnail",
+      "angle": "Brief description of the angle"
+    }
+  ]
+}
+
+Keep insights specific and actionable. 3-5 items per array.`;
+
+  const userPrompt = `Analyze this trending video for "${userChannelTitle}":
+
+Title: "${video.title}"
+Channel: ${video.channelTitle}
+Views: ${video.viewCount.toLocaleString()}
+Views/day: ${video.viewsPerDay.toLocaleString()}
+
+Provide:
+1. What it's about (1 sentence)
+2. Why it's trending (specific reasons)
+3. What they did well
+4. Themes to remix for my channel
+5. Title/hook/thumbnail patterns
+6. 3-4 specific remix ideas for "${userChannelTitle}"`;
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      { temperature: 0.6, maxTokens: 1500 }
+    );
+
+    const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch (err) {
+    console.warn("Failed to generate trending video analysis:", err);
+  }
+
+  // Default fallback
+  return {
+    whatItsAbout: `A video about "${video.title.slice(0, 50)}..."`,
+    whyTrending: [
+      "Strong initial hook captures attention",
+      "Title creates immediate curiosity",
+      "High engagement driving algorithm promotion",
+    ],
+    whatTheyDidWell: [
+      "Clear value proposition",
+      "Good pacing and structure",
+      "Strong call to action",
+    ],
+    themesToRemix: [
+      { theme: "Personal take", why: "Adds authenticity" },
+      { theme: "Contrarian view", why: "Drives engagement" },
+    ],
+    titlePatterns: ["Creates curiosity gap", "Specific numbers or outcomes"],
+    hookPatterns: ["Bold opening statement", "Shows result first"],
+    thumbnailPatterns: ["High contrast", "Clear focal point"],
+    remixIdeasForYou: [
+      {
+        title: `My Take on ${video.title.slice(0, 30)}`,
+        hook: "What if I told you there's another way?",
+        overlayText: "MY VERSION",
+        angle: "Personal experience and perspective",
+      },
+    ],
+  };
+}
+
+/**
+ * Analyze video comments for sentiment, themes, and hook inspiration.
+ * Uses LLM to extract structured insights from viewer comments.
+ */
+export async function analyzeVideoComments(
+  comments: Array<{
+    text: string;
+    likeCount: number;
+    authorName: string;
+  }>,
+  videoTitle: string
+): Promise<{
+  topComments: Array<{
+    text: string;
+    likeCount: number;
+    authorName: string;
+    publishedAt: string;
+  }>;
+  sentiment: { positive: number; neutral: number; negative: number };
+  themes: Array<{ theme: string; count: number; examples: string[] }>;
+  viewerLoved: string[];
+  viewerAskedFor: string[];
+  hookInspiration: string[];
+}> {
+  const systemPrompt = `You are analyzing YouTube video comments to extract viewer insights.
+
+Return ONLY valid JSON with this structure:
+{
+  "sentiment": { "positive": 70, "neutral": 20, "negative": 10 },
+  "themes": [
+    { "theme": "Theme name", "count": 15, "examples": ["quote 1", "quote 2"] }
+  ],
+  "viewerLoved": ["What viewers appreciated 1", "What viewers appreciated 2"],
+  "viewerAskedFor": ["Request from viewers 1", "Follow-up topic 2"],
+  "hookInspiration": ["Short quote that could be used as hook", "Another quote under 25 words"]
+}
+
+Rules:
+- Sentiment percentages must add up to 100
+- Extract 3-5 themes with real counts and short quote examples
+- 3-5 items for viewerLoved and viewerAskedFor
+- 3-5 hookInspiration quotes (under 25 words each, from actual comments)`;
+
+  const commentTexts = comments
+    .slice(0, 30)
+    .map((c) => `[${c.likeCount} likes] ${c.text}`)
+    .join("\n");
+
+  const userPrompt = `Analyze these comments for the video "${videoTitle}":
+
+${commentTexts}
+
+Extract sentiment, themes, what viewers loved, what they asked for, and hook-worthy quotes.`;
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      { temperature: 0.5, maxTokens: 1000 }
+    );
+
+    const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        topComments: [], // Filled in by caller
+        sentiment: parsed.sentiment ?? {
+          positive: 50,
+          neutral: 30,
+          negative: 20,
+        },
+        themes: parsed.themes ?? [],
+        viewerLoved: parsed.viewerLoved ?? [],
+        viewerAskedFor: parsed.viewerAskedFor ?? [],
+        hookInspiration: parsed.hookInspiration ?? [],
+      };
+    }
+  } catch (err) {
+    console.warn("Failed to analyze video comments:", err);
+  }
+
+  // Fallback
+  return {
+    topComments: [],
+    sentiment: { positive: 50, neutral: 30, negative: 20 },
+    themes: [],
+    viewerLoved: [],
+    viewerAskedFor: [],
+    hookInspiration: [],
+  };
+}
+
+/**
+ * Generate deep analysis for a competitor video.
+ * Focus on actionable insights: what's working and what to steal.
+ * Optionally incorporates comment analysis for richer insights.
+ */
+export async function generateCompetitorVideoAnalysis(
+  video: {
+    videoId: string;
+    title: string;
+    channelTitle: string;
+    stats: { viewCount: number; likeCount?: number; commentCount?: number };
+    derived: {
+      viewsPerDay: number;
+      likeRate?: number;
+      commentRate?: number;
+      engagementPerView?: number;
+    };
+  },
+  userChannelTitle: string,
+  commentsAnalysis?: {
+    sentiment?: { positive: number; neutral: number; negative: number };
+    themes?: Array<{ theme: string; count: number; examples: string[] }>;
+    viewerLoved?: string[];
+    viewerAskedFor?: string[];
+  }
+): Promise<{
+  whatItsAbout: string;
+  whyItsWorking: string[];
+  themesToRemix: Array<{ theme: string; why: string }>;
+  titlePatterns: string[];
+  packagingNotes: string[];
+  remixIdeasForYou: Array<{
+    title: string;
+    hook: string;
+    overlayText: string;
+    angle: string;
+  }>;
+}> {
+  const systemPrompt = `You are an expert YouTube growth strategist analyzing competitor videos.
+Your goal is to extract actionable insights from a competitor's successful video.
+
+Return ONLY valid JSON with this structure:
+{
+  "whatItsAbout": "One clear sentence describing what this video delivers to viewers",
+  "whyItsWorking": ["Specific reason 1", "Specific reason 2", "Specific reason 3", "..."],
+  "themesToRemix": [
+    { "theme": "Theme name", "why": "Why this theme resonates with viewers" }
+  ],
+  "titlePatterns": ["Pattern 1 observed in this title", "Pattern 2", "..."],
+  "packagingNotes": ["Note about thumbnail/title combo", "Emotional trigger used", "..."],
+  "remixIdeasForYou": [
+    {
+      "title": "Specific title idea for the user's channel",
+      "hook": "Opening line for the video",
+      "overlayText": "3-4 word thumbnail text",
+      "angle": "Brief description of the unique angle"
+    }
+  ]
+}
+
+Rules:
+- Keep insights specific and actionable, not generic
+- 4-6 items for whyItsWorking
+- 2-3 items for themesToRemix
+- 2-3 items for titlePatterns and packagingNotes
+- 3-4 remix ideas tailored for the user's channel
+- No markdown formatting within JSON values`;
+
+  // Build comments context if available
+  let commentsContext = "";
+  if (commentsAnalysis) {
+    if (commentsAnalysis.sentiment) {
+      commentsContext += `\nComment sentiment: ${commentsAnalysis.sentiment.positive}% positive, ${commentsAnalysis.sentiment.neutral}% neutral, ${commentsAnalysis.sentiment.negative}% negative`;
+    }
+    if (commentsAnalysis.themes && commentsAnalysis.themes.length > 0) {
+      commentsContext += `\nTop comment themes: ${commentsAnalysis.themes
+        .map((t) => t.theme)
+        .join(", ")}`;
+    }
+    if (
+      commentsAnalysis.viewerLoved &&
+      commentsAnalysis.viewerLoved.length > 0
+    ) {
+      commentsContext += `\nWhat viewers loved: ${commentsAnalysis.viewerLoved
+        .slice(0, 3)
+        .join("; ")}`;
+    }
+    if (
+      commentsAnalysis.viewerAskedFor &&
+      commentsAnalysis.viewerAskedFor.length > 0
+    ) {
+      commentsContext += `\nViewers asked for: ${commentsAnalysis.viewerAskedFor
+        .slice(0, 3)
+        .join("; ")}`;
+    }
+  }
+
+  const userPrompt = `Analyze this competitor video for "${userChannelTitle}":
+
+Title: "${video.title}"
+Channel: ${video.channelTitle}
+Views: ${video.stats.viewCount.toLocaleString()}
+Views/day: ${video.derived.viewsPerDay.toLocaleString()}
+${
+  video.stats.likeCount
+    ? `Likes: ${video.stats.likeCount.toLocaleString()}`
+    : ""
+}
+${
+  video.stats.commentCount
+    ? `Comments: ${video.stats.commentCount.toLocaleString()}`
+    : ""
+}
+${
+  video.derived.engagementPerView
+    ? `Engagement rate: ${(video.derived.engagementPerView * 100).toFixed(2)}%`
+    : ""
+}${commentsContext}
+
+Extract:
+1. What the video is about (1 sentence)
+2. Specific reasons why it's working (incorporate comment insights if available)
+3. Themes that could be remixed for my channel
+4. Title patterns to learn from
+5. Packaging/presentation notes
+6. 3-4 specific remix ideas for "${userChannelTitle}"`;
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      { temperature: 0.6, maxTokens: 1500 }
+    );
+
+    const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch (err) {
+    console.warn("Failed to generate competitor video analysis:", err);
+  }
+
+  // Default fallback
+  return {
+    whatItsAbout: `A video about "${video.title.slice(0, 50)}..."`,
+    whyItsWorking: [
+      "Strong initial hook captures attention in the first few seconds",
+      "Title creates clear curiosity gap without revealing the answer",
+      "Specific outcome or transformation promised",
+      "High engagement indicates strong audience resonance",
+    ],
+    themesToRemix: [
+      {
+        theme: "Personal take",
+        why: "Your unique experience adds authenticity",
+      },
+      {
+        theme: "Contrarian view",
+        why: "Challenging the mainstream drives engagement",
+      },
+    ],
+    titlePatterns: [
+      "Uses specific, believable numbers",
+      "Creates urgency or FOMO",
+    ],
+    packagingNotes: [
+      "Clear value proposition visible at a glance",
+      "Likely uses emotional triggers in thumbnail",
+    ],
+    remixIdeasForYou: [
+      {
+        title: `My Version of ${video.title.slice(0, 30)}`,
+        hook: "What if there's an even better approach nobody talks about?",
+        overlayText: "MY WAY",
+        angle: "Your personal experience and unique results",
+      },
+    ],
   };
 }
 
@@ -1087,6 +1478,114 @@ Place your subscribe CTA immediately after delivering the first major value mome
         ],
       }),
       tokensUsed: 150,
+      model: "gpt-4o-mini-test",
+    };
+  }
+
+  if (
+    lastMessage.includes("competitor video analysis") ||
+    lastMessage.includes("whyItsWorking")
+  ) {
+    return {
+      content: JSON.stringify({
+        whatItsAbout:
+          "A creator shares their strategy for doubling channel growth through focused, high-quality content instead of frequent uploads.",
+        whyItsWorking: [
+          "Addresses the universal quality vs quantity debate that creators struggle with",
+          "Specific, believable metric (doubled growth) creates trust",
+          "Timely topic during creator burnout discussions",
+          "Strong curiosity gap in title without clickbait",
+          "High comment engagement shows topic resonance",
+        ],
+        themesToRemix: [
+          {
+            theme: "Quality over quantity",
+            why: "Gives creators permission to slow down without guilt",
+          },
+          {
+            theme: "Data-driven approach",
+            why: "Appeals to analytical creators wanting proof",
+          },
+          {
+            theme: "Sustainable growth",
+            why: "Long-term thinking resonates with serious creators",
+          },
+        ],
+        titlePatterns: [
+          "'This One Change' creates focus on a single actionable insight",
+          "'DOUBLED' is specific and believable, not hyperbolic",
+          "Personal pronoun 'My' adds authenticity",
+        ],
+        packagingNotes: [
+          "Thumbnail likely shows before/after contrast",
+          "Creator face with surprised/realized expression",
+          "Numbers visible for social proof",
+        ],
+        remixIdeasForYou: [
+          {
+            title: "I Tried Posting Less for 30 Days (Here's What Happened)",
+            hook: "I was posting 5 times a week and burning out. Then I tried something counterintuitive...",
+            overlayText: "I STOPPED",
+            angle:
+              "Personal experiment documenting your shift to quality over quantity",
+          },
+          {
+            title: "The Upload Schedule That Actually Works in 2024",
+            hook: "Forget everything you've heard about consistency. Here's what the data shows...",
+            overlayText: "NEW STRATEGY",
+            angle: "Data-backed breakdown of optimal posting frequency",
+          },
+        ],
+      }),
+      tokensUsed: 350,
+      model: "gpt-4o-mini-test",
+    };
+  }
+
+  if (
+    lastMessage.includes("comment analysis") ||
+    lastMessage.includes("sentiment")
+  ) {
+    return {
+      content: JSON.stringify({
+        sentiment: { positive: 72, neutral: 22, negative: 6 },
+        themes: [
+          {
+            theme: "Quality over quantity",
+            count: 45,
+            examples: [
+              "finally permission to slow down",
+              "quality matters more",
+            ],
+          },
+          {
+            theme: "Personal results",
+            count: 38,
+            examples: ["tried this and it worked", "my retention went up"],
+          },
+          {
+            theme: "Burnout relief",
+            count: 24,
+            examples: ["was burning out", "sustainable approach"],
+          },
+        ],
+        viewerLoved: [
+          "Permission to post less without guilt",
+          "Specific data and proof, not just theory",
+          "Relatable burnout acknowledgment",
+        ],
+        viewerAskedFor: [
+          "How to decide which video topics to prioritize",
+          "Case studies for smaller channels",
+          "Deep dive on retention optimization",
+        ],
+        hookInspiration: [
+          "This completely changed my approach",
+          "The data was mind-blowing",
+          "Finally someone said what we all needed to hear",
+        ],
+      }),
+      tokensUsed: 200,
       model: "gpt-4o-mini-test",
     };
   }

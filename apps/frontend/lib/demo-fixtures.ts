@@ -10,8 +10,9 @@
 import retentionFixture from "@/test/fixtures/retention.json";
 import subscriberAuditFixture from "@/test/fixtures/subscriber-audit.json";
 import similarChannelsFixture from "@/test/fixtures/similar-channels.json";
+import ideaBoardFixture from "@/test/fixtures/idea-board.json";
 
-export type DemoDataType = "retention" | "subscriber-audit" | "similar-channels";
+export type DemoDataType = "retention" | "subscriber-audit" | "similar-channels" | "idea-board";
 
 /**
  * Check if the app is running in demo/test mode
@@ -31,6 +32,7 @@ export function getDemoData(type: DemoDataType): unknown {
     "retention": retentionFixture,
     "subscriber-audit": subscriberAuditFixture,
     "similar-channels": similarChannelsFixture,
+    "idea-board": ideaBoardFixture,
   };
   return fixtures[type] ?? null;
 }

@@ -1,78 +1,94 @@
-.h2 {
-    font-size: 20px;
-    margin: 16px 0;
+/* ================================
+   Channel Section - Mobile First
+   ================================ */
+
+.section {
+  margin-bottom: 24px;
 }
 
-.h3 {
-    margin: 0 0 6px 0;
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
-.subtle {
-    color: #586174;
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
 }
 
-.rowBetween {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6366f1;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 40px;
 }
 
-.card {
-    border: 1px solid #e7eaf0;
-    border-radius: 12px;
-    padding: 14px;
-    background: #fff;
+.addBtn:hover {
+  background: #f8fafc;
+  border-color: #6366f1;
 }
 
-.cardGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 12px;
+.channelGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
 
-.empty {
-    border: 1px dashed #cbd5e1;
-    border-radius: 12px;
-    padding: 24px;
-    background: #fafafa;
-    text-align: center;
+@media (min-width: 768px) {
+  .channelGrid {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  }
 }
 
-.btn {
-    appearance: none;
-    border: 1px solid #ddd;
-    background: #fff;
-    padding: 8px 12px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: transform .06s ease, box-shadow .12s ease;
+/* Loading State */
+.loadingCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
 }
 
-.btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, .06);
+.loadingAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
-.btnPrimary {
-    background: #111;
-    color: #fff;
-    border-color: #111;
+.loadingContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.btnSecondary {
-    background: #f5f5f5;
+.loadingLine {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
-.btnDisabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.btnLink {
-    background: transparent;
-    border: none;
-    color: #2563eb;
-    padding: 0;
-    text-decoration: none;
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

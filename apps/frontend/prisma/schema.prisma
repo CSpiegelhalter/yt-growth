@@ -170,3 +170,59 @@ model OAuthState {
   expiresAt DateTime @db.Timestamptz(6)
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_oauthstate_user")
 }
+
+// ============================================
+// COMPETITOR VIDEO TRACKING (public stats over time)
+// ============================================
+
+model CompetitorVideo {
+  id              String                     @id @default(uuid()) @db.Uuid
+  videoId         String                     @unique @db.VarChar(32) // YouTube video ID
+  channelId       String                     @db.VarChar(64)         // YouTube channel ID
+  channelTitle    String                     @db.VarChar(255)
+  title           String                     @db.VarChar(512)
+  description     String?                    @db.Text
+  publishedAt     DateTime                   @db.Timestamptz(6)
+  durationSec     Int?
+  thumbnailUrl    String?
+  tags            String[]                   @default([])
+  categoryId      String?                    @db.VarChar(32)
+  topicDetails    Json?                      // topicDetails from YouTube API
+  lastFetchedAt   DateTime                   @default(now()) @db.Timestamptz(6)
+  createdAt       DateTime                   @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime                   @default(now()) @updatedAt @db.Timestamptz(6)
+  Snapshots       CompetitorVideoSnapshot[]
+  CommentAnalysis CompetitorVideoComments?
+
+  @@index([channelId], map: "idx_competitor_video_channel")
+  @@index([publishedAt], map: "idx_competitor_video_published")
+  @@index([lastFetchedAt], map: "idx_competitor_video_last_fetched")
+}
+
+model CompetitorVideoSnapshot {
+  id           String          @id @default(uuid()) @db.Uuid
+  videoId      String          @db.VarChar(32) // YouTube video ID
+  capturedAt   DateTime        @default(now()) @db.Timestamptz(6)
+  viewCount    Int
+  likeCount    Int?
+  commentCount Int?
+  Video        CompetitorVideo @relation(fields: [videoId], references: [videoId], onDelete: Cascade)
+
+  @@index([videoId, capturedAt(sort: Desc)], map: "idx_competitor_snapshot_video_time")
+  @@index([capturedAt], map: "idx_competitor_snapshot_captured")
+}
+
+model CompetitorVideoComments {
+  id              String          @id @default(uuid()) @db.Uuid
+  videoId         String          @unique @db.VarChar(32) // YouTube video ID
+  capturedAt      DateTime        @default(now()) @db.Timestamptz(6)
+  topCommentsJson Json?           // Array of top comments for reference
+  analysisJson    Json?           // LLM analysis result: sentiment, themes, quotes
+  sentimentPos    Float?          // Percentage positive
+  sentimentNeu    Float?          // Percentage neutral
+  sentimentNeg    Float?          // Percentage negative
+  themesJson      Json?           // Array of extracted themes
+  Video           CompetitorVideo @relation(fields: [videoId], references: [videoId], onDelete: Cascade)
+
+  @@index([capturedAt], map: "idx_competitor_comments_captured")
+}

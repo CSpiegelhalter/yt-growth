@@ -218,14 +218,29 @@
   margin-bottom: var(--space-lg, 24px);
 }
 
-.ctaSection .btnPrimary {
+.ctaSection .btnPrimary,
+.ctaSection :global(.btnPrimary) {
   background: white;
   color: #1e3a5f;
 }
 
-.ctaSection .btnPrimary:hover {
+.ctaSection .btnPrimary:hover,
+.ctaSection :global(.btnPrimary):hover {
   background: #f8fafc;
   box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
+}
+
+.ctaSection .btnSecondary,
+.ctaSection :global(.btnSecondary) {
+  background: transparent;
+  color: white;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.ctaSection .btnSecondary:hover,
+.ctaSection :global(.btnSecondary):hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: white;
 }
 
 /* Footer */

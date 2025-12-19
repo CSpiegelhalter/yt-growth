@@ -84,6 +84,12 @@ export const RATE_LIMITS = {
   retentionFetch: { limit: 20, windowSec: 3600 },
   // Checkout: 3 per minute per user
   checkout: { limit: 3, windowSec: 60 },
+  // Competitor feed: 30 per hour per user
+  competitorFeed: { limit: 30, windowSec: 3600 },
+  // Competitor video detail: 60 per hour per user
+  competitorDetail: { limit: 60, windowSec: 3600 },
+  // Competitor comments fetch: 20 per hour per user
+  competitorComments: { limit: 20, windowSec: 3600 },
 } as const;
 
 /**

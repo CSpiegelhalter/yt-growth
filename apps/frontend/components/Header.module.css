@@ -24,7 +24,10 @@
 }
 
 .logoIcon {
-  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6366f1;
 }
 
 .logoText {
@@ -40,11 +43,11 @@
 /* Desktop Navigation */
 .desktopNav {
   display: none;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 900px) {
   .desktopNav {
     display: flex;
   }
@@ -63,6 +66,113 @@
 .navLink:hover {
   background: #f8fafc;
   color: var(--color-text, #1e293b);
+}
+
+.navLinkActive {
+  background: #eef2ff;
+  color: #6366f1;
+  font-weight: 600;
+}
+
+/* Right Section */
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mobile Nav Toggle */
+.mobileNavToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mobileNavToggle:hover {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+@media (min-width: 900px) {
+  .mobileNavToggle {
+    display: none;
+  }
+}
+
+/* Mobile Navigation */
+.mobileBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 98;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.mobileNav {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+  z-index: 99;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mobileNavLink {
+  display: block;
+  padding: 14px 16px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #1e293b;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: all 0.15s;
+}
+
+.mobileNavLink:hover {
+  background: #f8fafc;
+}
+
+.mobileNavLinkActive {
+  background: #eef2ff;
+  color: #6366f1;
+  font-weight: 600;
+}
+
+@media (min-width: 900px) {
+  .mobileNav,
+  .mobileBackdrop {
+    display: none;
+  }
 }
 
 /* Auth Section */
@@ -217,11 +327,6 @@
   background: #f8fafc;
 }
 
-.dropdownItemIcon {
-  font-size: 1rem;
-  opacity: 0.8;
-}
-
 .dropdownDivider {
   height: 1px;
   background: var(--color-border, #e2e8f0);
@@ -255,3 +360,159 @@
   }
 }
 
+/* ================================
+   Channel Selector
+   ================================ */
+
+.channelSelector {
+  position: relative;
+  margin-left: 8px;
+}
+
+@media (min-width: 640px) {
+  .channelSelector {
+    margin-left: 16px;
+  }
+}
+
+.channelBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 40px;
+}
+
+.channelBtn:hover {
+  border-color: #6366f1;
+  background: #f8fafc;
+}
+
+.channelThumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.channelThumbPlaceholder {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+
+.channelName {
+  display: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 768px) {
+  .channelName {
+    display: block;
+  }
+}
+
+.chevronUp {
+  transform: rotate(180deg);
+}
+
+.channelDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 240px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  padding: 8px;
+  animation: slideDown 0.15s ease-out;
+}
+
+.channelOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: left;
+}
+
+.channelOption:hover {
+  background: #f8fafc;
+}
+
+.channelOptionActive {
+  background: #eef2ff;
+}
+
+.channelOptionThumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.channelOptionThumbPlaceholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f1f5f9;
+}
+
+.channelOptionName {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkIcon {
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.addChannelLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6366f1;
+  text-decoration: none;
+  border-radius: 8px;
+  border-top: 1px solid #e2e8f0;
+  transition: background 0.15s;
+}
+
+.addChannelLink:hover {
+  background: #eef2ff;
+}

@@ -37,19 +37,19 @@ async function getUserInfo(accessToken: string) {
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
+  const baseUrl = process.env.NEXT_PUBLIC_WEB_URL || url.origin;
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  if (!code || !state)
-    return NextResponse.redirect(
-      new URL("/integrations/error?m=missing", process.env.NEXT_PUBLIC_WEB_URL)
-    );
+
+  if (!code || !state) {
+    return NextResponse.redirect(new URL("/integrations/error?m=missing", baseUrl));
+  }
 
   const row = await prisma.oAuthState.findUnique({ where: { state } });
   if (!row || row.expiresAt < new Date()) {
-    return NextResponse.redirect(
-      new URL("/integrations/error?m=state", process.env.NEXT_PUBLIC_WEB_URL)
-    );
+    return NextResponse.redirect(new URL("/integrations/error?m=state", baseUrl));
   }
+
   // consume state
   await prisma.oAuthState.delete({ where: { state } });
 
@@ -79,9 +79,8 @@ export async function GET(req: NextRequest) {
       tokenExpiresAt,
     },
   });
+
   await syncUserChannels(row.userId);
 
-  return NextResponse.redirect(
-    new URL("/channels", process.env.NEXT_PUBLIC_WEB_URL)
-  );
+  return NextResponse.redirect(new URL("/dashboard", baseUrl));
 }

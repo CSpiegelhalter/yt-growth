@@ -57,7 +57,7 @@ export default function BillingCTA({
       <div className={s.card}>
         <div className={s.header}>
           <div>
-            <h3 className={s.title}>✨ {plan.charAt(0).toUpperCase() + plan.slice(1)} Plan</h3>
+            <h3 className={s.title}>{plan.charAt(0).toUpperCase() + plan.slice(1)} Plan</h3>
             <span className={`${s.badge} ${s.badgeSuccess}`}>Active</span>
           </div>
         </div>
@@ -68,10 +68,10 @@ export default function BillingCTA({
             </p>
           )}
           <ul className={s.features}>
-            <li>✓ Unlimited plan generations</li>
-            <li>✓ Retention cliff analysis</li>
-            <li>✓ Subscriber magnet insights</li>
-            <li>✓ Up to 5 channels</li>
+            <li>Unlimited idea generations</li>
+            <li>Drop-off analysis</li>
+            <li>Subscriber driver insights</li>
+            <li>Up to 5 channels</li>
           </ul>
         </div>
         <button
@@ -89,16 +89,16 @@ export default function BillingCTA({
     <div className={s.cardHighlight}>
       <div className={s.header}>
         <div>
-          <h3 className={s.title}>🚀 Upgrade to Pro</h3>
+          <h3 className={s.title}>Upgrade to Pro</h3>
           <p className={s.subtitle}>Unlock all features and grow your channel faster</p>
         </div>
       </div>
       <ul className={s.features}>
-        <li>✓ AI-powered "Decide-for-Me" plans</li>
-        <li>✓ Retention cliff analysis with fixes</li>
-        <li>✓ Subscriber magnet insights</li>
-        <li>✓ Up to 5 connected channels</li>
-        <li>✓ Priority support</li>
+        <li>AI-powered Idea Engine</li>
+        <li>Drop-off analysis with fixes</li>
+        <li>Subscriber driver insights</li>
+        <li>Up to 5 connected channels</li>
+        <li>Priority support</li>
       </ul>
       <div className={s.pricing}>
         <span className={s.price}>$19</span>

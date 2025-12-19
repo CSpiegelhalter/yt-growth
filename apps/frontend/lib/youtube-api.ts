@@ -371,6 +371,84 @@ export async function fetchRecentChannelVideos(
   });
 }
 
+/**
+ * Fetch details for a single video by ID
+ */
+export async function fetchVideoDetails(
+  ga: GoogleAccount,
+  videoId: string
+): Promise<VideoDetails | null> {
+  // TEST_MODE: Return fixture data
+  if (process.env.TEST_MODE === "1") {
+    return getTestModeVideoDetails(videoId);
+  }
+
+  const url = new URL(`${YOUTUBE_DATA_API}/videos`);
+  url.searchParams.set("part", "snippet,contentDetails,statistics");
+  url.searchParams.set("id", videoId);
+
+  const data = await googleFetchWithAutoRefresh<{
+    items: Array<{
+      id: string;
+      snippet: {
+        title: string;
+        description: string;
+        publishedAt: string;
+        channelId: string;
+        channelTitle: string;
+        tags?: string[];
+        categoryId: string;
+        thumbnails: { maxres?: { url: string }; high?: { url: string }; default?: { url: string } };
+      };
+      contentDetails: { duration: string };
+      statistics: {
+        viewCount: string;
+        likeCount: string;
+        commentCount: string;
+      };
+    }>;
+  }>(ga, url.toString());
+
+  const item = data.items?.[0];
+  if (!item) return null;
+
+  return {
+    videoId: item.id,
+    title: item.snippet.title,
+    description: item.snippet.description,
+    publishedAt: item.snippet.publishedAt,
+    channelId: item.snippet.channelId,
+    channelTitle: item.snippet.channelTitle,
+    tags: item.snippet.tags ?? [],
+    category: item.snippet.categoryId,
+    thumbnailUrl:
+      item.snippet.thumbnails?.maxres?.url ??
+      item.snippet.thumbnails?.high?.url ??
+      item.snippet.thumbnails?.default?.url ??
+      null,
+    durationSec: parseDuration(item.contentDetails.duration),
+    viewCount: parseInt(item.statistics.viewCount ?? "0", 10),
+    likeCount: parseInt(item.statistics.likeCount ?? "0", 10),
+    commentCount: parseInt(item.statistics.commentCount ?? "0", 10),
+  };
+}
+
+export type VideoDetails = {
+  videoId: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  channelId: string;
+  channelTitle: string;
+  tags: string[];
+  category: string;
+  thumbnailUrl: string | null;
+  durationSec: number;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+};
+
 export type SimilarChannelResult = {
   channelId: string;
   channelTitle: string;
@@ -385,6 +463,7 @@ export type RecentVideoResult = {
   thumbnailUrl: string | null;
   views: number;
   viewsPerDay: number;
+  durationSec?: number;
 };
 
 // Types
@@ -611,4 +690,235 @@ function getTestModeRecentVideos(channelId: string): RecentVideoResult[] {
       viewsPerDay: 4667,
     },
   ];
+}
+
+function getTestModeVideoDetails(videoId: string): VideoDetails {
+  return {
+    videoId,
+    title: "This One Change DOUBLED My YouTube Growth",
+    description: "In this video, I share the single most important change I made to my content strategy that doubled my channel growth...",
+    publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    channelId: "demo-channel",
+    channelTitle: "Creator Academy",
+    tags: ["youtube growth", "content strategy", "creator tips", "upload schedule"],
+    category: "22", // Education
+    thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+    durationSec: 847,
+    viewCount: 245000,
+    likeCount: 11760,
+    commentCount: 735,
+  };
+}
+
+// ============================================
+// YOUTUBE COMMENTS API
+// ============================================
+
+export type YouTubeComment = {
+  commentId: string;
+  text: string;
+  likeCount: number;
+  authorName: string;
+  authorChannelId?: string;
+  publishedAt: string;
+  replyCount: number;
+};
+
+export type FetchCommentsResult = {
+  comments: YouTubeComment[];
+  commentsDisabled?: boolean;
+  error?: string;
+};
+
+/**
+ * Fetch top comments for a video using commentThreads.list
+ * This can fail if comments are disabled or quota is exceeded.
+ */
+export async function fetchVideoComments(
+  ga: GoogleAccount,
+  videoId: string,
+  maxResults: number = 50
+): Promise<FetchCommentsResult> {
+  // TEST_MODE: Return fixture data
+  if (process.env.TEST_MODE === "1") {
+    return getTestModeComments(videoId);
+  }
+
+  try {
+    const url = new URL(`${YOUTUBE_DATA_API}/commentThreads`);
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("videoId", videoId);
+    url.searchParams.set("order", "relevance"); // Top comments first
+    url.searchParams.set("maxResults", String(Math.min(maxResults, 100)));
+
+    const data = await googleFetchWithAutoRefresh<{
+      items?: Array<{
+        id: string;
+        snippet: {
+          topLevelComment: {
+            id: string;
+            snippet: {
+              textDisplay: string;
+              textOriginal: string;
+              likeCount: number;
+              authorDisplayName: string;
+              authorChannelId?: { value: string };
+              publishedAt: string;
+            };
+          };
+          totalReplyCount: number;
+        };
+      }>;
+      error?: {
+        code: number;
+        message: string;
+        errors?: Array<{ reason: string }>;
+      };
+    }>(ga, url.toString());
+
+    if (!data.items) {
+      // Check if comments are disabled
+      if (data.error?.errors?.some((e) => e.reason === "commentsDisabled")) {
+        return { comments: [], commentsDisabled: true };
+      }
+      return { comments: [], error: data.error?.message || "No comments found" };
+    }
+
+    const comments: YouTubeComment[] = data.items.map((item) => ({
+      commentId: item.snippet.topLevelComment.id,
+      text: item.snippet.topLevelComment.snippet.textOriginal,
+      likeCount: item.snippet.topLevelComment.snippet.likeCount,
+      authorName: item.snippet.topLevelComment.snippet.authorDisplayName,
+      authorChannelId: item.snippet.topLevelComment.snippet.authorChannelId?.value,
+      publishedAt: item.snippet.topLevelComment.snippet.publishedAt,
+      replyCount: item.snippet.totalReplyCount,
+    }));
+
+    return { comments };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    
+    // Check for specific error conditions
+    if (message.includes("commentsDisabled") || message.includes("disabled comments")) {
+      return { comments: [], commentsDisabled: true };
+    }
+    if (message.includes("quotaExceeded")) {
+      return { comments: [], error: "YouTube API quota exceeded" };
+    }
+    
+    return { comments: [], error: message };
+  }
+}
+
+/**
+ * Fetch video statistics in batch (for snapshotting)
+ */
+export async function fetchVideosStatsBatch(
+  ga: GoogleAccount,
+  videoIds: string[]
+): Promise<Map<string, { viewCount: number; likeCount?: number; commentCount?: number }>> {
+  if (videoIds.length === 0) return new Map();
+
+  // TEST_MODE: Return fixture data
+  if (process.env.TEST_MODE === "1") {
+    return getTestModeStatsBatch(videoIds);
+  }
+
+  const results = new Map<string, { viewCount: number; likeCount?: number; commentCount?: number }>();
+  
+  // YouTube API allows max 50 IDs per request
+  const batches: string[][] = [];
+  for (let i = 0; i < videoIds.length; i += 50) {
+    batches.push(videoIds.slice(i, i + 50));
+  }
+
+  for (const batch of batches) {
+    const url = new URL(`${YOUTUBE_DATA_API}/videos`);
+    url.searchParams.set("part", "statistics");
+    url.searchParams.set("id", batch.join(","));
+
+    try {
+      const data = await googleFetchWithAutoRefresh<{
+        items?: Array<{
+          id: string;
+          statistics: {
+            viewCount?: string;
+            likeCount?: string;
+            commentCount?: string;
+          };
+        }>;
+      }>(ga, url.toString());
+
+      for (const item of data.items ?? []) {
+        results.set(item.id, {
+          viewCount: parseInt(item.statistics.viewCount ?? "0", 10),
+          likeCount: item.statistics.likeCount ? parseInt(item.statistics.likeCount, 10) : undefined,
+          commentCount: item.statistics.commentCount ? parseInt(item.statistics.commentCount, 10) : undefined,
+        });
+      }
+    } catch (err) {
+      console.warn(`Failed to fetch stats batch:`, err);
+    }
+  }
+
+  return results;
+}
+
+function getTestModeComments(videoId: string): FetchCommentsResult {
+  return {
+    comments: [
+      {
+        commentId: "comment-1",
+        text: "This completely changed my approach to content. The quality vs quantity insight was exactly what I needed to hear.",
+        likeCount: 342,
+        authorName: "Creative Mind",
+        publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        replyCount: 12,
+      },
+      {
+        commentId: "comment-2",
+        text: "Can you do a follow-up video on how to decide WHICH videos to make when posting less? That's my biggest struggle.",
+        likeCount: 187,
+        authorName: "Aspiring Creator",
+        publishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        replyCount: 8,
+      },
+      {
+        commentId: "comment-3",
+        text: "I tried this and went from 3 videos/week to 1. My watch time actually increased by 40%. Thanks for the permission to slow down!",
+        likeCount: 156,
+        authorName: "Growth Experimenter",
+        publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        replyCount: 5,
+      },
+      {
+        commentId: "comment-4",
+        text: "The data at 4:32 was mind-blowing. Never realized retention was more important than upload frequency.",
+        likeCount: 98,
+        authorName: "Data Driven Dave",
+        publishedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        replyCount: 3,
+      },
+      {
+        commentId: "comment-5",
+        text: "Would love to see more case studies from smaller channels. Does this work for channels under 10k subs?",
+        likeCount: 76,
+        authorName: "Small Channel Sara",
+        publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        replyCount: 15,
+      },
+    ],
+  };
+}
+
+function getTestModeStatsBatch(videoIds: string[]): Map<string, { viewCount: number; likeCount?: number; commentCount?: number }> {
+  const results = new Map();
+  for (const id of videoIds) {
+    results.set(id, {
+      viewCount: Math.floor(Math.random() * 500000) + 10000,
+      likeCount: Math.floor(Math.random() * 20000) + 500,
+      commentCount: Math.floor(Math.random() * 2000) + 50,
+    });
+  }
+  return results;
 }
