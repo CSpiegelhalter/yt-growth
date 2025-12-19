@@ -28,8 +28,12 @@ type StripePortalSession = {
 type StripeSubscription = {
   id: string;
   status: string;
-  current_period_end: number;
   customer: string;
+  billing_cycle_anchor: number;
+  plan: {
+    interval: string;
+    interval_count: number;
+  };
 };
 
 /**
@@ -52,7 +56,9 @@ async function stripeRequest<T>(
       Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: options.body ? new URLSearchParams(options.body).toString() : undefined,
+    body: options.body
+      ? new URLSearchParams(options.body).toString()
+      : undefined,
   });
 
   if (!response.ok) {
@@ -117,18 +123,21 @@ export async function createCheckoutSession(
 
   const customerId = await getOrCreateStripeCustomer(userId, email);
 
-  const session = await stripeRequest<StripeCheckoutSession>("/checkout/sessions", {
-    method: "POST",
-    body: {
-      customer: customerId,
-      mode: "subscription",
-      "line_items[0][price]": STRIPE_PRICE_ID,
-      "line_items[0][quantity]": "1",
-      success_url: `${APP_URL}/dashboard?checkout=success`,
-      cancel_url: `${APP_URL}/dashboard?checkout=canceled`,
-      "metadata[userId]": String(userId),
-    },
-  });
+  const session = await stripeRequest<StripeCheckoutSession>(
+    "/checkout/sessions",
+    {
+      method: "POST",
+      body: {
+        customer: customerId,
+        mode: "subscription",
+        "line_items[0][price]": STRIPE_PRICE_ID,
+        "line_items[0][quantity]": "1",
+        success_url: `${APP_URL}/dashboard?checkout=success`,
+        cancel_url: `${APP_URL}/dashboard?checkout=canceled`,
+        "metadata[userId]": String(userId),
+      },
+    }
+  );
 
   return { url: session.url };
 }
@@ -136,7 +145,9 @@ export async function createCheckoutSession(
 /**
  * Create a Stripe billing portal session
  */
-export async function createPortalSession(userId: number): Promise<{ url: string }> {
+export async function createPortalSession(
+  userId: number
+): Promise<{ url: string }> {
   const subscription = await prisma.subscription.findUnique({
     where: { userId },
     select: { stripeCustomerId: true },
@@ -146,13 +157,16 @@ export async function createPortalSession(userId: number): Promise<{ url: string
     throw new Error("No Stripe customer found. Please contact support.");
   }
 
-  const session = await stripeRequest<StripePortalSession>("/billing_portal/sessions", {
-    method: "POST",
-    body: {
-      customer: subscription.stripeCustomerId,
-      return_url: `${APP_URL}/profile`,
-    },
-  });
+  const session = await stripeRequest<StripePortalSession>(
+    "/billing_portal/sessions",
+    {
+      method: "POST",
+      body: {
+        customer: subscription.stripeCustomerId,
+        return_url: `${APP_URL}/profile`,
+      },
+    }
+  );
 
   return { url: session.url };
 }
@@ -166,40 +180,114 @@ export async function handleStripeWebhook(
 ): Promise<{ received: boolean }> {
   // In production, verify webhook signature
   // For MVP, we'll trust the payload structure
-  
+
   const event = JSON.parse(payload);
   const eventType = event.type;
+
+  console.log(`[Stripe Webhook] Received event: ${eventType}`);
 
   switch (eventType) {
     case "checkout.session.completed": {
       const session = event.data.object;
-      const userId = parseInt(session.metadata?.userId, 10);
       const subscriptionId = session.subscription;
+      const customerId = session.customer;
 
-      if (userId && subscriptionId) {
-        // Fetch subscription details
-        const sub = await stripeRequest<StripeSubscription>(`/subscriptions/${subscriptionId}`);
-        
-        await prisma.subscription.upsert({
-          where: { userId },
-          update: {
-            stripeSubscriptionId: subscriptionId,
-            status: "active",
-            plan: "pro",
-            channelLimit: 5,
-            currentPeriodEnd: new Date(sub.current_period_end * 1000),
-          },
-          create: {
-            userId,
-            stripeCustomerId: String(sub.customer),
-            stripeSubscriptionId: subscriptionId,
-            status: "active",
-            plan: "pro",
-            channelLimit: 5,
-            currentPeriodEnd: new Date(sub.current_period_end * 1000),
-          },
-        });
+      console.log(`[Stripe Webhook] checkout.session.completed:`, {
+        subscriptionId,
+        customerId,
+        metadata: session.metadata,
+      });
+
+      if (!subscriptionId) {
+        console.log(`[Stripe Webhook] No subscription ID in session, skipping`);
+        break;
       }
+
+      // Try to get userId from metadata first
+      let userId = parseInt(session.metadata?.userId, 10);
+
+      // If no userId in metadata, look up by customer ID
+      if (!userId || isNaN(userId)) {
+        console.log(
+          `[Stripe Webhook] No userId in metadata, looking up by customer ID: ${customerId}`
+        );
+        const existingSub = await prisma.subscription.findFirst({
+          where: { stripeCustomerId: customerId },
+          select: { userId: true },
+        });
+        if (existingSub) {
+          userId = existingSub.userId;
+          console.log(
+            `[Stripe Webhook] Found userId by customer ID: ${userId}`
+          );
+        }
+      }
+
+      if (!userId || isNaN(userId)) {
+        console.error(
+          `[Stripe Webhook] Could not determine userId for subscription ${subscriptionId}`
+        );
+        break;
+      }
+
+      // Fetch subscription details from Stripe
+      const sub = await stripeRequest<StripeSubscription>(
+        `/subscriptions/${subscriptionId}`
+      );
+      console.log(`[Stripe Webhook] Fetched subscription from Stripe:`, {
+        id: sub.id,
+        status: sub.status,
+        customer: sub.customer,
+        billing_cycle_anchor: sub.billing_cycle_anchor,
+        plan: sub.plan,
+      });
+
+      // Calculate period end from billing_cycle_anchor + plan interval
+      const periodEndDate = new Date(sub.billing_cycle_anchor * 1000);
+      const interval = sub.plan.interval;
+      const intervalCount = sub.plan.interval_count;
+
+      if (interval === "month") {
+        periodEndDate.setMonth(periodEndDate.getMonth() + intervalCount);
+      } else if (interval === "year") {
+        periodEndDate.setFullYear(periodEndDate.getFullYear() + intervalCount);
+      } else if (interval === "week") {
+        periodEndDate.setDate(periodEndDate.getDate() + 7 * intervalCount);
+      } else if (interval === "day") {
+        periodEndDate.setDate(periodEndDate.getDate() + intervalCount);
+      }
+
+      console.log(`[Stripe Webhook] Period end:`, periodEndDate);
+
+      // Update or create the subscription record
+      const result = await prisma.subscription.upsert({
+        where: { userId },
+        update: {
+          stripeCustomerId: String(sub.customer),
+          stripeSubscriptionId: subscriptionId,
+          status: "active",
+          plan: "pro",
+          channelLimit: 5,
+          currentPeriodEnd: periodEndDate,
+        },
+        create: {
+          userId,
+          stripeCustomerId: String(sub.customer),
+          stripeSubscriptionId: subscriptionId,
+          status: "active",
+          plan: "pro",
+          channelLimit: 5,
+          currentPeriodEnd: periodEndDate,
+        },
+      });
+
+      console.log(
+        `[Stripe Webhook] Subscription activated for user ${userId}:`,
+        {
+          status: result.status,
+          plan: result.plan,
+        }
+      );
       break;
     }
 
@@ -213,9 +301,26 @@ export async function handleStripeWebhook(
       });
 
       if (subscription) {
-        const status = sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : "canceled";
+        const status =
+          sub.status === "active"
+            ? "active"
+            : sub.status === "past_due"
+            ? "past_due"
+            : "canceled";
         const plan = status === "active" ? "pro" : "free";
         const channelLimit = status === "active" ? 5 : 1;
+
+        // Calculate period end from billing_cycle_anchor
+        const updatePeriodEnd = new Date(sub.billing_cycle_anchor * 1000);
+        if (sub.plan.interval === "month") {
+          updatePeriodEnd.setMonth(
+            updatePeriodEnd.getMonth() + sub.plan.interval_count
+          );
+        } else if (sub.plan.interval === "year") {
+          updatePeriodEnd.setFullYear(
+            updatePeriodEnd.getFullYear() + sub.plan.interval_count
+          );
+        }
 
         await prisma.subscription.update({
           where: { id: subscription.id },
@@ -223,7 +328,7 @@ export async function handleStripeWebhook(
             status,
             plan,
             channelLimit,
-            currentPeriodEnd: new Date(sub.current_period_end * 1000),
+            currentPeriodEnd: updatePeriodEnd,
           },
         });
       }
@@ -277,4 +382,3 @@ export async function getSubscriptionStatus(userId: number): Promise<{
     isActive: subscription.status === "active" && subscription.plan !== "free",
   };
 }
-
