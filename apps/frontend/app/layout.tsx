@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s | YouTube Growth Consultant",
   },
   description:
-    "AI-powered YouTube growth tools. Get personalized video plans, retention analysis, and subscriber insights to grow your channel faster.",
+    "YouTube growth tools for creators. Get personalized video ideas, retention insights, and subscriber analysis to grow your channel faster.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   ),
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     siteName: "YouTube Growth Consultant",
     title: "YouTube Growth Consultant",
     description:
-      "AI-powered YouTube growth tools. Get personalized video plans, retention analysis, and subscriber insights.",
+      "YouTube growth tools for creators. Get personalized video ideas, retention insights, and subscriber analysis.",
     images: [
       {
         url: "/og-image.png",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "YouTube Growth Consultant",
     description:
-      "AI-powered YouTube growth tools. Get personalized video plans, retention analysis, and subscriber insights.",
+      "YouTube growth tools for creators. Get personalized video ideas, retention insights, and subscriber analysis.",
   },
   robots: {
     index: true,

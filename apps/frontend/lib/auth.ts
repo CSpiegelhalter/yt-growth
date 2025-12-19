@@ -63,9 +63,11 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          // Request offline access + force consent on first connect so we get refresh_token
+          // Request offline access for refresh_token
           access_type: "offline",
-          prompt: "consent",
+          // Don't force consent every time - Google will only prompt if needed
+          // (first sign-in, revoked permissions, or new scopes)
+          prompt: "select_account",
           // YouTube scopes (add monetary if you need revenue metrics)
           scope: [
             "openid",

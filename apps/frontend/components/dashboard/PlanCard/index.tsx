@@ -146,7 +146,7 @@ export default function PlanCard({
           </div>
           <h3 className={s.lockedTitle}>Unlock the Idea Engine</h3>
           <p className={s.lockedDesc}>
-            Get AI-generated video ideas with titles, hooks, angles, and
+            Get video ideas with titles, hooks, angles, and
             thumbnail guidance tailored to your channel.
           </p>
           <a href="/api/integrations/stripe/checkout" className={s.btnPrimary}>

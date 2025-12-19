@@ -296,12 +296,12 @@ export default function DashboardClient({
               <div className={s.ctaContent}>
                 <h3 className={s.ctaTitle}>Unlock Full Insights</h3>
                 <p className={s.ctaDesc}>
-                  Get AI-powered ideas, drop-off analysis, and subscriber driver
+                  Get video ideas, retention analysis, and subscriber driver
                   insights.
                 </p>
                 <ul className={s.ctaFeatures}>
                   <li>Unlimited idea generation</li>
-                  <li>Drop-off analysis with fixes</li>
+                  <li>Video analysis with fixes</li>
                   <li>Up to 5 connected channels</li>
                 </ul>
               </div>

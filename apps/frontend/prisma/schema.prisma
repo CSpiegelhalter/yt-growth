@@ -226,3 +226,55 @@ model CompetitorVideoComments {
 
   @@index([capturedAt], map: "idx_competitor_comments_captured")
 }
+
+// ============================================
+// OWNED VIDEO ANALYTICS (daily series for user's own videos)
+// ============================================
+
+model OwnedVideoAnalyticsDay {
+  id                        String   @id @default(uuid()) @db.Uuid
+  userId                    Int
+  channelId                 Int
+  videoId                   String   @db.VarChar(32) // YouTube video ID
+  date                      DateTime @db.Date        // YYYY-MM-DD
+  views                     Int      @default(0)
+  engagedViews              Int?
+  comments                  Int?
+  likes                     Int?
+  shares                    Int?
+  estimatedMinutesWatched   Int?
+  averageViewDuration       Int?     // seconds
+  averageViewPercentage     Float?
+  subscribersGained         Int?
+  subscribersLost           Int?
+  videosAddedToPlaylists    Int?
+  videosRemovedFromPlaylists Int?
+  // Monetization (may be null if not monetized)
+  estimatedRevenue          Float?
+  estimatedAdRevenue        Float?
+  grossRevenue              Float?
+  monetizedPlaybacks        Int?
+  playbackBasedCpm          Float?
+  adImpressions             Int?
+  cpm                       Float?
+  createdAt                 DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([userId, channelId, videoId, date], map: "uq_owned_analytics_day")
+  @@index([videoId, date(sort: Desc)], map: "idx_owned_analytics_video_date")
+  @@index([channelId, date(sort: Desc)], map: "idx_owned_analytics_channel_date")
+}
+
+model OwnedVideoInsightsCache {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      Int
+  channelId   Int
+  videoId     String   @db.VarChar(32) // YouTube video ID
+  range       String   @db.VarChar(8)  // "7d", "28d", "90d"
+  derivedJson Json?                    // Derived metrics + baselines
+  llmJson     Json?                    // LLM-generated insights
+  cachedUntil DateTime @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([userId, channelId, videoId, range], map: "uq_owned_insights_cache")
+  @@index([cachedUntil], map: "idx_owned_insights_cached")
+}

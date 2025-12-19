@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import type { Session } from "next-auth";
+import { useSession } from "next-auth/react";
 import s from "./Header.module.css";
 
 type Channel = {
@@ -14,18 +14,19 @@ type Channel = {
 };
 
 type HeaderProps = {
-  session: Session | null;
+  session?: unknown; // Legacy prop, no longer used
 };
 
 /**
  * Site header with auth-aware navigation and channel selector.
  * Mobile-first design with dropdown menu for logged-in users.
+ * Uses useSession() for reactive auth state updates.
  */
-export function Header({ session: serverSession }: HeaderProps) {
+export function Header(_props: HeaderProps) {
+  const { data: session, status } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [channelDropdownOpen, setChannelDropdownOpen] = useState(false);
-  const [session, setSession] = useState<Session | null>(serverSession);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -39,11 +40,6 @@ export function Header({ session: serverSession }: HeaderProps) {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Sync with server session on prop change
-  useEffect(() => {
-    setSession(serverSession);
-  }, [serverSession]);
 
   // Load channels and active channel
   useEffect(() => {
@@ -59,11 +55,17 @@ export function Header({ session: serverSession }: HeaderProps) {
           // Set active channel from URL or localStorage or first channel
           const urlChannelId = searchParams.get("channelId");
           const storedChannelId = localStorage.getItem("activeChannelId");
-          
-          if (urlChannelId && data.some((c: Channel) => c.channel_id === urlChannelId)) {
+
+          if (
+            urlChannelId &&
+            data.some((c: Channel) => c.channel_id === urlChannelId)
+          ) {
             setActiveChannelId(urlChannelId);
             localStorage.setItem("activeChannelId", urlChannelId);
-          } else if (storedChannelId && data.some((c: Channel) => c.channel_id === storedChannelId)) {
+          } else if (
+            storedChannelId &&
+            data.some((c: Channel) => c.channel_id === storedChannelId)
+          ) {
             setActiveChannelId(storedChannelId);
           } else if (data.length > 0) {
             setActiveChannelId(data[0].channel_id);
@@ -86,7 +88,10 @@ export function Header({ session: serverSession }: HeaderProps) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
-      if (channelRef.current && !channelRef.current.contains(e.target as Node)) {
+      if (
+        channelRef.current &&
+        !channelRef.current.contains(e.target as Node)
+      ) {
         setChannelDropdownOpen(false);
       }
     };
@@ -120,14 +125,20 @@ export function Header({ session: serverSession }: HeaderProps) {
     setActiveChannelId(channelId);
     localStorage.setItem("activeChannelId", channelId);
     setChannelDropdownOpen(false);
-    
+
     // If on a channel-specific page, update the URL
-    if (pathname.includes("/audit/") || pathname.includes("/ideas") || pathname.includes("/drop-offs") || pathname.includes("/competitors")) {
+    if (
+      pathname.includes("/audit/") ||
+      pathname.includes("/ideas") ||
+      pathname.includes("/converters") ||
+      pathname.includes("/competitors")
+    ) {
       router.push(`${pathname}?channelId=${channelId}`);
     }
   };
 
-  const isLoggedIn = session !== null;
+  const isLoggedIn = status === "authenticated" && session !== null;
+  const isLoading = status === "loading";
   const userEmail = session?.user?.email ?? "";
   const userInitials = getInitials(session?.user?.name || userEmail);
   const activeChannel = channels.find((c) => c.channel_id === activeChannelId);
@@ -136,10 +147,12 @@ export function Header({ session: serverSession }: HeaderProps) {
   const navLinks = [
     { href: "/dashboard", label: "Videos" },
     { href: "/ideas", label: "Ideas" },
-    { href: "/competitors", label: "Competitor Winners" },
+    { href: "/converters", label: "Subscriber Drivers" },
+    { href: "/competitors", label: "Competitors" },
   ];
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + "/");
 
   return (
     <header className={s.header}>
@@ -177,8 +190,13 @@ export function Header({ session: serverSession }: HeaderProps) {
               />
             ) : (
               <div className={s.channelThumbPlaceholder}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
                 </svg>
               </div>
             )}
@@ -205,7 +223,9 @@ export function Header({ session: serverSession }: HeaderProps) {
                 <button
                   key={channel.channel_id}
                   className={`${s.channelOption} ${
-                    channel.channel_id === activeChannelId ? s.channelOptionActive : ""
+                    channel.channel_id === activeChannelId
+                      ? s.channelOptionActive
+                      : ""
                   }`}
                   onClick={() => handleChannelSelect(channel.channel_id)}
                 >
@@ -241,7 +261,14 @@ export function Header({ session: serverSession }: HeaderProps) {
                 className={s.addChannelLink}
                 onClick={() => setChannelDropdownOpen(false)}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M12 5v14M5 12h14" />
                 </svg>
                 Add Channel
@@ -305,8 +332,8 @@ export function Header({ session: serverSession }: HeaderProps) {
 
         {/* Auth Section */}
         <div className={s.authSection}>
-          {!mounted ? (
-            /* Placeholder during SSR to prevent layout shift */
+          {!mounted || isLoading ? (
+            /* Placeholder during SSR or auth loading to prevent layout shift */
             <div className={s.placeholder} />
           ) : isLoggedIn ? (
             /* User Menu (logged in) */

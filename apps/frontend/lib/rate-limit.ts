@@ -90,6 +90,8 @@ export const RATE_LIMITS = {
   competitorDetail: { limit: 60, windowSec: 3600 },
   // Competitor comments fetch: 20 per hour per user
   competitorComments: { limit: 20, windowSec: 3600 },
+  // Owned video insights: 30 per hour per user
+  videoInsights: { limit: 30, windowSec: 3600 },
 } as const;
 
 /**

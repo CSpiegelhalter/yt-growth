@@ -439,6 +439,24 @@ export type PatternAnalysisJson = {
   formatPatterns: string[];
   nextExperiments: string[];
   hooksToTry: string[];
+  structuredInsights?: {
+    commonPatterns: Array<{
+      pattern: string;
+      evidence: string;
+      howToUse: string;
+    }>;
+    conversionRecipe: {
+      titleFormulas: string[];
+      ctaTiming: string;
+      structure: string;
+    };
+    nextIdeas: Array<{
+      title: string;
+      hook: string;
+      whyItConverts: string;
+      ctaSuggestion: string;
+    }>;
+  };
 };
 
 /**
@@ -528,6 +546,166 @@ ${analysis.hooksToTry.map((p) => `- ${p}`).join("\n")}`;
 }
 
 /**
+ * Generate structured converter insights for Subscriber Drivers page.
+ * Returns patterns, recipe, and video ideas optimized for subscriber conversion.
+ */
+export async function generateConverterInsights(
+  videos: Array<{
+    title: string;
+    subsPerThousand: number;
+    views: number;
+    viewsPerDay: number;
+    engagedRate: number;
+  }>,
+  channelAvgSubsPerThousand: number
+): Promise<PatternAnalysisJson> {
+  const systemPrompt = `You are a YouTube growth expert specializing in subscriber conversion optimization.
+
+Analyze these top-converting videos and return ONLY valid JSON matching this EXACT structure:
+
+{
+  "summary": "One sentence about what makes these videos convert viewers to subscribers",
+  "commonPatterns": ["pattern1", "pattern2", "pattern3"],
+  "ctaPatterns": ["cta1", "cta2"],
+  "formatPatterns": ["format1", "format2"],
+  "nextExperiments": ["experiment1", "experiment2", "experiment3"],
+  "hooksToTry": ["hook1", "hook2"],
+  "structuredInsights": {
+    "commonPatterns": [
+      {
+        "pattern": "Clear pattern title",
+        "evidence": "Seen in X of Y top videos",
+        "howToUse": "Actionable one-liner"
+      }
+    ],
+    "conversionRecipe": {
+      "titleFormulas": ["[Outcome] in [Timeframe]", "[Number] Ways to [Benefit]"],
+      "ctaTiming": "Place subscribe CTA after delivering first value moment (usually 60-90s)",
+      "structure": "Problem statement → Quick win → Deep value → Clear next step"
+    },
+    "nextIdeas": [
+      {
+        "title": "Video title idea",
+        "hook": "Opening line that grabs attention",
+        "whyItConverts": "One line explanation",
+        "ctaSuggestion": "When and how to ask for subscribe"
+      }
+    ]
+  }
+}
+
+Guidelines:
+- Keep patterns specific and actionable
+- Base evidence on actual video data
+- Generate 3-5 common patterns
+- Generate exactly 3 video ideas
+- Title formulas should be templates with [placeholders]
+- CTA timing should reference specific moments
+- Structure should be a clear flow`;
+
+  const userPrompt = `Analyze these top converting videos (channel avg: ${channelAvgSubsPerThousand.toFixed(
+    1
+  )} subs/1k):
+
+${videos
+  .map(
+    (v, i) =>
+      `${i + 1}. "${v.title}"
+   - ${v.subsPerThousand.toFixed(1)} subs/1k views (${(
+        (v.subsPerThousand / channelAvgSubsPerThousand - 1) *
+        100
+      ).toFixed(0)}% above avg)
+   - ${v.views.toLocaleString()} views, ${v.viewsPerDay}/day
+   - ${(v.engagedRate * 100).toFixed(1)}% engagement`
+  )
+  .join("\n\n")}
+
+Return ONLY JSON, no explanation.`;
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      { temperature: 0.6, maxTokens: 2000 }
+    );
+
+    const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]) as PatternAnalysisJson;
+      return parsed;
+    }
+  } catch (err) {
+    console.warn("Failed to generate converter insights:", err);
+  }
+
+  // Fallback with reasonable defaults
+  return {
+    summary: "Your top videos share clear value propositions and strong hooks.",
+    commonPatterns: [
+      "Strong opening hook in first 5 seconds",
+      "Clear promise delivered early",
+      "Consistent call-to-action placement",
+    ],
+    ctaPatterns: ["Subscribe CTA after first value delivery"],
+    formatPatterns: ["Problem-solution structure"],
+    nextExperiments: [
+      "Test different CTA placements",
+      "Try more specific titles",
+      "Increase early value density",
+    ],
+    hooksToTry: [
+      "What if I told you...",
+      "Here's what nobody tells you about...",
+    ],
+    structuredInsights: {
+      commonPatterns: [
+        {
+          pattern: "Clear promise in first 10 seconds",
+          evidence: "Present in most top videos",
+          howToUse: "State the viewer benefit before your intro",
+        },
+        {
+          pattern: "Value delivered before CTA",
+          evidence: "Top converters give value first",
+          howToUse: "Share a quick win before asking for subscribe",
+        },
+      ],
+      conversionRecipe: {
+        titleFormulas: [
+          "[Outcome] in [Timeframe]",
+          "How I [Achievement] (and you can too)",
+        ],
+        ctaTiming: "Place subscribe CTA after delivering first value moment",
+        structure: "Hook → Quick win → Deep value → Subscribe ask → Next step",
+      },
+      nextIdeas: [
+        {
+          title: "The [Topic] Mistake Everyone Makes",
+          hook: "I used to make this mistake every single day...",
+          whyItConverts:
+            "Creates immediate identification with viewer struggles",
+          ctaSuggestion: "Ask for subscribe after revealing the solution",
+        },
+        {
+          title: "[Number] [Topic] Tips That Actually Work",
+          hook: "Forget everything you've heard about [topic]...",
+          whyItConverts: "Promises curated, tested value upfront",
+          ctaSuggestion: "Soft CTA between tips, strong CTA at end",
+        },
+        {
+          title: "How to [Achieve Goal] in [Timeframe]",
+          hook: "In the next [X] minutes, you'll learn exactly how to...",
+          whyItConverts: "Specific outcome with time commitment",
+          ctaSuggestion: "CTA after demonstrating the first result",
+        },
+      ],
+    },
+  };
+}
+
+/**
  * Generate insights for similar channels.
  */
 export async function generateSimilarChannelInsights(
@@ -585,121 +763,6 @@ Analyze what's working for these similar channels.`;
     whatTheyreDoing: ["Unable to generate insights"],
     ideasToSteal: [],
     formatsToTry: [],
-  };
-}
-
-/**
- * Generate deep analysis for a trending video.
- */
-export async function generateTrendingVideoAnalysis(
-  video: {
-    videoId: string;
-    title: string;
-    channelTitle: string;
-    viewCount: number;
-    viewsPerDay: number;
-  },
-  userChannelTitle: string
-): Promise<{
-  whatItsAbout: string;
-  whyTrending: string[];
-  whatTheyDidWell: string[];
-  themesToRemix: Array<{ theme: string; why: string }>;
-  titlePatterns: string[];
-  hookPatterns: string[];
-  thumbnailPatterns: string[];
-  remixIdeasForYou: Array<{
-    title: string;
-    hook: string;
-    overlayText: string;
-    angle: string;
-  }>;
-}> {
-  const systemPrompt = `You are a YouTube growth strategist. Analyze a trending video and provide actionable insights.
-
-Return ONLY valid JSON:
-{
-  "whatItsAbout": "One sentence summary of the video content",
-  "whyTrending": ["Reason 1", "Reason 2", "Reason 3"],
-  "whatTheyDidWell": ["Thing 1", "Thing 2", "Thing 3"],
-  "themesToRemix": [
-    { "theme": "Theme name", "why": "Why this resonates" }
-  ],
-  "titlePatterns": ["Pattern 1", "Pattern 2"],
-  "hookPatterns": ["Hook pattern 1", "Hook pattern 2"],
-  "thumbnailPatterns": ["Thumbnail pattern 1", "Thumbnail pattern 2"],
-  "remixIdeasForYou": [
-    {
-      "title": "Your remix title idea",
-      "hook": "Opening hook for the video",
-      "overlayText": "3-4 words for thumbnail",
-      "angle": "Brief description of the angle"
-    }
-  ]
-}
-
-Keep insights specific and actionable. 3-5 items per array.`;
-
-  const userPrompt = `Analyze this trending video for "${userChannelTitle}":
-
-Title: "${video.title}"
-Channel: ${video.channelTitle}
-Views: ${video.viewCount.toLocaleString()}
-Views/day: ${video.viewsPerDay.toLocaleString()}
-
-Provide:
-1. What it's about (1 sentence)
-2. Why it's trending (specific reasons)
-3. What they did well
-4. Themes to remix for my channel
-5. Title/hook/thumbnail patterns
-6. 3-4 specific remix ideas for "${userChannelTitle}"`;
-
-  try {
-    const result = await callLLM(
-      [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      { temperature: 0.6, maxTokens: 1500 }
-    );
-
-    const jsonMatch = result.content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-  } catch (err) {
-    console.warn("Failed to generate trending video analysis:", err);
-  }
-
-  // Default fallback
-  return {
-    whatItsAbout: `A video about "${video.title.slice(0, 50)}..."`,
-    whyTrending: [
-      "Strong initial hook captures attention",
-      "Title creates immediate curiosity",
-      "High engagement driving algorithm promotion",
-    ],
-    whatTheyDidWell: [
-      "Clear value proposition",
-      "Good pacing and structure",
-      "Strong call to action",
-    ],
-    themesToRemix: [
-      { theme: "Personal take", why: "Adds authenticity" },
-      { theme: "Contrarian view", why: "Drives engagement" },
-    ],
-    titlePatterns: ["Creates curiosity gap", "Specific numbers or outcomes"],
-    hookPatterns: ["Bold opening statement", "Shows result first"],
-    thumbnailPatterns: ["High contrast", "Clear focal point"],
-    remixIdeasForYou: [
-      {
-        title: `My Take on ${video.title.slice(0, 30)}`,
-        hook: "What if I told you there's another way?",
-        overlayText: "MY VERSION",
-        angle: "Personal experience and perspective",
-      },
-    ],
   };
 }
 

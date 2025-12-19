@@ -1,13 +1,13 @@
 # YouTube Growth Consultant - Frontend
 
-AI-powered YouTube growth tools built with Next.js 14, Prisma, and TypeScript.
+YouTube growth tools built with Next.js 14, Prisma, and TypeScript.
 
 ## 🎯 MVP Features
 
 ### Core Deliverables
 
 1. **Decide-for-Me Plan** (paid feature)
-   - Generate AI-powered content plans with:
+   - Generate content plans with:
      - 1 best next video topic + 2 alternates
      - 3 title options
      - Thumbnail guidance (no image generation)
@@ -15,16 +15,16 @@ AI-powered YouTube growth tools built with Next.js 14, Prisma, and TypeScript.
      - One-week checklist
    - Plans cached for 24 hours
 
-2. **Retention Cliff Pinpointer** (paid feature)
+2. **Video Analysis** (paid feature)
    - For last 10 uploads, compute:
      - Timestamp where retention crosses 50% OR steepest drop
-     - AI hypothesis + 3 fixes
+     - Hypothesis + 3 fixes
    - Lazy-loaded when user visits audit page
    - Cached for 12-24 hours
 
 3. **Subscriber Magnet Audit** (paid feature)
    - Top 3 videos by subs gained per 1k views
-   - AI-generated pattern summary
+   - Pattern summary
 
 ---
 
@@ -48,14 +48,14 @@ AI-powered YouTube growth tools built with Next.js 14, Prisma, and TypeScript.
 ### Journey 3: Generate Plan
 1. User with subscription visits dashboard
 2. Clicks "Generate Plan" on channel card
-3. AI generates plan (uses cached data if available)
+3. Plan generated (uses cached data if available)
 4. Plan displayed in expandable card
 5. Plan saved to history
 
 ### Journey 4: View Audit
 1. User clicks "View Full Audit" link
 2. Navigates to `/audit/[channelId]`
-3. Tabs: Retention Cliffs | Subscriber Magnets | Plans
+3. Tabs: Video Analysis | Subscriber Magnets | Plans
 4. Data lazy-loaded per tab
 5. Results cached for 12 hours
 
@@ -92,7 +92,7 @@ AI-powered YouTube growth tools built with Next.js 14, Prisma, and TypeScript.
 - **Subscription**: Required for data (shows upgrade CTA if not)
 - **Tabs**:
   - Retention Cliffs: Table of videos with cliff timestamps
-  - Subscriber Magnets: Top 3 videos + AI analysis
+  - Subscriber Magnets: Top 3 videos + pattern analysis
   - Plans: Latest plan + history
 - **Lazy loading**: Data fetched when tab activated
 

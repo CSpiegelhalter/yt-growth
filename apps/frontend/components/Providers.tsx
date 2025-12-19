@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { SessionProvider } from "next-auth/react";
 import { ToastProvider } from "@/components/ui/Toast";
 
 /**
@@ -8,6 +9,10 @@ import { ToastProvider } from "@/components/ui/Toast";
  * Add all client-side context providers here
  */
 export function Providers({ children }: { children: ReactNode }) {
-  return <ToastProvider>{children}</ToastProvider>;
+  return (
+    <SessionProvider>
+      <ToastProvider>{children}</ToastProvider>
+    </SessionProvider>
+  );
 }
 

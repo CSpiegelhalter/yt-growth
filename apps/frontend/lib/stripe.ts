@@ -111,11 +111,6 @@ export async function createCheckoutSession(
   userId: number,
   email: string
 ): Promise<{ url: string }> {
-  // TEST_MODE: Return fake URL that simulates subscription activation
-  if (process.env.TEST_MODE === "1") {
-    return { url: `${APP_URL}/api/integrations/stripe/test-activate?userId=${userId}` };
-  }
-
   if (!STRIPE_PRICE_ID) {
     throw new Error("STRIPE_PRICE_ID not configured");
   }
@@ -142,18 +137,13 @@ export async function createCheckoutSession(
  * Create a Stripe billing portal session
  */
 export async function createPortalSession(userId: number): Promise<{ url: string }> {
-  // TEST_MODE: Return fake URL
-  if (process.env.TEST_MODE === "1") {
-    return { url: `${APP_URL}/profile?portal=test` };
-  }
-
   const subscription = await prisma.subscription.findUnique({
     where: { userId },
     select: { stripeCustomerId: true },
   });
 
   if (!subscription?.stripeCustomerId) {
-    throw new Error("No Stripe customer found");
+    throw new Error("No Stripe customer found. Please contact support.");
   }
 
   const session = await stripeRequest<StripePortalSession>("/billing_portal/sessions", {
@@ -265,17 +255,6 @@ export async function getSubscriptionStatus(userId: number): Promise<{
   currentPeriodEnd: Date | null;
   isActive: boolean;
 }> {
-  // TEST_MODE: Always return active subscription
-  if (process.env.TEST_MODE === "1") {
-    return {
-      status: "active",
-      plan: "pro",
-      channelLimit: 5,
-      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      isActive: true,
-    };
-  }
-
   const subscription = await prisma.subscription.findUnique({
     where: { userId },
   });

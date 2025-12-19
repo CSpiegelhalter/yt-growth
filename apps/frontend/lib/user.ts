@@ -74,14 +74,10 @@ export async function getCurrentUserWithSubscription(): Promise<AuthUserWithSubs
 
 /**
  * Check if user has an active paid subscription.
- * In TEST_MODE, always returns true for easier testing.
  */
 export function hasActiveSubscription(
   subscription: AuthUserWithSubscription["subscription"]
 ): boolean {
-  // TEST_MODE bypass for local development/testing
-  if (process.env.TEST_MODE === "1") return true;
-
   if (!subscription) return false;
   return subscription.status === "active" && subscription.plan !== "free";
 }

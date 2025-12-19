@@ -111,7 +111,7 @@ export default function IdeasClient({
         <div className={s.header}>
           <h1 className={s.title}>Idea Engine</h1>
           <p className={s.subtitle}>
-            Get AI-powered video ideas based on what&apos;s working
+            Get video ideas based on what&apos;s working in your niche
           </p>
         </div>
         <div className={s.emptyState}>
@@ -143,6 +143,7 @@ export default function IdeasClient({
     <main className={s.page}>
       <IdeaBoard
         data={ideaBoard}
+        channelId={activeChannelId ?? undefined}
         channelName={activeChannel.title ?? undefined}
         loading={ideaBoardLoading}
         isSubscribed={isSubscribed}

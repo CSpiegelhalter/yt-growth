@@ -113,11 +113,45 @@ export type SubscriberMagnetVideo = {
   viewsPerDay?: number;
   avdSec?: number | null;
   apv?: number | null;
+  // Additional conversion metrics
+  playlistAddsPer1k?: number | null;
+  engagedRate?: number | null;
+  commentsPer1k?: number | null;
+  sharesPer1k?: number | null;
+  // Conversion strength based on percentile
+  conversionTier?: "strong" | "average" | "weak";
+  percentileRank?: number;
+  // Legacy insight (optional)
   insight?: {
     whyItConverts: string[];
     stealThis: string[];
     hookIdea: string[];
   };
+};
+
+export type ConversionPattern = {
+  pattern: string;
+  evidence: string;
+  howToUse: string;
+};
+
+export type ConversionRecipe = {
+  titleFormulas: string[];
+  ctaTiming: string;
+  structure: string;
+};
+
+export type ConversionVideoIdea = {
+  title: string;
+  hook: string;
+  whyItConverts: string;
+  ctaSuggestion: string;
+};
+
+export type ConverterInsights = {
+  commonPatterns: ConversionPattern[];
+  conversionRecipe: ConversionRecipe;
+  nextIdeas: ConversionVideoIdea[];
 };
 
 export type PatternAnalysisJson = {
@@ -127,11 +161,13 @@ export type PatternAnalysisJson = {
   formatPatterns: string[];
   nextExperiments: string[];
   hooksToTry: string[];
+  // New structured format
+  structuredInsights?: ConverterInsights;
 };
 
 export type SubscriberAuditResponse = {
   channelId: string;
-  range: "7d" | "28d";
+  range: "7d" | "28d" | "90d";
   generatedAt: string;
   cachedUntil: string;
   videos: SubscriberMagnetVideo[];
@@ -144,7 +180,11 @@ export type SubscriberAuditResponse = {
     avgSubsPerThousand: number;
     totalSubscribersGained: number;
     totalViews: number;
+    strongConverterCount: number;
+    avgPlaylistAddsPer1k?: number;
+    avgEngagedRate?: number;
   };
+  demo?: boolean;
 };
 
 export type SimilarChannel = {
@@ -308,68 +348,6 @@ export type IdeaBoardData = {
 };
 
 /* ============================================
-   TRENDING TYPES - Video-first trending analysis
-   ============================================ */
-
-export type TrendingVideo = {
-  videoId: string;
-  title: string;
-  channelId: string;
-  channelTitle: string;
-  channelThumbnailUrl: string | null;
-  videoUrl: string;
-  channelUrl: string;
-  thumbnailUrl: string | null;
-  publishedAt: string;
-  viewCount: number;
-  likeCount?: number;
-  commentCount?: number;
-  viewsPerDay: number;
-  durationSec?: number;
-  topicKeywords?: string[];
-  isUserVideo?: boolean;
-};
-
-export type TrendingListResponse = {
-  channelId: string;
-  range: "7d" | "14d" | "28d";
-  generatedAt: string;
-  cachedUntil: string;
-  nextCursor?: string;
-  videos: TrendingVideo[];
-  demo?: boolean;
-};
-
-export type TrendingVideoAnalysis = {
-  video: TrendingVideo;
-  metrics: {
-    viewCount: number;
-    viewsPerDay: number;
-    likeRate?: number;
-    commentRate?: number;
-    subscriberGain?: number; // Only for user's videos
-    subsPer1k?: number; // Only for user's videos
-  };
-  analysis: {
-    whatItsAbout: string;
-    whyTrending: string[];
-    whatTheyDidWell: string[];
-    themesToRemix: Array<{ theme: string; why: string }>;
-    titlePatterns: string[];
-    hookPatterns: string[];
-    thumbnailPatterns: string[];
-    remixIdeasForYou: Array<{
-      title: string;
-      hook: string;
-      overlayText: string;
-      angle: string;
-    }>;
-  };
-  tags?: string[];
-  category?: string;
-};
-
-/* ============================================
    IDEA MASHUP TYPES - Cross-niche creativity
    ============================================ */
 
@@ -481,5 +459,155 @@ export type CompetitorVideoAnalysis = {
   derivedKeywords?: string[]; // If tags absent, derived from title/description
   category?: string;
   moreFromChannel: CompetitorVideo[];
+  demo?: boolean;
+};
+
+// ============================================
+// OWNED VIDEO INSIGHTS (YouTube Analytics-powered)
+// ============================================
+
+export type OwnedVideoMetadata = {
+  videoId: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  tags: string[];
+  categoryId: string | null;
+  thumbnailUrl: string | null;
+  durationSec: number;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  topicCategories: string[];
+};
+
+export type DailyAnalyticsRow = {
+  date: string;
+  views: number;
+  engagedViews: number | null;
+  likes: number | null;
+  comments: number | null;
+  shares: number | null;
+  estimatedMinutesWatched: number | null;
+  averageViewDuration: number | null;
+  averageViewPercentage: number | null;
+  subscribersGained: number | null;
+  subscribersLost: number | null;
+  videosAddedToPlaylists: number | null;
+  videosRemovedFromPlaylists: number | null;
+  estimatedRevenue: number | null;
+  estimatedAdRevenue: number | null;
+  grossRevenue: number | null;
+  monetizedPlaybacks: number | null;
+  playbackBasedCpm: number | null;
+  adImpressions: number | null;
+  cpm: number | null;
+};
+
+export type AnalyticsTotals = DailyAnalyticsRow & {
+  startDate: string;
+  endDate: string;
+  daysInRange: number;
+};
+
+export type DerivedMetrics = {
+  viewsPerDay: number;
+  totalViews: number;
+  daysInRange: number;
+  subsPer1k: number | null;
+  sharesPer1k: number | null;
+  commentsPer1k: number | null;
+  likesPer1k: number | null;
+  playlistAddsPer1k: number | null;
+  watchTimePerViewSec: number | null;
+  avdRatio: number | null;
+  engagementPerView: number | null;
+  engagedViewRate: number | null;
+  rpm: number | null;
+  monetizedPlaybackRate: number | null;
+  adImpressionsPerView: number | null;
+  velocity24h: number | null;
+  velocity7d: number | null;
+  acceleration24h: number | null;
+};
+
+export type ChannelBaseline = {
+  sampleSize: number;
+  viewsPerDay: { mean: number; std: number };
+  avgViewPercentage: { mean: number; std: number };
+  watchTimePerViewSec: { mean: number; std: number };
+  subsPer1k: { mean: number; std: number };
+  engagementPerView: { mean: number; std: number };
+  sharesPer1k: { mean: number; std: number };
+};
+
+export type ZScoreResult = {
+  value: number | null;
+  zScore: number | null;
+  percentile: number | null;
+  vsBaseline: "above" | "at" | "below" | "unknown";
+  delta: number | null;
+};
+
+export type BaselineComparison = {
+  viewsPerDay: ZScoreResult;
+  avgViewPercentage: ZScoreResult;
+  watchTimePerViewSec: ZScoreResult;
+  subsPer1k: ZScoreResult;
+  engagementPerView: ZScoreResult;
+  sharesPer1k: ZScoreResult;
+  healthScore: number;
+  healthLabel: "Excellent" | "Good" | "Average" | "Below Average" | "Needs Work";
+};
+
+export type VideoInsightsLLM = {
+  summary: { headline: string; oneLiner: string };
+  wins: Array<{ label: string; why: string; metricKey: string }>;
+  leaks: Array<{ label: string; why: string; metricKey: string }>;
+  actions: Array<{
+    lever: "Retention" | "Conversion" | "Engagement" | "Discovery";
+    action: string;
+    reason: string;
+    expectedImpact: string;
+  }>;
+  experiments: Array<{
+    type: "Title" | "Hook" | "Structure";
+    test: string[];
+    successMetric: string;
+  }>;
+  packaging: {
+    titleAngles: string[];
+    hookSetups: string[];
+    visualMoments: string[];
+  };
+  competitorTakeaways: Array<{
+    pattern: string;
+    evidence: Array<{ videoId: string; title: string; channelTitle: string }>;
+    howToUse: string;
+  }>;
+  remixIdeas: Array<{
+    title: string;
+    hook: string;
+    keywords: string[];
+    inspiredByVideoIds: string[];
+  }>;
+};
+
+export type VideoInsightsResponse = {
+  video: OwnedVideoMetadata;
+  analytics: {
+    totals: AnalyticsTotals;
+    dailySeries: DailyAnalyticsRow[];
+  };
+  derived: DerivedMetrics;
+  baseline: ChannelBaseline;
+  comparison: BaselineComparison;
+  levers: {
+    retention: { grade: string; color: string; reason: string; action: string };
+    conversion: { grade: string; color: string; reason: string; action: string };
+    engagement: { grade: string; color: string; reason: string; action: string };
+  };
+  llmInsights: VideoInsightsLLM | null;
+  cachedUntil: string;
   demo?: boolean;
 };

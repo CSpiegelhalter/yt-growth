@@ -4,7 +4,7 @@ import IdeasClient from "./IdeasClient";
 
 export const metadata: Metadata = {
   title: "Idea Engine | YT Growth",
-  description: "AI-powered video ideas based on what's working in your niche",
+  description: "Video ideas based on what's working in your niche",
   robots: { index: false, follow: false },
 };
 

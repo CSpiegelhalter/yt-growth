@@ -13,6 +13,7 @@ import { copyToClipboard } from "@/components/ui/Toast";
 
 type Props = {
   data: IdeaBoardData | null;
+  channelId?: string;
   channelName?: string;
   loading?: boolean;
   isSubscribed?: boolean;
@@ -21,7 +22,6 @@ type Props = {
     range?: "7d" | "28d";
   }) => Promise<void>;
   onRefresh?: (range: "7d" | "28d") => void;
-  onLoadMoreProof?: (ideaId: string) => Promise<void>;
 };
 
 /**
@@ -30,19 +30,18 @@ type Props = {
  */
 export default function IdeaBoard({
   data,
+  channelId,
   channelName,
   loading = false,
   isSubscribed = true,
   onGenerate,
   onRefresh,
-  onLoadMoreProof,
 }: Props) {
   const [generating, setGenerating] = useState(false);
   const [generatingMore, setGeneratingMore] = useState(false);
   const [range, setRange] = useState<"7d" | "28d">("7d");
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [loadingMoreProof, setLoadingMoreProof] = useState(false);
   const [savedIdeas, setSavedIdeas] = useState<Set<string>>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("savedIdeas");
@@ -50,19 +49,6 @@ export default function IdeaBoard({
     }
     return new Set();
   });
-
-  const handleLoadMoreProof = useCallback(
-    async (ideaId: string) => {
-      if (!onLoadMoreProof || loadingMoreProof) return;
-      setLoadingMoreProof(true);
-      try {
-        await onLoadMoreProof(ideaId);
-      } finally {
-        setLoadingMoreProof(false);
-      }
-    },
-    [onLoadMoreProof, loadingMoreProof]
-  );
 
   const handleCopy = useCallback(async (text: string, id: string) => {
     const success = await copyToClipboard(text);
@@ -153,7 +139,7 @@ export default function IdeaBoard({
           </div>
           <h2 className={s.lockedTitle}>Unlock the Idea Board</h2>
           <p className={s.lockedDesc}>
-            Get AI-generated video ideas backed by real data from similar
+            Get video ideas backed by real data from similar
             channels. See what&apos;s working in your niche and get actionable
             hooks, titles, and thumbnails.
           </p>
@@ -276,9 +262,7 @@ export default function IdeaBoard({
           onCopy={handleCopy}
           copiedId={copiedId}
           onClose={() => setSelectedIdeaId(null)}
-          similarChannels={data.similarChannels}
-          onLoadMore={() => handleLoadMoreProof(selectedIdea.id)}
-          loadingMore={loadingMoreProof}
+          channelId={channelId}
         />
       )}
     </div>
@@ -405,19 +389,24 @@ function IdeaDetailSheet({
   onCopy,
   copiedId,
   onClose,
-  similarChannels,
-  onLoadMore,
-  loadingMore,
+  channelId,
 }: {
   idea: Idea;
   onCopy: (text: string, id: string) => void;
   copiedId: string | null;
   onClose: () => void;
-  similarChannels: IdeaBoardData["similarChannels"];
-  onLoadMore?: () => void;
-  loadingMore?: boolean;
+  channelId?: string;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [generatingMore, setGeneratingMore] = useState(false);
+  const [extraHooks, setExtraHooks] = useState<string[]>([]);
+  const [extraTitles, setExtraTitles] = useState<string[]>([]);
+  const [extraKeywords, setExtraKeywords] = useState<string[]>([]);
+  const [packaging, setPackaging] = useState<{
+    titleAngles: string[];
+    hookSetups: string[];
+    visualMoments: string[];
+  } | null>(null);
 
   // Lock body scroll
   useEffect(() => {
@@ -437,9 +426,64 @@ function IdeaDetailSheet({
     return () => window.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
-  const allKeywords = idea.keywords.map((k) => k.text).join(", ");
-  const allHooks = idea.hooks.map((h) => h.text).join("\n\n");
-  const allTitles = idea.titles.map((t) => t.text).join("\n");
+  // Generate packaging ideas on mount (client-side derivation)
+  useEffect(() => {
+    if (!packaging) {
+      const derived = derivePackagingIdeas(idea);
+      setPackaging(derived);
+    }
+  }, [idea, packaging]);
+
+  const handleGenerateMore = useCallback(async () => {
+    if (!channelId || generatingMore) return;
+    setGeneratingMore(true);
+    try {
+      const res = await fetch(`/api/me/channels/${channelId}/ideas/more`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          seed: {
+            ideaId: idea.id,
+            title: idea.title,
+            summary: idea.angle,
+            keywords: idea.keywords.slice(0, 5).map((k) => k.text),
+            hooks: idea.hooks.slice(0, 2).map((h) => h.text),
+            inspiredByVideoIds: idea.proof.basedOn.slice(0, 3).map((p) => p.videoId),
+          },
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.hooks?.length) setExtraHooks((prev) => [...prev, ...data.hooks]);
+        if (data.titles?.length) setExtraTitles((prev) => [...prev, ...data.titles]);
+        if (data.keywords?.length) setExtraKeywords((prev) => [...prev, ...data.keywords]);
+        if (data.packaging) setPackaging(data.packaging);
+      }
+    } catch (err) {
+      console.error("Failed to generate more:", err);
+    } finally {
+      setGeneratingMore(false);
+    }
+  }, [channelId, generatingMore, idea]);
+
+  const allKeywords = [
+    ...idea.keywords.map((k) => k.text),
+    ...extraKeywords,
+  ].join(", ");
+
+  // Combine original + extra content
+  const allHooks = [
+    ...idea.hooks.map((h) => h.text),
+    ...extraHooks,
+  ];
+  const allTitles = [
+    ...idea.titles.map((t) => t.text),
+    ...extraTitles,
+  ];
+
+  // Limit inspired by to 6 max, no load more
+  const proofVideos = idea.proof.basedOn.slice(0, 6);
 
   return (
     <div className={s.sheetOverlay} onClick={onClose}>
@@ -453,7 +497,7 @@ function IdeaDetailSheet({
         {/* Drag handle */}
         <div className={s.sheetHandle} aria-hidden="true" />
 
-        {/* Sticky header */}
+        {/* Sticky header with Generate More CTA */}
         <div className={s.sheetHeader}>
           <button className={s.sheetClose} onClick={onClose} aria-label="Close">
             <svg
@@ -469,49 +513,49 @@ function IdeaDetailSheet({
           </button>
           <h2 className={s.sheetTitle}>{idea.title}</h2>
           <p className={s.sheetAngle}>{idea.angle}</p>
-        </div>
 
-        {/* Quick Actions Bar */}
-        <div className={s.quickActions}>
-          <button
-            className={s.quickActionBtn}
-            onClick={() => onCopy(idea.hooks[0]?.text ?? "", "quick-hook")}
-          >
-            {copiedId === "quick-hook" ? "Copied" : "Copy Hook"}
-          </button>
-          <button
-            className={s.quickActionBtn}
-            onClick={() => onCopy(idea.titles[0]?.text ?? "", "quick-title")}
-          >
-            {copiedId === "quick-title" ? "Copied" : "Copy Title"}
-          </button>
-          <button
-            className={s.quickActionBtn}
-            onClick={() => onCopy(allKeywords, "quick-keywords")}
-          >
-            {copiedId === "quick-keywords" ? "Copied" : "Copy Keywords"}
-          </button>
+          {/* Generate More Like This - Primary CTA */}
+          {channelId && (
+            <button
+              className={s.generateMoreBtn}
+              onClick={handleGenerateMore}
+              disabled={generatingMore}
+            >
+              {generatingMore ? (
+                <>
+                  <span className={s.spinnerSmall} />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Generate more like this
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Scrollable Content */}
         <div className={s.sheetContent}>
           {/* Hooks Section */}
           <section className={s.sheetSection}>
-            <div className={s.sectionHeader}>
-              <h3 className={s.sectionTitle}>Hooks</h3>
-              <button
-                className={s.copyAllBtn}
-                onClick={() => onCopy(allHooks, "all-hooks")}
-              >
-                {copiedId === "all-hooks" ? "Copied" : "Copy All"}
-              </button>
-            </div>
+            <h3 className={s.sectionTitle}>Hooks</h3>
             <p className={s.sectionIntro}>
               Opening lines to grab attention in the first 5 seconds
             </p>
             <div className={s.hookCards}>
               {idea.hooks.map((hook, i) => (
-                <div key={i} className={s.hookCard}>
+                <div key={`orig-${i}`} className={s.hookCard}>
                   <p className={s.hookCardText}>&ldquo;{hook.text}&rdquo;</p>
                   <div className={s.hookCardFooter}>
                     <div className={s.hookTags}>
@@ -522,10 +566,46 @@ function IdeaDetailSheet({
                       ))}
                     </div>
                     <button
-                      className={s.copyBtn}
+                      className={s.copyIconBtn}
                       onClick={() => onCopy(hook.text, `hook-${i}`)}
+                      title="Copy"
                     >
-                      {copiedId === `hook-${i}` ? "Copied" : "Copy"}
+                      {copiedId === `hook-${i}` ? (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" />
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {/* Extra hooks from Generate More */}
+              {extraHooks.map((hookText, i) => (
+                <div key={`extra-${i}`} className={`${s.hookCard} ${s.newItem}`}>
+                  <span className={s.newBadge}>New</span>
+                  <p className={s.hookCardText}>&ldquo;{hookText}&rdquo;</p>
+                  <div className={s.hookCardFooter}>
+                    <div />
+                    <button
+                      className={s.copyIconBtn}
+                      onClick={() => onCopy(hookText, `extra-hook-${i}`)}
+                      title="Copy"
+                    >
+                      {copiedId === `extra-hook-${i}` ? (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" />
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -535,23 +615,15 @@ function IdeaDetailSheet({
 
           {/* Titles Section */}
           <section className={s.sheetSection}>
-            <div className={s.sectionHeader}>
-              <h3 className={s.sectionTitle}>Titles</h3>
-              <button
-                className={s.copyAllBtn}
-                onClick={() => onCopy(allTitles, "all-titles")}
-              >
-                {copiedId === "all-titles" ? "Copied" : "Copy All"}
-              </button>
-            </div>
+            <h3 className={s.sectionTitle}>Titles</h3>
             <p className={s.sectionIntro}>
               Title options with style patterns that work
             </p>
             <div className={s.titleCards}>
               {idea.titles.map((title, i) => (
-                <div key={i} className={s.titleCard}>
-                  <p className={s.titleCardText}>{title.text}</p>
-                  <div className={s.titleCardFooter}>
+                <div key={`orig-${i}`} className={s.titleCard}>
+                  <div className={s.titleCardContent}>
+                    <p className={s.titleCardText}>{title.text}</p>
                     <div className={s.styleTags}>
                       {title.styleTags.map((tag) => (
                         <span key={tag} className={s.styleTag}>
@@ -559,57 +631,85 @@ function IdeaDetailSheet({
                         </span>
                       ))}
                     </div>
-                    <button
-                      className={s.copyBtn}
-                      onClick={() => onCopy(title.text, `title-${i}`)}
-                    >
-                      {copiedId === `title-${i}` ? "Copied" : "Copy"}
-                    </button>
                   </div>
+                  <button
+                    className={s.copyIconBtn}
+                    onClick={() => onCopy(title.text, `title-${i}`)}
+                    title="Copy"
+                  >
+                    {copiedId === `title-${i}` ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" />
+                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              ))}
+              {/* Extra titles from Generate More */}
+              {extraTitles.map((titleText, i) => (
+                <div key={`extra-${i}`} className={`${s.titleCard} ${s.newItem}`}>
+                  <span className={s.newBadge}>New</span>
+                  <div className={s.titleCardContent}>
+                    <p className={s.titleCardText}>{titleText}</p>
+                  </div>
+                  <button
+                    className={s.copyIconBtn}
+                    onClick={() => onCopy(titleText, `extra-title-${i}`)}
+                    title="Copy"
+                  >
+                    {copiedId === `extra-title-${i}` ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" />
+                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* Inspired By Section (formerly Proof) */}
-          <section className={s.sheetSection}>
-            <h3 className={s.sectionTitle}>Inspired By</h3>
-            <p className={s.sectionIntro}>
-              Recent winners that sparked this idea
-            </p>
-            <div className={s.proofScroller}>
-              {idea.proof.basedOn.map((pv) => (
-                <a
-                  key={pv.videoId}
-                  href={`/competitors/video/${pv.videoId}`}
-                  className={s.proofCard}
-                >
-                  <div className={s.proofThumb}>
-                    <img
-                      src={pv.thumbnailUrl || "/placeholder-thumb.jpg"}
-                      alt=""
-                    />
-                    <span className={s.proofViews}>
-                      {formatCompact(pv.metrics.viewsPerDay)}/day
-                    </span>
-                  </div>
-                  <div className={s.proofInfo}>
-                    <h4 className={s.proofTitle}>{truncate(pv.title, 50)}</h4>
-                    <span className={s.proofChannel}>{pv.channelTitle}</span>
-                  </div>
-                </a>
-              ))}
-            </div>
-            {onLoadMore && (
-              <button
-                className={s.loadMoreBtn}
-                onClick={onLoadMore}
-                disabled={loadingMore}
-              >
-                {loadingMore ? "Loading..." : "Load More"}
-              </button>
-            )}
-          </section>
+          {/* Inspired By Section - curated, no load more */}
+          {proofVideos.length > 0 && (
+            <section className={s.sheetSection}>
+              <h3 className={s.sectionTitle}>Inspired By</h3>
+              <p className={s.sectionIntro}>
+                Recent winners that sparked this idea
+              </p>
+              <div className={s.proofScroller}>
+                {proofVideos.map((pv) => (
+                  <a
+                    key={pv.videoId}
+                    href={`/competitors/video/${pv.videoId}`}
+                    className={s.proofCard}
+                  >
+                    <div className={s.proofThumb}>
+                      <img
+                        src={pv.thumbnailUrl || "/placeholder-thumb.jpg"}
+                        alt=""
+                      />
+                      <span className={s.proofViews}>
+                        {formatCompact(pv.metrics.viewsPerDay)}/day
+                      </span>
+                    </div>
+                    <div className={s.proofInfo}>
+                      <h4 className={s.proofTitle}>{truncate(pv.title, 50)}</h4>
+                      <span className={s.proofChannel}>{pv.channelTitle}</span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Keywords Section */}
           <section className={s.sheetSection}>
@@ -636,46 +736,75 @@ function IdeaDetailSheet({
                   )}
                 </button>
               ))}
+              {extraKeywords.map((kw, i) => (
+                <button
+                  key={`extra-${i}`}
+                  className={`${s.keywordChip} ${s.newChip}`}
+                  onClick={() => onCopy(kw, `extra-kw-${i}`)}
+                >
+                  {kw}
+                  {copiedId === `extra-kw-${i}` && (
+                    <span className={s.chipCheck}>✓</span>
+                  )}
+                </button>
+              ))}
             </div>
           </section>
 
-          {/* Thumbnail Recipe */}
-          {idea.thumbnailConcept && (
+          {/* Packaging Ideas - replaces Thumbnail Recipe */}
+          {packaging && (
             <section className={s.sheetSection}>
-              <h3 className={s.sectionTitle}>Thumbnail Recipe</h3>
-              <div className={s.thumbnailRecipe}>
-                <div className={s.thumbnailOverlay}>
-                  <span className={s.overlayLabel}>Text Overlay</span>
-                  <span className={s.overlayText}>
-                    {idea.thumbnailConcept.overlayText}
-                  </span>
-                  <button
-                    className={s.copyBtn}
-                    onClick={() =>
-                      onCopy(idea.thumbnailConcept.overlayText, "overlay")
-                    }
-                  >
-                    {copiedId === "overlay" ? "Copied" : "Copy"}
-                  </button>
+              <h3 className={s.sectionTitle}>Packaging Ideas</h3>
+              <p className={s.sectionIntro}>
+                How to package this video for maximum impact
+              </p>
+              <div className={s.packagingGrid}>
+                {/* Title Angles */}
+                <div className={s.packagingCard}>
+                  <h4 className={s.packagingCardTitle}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M4 7V4h16v3M9 20h6M12 4v16" />
+                    </svg>
+                    Title Angles
+                  </h4>
+                  <ul className={s.packagingList}>
+                    {packaging.titleAngles.map((angle, i) => (
+                      <li key={i}>{angle}</li>
+                    ))}
+                  </ul>
                 </div>
-                <p className={s.thumbnailNote}>
-                  <strong>Composition:</strong>{" "}
-                  {idea.thumbnailConcept.composition}
-                </p>
-                <p className={s.thumbnailNote}>
-                  <strong>Contrast:</strong>{" "}
-                  {idea.thumbnailConcept.contrastNote}
-                </p>
-                {idea.thumbnailConcept.avoid.length > 0 && (
-                  <div className={s.thumbnailAvoid}>
-                    <strong>Avoid:</strong>
-                    <ul>
-                      {idea.thumbnailConcept.avoid.map((item, i) => (
-                        <li key={i}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+
+                {/* Hook Setups */}
+                <div className={s.packagingCard}>
+                  <h4 className={s.packagingCardTitle}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7z" />
+                    </svg>
+                    Hook Setups
+                  </h4>
+                  <ul className={s.packagingList}>
+                    {packaging.hookSetups.map((setup, i) => (
+                      <li key={i}>{setup}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Visual Moments */}
+                <div className={s.packagingCard}>
+                  <h4 className={s.packagingCardTitle}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <path d="M21 15l-5-5L5 21" />
+                    </svg>
+                    Visual Moments
+                  </h4>
+                  <ul className={s.packagingList}>
+                    {packaging.visualMoments.map((moment, i) => (
+                      <li key={i}>{moment}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </section>
           )}
@@ -717,6 +846,43 @@ function IdeaDetailSheet({
       </div>
     </div>
   );
+}
+
+/** Derive packaging ideas client-side from idea data */
+function derivePackagingIdeas(idea: Idea): {
+  titleAngles: string[];
+  hookSetups: string[];
+  visualMoments: string[];
+} {
+  const titleAngles: string[] = [];
+  const hookSetups: string[] = [];
+  const visualMoments: string[] = [];
+
+  // Derive title angles from titles and keywords
+  if (idea.titles.length > 0) {
+    const firstTitle = idea.titles[0].text;
+    titleAngles.push(`Lead with the promise: "${truncate(firstTitle, 40)}"`);
+  }
+  if (idea.keywords.length > 0) {
+    titleAngles.push(`Keyword-first: Start with "${idea.keywords[0].text}"`);
+  }
+  titleAngles.push("Question format: Turn the topic into a curiosity question");
+
+  // Derive hook setups from hooks
+  if (idea.hooks.length > 0) {
+    hookSetups.push("Start with a bold claim from your top hook");
+    hookSetups.push("Open with a relatable problem your audience faces");
+  }
+  hookSetups.push("Show the end result first, then explain how");
+
+  // Derive visual moments from proof/inspired by
+  if (idea.proof.basedOn.length > 0) {
+    visualMoments.push("Show a quick result/transformation in first 3 seconds");
+  }
+  visualMoments.push("Use text overlay matching your title promise");
+  visualMoments.push("Cut to B-roll of your hands demonstrating the concept");
+
+  return { titleAngles, hookSetups, visualMoments };
 }
 
 /* ================================================

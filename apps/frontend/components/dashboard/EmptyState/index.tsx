@@ -20,14 +20,14 @@ export default function EmptyState({ onConnect, canAdd }: Props) {
       </div>
       <h3 className={s.title}>Connect Your Channel</h3>
       <p className={s.description}>
-        Link your YouTube channel to unlock AI-powered growth insights, retention analysis, and personalized content plans.
+        Link your YouTube channel to unlock growth insights, retention analysis, and personalized content ideas.
       </p>
       <div className={s.features}>
         <div className={s.feature}>
-          <span>Drop-off analysis</span>
+          <span>Video analysis</span>
         </div>
         <div className={s.feature}>
-          <span>AI content recommendations</span>
+          <span>Content recommendations</span>
         </div>
         <div className={s.feature}>
           <span>Subscriber driver insights</span>

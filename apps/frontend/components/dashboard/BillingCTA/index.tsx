@@ -44,9 +44,15 @@ export default function BillingCTA({
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else if (data.needsSubscription) {
+        // User has a fake subscription, redirect to checkout
+        window.location.href = "/api/integrations/stripe/checkout";
+      } else if (data.error) {
+        alert(data.error);
       }
     } catch (err) {
       console.error("Portal error:", err);
+      alert("Failed to open billing portal. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -69,7 +75,7 @@ export default function BillingCTA({
           )}
           <ul className={s.features}>
             <li>Unlimited idea generations</li>
-            <li>Drop-off analysis</li>
+            <li>Video analysis</li>
             <li>Subscriber driver insights</li>
             <li>Up to 5 channels</li>
           </ul>
@@ -94,8 +100,8 @@ export default function BillingCTA({
         </div>
       </div>
       <ul className={s.features}>
-        <li>AI-powered Idea Engine</li>
-        <li>Drop-off analysis with fixes</li>
+        <li>Unlimited Idea Engine</li>
+        <li>Video analysis with fixes</li>
         <li>Subscriber driver insights</li>
         <li>Up to 5 connected channels</li>
         <li>Priority support</li>

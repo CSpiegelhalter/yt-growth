@@ -3,9 +3,9 @@ import s from "./home.module.css";
 import { HeroCTAs } from "@/components/HeroCTAs";
 
 export const metadata: Metadata = {
-  title: "YouTube Growth Consultant - AI-Powered Channel Growth",
+  title: "YouTube Growth Consultant - Grow Your Channel Faster",
   description:
-    "Stop guessing what video to make next. Get AI-powered content plans, retention analysis, and subscriber insights to grow your YouTube channel 10x faster.",
+    "Stop guessing what video to make next. Get data-driven content ideas, retention insights, and subscriber analysis to grow your YouTube channel 10x faster.",
 };
 
 export default function HomePage() {
@@ -20,8 +20,8 @@ export default function HomePage() {
           <span className={s.highlight}>Video to Make Next</span>
         </h1>
         <p className={s.subtitle}>
-          AI-powered content plans, retention analysis, and subscriber insights.
-          Grow your channel 10x faster with data-driven decisions.
+          Data-driven video ideas, retention insights, and subscriber analysis.
+          Grow your channel 10x faster with smarter decisions.
         </p>
         {/* Auth-aware CTAs */}
         <HeroCTAs />
@@ -37,8 +37,8 @@ export default function HomePage() {
           </div>
           <h3 className={s.featureTitle}>Idea Engine</h3>
           <p className={s.featureDesc}>
-            Get AI-generated content plans with topic ideas, title options,
-            thumbnail guidance, and hooks that convert.
+            Get content ideas based on what&apos;s working in your niche, with 
+            title options, thumbnail guidance, and hooks that convert.
           </p>
         </div>
 
@@ -48,9 +48,9 @@ export default function HomePage() {
               <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
           </div>
-          <h3 className={s.featureTitle}>Drop-off Analysis</h3>
+          <h3 className={s.featureTitle}>Video Analysis</h3>
           <p className={s.featureDesc}>
-            Discover exactly where viewers leave and get AI-powered
+            Discover exactly where viewers leave and get clear
             hypotheses with actionable fixes.
           </p>
         </div>
@@ -95,7 +95,7 @@ export default function HomePage() {
             <div className={s.stepNumber}>3</div>
             <h4 className={s.stepTitle}>Get Actionable Insights</h4>
             <p className={s.stepDesc}>
-              Receive AI-powered recommendations tailored to your channel&apos;s
+              Receive personalized recommendations tailored to your channel&apos;s
               performance.
             </p>
           </div>
