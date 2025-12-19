@@ -35,26 +35,13 @@ export default function BillingCTA({
     }
   };
 
-  const handleManageBilling = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/integrations/stripe/portal", {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else if (data.needsSubscription) {
-        // User has a fake subscription, redirect to checkout
-        window.location.href = "/api/integrations/stripe/checkout";
-      } else if (data.error) {
-        alert(data.error);
-      }
-    } catch (err) {
-      console.error("Portal error:", err);
-      alert("Failed to open billing portal. Please try again.");
-    } finally {
-      setLoading(false);
+  const handleManageBilling = () => {
+    // Direct link to Stripe Customer Portal
+    const portalUrl = process.env.NEXT_PUBLIC_STRIPE_PORTAL_URL;
+    if (portalUrl) {
+      window.location.href = portalUrl;
+    } else {
+      alert("Billing portal not configured. Please contact support.");
     }
   };
 
@@ -63,14 +50,17 @@ export default function BillingCTA({
       <div className={s.card}>
         <div className={s.header}>
           <div>
-            <h3 className={s.title}>{plan.charAt(0).toUpperCase() + plan.slice(1)} Plan</h3>
+            <h3 className={s.title}>
+              {plan.charAt(0).toUpperCase() + plan.slice(1)} Plan
+            </h3>
             <span className={`${s.badge} ${s.badgeSuccess}`}>Active</span>
           </div>
         </div>
         <div className={s.details}>
           {currentPeriodEnd && (
             <p className={s.meta}>
-              Next billing date: {new Date(currentPeriodEnd).toLocaleDateString()}
+              Next billing date:{" "}
+              {new Date(currentPeriodEnd).toLocaleDateString()}
             </p>
           )}
           <ul className={s.features}>
@@ -96,7 +86,9 @@ export default function BillingCTA({
       <div className={s.header}>
         <div>
           <h3 className={s.title}>Upgrade to Pro</h3>
-          <p className={s.subtitle}>Unlock all features and grow your channel faster</p>
+          <p className={s.subtitle}>
+            Unlock all features and grow your channel faster
+          </p>
         </div>
       </div>
       <ul className={s.features}>
@@ -120,4 +112,3 @@ export default function BillingCTA({
     </div>
   );
 }
-
