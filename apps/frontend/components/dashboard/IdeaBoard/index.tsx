@@ -24,18 +24,9 @@ type Props = {
   onLoadMoreProof?: (ideaId: string) => Promise<void>;
 };
 
-type RemixMode =
-  | "default"
-  | "emotional"
-  | "contrarian"
-  | "beginner"
-  | "advanced"
-  | "shortsFirst";
-// Removed: FormatFilter and DifficultyFilter types - no longer used
-
 /**
  * IdeaBoard - Premium Idea Engine experience
- * Visual, data-backed creative direction for YouTube creators
+ * Vertical feed with scrollable detail sheets
  */
 export default function IdeaBoard({
   data,
@@ -50,7 +41,6 @@ export default function IdeaBoard({
   const [generatingMore, setGeneratingMore] = useState(false);
   const [range, setRange] = useState<"7d" | "28d">("7d");
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
-  const [remixMode, setRemixMode] = useState<RemixMode>("default");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [loadingMoreProof, setLoadingMoreProof] = useState(false);
   const [savedIdeas, setSavedIdeas] = useState<Set<string>>(() => {
@@ -61,7 +51,6 @@ export default function IdeaBoard({
     return new Set();
   });
 
-  // Handle load more proof videos
   const handleLoadMoreProof = useCallback(
     async (ideaId: string) => {
       if (!onLoadMoreProof || loadingMoreProof) return;
@@ -124,15 +113,7 @@ export default function IdeaBoard({
     });
   }, []);
 
-  // All ideas - no filtering by format/difficulty
-  const filteredIdeas = useMemo(() => {
-    return data?.ideas ?? [];
-  }, [data?.ideas]);
-
-  // Top 3 sparks (hero ideas)
-  const topSparks = filteredIdeas.slice(0, 3);
-  // Rest of ideas for the stream
-  const ideaStream = filteredIdeas.slice(3);
+  const ideas = data?.ideas ?? [];
 
   const selectedIdea = useMemo(() => {
     if (!selectedIdeaId || !data?.ideas) return null;
@@ -144,14 +125,9 @@ export default function IdeaBoard({
     return (
       <div className={s.board}>
         <div className={s.skeletonHeader} />
-        <div className={s.skeletonCarousel}>
-          {[1, 2, 3].map((i) => (
-            <div key={i} className={s.skeletonSparkCard} />
-          ))}
-        </div>
-        <div className={s.skeletonStream}>
+        <div className={s.skeletonFeed}>
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className={s.skeletonStreamCard} />
+            <div key={i} className={s.skeletonCard} />
           ))}
         </div>
       </div>
@@ -178,8 +154,8 @@ export default function IdeaBoard({
           <h2 className={s.lockedTitle}>Unlock the Idea Board</h2>
           <p className={s.lockedDesc}>
             Get AI-generated video ideas backed by real data from similar
-            channels. See what's working in your niche and get actionable hooks,
-            titles, and thumbnails.
+            channels. See what&apos;s working in your niche and get actionable
+            hooks, titles, and thumbnails.
           </p>
           <a href="/api/integrations/stripe/checkout" className={s.btnPrimary}>
             Subscribe to Pro
@@ -208,8 +184,8 @@ export default function IdeaBoard({
           </div>
           <h2 className={s.emptyTitle}>Your Idea Board</h2>
           <p className={s.emptyDesc}>
-            Generate video ideas backed by data from similar channels. We'll
-            show you what's working and how to make it your own.
+            Generate video ideas backed by data from similar channels.
+            We&apos;ll show you what&apos;s working and how to make it your own.
           </p>
           <div className={s.emptyActions}>
             <select
@@ -242,10 +218,10 @@ export default function IdeaBoard({
 
   return (
     <div className={s.board}>
-      {/* Top Bar */}
+      {/* Header */}
       <header className={s.header}>
         <div className={s.headerLeft}>
-          <h1 className={s.title}>Idea Board</h1>
+          <h1 className={s.title}>Idea Engine</h1>
           {channelName && <span className={s.channelName}>{channelName}</span>}
           {data.demo && <span className={s.demoBadge}>Demo Data</span>}
         </div>
@@ -268,36 +244,35 @@ export default function IdeaBoard({
         </div>
       </header>
 
-      {/* Filter chips removed - ideas now shown without format/difficulty filters */}
-
-      {/* Hero Section: Top 3 Sparks */}
-      {topSparks.length > 0 && (
-        <section className={s.sparksSection}>
-          <h2 className={s.sectionTitle}>Top Sparks</h2>
-          <div className={s.sparksCarousel}>
-            {topSparks.map((idea) => (
-              <SparkCard
-                key={idea.id}
-                idea={idea}
-                isSaved={savedIdeas.has(idea.id)}
-                isSelected={selectedIdeaId === idea.id}
-                onSelect={() => setSelectedIdeaId(idea.id)}
-                onSave={() => toggleSaveIdea(idea.id)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* Niche Insights */}
       {data.nicheInsights && <NicheInsightsBar insights={data.nicheInsights} />}
 
-      {/* Selected Idea Detail View */}
+      {/* Vertical Idea Feed */}
+      <div className={s.ideaFeed}>
+        {ideas.map((idea) => (
+          <IdeaCard
+            key={idea.id}
+            idea={idea}
+            isSaved={savedIdeas.has(idea.id)}
+            onSelect={() => setSelectedIdeaId(idea.id)}
+            onSave={() => toggleSaveIdea(idea.id)}
+            onCopyHook={(text) => handleCopy(text, `hook-${idea.id}`)}
+            copiedId={copiedId}
+          />
+        ))}
+      </div>
+
+      {/* Footer */}
+      <footer className={s.footer}>
+        <span className={s.footerMeta}>
+          {ideas.length} ideas generated {formatRelativeTime(data.generatedAt)}
+        </span>
+      </footer>
+
+      {/* Detail Sheet */}
       {selectedIdea && (
-        <IdeaDetailView
+        <IdeaDetailSheet
           idea={selectedIdea}
-          remixMode={remixMode}
-          onRemixChange={setRemixMode}
           onCopy={handleCopy}
           copiedId={copiedId}
           onClose={() => setSelectedIdeaId(null)}
@@ -306,197 +281,127 @@ export default function IdeaBoard({
           loadingMore={loadingMoreProof}
         />
       )}
-
-      {/* Idea Stream */}
-      {ideaStream.length > 0 && (
-        <section className={s.streamSection}>
-          <h2 className={s.sectionTitle}>More Ideas</h2>
-          <div className={s.streamGrid}>
-            {ideaStream.map((idea) => (
-              <StreamCard
-                key={idea.id}
-                idea={idea}
-                isSaved={savedIdeas.has(idea.id)}
-                onSelect={() => setSelectedIdeaId(idea.id)}
-                onSave={() => toggleSaveIdea(idea.id)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Footer */}
-      <footer className={s.footer}>
-        <span className={s.footerMeta}>
-          {filteredIdeas.length} ideas • Generated{" "}
-          {formatRelativeTime(data.generatedAt)}
-        </span>
-      </footer>
     </div>
   );
 }
 
 /* ================================================
-   SUB-COMPONENTS
+   IDEA CARD - Vertical Feed Card
    ================================================ */
-
-/** Spark Card - Hero idea card with proof strip */
-function SparkCard({
+function IdeaCard({
   idea,
   isSaved,
-  isSelected,
   onSelect,
   onSave,
+  onCopyHook,
+  copiedId,
 }: {
   idea: Idea;
   isSaved: boolean;
-  isSelected: boolean;
   onSelect: () => void;
   onSave: () => void;
+  onCopyHook: (text: string) => void;
+  copiedId: string | null;
 }) {
   const topHook = idea.hooks[0];
   const proofVideos = idea.proof.basedOn.slice(0, 3);
 
-  // Use button for accessibility and proper click handling
   return (
-    <button
-      type="button"
-      className={`${s.sparkCard} ${isSelected ? s.sparkSelected : ""}`}
-      onClick={onSelect}
-      aria-pressed={isSelected}
-    >
-      {/* Selected indicator */}
-      {isSelected && <span className={s.selectedChip}>Selected</span>}
+    <article className={s.ideaCard}>
+      {/* Card content - clickable */}
+      <div className={s.ideaCardMain} onClick={onSelect}>
+        <h3 className={s.ideaTitle}>{idea.title}</h3>
+        <p className={s.ideaAngle}>{idea.angle}</p>
 
-      <div className={s.sparkHeader}>
-        <span
-          role="button"
-          tabIndex={0}
-          className={`${s.saveBtn} ${isSaved ? s.saved : ""}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSave();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.stopPropagation();
-              onSave();
-            }
-          }}
-          title={isSaved ? "Unsave" : "Save idea"}
-        >
-          {isSaved ? "★" : "☆"}
-        </span>
-      </div>
-
-      <h3 className={s.sparkTitle}>{idea.title}</h3>
-      <p className={s.sparkAngle}>{idea.angle}</p>
-
-      {topHook && (
-        <div className={s.sparkHook}>
-          <span className={s.hookQuote}>&ldquo;{topHook.text}&rdquo;</span>
-          <div className={s.hookTags}>
-            {topHook.typeTags.slice(0, 2).map((tag) => (
-              <span key={tag} className={s.hookTag}>
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Removed TH chip - thumbnail text shown in detail view */}
-
-      {/* Proof Strip - Inspired by recent winners */}
-      {proofVideos.length > 0 && (
-        <div className={s.proofStrip}>
-          <span className={s.proofLabel}>Inspired by:</span>
-          <div className={s.proofThumbs}>
-            {proofVideos.map((pv) => (
-              <div key={pv.videoId} className={s.proofThumb} title={pv.title}>
-                <img
-                  src={pv.thumbnailUrl || "/placeholder-thumb.jpg"}
-                  alt=""
-                  loading="lazy"
-                />
-                <span className={s.proofViews}>
-                  {formatCompact(pv.metrics.viewsPerDay)}/d
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className={s.sparkFooter}>
-        <span className={s.tapHint}>Tap to explore →</span>
-      </div>
-    </button>
-  );
-}
-
-/** Stream Card - Compact idea card for the grid */
-function StreamCard({
-  idea,
-  isSaved,
-  onSelect,
-  onSave,
-}: {
-  idea: Idea;
-  isSaved: boolean;
-  onSelect: () => void;
-  onSave: () => void;
-}) {
-  const topHook = idea.hooks[0];
-  const topProof = idea.proof.basedOn[0];
-
-  return (
-    <div className={s.streamCard} onClick={onSelect}>
-      <div className={s.streamCardHeader}>
-        <button
-          className={`${s.saveBtn} ${s.saveBtnSmall} ${isSaved ? s.saved : ""}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSave();
-          }}
-        >
-          {isSaved ? "★" : "☆"}
-        </button>
-      </div>
-
-      <h4 className={s.streamTitle}>{idea.title}</h4>
-
-      {topHook && (
-        <p className={s.streamHook}>
-          &ldquo;{truncate(topHook.text, 60)}&rdquo;
-        </p>
-      )}
-
-      <div className={s.streamFooter}>
-        {topProof && (
-          <div className={s.streamProof}>
-            <img
-              src={topProof.thumbnailUrl || "/placeholder-thumb.jpg"}
-              alt=""
-              className={s.streamProofThumb}
-              loading="lazy"
-            />
-            <span className={s.streamProofChannel}>
-              {topProof.channelTitle}
+        {/* Standout hook */}
+        {topHook && (
+          <div className={s.ideaHookPreview}>
+            <span className={s.hookLabel}>Hook:</span>
+            <span className={s.hookText}>
+              &ldquo;{truncate(topHook.text, 80)}&rdquo;
             </span>
           </div>
         )}
+
+        {/* Inspired by strip */}
+        {proofVideos.length > 0 && (
+          <div className={s.inspiredBy}>
+            <span className={s.inspiredLabel}>Inspired by:</span>
+            <div className={s.inspiredThumbs}>
+              {proofVideos.map((pv) => (
+                <div
+                  key={pv.videoId}
+                  className={s.inspiredThumb}
+                  title={pv.title}
+                >
+                  <img
+                    src={pv.thumbnailUrl || "/placeholder-thumb.jpg"}
+                    alt=""
+                    loading="lazy"
+                  />
+                </div>
+              ))}
+              {proofVideos[0] && (
+                <span className={s.inspiredChannel}>
+                  {proofVideos[0].channelTitle}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Action row */}
+      <div className={s.ideaActions}>
+        <button className={s.ideaActionPrimary} onClick={onSelect}>
+          Open
+        </button>
+        {topHook && (
+          <button
+            className={s.ideaActionSecondary}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCopyHook(topHook.text);
+            }}
+          >
+            {copiedId === `hook-${idea.id}` ? "Copied" : "Copy Hook"}
+          </button>
+        )}
+        <button
+          className={`${s.ideaSaveBtn} ${isSaved ? s.saved : ""}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSave();
+          }}
+          title={isSaved ? "Unsave" : "Save idea"}
+        >
+          {isSaved ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+          ) : (
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+          )}
+        </button>
+      </div>
+    </article>
   );
 }
 
-/** Idea Detail View - Full expanded view of an idea */
-/** Uses bottom sheet pattern on mobile with fixed header and scrollable content */
-function IdeaDetailView({
+/* ================================================
+   DETAIL SHEET - Scrollable Bottom Sheet
+   ================================================ */
+function IdeaDetailSheet({
   idea,
-  remixMode,
-  onRemixChange,
   onCopy,
   copiedId,
   onClose,
@@ -505,8 +410,6 @@ function IdeaDetailView({
   loadingMore,
 }: {
   idea: Idea;
-  remixMode: RemixMode;
-  onRemixChange: (mode: RemixMode) => void;
   onCopy: (text: string, id: string) => void;
   copiedId: string | null;
   onClose: () => void;
@@ -514,12 +417,9 @@ function IdeaDetailView({
   onLoadMore?: () => void;
   loadingMore?: boolean;
 }) {
-  const [activeTab, setActiveTab] = useState<
-    "hooks" | "titles" | "thumbnail" | "proof" | "keywords"
-  >("hooks");
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Lock body scroll when modal is open
+  // Lock body scroll
   useEffect(() => {
     const originalStyle = window.getComputedStyle(document.body).overflow;
     document.body.style.overflow = "hidden";
@@ -537,56 +437,25 @@ function IdeaDetailView({
     return () => window.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
-  // Get hooks/titles based on remix mode
-  const displayHooks = useMemo(() => {
-    if (
-      remixMode === "default" ||
-      !idea.remixVariants?.[remixMode as keyof typeof idea.remixVariants]
-    ) {
-      return idea.hooks;
-    }
-    return (
-      idea.remixVariants[remixMode as keyof typeof idea.remixVariants]?.hooks ??
-      idea.hooks
-    );
-  }, [idea, remixMode]);
-
-  const displayTitles = useMemo(() => {
-    if (
-      remixMode === "default" ||
-      !idea.remixVariants?.[remixMode as keyof typeof idea.remixVariants]
-    ) {
-      return idea.titles;
-    }
-    return (
-      idea.remixVariants[remixMode as keyof typeof idea.remixVariants]
-        ?.titles ?? idea.titles
-    );
-  }, [idea, remixMode]);
+  const allKeywords = idea.keywords.map((k) => k.text).join(", ");
+  const allHooks = idea.hooks.map((h) => h.text).join("\n\n");
+  const allTitles = idea.titles.map((t) => t.text).join("\n");
 
   return (
-    <div
-      className={s.detailOverlay}
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="idea-detail-title"
-    >
+    <div className={s.sheetOverlay} onClick={onClose}>
       <div
         ref={panelRef}
-        className={s.detailPanel}
+        className={s.sheetPanel}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
-        {/* Fixed Header for Mobile Bottom Sheet */}
-        <div className={s.detailHeaderFixed}>
-          {/* Drag handle for mobile */}
-          <div className={s.dragHandle} aria-hidden="true" />
+        {/* Drag handle */}
+        <div className={s.sheetHandle} aria-hidden="true" />
 
-          <button
-            className={s.closeBtn}
-            onClick={onClose}
-            aria-label="Close detail view"
-          >
+        {/* Sticky header */}
+        <div className={s.sheetHeader}>
+          <button className={s.sheetClose} onClick={onClose} aria-label="Close">
             <svg
               width="20"
               height="20"
@@ -598,124 +467,251 @@ function IdeaDetailView({
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
+          <h2 className={s.sheetTitle}>{idea.title}</h2>
+          <p className={s.sheetAngle}>{idea.angle}</p>
+        </div>
 
-          {/* Header Content */}
-          <div className={s.detailHeader}>
-            <h2 id="idea-detail-title" className={s.detailTitle}>
-              {idea.title}
-            </h2>
-            <p className={s.detailAngle}>{idea.angle}</p>
-          </div>
+        {/* Quick Actions Bar */}
+        <div className={s.quickActions}>
+          <button
+            className={s.quickActionBtn}
+            onClick={() => onCopy(idea.hooks[0]?.text ?? "", "quick-hook")}
+          >
+            {copiedId === "quick-hook" ? "Copied" : "Copy Hook"}
+          </button>
+          <button
+            className={s.quickActionBtn}
+            onClick={() => onCopy(idea.titles[0]?.text ?? "", "quick-title")}
+          >
+            {copiedId === "quick-title" ? "Copied" : "Copy Title"}
+          </button>
+          <button
+            className={s.quickActionBtn}
+            onClick={() => onCopy(allKeywords, "quick-keywords")}
+          >
+            {copiedId === "quick-keywords" ? "Copied" : "Copy Keywords"}
+          </button>
+        </div>
 
-          {/* Remix Dial */}
-          <div className={s.remixDial}>
-            <span className={s.remixLabel}>Remix Style:</span>
-            <div className={s.remixOptions}>
-              {(
-                [
-                  { key: "default", label: "Original" },
-                  { key: "emotional", label: "Emotional" },
-                  { key: "contrarian", label: "Contrarian" },
-                  { key: "beginner", label: "Beginner" },
-                  { key: "advanced", label: "Advanced" },
-                ] as { key: RemixMode; label: string }[]
-              ).map((opt) => (
-                <button
-                  key={opt.key}
-                  className={`${s.remixBtn} ${
-                    remixMode === opt.key ? s.remixActive : ""
-                  }`}
-                  onClick={() => onRemixChange(opt.key)}
-                  disabled={
-                    opt.key !== "default" &&
-                    !idea.remixVariants?.[
-                      opt.key as keyof typeof idea.remixVariants
-                    ]
-                  }
+        {/* Scrollable Content */}
+        <div className={s.sheetContent}>
+          {/* Hooks Section */}
+          <section className={s.sheetSection}>
+            <div className={s.sectionHeader}>
+              <h3 className={s.sectionTitle}>Hooks</h3>
+              <button
+                className={s.copyAllBtn}
+                onClick={() => onCopy(allHooks, "all-hooks")}
+              >
+                {copiedId === "all-hooks" ? "Copied" : "Copy All"}
+              </button>
+            </div>
+            <p className={s.sectionIntro}>
+              Opening lines to grab attention in the first 5 seconds
+            </p>
+            <div className={s.hookCards}>
+              {idea.hooks.map((hook, i) => (
+                <div key={i} className={s.hookCard}>
+                  <p className={s.hookCardText}>&ldquo;{hook.text}&rdquo;</p>
+                  <div className={s.hookCardFooter}>
+                    <div className={s.hookTags}>
+                      {hook.typeTags.slice(0, 2).map((tag) => (
+                        <span key={tag} className={s.hookTag}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      className={s.copyBtn}
+                      onClick={() => onCopy(hook.text, `hook-${i}`)}
+                    >
+                      {copiedId === `hook-${i}` ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Titles Section */}
+          <section className={s.sheetSection}>
+            <div className={s.sectionHeader}>
+              <h3 className={s.sectionTitle}>Titles</h3>
+              <button
+                className={s.copyAllBtn}
+                onClick={() => onCopy(allTitles, "all-titles")}
+              >
+                {copiedId === "all-titles" ? "Copied" : "Copy All"}
+              </button>
+            </div>
+            <p className={s.sectionIntro}>
+              Title options with style patterns that work
+            </p>
+            <div className={s.titleCards}>
+              {idea.titles.map((title, i) => (
+                <div key={i} className={s.titleCard}>
+                  <p className={s.titleCardText}>{title.text}</p>
+                  <div className={s.titleCardFooter}>
+                    <div className={s.styleTags}>
+                      {title.styleTags.map((tag) => (
+                        <span key={tag} className={s.styleTag}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      className={s.copyBtn}
+                      onClick={() => onCopy(title.text, `title-${i}`)}
+                    >
+                      {copiedId === `title-${i}` ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Inspired By Section (formerly Proof) */}
+          <section className={s.sheetSection}>
+            <h3 className={s.sectionTitle}>Inspired By</h3>
+            <p className={s.sectionIntro}>
+              Recent winners that sparked this idea
+            </p>
+            <div className={s.proofScroller}>
+              {idea.proof.basedOn.map((pv) => (
+                <a
+                  key={pv.videoId}
+                  href={`/competitors/video/${pv.videoId}`}
+                  className={s.proofCard}
                 >
-                  {opt.label}
+                  <div className={s.proofThumb}>
+                    <img
+                      src={pv.thumbnailUrl || "/placeholder-thumb.jpg"}
+                      alt=""
+                    />
+                    <span className={s.proofViews}>
+                      {formatCompact(pv.metrics.viewsPerDay)}/day
+                    </span>
+                  </div>
+                  <div className={s.proofInfo}>
+                    <h4 className={s.proofTitle}>{truncate(pv.title, 50)}</h4>
+                    <span className={s.proofChannel}>{pv.channelTitle}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+            {onLoadMore && (
+              <button
+                className={s.loadMoreBtn}
+                onClick={onLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? "Loading..." : "Load More"}
+              </button>
+            )}
+          </section>
+
+          {/* Keywords Section */}
+          <section className={s.sheetSection}>
+            <div className={s.sectionHeader}>
+              <h3 className={s.sectionTitle}>Keywords</h3>
+              <button
+                className={s.copyAllBtn}
+                onClick={() => onCopy(allKeywords, "all-keywords")}
+              >
+                {copiedId === "all-keywords" ? "Copied" : "Copy All"}
+              </button>
+            </div>
+            <p className={s.sectionIntro}>Tags for discoverability</p>
+            <div className={s.keywordChips}>
+              {idea.keywords.map((kw, i) => (
+                <button
+                  key={i}
+                  className={s.keywordChip}
+                  onClick={() => onCopy(kw.text, `kw-${i}`)}
+                >
+                  {kw.text}
+                  {copiedId === `kw-${i}` && (
+                    <span className={s.chipCheck}>✓</span>
+                  )}
                 </button>
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* Tab Navigation - Sticky */}
-          <div className={s.detailTabs}>
-            {(
-              [
-                { key: "hooks", label: "Hooks", count: displayHooks.length },
-                { key: "titles", label: "Titles", count: displayTitles.length },
-                { key: "thumbnail", label: "Thumbnail" },
-                {
-                  key: "proof",
-                  label: "Proof",
-                  count: idea.proof.basedOn.length,
-                },
-                {
-                  key: "keywords",
-                  label: "Keywords",
-                  count: idea.keywords.length,
-                },
-              ] as { key: typeof activeTab; label: string; count?: number }[]
-            ).map((tab) => (
-              <button
-                key={tab.key}
-                className={`${s.tabBtn} ${
-                  activeTab === tab.key ? s.tabActive : ""
-                }`}
-                onClick={() => setActiveTab(tab.key)}
-              >
-                {tab.label}
-                {tab.count !== undefined && (
-                  <span className={s.tabCount}>{tab.count}</span>
+          {/* Thumbnail Recipe */}
+          {idea.thumbnailConcept && (
+            <section className={s.sheetSection}>
+              <h3 className={s.sectionTitle}>Thumbnail Recipe</h3>
+              <div className={s.thumbnailRecipe}>
+                <div className={s.thumbnailOverlay}>
+                  <span className={s.overlayLabel}>Text Overlay</span>
+                  <span className={s.overlayText}>
+                    {idea.thumbnailConcept.overlayText}
+                  </span>
+                  <button
+                    className={s.copyBtn}
+                    onClick={() =>
+                      onCopy(idea.thumbnailConcept.overlayText, "overlay")
+                    }
+                  >
+                    {copiedId === "overlay" ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <p className={s.thumbnailNote}>
+                  <strong>Composition:</strong>{" "}
+                  {idea.thumbnailConcept.composition}
+                </p>
+                <p className={s.thumbnailNote}>
+                  <strong>Contrast:</strong>{" "}
+                  {idea.thumbnailConcept.contrastNote}
+                </p>
+                {idea.thumbnailConcept.avoid.length > 0 && (
+                  <div className={s.thumbnailAvoid}>
+                    <strong>Avoid:</strong>
+                    <ul>
+                      {idea.thumbnailConcept.avoid.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Scrollable Tab Content */}
-        <div className={s.tabContent}>
-          {activeTab === "hooks" && (
-            <HookLab hooks={displayHooks} onCopy={onCopy} copiedId={copiedId} />
+              </div>
+            </section>
           )}
 
-          {activeTab === "titles" && (
-            <TitleStudio
-              titles={displayTitles}
-              proofVideos={idea.proof.basedOn}
-              onCopy={onCopy}
-              copiedId={copiedId}
-            />
+          {/* Make It Yours - Remix Suggestions */}
+          {idea.remixVariants && Object.keys(idea.remixVariants).length > 0 && (
+            <section className={s.sheetSection}>
+              <h3 className={s.sectionTitle}>Make It Yours</h3>
+              <p className={s.sectionIntro}>
+                Twist this idea to fit your style
+              </p>
+              <div className={s.remixCards}>
+                {Object.entries(idea.remixVariants)
+                  .slice(0, 3)
+                  .map(([key, variant]) => (
+                    <div key={key} className={s.remixCard}>
+                      <h4 className={s.remixCardTitle}>
+                        {formatRemixLabel(key)} Version
+                      </h4>
+                      {variant.hooks[0] && (
+                        <p className={s.remixCardHook}>
+                          &ldquo;{truncate(variant.hooks[0].text, 60)}&rdquo;
+                        </p>
+                      )}
+                      {variant.titles[0] && (
+                        <p className={s.remixCardTitle2}>
+                          {variant.titles[0].text}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </section>
           )}
 
-          {activeTab === "thumbnail" && (
-            <ThumbnailRecipe
-              concept={idea.thumbnailConcept}
-              proofVideos={idea.proof.basedOn}
-              onCopy={onCopy}
-              copiedId={copiedId}
-            />
-          )}
-
-          {activeTab === "proof" && (
-            <ProofInspiration
-              proofVideos={idea.proof.basedOn}
-              similarChannels={similarChannels}
-              onLoadMore={onLoadMore}
-              loadingMore={loadingMore}
-            />
-          )}
-
-          {activeTab === "keywords" && (
-            <KeywordsPanel
-              keywords={idea.keywords}
-              onCopy={onCopy}
-              copiedId={copiedId}
-            />
-          )}
-
-          {/* Safe area padding for iOS */}
+          {/* Safe area padding */}
           <div className={s.safeAreaBottom} />
         </div>
       </div>
@@ -723,381 +719,9 @@ function IdeaDetailView({
   );
 }
 
-/** Hook Lab - Visual hook cards */
-function HookLab({
-  hooks,
-  onCopy,
-  copiedId,
-}: {
-  hooks: IdeaHook[];
-  onCopy: (text: string, id: string) => void;
-  copiedId: string | null;
-}) {
-  return (
-    <div className={s.hookLab}>
-      <p className={s.tabIntro}>
-        Opening hooks to grab attention in the first 5 seconds
-      </p>
-      <div className={s.hookCards}>
-        {hooks.map((hook, i) => (
-          <div key={i} className={s.hookCard}>
-            <p className={s.hookCardText}>&ldquo;{hook.text}&rdquo;</p>
-            <div className={s.hookCardMeta}>
-              <div className={s.hookCardTags}>
-                {hook.typeTags.map((tag) => (
-                  <span key={tag} className={s.hookTypeTag}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              <button
-                className={s.copyBtn}
-                onClick={() => onCopy(hook.text, `hook-${i}`)}
-              >
-                {copiedId === `hook-${i}` ? "✓" : "Copy"}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** Title Studio - Visual title options with inspiration sources */
-function TitleStudio({
-  titles,
-  proofVideos,
-  onCopy,
-  copiedId,
-}: {
-  titles: IdeaTitle[];
-  proofVideos: ProofVideo[];
-  onCopy: (text: string, id: string) => void;
-  copiedId: string | null;
-}) {
-  const proofMap = useMemo(() => {
-    const map = new Map<string, ProofVideo>();
-    proofVideos.forEach((pv) => map.set(pv.videoId, pv));
-    return map;
-  }, [proofVideos]);
-
-  return (
-    <div className={s.titleStudio}>
-      <p className={s.tabIntro}>
-        Title options with style tags showing what makes them work
-      </p>
-      <div className={s.titleCards}>
-        {titles.map((title, i) => {
-          const basedOnVideo = title.basedOnVideoId
-            ? proofMap.get(title.basedOnVideoId)
-            : null;
-          return (
-            <div key={i} className={s.titleCard}>
-              <p className={s.titleCardText}>{title.text}</p>
-              <div className={s.titleCardMeta}>
-                <div className={s.titleStyleTags}>
-                  {title.styleTags.map((tag) => (
-                    <span key={tag} className={s.styleTag}>
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                {basedOnVideo && (
-                  <div className={s.titleBasedOn}>
-                    <img
-                      src={basedOnVideo.thumbnailUrl}
-                      alt=""
-                      className={s.titleBasedOnThumb}
-                    />
-                    <span className={s.titleBasedOnChannel}>
-                      Inspired by{" "}
-                      {title.basedOnChannel || basedOnVideo.channelTitle}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <button
-                className={s.copyBtn}
-                onClick={() => onCopy(title.text, `title-${i}`)}
-              >
-                {copiedId === `title-${i}` ? "✓" : "Copy"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/** Thumbnail Recipe - Visual thumbnail guidance */
-function ThumbnailRecipe({
-  concept,
-  proofVideos,
-  onCopy,
-  copiedId,
-}: {
-  concept: Idea["thumbnailConcept"];
-  proofVideos: ProofVideo[];
-  onCopy: (text: string, id: string) => void;
-  copiedId: string | null;
-}) {
-  // Normalize moodboard refs to a common shape
-  const moodboardRefs = useMemo(() => {
-    if (concept.moodboardRefs && concept.moodboardRefs.length > 0) {
-      return concept.moodboardRefs;
-    }
-    return proofVideos.slice(0, 3).map((pv) => ({
-      videoId: pv.videoId,
-      thumbnailUrl: pv.thumbnailUrl,
-      channelTitle: pv.channelTitle,
-    }));
-  }, [concept.moodboardRefs, proofVideos]);
-
-  return (
-    <div className={s.thumbnailRecipe}>
-      <div className={s.thumbnailMain}>
-        <div className={s.thumbnailOverlay}>
-          <span className={s.overlayLabel}>Text Overlay</span>
-          <span className={s.overlayText}>{concept.overlayText}</span>
-          <button
-            className={s.copyBtn}
-            onClick={() => onCopy(concept.overlayText, "overlay")}
-          >
-            {copiedId === "overlay" ? "✓" : "Copy"}
-          </button>
-        </div>
-
-        <div className={s.thumbnailDetail}>
-          <h4 className={s.thumbnailDetailTitle}>Composition</h4>
-          <p className={s.thumbnailDetailText}>{concept.composition}</p>
-        </div>
-
-        <div className={s.thumbnailDetail}>
-          <h4 className={s.thumbnailDetailTitle}>Contrast Note</h4>
-          <p className={s.thumbnailDetailText}>{concept.contrastNote}</p>
-        </div>
-
-        {concept.avoid.length > 0 && (
-          <div className={s.thumbnailAvoid}>
-            <h4 className={s.thumbnailDetailTitle}>Avoid</h4>
-            <ul className={s.avoidList}>
-              {concept.avoid.map((item, i) => (
-                <li key={i}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      {/* Moodboard */}
-      {moodboardRefs.length > 0 && (
-        <div className={s.moodboard}>
-          <h4 className={s.moodboardTitle}>Reference Moodboard</h4>
-          <div className={s.moodboardGrid}>
-            {moodboardRefs.map((ref, i) => (
-              <div key={i} className={s.moodboardItem}>
-                <img
-                  src={ref.thumbnailUrl || "/placeholder-thumb.jpg"}
-                  alt=""
-                  className={s.moodboardThumb}
-                />
-                <span className={s.moodboardChannel}>{ref.channelTitle}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Proof & Inspiration - Horizontal scroller of winning videos with load more */
-function ProofInspiration({
-  proofVideos,
-  similarChannels,
-  onLoadMore,
-  loadingMore,
-}: {
-  proofVideos: ProofVideo[];
-  similarChannels: IdeaBoardData["similarChannels"];
-  onLoadMore?: () => void;
-  loadingMore?: boolean;
-}) {
-  const [selectedProof, setSelectedProof] = useState<ProofVideo | null>(null);
-
-  return (
-    <div className={s.proofInspiration}>
-      <p className={s.tabIntro}>
-        These recent winners inspired this idea. Tap one to see why it worked.
-      </p>
-
-      {/* Proof Video Carousel */}
-      <div className={s.proofCarousel}>
-        {proofVideos.map((pv) => (
-          <button
-            type="button"
-            key={pv.videoId}
-            className={`${s.proofCard} ${
-              selectedProof?.videoId === pv.videoId ? s.proofSelected : ""
-            }`}
-            onClick={() => setSelectedProof(pv)}
-          >
-            <div className={s.proofCardThumb}>
-              <img src={pv.thumbnailUrl || "/placeholder-thumb.jpg"} alt="" />
-              <span className={s.proofCardViews}>
-                {formatCompact(pv.metrics.views)} views
-              </span>
-            </div>
-            <div className={s.proofCardInfo}>
-              <h5 className={s.proofCardTitle}>{truncate(pv.title, 50)}</h5>
-              <span className={s.proofCardChannel}>{pv.channelTitle}</span>
-              <span className={s.proofCardVPD}>
-                {formatCompact(pv.metrics.viewsPerDay)}/day
-              </span>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Load More Button */}
-      {onLoadMore && (
-        <button
-          type="button"
-          className={s.loadMoreBtn}
-          onClick={onLoadMore}
-          disabled={loadingMore}
-        >
-          {loadingMore ? (
-            <>
-              <span className={s.spinnerSmall} />
-              Loading...
-            </>
-          ) : (
-            "More Inspiration"
-          )}
-        </button>
-      )}
-
-      {/* Selected Proof Detail */}
-      {selectedProof && (
-        <div className={s.proofDetail}>
-          <h4 className={s.proofDetailTitle}>{selectedProof.title}</h4>
-
-          {selectedProof.whyItWorked &&
-            selectedProof.whyItWorked.length > 0 && (
-              <div className={s.proofSection}>
-                <h5 className={s.proofSectionTitle}>Why It Worked</h5>
-                <ul className={s.proofList}>
-                  {selectedProof.whyItWorked.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-          {selectedProof.patternToSteal &&
-            selectedProof.patternToSteal.length > 0 && (
-              <div className={s.proofSection}>
-                <h5 className={s.proofSectionTitle}>Pattern to Steal</h5>
-                <ul className={s.proofList}>
-                  {selectedProof.patternToSteal.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-          {selectedProof.remixIdea && (
-            <div className={s.proofSection}>
-              <h5 className={s.proofSectionTitle}>How to Remix for You</h5>
-              <p className={s.proofRemix}>{selectedProof.remixIdea}</p>
-            </div>
-          )}
-
-          <a
-            href={`https://youtube.com/watch?v=${selectedProof.videoId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={s.proofLink}
-          >
-            Watch on YouTube →
-          </a>
-        </div>
-      )}
-
-      {/* Similar Channels Strip */}
-      {similarChannels.length > 0 && (
-        <div className={s.similarChannels}>
-          <h4 className={s.similarTitle}>Similar Channels Tracked</h4>
-          <div className={s.similarStrip}>
-            {similarChannels.map((ch) => (
-              <div key={ch.channelId} className={s.similarChannel}>
-                {ch.channelThumbnailUrl && (
-                  <img
-                    src={ch.channelThumbnailUrl}
-                    alt=""
-                    className={s.similarThumb}
-                  />
-                )}
-                <span className={s.similarName}>{ch.channelTitle}</span>
-                <span className={s.similarScore}>
-                  {Math.round(ch.similarityScore * 100)}%
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Keywords Panel - Chips with copy functionality */
-function KeywordsPanel({
-  keywords,
-  onCopy,
-  copiedId,
-}: {
-  keywords: Idea["keywords"];
-  onCopy: (text: string, id: string) => void;
-  copiedId: string | null;
-}) {
-  const allKeywords = keywords.map((k) => k.text).join(", ");
-
-  return (
-    <div className={s.keywordsPanel}>
-      <p className={s.tabIntro}>Keywords and tags for discoverability</p>
-
-      <div className={s.keywordChips}>
-        {keywords.map((kw, i) => (
-          <button
-            key={i}
-            className={s.keywordChip}
-            onClick={() => onCopy(kw.text, `kw-${i}`)}
-            title={kw.fit}
-          >
-            <span className={s.keywordText}>{kw.text}</span>
-            <span className={`${s.keywordIntent} ${s[`intent-${kw.intent}`]}`}>
-              {kw.intent}
-            </span>
-            {copiedId === `kw-${i}` && <span className={s.chipCopied}>✓</span>}
-          </button>
-        ))}
-      </div>
-
-      <button
-        className={s.copyAllBtn}
-        onClick={() => onCopy(allKeywords, "all-keywords")}
-      >
-        {copiedId === "all-keywords" ? "✓ Copied All" : "Copy All Keywords"}
-      </button>
-    </div>
-  );
-}
-
-/** Niche Insights Bar - Quick insights strip */
+/* ================================================
+   NICHE INSIGHTS BAR
+   ================================================ */
 function NicheInsightsBar({
   insights,
 }: {
@@ -1176,15 +800,8 @@ function NicheInsightsBar({
 }
 
 /* ================================================
-   BADGE COMPONENTS
-   ================================================ */
-
-// DifficultyBadge and FormatBadge removed - no longer shown per user request
-
-/* ================================================
    HELPERS
    ================================================ */
-
 function formatCompact(num: number): string {
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
   if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
@@ -1206,4 +823,15 @@ function formatRelativeTime(dateStr: string): string {
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
   return text.slice(0, maxLen - 3) + "...";
+}
+
+function formatRemixLabel(key: string): string {
+  const labels: Record<string, string> = {
+    emotional: "Emotional",
+    contrarian: "Contrarian",
+    beginner: "Beginner-Friendly",
+    advanced: "Advanced",
+    shortsFirst: "Shorts-First",
+  };
+  return labels[key] ?? key;
 }

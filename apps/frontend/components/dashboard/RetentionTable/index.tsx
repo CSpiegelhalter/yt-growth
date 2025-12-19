@@ -72,8 +72,14 @@ export default function RetentionTable({
             <div key={i} className={s.skeletonItem}>
               <div className={s.skeletonThumb} />
               <div className={s.skeletonContent}>
-                <div className={s.skeleton} style={{ height: 16, width: "70%" }} />
-                <div className={s.skeleton} style={{ height: 14, width: "40%", marginTop: 8 }} />
+                <div
+                  className={s.skeleton}
+                  style={{ height: 16, width: "70%" }}
+                />
+                <div
+                  className={s.skeleton}
+                  style={{ height: 14, width: "40%", marginTop: 8 }}
+                />
               </div>
             </div>
           ))}
@@ -90,12 +96,92 @@ export default function RetentionTable({
         </div>
         <div className={s.emptyState}>
           <div className={s.emptyIcon} aria-hidden="true">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-          <p className={s.emptyTitle}>No retention data yet</p>
-          <p className={s.emptyDesc}>Sync your channel to analyze where viewers drop off in your videos.</p>
+          <h4 className={s.emptyTitle}>
+            Connect your channel to unlock insights
+          </h4>
+          <p className={s.emptyDesc}>
+            Once synced, you&apos;ll get access to powerful growth tools:
+          </p>
+          <ul className={s.emptyFeatures}>
+            <li className={s.emptyFeature}>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10" />
+              </svg>
+              <span>
+                <strong>Video Analysis</strong> — See where viewers drop off and
+                get actionable fixes
+              </span>
+            </li>
+            <li className={s.emptyFeature}>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <span>
+                <strong>Idea Engine</strong> — AI-powered video ideas based on
+                what&apos;s working
+              </span>
+            </li>
+            <li className={s.emptyFeature}>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+              <span>
+                <strong>Competitor Winners</strong> — See what&apos;s working
+                for similar channels
+              </span>
+            </li>
+            <li className={s.emptyFeature}>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>
+                <strong>Subscriber Drivers</strong> — Discover which videos
+                convert viewers to subs
+              </span>
+            </li>
+          </ul>
+          <a href="/api/integrations/google/start" className={s.emptyBtn}>
+            Connect YouTube
+          </a>
         </div>
       </div>
     );
@@ -155,9 +241,17 @@ function VideoRetentionCard({
 }: VideoRetentionCardProps) {
   const hasData = video.retention.hasData && video.retention.cliffTimestamp;
   const severity = getDropSeverity(video.retention.cliffReason);
-  const causes = getLikelyCauses(video.retention.cliffReason, video.retention.cliffTimestamp);
-  const fixes = getFixSuggestions(video.retention.cliffReason, video.retention.cliffTimestamp);
-  const patternInterrupts = getPatternInterrupts(video.retention.cliffTimestamp);
+  const causes = getLikelyCauses(
+    video.retention.cliffReason,
+    video.retention.cliffTimestamp
+  );
+  const fixes = getFixSuggestions(
+    video.retention.cliffReason,
+    video.retention.cliffTimestamp
+  );
+  const patternInterrupts = getPatternInterrupts(
+    video.retention.cliffTimestamp
+  );
   const timeWindow = getTimeWindow(video.retention.cliffTimestamp);
 
   // Use the new human-readable labels
@@ -182,7 +276,14 @@ function VideoRetentionCard({
           />
         ) : (
           <div className={s.thumbnailPlaceholder}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
           </div>
@@ -191,9 +292,11 @@ function VideoRetentionCard({
         {/* Video Info */}
         <div className={s.videoInfo}>
           <h4 className={s.videoTitle}>{video.title ?? "Untitled"}</h4>
-            <div className={s.videoMeta}>
+          <div className={s.videoMeta}>
             {video.publishedAt && (
-              <span className={s.metaDate}>{formatDate(video.publishedAt)}</span>
+              <span className={s.metaDate}>
+                {formatDate(video.publishedAt)}
+              </span>
             )}
           </div>
 
@@ -201,12 +304,14 @@ function VideoRetentionCard({
           {hasData ? (
             <div className={s.dropOffRow}>
               <span className={s.dropOffLabel}>Drop-off at</span>
-              <span className={s.dropOffTime}>{video.retention.cliffTimestamp}</span>
+              <span className={s.dropOffTime}>
+                {video.retention.cliffTimestamp}
+              </span>
               <SeverityBadge severity={severity} />
             </div>
-              ) : (
-                <span className={s.noData}>No data available</span>
-              )}
+          ) : (
+            <span className={s.noData}>No data available</span>
+          )}
         </div>
 
         <div className={s.expandIcon} aria-hidden="true">
@@ -227,7 +332,9 @@ function VideoRetentionCard({
       {/* Expanded Details - Enhanced with human-readable labels */}
       <div
         id={`retention-details-${video.youtubeVideoId}`}
-        className={`${s.expandedWrapper} ${isExpanded && hasData ? s.open : ""}`}
+        className={`${s.expandedWrapper} ${
+          isExpanded && hasData ? s.open : ""
+        }`}
       >
         <div className={s.expandedContent}>
           {/* Likely Cause - Human readable */}
@@ -243,7 +350,7 @@ function VideoRetentionCard({
           <div className={s.whySection}>
             <h5 className={s.sectionTitle}>Why It Matters</h5>
             <p className={s.whyText}>{reasonInfo.whyItMatters}</p>
-      </div>
+          </div>
 
           {/* What was happening around the drop */}
           <div className={s.contextSection}>
@@ -252,7 +359,14 @@ function VideoRetentionCard({
               {timeWindow && (
                 <div className={s.contextCard}>
                   <span className={s.contextIcon}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <circle cx="12" cy="12" r="10" />
                       <path d="M12 6v6l4 2" />
                     </svg>
@@ -263,13 +377,22 @@ function VideoRetentionCard({
               )}
               <div className={s.contextCard}>
                 <span className={s.contextIcon}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2z" />
                     <path d="M15 13v6a2 2 0 002 2h2a2 2 0 002-2v-6a2 2 0 00-2-2h-2a2 2 0 00-2 2z" />
                   </svg>
-                    </span>
+                </span>
                 <span className={s.contextLabel}>Retention Story</span>
-                <span className={s.contextValue}>{getHookStatus(video.retention.cliffTimestamp)}</span>
+                <span className={s.contextValue}>
+                  {getHookStatus(video.retention.cliffTimestamp)}
+                </span>
               </div>
             </div>
           </div>
@@ -304,7 +427,9 @@ function VideoRetentionCard({
                   <span className={s.interruptIcon}>{interrupt.icon}</span>
                   <div className={s.interruptContent}>
                     <span className={s.interruptType}>{interrupt.type}</span>
-                    <span className={s.interruptDesc}>{interrupt.description}</span>
+                    <span className={s.interruptDesc}>
+                      {interrupt.description}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -315,7 +440,10 @@ function VideoRetentionCard({
           <div className={s.momentSuggestion}>
             <h5 className={s.sectionTitle}>For This Exact Moment</h5>
             <p className={s.suggestionText}>
-              {getMomentSuggestion(video.retention.cliffTimestamp, video.retention.cliffReason)}
+              {getMomentSuggestion(
+                video.retention.cliffTimestamp,
+                video.retention.cliffReason
+              )}
             </p>
           </div>
 
@@ -340,7 +468,9 @@ function VideoRetentionCard({
 
           {/* Watch on YouTube link */}
           <a
-            href={`https://youtube.com/watch?v=${video.youtubeVideoId}&t=${parseTimestamp(video.retention.cliffTimestamp ?? "0")}`}
+            href={`https://youtube.com/watch?v=${
+              video.youtubeVideoId
+            }&t=${parseTimestamp(video.retention.cliffTimestamp ?? "0")}`}
             target="_blank"
             rel="noopener noreferrer"
             className={s.watchLink}
@@ -441,17 +571,29 @@ function getFixSuggestions(
   const fixes: string[] = [];
 
   if (seconds < 30) {
-    fixes.push("Start with your boldest claim or most surprising fact in the first 5 seconds");
-    fixes.push("Show a quick preview of the payoff (before/after, end result) within 10 seconds");
-    fixes.push("Cut any 'welcome back' or throat-clearing - jump straight into value");
+    fixes.push(
+      "Start with your boldest claim or most surprising fact in the first 5 seconds"
+    );
+    fixes.push(
+      "Show a quick preview of the payoff (before/after, end result) within 10 seconds"
+    );
+    fixes.push(
+      "Cut any 'welcome back' or throat-clearing - jump straight into value"
+    );
   } else if (seconds < 60) {
-    fixes.push("Add a clear 'here's what you'll learn' roadmap between seconds 15-30");
-    fixes.push("Use a pattern interrupt (zoom, cut, B-roll) at the 30-second mark");
+    fixes.push(
+      "Add a clear 'here's what you'll learn' roadmap between seconds 15-30"
+    );
+    fixes.push(
+      "Use a pattern interrupt (zoom, cut, B-roll) at the 30-second mark"
+    );
     fixes.push("Deliver your first useful tip before 45 seconds");
   } else if (seconds < 180) {
     fixes.push("Break up talking head with B-roll every 15-20 seconds");
     fixes.push("Add visual text highlights for key points");
-    fixes.push("Insert a curiosity loop: 'But here's what most people miss...'");
+    fixes.push(
+      "Insert a curiosity loop: 'But here's what most people miss...'"
+    );
   } else {
     fixes.push("Add a 'stick around' hook referencing later content");
     fixes.push("Use chapter markers and announce them verbally");
@@ -467,7 +609,9 @@ type PatternInterrupt = {
   icon: string;
 };
 
-function getPatternInterrupts(timestamp: string | null | undefined): PatternInterrupt[] {
+function getPatternInterrupts(
+  timestamp: string | null | undefined
+): PatternInterrupt[] {
   const seconds = timestamp ? parseTimestamp(timestamp) : 0;
   const beforeTime = formatSeconds(Math.max(0, seconds - 5));
 
@@ -497,7 +641,8 @@ function getMomentSuggestion(
   timestamp: string | null | undefined,
   reason: string | null | undefined
 ): string {
-  if (!timestamp) return "Analyze your content structure to find natural break points.";
+  if (!timestamp)
+    return "Analyze your content structure to find natural break points.";
   const seconds = parseTimestamp(timestamp);
   const beforeSeconds = Math.max(0, seconds - 5);
   const beforeTime = formatSeconds(beforeSeconds);

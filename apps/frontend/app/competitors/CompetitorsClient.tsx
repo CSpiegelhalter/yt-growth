@@ -1,93 +1,71 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import s from "./style.module.css";
-import type { Channel, CompetitorFeedResponse, CompetitorVideo } from "@/types/api";
+import type {
+  Me,
+  Channel,
+  CompetitorFeedResponse,
+  CompetitorVideo,
+} from "@/types/api";
 
 type SortOption = "velocity" | "engagement" | "newest" | "outliers";
 
+type Props = {
+  initialMe: Me;
+  initialChannels: Channel[];
+  initialActiveChannelId: string | null;
+};
+
 /**
- * CompetitorsClient - Video-first competitor winners feed
- * Shows competitor videos working in the user's niche with actionable insights.
+ * CompetitorsClient - Video-first competitor winners feed.
+ * Receives bootstrap data from server, handles interactions client-side.
  */
-export default function CompetitorsClient() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
+export default function CompetitorsClient({
+  initialMe,
+  initialChannels,
+  initialActiveChannelId,
+}: Props) {
+  // State initialized from server props
+  const [channels] = useState<Channel[]>(initialChannels);
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(
+    initialActiveChannelId
+  );
+
+  // Feed data and loading states
   const [feedData, setFeedData] = useState<CompetitorFeedResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Filters
   const [range, setRange] = useState<"7d" | "28d">("7d");
   const [sort, setSort] = useState<SortOption>("velocity");
-  const [isSubscribed, setIsSubscribed] = useState(false);
 
-  // Load active channel from URL/localStorage
+  const activeChannel = useMemo(
+    () => channels.find((c) => c.channel_id === activeChannelId) ?? null,
+    [channels, activeChannelId]
+  );
+
+  const isSubscribed = useMemo(
+    () => initialMe.subscription?.isActive ?? false,
+    [initialMe]
+  );
+
+  // Sync activeChannelId to localStorage
   useEffect(() => {
-    async function loadData() {
-      try {
-        const [meRes, channelsRes] = await Promise.all([
-          fetch("/api/me", { cache: "no-store" }),
-          fetch("/api/me/channels", { cache: "no-store" }),
-        ]);
-
-        if (!meRes.ok) {
-          router.push("/auth/login");
-          return;
-        }
-
-        const me = await meRes.json();
-        const channelsData = await channelsRes.json();
-
-        setIsSubscribed(me.subscription?.isActive ?? false);
-
-        if (channelsData.length === 0) {
-          setLoading(false);
-          return;
-        }
-
-        // Get active channel from URL, then localStorage, then first channel
-        const urlChannelId = searchParams.get("channelId");
-        const storedChannelId =
-          typeof window !== "undefined"
-            ? localStorage.getItem("activeChannelId")
-            : null;
-
-        let channel: Channel | null = null;
-        if (urlChannelId) {
-          channel =
-            channelsData.find((c: Channel) => c.channel_id === urlChannelId) ||
-            null;
-        }
-        if (!channel && storedChannelId) {
-          channel =
-            channelsData.find(
-              (c: Channel) => c.channel_id === storedChannelId
-            ) || null;
-        }
-        if (!channel && channelsData.length > 0) {
-          channel = channelsData[0];
-        }
-
-        setActiveChannel(channel);
-      } catch {
-        router.push("/auth/login");
-      } finally {
-        setLoading(false);
-      }
+    if (activeChannelId && typeof window !== "undefined") {
+      localStorage.setItem("activeChannelId", activeChannelId);
     }
-    loadData();
-  }, [router, searchParams]);
+  }, [activeChannelId]);
 
   // Load competitor feed when channel, range, or sort changes
   useEffect(() => {
-    if (!activeChannel) return;
+    if (!activeChannelId) return;
 
     setDataLoading(true);
     fetch(
-      `/api/me/channels/${activeChannel.channel_id}/competitors?range=${range}&sort=${sort}`
+      `/api/me/channels/${activeChannelId}/competitors?range=${range}&sort=${sort}`
     )
       .then((r) => r.json())
       .then((data) => {
@@ -99,16 +77,16 @@ export default function CompetitorsClient() {
       })
       .catch(console.error)
       .finally(() => setDataLoading(false));
-  }, [activeChannel, range, sort]);
+  }, [activeChannelId, range, sort]);
 
   // Load more videos
   const handleLoadMore = useCallback(async () => {
-    if (!activeChannel || !feedData?.nextCursor || loadingMore) return;
+    if (!activeChannelId || !feedData?.nextCursor || loadingMore) return;
 
     setLoadingMore(true);
     try {
       const res = await fetch(
-        `/api/me/channels/${activeChannel.channel_id}/competitors?range=${range}&sort=${sort}&cursor=${feedData.nextCursor}`
+        `/api/me/channels/${activeChannelId}/competitors?range=${range}&sort=${sort}&cursor=${feedData.nextCursor}`
       );
       const data = await res.json();
       if (data.videos) {
@@ -122,29 +100,19 @@ export default function CompetitorsClient() {
     } finally {
       setLoadingMore(false);
     }
-  }, [activeChannel, feedData?.nextCursor, range, sort, loadingMore]);
+  }, [activeChannelId, feedData?.nextCursor, range, sort, loadingMore]);
 
   const handleRangeChange = useCallback((newRange: "7d" | "28d") => {
     setRange(newRange);
-    setFeedData(null); // Reset feed on range change
+    setFeedData(null);
   }, []);
 
   const handleSortChange = useCallback((newSort: SortOption) => {
     setSort(newSort);
-    setFeedData(null); // Reset feed on sort change
+    setFeedData(null);
   }, []);
 
-  if (loading) {
-    return (
-      <main className={s.page}>
-        <div className={s.loading}>
-          <div className={s.spinner} />
-          <p>Loading...</p>
-        </div>
-      </main>
-    );
-  }
-
+  // No channels state
   if (!activeChannel) {
     return (
       <main className={s.page}>
@@ -219,9 +187,7 @@ export default function CompetitorsClient() {
 
       {!isSubscribed && (
         <div className={s.upgradeBanner}>
-          <p>
-            Upgrade to Pro to unlock competitor analysis and deep insights.
-          </p>
+          <p>Upgrade to Pro to unlock competitor analysis and deep insights.</p>
           <a href="/api/integrations/stripe/checkout" className={s.upgradeBtn}>
             Upgrade
           </a>
@@ -351,12 +317,12 @@ function CompetitorVideoCard({
             </svg>
           </div>
         )}
-        
+
         {/* Views/day badge */}
         <span className={s.vpdBadge}>
           {formatCompact(video.derived.viewsPerDay)}/day
         </span>
-        
+
         {/* Velocity badge if available */}
         {hasVelocity && (
           <span className={s.velocityBadge}>
@@ -393,14 +359,14 @@ function CompetitorVideoCard({
               {(video.derived.engagementPerView * 100).toFixed(1)}% eng
             </span>
           )}
-          
+
           {/* Outlier score chip */}
           {hasOutlier && video.derived.outlierScore! > 1.5 && (
             <span className={`${s.metricChip} ${s.outlierChip}`}>
               Outlier +{video.derived.outlierScore!.toFixed(1)}σ
             </span>
           )}
-          
+
           {/* Building data indicator */}
           {isBuilding && (
             <span className={`${s.metricChip} ${s.buildingChip}`}>
@@ -438,4 +404,3 @@ function formatRelativeTime(dateStr: string): string {
   if (diffHours < 48) return "Yesterday";
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
-

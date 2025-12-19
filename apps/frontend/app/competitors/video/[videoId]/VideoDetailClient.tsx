@@ -10,29 +10,33 @@ import { copyToClipboard } from "@/components/ui/Toast";
 type Props = {
   videoId: string;
   channelId?: string;
+  isSubscribed?: boolean;
 };
 
 /**
  * VideoDetailClient - Deep analysis view for a competitor video.
  * Shows structured insights and "what to steal" from this video.
- *
- * IMPORTANT: Only shows publicly available metrics (views, likes, comments).
- * Does NOT show competitor Analytics data (subs gained, watch time, AVD).
+ * Receives channelId from server (no more localStorage fallback needed).
  */
-export default function VideoDetailClient({ videoId, channelId }: Props) {
+export default function VideoDetailClient({
+  videoId,
+  channelId,
+  isSubscribed = false,
+}: Props) {
   const router = useRouter();
-  const [analysis, setAnalysis] = useState<CompetitorVideoAnalysis | null>(null);
+  const [analysis, setAnalysis] = useState<CompetitorVideoAnalysis | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [expandedSection, setExpandedSection] = useState<string | null>("whyItsWorking");
+  const [expandedSection, setExpandedSection] = useState<string | null>(
+    "whyItsWorking"
+  );
+  const [showAllTags, setShowAllTags] = useState(false);
 
-  // Get channelId from props or localStorage
-  const activeChannelId =
-    channelId ||
-    (typeof window !== "undefined"
-      ? localStorage.getItem("activeChannelId")
-      : null);
+  // Use channelId from server props directly
+  const activeChannelId = channelId ?? null;
 
   // Load video analysis
   useEffect(() => {
@@ -60,7 +64,9 @@ export default function VideoDetailClient({ videoId, channelId }: Props) {
         const data = await res.json();
         setAnalysis(data as CompetitorVideoAnalysis);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load analysis");
+        setError(
+          err instanceof Error ? err.message : "Failed to load analysis"
+        );
       } finally {
         setLoading(false);
       }
@@ -121,7 +127,18 @@ export default function VideoDetailClient({ videoId, channelId }: Props) {
     );
   }
 
-  const { video, analysis: insights, comments, tags, derivedKeywords, moreFromChannel } = analysis;
+  const {
+    video,
+    analysis: insights,
+    comments,
+    tags,
+    derivedKeywords,
+    moreFromChannel,
+  } = analysis;
+  const allTags = tags ?? derivedKeywords ?? [];
+  const hasTags = allTags.length > 0;
+  const visibleTags = showAllTags ? allTags : allTags.slice(0, 12);
+  const hasMoreTags = allTags.length > 12;
 
   return (
     <main className={s.page}>
@@ -136,7 +153,7 @@ export default function VideoDetailClient({ videoId, channelId }: Props) {
         </div>
       )}
 
-      {/* Video Header */}
+      {/* Video Header - Compact */}
       <header className={s.videoHeader}>
         <div className={s.thumbnailWrap}>
           {video.thumbnailUrl ? (
@@ -156,27 +173,58 @@ export default function VideoDetailClient({ videoId, channelId }: Props) {
             </div>
           )}
           {video.durationSec && (
-            <span className={s.durationBadge}>{formatDuration(video.durationSec)}</span>
+            <span className={s.durationBadge}>
+              {formatDuration(video.durationSec)}
+            </span>
           )}
         </div>
 
         <div className={s.videoInfo}>
+          {/* Title + Channel */}
           <h1 className={s.videoTitle}>{video.title}</h1>
+          <div className={s.channelMeta}>
+            <a
+              href={video.channelUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={s.channelLink}
+            >
+              {video.channelTitle}
+            </a>
+            <span className={s.metaSep}>·</span>
+            <span className={s.publishDate}>
+              {formatDate(video.publishedAt)}
+            </span>
+          </div>
 
-          <a
-            href={video.channelUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={s.channelLink}
-          >
-            {video.channelTitle}
-          </a>
+          {/* Tags/Keywords - Inline chips near top */}
+          {hasTags && (
+            <div className={s.tagsInline}>
+              <div className={s.tagsChips}>
+                {visibleTags.map((tag, i) => (
+                  <span key={i} className={s.tagChip}>
+                    {tag}
+                  </span>
+                ))}
+                {hasMoreTags && !showAllTags && (
+                  <button
+                    className={s.showMoreTagsBtn}
+                    onClick={() => setShowAllTags(true)}
+                  >
+                    +{allTags.length - 12} more
+                  </button>
+                )}
+              </div>
+              <button
+                className={s.copyAllTagsBtn}
+                onClick={() => handleCopy(allTags.join(", "), "all-tags")}
+              >
+                {copiedId === "all-tags" ? "Copied" : "Copy all"}
+              </button>
+            </div>
+          )}
 
-          <p className={s.publishDate}>
-            Published {formatDate(video.publishedAt)}
-          </p>
-
-          {/* Public Metrics Grid */}
+          {/* Metrics Grid - Responsive */}
           <div className={s.metricsGrid}>
             <MetricCard
               label="Views"
@@ -206,27 +254,23 @@ export default function VideoDetailClient({ videoId, channelId }: Props) {
                 value={`${(video.derived.engagementPerView * 100).toFixed(1)}%`}
               />
             )}
-            {video.derived.outlierScore !== undefined && video.derived.outlierScore > 1 && (
-              <MetricCard
-                label="Outlier Score"
-                value={`+${video.derived.outlierScore.toFixed(1)}σ`}
-                highlight
-              />
-            )}
+            {video.derived.outlierScore !== undefined &&
+              video.derived.outlierScore > 1 && (
+                <MetricCard
+                  label="Outlier"
+                  value={`+${video.derived.outlierScore.toFixed(1)}σ`}
+                  highlight
+                />
+              )}
           </div>
 
-          {/* Data status indicator */}
+          {/* Data status indicator (only if building) */}
           {video.derived.dataStatus === "building" && (
             <p className={s.dataStatus}>
-              Velocity data is being collected. Check back in a few hours for more detailed metrics.
+              Velocity data is being collected. Check back soon for more
+              metrics.
             </p>
           )}
-
-          {/* Note about unavailable metrics */}
-          <p className={s.metricsNote}>
-            Only publicly available metrics shown. Subscriber gain, watch time,
-            and average view duration are not available for competitor videos.
-          </p>
 
           <a
             href={video.videoUrl}
@@ -375,9 +419,15 @@ export default function VideoDetailClient({ videoId, channelId }: Props) {
                     />
                   </div>
                   <div className={s.sentimentLabels}>
-                    <span className={s.sentimentLabelPos}>Positive {comments.sentiment.positive}%</span>
-                    <span className={s.sentimentLabelNeu}>Neutral {comments.sentiment.neutral}%</span>
-                    <span className={s.sentimentLabelNeg}>Negative {comments.sentiment.negative}%</span>
+                    <span className={s.sentimentLabelPos}>
+                      Positive {comments.sentiment.positive}%
+                    </span>
+                    <span className={s.sentimentLabelNeu}>
+                      Neutral {comments.sentiment.neutral}%
+                    </span>
+                    <span className={s.sentimentLabelNeg}>
+                      Negative {comments.sentiment.negative}%
+                    </span>
                   </div>
                 </div>
 
@@ -394,16 +444,19 @@ export default function VideoDetailClient({ videoId, channelId }: Props) {
                 )}
 
                 {/* What Viewers Asked For */}
-                {comments.viewerAskedFor && comments.viewerAskedFor.length > 0 && (
-                  <div className={s.commentThemeBlock}>
-                    <h4 className={s.subSectionTitle}>What Viewers Asked For Next</h4>
-                    <ul className={s.commentThemeList}>
-                      {comments.viewerAskedFor.map((item, i) => (
-                        <li key={i}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {comments.viewerAskedFor &&
+                  comments.viewerAskedFor.length > 0 && (
+                    <div className={s.commentThemeBlock}>
+                      <h4 className={s.subSectionTitle}>
+                        What Viewers Asked For Next
+                      </h4>
+                      <ul className={s.commentThemeList}>
+                        {comments.viewerAskedFor.map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                 {/* Comment Themes */}
                 {comments.themes && comments.themes.length > 0 && (
@@ -412,7 +465,8 @@ export default function VideoDetailClient({ videoId, channelId }: Props) {
                     <div className={s.themeChips}>
                       {comments.themes.map((theme, i) => (
                         <span key={i} className={s.themeChip}>
-                          {theme.theme} <span className={s.themeCount}>({theme.count})</span>
+                          {theme.theme}{" "}
+                          <span className={s.themeCount}>({theme.count})</span>
                         </span>
                       ))}
                     </div>
@@ -420,24 +474,29 @@ export default function VideoDetailClient({ videoId, channelId }: Props) {
                 )}
 
                 {/* Hook Inspiration */}
-                {comments.hookInspiration && comments.hookInspiration.length > 0 && (
-                  <div className={s.commentThemeBlock}>
-                    <h4 className={s.subSectionTitle}>Hook Inspiration from Comments</h4>
-                    <div className={s.hookQuotes}>
-                      {comments.hookInspiration.map((quote, i) => (
-                        <div key={i} className={s.hookQuote}>
-                          <span className={s.quoteText}>&ldquo;{quote}&rdquo;</span>
-                          <button
-                            className={s.copyQuoteBtn}
-                            onClick={() => handleCopy(quote, `hook-${i}`)}
-                          >
-                            {copiedId === `hook-${i}` ? "Copied" : "Copy"}
-                          </button>
-                        </div>
-                      ))}
+                {comments.hookInspiration &&
+                  comments.hookInspiration.length > 0 && (
+                    <div className={s.commentThemeBlock}>
+                      <h4 className={s.subSectionTitle}>
+                        Hook Inspiration from Comments
+                      </h4>
+                      <div className={s.hookQuotes}>
+                        {comments.hookInspiration.map((quote, i) => (
+                          <div key={i} className={s.hookQuote}>
+                            <span className={s.quoteText}>
+                              &ldquo;{quote}&rdquo;
+                            </span>
+                            <button
+                              className={s.copyQuoteBtn}
+                              onClick={() => handleCopy(quote, `hook-${i}`)}
+                            >
+                              {copiedId === `hook-${i}` ? "Copied" : "Copy"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Top Comments Preview */}
                 {comments.topComments && comments.topComments.length > 0 && (
@@ -448,8 +507,12 @@ export default function VideoDetailClient({ videoId, channelId }: Props) {
                         <div key={i} className={s.topComment}>
                           <p className={s.commentText}>{comment.text}</p>
                           <div className={s.commentMeta}>
-                            <span className={s.commentAuthor}>{comment.authorName}</span>
-                            <span className={s.commentLikes}>{comment.likeCount} likes</span>
+                            <span className={s.commentAuthor}>
+                              {comment.authorName}
+                            </span>
+                            <span className={s.commentLikes}>
+                              {comment.likeCount} likes
+                            </span>
                           </div>
                         </div>
                       ))}
@@ -467,37 +530,6 @@ export default function VideoDetailClient({ videoId, channelId }: Props) {
             <p>Comments are disabled for this video.</p>
           </div>
         )}
-
-        {/* Tags/Keywords */}
-        {(tags && tags.length > 0) || (derivedKeywords && derivedKeywords.length > 0) ? (
-          <AccordionSection
-            title={derivedKeywords ? "Derived Keywords" : "Tags & Keywords"}
-            isOpen={expandedSection === "tags"}
-            onToggle={() => toggleSection("tags")}
-          >
-            {derivedKeywords && (
-              <p className={s.derivedNote}>
-                This video has no public tags. Keywords derived from title and description.
-              </p>
-            )}
-            <div className={s.tagsList}>
-              {(tags ?? derivedKeywords ?? []).slice(0, 20).map((tag, i) => (
-                <span key={i} className={s.tag}>
-                  {tag}
-                </span>
-              ))}
-              {(tags ?? derivedKeywords ?? []).length > 20 && (
-                <span className={s.tagMore}>+{(tags ?? derivedKeywords ?? []).length - 20} more</span>
-              )}
-            </div>
-            <button
-              className={s.copyTagsBtn}
-              onClick={() => handleCopy((tags ?? derivedKeywords ?? []).join(", "), "all-tags")}
-            >
-              {copiedId === "all-tags" ? "Copied!" : "Copy All Tags"}
-            </button>
-          </AccordionSection>
-        ) : null}
 
         {/* More from This Channel */}
         {moreFromChannel && moreFromChannel.length > 0 && (
@@ -583,12 +615,12 @@ function AccordionSection({
 function formatCompact(num: number): string {
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
   if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
-  return num.toString();
+  return num.toLocaleString();
 }
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "long",
+    month: "short",
     day: "numeric",
     year: "numeric",
   });
@@ -598,7 +630,9 @@ function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
-  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  if (h > 0)
+    return `${h}:${m.toString().padStart(2, "0")}:${s
+      .toString()
+      .padStart(2, "0")}`;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
-

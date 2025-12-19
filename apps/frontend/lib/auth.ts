@@ -7,7 +7,6 @@ import { issueEmailToken, verifyEmailToken } from "@/lib/jwt";
 import { log } from "@/lib/logger";
 import Google from "next-auth/providers/google";
 
-
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 }, // 30d
   pages: { signIn: "/auth/login", error: "/auth/login" },
@@ -24,16 +23,23 @@ export const authOptions: NextAuthOptions = {
       authorize: async (creds) => {
         const ip = headers().get("x-forwarded-for") ?? "unknown";
 
-        if (!creds?.email || !creds?.password) throw new Error("Missing credentials");
+        if (!creds?.email || !creds?.password)
+          throw new Error("Missing credentials");
 
-        const user = await prisma.user.findUnique({ where: { email: creds.email } });
+        const user = await prisma.user.findUnique({
+          where: { email: creds.email },
+        });
         if (!user || !user.passwordHash) throw new Error("Invalid credentials");
 
         const ok = await compare(creds.password, user.passwordHash);
         if (!ok) throw new Error("Invalid credentials");
 
         log("login ok", user.id, user.email);
-        return { id: String(user.id), email: user.email, name: user.name ?? undefined };
+        return {
+          id: String(user.id),
+          email: user.email,
+          name: user.name ?? undefined,
+        };
       },
     }),
 
@@ -47,37 +53,51 @@ export const authOptions: NextAuthOptions = {
 
         if (!creds?.token) throw new Error("Token missing");
         const { id, email } = verifyEmailToken(creds.token);
-     
+
         log("email verified", id, email);
         return { id: String(id), email: email, name: name ?? undefined };
       },
     }),
     Google({
-        clientId: process.env.GOOGLE_CLIENT_ID!,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        authorization: {
-          params: {
-            // Request offline access + force consent on first connect so we get refresh_token
-            access_type: "offline",
-            prompt: "consent",
-            // YouTube scopes (add monetary if you need revenue metrics)
-            scope: [
-              "openid",
-              "email",
-              "profile",
-              "https://www.googleapis.com/auth/youtube.readonly",
-              "https://www.googleapis.com/auth/yt-analytics.readonly",
-              // "https://www.googleapis.com/auth/yt-analytics-monetary.readonly", // optional
-            ].join(" "),
-          },
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          // Request offline access + force consent on first connect so we get refresh_token
+          access_type: "offline",
+          prompt: "consent",
+          // YouTube scopes (add monetary if you need revenue metrics)
+          scope: [
+            "openid",
+            "email",
+            "profile",
+            "https://www.googleapis.com/auth/youtube.readonly",
+            "https://www.googleapis.com/auth/yt-analytics.readonly",
+            // "https://www.googleapis.com/auth/yt-analytics-monetary.readonly", // optional
+          ].join(" "),
         },
-      }),
-  
+      },
+    }),
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
-      if (user?.id) token.uid = user.id; // persist uid
+    async jwt({ token, user, account }) {
+      // For Google OAuth, user.id is the Google sub (a huge number), not our DB id.
+      // We need to look up the actual database user ID by email.
+      if (user?.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email },
+          select: { id: true },
+        });
+        if (dbUser) {
+          token.uid = String(dbUser.id);
+        } else if (account?.provider !== "google") {
+          // For non-Google providers, use the provided ID if no DB user found yet
+          token.uid = user.id;
+        }
+        // For Google OAuth without existing user, signIn callback will create user
+        // and next token refresh will pick up the correct ID
+      }
       return token;
     },
     async session({ session, token }) {
@@ -85,45 +105,61 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async signIn({ user, account, profile }) {
-        // For Google OAuth, persist (or update) tokens for later worker use.
-        if (account?.provider === "google" && user?.email) {
-          const providerAccountId = account.providerAccountId ?? profile?.sub ?? "";
-          // Note: refresh_token is only returned on first consent or if revoked/expired.
-          const refreshToken = account.refresh_token ?? null;
-          const scopes = (account.scope as string | undefined) ?? "";
-          const tokenExpiresAt = account.expires_at
-            ? new Date(account.expires_at * 1000)
-            : null;
-  
-          // Ensure we know the app user id:
-          const dbUser = await prisma.user.findUnique({ where: { email: user.email } });
-          if (dbUser) {
-            // Upsert into your GoogleAccount table
-            await prisma.googleAccount.upsert({
-              where: {
-                // unique on (provider, providerAccountId)
-                provider_providerAccountId: { provider: "google", providerAccountId },
-              },
-              update: {
-                userId: dbUser.id,
-                tokenExpiresAt,
-                scopes,
-                // store refreshToken only if present to avoid overwriting a good one with null
-                ...(refreshToken ? { refreshTokenEnc: refreshToken } : {}),
-                updatedAt: new Date(),
-              },
-              create: {
-                userId: dbUser.id,
-                provider: "google",
-                providerAccountId,
-                refreshTokenEnc: refreshToken,
-                scopes,
-                tokenExpiresAt,
-              },
-            });
-          }
+      // For Google OAuth, persist (or update) tokens for later worker use.
+      if (account?.provider === "google" && user?.email) {
+        const providerAccountId =
+          account.providerAccountId ?? profile?.sub ?? "";
+        // Note: refresh_token is only returned on first consent or if revoked/expired.
+        const refreshToken = account.refresh_token ?? null;
+        const scopes = (account.scope as string | undefined) ?? "";
+        const tokenExpiresAt = account.expires_at
+          ? new Date(account.expires_at * 1000)
+          : null;
+
+        // Find or create the user
+        let dbUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        });
+
+        if (!dbUser) {
+          // Create new user for Google OAuth sign-in
+          dbUser = await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name ?? profile?.name ?? null,
+            },
+          });
+          log("google oauth new user", dbUser.id, dbUser.email);
         }
-        return true;
-      },  
+
+        // Upsert into GoogleAccount table
+        await prisma.googleAccount.upsert({
+          where: {
+            // unique on (provider, providerAccountId)
+            provider_providerAccountId: {
+              provider: "google",
+              providerAccountId,
+            },
+          },
+          update: {
+            userId: dbUser.id,
+            tokenExpiresAt,
+            scopes,
+            // store refreshToken only if present to avoid overwriting a good one with null
+            ...(refreshToken ? { refreshTokenEnc: refreshToken } : {}),
+            updatedAt: new Date(),
+          },
+          create: {
+            userId: dbUser.id,
+            provider: "google",
+            providerAccountId,
+            refreshTokenEnc: refreshToken,
+            scopes,
+            tokenExpiresAt,
+          },
+        });
+      }
+      return true;
+    },
   },
 };

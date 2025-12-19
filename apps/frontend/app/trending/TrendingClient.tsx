@@ -1,83 +1,67 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import s from "./style.module.css";
-import type { Channel, TrendingListResponse, TrendingVideo } from "@/types/api";
+import type {
+  Me,
+  Channel,
+  TrendingListResponse,
+  TrendingVideo,
+} from "@/types/api";
+
+type Props = {
+  initialMe: Me;
+  initialChannels: Channel[];
+  initialActiveChannelId: string | null;
+};
 
 /**
- * TrendingClient - Video-first trending page
- * Shows specific videos that are taking off in the user's niche
+ * TrendingClient - Video-first trending page.
+ * Receives bootstrap data from server, handles interactions client-side.
  */
-export default function TrendingClient() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
-  const [trendingData, setTrendingData] = useState<TrendingListResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function TrendingClient({
+  initialMe,
+  initialChannels,
+  initialActiveChannelId,
+}: Props) {
+  // State initialized from server props
+  const [channels] = useState<Channel[]>(initialChannels);
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(
+    initialActiveChannelId
+  );
+
+  // Trending data state
+  const [trendingData, setTrendingData] = useState<TrendingListResponse | null>(
+    null
+  );
   const [dataLoading, setDataLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [range, setRange] = useState<"7d" | "14d" | "28d">("7d");
-  const [isSubscribed, setIsSubscribed] = useState(false);
 
-  // Load active channel from URL/localStorage
+  const activeChannel = useMemo(
+    () => channels.find((c) => c.channel_id === activeChannelId) ?? null,
+    [channels, activeChannelId]
+  );
+
+  const isSubscribed = useMemo(
+    () => initialMe.subscription?.isActive ?? false,
+    [initialMe]
+  );
+
+  // Sync activeChannelId to localStorage
   useEffect(() => {
-    async function loadData() {
-      try {
-        const [meRes, channelsRes] = await Promise.all([
-          fetch("/api/me", { cache: "no-store" }),
-          fetch("/api/me/channels", { cache: "no-store" }),
-        ]);
-
-        if (!meRes.ok) {
-          router.push("/auth/login");
-          return;
-        }
-
-        const me = await meRes.json();
-        const channelsData = await channelsRes.json();
-
-        setIsSubscribed(me.subscription?.isActive ?? false);
-
-        if (channelsData.length === 0) {
-          setLoading(false);
-          return;
-        }
-
-        // Get active channel from URL, then localStorage, then first channel
-        const urlChannelId = searchParams.get("channelId");
-        const storedChannelId = typeof window !== "undefined" 
-          ? localStorage.getItem("activeChannelId") 
-          : null;
-
-        let channel: Channel | null = null;
-        if (urlChannelId) {
-          channel = channelsData.find((c: Channel) => c.channel_id === urlChannelId) || null;
-        }
-        if (!channel && storedChannelId) {
-          channel = channelsData.find((c: Channel) => c.channel_id === storedChannelId) || null;
-        }
-        if (!channel && channelsData.length > 0) {
-          channel = channelsData[0];
-        }
-
-        setActiveChannel(channel);
-      } catch {
-        router.push("/auth/login");
-      } finally {
-        setLoading(false);
-      }
+    if (activeChannelId && typeof window !== "undefined") {
+      localStorage.setItem("activeChannelId", activeChannelId);
     }
-    loadData();
-  }, [router, searchParams]);
+  }, [activeChannelId]);
 
   // Load trending videos when channel or range changes
   useEffect(() => {
-    if (!activeChannel) return;
+    if (!activeChannelId) return;
 
     setDataLoading(true);
-    fetch(`/api/me/channels/${activeChannel.channel_id}/trending?range=${range}`)
+    fetch(`/api/me/channels/${activeChannelId}/trending?range=${range}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.videos) {
@@ -88,16 +72,16 @@ export default function TrendingClient() {
       })
       .catch(console.error)
       .finally(() => setDataLoading(false));
-  }, [activeChannel, range]);
+  }, [activeChannelId, range]);
 
   // Load more videos
   const handleLoadMore = useCallback(async () => {
-    if (!activeChannel || !trendingData?.nextCursor || loadingMore) return;
+    if (!activeChannelId || !trendingData?.nextCursor || loadingMore) return;
 
     setLoadingMore(true);
     try {
       const res = await fetch(
-        `/api/me/channels/${activeChannel.channel_id}/trending?range=${range}&cursor=${trendingData.nextCursor}`
+        `/api/me/channels/${activeChannelId}/trending?range=${range}&cursor=${trendingData.nextCursor}`
       );
       const data = await res.json();
       if (data.videos) {
@@ -111,38 +95,40 @@ export default function TrendingClient() {
     } finally {
       setLoadingMore(false);
     }
-  }, [activeChannel, trendingData?.nextCursor, range, loadingMore]);
+  }, [activeChannelId, trendingData?.nextCursor, range, loadingMore]);
 
   const handleRangeChange = useCallback((newRange: "7d" | "14d" | "28d") => {
     setRange(newRange);
   }, []);
 
-  if (loading) {
-    return (
-      <main className={s.page}>
-        <div className={s.loading}>
-          <div className={s.spinner} />
-          <p>Loading...</p>
-        </div>
-      </main>
-    );
-  }
-
+  // No channels state
   if (!activeChannel) {
     return (
       <main className={s.page}>
         <div className={s.header}>
           <h1 className={s.title}>Trending in Your Niche</h1>
-          <p className={s.subtitle}>Discover what's taking off in your niche right now</p>
+          <p className={s.subtitle}>
+            Discover what&apos;s taking off in your niche right now
+          </p>
         </div>
         <div className={s.emptyState}>
           <div className={s.emptyIcon}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>
           <h2 className={s.emptyTitle}>Connect a Channel First</h2>
-          <p className={s.emptyDesc}>Connect your YouTube channel to see what's trending in your niche.</p>
+          <p className={s.emptyDesc}>
+            Connect your YouTube channel to see what&apos;s trending in your
+            niche.
+          </p>
           <a href="/dashboard" className={s.emptyBtn}>
             Go to Dashboard
           </a>
@@ -157,14 +143,17 @@ export default function TrendingClient() {
         <div>
           <h1 className={s.title}>Trending in Your Niche</h1>
           <p className={s.subtitle}>
-            What's taking off for channels similar to <strong>{activeChannel.title}</strong>
+            What&apos;s taking off for channels similar to{" "}
+            <strong>{activeChannel.title}</strong>
           </p>
         </div>
         <div className={s.controls}>
           <select
             className={s.rangeSelect}
             value={range}
-            onChange={(e) => handleRangeChange(e.target.value as "7d" | "14d" | "28d")}
+            onChange={(e) =>
+              handleRangeChange(e.target.value as "7d" | "14d" | "28d")
+            }
           >
             <option value="7d">Last 7 days</option>
             <option value="14d">Last 14 days</option>
@@ -175,7 +164,9 @@ export default function TrendingClient() {
 
       {!isSubscribed && (
         <div className={s.upgradeBanner}>
-          <p>Upgrade to Pro to unlock trending analysis and deep insights.</p>
+          <p>
+            Upgrade to Pro to unlock trending analysis and deep insights.
+          </p>
           <a href="/api/integrations/stripe/checkout" className={s.upgradeBtn}>
             Upgrade
           </a>
@@ -233,8 +224,15 @@ export default function TrendingClient() {
         </>
       ) : (
         <div className={s.emptyVideos}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
           </svg>
           <p>No trending videos found. Try expanding your date range.</p>
         </div>
@@ -246,7 +244,7 @@ export default function TrendingClient() {
 /* ---------- Trending Video Card ---------- */
 function TrendingVideoCard({ video }: { video: TrendingVideo }) {
   return (
-    <Link 
+    <Link
       href={`/trending/${video.videoId}?channelId=${video.channelId}`}
       className={s.videoCard}
     >
@@ -260,19 +258,24 @@ function TrendingVideoCard({ video }: { video: TrendingVideo }) {
           />
         ) : (
           <div className={s.videoThumbPlaceholder}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
           </div>
         )}
-        <span className={s.vpdBadge}>
-          {formatCompact(video.viewsPerDay)}/day
-        </span>
+        <span className={s.vpdBadge}>{formatCompact(video.viewsPerDay)}/day</span>
       </div>
 
       <div className={s.videoCardContent}>
         <h3 className={s.videoCardTitle}>{video.title}</h3>
-        
+
         <div className={s.channelRow}>
           {video.channelThumbnailUrl && (
             <img
@@ -319,4 +322,3 @@ function formatRelativeTime(dateStr: string): string {
   if (diffHours < 48) return "Yesterday";
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
-
