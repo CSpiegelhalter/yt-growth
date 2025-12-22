@@ -8,7 +8,9 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   const userId = Number((session?.user as any)?.id);
   if (!userId) {
-    return NextResponse.redirect(new URL("/auth/login", process.env.NEXT_PUBLIC_WEB_URL));
+    return NextResponse.redirect(
+      new URL("/auth/login", process.env.NEXT_PUBLIC_WEB_URL)
+    );
   }
 
   const state = crypto.randomBytes(24).toString("hex");
@@ -21,7 +23,8 @@ export async function GET() {
     },
   });
 
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI ?? process.env.GOOGLE_OAUTH_REDIRECT!;
+  const redirectUri =
+    process.env.GOOGLE_REDIRECT_URI ?? process.env.GOOGLE_OAUTH_REDIRECT!;
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
     redirect_uri: redirectUri,
@@ -33,10 +36,13 @@ export async function GET() {
       "email",
       "profile",
       "https://www.googleapis.com/auth/youtube.readonly",
+      "https://www.googleapis.com/auth/youtube.force-ssl",
       "https://www.googleapis.com/auth/yt-analytics.readonly",
     ].join(" "),
     state,
   });
 
-  return NextResponse.redirect("https://accounts.google.com/o/oauth2/v2/auth?" + params.toString());
+  return NextResponse.redirect(
+    "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString()
+  );
 }

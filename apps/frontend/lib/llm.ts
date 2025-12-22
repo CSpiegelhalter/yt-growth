@@ -869,6 +869,8 @@ export async function generateCompetitorVideoAnalysis(
   video: {
     videoId: string;
     title: string;
+    description?: string;
+    tags?: string[];
     channelTitle: string;
     stats: { viewCount: number; likeCount?: number; commentCount?: number };
     derived: {
@@ -898,12 +900,138 @@ export async function generateCompetitorVideoAnalysis(
     angle: string;
   }>;
 }> {
+  function cleanDescriptionForAbout(raw: string): string {
+    // Strip URLs, timestamps, and normalize whitespace so the model sees the actual topic.
+    const noUrls = raw.replace(/https?:\/\/\S+/gi, "");
+    const noTimestamps = noUrls.replace(
+      /\b\d{1,2}:\d{2}(?::\d{2})?\b/g,
+      ""
+    );
+    const noHashtags = noTimestamps.replace(/#[\p{L}\p{N}_-]+/gu, "");
+    return noHashtags.replace(/\s+/g, " ").trim();
+  }
+
+  const ABOUT_STOPWORDS = new Set([
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "to",
+    "of",
+    "in",
+    "on",
+    "for",
+    "with",
+    "from",
+    "by",
+    "my",
+    "your",
+    "our",
+    "this",
+    "that",
+    "these",
+    "those",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "how",
+    "why",
+    "what",
+    "when",
+    "where",
+    "video",
+    "youtube",
+  ]);
+
+  function normalizeForSimilarity(s: string): string {
+    return s
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function significantWords(s: string): string[] {
+    return normalizeForSimilarity(s)
+      .split(" ")
+      .filter((w) => w.length >= 4 && !ABOUT_STOPWORDS.has(w));
+  }
+
+  function jaccardSimilarity(a: string[], b: string[]): number {
+    const sa = new Set(a);
+    const sb = new Set(b);
+    let inter = 0;
+    for (const w of sa) if (sb.has(w)) inter++;
+    const union = sa.size + sb.size - inter;
+    return union === 0 ? 0 : inter / union;
+  }
+
+  function aboutSeemsTitleLike(about: string, title: string): boolean {
+    const a = normalizeForSimilarity(about);
+    const t = normalizeForSimilarity(title);
+    if (!a || !t) return false;
+    // Hard check: it literally contains (most of) the title.
+    if (t.length >= 18 && a.includes(t)) return true;
+    // Soft check: very high word overlap with the title.
+    const sim = jaccardSimilarity(significantWords(about), significantWords(title));
+    return sim >= 0.75;
+  }
+
+  async function rewriteWhatItsAbout(input: {
+    title: string;
+    description?: string;
+    tags?: string[];
+    channelTitle: string;
+    previous: string;
+  }): Promise<string | null> {
+    const sys = `You write high-signal YouTube topic summaries.
+Return ONLY valid JSON:
+{ "whatItsAbout": "2 sentences max. Plain English. Overall feel + what viewers get." }
+
+Rules:
+- Do NOT quote or restate the title.
+- Use the description + tags to infer the true subject matter.
+- Mention format/tone implicitly (e.g., tutorial, breakdown, story, review) if clear.
+- No markdown. No bullets. No colons.`;
+
+    const user = `TITLE: ${input.title}
+CHANNEL: ${input.channelTitle}
+TAGS: ${(input.tags ?? []).slice(0, 25).join(", ")}
+DESCRIPTION: ${cleanDescriptionForAbout(input.description ?? "").slice(0, 1400)}
+
+BAD SUMMARY (too title-like): ${input.previous}
+
+Rewrite the summary.`;
+
+    try {
+      const result = await callLLM(
+        [
+          { role: "system", content: sys },
+          { role: "user", content: user },
+        ],
+        { temperature: 0.4, maxTokens: 160 }
+      );
+      const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return null;
+      const parsed = JSON.parse(jsonMatch[0]) as { whatItsAbout?: string };
+      const rewritten = (parsed.whatItsAbout ?? "").trim();
+      return rewritten ? rewritten : null;
+    } catch {
+      return null;
+    }
+  }
+
   const systemPrompt = `You are an expert YouTube growth strategist analyzing competitor videos.
 Your goal is to extract actionable insights from a competitor's successful video.
 
 Return ONLY valid JSON with this structure:
 {
-  "whatItsAbout": "One clear sentence describing what this video delivers to viewers",
+  "whatItsAbout": "2 sentences max. What it is actually about (topic + promise) and the overall feel/format implied by description + tags (e.g., tutorial, breakdown, story, review). Do NOT restate the title.",
   "whyItsWorking": ["Specific reason 1", "Specific reason 2", "Specific reason 3", "..."],
   "themesToRemix": [
     { "theme": "Theme name", "why": "Why this theme resonates with viewers" }
@@ -922,6 +1050,7 @@ Return ONLY valid JSON with this structure:
 
 Rules:
 - Keep insights specific and actionable, not generic
+- For whatItsAbout: do not quote, copy, or closely paraphrase the title; use description + tags
 - 4-6 items for whyItsWorking
 - 2-3 items for themesToRemix
 - 2-3 items for titlePatterns and packagingNotes
@@ -957,10 +1086,13 @@ Rules:
     }
   }
 
+  const cleanedDescription = cleanDescriptionForAbout(video.description ?? "");
   const userPrompt = `Analyze this competitor video for "${userChannelTitle}":
 
 Title: "${video.title}"
 Channel: ${video.channelTitle}
+Description: ${cleanedDescription.slice(0, 1400)}
+Tags: ${(video.tags ?? []).slice(0, 25).join(", ")}
 Views: ${video.stats.viewCount.toLocaleString()}
 Views/day: ${video.derived.viewsPerDay.toLocaleString()}
 ${
@@ -980,12 +1112,12 @@ ${
 }${commentsContext}
 
 Extract:
-1. What the video is about (1 sentence)
+1. What the video is actually about (2 sentences max; use description + tags; don't restate title)
 2. Specific reasons why it's working (incorporate comment insights if available)
 3. Themes that could be remixed for my channel
 4. Title patterns to learn from
-5. Packaging/presentation notes
-6. 3-4 specific remix ideas for "${userChannelTitle}"`;
+5. 3-4 specific remix ideas for "${userChannelTitle}"
+6. Optional packaging notes ONLY if clearly implied by title/description/comments (keep short)`;
 
   try {
     const result = await callLLM(
@@ -998,7 +1130,33 @@ Extract:
 
     const jsonMatch = result.content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(jsonMatch[0]) as {
+        whatItsAbout?: string;
+        whyItsWorking?: string[];
+        themesToRemix?: Array<{ theme: string; why: string }>;
+        titlePatterns?: string[];
+        packagingNotes?: string[];
+        remixIdeasForYou?: Array<{
+          title: string;
+          hook: string;
+          overlayText: string;
+          angle: string;
+        }>;
+      };
+
+      const about = (parsed.whatItsAbout ?? "").trim();
+      if (about && aboutSeemsTitleLike(about, video.title)) {
+        const rewritten = await rewriteWhatItsAbout({
+          title: video.title,
+          description: video.description,
+          tags: video.tags,
+          channelTitle: video.channelTitle,
+          previous: about,
+        });
+        if (rewritten) parsed.whatItsAbout = rewritten;
+      }
+
+      return parsed as any;
     }
   } catch (err) {
     console.warn("Failed to generate competitor video analysis:", err);

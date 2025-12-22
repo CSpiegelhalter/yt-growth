@@ -19,17 +19,27 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
-import { getCurrentUserWithSubscription, hasActiveSubscription } from "@/lib/user";
+import {
+  getCurrentUserWithSubscription,
+  hasActiveSubscription,
+} from "@/lib/user";
 import {
   getGoogleAccount,
   fetchVideoDetails,
   fetchRecentChannelVideos,
   fetchVideoComments,
 } from "@/lib/youtube-api";
-import { generateCompetitorVideoAnalysis, analyzeVideoComments } from "@/lib/llm";
-import { isDemoMode } from "@/lib/demo-fixtures";
+import {
+  generateCompetitorVideoAnalysis,
+  analyzeVideoComments,
+} from "@/lib/llm";
+import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import type { CompetitorVideoAnalysis, CompetitorVideo, CompetitorCommentsAnalysis } from "@/types/api";
+import type {
+  CompetitorVideoAnalysis,
+  CompetitorVideo,
+  CompetitorCommentsAnalysis,
+} from "@/types/api";
 
 const ParamsSchema = z.object({
   videoId: z.string().min(1),
@@ -44,7 +54,7 @@ export async function GET(
   { params }: { params: { videoId: string } }
 ) {
   // Return demo data if demo mode is enabled
-  if (isDemoMode()) {
+  if (isDemoMode() && !isYouTubeMockMode()) {
     const demoData = generateDemoVideoAnalysis(params.videoId);
     return Response.json(demoData);
   }
@@ -61,7 +71,10 @@ export async function GET(
     const rlResult = checkRateLimit(rlKey, RATE_LIMITS.competitorDetail);
     if (!rlResult.success) {
       return Response.json(
-        { error: "Rate limit exceeded", resetAt: new Date(rlResult.resetAt).toISOString() },
+        {
+          error: "Rate limit exceeded",
+          resetAt: new Date(rlResult.resetAt).toISOString(),
+        },
         { status: 429 }
       );
     }
@@ -89,7 +102,10 @@ export async function GET(
     });
 
     if (!queryResult.success) {
-      return Response.json({ error: "channelId query parameter required" }, { status: 400 });
+      return Response.json(
+        { error: "channelId query parameter required" },
+        { status: 400 }
+      );
     }
 
     const { channelId } = queryResult.data;
@@ -109,7 +125,10 @@ export async function GET(
     // Get Google account for API calls
     const ga = await getGoogleAccount(user.id);
     if (!ga) {
-      return Response.json({ error: "Google account not connected" }, { status: 400 });
+      return Response.json(
+        { error: "Google account not connected" },
+        { status: 400 }
+      );
     }
 
     // Check for cached analysis in DB
@@ -117,11 +136,13 @@ export async function GET(
       where: { videoId },
     });
 
-    // If analysis is fresh (within 7 days), use cached
-    const analysisCacheDays = 7;
+    // If comment analysis is fresh (within 7 days), use cached
+    const commentsCacheDays = 7;
     const now = new Date();
-    const isCacheFresh = cachedComments && 
-      (now.getTime() - cachedComments.capturedAt.getTime()) < analysisCacheDays * 24 * 60 * 60 * 1000;
+    const isCacheFresh =
+      cachedComments &&
+      now.getTime() - cachedComments.capturedAt.getTime() <
+        commentsCacheDays * 24 * 60 * 60 * 1000;
 
     // Fetch video details from YouTube API
     const videoDetails = await fetchVideoDetails(ga, videoId);
@@ -129,17 +150,64 @@ export async function GET(
       return Response.json({ error: "Video not found" }, { status: 404 });
     }
 
+    console.log("[competitor.video] fetched video details", {
+      videoId,
+      channelId: videoDetails.channelId,
+      titleLen: videoDetails.title?.length ?? 0,
+      descLen: videoDetails.description?.length ?? 0,
+      tagsCount: videoDetails.tags?.length ?? 0,
+      hasThumb: Boolean(videoDetails.thumbnailUrl),
+      hasDuration: Boolean(videoDetails.durationSec),
+    });
+
+    // Upsert competitor video metadata (enables caching LLM analysis even if it wasn't tracked before)
+    await prisma.competitorVideo.upsert({
+      where: { videoId },
+      create: {
+        videoId,
+        channelId: videoDetails.channelId,
+        channelTitle: videoDetails.channelTitle,
+        title: videoDetails.title,
+        description: videoDetails.description,
+        publishedAt: new Date(videoDetails.publishedAt),
+        durationSec: videoDetails.durationSec,
+        thumbnailUrl: videoDetails.thumbnailUrl ?? undefined,
+        tags: videoDetails.tags ?? [],
+        categoryId: videoDetails.category,
+        lastFetchedAt: now,
+      },
+      update: {
+        channelId: videoDetails.channelId,
+        channelTitle: videoDetails.channelTitle,
+        title: videoDetails.title,
+        description: videoDetails.description,
+        publishedAt: new Date(videoDetails.publishedAt),
+        durationSec: videoDetails.durationSec,
+        thumbnailUrl: videoDetails.thumbnailUrl ?? undefined,
+        tags: videoDetails.tags ?? [],
+        categoryId: videoDetails.category,
+        lastFetchedAt: now,
+      },
+    });
+
     // Calculate derived metrics
     const publishedAt = new Date(videoDetails.publishedAt);
-    const daysSincePublish = Math.max(1, Math.floor((now.getTime() - publishedAt.getTime()) / (1000 * 60 * 60 * 24)));
+    const daysSincePublish = Math.max(
+      1,
+      Math.floor(
+        (now.getTime() - publishedAt.getTime()) / (1000 * 60 * 60 * 24)
+      )
+    );
     const viewsPerDay = Math.round(videoDetails.viewCount / daysSincePublish);
 
     // Calculate engagement rates from public metrics
-    const engagementPerView = videoDetails.viewCount > 0
-      ? (videoDetails.likeCount + videoDetails.commentCount) / videoDetails.viewCount
-      : undefined;
+    const engagementPerView =
+      videoDetails.viewCount > 0
+        ? (videoDetails.likeCount + videoDetails.commentCount) /
+          videoDetails.viewCount
+        : undefined;
 
-    // Get velocity from snapshots if available
+    // Get velocity from snapshots if available (+ cached LLM analysis)
     const dbVideo = await prisma.competitorVideo.findUnique({
       where: { videoId },
       include: {
@@ -199,11 +267,15 @@ export async function GET(
 
     if (isCacheFresh && cachedComments?.analysisJson) {
       // Use cached analysis
-      commentsAnalysis = cachedComments.analysisJson as unknown as CompetitorCommentsAnalysis;
+      commentsAnalysis =
+        cachedComments.analysisJson as unknown as CompetitorCommentsAnalysis;
     } else {
       // Fetch fresh comments
       const commentsRlKey = rateLimitKey("competitorComments", user.id);
-      const commentsRlResult = checkRateLimit(commentsRlKey, RATE_LIMITS.competitorComments);
+      const commentsRlResult = checkRateLimit(
+        commentsRlKey,
+        RATE_LIMITS.competitorComments
+      );
 
       if (commentsRlResult.success) {
         const commentsResult = await fetchVideoComments(ga, videoId, 50);
@@ -237,12 +309,14 @@ export async function GET(
             );
 
             // Add top comments to response
-            commentsAnalysis.topComments = commentsResult.comments.slice(0, 10).map((c) => ({
-              text: c.text,
-              likeCount: c.likeCount,
-              authorName: c.authorName,
-              publishedAt: c.publishedAt,
-            }));
+            commentsAnalysis.topComments = commentsResult.comments
+              .slice(0, 10)
+              .map((c) => ({
+                text: c.text,
+                likeCount: c.likeCount,
+                authorName: c.authorName,
+                publishedAt: c.publishedAt,
+              }));
 
             // Cache the analysis
             await prisma.competitorVideoComments.upsert({
@@ -290,11 +364,18 @@ export async function GET(
 
     // Fetch more videos from the same channel
     const rangeDays = 28;
-    const publishedAfter = new Date(now.getTime() - rangeDays * 24 * 60 * 60 * 1000).toISOString();
+    const publishedAfter = new Date(
+      now.getTime() - rangeDays * 24 * 60 * 60 * 1000
+    ).toISOString();
     let moreFromChannel: CompetitorVideo[] = [];
 
     try {
-      const channelVideos = await fetchRecentChannelVideos(ga, videoDetails.channelId, publishedAfter, 6);
+      const channelVideos = await fetchRecentChannelVideos(
+        ga,
+        videoDetails.channelId,
+        publishedAfter,
+        6
+      );
       moreFromChannel = channelVideos
         .filter((v) => v.videoId !== videoId)
         .slice(0, 4)
@@ -318,16 +399,94 @@ export async function GET(
     // Generate analysis using LLM (includes comments context if available)
     let analysis: CompetitorVideoAnalysis["analysis"];
 
-    try {
-      analysis = await generateCompetitorVideoAnalysis(
-        video,
-        channel.title ?? "Your Channel",
-        commentsAnalysis
-      );
-    } catch (err) {
-      console.warn("Failed to generate competitor analysis, using defaults:", err);
-      analysis = getDefaultAnalysis(video);
+    const analysisCacheDays = 30;
+    const isAnalysisCacheFresh =
+      dbVideo?.analysisCapturedAt &&
+      now.getTime() - dbVideo.analysisCapturedAt.getTime() <
+        analysisCacheDays * 24 * 60 * 60 * 1000;
+
+    if (isAnalysisCacheFresh && dbVideo?.analysisJson) {
+      analysis =
+        dbVideo.analysisJson as unknown as CompetitorVideoAnalysis["analysis"];
+    } else {
+      try {
+        analysis = await generateCompetitorVideoAnalysis(
+          {
+            videoId: video.videoId,
+            title: video.title,
+            description: videoDetails.description,
+            tags: videoDetails.tags ?? [],
+            channelTitle: video.channelTitle,
+            stats: video.stats,
+            derived: {
+              viewsPerDay: video.derived.viewsPerDay,
+              engagementPerView,
+            },
+          },
+          channel.title ?? "Your Channel",
+          commentsAnalysis
+        );
+      } catch (err) {
+        console.warn(
+          "Failed to generate competitor analysis, using defaults:",
+          err
+        );
+        analysis = getDefaultAnalysis(video);
+      }
     }
+
+    // Normalize analysis to protect the UI from partial LLM output.
+    // (We keep packagingNotes in the type for backward compatibility, but the UI no longer displays it.)
+    analysis = {
+      whatItsAbout:
+        (analysis.whatItsAbout ?? "").trim() ||
+        fallbackWhatItsAbout({
+          title: videoDetails.title,
+          description: videoDetails.description,
+          tags: videoDetails.tags ?? [],
+        }),
+      whyItsWorking: Array.isArray(analysis.whyItsWorking)
+        ? analysis.whyItsWorking
+        : [],
+      themesToRemix: Array.isArray(analysis.themesToRemix)
+        ? analysis.themesToRemix
+        : [],
+      titlePatterns: Array.isArray(analysis.titlePatterns)
+        ? analysis.titlePatterns
+        : [],
+      packagingNotes: Array.isArray(analysis.packagingNotes)
+        ? analysis.packagingNotes
+        : [],
+      remixIdeasForYou: Array.isArray(analysis.remixIdeasForYou)
+        ? analysis.remixIdeasForYou
+        : [],
+    };
+
+    // Persist normalized analysis (cache) so the “What it’s about” stays useful without re-calling the LLM.
+    // Only write when cache was missing/stale.
+    if (!isAnalysisCacheFresh) {
+      try {
+        await prisma.competitorVideo.update({
+          where: { videoId },
+          data: {
+            analysisJson: analysis as object,
+            analysisCapturedAt: now,
+          },
+        });
+      } catch (err) {
+        console.warn("Failed to cache competitor video analysis:", err);
+      }
+    }
+
+    console.log("[competitor.video] analysis summary", {
+      videoId,
+      whatItsAboutLen: analysis.whatItsAbout.length,
+      whyItsWorkingCount: analysis.whyItsWorking.length,
+      themesToRemixCount: analysis.themesToRemix.length,
+      titlePatternsCount: analysis.titlePatterns.length,
+      remixIdeasCount: analysis.remixIdeasForYou.length,
+      hasCommentsAnalysis: Boolean(commentsAnalysis),
+    });
 
     // Derive keywords if tags are empty
     let derivedKeywords: string[] | undefined;
@@ -352,13 +511,10 @@ export async function GET(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Competitor video analysis error:", err);
-
-    // Return demo analysis as fallback
-    const demoData = generateDemoVideoAnalysis(params.videoId);
-    return Response.json({
-      ...demoData,
-      error: "Using demo data - actual fetch failed",
-    });
+    return Response.json(
+      { error: "Failed to analyze competitor video", detail: message },
+      { status: 500 }
+    );
   }
 }
 
@@ -381,10 +537,43 @@ function deriveKeywordsFromText(text: string): string[] {
     .map(([word]) => word);
 }
 
+function fallbackWhatItsAbout(input: {
+  title: string;
+  description?: string | null;
+  tags: string[];
+}): string {
+  const desc = (input.description ?? "")
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Prefer the first “real” sentence from the description (not the title).
+  const firstSentence = desc.split(/(?<=[.!?])\s+/).find((s) => {
+    const t = s.trim();
+    return t.length >= 60 && t.length <= 240;
+  });
+  if (firstSentence) return firstSentence.trim();
+
+  const topTags = (input.tags ?? []).slice(0, 4).filter(Boolean);
+  if (topTags.length > 0) {
+    return `A video centered on ${topTags.join(
+      ", "
+    )}, framed as a practical breakdown for viewers.`;
+  }
+
+  // Last resort: avoid echoing the title; keep it general.
+  return "A video that explores the core topic implied by the title, focusing on the main promise and viewer takeaway.";
+}
+
 // Default analysis when LLM fails
-function getDefaultAnalysis(video: CompetitorVideo): CompetitorVideoAnalysis["analysis"] {
+function getDefaultAnalysis(
+  video: CompetitorVideo
+): CompetitorVideoAnalysis["analysis"] {
   return {
-    whatItsAbout: `A video about ${video.title?.split(" ").slice(0, 5).join(" ") || "this topic"}...`,
+    whatItsAbout: `A video about ${
+      video.title?.split(" ").slice(0, 5).join(" ") || "this topic"
+    }...`,
     whyItsWorking: [
       "Strong initial hook captures attention in the first few seconds",
       "Title creates clear curiosity gap without revealing the answer",
@@ -392,8 +581,14 @@ function getDefaultAnalysis(video: CompetitorVideo): CompetitorVideoAnalysis["an
       "High engagement indicates strong audience resonance",
     ],
     themesToRemix: [
-      { theme: "Personal experience angle", why: "Adds authenticity and relatability to the topic" },
-      { theme: "Contrarian perspective", why: "Stands out in a crowded niche by challenging assumptions" },
+      {
+        theme: "Personal experience angle",
+        why: "Adds authenticity and relatability to the topic",
+      },
+      {
+        theme: "Contrarian perspective",
+        why: "Stands out in a crowded niche by challenging assumptions",
+      },
     ],
     titlePatterns: [
       "Uses specific, believable numbers",
@@ -411,7 +606,9 @@ function getDefaultAnalysis(video: CompetitorVideo): CompetitorVideoAnalysis["an
         angle: "Personal experiment documenting your unique results",
       },
       {
-        title: `The Truth About ${video.title?.split(" ").slice(0, 3).join(" ") || "This"}`,
+        title: `The Truth About ${
+          video.title?.split(" ").slice(0, 3).join(" ") || "This"
+        }`,
         hook: "Everyone's talking about this, but nobody mentions the real problem...",
         overlayText: "THE TRUTH",
         angle: "Myth-busting with evidence from your experience",
@@ -434,7 +631,9 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
       videoUrl: `https://youtube.com/watch?v=${videoId}`,
       channelUrl: "https://youtube.com/channel/demo-channel",
       thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-      publishedAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      publishedAt: new Date(
+        now.getTime() - 3 * 24 * 60 * 60 * 1000
+      ).toISOString(),
       durationSec: 847,
       stats: {
         viewCount: 245000,
@@ -450,7 +649,8 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
       },
     },
     analysis: {
-      whatItsAbout: "A creator shares how changing their upload strategy from 3 videos per week to 1 high-quality video doubled their subscriber growth and watch time metrics.",
+      whatItsAbout:
+        "A creator shares how changing their upload strategy from 3 videos per week to 1 high-quality video doubled their subscriber growth and watch time metrics.",
       whyItsWorking: [
         "Addresses a common pain point: quantity vs quality debate that every creator faces",
         "Promise of 'doubling growth' is specific, believable, and highly desirable",
@@ -460,9 +660,18 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
         "Comments show high resonance with personal stories of similar results",
       ],
       themesToRemix: [
-        { theme: "Quality over quantity", why: "Resonates with burned-out creators looking for permission to slow down" },
-        { theme: "Data-driven decisions", why: "Appeals to analytical creators who want proof before making changes" },
-        { theme: "Sustainable growth", why: "Taps into long-term thinking mindset vs short-term metrics" },
+        {
+          theme: "Quality over quantity",
+          why: "Resonates with burned-out creators looking for permission to slow down",
+        },
+        {
+          theme: "Data-driven decisions",
+          why: "Appeals to analytical creators who want proof before making changes",
+        },
+        {
+          theme: "Sustainable growth",
+          why: "Taps into long-term thinking mindset vs short-term metrics",
+        },
       ],
       titlePatterns: [
         "'This One Change' creates curiosity about the single solution",
@@ -479,19 +688,22 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
           title: "I Tried Posting Less for 30 Days (Here's What Happened)",
           hook: "I was posting 5 times a week and burning out. Then I tried something counterintuitive...",
           overlayText: "I STOPPED",
-          angle: "Personal experiment documenting your shift to quality over quantity with real metrics",
+          angle:
+            "Personal experiment documenting your shift to quality over quantity with real metrics",
         },
         {
           title: "The Upload Schedule That Actually Works in 2024",
           hook: "Forget everything you've heard about 'consistency being key'. Here's what the data shows...",
           overlayText: "NEW STRATEGY",
-          angle: "Data-backed breakdown of optimal posting frequency for your specific niche",
+          angle:
+            "Data-backed breakdown of optimal posting frequency for your specific niche",
         },
         {
           title: "Why Less Content = More Growth (Proof Inside)",
           hook: "What if the secret to growing faster isn't making more videos?",
           overlayText: "PROOF",
-          angle: "Counter-intuitive deep dive with case studies from creators in your niche",
+          angle:
+            "Counter-intuitive deep dive with case studies from creators in your niche",
         },
       ],
     },
@@ -501,19 +713,25 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
           text: "This completely changed my approach. Went from 3 videos/week to 1 and my retention went up 40%.",
           likeCount: 342,
           authorName: "Creative Mind",
-          publishedAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          publishedAt: new Date(
+            now.getTime() - 2 * 24 * 60 * 60 * 1000
+          ).toISOString(),
         },
         {
           text: "Can you do a follow-up on how to decide WHICH videos to make when posting less?",
           likeCount: 187,
           authorName: "Aspiring Creator",
-          publishedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          publishedAt: new Date(
+            now.getTime() - 1 * 24 * 60 * 60 * 1000
+          ).toISOString(),
         },
         {
           text: "The data at 4:32 was mind-blowing. Never realized retention matters more than frequency.",
           likeCount: 98,
           authorName: "Data Dave",
-          publishedAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          publishedAt: new Date(
+            now.getTime() - 3 * 24 * 60 * 60 * 1000
+          ).toISOString(),
         },
       ],
       sentiment: {
@@ -522,9 +740,21 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
         negative: 6,
       },
       themes: [
-        { theme: "Quality over quantity", count: 45, examples: ["finally permission to slow down", "quality matters more"] },
-        { theme: "Personal results", count: 38, examples: ["tried this and it worked", "my retention went up"] },
-        { theme: "Burnout relief", count: 24, examples: ["was burning out", "sustainable approach"] },
+        {
+          theme: "Quality over quantity",
+          count: 45,
+          examples: ["finally permission to slow down", "quality matters more"],
+        },
+        {
+          theme: "Personal results",
+          count: 38,
+          examples: ["tried this and it worked", "my retention went up"],
+        },
+        {
+          theme: "Burnout relief",
+          count: 24,
+          examples: ["was burning out", "sustainable approach"],
+        },
       ],
       viewerLoved: [
         "The permission to post less without guilt",
@@ -542,7 +772,13 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
         "Finally someone said what we all needed to hear",
       ],
     },
-    tags: ["youtube growth", "content strategy", "creator tips", "upload schedule", "quality vs quantity"],
+    tags: [
+      "youtube growth",
+      "content strategy",
+      "creator tips",
+      "upload schedule",
+      "quality vs quantity",
+    ],
     category: "Education",
     moreFromChannel: [
       {
@@ -554,7 +790,9 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
         videoUrl: "https://youtube.com/watch?v=more-1",
         channelUrl: "https://youtube.com/channel/demo-channel",
         thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-        publishedAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        publishedAt: new Date(
+          now.getTime() - 7 * 24 * 60 * 60 * 1000
+        ).toISOString(),
         stats: { viewCount: 156000 },
         derived: { viewsPerDay: 22285 },
       },
@@ -567,7 +805,9 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
         videoUrl: "https://youtube.com/watch?v=more-2",
         channelUrl: "https://youtube.com/channel/demo-channel",
         thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-        publishedAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+        publishedAt: new Date(
+          now.getTime() - 10 * 24 * 60 * 60 * 1000
+        ).toISOString(),
         stats: { viewCount: 198000 },
         derived: { viewsPerDay: 19800 },
       },
@@ -578,8 +818,37 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
 
 // Common words to filter out
 const commonWords = new Set([
-  "the", "and", "for", "with", "this", "that", "from", "have", "you",
-  "what", "when", "where", "how", "why", "who", "which", "your", "will",
-  "can", "all", "are", "been", "being", "but", "each", "had", "has",
-  "about", "video", "watch", "youtube", "channel", "subscribe",
+  "the",
+  "and",
+  "for",
+  "with",
+  "this",
+  "that",
+  "from",
+  "have",
+  "you",
+  "what",
+  "when",
+  "where",
+  "how",
+  "why",
+  "who",
+  "which",
+  "your",
+  "will",
+  "can",
+  "all",
+  "are",
+  "been",
+  "being",
+  "but",
+  "each",
+  "had",
+  "has",
+  "about",
+  "video",
+  "watch",
+  "youtube",
+  "channel",
+  "subscribe",
 ]);

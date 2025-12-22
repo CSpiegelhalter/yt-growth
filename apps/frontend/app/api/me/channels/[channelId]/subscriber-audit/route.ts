@@ -23,7 +23,10 @@ import {
 import { calcSubsPerThousandViews } from "@/lib/retention";
 import { generateConverterInsights } from "@/lib/llm";
 import { isDemoMode, getDemoData } from "@/lib/demo-fixtures";
-import type { SubscriberMagnetVideo, SubscriberAuditResponse } from "@/types/api";
+import type {
+  SubscriberMagnetVideo,
+  SubscriberAuditResponse,
+} from "@/types/api";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -43,7 +46,9 @@ export async function GET(
 ) {
   // Return demo data if demo mode is enabled
   if (isDemoMode()) {
-    const demoData = getDemoData("subscriber-audit") as SubscriberAuditResponse | null;
+    const demoData = getDemoData(
+      "subscriber-audit"
+    ) as SubscriberAuditResponse | null;
     if (demoData) {
       return Response.json({ ...demoData, demo: true });
     }
@@ -208,7 +213,8 @@ export async function GET(
 
     // Assign conversion tier based on percentile
     sortedByConversion.forEach((v, idx) => {
-      const percentile = ((sortedByConversion.length - idx) / sortedByConversion.length) * 100;
+      const percentile =
+        ((sortedByConversion.length - idx) / sortedByConversion.length) * 100;
       v.percentileRank = percentile;
       if (percentile >= 75) {
         v.conversionTier = "strong";
@@ -283,16 +289,6 @@ export async function GET(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Subscriber audit error:", err);
-
-    // Return demo data as fallback on error
-    const demoData = getDemoData("subscriber-audit") as SubscriberAuditResponse | null;
-    if (demoData) {
-      return Response.json({
-        ...demoData,
-        demo: true,
-        error: "Using demo data - actual fetch failed",
-      });
-    }
 
     return Response.json(
       { error: "Failed to fetch subscriber audit", detail: message },

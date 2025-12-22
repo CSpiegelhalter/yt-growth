@@ -302,6 +302,10 @@ function CompetitorVideoCard({
             alt=""
             className={s.videoThumb}
             loading="lazy"
+            onError={(e) => {
+              // Hide broken thumbnails gracefully.
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
           />
         ) : (
           <div className={s.videoThumbPlaceholder}>
@@ -341,6 +345,9 @@ function CompetitorVideoCard({
               alt=""
               className={s.channelAvatar}
               loading="lazy"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
             />
           )}
           <span className={s.channelName}>{video.channelTitle}</span>

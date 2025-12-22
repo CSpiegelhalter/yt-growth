@@ -38,7 +38,10 @@ export type RateLimitResult = {
 /**
  * Check and update rate limit for a key
  */
-export function checkRateLimit(key: string, config: RateLimitConfig): RateLimitResult {
+export function checkRateLimit(
+  key: string,
+  config: RateLimitConfig
+): RateLimitResult {
   const now = Date.now();
   const windowMs = config.windowSec * 1000;
 
@@ -92,6 +95,8 @@ export const RATE_LIMITS = {
   competitorComments: { limit: 20, windowSec: 3600 },
   // Owned video insights: 30 per hour per user
   videoInsights: { limit: 30, windowSec: 3600 },
+  // Owned video remixes generation: 20 per hour per user
+  videoRemixes: { limit: 20, windowSec: 3600 },
 } as const;
 
 /**
@@ -103,4 +108,3 @@ export function rateLimitKey(
 ): string {
   return `${operation}:${identifier}`;
 }
-

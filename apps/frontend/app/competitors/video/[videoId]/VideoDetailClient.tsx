@@ -30,10 +30,8 @@ export default function VideoDetailClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [expandedSection, setExpandedSection] = useState<string | null>(
-    "whyItsWorking"
-  );
   const [showAllTags, setShowAllTags] = useState(false);
+  const [showComments, setShowComments] = useState(false);
 
   // Use channelId from server props directly
   const activeChannelId = channelId ?? null;
@@ -81,10 +79,6 @@ export default function VideoDetailClient({
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 1500);
     }
-  }, []);
-
-  const toggleSection = useCallback((section: string) => {
-    setExpandedSection((prev) => (prev === section ? null : section));
   }, []);
 
   if (loading) {
@@ -139,6 +133,15 @@ export default function VideoDetailClient({
   const hasTags = allTags.length > 0;
   const visibleTags = showAllTags ? allTags : allTags.slice(0, 12);
   const hasMoreTags = allTags.length > 12;
+
+  const whyCards = (insights.whyItsWorking ?? []).slice(0, 6);
+  const themeCards = (insights.themesToRemix ?? []).slice(0, 6);
+  const remixCards = (insights.remixIdeasForYou ?? []).slice(0, 6);
+  const patternCards = (insights.titlePatterns ?? []).slice(0, 6).map((p) => ({
+    pattern: p,
+    evidence: "Observed in this video's title and topic framing",
+    howToUse: "Write 2 variants using this pattern with your main keyword.",
+  }));
 
   return (
     <main className={s.page}>
@@ -288,122 +291,118 @@ export default function VideoDetailClient({
         {/* What It's About */}
         <section className={s.section}>
           <h2 className={s.sectionTitle}>What It&apos;s About</h2>
-          <p className={s.aboutText}>{insights.whatItsAbout}</p>
+          <p className={s.aboutText}>
+            {insights.whatItsAbout || "Analysis not available yet."}
+          </p>
         </section>
 
         {/* Why It's Working */}
-        <AccordionSection
-          title="Why It's Working"
-          isOpen={expandedSection === "whyItsWorking"}
-          onToggle={() => toggleSection("whyItsWorking")}
-        >
-          <ul className={s.bulletList}>
-            {insights.whyItsWorking.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
-          </ul>
-        </AccordionSection>
+        {whyCards.length > 0 && (
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Why it&apos;s working</h2>
+            <p className={s.sectionSubtitle}>
+              The strongest drivers behind this video&apos;s performance.
+            </p>
+            <div className={s.cardGrid}>
+              {whyCards.map((text, i) => (
+                <div key={i} className={s.simpleCard}>
+                  <p className={s.cardText}>{text}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Themes to Remix */}
-        <AccordionSection
-          title="Themes to Remix"
-          isOpen={expandedSection === "themes"}
-          onToggle={() => toggleSection("themes")}
-        >
-          <div className={s.themesList}>
-            {insights.themesToRemix.map((theme, i) => (
-              <div key={i} className={s.themeCard}>
-                <h4 className={s.themeTitle}>{theme.theme}</h4>
-                <p className={s.themeWhy}>{theme.why}</p>
-              </div>
-            ))}
-          </div>
-        </AccordionSection>
+        {themeCards.length > 0 && (
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Themes to remix</h2>
+            <p className={s.sectionSubtitle}>
+              Concepts that transfer well into your niche.
+            </p>
+            <div className={s.themesList}>
+              {themeCards.map((theme, i) => (
+                <div key={i} className={s.themeCard}>
+                  <h4 className={s.themeTitle}>{theme.theme}</h4>
+                  <p className={s.themeWhy}>{theme.why}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Patterns to Learn */}
-        <AccordionSection
-          title="Patterns to Learn"
-          isOpen={expandedSection === "patterns"}
-          onToggle={() => toggleSection("patterns")}
-        >
-          <div className={s.patternsGrid}>
-            {insights.titlePatterns.length > 0 && (
-              <div className={s.patternBlock}>
-                <h4 className={s.patternBlockTitle}>Title Patterns</h4>
-                <ul className={s.patternList}>
-                  {insights.titlePatterns.map((p, i) => (
-                    <li key={i}>{p}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {insights.packagingNotes.length > 0 && (
-              <div className={s.patternBlock}>
-                <h4 className={s.patternBlockTitle}>Packaging Notes</h4>
-                <ul className={s.patternList}>
-                  {insights.packagingNotes.map((p, i) => (
-                    <li key={i}>{p}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </AccordionSection>
+        {patternCards.length > 0 && (
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Patterns to learn</h2>
+            <p className={s.sectionSubtitle}>
+              Portable patterns you can apply without copying the niche.
+            </p>
+            <div className={s.patternCards}>
+              {patternCards.map((p, i) => (
+                <div key={i} className={s.patternCard}>
+                  <h4 className={s.patternTitle}>{p.pattern}</h4>
+                  <p className={s.patternEvidence}>{p.evidence}</p>
+                  <p className={s.patternHow}>{p.howToUse}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Steal This, But Make It Yours */}
-        <section className={s.section}>
-          <h2 className={s.sectionTitle}>Steal This, But Make It Yours</h2>
-          <p className={s.sectionSubtitle}>
-            Remix ideas tailored for your channel
-          </p>
+        {remixCards.length > 0 && (
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Steal This, But Make It Yours</h2>
+            <p className={s.sectionSubtitle}>
+              Remix ideas tailored for your channel
+            </p>
 
-          <div className={s.remixGrid}>
-            {insights.remixIdeasForYou.map((remix, i) => (
-              <div key={i} className={s.remixCard}>
-                <h4 className={s.remixTitle}>{remix.title}</h4>
-                <p className={s.remixAngle}>{remix.angle}</p>
+            <div className={s.remixGrid}>
+              {remixCards.map((remix, i) => (
+                <div key={i} className={s.remixCard}>
+                  <h4 className={s.remixTitle}>{remix.title}</h4>
+                  <p className={s.remixAngle}>{remix.angle}</p>
 
-                <div className={s.remixHook}>
-                  <span className={s.hookLabel}>Hook:</span>
-                  <span className={s.hookText}>&ldquo;{remix.hook}&rdquo;</span>
+                  <div className={s.remixHook}>
+                    <span className={s.hookLabel}>Hook:</span>
+                    <span className={s.hookText}>
+                      &ldquo;{remix.hook}&rdquo;
+                    </span>
+                  </div>
+
+                  <div className={s.remixOverlay}>
+                    <span className={s.overlayLabel}>Thumbnail Text:</span>
+                    <span className={s.overlayText}>{remix.overlayText}</span>
+                  </div>
+
+                  <button
+                    className={s.copyBtn}
+                    onClick={() =>
+                      handleCopy(
+                        `Title: ${remix.title}\nHook: ${remix.hook}\nThumbnail: ${remix.overlayText}\nAngle: ${remix.angle}`,
+                        `remix-${i}`
+                      )
+                    }
+                  >
+                    {copiedId === `remix-${i}` ? "Copied!" : "Copy Idea"}
+                  </button>
                 </div>
+              ))}
+            </div>
+          </section>
+        )}
 
-                <div className={s.remixOverlay}>
-                  <span className={s.overlayLabel}>Thumbnail Text:</span>
-                  <span className={s.overlayText}>{remix.overlayText}</span>
-                </div>
-
-                <button
-                  className={s.copyBtn}
-                  onClick={() =>
-                    handleCopy(
-                      `Title: ${remix.title}\nHook: ${remix.hook}\nThumbnail: ${remix.overlayText}\nAngle: ${remix.angle}`,
-                      `remix-${i}`
-                    )
-                  }
-                >
-                  {copiedId === `remix-${i}` ? "Copied!" : "Copy Idea"}
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Comments Insights (Key Differentiator) */}
+        {/* Top comments & sentiment */}
         {comments && !comments.commentsDisabled && (
-          <AccordionSection
-            title="Comments Insights"
-            isOpen={expandedSection === "comments"}
-            onToggle={() => toggleSection("comments")}
-          >
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Top comments &amp; sentiment</h2>
             {comments.error ? (
               <p className={s.commentsError}>{comments.error}</p>
             ) : (
               <div className={s.commentsAnalysis}>
-                {/* Sentiment Distribution */}
                 <div className={s.sentimentSection}>
-                  <h4 className={s.subSectionTitle}>Viewer Sentiment</h4>
+                  <h4 className={s.subSectionTitle}>Viewer sentiment</h4>
                   <div className={s.sentimentBar}>
                     <div
                       className={s.sentimentPositive}
@@ -431,39 +430,39 @@ export default function VideoDetailClient({
                   </div>
                 </div>
 
-                {/* What Viewers Loved */}
-                {comments.viewerLoved && comments.viewerLoved.length > 0 && (
-                  <div className={s.commentThemeBlock}>
-                    <h4 className={s.subSectionTitle}>What Viewers Loved</h4>
-                    <ul className={s.commentThemeList}>
-                      {comments.viewerLoved.map((item, i) => (
-                        <li key={i}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* What Viewers Asked For */}
-                {comments.viewerAskedFor &&
-                  comments.viewerAskedFor.length > 0 && (
+                <div className={s.commentSummaryGrid}>
+                  {comments.viewerLoved && comments.viewerLoved.length > 0 && (
                     <div className={s.commentThemeBlock}>
-                      <h4 className={s.subSectionTitle}>
-                        What Viewers Asked For Next
-                      </h4>
+                      <h4 className={s.subSectionTitle}>What viewers loved</h4>
                       <ul className={s.commentThemeList}>
-                        {comments.viewerAskedFor.map((item, i) => (
+                        {comments.viewerLoved.slice(0, 5).map((item, i) => (
                           <li key={i}>{item}</li>
                         ))}
                       </ul>
                     </div>
                   )}
+                  {comments.viewerAskedFor &&
+                    comments.viewerAskedFor.length > 0 && (
+                      <div className={s.commentThemeBlock}>
+                        <h4 className={s.subSectionTitle}>
+                          What viewers asked for next
+                        </h4>
+                        <ul className={s.commentThemeList}>
+                          {comments.viewerAskedFor
+                            .slice(0, 5)
+                            .map((item, i) => (
+                              <li key={i}>{item}</li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                </div>
 
-                {/* Comment Themes */}
                 {comments.themes && comments.themes.length > 0 && (
                   <div className={s.commentThemeBlock}>
-                    <h4 className={s.subSectionTitle}>Top Comment Themes</h4>
+                    <h4 className={s.subSectionTitle}>Themes</h4>
                     <div className={s.themeChips}>
-                      {comments.themes.map((theme, i) => (
+                      {comments.themes.slice(0, 10).map((theme, i) => (
                         <span key={i} className={s.themeChip}>
                           {theme.theme}{" "}
                           <span className={s.themeCount}>({theme.count})</span>
@@ -473,55 +472,60 @@ export default function VideoDetailClient({
                   </div>
                 )}
 
-                {/* Hook Inspiration */}
                 {comments.hookInspiration &&
                   comments.hookInspiration.length > 0 && (
                     <div className={s.commentThemeBlock}>
-                      <h4 className={s.subSectionTitle}>
-                        Hook Inspiration from Comments
-                      </h4>
+                      <h4 className={s.subSectionTitle}>Hook inspiration</h4>
                       <div className={s.hookQuotes}>
-                        {comments.hookInspiration.map((quote, i) => (
-                          <div key={i} className={s.hookQuote}>
-                            <span className={s.quoteText}>
-                              &ldquo;{quote}&rdquo;
-                            </span>
-                            <button
-                              className={s.copyQuoteBtn}
-                              onClick={() => handleCopy(quote, `hook-${i}`)}
-                            >
-                              {copiedId === `hook-${i}` ? "Copied" : "Copy"}
-                            </button>
-                          </div>
-                        ))}
+                        {comments.hookInspiration
+                          .slice(0, 6)
+                          .map((quote, i) => (
+                            <div key={i} className={s.hookQuote}>
+                              <span className={s.quoteText}>
+                                &ldquo;{quote}&rdquo;
+                              </span>
+                              <button
+                                className={s.copyQuoteBtn}
+                                onClick={() => handleCopy(quote, `hook-${i}`)}
+                              >
+                                {copiedId === `hook-${i}` ? "Copied" : "Copy"}
+                              </button>
+                            </div>
+                          ))}
                       </div>
                     </div>
                   )}
 
-                {/* Top Comments Preview */}
                 {comments.topComments && comments.topComments.length > 0 && (
                   <div className={s.topCommentsBlock}>
-                    <h4 className={s.subSectionTitle}>Top Comments</h4>
-                    <div className={s.topCommentsList}>
-                      {comments.topComments.slice(0, 5).map((comment, i) => (
-                        <div key={i} className={s.topComment}>
-                          <p className={s.commentText}>{comment.text}</p>
-                          <div className={s.commentMeta}>
-                            <span className={s.commentAuthor}>
-                              {comment.authorName}
-                            </span>
-                            <span className={s.commentLikes}>
-                              {comment.likeCount} likes
-                            </span>
+                    <button
+                      className={s.commentsToggle}
+                      onClick={() => setShowComments((v) => !v)}
+                    >
+                      {showComments ? "Hide comments" : "Show comments"}
+                    </button>
+                    {showComments && (
+                      <div className={s.topCommentsList}>
+                        {comments.topComments.slice(0, 12).map((comment, i) => (
+                          <div key={i} className={s.topComment}>
+                            <p className={s.commentText}>{comment.text}</p>
+                            <div className={s.commentMeta}>
+                              <span className={s.commentAuthor}>
+                                {comment.authorName}
+                              </span>
+                              <span className={s.commentLikes}>
+                                {comment.likeCount} likes
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
-          </AccordionSection>
+          </section>
         )}
 
         {/* Comments Disabled Notice */}
@@ -584,30 +588,6 @@ function MetricCard({
       <span className={s.metricValue}>{value}</span>
       <span className={s.metricLabel}>{label}</span>
     </div>
-  );
-}
-
-function AccordionSection({
-  title,
-  isOpen,
-  onToggle,
-  children,
-}: {
-  title: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <section
-      className={`${s.accordionSection} ${isOpen ? s.accordionOpen : ""}`}
-    >
-      <button className={s.accordionHeader} onClick={onToggle}>
-        <h2 className={s.accordionTitle}>{title}</h2>
-        <span className={s.accordionIcon}>{isOpen ? "−" : "+"}</span>
-      </button>
-      {isOpen && <div className={s.accordionContent}>{children}</div>}
-    </section>
   );
 }
 

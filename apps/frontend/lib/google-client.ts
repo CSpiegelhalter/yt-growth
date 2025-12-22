@@ -15,25 +15,102 @@ function parseISODuration(iso: string | undefined | null) {
 async function getGoogleAccount(userId: number) {
   const ga = await prisma.googleAccount.findFirst({ where: { userId } });
   if (!ga) throw new ApiError(400, "Google account not connected");
-  if (!ga.refreshTokenEnc) throw new ApiError(400, "Missing Google refresh token");
+  if (!ga.refreshTokenEnc)
+    throw new ApiError(400, "Missing Google refresh token");
   return ga;
 }
 
 export async function listRecentVideos(userId: number, channelId: string) {
   const ga = await getGoogleAccount(userId);
-  const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
-  searchUrl.search = new URLSearchParams({
-    part: "snippet",
-    channelId,
-    order: "date",
-    maxResults: "10",
-    type: "video",
+  // Avoid search.list (expensive quota). Use uploads playlist instead.
+  const channelUrl = new URL("https://www.googleapis.com/youtube/v3/channels");
+  channelUrl.search = new URLSearchParams({
+    part: "contentDetails",
+    id: channelId,
   }).toString();
 
-  const search = await googleFetchWithAutoRefresh<{
-    items: Array<{ id: { videoId: string }; snippet: { title: string; publishedAt?: string } }>;
-  }>(ga, searchUrl.toString());
-  const videoIds = (search.items ?? []).map((i) => i.id.videoId).filter(Boolean);
+  const channelData = await googleFetchWithAutoRefresh<{
+    items: Array<{ contentDetails: { relatedPlaylists: { uploads: string } } }>;
+  }>(ga, channelUrl.toString());
+  const uploadsPlaylistId =
+    channelData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+  if (!uploadsPlaylistId) {
+    // Fallback for rare channels where uploads playlist isn't returned.
+    // Costs more quota.
+    const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+    searchUrl.search = new URLSearchParams({
+      part: "snippet",
+      channelId,
+      order: "date",
+      maxResults: "25",
+      type: "video",
+    }).toString();
+
+    const search = await googleFetchWithAutoRefresh<{
+      items: Array<{
+        id: { videoId: string };
+        snippet: { title: string; publishedAt?: string; thumbnails?: any };
+      }>;
+    }>(ga, searchUrl.toString());
+    const videoIds = (search.items ?? [])
+      .map((i) => i.id.videoId)
+      .filter(Boolean);
+    if (videoIds.length === 0) return [];
+
+    const videosUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
+    videosUrl.search = new URLSearchParams({
+      part: "snippet,contentDetails",
+      id: videoIds.join(","),
+    }).toString();
+
+    const videos = await googleFetchWithAutoRefresh<{
+      items: Array<{
+        id: string;
+        snippet: {
+          title: string;
+          publishedAt?: string;
+          tags?: string[];
+          thumbnails?: any;
+        };
+        contentDetails?: { duration?: string };
+      }>;
+    }>(ga, videosUrl.toString());
+
+    return (videos.items ?? []).map((v) => ({
+      videoId: v.id,
+      title: v.snippet?.title ?? "Untitled",
+      publishedAt: v.snippet?.publishedAt
+        ? new Date(v.snippet.publishedAt)
+        : null,
+      durationSec: parseISODuration(v.contentDetails?.duration),
+      tags: (v.snippet?.tags ?? []).join(","),
+      thumbnailUrl:
+        v.snippet?.thumbnails?.maxres?.url ||
+        v.snippet?.thumbnails?.high?.url ||
+        v.snippet?.thumbnails?.default?.url ||
+        null,
+    }));
+  }
+
+  const playlistUrl = new URL(
+    "https://www.googleapis.com/youtube/v3/playlistItems"
+  );
+  playlistUrl.search = new URLSearchParams({
+    part: "snippet,contentDetails",
+    playlistId: uploadsPlaylistId,
+    maxResults: "25",
+  }).toString();
+
+  const playlist = await googleFetchWithAutoRefresh<{
+    items: Array<{
+      contentDetails: { videoId: string };
+      snippet: { title: string; publishedAt?: string; thumbnails?: any };
+    }>;
+  }>(ga, playlistUrl.toString());
+
+  const videoIds = (playlist.items ?? [])
+    .map((i) => i.contentDetails.videoId)
+    .filter(Boolean);
   if (videoIds.length === 0) return [];
 
   const videosUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
@@ -45,7 +122,12 @@ export async function listRecentVideos(userId: number, channelId: string) {
   const videos = await googleFetchWithAutoRefresh<{
     items: Array<{
       id: string;
-      snippet: { title: string; publishedAt?: string; tags?: string[]; thumbnails?: any };
+      snippet: {
+        title: string;
+        publishedAt?: string;
+        tags?: string[];
+        thumbnails?: any;
+      };
       contentDetails?: { duration?: string };
     }>;
   }>(ga, videosUrl.toString());
@@ -53,7 +135,9 @@ export async function listRecentVideos(userId: number, channelId: string) {
   return (videos.items ?? []).map((v) => ({
     videoId: v.id,
     title: v.snippet?.title ?? "Untitled",
-    publishedAt: v.snippet?.publishedAt ? new Date(v.snippet.publishedAt) : null,
+    publishedAt: v.snippet?.publishedAt
+      ? new Date(v.snippet.publishedAt)
+      : null,
     durationSec: parseISODuration(v.contentDetails?.duration),
     tags: (v.snippet?.tags ?? []).join(","),
     thumbnailUrl:
@@ -87,10 +171,10 @@ export async function fetchVideoMetrics(
     maxResults: "10",
   }).toString();
 
-  const data = await googleFetchWithAutoRefresh<{ columnHeaders: any[]; rows?: any[] }>(
-    ga,
-    url.toString()
-  );
+  const data = await googleFetchWithAutoRefresh<{
+    columnHeaders: any[];
+    rows?: any[];
+  }>(ga, url.toString());
 
   const headers = (data.columnHeaders ?? []).map((h: any) => h.name);
   const idx = (name: string) => headers.indexOf(name);
@@ -108,7 +192,11 @@ export async function fetchVideoMetrics(
   }));
 }
 
-export async function fetchRetentionPoints(userId: number, channelId: string, videoId: string) {
+export async function fetchRetentionPoints(
+  userId: number,
+  channelId: string,
+  videoId: string
+) {
   const ga = await getGoogleAccount(userId);
   const url = new URL("https://youtubeanalytics.googleapis.com/v2/reports");
   const endDate = new Date();
@@ -123,7 +211,10 @@ export async function fetchRetentionPoints(userId: number, channelId: string, vi
     sort: "elapsedVideoTimeRatio",
   }).toString();
 
-  const data = await googleFetchWithAutoRefresh<{ rows?: any[] }>(ga, url.toString());
+  const data = await googleFetchWithAutoRefresh<{ rows?: any[] }>(
+    ga,
+    url.toString()
+  );
   return (data.rows ?? []).map((row) => ({
     elapsedRatio: Number(row[0]),
     audienceWatchRatio: Number(row[1]),

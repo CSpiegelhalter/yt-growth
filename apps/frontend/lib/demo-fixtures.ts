@@ -12,16 +12,29 @@ import subscriberAuditFixture from "@/test/fixtures/subscriber-audit.json";
 import similarChannelsFixture from "@/test/fixtures/similar-channels.json";
 import ideaBoardFixture from "@/test/fixtures/idea-board.json";
 
-export type DemoDataType = "retention" | "subscriber-audit" | "similar-channels" | "idea-board";
+export type DemoDataType =
+  | "retention"
+  | "subscriber-audit"
+  | "similar-channels"
+  | "idea-board";
 
 /**
  * Check if the app is running in demo/test mode
  */
 export function isDemoMode(): boolean {
+  // Demo mode is opt-in via an env var.
+  // Support both DEMO_MODE (server-only) and NEXT_PUBLIC_DEMO_MODE (legacy/dev convenience).
   return (
-    process.env.NEXT_PUBLIC_DEMO_MODE === "1" ||
-    process.env.TEST_MODE === "1"
+    process.env.DEMO_MODE === "1" || process.env.NEXT_PUBLIC_DEMO_MODE === "1"
   );
+}
+
+/**
+ * YouTube mock mode runs the REAL codepaths but mocks the underlying YouTube APIs.
+ * This is ideal when quota is exhausted and you still want realistic, high-volume data.
+ */
+export function isYouTubeMockMode(): boolean {
+  return process.env.YT_MOCK_MODE === "1";
 }
 
 /**
@@ -29,7 +42,7 @@ export function isDemoMode(): boolean {
  */
 export function getDemoData(type: DemoDataType): unknown {
   const fixtures: Record<DemoDataType, unknown> = {
-    "retention": retentionFixture,
+    retention: retentionFixture,
     "subscriber-audit": subscriberAuditFixture,
     "similar-channels": similarChannelsFixture,
     "idea-board": ideaBoardFixture,
@@ -62,9 +75,7 @@ export async function withDemoFallback<T extends object>(
     const result = await fetchFn();
     return result;
   } catch (error) {
-    console.warn(`Falling back to demo data for ${demoType}:`, error);
-    const demoData = getDemoData(demoType) as T;
-    return { ...demoData, demo: true };
+    // In live mode, do not silently swap to fixtures — propagate the real error.
+    throw error;
   }
 }
-

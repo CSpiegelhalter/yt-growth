@@ -510,10 +510,50 @@ export async function getSubscriptionStatus(userId: number): Promise<{
         subscription.status === "trialing" ||
         subscription.status === "past_due");
 
+  // Keep API-facing plan/status/channelLimit consistent with computed entitlement.
+  // If the effective end is in the past, the DB row can still say plan=pro/status=active
+  // (especially if someone manually edits the DB or a webhook is missed).
+  const hasCancelSignal =
+    Boolean(subscription.cancelAtPeriodEnd) ||
+    Boolean(subscription.cancelAt) ||
+    Boolean(subscription.canceledAt);
+  const normalizedStatus = isActive
+    ? subscription.status
+    : hasCancelSignal
+    ? "canceled"
+    : "inactive";
+  const normalizedPlan = isActive ? subscription.plan : "free";
+  const normalizedChannelLimit = isActive ? subscription.channelLimit : 1;
+
+  if (
+    !isActive &&
+    subscription.plan !== "free" &&
+    effectiveEnd &&
+    effectiveEnd.getTime() <= now
+  ) {
+    // Best-effort self-heal: downgrade stale rows so the UI doesn't show "Pro/active"
+    // when the effective end has already passed.
+    try {
+      await prisma.subscription.update({
+        where: { userId },
+        data: {
+          status: normalizedStatus,
+          plan: "free",
+          channelLimit: 1,
+        },
+      });
+    } catch (err) {
+      console.warn(
+        `[Stripe] Failed to normalize expired subscription row for user ${userId}:`,
+        err
+      );
+    }
+  }
+
   return {
-    status: subscription.status,
-    plan: subscription.plan,
-    channelLimit: subscription.channelLimit,
+    status: normalizedStatus,
+    plan: normalizedPlan,
+    channelLimit: normalizedChannelLimit,
     currentPeriodEnd: subscription.currentPeriodEnd,
     cancelAtPeriodEnd: subscription.cancelAtPeriodEnd ?? false,
     cancelAt: subscription.cancelAt,

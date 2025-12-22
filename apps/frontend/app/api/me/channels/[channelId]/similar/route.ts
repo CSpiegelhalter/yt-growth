@@ -17,10 +17,21 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
-import { getCurrentUserWithSubscription, hasActiveSubscription } from "@/lib/user";
-import { getGoogleAccount, searchSimilarChannels, fetchRecentChannelVideos } from "@/lib/youtube-api";
+import {
+  getCurrentUserWithSubscription,
+  hasActiveSubscription,
+} from "@/lib/user";
+import {
+  getGoogleAccount,
+  searchSimilarChannels,
+  fetchRecentChannelVideos,
+} from "@/lib/youtube-api";
 import { generateSimilarChannelInsights } from "@/lib/llm";
-import { isDemoMode, getDemoData } from "@/lib/demo-fixtures";
+import {
+  isDemoMode,
+  getDemoData,
+  isYouTubeMockMode,
+} from "@/lib/demo-fixtures";
 import type { SimilarChannelsResponse, SimilarChannel } from "@/types/api";
 
 const ParamsSchema = z.object({
@@ -37,7 +48,7 @@ export async function GET(
   { params }: { params: { channelId: string } }
 ) {
   // Return demo data if demo mode is enabled
-  if (isDemoMode()) {
+  if (isDemoMode() && !isYouTubeMockMode()) {
     const demoData = getDemoData("similar-channels");
     return Response.json({ ...(demoData as object), demo: true });
   }
@@ -73,7 +84,10 @@ export async function GET(
     });
 
     if (!queryResult.success) {
-      return Response.json({ error: "Invalid query parameters" }, { status: 400 });
+      return Response.json(
+        { error: "Invalid query parameters" },
+        { status: 400 }
+      );
     }
 
     const { range, channels: channelCount } = queryResult.data;
@@ -96,20 +110,39 @@ export async function GET(
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
+    // Cache: avoid repeated YouTube discovery calls within 12h
+    const cached = await prisma.similarChannelsCache.findUnique({
+      where: {
+        userId_channelId_range_channels: {
+          userId: user.id,
+          channelId: channel.id,
+          range,
+          channels: channelCount,
+        },
+      },
+    });
+
+    if (cached && cached.cachedUntil > new Date()) {
+      return Response.json(cached.responseJson as object);
+    }
+
     // Get Google account for API calls
     const ga = await getGoogleAccount(user.id);
     if (!ga) {
-      return Response.json({ error: "Google account not connected" }, { status: 400 });
+      return Response.json(
+        { error: "Google account not connected" },
+        { status: 400 }
+      );
     }
 
     // Extract keywords from recent video titles and tags
-    const titleWords = channel.Video
-      .flatMap((v) => (v.title ?? "").toLowerCase().split(/\s+/))
-      .filter((w) => w.length > 3 && !commonWords.has(w));
-    
-    const tagWords = channel.Video
-      .flatMap((v) => (v.tags ?? "").split(",").map((t) => t.trim().toLowerCase()))
-      .filter(Boolean);
+    const titleWords = channel.Video.flatMap((v) =>
+      (v.title ?? "").toLowerCase().split(/\s+/)
+    ).filter((w) => w.length > 3 && !commonWords.has(w));
+
+    const tagWords = channel.Video.flatMap((v) =>
+      (v.tags ?? "").split(",").map((t) => t.trim().toLowerCase())
+    ).filter(Boolean);
 
     // Count word frequency and get top keywords
     const wordCounts = new Map<string, number>();
@@ -138,7 +171,11 @@ export async function GET(
     }
 
     // Search for similar channels
-    const similarChannelResults = await searchSimilarChannels(ga, keywords, channelCount + 2);
+    const similarChannelResults = await searchSimilarChannels(
+      ga,
+      keywords,
+      channelCount + 2
+    );
 
     // Filter out the user's own channel
     const filteredChannels = similarChannelResults
@@ -147,14 +184,21 @@ export async function GET(
 
     // Calculate date range
     const rangeDays = range === "7d" ? 7 : 14;
-    const publishedAfter = new Date(Date.now() - rangeDays * 24 * 60 * 60 * 1000).toISOString();
+    const publishedAfter = new Date(
+      Date.now() - rangeDays * 24 * 60 * 60 * 1000
+    ).toISOString();
 
     // Fetch recent videos for each similar channel
     const similarChannels: SimilarChannel[] = await Promise.all(
       filteredChannels.map(async (sc, index) => {
         try {
-          const recentVideos = await fetchRecentChannelVideos(ga, sc.channelId, publishedAfter, 5);
-          
+          const recentVideos = await fetchRecentChannelVideos(
+            ga,
+            sc.channelId,
+            publishedAfter,
+            3
+          );
+
           // Calculate similarity score based on keyword overlap (simplified)
           const similarityScore = Math.max(0.3, 1 - index * 0.1); // Decreasing score based on order
 
@@ -173,7 +217,10 @@ export async function GET(
             })),
           };
         } catch (err) {
-          console.warn(`Failed to fetch videos for channel ${sc.channelId}:`, err);
+          console.warn(
+            `Failed to fetch videos for channel ${sc.channelId}:`,
+            err
+          );
           return {
             channelId: sc.channelId,
             channelTitle: sc.channelTitle,
@@ -192,7 +239,9 @@ export async function GET(
       formatsToTry: [],
     };
 
-    const channelsWithVideos = similarChannels.filter((c) => c.recentWinners.length > 0);
+    const channelsWithVideos = similarChannels.filter(
+      (c) => c.recentWinners.length > 0
+    );
     if (channelsWithVideos.length >= 2) {
       try {
         insights = await generateSimilarChannelInsights(
@@ -205,8 +254,12 @@ export async function GET(
       } catch (err) {
         console.warn("Failed to generate similar channel insights:", err);
         insights = {
-          whatTheyreDoing: ["Similar channels are posting consistently in your niche"],
-          ideasToSteal: ["Check their highest-viewed recent videos for topic inspiration"],
+          whatTheyreDoing: [
+            "Similar channels are posting consistently in your niche",
+          ],
+          ideasToSteal: [
+            "Check their highest-viewed recent videos for topic inspiration",
+          ],
           formatsToTry: ["Try formats that are working for these channels"],
         };
       }
@@ -214,28 +267,42 @@ export async function GET(
 
     const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours
 
-    return Response.json({
+    const response: SimilarChannelsResponse = {
       channelId,
       range,
       generatedAt: new Date().toISOString(),
       cachedUntil: cachedUntil.toISOString(),
       similarChannels,
       insights,
-    } as SimilarChannelsResponse);
+    };
+
+    await prisma.similarChannelsCache.upsert({
+      where: {
+        userId_channelId_range_channels: {
+          userId: user.id,
+          channelId: channel.id,
+          range,
+          channels: channelCount,
+        },
+      },
+      create: {
+        userId: user.id,
+        channelId: channel.id,
+        range,
+        channels: channelCount,
+        responseJson: response as unknown as object,
+        cachedUntil,
+      },
+      update: {
+        responseJson: response as unknown as object,
+        cachedUntil,
+      },
+    });
+
+    return Response.json(response);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Similar channels error:", err);
-    
-    // Return demo data as fallback on error
-    const demoData = getDemoData("similar-channels");
-    if (demoData) {
-      return Response.json({
-        ...(demoData as object),
-        demo: true,
-        error: "Using demo data - actual fetch failed",
-      });
-    }
-    
     return Response.json(
       { error: "Failed to fetch similar channels", detail: message },
       { status: 500 }
@@ -245,13 +312,80 @@ export async function GET(
 
 // Common words to filter out from keyword extraction
 const commonWords = new Set([
-  "the", "and", "for", "with", "this", "that", "from", "have", "you",
-  "what", "when", "where", "how", "why", "who", "which", "your", "will",
-  "can", "all", "are", "been", "being", "but", "each", "had", "has",
-  "her", "here", "his", "into", "just", "like", "made", "make", "more",
-  "most", "much", "must", "not", "now", "only", "other", "our", "out",
-  "over", "own", "said", "same", "she", "should", "some", "such", "than",
-  "them", "then", "there", "these", "they", "their", "through", "too",
-  "under", "very", "was", "way", "were", "about", "after", "also",
-  "video", "videos", "watch", "watching", "today", "new",
+  "the",
+  "and",
+  "for",
+  "with",
+  "this",
+  "that",
+  "from",
+  "have",
+  "you",
+  "what",
+  "when",
+  "where",
+  "how",
+  "why",
+  "who",
+  "which",
+  "your",
+  "will",
+  "can",
+  "all",
+  "are",
+  "been",
+  "being",
+  "but",
+  "each",
+  "had",
+  "has",
+  "her",
+  "here",
+  "his",
+  "into",
+  "just",
+  "like",
+  "made",
+  "make",
+  "more",
+  "most",
+  "much",
+  "must",
+  "not",
+  "now",
+  "only",
+  "other",
+  "our",
+  "out",
+  "over",
+  "own",
+  "said",
+  "same",
+  "she",
+  "should",
+  "some",
+  "such",
+  "than",
+  "them",
+  "then",
+  "there",
+  "these",
+  "they",
+  "their",
+  "through",
+  "too",
+  "under",
+  "very",
+  "was",
+  "way",
+  "were",
+  "about",
+  "after",
+  "also",
+  "video",
+  "videos",
+  "watch",
+  "watching",
+  "today",
+  "new",
 ]);

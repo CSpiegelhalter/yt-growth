@@ -95,7 +95,7 @@ export async function POST(
       include: {
         Video: {
           orderBy: { publishedAt: "desc" },
-          take: 10,
+          take: 25, // We only need ~25 recent videos for good signal
           include: {
             VideoMetrics: true,
           },
@@ -221,9 +221,73 @@ export async function POST(
       });
     }
 
-    // Fetch competitor videos
+    // Fetch competitor videos (avoid YouTube search.list if we already have competitor data cached)
     let competitorTitles: string[] = [];
-    if (nicheKeywords.length > 0) {
+    // 1) Prefer competitor feed cache (0 YouTube quota)
+    try {
+      const cachedFeed = await prisma.competitorFeedCache.findFirst({
+        where: {
+          userId: user.id,
+          channelId: channel.id,
+          cachedUntil: { gt: new Date() },
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (cachedFeed?.videosJson) {
+        const raw = cachedFeed.videosJson as unknown as Array<{
+          title: string;
+          channelId: string;
+        }>;
+        const perChannel = new Map<string, number>();
+        competitorTitles = raw
+          .filter((v) => {
+            const n = perChannel.get(v.channelId) ?? 0;
+            if (n >= 3) return false;
+            perChannel.set(v.channelId, n + 1);
+            return true;
+          })
+          .map((v) => v.title)
+          .slice(0, 20);
+      }
+    } catch {
+      // ignore and fall back
+    }
+
+    // 2) If no cache, use recent DB competitor videos (still 0 YouTube quota)
+    if (competitorTitles.length === 0 && nicheKeywords.length > 0) {
+      const keywords = nicheKeywords
+        .map((k) => k.trim().toLowerCase())
+        .filter(Boolean)
+        .slice(0, 5);
+      const candidates = await prisma.competitorVideo.findMany({
+        where: {
+          lastFetchedAt: { gt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) },
+          ...(keywords.length
+            ? {
+                OR: keywords.map((k) => ({
+                  title: { contains: k, mode: "insensitive" as const },
+                })),
+              }
+            : {}),
+        },
+        select: { title: true, channelId: true },
+        orderBy: { lastFetchedAt: "desc" },
+        take: 60,
+      });
+      const perChannel = new Map<string, number>();
+      competitorTitles = candidates
+        .filter((v) => {
+          const n = perChannel.get(v.channelId) ?? 0;
+          if (n >= 3) return false;
+          perChannel.set(v.channelId, n + 1);
+          return true;
+        })
+        .map((v) => v.title)
+        .slice(0, 20);
+    }
+
+    // 3) Last resort: YouTube search (costly: search.list = 100 units)
+    if (competitorTitles.length === 0 && nicheKeywords.length > 0) {
       const ga = await getGoogleAccount(user.id);
       if (ga) {
         try {

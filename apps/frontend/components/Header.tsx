@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -25,7 +25,6 @@ type HeaderProps = {
 export function Header(_props: HeaderProps) {
   const { data: session, status } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [channelDropdownOpen, setChannelDropdownOpen] = useState(false);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
@@ -102,24 +101,18 @@ export function Header(_props: HeaderProps) {
 
   // Close menu on escape key
   useEffect(() => {
-    if (!menuOpen && !mobileNavOpen && !channelDropdownOpen) return;
+    if (!menuOpen && !channelDropdownOpen) return;
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setMenuOpen(false);
-        setMobileNavOpen(false);
         setChannelDropdownOpen(false);
       }
     };
 
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [menuOpen, mobileNavOpen, channelDropdownOpen]);
-
-  // Close mobile nav on route change
-  useEffect(() => {
-    setMobileNavOpen(false);
-  }, [pathname]);
+  }, [menuOpen, channelDropdownOpen]);
 
   const handleChannelSelect = (channelId: string) => {
     setActiveChannelId(channelId);
@@ -143,206 +136,169 @@ export function Header(_props: HeaderProps) {
   const userInitials = getInitials(session?.user?.name || userEmail);
   const activeChannel = channels.find((c) => c.channel_id === activeChannelId);
 
-  // Simplified nav links - channel-centric navigation
-  const navLinks = [
-    { href: "/dashboard", label: "Videos" },
-    { href: "/ideas", label: "Ideas" },
-    { href: "/converters", label: "Subscriber Drivers" },
-    { href: "/competitors", label: "Competitors" },
-  ];
+  const navLinks = useMemo(
+    () => [
+      { href: "/dashboard", label: "Videos" },
+      { href: "/ideas", label: "Ideas" },
+      { href: "/converters", label: "Subscriber Drivers" },
+      { href: "/competitors", label: "Competitors" },
+    ],
+    []
+  );
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(href + "/");
+  const isAdmin = useMemo(() => {
+    const email = String(session?.user?.email ?? "").toLowerCase();
+    const allow = String(process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    if (allow.length === 0) return false;
+    return allow.includes(email);
+  }, [session?.user?.email]);
 
   return (
     <header className={s.header}>
-      {/* Logo */}
-      <Link href="/" className={s.logo}>
-        <span className={s.logoIcon}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-          </svg>
-        </span>
-        <span className={s.logoText}>YT Growth</span>
-      </Link>
-
-      {/* Channel Selector (only when logged in and has channels) */}
-      {mounted && isLoggedIn && channels.length > 0 && (
-        <div ref={channelRef} className={s.channelSelector}>
-          <button
-            className={s.channelBtn}
-            onClick={() => setChannelDropdownOpen(!channelDropdownOpen)}
-            aria-expanded={channelDropdownOpen}
-            aria-label="Select channel"
-          >
-            {activeChannel?.thumbnailUrl ? (
-              <img
-                src={activeChannel.thumbnailUrl}
-                alt=""
-                className={s.channelThumb}
-              />
-            ) : (
-              <div className={s.channelThumbPlaceholder}>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
-                </svg>
-              </div>
-            )}
-            <span className={s.channelName}>
-              {activeChannel?.title ?? "Select Channel"}
-            </span>
+      <div className={s.leftSection}>
+        {/* Logo */}
+        <Link href="/" className={s.logo}>
+          <span className={s.logoIcon}>
             <svg
-              width="12"
-              height="12"
+              width="20"
+              height="20"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              className={channelDropdownOpen ? s.chevronUp : ""}
             >
-              <path d="M6 9l6 6 6-6" />
+              <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
-          </button>
+          </span>
+          <span className={s.logoText}>YT Growth</span>
+        </Link>
+      </div>
 
-          {/* Channel Dropdown */}
-          {channelDropdownOpen && (
-            <div className={s.channelDropdown}>
-              {channels.map((channel) => (
-                <button
-                  key={channel.channel_id}
-                  className={`${s.channelOption} ${
-                    channel.channel_id === activeChannelId
-                      ? s.channelOptionActive
-                      : ""
-                  }`}
-                  onClick={() => handleChannelSelect(channel.channel_id)}
-                >
-                  {channel.thumbnailUrl ? (
-                    <img
-                      src={channel.thumbnailUrl}
-                      alt=""
-                      className={s.channelOptionThumb}
-                    />
-                  ) : (
-                    <div className={s.channelOptionThumbPlaceholder} />
-                  )}
-                  <span className={s.channelOptionName}>
-                    {channel.title ?? "Untitled Channel"}
-                  </span>
-                  {channel.channel_id === activeChannelId && (
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      className={s.checkIcon}
-                    >
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  )}
-                </button>
-              ))}
-              <Link
-                href="/api/integrations/google/start"
-                className={s.addChannelLink}
-                onClick={() => setChannelDropdownOpen(false)}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Add Channel
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Desktop Nav Links (only when logged in) */}
-      {mounted && isLoggedIn && (
-        <nav className={s.desktopNav}>
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`${s.navLink} ${
-                isActive(link.href) ? s.navLinkActive : ""
-              }`}
+      <div className={s.centerSection}>
+        {/* Channel Selector (only when logged in and has channels) */}
+        {mounted && isLoggedIn && channels.length > 0 && (
+          <div ref={channelRef} className={s.channelSelector}>
+            <button
+              className={s.channelBtn}
+              onClick={() => setChannelDropdownOpen(!channelDropdownOpen)}
+              aria-expanded={channelDropdownOpen}
+              aria-label="Select channel"
+              type="button"
             >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-      )}
+              {activeChannel?.thumbnailUrl ? (
+                <img
+                  src={activeChannel.thumbnailUrl}
+                  alt=""
+                  className={s.channelThumb}
+                />
+              ) : (
+                <div className={s.channelThumbPlaceholder}>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
+                  </svg>
+                </div>
+              )}
+              <span className={s.channelName}>
+                {activeChannel?.title ?? "Select Channel"}
+              </span>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className={channelDropdownOpen ? s.chevronUp : ""}
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
 
-      {/* Right Section */}
-      <div className={s.rightSection}>
-        {/* Mobile Nav Toggle (only when logged in) */}
-        {mounted && isLoggedIn && (
-          <button
-            className={s.mobileNavToggle}
-            onClick={() => setMobileNavOpen(!mobileNavOpen)}
-            aria-label="Toggle navigation"
-          >
-            {mobileNavOpen ? (
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+            {/* Channel Dropdown */}
+            {channelDropdownOpen && (
+              <div className={s.channelDropdown}>
+                {channels.map((channel) => (
+                  <button
+                    key={channel.channel_id}
+                    className={`${s.channelOption} ${
+                      channel.channel_id === activeChannelId
+                        ? s.channelOptionActive
+                        : ""
+                    }`}
+                    onClick={() => handleChannelSelect(channel.channel_id)}
+                    type="button"
+                  >
+                    {channel.thumbnailUrl ? (
+                      <img
+                        src={channel.thumbnailUrl}
+                        alt=""
+                        className={s.channelOptionThumb}
+                      />
+                    ) : (
+                      <div className={s.channelOptionThumbPlaceholder} />
+                    )}
+                    <span className={s.channelOptionName}>
+                      {channel.title ?? "Untitled Channel"}
+                    </span>
+                    {channel.channel_id === activeChannelId && (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        className={s.checkIcon}
+                      >
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+                <Link
+                  href="/api/integrations/google/start"
+                  className={s.addChannelLink}
+                  onClick={() => setChannelDropdownOpen(false)}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Add Channel
+                </Link>
+              </div>
             )}
-          </button>
+          </div>
         )}
+      </div>
 
+      <div className={s.rightSection}>
         {/* Auth Section */}
         <div className={s.authSection}>
           {!mounted || isLoading ? (
-            /* Placeholder during SSR or auth loading to prevent layout shift */
             <div className={s.placeholder} />
           ) : isLoggedIn ? (
-            /* User Menu (logged in) */
             <div ref={menuRef} style={{ position: "relative" }}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 className={s.userMenuBtn}
                 aria-label="User menu"
                 aria-expanded={menuOpen}
+                type="button"
               >
                 <div className={s.avatar}>{userInitials}</div>
                 <span className={s.userName}>
@@ -351,7 +307,6 @@ export function Header(_props: HeaderProps) {
                 <span className={s.menuChevron}>{menuOpen ? "▲" : "▼"}</span>
               </button>
 
-              {/* Dropdown Menu */}
               {menuOpen && (
                 <>
                   <div
@@ -360,6 +315,20 @@ export function Header(_props: HeaderProps) {
                   />
                   <div className={s.dropdown}>
                     <div className={s.dropdownEmail}>{userEmail}</div>
+
+                    {navLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={s.dropdownItem}
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+
+                    <div className={s.dropdownDivider} />
+
                     <Link
                       href="/profile"
                       className={s.dropdownItem}
@@ -367,7 +336,19 @@ export function Header(_props: HeaderProps) {
                     >
                       Profile
                     </Link>
+
+                    {isAdmin && (
+                      <Link
+                        href="/admin/youtube-usage"
+                        className={s.dropdownItem}
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Admin: YouTube Usage
+                      </Link>
+                    )}
+
                     <div className={s.dropdownDivider} />
+
                     <Link
                       href="/api/auth/signout"
                       className={`${s.dropdownItem} ${s.dropdownSignout}`}
@@ -380,7 +361,6 @@ export function Header(_props: HeaderProps) {
               )}
             </div>
           ) : (
-            /* Auth Buttons (logged out) */
             <>
               <Link href="/auth/login" className={s.loginBtn}>
                 Log in
@@ -392,29 +372,6 @@ export function Header(_props: HeaderProps) {
           )}
         </div>
       </div>
-
-      {/* Mobile Navigation */}
-      {mounted && isLoggedIn && mobileNavOpen && (
-        <>
-          <div
-            className={s.mobileBackdrop}
-            onClick={() => setMobileNavOpen(false)}
-          />
-          <nav className={s.mobileNav}>
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`${s.mobileNavLink} ${
-                  isActive(link.href) ? s.mobileNavLinkActive : ""
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        </>
-      )}
     </header>
   );
 }

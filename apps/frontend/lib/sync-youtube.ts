@@ -128,30 +128,124 @@ async function fetchChannelVideos(
   youtubeChannelId: string
 ): Promise<void> {
   try {
-    // Search for recent uploads
-    const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
-    searchUrl.search = new URLSearchParams({
-      part: "id,snippet",
-      channelId: youtubeChannelId,
-      order: "date",
-      type: "video",
-      maxResults: "20",
+    // Avoid search.list (expensive quota). Use uploads playlist.
+    const channelUrl = new URL("https://www.googleapis.com/youtube/v3/channels");
+    channelUrl.search = new URLSearchParams({
+      part: "contentDetails",
+      id: youtubeChannelId,
     }).toString();
 
-    const searchData = await googleFetchWithAutoRefresh<{
-      items: YouTubeVideoItem[];
-    }>(ga, searchUrl.toString());
+    const channelData = await googleFetchWithAutoRefresh<{
+      items: Array<{ contentDetails: { relatedPlaylists: { uploads: string } } }>;
+    }>(ga, channelUrl.toString());
 
-    const videoIds = (searchData.items ?? [])
-      .map((v) => v.id.videoId)
+    const uploadsPlaylistId =
+      channelData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+    if (!uploadsPlaylistId) {
+      // Fallback for rare channels where uploads playlist isn't returned.
+      // Costs more quota.
+      const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+      searchUrl.search = new URLSearchParams({
+        part: "id,snippet",
+        channelId: youtubeChannelId,
+        order: "date",
+        type: "video",
+        maxResults: "25",
+      }).toString();
+
+      const searchData = await googleFetchWithAutoRefresh<{
+        items: YouTubeVideoItem[];
+      }>(ga, searchUrl.toString());
+
+      const videoIds = (searchData.items ?? [])
+        .map((v) => v.id.videoId)
+        .filter(Boolean);
+      if (videoIds.length === 0) return;
+
+      // Fetch video details (duration)
+      const detailsUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
+      detailsUrl.search = new URLSearchParams({
+        part: "id,contentDetails",
+        id: videoIds.join(","),
+      }).toString();
+
+      const detailsData = await googleFetchWithAutoRefresh<{
+        items: YouTubeVideoDetails[];
+      }>(ga, detailsUrl.toString());
+
+      const detailsMap = new Map(
+        (detailsData.items ?? []).map((v) => [v.id, v])
+      );
+
+      for (const item of searchData.items ?? []) {
+        const videoId = item.id.videoId;
+        const details = detailsMap.get(videoId);
+        const thumb =
+          item.snippet.thumbnails?.high?.url ??
+          item.snippet.thumbnails?.medium?.url ??
+          item.snippet.thumbnails?.default?.url ??
+          null;
+
+        const durationSec = details?.contentDetails?.duration
+          ? parseDuration(details.contentDetails.duration)
+          : null;
+
+        await prisma.video.upsert({
+          where: {
+            channelId_youtubeVideoId: {
+              channelId: channelDbId,
+              youtubeVideoId: videoId,
+            },
+          },
+          update: {
+            title: item.snippet.title,
+            thumbnailUrl: thumb,
+            publishedAt: new Date(item.snippet.publishedAt),
+            durationSec,
+          },
+          create: {
+            channelId: channelDbId,
+            youtubeVideoId: videoId,
+            title: item.snippet.title,
+            thumbnailUrl: thumb,
+            publishedAt: new Date(item.snippet.publishedAt),
+            durationSec,
+          },
+        });
+      }
+
+      // Update channel lastSyncedAt and return
+      await prisma.channel.update({
+        where: { id: channelDbId },
+        data: { lastSyncedAt: new Date() },
+      });
+
+      return;
+    }
+
+    const playlistUrl = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+    playlistUrl.search = new URLSearchParams({
+      part: "snippet,contentDetails",
+      playlistId: uploadsPlaylistId,
+      maxResults: "25",
+    }).toString();
+
+    const playlistData = await googleFetchWithAutoRefresh<{
+      items: Array<{
+        contentDetails: { videoId: string };
+        snippet: { title: string; publishedAt: string; thumbnails: any };
+      }>;
+    }>(ga, playlistUrl.toString());
+
+    const videoIds = (playlistData.items ?? [])
+      .map((v) => v.contentDetails.videoId)
       .filter(Boolean);
-
     if (videoIds.length === 0) return;
 
-    // Fetch video details (duration, view counts)
+    // Fetch video details (duration)
     const detailsUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
     detailsUrl.search = new URLSearchParams({
-      part: "id,contentDetails,statistics",
+      part: "id,contentDetails",
       id: videoIds.join(","),
     }).toString();
 
@@ -163,9 +257,8 @@ async function fetchChannelVideos(
       (detailsData.items ?? []).map((v) => [v.id, v])
     );
 
-    // Upsert videos
-    for (const item of searchData.items ?? []) {
-      const videoId = item.id.videoId;
+    for (const item of playlistData.items ?? []) {
+      const videoId = item.contentDetails.videoId;
       const details = detailsMap.get(videoId);
       const thumb =
         item.snippet.thumbnails?.high?.url ??

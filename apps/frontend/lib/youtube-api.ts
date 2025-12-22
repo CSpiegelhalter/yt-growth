@@ -2,13 +2,20 @@
  * YouTube Data API and Analytics API helpers
  *
  * Uses stored Google OAuth tokens to make authenticated requests.
- * Includes TEST_MODE fixtures for local development.
+ * Includes fixture data for demos/tests (disabled by default).
  */
 import { prisma } from "@/prisma";
 import { googleFetchWithAutoRefresh } from "@/lib/google-tokens";
 
 const YOUTUBE_DATA_API = "https://www.googleapis.com/youtube/v3";
 const YOUTUBE_ANALYTICS_API = "https://youtubeanalytics.googleapis.com/v2";
+
+// Fixtures should NOT run during normal local development when testing live data.
+// They are only enabled explicitly via DEMO_MODE, or in NODE_ENV=test (e.g. CI).
+const USE_FIXTURES =
+  process.env.DEMO_MODE === "1" ||
+  process.env.NEXT_PUBLIC_DEMO_MODE === "1" ||
+  (process.env.TEST_MODE === "1" && process.env.NODE_ENV === "test");
 
 type GoogleAccount = {
   id: number;
@@ -22,7 +29,16 @@ type GoogleAccount = {
 export async function getGoogleAccount(
   userId: number
 ): Promise<GoogleAccount | null> {
-  return prisma.googleAccount.findFirst({ where: { userId } });
+  const ga = await prisma.googleAccount.findFirst({ where: { userId } });
+  if (ga) return ga;
+
+  // In YT_MOCK_MODE we don't need a real Google account/token because requests are mocked
+  // at the transport layer. Return a dummy object so API routes can proceed.
+  if (process.env.YT_MOCK_MODE === "1") {
+    return { id: 0, refreshTokenEnc: "mock", tokenExpiresAt: null };
+  }
+
+  return null;
 }
 
 /**
@@ -31,10 +47,10 @@ export async function getGoogleAccount(
 export async function fetchChannelVideos(
   ga: GoogleAccount,
   channelId: string,
-  maxResults: number = 10
+  maxResults: number = 25
 ): Promise<YouTubeVideo[]> {
   // TEST_MODE: Return fixture data
-  if (process.env.TEST_MODE === "1") {
+  if (USE_FIXTURES) {
     return getTestModeVideos(channelId);
   }
 
@@ -61,7 +77,7 @@ export async function fetchChannelVideos(
   const playlistUrl = new URL(`${YOUTUBE_DATA_API}/playlistItems`);
   playlistUrl.searchParams.set("part", "snippet,contentDetails");
   playlistUrl.searchParams.set("playlistId", uploadsPlaylistId);
-  playlistUrl.searchParams.set("maxResults", String(maxResults));
+  playlistUrl.searchParams.set("maxResults", String(Math.min(50, maxResults)));
 
   const playlistData = await googleFetchWithAutoRefresh<{
     items: Array<{
@@ -131,7 +147,7 @@ export async function fetchVideoMetrics(
   endDate: string
 ): Promise<VideoMetricsData[]> {
   // TEST_MODE: Return fixture data
-  if (process.env.TEST_MODE === "1") {
+  if (USE_FIXTURES) {
     return getTestModeMetrics(videoIds);
   }
 
@@ -184,7 +200,7 @@ export async function fetchRetentionCurve(
   videoId: string
 ): Promise<RetentionPoint[]> {
   // TEST_MODE: Return fixture data
-  if (process.env.TEST_MODE === "1") {
+  if (USE_FIXTURES) {
     return getTestModeRetention(videoId);
   }
 
@@ -220,15 +236,39 @@ export async function searchCompetitorVideos(
   maxResults: number = 50
 ): Promise<CompetitorVideo[]> {
   // TEST_MODE: Return fixture data
-  if (process.env.TEST_MODE === "1") {
+  if (USE_FIXTURES) {
     return getTestModeCompetitors(query);
+  }
+
+  // Cache expensive search.list calls (100 units) for 24h.
+  // Keyed by query string (normalized) so multiple pages can reuse it.
+  const normalizedQuery = query.trim().toLowerCase();
+  const now = new Date();
+  const cacheTtlMs = 24 * 60 * 60 * 1000;
+  if (process.env.YT_MOCK_MODE !== "1" && normalizedQuery) {
+    const cacheModel = (prisma as any).youTubeSearchCache;
+    const cached = cacheModel?.findUnique
+      ? await cacheModel.findUnique({
+          where: {
+            kind_query: { kind: "video", query: normalizedQuery },
+          },
+        })
+      : null;
+    if (cached && cached.cachedUntil > now) {
+      const items = (cached.responseJson as unknown as CompetitorVideo[]) ?? [];
+      return items.slice(0, maxResults);
+    }
   }
 
   const url = new URL(`${YOUTUBE_DATA_API}/search`);
   url.searchParams.set("part", "snippet");
   url.searchParams.set("type", "video");
   url.searchParams.set("q", query);
-  url.searchParams.set("maxResults", String(maxResults));
+  // Fetch up to 50 once; slice for callers.
+  url.searchParams.set(
+    "maxResults",
+    String(Math.min(50, Math.max(1, maxResults)))
+  );
   url.searchParams.set("order", "viewCount");
   url.searchParams.set("relevanceLanguage", "en");
 
@@ -243,12 +283,36 @@ export async function searchCompetitorVideos(
     }>;
   }>(ga, url.toString());
 
-  return (data.items ?? []).map((i) => ({
+  const mapped = (data.items ?? []).map((i) => ({
     videoId: i.id.videoId,
     title: i.snippet.title,
     channelTitle: i.snippet.channelTitle,
     publishedAt: i.snippet.publishedAt,
   }));
+
+  // Write cache best-effort (ignore if migrations not applied yet)
+  if (process.env.YT_MOCK_MODE !== "1" && normalizedQuery) {
+    const cachedUntil = new Date(now.getTime() + cacheTtlMs);
+    try {
+      const cacheModel = (prisma as any).youTubeSearchCache;
+      if (cacheModel?.upsert) {
+        await cacheModel.upsert({
+          where: { kind_query: { kind: "video", query: normalizedQuery } },
+          create: {
+            kind: "video",
+            query: normalizedQuery,
+            responseJson: mapped as unknown as object,
+            cachedUntil,
+          },
+          update: { responseJson: mapped as unknown as object, cachedUntil },
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return mapped.slice(0, maxResults);
 }
 
 /**
@@ -260,16 +324,39 @@ export async function searchSimilarChannels(
   maxResults: number = 10
 ): Promise<SimilarChannelResult[]> {
   // TEST_MODE: Return fixture data
-  if (process.env.TEST_MODE === "1") {
+  if (USE_FIXTURES) {
     return getTestModeSimilarChannels(keywords);
   }
 
   const query = keywords.slice(0, 3).join(" ");
+  const normalizedQuery = query.trim().toLowerCase();
+  const now = new Date();
+  const cacheTtlMs = 24 * 60 * 60 * 1000;
+
+  // Cache expensive search.list calls (100 units) for 24h.
+  if (process.env.YT_MOCK_MODE !== "1" && normalizedQuery) {
+    const cacheModel = (prisma as any).youTubeSearchCache;
+    const cached = cacheModel?.findUnique
+      ? await cacheModel.findUnique({
+          where: { kind_query: { kind: "channel", query: normalizedQuery } },
+        })
+      : null;
+    if (cached && cached.cachedUntil > now) {
+      const items =
+        (cached.responseJson as unknown as SimilarChannelResult[]) ?? [];
+      return items.slice(0, maxResults);
+    }
+  }
+
   const url = new URL(`${YOUTUBE_DATA_API}/search`);
   url.searchParams.set("part", "snippet");
   url.searchParams.set("type", "channel");
   url.searchParams.set("q", query);
-  url.searchParams.set("maxResults", String(maxResults));
+  // Fetch up to 50 once; slice for callers.
+  url.searchParams.set(
+    "maxResults",
+    String(Math.min(50, Math.max(1, maxResults)))
+  );
   url.searchParams.set("relevanceLanguage", "en");
 
   const data = await googleFetchWithAutoRefresh<{
@@ -283,7 +370,7 @@ export async function searchSimilarChannels(
     }>;
   }>(ga, url.toString());
 
-  return (data.items ?? []).map((i) => ({
+  const mapped = (data.items ?? []).map((i) => ({
     channelId: i.id.channelId,
     channelTitle: i.snippet.title,
     description: i.snippet.description,
@@ -292,6 +379,29 @@ export async function searchSimilarChannels(
       i.snippet.thumbnails?.default?.url ??
       null,
   }));
+
+  if (process.env.YT_MOCK_MODE !== "1" && normalizedQuery) {
+    const cachedUntil = new Date(now.getTime() + cacheTtlMs);
+    try {
+      const cacheModel = (prisma as any).youTubeSearchCache;
+      if (cacheModel?.upsert) {
+        await cacheModel.upsert({
+          where: { kind_query: { kind: "channel", query: normalizedQuery } },
+          create: {
+            kind: "channel",
+            query: normalizedQuery,
+            responseJson: mapped as unknown as object,
+            cachedUntil,
+          },
+          update: { responseJson: mapped as unknown as object, cachedUntil },
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return mapped.slice(0, maxResults);
 }
 
 /**
@@ -304,42 +414,161 @@ export async function fetchRecentChannelVideos(
   maxResults: number = 10
 ): Promise<RecentVideoResult[]> {
   // TEST_MODE: Return fixture data
-  if (process.env.TEST_MODE === "1") {
+  if (USE_FIXTURES) {
     return getTestModeRecentVideos(channelId);
   }
 
-  const url = new URL(`${YOUTUBE_DATA_API}/search`);
-  url.searchParams.set("part", "snippet");
-  url.searchParams.set("type", "video");
-  url.searchParams.set("channelId", channelId);
-  url.searchParams.set("publishedAfter", publishedAfter);
-  url.searchParams.set("order", "viewCount");
-  url.searchParams.set("maxResults", String(maxResults));
+  // IMPORTANT: Do NOT use search.list here (100 quota units/call).
+  // Instead use the channel uploads playlist (cheap) then fetch stats.
+  const publishedAfterMs = new Date(publishedAfter).getTime();
 
-  const searchData = await googleFetchWithAutoRefresh<{
+  // 1) Get uploads playlist id
+  const channelUrl = new URL(`${YOUTUBE_DATA_API}/channels`);
+  channelUrl.searchParams.set("part", "contentDetails");
+  channelUrl.searchParams.set("id", channelId);
+
+  const channelData = await googleFetchWithAutoRefresh<{
     items: Array<{
-      id: { videoId: string };
-      snippet: {
-        title: string;
-        publishedAt: string;
-        thumbnails: { medium?: { url: string }; default?: { url: string } };
-      };
+      contentDetails: { relatedPlaylists: { uploads: string } };
     }>;
-  }>(ga, url.toString());
+  }>(ga, channelUrl.toString());
 
-  const videoIds = searchData.items?.map((i) => i.id.videoId) ?? [];
-  if (videoIds.length === 0) return [];
+  const uploadsPlaylistId =
+    channelData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+  if (!uploadsPlaylistId) {
+    // Extremely rare, but if we can't resolve the uploads playlist, fall back to search.list.
+    // This preserves usefulness, but costs more quota (search.list = 100 units/call).
+    const url = new URL(`${YOUTUBE_DATA_API}/search`);
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("type", "video");
+    url.searchParams.set("channelId", channelId);
+    url.searchParams.set("publishedAfter", publishedAfter);
+    url.searchParams.set("order", "viewCount");
+    url.searchParams.set("maxResults", String(Math.min(25, maxResults)));
 
-  // Fetch view counts
+    const searchData = await googleFetchWithAutoRefresh<{
+      items: Array<{
+        id: { videoId: string };
+        snippet: {
+          title: string;
+          publishedAt: string;
+          thumbnails: { medium?: { url: string }; default?: { url: string } };
+        };
+      }>;
+    }>(ga, url.toString());
+
+    const videoIds = searchData.items?.map((i) => i.id.videoId) ?? [];
+    if (videoIds.length === 0) return [];
+
+    const videosUrl = new URL(`${YOUTUBE_DATA_API}/videos`);
+    videosUrl.searchParams.set("part", "statistics");
+    videosUrl.searchParams.set("id", videoIds.join(","));
+
+    const statsData = await googleFetchWithAutoRefresh<{
+      items: Array<{ id: string; statistics: { viewCount: string } }>;
+    }>(ga, videosUrl.toString());
+
+    const statsMap = new Map<string, number>();
+    (statsData.items ?? []).forEach((item) => {
+      statsMap.set(item.id, parseInt(item.statistics.viewCount ?? "0", 10));
+    });
+
+    return (searchData.items ?? []).map((i) => {
+      const views = statsMap.get(i.id.videoId) ?? 0;
+      const publishedAt = i.snippet.publishedAt;
+      const daysSince = Math.max(
+        1,
+        Math.floor(
+          (Date.now() - new Date(publishedAt).getTime()) / (1000 * 60 * 60 * 24)
+        )
+      );
+
+      return {
+        videoId: i.id.videoId,
+        title: i.snippet.title,
+        publishedAt,
+        thumbnailUrl:
+          i.snippet.thumbnails?.medium?.url ??
+          i.snippet.thumbnails?.default?.url ??
+          null,
+        views,
+        viewsPerDay: Math.round(views / daysSince),
+      };
+    });
+  }
+
+  // 2) Read uploads pages (reverse-chronological). Paginate cheaply until we either:
+  // - have enough candidates, or
+  // - we've crossed publishedAfter, or
+  // - hit a small page limit (keeps calls low).
+  const candidates: Array<{
+    videoId: string;
+    title: string;
+    publishedAt: string;
+    thumbnailUrl: string | null;
+  }> = [];
+
+  let pageToken: string | undefined;
+  const maxPages = 2; // 2 playlist pages = up to 100 uploads (cheap; 1 unit/page)
+  let crossedCutoff = false;
+
+  for (let page = 0; page < maxPages; page++) {
+    const playlistUrl = new URL(`${YOUTUBE_DATA_API}/playlistItems`);
+    playlistUrl.searchParams.set("part", "snippet,contentDetails");
+    playlistUrl.searchParams.set("playlistId", uploadsPlaylistId);
+    playlistUrl.searchParams.set("maxResults", "50");
+    if (pageToken) playlistUrl.searchParams.set("pageToken", pageToken);
+
+    const playlistData = await googleFetchWithAutoRefresh<{
+      items: Array<{
+        snippet: {
+          title: string;
+          publishedAt: string;
+          thumbnails: { medium?: { url: string }; default?: { url: string } };
+        };
+        contentDetails: { videoId: string };
+      }>;
+      nextPageToken?: string;
+    }>(ga, playlistUrl.toString());
+
+    const items = playlistData.items ?? [];
+    for (const i of items) {
+      const publishedAt = i.snippet.publishedAt;
+      if (new Date(publishedAt).getTime() < publishedAfterMs) {
+        // Since playlist is reverse-chronological, once we go older than the cutoff,
+        // the rest of this page (and next pages) are too old.
+        crossedCutoff = true;
+        break;
+      }
+      candidates.push({
+        videoId: i.contentDetails.videoId,
+        title: i.snippet.title,
+        publishedAt,
+        thumbnailUrl:
+          i.snippet.thumbnails?.medium?.url ??
+          i.snippet.thumbnails?.default?.url ??
+          null,
+      });
+    }
+
+    // Stop early if we crossed the cutoff or have enough material.
+    if (crossedCutoff) break;
+    if (!playlistData.nextPageToken) break;
+    if (candidates.length >= 50) break;
+    pageToken = playlistData.nextPageToken;
+    if (!pageToken) break;
+  }
+
+  if (candidates.length === 0) return [];
+
+  // 3) Fetch view counts for candidates (single videos.list call, up to 50 IDs).
+  const ids = candidates.slice(0, 50).map((v) => v.videoId);
   const videosUrl = new URL(`${YOUTUBE_DATA_API}/videos`);
   videosUrl.searchParams.set("part", "statistics");
-  videosUrl.searchParams.set("id", videoIds.join(","));
+  videosUrl.searchParams.set("id", ids.join(","));
 
   const statsData = await googleFetchWithAutoRefresh<{
-    items: Array<{
-      id: string;
-      statistics: { viewCount: string };
-    }>;
+    items: Array<{ id: string; statistics: { viewCount: string } }>;
   }>(ga, videosUrl.toString());
 
   const statsMap = new Map<string, number>();
@@ -347,28 +576,26 @@ export async function fetchRecentChannelVideos(
     statsMap.set(item.id, parseInt(item.statistics.viewCount ?? "0", 10));
   });
 
-  return (searchData.items ?? []).map((i) => {
-    const views = statsMap.get(i.id.videoId) ?? 0;
-    const publishedAt = i.snippet.publishedAt;
+  const withViews = candidates.map((v) => {
+    const views = statsMap.get(v.videoId) ?? 0;
     const daysSince = Math.max(
       1,
       Math.floor(
-        (Date.now() - new Date(publishedAt).getTime()) / (1000 * 60 * 60 * 24)
+        (Date.now() - new Date(v.publishedAt).getTime()) / (1000 * 60 * 60 * 24)
       )
     );
-
     return {
-      videoId: i.id.videoId,
-      title: i.snippet.title,
-      publishedAt,
-      thumbnailUrl:
-        i.snippet.thumbnails?.medium?.url ??
-        i.snippet.thumbnails?.default?.url ??
-        null,
+      ...v,
       views,
       viewsPerDay: Math.round(views / daysSince),
     };
   });
+
+  // Prior behavior was ordering by viewCount; keep that (within the time window)
+  // so the product value stays the same.
+  withViews.sort((a, b) => b.views - a.views);
+
+  return withViews.slice(0, maxResults);
 }
 
 /**
@@ -379,7 +606,7 @@ export async function fetchVideoDetails(
   videoId: string
 ): Promise<VideoDetails | null> {
   // TEST_MODE: Return fixture data
-  if (process.env.TEST_MODE === "1") {
+  if (USE_FIXTURES) {
     return getTestModeVideoDetails(videoId);
   }
 
@@ -398,7 +625,11 @@ export async function fetchVideoDetails(
         channelTitle: string;
         tags?: string[];
         categoryId: string;
-        thumbnails: { maxres?: { url: string }; high?: { url: string }; default?: { url: string } };
+        thumbnails: {
+          maxres?: { url: string };
+          high?: { url: string };
+          default?: { url: string };
+        };
       };
       contentDetails: { duration: string };
       statistics: {
@@ -696,11 +927,17 @@ function getTestModeVideoDetails(videoId: string): VideoDetails {
   return {
     videoId,
     title: "This One Change DOUBLED My YouTube Growth",
-    description: "In this video, I share the single most important change I made to my content strategy that doubled my channel growth...",
+    description:
+      "In this video, I share the single most important change I made to my content strategy that doubled my channel growth...",
     publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     channelId: "demo-channel",
     channelTitle: "Creator Academy",
-    tags: ["youtube growth", "content strategy", "creator tips", "upload schedule"],
+    tags: [
+      "youtube growth",
+      "content strategy",
+      "creator tips",
+      "upload schedule",
+    ],
     category: "22", // Education
     thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
     durationSec: 847,
@@ -740,7 +977,7 @@ export async function fetchVideoComments(
   maxResults: number = 50
 ): Promise<FetchCommentsResult> {
   // TEST_MODE: Return fixture data
-  if (process.env.TEST_MODE === "1") {
+  if (USE_FIXTURES) {
     return getTestModeComments(videoId);
   }
 
@@ -781,7 +1018,10 @@ export async function fetchVideoComments(
       if (data.error?.errors?.some((e) => e.reason === "commentsDisabled")) {
         return { comments: [], commentsDisabled: true };
       }
-      return { comments: [], error: data.error?.message || "No comments found" };
+      return {
+        comments: [],
+        error: data.error?.message || "No comments found",
+      };
     }
 
     const comments: YouTubeComment[] = data.items.map((item) => ({
@@ -789,7 +1029,8 @@ export async function fetchVideoComments(
       text: item.snippet.topLevelComment.snippet.textOriginal,
       likeCount: item.snippet.topLevelComment.snippet.likeCount,
       authorName: item.snippet.topLevelComment.snippet.authorDisplayName,
-      authorChannelId: item.snippet.topLevelComment.snippet.authorChannelId?.value,
+      authorChannelId:
+        item.snippet.topLevelComment.snippet.authorChannelId?.value,
       publishedAt: item.snippet.topLevelComment.snippet.publishedAt,
       replyCount: item.snippet.totalReplyCount,
     }));
@@ -797,15 +1038,30 @@ export async function fetchVideoComments(
     return { comments };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    
+
     // Check for specific error conditions
-    if (message.includes("commentsDisabled") || message.includes("disabled comments")) {
+    if (
+      message.includes("commentsDisabled") ||
+      message.includes("disabled comments")
+    ) {
       return { comments: [], commentsDisabled: true };
     }
     if (message.includes("quotaExceeded")) {
       return { comments: [], error: "YouTube API quota exceeded" };
     }
-    
+
+    if (
+      message.includes("ACCESS_TOKEN_SCOPE_INSUFFICIENT") ||
+      message.includes("insufficientPermissions") ||
+      message.includes("insufficient authentication scopes")
+    ) {
+      return {
+        comments: [],
+        error:
+          "Google account is missing the YouTube comments scope. Reconnect Google (it will prompt for updated permissions), then try again.",
+      };
+    }
+
     return { comments: [], error: message };
   }
 }
@@ -816,16 +1072,21 @@ export async function fetchVideoComments(
 export async function fetchVideosStatsBatch(
   ga: GoogleAccount,
   videoIds: string[]
-): Promise<Map<string, { viewCount: number; likeCount?: number; commentCount?: number }>> {
+): Promise<
+  Map<string, { viewCount: number; likeCount?: number; commentCount?: number }>
+> {
   if (videoIds.length === 0) return new Map();
 
   // TEST_MODE: Return fixture data
-  if (process.env.TEST_MODE === "1") {
+  if (USE_FIXTURES) {
     return getTestModeStatsBatch(videoIds);
   }
 
-  const results = new Map<string, { viewCount: number; likeCount?: number; commentCount?: number }>();
-  
+  const results = new Map<
+    string,
+    { viewCount: number; likeCount?: number; commentCount?: number }
+  >();
+
   // YouTube API allows max 50 IDs per request
   const batches: string[][] = [];
   for (let i = 0; i < videoIds.length; i += 50) {
@@ -852,8 +1113,12 @@ export async function fetchVideosStatsBatch(
       for (const item of data.items ?? []) {
         results.set(item.id, {
           viewCount: parseInt(item.statistics.viewCount ?? "0", 10),
-          likeCount: item.statistics.likeCount ? parseInt(item.statistics.likeCount, 10) : undefined,
-          commentCount: item.statistics.commentCount ? parseInt(item.statistics.commentCount, 10) : undefined,
+          likeCount: item.statistics.likeCount
+            ? parseInt(item.statistics.likeCount, 10)
+            : undefined,
+          commentCount: item.statistics.commentCount
+            ? parseInt(item.statistics.commentCount, 10)
+            : undefined,
         });
       }
     } catch (err) {
@@ -872,7 +1137,9 @@ function getTestModeComments(videoId: string): FetchCommentsResult {
         text: "This completely changed my approach to content. The quality vs quantity insight was exactly what I needed to hear.",
         likeCount: 342,
         authorName: "Creative Mind",
-        publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        publishedAt: new Date(
+          Date.now() - 2 * 24 * 60 * 60 * 1000
+        ).toISOString(),
         replyCount: 12,
       },
       {
@@ -880,7 +1147,9 @@ function getTestModeComments(videoId: string): FetchCommentsResult {
         text: "Can you do a follow-up video on how to decide WHICH videos to make when posting less? That's my biggest struggle.",
         likeCount: 187,
         authorName: "Aspiring Creator",
-        publishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        publishedAt: new Date(
+          Date.now() - 1 * 24 * 60 * 60 * 1000
+        ).toISOString(),
         replyCount: 8,
       },
       {
@@ -888,7 +1157,9 @@ function getTestModeComments(videoId: string): FetchCommentsResult {
         text: "I tried this and went from 3 videos/week to 1. My watch time actually increased by 40%. Thanks for the permission to slow down!",
         likeCount: 156,
         authorName: "Growth Experimenter",
-        publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        publishedAt: new Date(
+          Date.now() - 3 * 24 * 60 * 60 * 1000
+        ).toISOString(),
         replyCount: 5,
       },
       {
@@ -896,7 +1167,9 @@ function getTestModeComments(videoId: string): FetchCommentsResult {
         text: "The data at 4:32 was mind-blowing. Never realized retention was more important than upload frequency.",
         likeCount: 98,
         authorName: "Data Driven Dave",
-        publishedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        publishedAt: new Date(
+          Date.now() - 4 * 24 * 60 * 60 * 1000
+        ).toISOString(),
         replyCount: 3,
       },
       {
@@ -904,14 +1177,21 @@ function getTestModeComments(videoId: string): FetchCommentsResult {
         text: "Would love to see more case studies from smaller channels. Does this work for channels under 10k subs?",
         likeCount: 76,
         authorName: "Small Channel Sara",
-        publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        publishedAt: new Date(
+          Date.now() - 5 * 24 * 60 * 60 * 1000
+        ).toISOString(),
         replyCount: 15,
       },
     ],
   };
 }
 
-function getTestModeStatsBatch(videoIds: string[]): Map<string, { viewCount: number; likeCount?: number; commentCount?: number }> {
+function getTestModeStatsBatch(
+  videoIds: string[]
+): Map<
+  string,
+  { viewCount: number; likeCount?: number; commentCount?: number }
+> {
   const results = new Map();
   for (const id of videoIds) {
     results.set(id, {

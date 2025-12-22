@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
-import VideoInsightsClient from "./VideoInsightsClient";
+import nextDynamic from "next/dynamic";
+import { cookies } from "next/headers";
+
+const VideoInsightsClient = nextDynamic(() => import("./VideoInsightsClient"), {
+  ssr: false,
+});
 
 export const metadata: Metadata = {
   title: "Video Insights | YT Growth",
@@ -22,10 +27,9 @@ type Props = {
  */
 export default async function VideoPage({ params, searchParams }: Props) {
   const [{ videoId }, search] = await Promise.all([params, searchParams]);
-  const range = (["7d", "28d", "90d"].includes(search.range ?? "") ? search.range : "28d") as
-    | "7d"
-    | "28d"
-    | "90d";
+  const range = (
+    ["7d", "28d", "90d"].includes(search.range ?? "") ? search.range : "28d"
+  ) as "7d" | "28d" | "90d";
 
   // Get bootstrap data (user, channels, active channel)
   const bootstrap = await getAppBootstrap({ channelId: search.channelId });
@@ -35,11 +39,16 @@ export default async function VideoPage({ params, searchParams }: Props) {
   if (bootstrap.activeChannelId) {
     try {
       const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+      const cookieHeader = cookies()
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join("; ");
       const res = await fetch(
         `${baseUrl}/api/me/channels/${bootstrap.activeChannelId}/videos/${videoId}/insights?range=${range}`,
         {
           headers: {
-            Cookie: "", // Server-side doesn't have cookies, but we're making internal call
+            // Forward auth cookies so the route runs as the current user.
+            ...(cookieHeader ? { Cookie: cookieHeader } : {}),
           },
           cache: "no-store",
         }
@@ -54,6 +63,7 @@ export default async function VideoPage({ params, searchParams }: Props) {
 
   return (
     <VideoInsightsClient
+      key={videoId}
       videoId={videoId}
       channelId={bootstrap.activeChannelId ?? undefined}
       initialInsights={initialInsights}

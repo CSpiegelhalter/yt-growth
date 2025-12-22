@@ -11,7 +11,10 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
-import { getCurrentUserWithSubscription, hasActiveSubscription } from "@/lib/user";
+import {
+  getCurrentUserWithSubscription,
+  hasActiveSubscription,
+} from "@/lib/user";
 import { isDemoMode } from "@/lib/demo-fixtures";
 import { callLLM } from "@/lib/llm";
 import crypto from "crypto";
@@ -53,7 +56,10 @@ type MoreIdeaResponse = {
 };
 
 // Simple in-memory cache (24h TTL)
-const responseCache = new Map<string, { data: MoreIdeaResponse; expiresAt: number }>();
+const responseCache = new Map<
+  string,
+  { data: MoreIdeaResponse; expiresAt: number }
+>();
 
 /**
  * Generate a stable hash from the seed for caching
@@ -65,7 +71,11 @@ function hashSeed(seed: Seed, channelId: string): string {
     keywords: seed.keywords.slice(0, 5).sort(),
     hooks: seed.hooks.slice(0, 2).map((h: string) => h.toLowerCase().trim()),
   });
-  return crypto.createHash("sha256").update(normalized).digest("hex").slice(0, 16);
+  return crypto
+    .createHash("sha256")
+    .update(normalized)
+    .digest("hex")
+    .slice(0, 16);
 }
 
 /**
@@ -136,7 +146,10 @@ export async function POST(
     }
 
     // Generate more content via LLM
-    const result = await generateMoreIdeaContent(seed, channel.title ?? "Your Channel");
+    const result = await generateMoreIdeaContent(
+      seed,
+      channel.title ?? "Your Channel"
+    );
 
     // Cache the result (24h TTL)
     responseCache.set(cacheKey, {
@@ -155,10 +168,13 @@ export async function POST(
     }
 
     return Response.json(result);
-  } catch (err) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Generate more ideas failed:", err);
-    // Return demo data on error
-    return Response.json(getDemoMoreIdeas());
+    return Response.json(
+      { error: "Failed to generate more ideas", detail: message },
+      { status: 500 }
+    );
   }
 }
 
@@ -221,7 +237,7 @@ Generate MORE content that complements (not duplicates) this idea.`;
 
     const jsonMatch = result.content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return getDemoMoreIdeas();
+      throw new Error("LLM did not return JSON");
     }
 
     const parsed = JSON.parse(jsonMatch[0]) as MoreIdeaResponse;
@@ -230,7 +246,9 @@ Generate MORE content that complements (not duplicates) this idea.`;
     return {
       hooks: Array.isArray(parsed.hooks) ? parsed.hooks.slice(0, 5) : [],
       titles: Array.isArray(parsed.titles) ? parsed.titles.slice(0, 5) : [],
-      keywords: Array.isArray(parsed.keywords) ? parsed.keywords.slice(0, 8) : [],
+      keywords: Array.isArray(parsed.keywords)
+        ? parsed.keywords.slice(0, 8)
+        : [],
       packaging: {
         titleAngles: parsed.packaging?.titleAngles?.slice(0, 3) ?? [],
         hookSetups: parsed.packaging?.hookSetups?.slice(0, 3) ?? [],
@@ -238,9 +256,9 @@ Generate MORE content that complements (not duplicates) this idea.`;
       },
       remixes: Array.isArray(parsed.remixes) ? parsed.remixes.slice(0, 3) : [],
     };
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("LLM generation failed:", err);
-    return getDemoMoreIdeas();
+    throw err;
   }
 }
 

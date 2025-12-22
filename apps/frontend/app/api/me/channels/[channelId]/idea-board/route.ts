@@ -21,10 +21,17 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
-import { getCurrentUserWithSubscription, hasActiveSubscription } from "@/lib/user";
-import { getGoogleAccount, searchSimilarChannels, fetchRecentChannelVideos } from "@/lib/youtube-api";
+import {
+  getCurrentUserWithSubscription,
+  hasActiveSubscription,
+} from "@/lib/user";
+import {
+  getGoogleAccount,
+  searchSimilarChannels,
+  fetchRecentChannelVideos,
+} from "@/lib/youtube-api";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDemoMode, getDemoData } from "@/lib/demo-fixtures";
+import { isDemoMode, getDemoData, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { generateIdeaBoardPlan, generateMoreIdeas } from "@/lib/idea-board-llm";
 import type { IdeaBoardData, SimilarChannel } from "@/types/api";
 
@@ -43,9 +50,30 @@ const BodySchema = z.object({
 
 // Common words to filter out
 const commonWords = new Set([
-  "the", "and", "for", "with", "this", "that", "from", "have", "you",
-  "what", "when", "where", "how", "why", "who", "which", "your", "will",
-  "video", "videos", "watch", "watching", "today", "new",
+  "the",
+  "and",
+  "for",
+  "with",
+  "this",
+  "that",
+  "from",
+  "have",
+  "you",
+  "what",
+  "when",
+  "where",
+  "how",
+  "why",
+  "who",
+  "which",
+  "your",
+  "will",
+  "video",
+  "videos",
+  "watch",
+  "watching",
+  "today",
+  "new",
 ]);
 
 /**
@@ -56,7 +84,7 @@ export async function GET(
   { params }: { params: { channelId: string } }
 ) {
   // Return demo data if demo mode is enabled
-  if (isDemoMode()) {
+  if (isDemoMode() && !isYouTubeMockMode()) {
     const demoData = getDemoData("idea-board") as IdeaBoardData;
     return Response.json({ ...demoData, demo: true });
   }
@@ -91,7 +119,10 @@ export async function GET(
     });
 
     if (!queryResult.success) {
-      return Response.json({ error: "Invalid query parameters" }, { status: 400 });
+      return Response.json(
+        { error: "Invalid query parameters" },
+        { status: 400 }
+      );
     }
 
     const { range } = queryResult.data;
@@ -121,9 +152,10 @@ export async function GET(
 
     if (cached?.outputJson) {
       try {
-        const data = typeof cached.outputJson === "string"
-          ? JSON.parse(cached.outputJson)
-          : cached.outputJson;
+        const data =
+          typeof cached.outputJson === "string"
+            ? JSON.parse(cached.outputJson)
+            : cached.outputJson;
         return Response.json({ ...data, fromCache: true });
       } catch {
         // Fall through to return empty state
@@ -141,14 +173,10 @@ export async function GET(
     });
   } catch (err: unknown) {
     console.error("IdeaBoard GET error:", err);
-    
-    // Return demo data as fallback
-    const demoData = getDemoData("idea-board") as IdeaBoardData;
-    if (demoData) {
-      return Response.json({ ...demoData, demo: true });
-    }
-
-    return Response.json({ error: "Failed to fetch idea board" }, { status: 500 });
+    return Response.json(
+      { error: "Failed to fetch idea board" },
+      { status: 500 }
+    );
   }
 }
 
@@ -160,7 +188,7 @@ export async function POST(
   { params }: { params: { channelId: string } }
 ) {
   // Return demo data if demo mode is enabled
-  if (isDemoMode()) {
+  if (isDemoMode() && !isYouTubeMockMode()) {
     const demoData = getDemoData("idea-board") as IdeaBoardData;
     return Response.json({ ...demoData, demo: true });
   }
@@ -247,9 +275,10 @@ export async function POST(
 
       if (cached?.outputJson) {
         try {
-          existingData = typeof cached.outputJson === "string"
-            ? JSON.parse(cached.outputJson)
-            : cached.outputJson as IdeaBoardData;
+          existingData =
+            typeof cached.outputJson === "string"
+              ? JSON.parse(cached.outputJson)
+              : (cached.outputJson as IdeaBoardData);
         } catch {
           existingData = null;
         }
@@ -260,13 +289,13 @@ export async function POST(
     const ga = await getGoogleAccount(user.id);
 
     // Extract keywords from channel content
-    const titleWords = channel.Video
-      .flatMap((v) => (v.title ?? "").toLowerCase().split(/\s+/))
-      .filter((w) => w.length > 3 && !commonWords.has(w));
+    const titleWords = channel.Video.flatMap((v) =>
+      (v.title ?? "").toLowerCase().split(/\s+/)
+    ).filter((w) => w.length > 3 && !commonWords.has(w));
 
-    const tagWords = channel.Video
-      .flatMap((v) => (v.tags ?? "").split(",").map((t) => t.trim().toLowerCase()))
-      .filter(Boolean);
+    const tagWords = channel.Video.flatMap((v) =>
+      (v.tags ?? "").split(",").map((t) => t.trim().toLowerCase())
+    ).filter(Boolean);
 
     const wordCounts = new Map<string, number>();
     [...titleWords, ...tagWords].forEach((word) => {
@@ -280,7 +309,7 @@ export async function POST(
 
     // Fetch similar channels and their winners
     let similarChannels: SimilarChannel[] = [];
-    
+
     if (ga && keywords.length > 0) {
       try {
         const similarResults = await searchSimilarChannels(ga, keywords, 6);
@@ -289,12 +318,19 @@ export async function POST(
           .slice(0, 5);
 
         const rangeDays = range === "7d" ? 7 : 28;
-        const publishedAfter = new Date(Date.now() - rangeDays * 24 * 60 * 60 * 1000).toISOString();
+        const publishedAfter = new Date(
+          Date.now() - rangeDays * 24 * 60 * 60 * 1000
+        ).toISOString();
 
         similarChannels = await Promise.all(
           filteredChannels.map(async (sc, index) => {
             try {
-              const recentVideos = await fetchRecentChannelVideos(ga, sc.channelId, publishedAfter, 5);
+              const recentVideos = await fetchRecentChannelVideos(
+                ga,
+                sc.channelId,
+                publishedAfter,
+                3
+              );
               const similarityScore = Math.max(0.3, 1 - index * 0.1);
 
               return {
@@ -302,7 +338,8 @@ export async function POST(
                 channelTitle: sc.channelTitle,
                 channelThumbnailUrl: sc.thumbnailUrl,
                 similarityScore,
-                recentWinners: recentVideos.slice(0, 5).map((v) => ({
+                // Cap winners per channel for diversity + quota efficiency
+                recentWinners: recentVideos.slice(0, 3).map((v) => ({
                   videoId: v.videoId,
                   title: v.title,
                   publishedAt: v.publishedAt,
@@ -312,7 +349,10 @@ export async function POST(
                 })),
               };
             } catch (err) {
-              console.warn(`Failed to fetch videos for channel ${sc.channelId}:`, err);
+              console.warn(
+                `Failed to fetch videos for channel ${sc.channelId}:`,
+                err
+              );
               return {
                 channelId: sc.channelId,
                 channelTitle: sc.channelTitle,
@@ -332,7 +372,9 @@ export async function POST(
     const recentVideoTitles = channel.Video.map((v) => v.title ?? "Untitled");
     const topPerformingVideos = [...channel.Video]
       .filter((v) => v.VideoMetrics)
-      .sort((a, b) => (b.VideoMetrics?.views ?? 0) - (a.VideoMetrics?.views ?? 0))
+      .sort(
+        (a, b) => (b.VideoMetrics?.views ?? 0) - (a.VideoMetrics?.views ?? 0)
+      )
       .slice(0, 5);
 
     const proofVideos = similarChannels.flatMap((sc) =>
@@ -348,7 +390,7 @@ export async function POST(
     if (mode === "more" && existingData) {
       // Generate more ideas and append
       const existingTitles = existingData.ideas.map((i) => i.title);
-      
+
       const newIdeas = await generateMoreIdeas({
         channelTitle: channel.title ?? "Your Channel",
         existingIdeas: existingTitles,
@@ -369,7 +411,9 @@ export async function POST(
         channelTitle: channel.title ?? "Your Channel",
         range,
         recentVideoTitles,
-        topPerformingTitles: topPerformingVideos.map((v) => v.title ?? "Untitled"),
+        topPerformingTitles: topPerformingVideos.map(
+          (v) => v.title ?? "Untitled"
+        ),
         nicheKeywords: keywords,
         proofVideos,
         similarChannels: similarChannels.map((sc) => ({
@@ -408,20 +452,9 @@ export async function POST(
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("IdeaBoard POST error:", err);
 
-    // Return demo data as fallback
-    const demoData = getDemoData("idea-board") as IdeaBoardData;
-    if (demoData) {
-      return Response.json({
-        ...demoData,
-        demo: true,
-        error: "Using demo data - generation failed",
-      });
-    }
-
     return Response.json(
       { error: "Failed to generate idea board", detail: message },
       { status: 500 }
     );
   }
 }
-

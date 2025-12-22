@@ -1,7 +1,7 @@
 /**
  * POST /api/me/channels/[channelId]/sync
  *
- * Sync last 10 videos for a channel from YouTube Data API.
+ * Sync last ~25 videos for a channel from YouTube Data API.
  * Also fetches metrics from YouTube Analytics API.
  *
  * Auth: Required
@@ -89,8 +89,8 @@ export async function POST(
     });
 
     try {
-      // Fetch videos from YouTube
-      const videos = await fetchChannelVideos(ga, channelId, 10);
+      // Fetch videos from YouTube (we only need ~25 recent videos)
+      const videos = await fetchChannelVideos(ga, channelId, 25);
 
       // Upsert videos
       for (const v of videos) {

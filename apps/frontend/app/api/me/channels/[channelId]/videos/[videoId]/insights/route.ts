@@ -17,7 +17,7 @@ import {
   hasActiveSubscription,
 } from "@/lib/user";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDemoMode } from "@/lib/demo-fixtures";
+import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { getGoogleAccount } from "@/lib/youtube-api";
 import {
   fetchVideoAnalyticsDaily,
@@ -63,7 +63,7 @@ export async function GET(
   { params }: { params: Promise<{ channelId: string; videoId: string }> }
 ) {
   // Demo mode - return demo data
-  if (isDemoMode()) {
+  if (isDemoMode() && !isYouTubeMockMode()) {
     return Response.json(getDemoInsights());
   }
 
@@ -89,16 +89,10 @@ export async function GET(
   }
   const { range } = queryResult.data;
 
-  // Special demo channel ID - always return demo data
-  if (channelId === "_demo" || videoId.startsWith("demo-")) {
-    return Response.json(getDemoInsights({ videoId }));
-  }
-
   try {
     const user = await getCurrentUserWithSubscription();
     if (!user) {
-      // Return demo data for unauthenticated users
-      return Response.json(getDemoInsights({ videoId }));
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify channel ownership
@@ -106,8 +100,7 @@ export async function GET(
       where: { youtubeChannelId: channelId, userId: user.id },
     });
     if (!channel) {
-      // Return demo data if channel not found
-      return Response.json(getDemoInsights({ videoId }));
+      return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
     // Check cache
@@ -147,7 +140,8 @@ export async function GET(
     const ga = await getGoogleAccount(user.id);
     if (!ga) {
       return Response.json(
-        getDemoInsights({ reason: "No Google account linked" })
+        { error: "Google account not connected" },
+        { status: 400 }
       );
     }
 
@@ -202,9 +196,13 @@ export async function GET(
     });
 
     return Response.json(result);
-  } catch (err) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Video insights error:", err);
-    return Response.json(getDemoInsights({ reason: "Analytics fetch failed" }));
+    return Response.json(
+      { error: "Failed to fetch video insights", detail: message },
+      { status: 500 }
+    );
   }
 }
 
@@ -267,7 +265,8 @@ export async function POST(
     const ga = await getGoogleAccount(user.id);
     if (!ga) {
       return Response.json(
-        getDemoInsights({ reason: "No Google account linked" })
+        { error: "Google account not connected" },
+        { status: 400 }
       );
     }
 
@@ -322,9 +321,13 @@ export async function POST(
     });
 
     return Response.json(result);
-  } catch (err) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Video insights refresh error:", err);
-    return Response.json(getDemoInsights({ reason: "Refresh failed" }));
+    return Response.json(
+      { error: "Failed to refresh video insights", detail: message },
+      { status: 500 }
+    );
   }
 }
 

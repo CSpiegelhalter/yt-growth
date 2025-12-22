@@ -24,10 +24,23 @@ export default function VideoInsightsClient({
   initialRange,
 }: Props) {
   const router = useRouter();
-  const [insights, setInsights] = useState<VideoInsightsResponse | null>(initialInsights);
+  const [insights, setInsights] = useState<VideoInsightsResponse | null>(
+    initialInsights
+  );
   const [range, setRange] = useState<"7d" | "28d" | "90d">(initialRange);
   const [loading, setLoading] = useState(!initialInsights); // Start loading if no initial data
   const [refreshing, setRefreshing] = useState(false);
+  const [extraRemixes, setExtraRemixes] = useState<
+    Array<{
+      id: string;
+      title: string;
+      hook: string;
+      keywords: string[];
+      inspiredByVideoIds?: string[];
+      isNew?: boolean;
+    }>
+  >([]);
+  const [generatingRemixes, setGeneratingRemixes] = useState(false);
 
   const fetchInsights = useCallback(
     async (newRange: "7d" | "28d" | "90d") => {
@@ -51,12 +64,25 @@ export default function VideoInsightsClient({
     [channelId, videoId]
   );
 
-  // Fetch on mount if no initial data was provided
+  // Reset local state when the route videoId changes so we never show stale data.
   useEffect(() => {
-    if (!initialInsights) {
+    setExtraRemixes([]);
+    setGeneratingRemixes(false);
+    setRefreshing(false);
+    setRange(initialRange);
+
+    if (initialInsights) {
+      setInsights(initialInsights);
+      setLoading(false);
+    } else {
+      setInsights(null);
+      // Fetch fresh insights for this videoId
       fetchInsights(initialRange);
     }
-  }, [initialInsights, initialRange, fetchInsights]);
+    // We intentionally depend on videoId so navigation always resets.
+  }, [videoId, initialRange, initialInsights, fetchInsights]);
+
+  // (No separate "mount" fetch effect needed; the reset-on-videoId effect handles this.)
 
   const handleRangeChange = useCallback(
     (newRange: "7d" | "28d" | "90d") => {
@@ -110,7 +136,14 @@ export default function VideoInsightsClient({
         </Link>
         <div className={s.errorState}>
           <div className={s.errorIcon}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <circle cx="12" cy="12" r="10" />
               <path d="M12 8v4M12 16h.01" />
             </svg>
@@ -130,6 +163,84 @@ export default function VideoInsightsClient({
   }
 
   const { video, derived, comparison, levers, llmInsights } = insights;
+  const baseRemixes = llmInsights?.remixIdeas ?? [];
+  const remixItems = [
+    ...baseRemixes.map((r) => ({
+      id: `base:${r.title}:${r.hook}`,
+      title: r.title,
+      hook: r.hook,
+      keywords: r.keywords ?? [],
+      inspiredByVideoIds: r.inspiredByVideoIds ?? [],
+      isNew: false,
+    })),
+    ...extraRemixes,
+  ];
+
+  const handleGenerateMoreRemixes = async () => {
+    if (!channelId) return;
+    setGeneratingRemixes(true);
+    try {
+      const res = await fetch(
+        `/api/me/channels/${channelId}/videos/${videoId}/remixes`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            range,
+            seed: {
+              title: video.title,
+              tags: video.tags ?? [],
+              currentRemixTitles: remixItems.map((r) => r.title),
+              currentHooks: remixItems.map((r) => r.hook),
+              keyMetrics: {
+                subsPer1k: derived.subsPer1k ?? null,
+                avgViewPercentage:
+                  insights.analytics.totals.averageViewPercentage ?? null,
+                watchTimePerViewSec: derived.watchTimePerViewSec ?? null,
+                viewsPerDay: derived.viewsPerDay ?? null,
+              },
+            },
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error("Remix generation failed:", data);
+        return;
+      }
+
+      const data = (await res.json()) as {
+        remixIdeas: Array<{
+          title: string;
+          hook: string;
+          keywords: string[];
+          inspiredByVideoIds?: string[];
+        }>;
+      };
+      const now = Date.now();
+      const appended = (data.remixIdeas ?? []).map((r, idx) => ({
+        id: `new:${now}:${idx}:${r.title}`,
+        title: r.title,
+        hook: r.hook,
+        keywords: r.keywords ?? [],
+        inspiredByVideoIds: r.inspiredByVideoIds ?? [],
+        isNew: true,
+      }));
+
+      setExtraRemixes((prev) => [...prev, ...appended]);
+      // Clear the "New" tag after a moment
+      setTimeout(() => {
+        setExtraRemixes((prev) =>
+          prev.map((r) => (r.isNew ? { ...r, isNew: false } : r))
+        );
+      }, 2500);
+    } catch (err) {
+      console.error("Failed to generate remixes:", err);
+    } finally {
+      setGeneratingRemixes(false);
+    }
+  };
 
   return (
     <main className={s.page}>
@@ -142,7 +253,9 @@ export default function VideoInsightsClient({
       {insights.demo && (
         <div className={s.demoBanner}>
           <span className={s.demoBadge}>Demo Data</span>
-          <span>This is sample data. Connect your channel to see real insights.</span>
+          <span>
+            This is sample data. Connect your channel to see real insights.
+          </span>
         </div>
       )}
 
@@ -153,7 +266,14 @@ export default function VideoInsightsClient({
             <img src={video.thumbnailUrl} alt="" className={s.thumbnail} />
           ) : (
             <div className={s.thumbnailPlaceholder}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </div>
@@ -175,7 +295,9 @@ export default function VideoInsightsClient({
                 Published {formatDate(video.publishedAt)}
               </span>
             )}
-            <span className={s.metaItem}>{formatDuration(video.durationSec)}</span>
+            <span className={s.metaItem}>
+              {formatDuration(video.durationSec)}
+            </span>
           </div>
           <div className={s.headerChips}>
             <span
@@ -228,14 +350,22 @@ export default function VideoInsightsClient({
             />
             <ScoreCard
               label="Watch Time"
-              value={formatCompact(insights.analytics.totals.estimatedMinutesWatched ?? 0)}
-              sub={derived.watchTimePerViewSec ? `${formatDuration(derived.watchTimePerViewSec)}/view` : "-"}
+              value={formatCompact(
+                insights.analytics.totals.estimatedMinutesWatched ?? 0
+              )}
+              sub={
+                derived.watchTimePerViewSec
+                  ? `${formatDuration(derived.watchTimePerViewSec)}/view`
+                  : "-"
+              }
             />
             <ScoreCard
               label="Avg % Viewed"
               value={
                 insights.analytics.totals.averageViewPercentage != null
-                  ? `${insights.analytics.totals.averageViewPercentage.toFixed(1)}%`
+                  ? `${insights.analytics.totals.averageViewPercentage.toFixed(
+                      1
+                    )}%`
                   : "-"
               }
               delta={comparison.avgViewPercentage.delta}
@@ -244,7 +374,11 @@ export default function VideoInsightsClient({
             <ScoreCard
               label="Subscribers"
               value={`+${insights.analytics.totals.subscribersGained ?? 0}`}
-              sub={derived.subsPer1k ? `${derived.subsPer1k.toFixed(1)}/1K views` : "-"}
+              sub={
+                derived.subsPer1k
+                  ? `${derived.subsPer1k.toFixed(1)}/1K views`
+                  : "-"
+              }
               delta={comparison.subsPer1k.delta}
               vsBaseline={comparison.subsPer1k.vsBaseline}
             />
@@ -262,7 +396,11 @@ export default function VideoInsightsClient({
             <ScoreCard
               label="Shares"
               value={String(insights.analytics.totals.shares ?? 0)}
-              sub={derived.sharesPer1k ? `${derived.sharesPer1k.toFixed(1)}/1K` : "-"}
+              sub={
+                derived.sharesPer1k
+                  ? `${derived.sharesPer1k.toFixed(1)}/1K`
+                  : "-"
+              }
               delta={comparison.sharesPer1k.delta}
               vsBaseline={comparison.sharesPer1k.vsBaseline}
             />
@@ -272,7 +410,9 @@ export default function VideoInsightsClient({
         {/* 3 Levers */}
         <section className={s.section}>
           <h2 className={s.sectionTitle}>3 Levers</h2>
-          <p className={s.sectionSubtitle}>Focus areas for improving this video</p>
+          <p className={s.sectionSubtitle}>
+            Focus areas for improving this video
+          </p>
           <div className={s.leversGrid}>
             <LeverCard
               title="Retention"
@@ -299,110 +439,107 @@ export default function VideoInsightsClient({
         </section>
 
         {/* Wins & Leaks */}
-        {llmInsights && (llmInsights.wins.length > 0 || llmInsights.leaks.length > 0) && (
-          <section className={s.section}>
-            <div className={s.winsLeaksGrid}>
-              {llmInsights.wins.length > 0 && (
-                <div className={s.winsColumn}>
-                  <h3 className={s.columnTitle}>What's Working</h3>
-                  {llmInsights.wins.map((win, i) => (
-                    <div key={i} className={s.winCard}>
-                      <span className={s.winLabel}>{win.label}</span>
-                      <p className={s.winWhy}>{win.why}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {llmInsights.leaks.length > 0 && (
-                <div className={s.leaksColumn}>
-                  <h3 className={s.columnTitle}>What's Leaking</h3>
-                  {llmInsights.leaks.map((leak, i) => (
-                    <div key={i} className={s.leakCard}>
-                      <span className={s.leakLabel}>{leak.label}</span>
-                      <p className={s.leakWhy}>{leak.why}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* Actions */}
-        {llmInsights && llmInsights.actions.length > 0 && (
-          <section className={s.section}>
-            <h2 className={s.sectionTitle}>Actions</h2>
-            <div className={s.actionsGrid}>
-              {llmInsights.actions.map((action, i) => (
-                <div key={i} className={s.actionCard}>
-                  <span className={s.actionLever}>{action.lever}</span>
-                  <p className={s.actionText}>{action.action}</p>
-                  <p className={s.actionReason}>{action.reason}</p>
-                  <span className={s.actionImpact}>{action.expectedImpact}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Experiments */}
-        {llmInsights && llmInsights.experiments.length > 0 && (
-          <section className={s.section}>
-            <h2 className={s.sectionTitle}>Experiments</h2>
-            <div className={s.experimentsGrid}>
-              {llmInsights.experiments.map((exp, i) => (
-                <div key={i} className={s.experimentCard}>
-                  <span className={s.experimentType}>{exp.type}</span>
-                  <div className={s.experimentTests}>
-                    {exp.test.map((t, j) => (
-                      <CopyableItem key={j} text={t} />
+        {llmInsights &&
+          (llmInsights.wins.length > 0 || llmInsights.leaks.length > 0) && (
+            <section className={s.section}>
+              <div className={s.winsLeaksGrid}>
+                {llmInsights.wins.length > 0 && (
+                  <div className={s.winsColumn}>
+                    <h3 className={s.columnTitle}>What's Working</h3>
+                    {llmInsights.wins.map((win, i) => (
+                      <div key={i} className={s.winCard}>
+                        <span className={s.winLabel}>{win.label}</span>
+                        <p className={s.winWhy}>{win.why}</p>
+                      </div>
                     ))}
                   </div>
-                  <span className={s.experimentMetric}>Track: {exp.successMetric}</span>
+                )}
+                {llmInsights.leaks.length > 0 && (
+                  <div className={s.leaksColumn}>
+                    <h3 className={s.columnTitle}>What's Leaking</h3>
+                    {llmInsights.leaks.map((leak, i) => (
+                      <div key={i} className={s.leakCard}>
+                        <span className={s.leakLabel}>{leak.label}</span>
+                        <p className={s.leakWhy}>{leak.why}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+        {/* What to change next */}
+        {llmInsights && llmInsights.actions.length > 0 && (
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>What to change next</h2>
+            <p className={s.sectionSubtitle}>
+              Actionable fixes prioritized by leverage on retention, conversion,
+              and engagement.
+            </p>
+            <div className={s.actionsGrid}>
+              {llmInsights.actions.slice(0, 6).map((action, i) => (
+                <div key={i} className={s.actionCard}>
+                  <div className={s.actionTopRow}>
+                    <span className={s.actionLever}>{action.lever}</span>
+                    {action.expectedImpact && (
+                      <span className={s.actionImpact}>
+                        {action.expectedImpact}
+                      </span>
+                    )}
+                  </div>
+                  <p className={s.actionText}>{action.action}</p>
+                  <p className={s.actionReason}>{action.reason}</p>
                 </div>
               ))}
-            </div>
-          </section>
-        )}
-
-        {/* Packaging Ideas */}
-        {llmInsights && llmInsights.packaging && (
-          <section className={s.section}>
-            <h2 className={s.sectionTitle}>Packaging Ideas</h2>
-            <div className={s.packagingGrid}>
-              <PackagingCard
-                title="Title Angles"
-                items={llmInsights.packaging.titleAngles}
-              />
-              <PackagingCard
-                title="Hook Setups"
-                items={llmInsights.packaging.hookSetups}
-              />
-              <PackagingCard
-                title="Visual Moments"
-                items={llmInsights.packaging.visualMoments}
-              />
             </div>
           </section>
         )}
 
         {/* Remix Ideas */}
-        {llmInsights && llmInsights.remixIdeas.length > 0 && (
+        {llmInsights && remixItems.length > 0 && (
           <section className={s.section}>
             <h2 className={s.sectionTitle}>Remix Ideas</h2>
-            <p className={s.sectionSubtitle}>New video ideas inspired by this one</p>
+            <p className={s.sectionSubtitle}>
+              Ready-to-film angles inspired by what worked here.
+            </p>
             <div className={s.remixGrid}>
-              {llmInsights.remixIdeas.map((remix, i) => (
-                <div key={i} className={s.remixCard}>
-                  <h4 className={s.remixTitle}>{remix.title}</h4>
-                  <p className={s.remixHook}>"{remix.hook}"</p>
-                  <div className={s.remixKeywords}>
-                    {remix.keywords.map((kw, j) => (
-                      <span key={j} className={s.remixKeyword}>{kw}</span>
-                    ))}
+              {remixItems.slice(0, 10).map((remix) => (
+                <div key={remix.id} className={s.remixCard}>
+                  <div className={s.remixHeaderRow}>
+                    <h4 className={s.remixTitle}>{remix.title}</h4>
+                    {remix.isNew && <span className={s.newPill}>New</span>}
+                  </div>
+                  <p className={s.remixHook}>&ldquo;{remix.hook}&rdquo;</p>
+                  {remix.keywords.length > 0 && (
+                    <div className={s.remixKeywords}>
+                      {remix.keywords.slice(0, 6).map((kw) => (
+                        <span key={kw} className={s.remixKeyword}>
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className={s.remixActionsRow}>
+                    <CopyButton label="Copy title" text={remix.title} />
+                    <CopyButton label="Copy hook" text={remix.hook} />
                   </div>
                 </div>
               ))}
+            </div>
+            <div className={s.remixFooterRow}>
+              <button
+                className={s.primaryBtn}
+                onClick={handleGenerateMoreRemixes}
+                disabled={!channelId || generatingRemixes}
+              >
+                {generatingRemixes ? "Generating..." : "Generate more remixes"}
+              </button>
+              {!channelId && (
+                <span className={s.mutedHint}>
+                  Select a channel to generate more.
+                </span>
+              )}
             </div>
           </section>
         )}
@@ -466,10 +603,7 @@ function LeverCard({
     <div className={s.leverCard}>
       <div className={s.leverHeader}>
         <span className={s.leverTitle}>{title}</span>
-        <span
-          className={s.leverGrade}
-          data-color={color}
-        >
+        <span className={s.leverGrade} data-color={color}>
           {grade}
         </span>
       </div>
@@ -479,35 +613,19 @@ function LeverCard({
   );
 }
 
-function PackagingCard({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div className={s.packagingCard}>
-      <h4 className={s.packagingTitle}>{title}</h4>
-      <ul className={s.packagingList}>
-        {items.map((item, i) => (
-          <li key={i}>{item}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function CopyableItem({ text }: { text: string }) {
+function CopyButton({ label, text }: { label: string; text: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setTimeout(() => setCopied(false), 1200);
   };
 
   return (
-    <div className={s.copyableItem}>
-      <span>{text}</span>
-      <button onClick={handleCopy} className={s.copyBtn}>
-        {copied ? "Copied" : "Copy"}
-      </button>
-    </div>
+    <button onClick={handleCopy} className={s.secondaryBtn} type="button">
+      {copied ? "Copied" : label}
+    </button>
   );
 }
 
@@ -536,4 +654,3 @@ function formatCompact(num: number): string {
   if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
   return num.toFixed(0);
 }
-

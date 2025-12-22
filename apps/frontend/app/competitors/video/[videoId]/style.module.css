@@ -405,6 +405,109 @@
   line-height: 1.6;
 }
 
+/* Simple card grids (used for "Why it's working" + patterns) */
+.cardGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .cardGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.simpleCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 14px;
+}
+
+.cardText {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.patternCards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .patternCards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.patternCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.patternTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+  line-height: 1.35;
+}
+
+.patternEvidence {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+
+.patternHow {
+  font-size: 0.875rem;
+  color: #334155;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.commentSummaryGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+@media (min-width: 640px) {
+  .commentSummaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.commentsToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  margin-bottom: 12px;
+}
+
+.commentsToggle:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
 /* ================================
    Accordion Sections
    ================================ */

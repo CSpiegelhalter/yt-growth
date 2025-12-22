@@ -21,7 +21,8 @@ import {
 import { getGoogleAccount, fetchRetentionCurve } from "@/lib/youtube-api";
 import { computeRetentionCliff, formatTimestamp } from "@/lib/retention";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDemoMode, getDemoData } from "@/lib/demo-fixtures";
+import { isDemoMode, getDemoData, isYouTubeMockMode } from "@/lib/demo-fixtures";
+import { ensureMockChannelSeeded } from "@/lib/mock-seed";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -32,7 +33,7 @@ export async function GET(
   { params }: { params: { channelId: string } }
 ) {
   // Return demo data if demo mode is enabled
-  if (isDemoMode()) {
+  if (isDemoMode() && !isYouTubeMockMode()) {
     const demoData = getDemoData("retention");
     return Response.json({ ...(demoData as object), demo: true });
   }
@@ -45,7 +46,7 @@ export async function GET(
     }
 
     // Subscription check (paid feature)
-    if (!hasActiveSubscription(user.subscription)) {
+    if (!isYouTubeMockMode() && !hasActiveSubscription(user.subscription)) {
       return Response.json(
         { error: "Subscription required", code: "SUBSCRIPTION_REQUIRED" },
         { status: 403 }
@@ -61,7 +62,7 @@ export async function GET(
     const { channelId } = parsed.data;
 
     // Get channel and verify ownership
-    const channel = await prisma.channel.findFirst({
+    let channel = await prisma.channel.findFirst({
       where: {
         youtubeChannelId: channelId,
         userId: user.id,
@@ -80,6 +81,39 @@ export async function GET(
         },
       },
     });
+
+    // In YT_MOCK_MODE, auto-seed the channel/videos if missing so pages work immediately.
+    if (!channel && isYouTubeMockMode()) {
+      const ga = await getGoogleAccount(user.id);
+      if (!ga) {
+        return Response.json(
+          { error: "Google account not connected" },
+          { status: 400 }
+        );
+      }
+      await ensureMockChannelSeeded({
+        userId: user.id,
+        youtubeChannelId: channelId,
+        minVideos: 25,
+        ga,
+      });
+      channel = await prisma.channel.findFirst({
+        where: { youtubeChannelId: channelId, userId: user.id },
+        include: {
+          Video: {
+            orderBy: { publishedAt: "desc" },
+            take: 10,
+            select: {
+              id: true,
+              youtubeVideoId: true,
+              title: true,
+              durationSec: true,
+              publishedAt: true,
+            },
+          },
+        },
+      });
+    }
 
     if (!channel) {
       return Response.json({ error: "Channel not found" }, { status: 404 });
@@ -215,17 +249,6 @@ export async function GET(
     });
   } catch (err: any) {
     console.error("Retention error:", err);
-
-    // Return demo data as fallback on error
-    const demoData = getDemoData("retention");
-    if (demoData) {
-      return Response.json({
-        ...(demoData as object),
-        demo: true,
-        error: "Using demo data - actual fetch failed",
-      });
-    }
-
     return Response.json(
       { error: "Failed to fetch retention data", detail: err.message },
       { status: 500 }
