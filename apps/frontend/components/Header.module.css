@@ -71,6 +71,24 @@
 }
 
 /* Auth Buttons (logged out) */
+.contactBtn {
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #64748b);
+  text-decoration: none;
+  border-radius: 8px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.contactBtn:hover {
+  background: #f8fafc;
+  color: var(--color-text, #1e293b);
+}
+
 .loginBtn {
   padding: 10px 16px;
   font-size: 0.875rem;
@@ -213,6 +231,18 @@
 
 .dropdownItem:hover {
   background: #f8fafc;
+}
+
+.savedIdeasItem {
+  color: #f59e0b;
+}
+
+.savedIdeasItem:hover {
+  background: #fffbeb;
+}
+
+.savedIdeasItem svg {
+  flex-shrink: 0;
 }
 
 .dropdownDivider {

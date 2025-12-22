@@ -42,8 +42,8 @@ export async function ensureMockChannelSeeded(input: {
   const existingCount = await prisma.video.count({
     where: { channelId: channel.id },
   });
-  // In YT_MOCK_MODE, always refresh/upsert so DB titles stay consistent with current mock generator.
-  if (process.env.YT_MOCK_MODE !== "1" && existingCount >= input.minVideos) {
+  // Skip if we already have enough videos seeded (works in both real and mock mode)
+  if (existingCount >= input.minVideos) {
     return channel;
   }
 

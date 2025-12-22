@@ -72,6 +72,26 @@ export default function AdminYoutubeUsageClient() {
     }
   };
 
+  const handleClearCache = async () => {
+    if (!confirm("Clear all YouTube/competitor/insights caches? This will force fresh API calls on next page load.")) {
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/dev/youtube-usage?action=clear-cache", {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Clear cache failed");
+      const json = await res.json();
+      alert(`Cleared: ${json.cleared?.join(", ") || "none"}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Clear cache failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -115,7 +135,14 @@ export default function AdminYoutubeUsageClient() {
             onClick={handleReset}
             disabled={loading}
           >
-            Reset
+            Reset Stats
+          </button>
+          <button
+            className={`${s.btn} ${s.btnDanger}`}
+            onClick={handleClearCache}
+            disabled={loading}
+          >
+            Clear Cache
           </button>
         </div>
       </div>

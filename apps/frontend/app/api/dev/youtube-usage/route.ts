@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
 
   const url = new URL(req.url);
   const action = url.searchParams.get("action") ?? "reset";
+
   if (action === "reset") {
     resetGoogleApiUsageStats();
     try {
@@ -105,5 +106,41 @@ export async function POST(req: NextRequest) {
     }
     return Response.json({ ok: true });
   }
+
+  if (action === "clear-cache") {
+    const cleared: string[] = [];
+    try {
+      await prisma.$executeRawUnsafe(`DELETE FROM "YouTubeSearchCache"`);
+      cleared.push("YouTubeSearchCache");
+    } catch {
+      /* table may not exist */
+    }
+    try {
+      await prisma.$executeRawUnsafe(`DELETE FROM "CompetitorFeedCache"`);
+      cleared.push("CompetitorFeedCache");
+    } catch {
+      /* table may not exist */
+    }
+    try {
+      await prisma.$executeRawUnsafe(`DELETE FROM "SimilarChannelsCache"`);
+      cleared.push("SimilarChannelsCache");
+    } catch {
+      /* table may not exist */
+    }
+    try {
+      await prisma.$executeRawUnsafe(`DELETE FROM "OwnedVideoInsightsCache"`);
+      cleared.push("OwnedVideoInsightsCache");
+    } catch {
+      /* table may not exist */
+    }
+    try {
+      await prisma.$executeRawUnsafe(`DELETE FROM "OwnedVideoRemixCache"`);
+      cleared.push("OwnedVideoRemixCache");
+    } catch {
+      /* table may not exist */
+    }
+    return Response.json({ ok: true, cleared });
+  }
+
   return Response.json({ ok: false, error: "Unknown action" }, { status: 400 });
 }

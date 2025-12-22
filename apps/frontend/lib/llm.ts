@@ -903,10 +903,7 @@ export async function generateCompetitorVideoAnalysis(
   function cleanDescriptionForAbout(raw: string): string {
     // Strip URLs, timestamps, and normalize whitespace so the model sees the actual topic.
     const noUrls = raw.replace(/https?:\/\/\S+/gi, "");
-    const noTimestamps = noUrls.replace(
-      /\b\d{1,2}:\d{2}(?::\d{2})?\b/g,
-      ""
-    );
+    const noTimestamps = noUrls.replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "");
     const noHashtags = noTimestamps.replace(/#[\p{L}\p{N}_-]+/gu, "");
     return noHashtags.replace(/\s+/g, " ").trim();
   }
@@ -978,7 +975,10 @@ export async function generateCompetitorVideoAnalysis(
     // Hard check: it literally contains (most of) the title.
     if (t.length >= 18 && a.includes(t)) return true;
     // Soft check: very high word overlap with the title.
-    const sim = jaccardSimilarity(significantWords(about), significantWords(title));
+    const sim = jaccardSimilarity(
+      significantWords(about),
+      significantWords(title)
+    );
     return sim >= 0.75;
   }
 
@@ -1205,6 +1205,33 @@ Extract:
  */
 function getTestModeResponse(messages: LLMMessage[]): LLMResponse {
   const lastMessage = messages[messages.length - 1]?.content ?? "";
+  const systemMessage =
+    messages.find((m) => m.role === "system")?.content ?? "";
+
+  // Detect IdeaBoard request
+  if (
+    systemMessage.includes("elite YouTube creative") ||
+    lastMessage.includes("CREATOR PROFILE") ||
+    lastMessage.includes("COMPETITOR PROOF VIDEOS")
+  ) {
+    return {
+      content: JSON.stringify(getTestModeIdeaBoardResponse()),
+      tokensUsed: 2500,
+      model: "gpt-4o-mini",
+    };
+  }
+
+  // Detect "generate more ideas" request
+  if (
+    lastMessage.includes("EXISTING IDEAS") &&
+    lastMessage.includes("completely different")
+  ) {
+    return {
+      content: JSON.stringify(getTestModeMoreIdeasResponse()),
+      tokensUsed: 1500,
+      model: "gpt-4o-mini",
+    };
+  }
 
   // Detect which type of response to return based on the prompt
   if (
@@ -1818,4 +1845,695 @@ Place your subscribe CTA immediately after delivering the first major value mome
     tokensUsed: 10,
     model: "gpt-4o-mini-test",
   };
+}
+
+/**
+ * Test mode fixture for IdeaBoard generation
+ */
+function getTestModeIdeaBoardResponse() {
+  const ideas = [
+    {
+      id: "idea-1",
+      title: "The algorithm secret nobody talks about",
+      angle: "Reveal the hidden factor that determines 80% of video success",
+      whyNow:
+        "Algorithm discussions are trending, but everyone focuses on the wrong metrics",
+      format: "long",
+      difficulty: "easy",
+      estimatedViews: "50K-100K based on similar content",
+      hooks: [
+        {
+          text: "I analyzed 500 videos and found the ONE thing that matters most",
+          typeTags: ["shock", "promise"],
+        },
+        {
+          text: "Forget everything you know about the algorithm. This changes everything.",
+          typeTags: ["contrarian", "curiosity"],
+        },
+        {
+          text: "The metric YouTube actually cares about isn't what you think",
+          typeTags: ["curiosity", "story"],
+        },
+      ],
+      titles: [
+        {
+          text: "The YouTube Algorithm Secret Nobody Talks About",
+          styleTags: ["curiosity", "authority"],
+        },
+        {
+          text: "I Analyzed 500 Videos - Here's What Actually Matters",
+          styleTags: ["personal", "specific"],
+        },
+        {
+          text: "Why Your Videos Aren't Getting Views (It's Not What You Think)",
+          styleTags: ["contrarian", "outcome"],
+        },
+        {
+          text: "The ONE Metric That Determines If YouTube Promotes Your Video",
+          styleTags: ["specific", "promise"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "THE SECRET",
+        composition:
+          "Face showing surprised/enlightened expression, algorithm visualization graphic",
+        emotionToConvey: "Revelation and insider knowledge",
+        colorScheme: "Dark purple/blue with bright yellow accent",
+        avoid: ["Generic YouTube logo", "Boring charts"],
+      },
+      scriptOutline: {
+        hook: "Show the shocking stat that contradicts common belief",
+        setup: "Explain why most creators focus on the wrong things",
+        mainPoints: [
+          "The real metric YouTube optimizes for",
+          "How to measure it",
+          "3 ways to improve it",
+        ],
+        payoff: "Concrete action plan for next video",
+        cta: "Comment which metric you thought mattered most",
+      },
+      keywords: [
+        {
+          text: "youtube algorithm",
+          intent: "search",
+          monthlySearches: "50K+",
+          competition: "high",
+        },
+        {
+          text: "youtube algorithm 2024",
+          intent: "search",
+          monthlySearches: "20K",
+          competition: "medium",
+        },
+        {
+          text: "how to grow on youtube",
+          intent: "browse",
+          monthlySearches: "30K",
+          competition: "high",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: "idea-2",
+      title: "My exact workflow for consistent uploads",
+      angle:
+        "Behind-the-scenes system reveal that enables sustainable content creation",
+      whyNow: "Burnout is a hot topic and creators want sustainable systems",
+      format: "long",
+      difficulty: "easy",
+      estimatedViews: "30K-60K based on similar content",
+      hooks: [
+        {
+          text: "I used to spend 40 hours on one video. Now I do it in 8.",
+          typeTags: ["shock", "promise"],
+        },
+        {
+          text: "Here's the system that lets me post weekly without burning out",
+          typeTags: ["promise", "tutorial"],
+        },
+      ],
+      titles: [
+        {
+          text: "My Exact Workflow for Weekly YouTube Videos",
+          styleTags: ["personal", "specific"],
+        },
+        {
+          text: "How I Cut My Video Production Time by 80%",
+          styleTags: ["outcome", "specific"],
+        },
+        {
+          text: "The Content System That Changed Everything",
+          styleTags: ["personal", "curiosity"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "MY SYSTEM",
+        composition:
+          "You at desk with organized setup, workflow diagram overlay",
+        emotionToConvey: "Efficiency and control",
+        colorScheme: "Clean whites with blue accents",
+        avoid: ["Messy desk", "Overwhelming complexity"],
+      },
+      keywords: [
+        {
+          text: "youtube workflow",
+          intent: "search",
+          monthlySearches: "5K",
+          competition: "low",
+        },
+        {
+          text: "content creation system",
+          intent: "search",
+          monthlySearches: "3K",
+          competition: "low",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: "idea-3",
+      title: "Reaction to viral competitor video",
+      angle: "Break down why a trending video is exploding and extract lessons",
+      whyNow: "Riding the wave of trending content in your niche",
+      format: "long",
+      difficulty: "easy",
+      estimatedViews: "40K-80K based on trending topic boost",
+      hooks: [
+        {
+          text: "This video got 2 million views in 3 days. Here's exactly why.",
+          typeTags: ["curiosity", "story"],
+        },
+        {
+          text: "I watched this viral video 50 times. Here's what I learned.",
+          typeTags: ["curiosity", "promise"],
+        },
+      ],
+      titles: [
+        {
+          text: "Why This Video Went VIRAL (Creator Breakdown)",
+          styleTags: ["curiosity", "authority"],
+        },
+        {
+          text: "Analyzing the Most Viral Video in Our Niche",
+          styleTags: ["specific", "authority"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "2M VIEWS?!",
+        composition: "Split screen - competitor thumbnail + your reaction face",
+        emotionToConvey: "Curiosity and insight",
+        colorScheme: "Match competitor colors for recognition",
+        avoid: ["Looking negative", "Clickbait drama"],
+      },
+      keywords: [
+        {
+          text: "viral video breakdown",
+          intent: "browse",
+          monthlySearches: "10K",
+          competition: "medium",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: "idea-4",
+      title: "Deep dive on underrated strategy",
+      angle: "Explore a tactic that works but few creators use",
+      whyNow: "Creators are looking for competitive advantages",
+      format: "long",
+      difficulty: "medium",
+      hooks: [
+        {
+          text: "This strategy grew my channel 40% and nobody talks about it",
+          typeTags: ["shock", "contrarian"],
+        },
+      ],
+      titles: [
+        {
+          text: "The Underrated YouTube Strategy That Actually Works",
+          styleTags: ["contrarian", "promise"],
+        },
+        {
+          text: "Why I Stopped Doing What Everyone Says (And Grew 40%)",
+          styleTags: ["personal", "contrarian"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "40% GROWTH",
+        composition: "Before/after analytics screenshot with your face",
+        emotionToConvey: "Proof and results",
+        colorScheme: "Green growth colors",
+        avoid: ["Fake looking numbers", "No proof"],
+      },
+      keywords: [
+        {
+          text: "youtube growth strategy",
+          intent: "search",
+          monthlySearches: "15K",
+          competition: "medium",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: "idea-5",
+      title: "Common mistakes holding creators back",
+      angle: "Identify and fix the most damaging errors",
+      whyNow: "Educational content that positions you as authority",
+      format: "long",
+      difficulty: "medium",
+      hooks: [
+        {
+          text: "These 5 mistakes are killing your channel. I made all of them.",
+          typeTags: ["shock", "story"],
+        },
+      ],
+      titles: [
+        {
+          text: "5 YouTube Mistakes I Made (So You Don't Have To)",
+          styleTags: ["personal", "specific"],
+        },
+        {
+          text: "Stop Making These YouTube Mistakes",
+          styleTags: ["contrarian", "specific"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "STOP THIS",
+        composition: "Face with 'X' graphic, concerned expression",
+        emotionToConvey: "Warning and helpfulness",
+        colorScheme: "Red accent for urgency",
+        avoid: ["Too negative", "Scary imagery"],
+      },
+      keywords: [
+        {
+          text: "youtube mistakes",
+          intent: "search",
+          monthlySearches: "8K",
+          competition: "low",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: "idea-6",
+      title: "Step-by-step beginner tutorial",
+      angle: "Complete guide for newcomers to your niche",
+      whyNow: "Evergreen content that consistently drives new subscribers",
+      format: "long",
+      difficulty: "medium",
+      hooks: [
+        {
+          text: "If you're just starting out, this is the only video you need",
+          typeTags: ["promise", "tutorial"],
+        },
+      ],
+      titles: [
+        {
+          text: "Complete Beginner's Guide (Everything You Need to Know)",
+          styleTags: ["authority", "specific"],
+        },
+        {
+          text: "Start Here: The Ultimate Guide for Beginners",
+          styleTags: ["specific", "authority"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "START HERE",
+        composition: "Welcoming face, roadmap or checklist graphic",
+        emotionToConvey: "Friendly and comprehensive",
+        colorScheme: "Inviting blues and greens",
+        avoid: ["Intimidating complexity", "Advanced jargon"],
+      },
+      keywords: [
+        {
+          text: "beginner guide",
+          intent: "search",
+          monthlySearches: "20K",
+          competition: "medium",
+        },
+        {
+          text: "how to start",
+          intent: "search",
+          monthlySearches: "30K",
+          competition: "high",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: "idea-7",
+      title: "Advanced technique deep dive",
+      angle: "Pro-level content for experienced audience",
+      whyNow: "Establishes authority and drives high engagement",
+      format: "long",
+      difficulty: "stretch",
+      hooks: [
+        {
+          text: "This advanced technique took me 2 years to figure out",
+          typeTags: ["authority", "curiosity"],
+        },
+      ],
+      titles: [
+        {
+          text: "Advanced Techniques Most Creators Don't Know",
+          styleTags: ["authority", "curiosity"],
+        },
+        {
+          text: "The Pro-Level Strategy That Changes Everything",
+          styleTags: ["authority", "promise"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "PRO LEVEL",
+        composition: "Serious expression, premium/sophisticated look",
+        emotionToConvey: "Expertise and exclusivity",
+        colorScheme: "Dark premium colors - black/gold",
+        avoid: ["Looking too basic", "Beginner vibes"],
+      },
+      keywords: [
+        {
+          text: "advanced tips",
+          intent: "search",
+          monthlySearches: "5K",
+          competition: "low",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: "idea-8",
+      title: "Tools and resources roundup",
+      angle: "Curated list of best tools for your audience",
+      whyNow: "Practical content that viewers bookmark and share",
+      format: "long",
+      difficulty: "easy",
+      hooks: [
+        {
+          text: "These are the exact tools I use every single day",
+          typeTags: ["promise", "authority"],
+        },
+      ],
+      titles: [
+        {
+          text: "My Favorite Tools and Resources (2024 Edition)",
+          styleTags: ["personal", "timebound"],
+        },
+        {
+          text: "10 Tools That Changed My Workflow",
+          styleTags: ["specific", "outcome"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "MY TOOLS",
+        composition: "Grid of tool logos with your face",
+        emotionToConvey: "Helpful and curated",
+        colorScheme: "Clean organized look",
+        avoid: ["Too many logos", "Overwhelming grid"],
+      },
+      keywords: [
+        {
+          text: "best tools",
+          intent: "search",
+          monthlySearches: "25K",
+          competition: "medium",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: "idea-9",
+      title: "Quick tips compilation",
+      angle: "Fast-paced, high-value density content",
+      whyNow: "Short attention span friendly, high shareability",
+      format: "shorts",
+      difficulty: "easy",
+      hooks: [
+        {
+          text: "5 tips in 60 seconds that will change your game",
+          typeTags: ["promise", "specific"],
+        },
+      ],
+      titles: [
+        {
+          text: "5 Tips in 60 Seconds #Shorts",
+          styleTags: ["specific", "timebound"],
+        },
+        {
+          text: "Quick Tips You NEED to Know #Shorts",
+          styleTags: ["promise", "specific"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "5 TIPS",
+        composition: "Dynamic action shot or key visual",
+        emotionToConvey: "Energy and quick value",
+        colorScheme: "Bright, attention-grabbing",
+        avoid: ["Static boring image", "Too much text"],
+      },
+      keywords: [
+        {
+          text: "quick tips",
+          intent: "browse",
+          monthlySearches: "15K",
+          competition: "low",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: "idea-10",
+      title: "Controversial take on industry trend",
+      angle: "Challenge common wisdom with data and reasoning",
+      whyNow: "Drives engagement, comments, and establishes thought leadership",
+      format: "long",
+      difficulty: "stretch",
+      hooks: [
+        {
+          text: "Everyone is wrong about this. And I can prove it.",
+          typeTags: ["contrarian", "shock"],
+        },
+        {
+          text: "The popular advice is actually hurting you. Here's why.",
+          typeTags: ["contrarian", "promise"],
+        },
+      ],
+      titles: [
+        {
+          text: "Why Popular Advice Is Wrong (Unpopular Opinion)",
+          styleTags: ["contrarian", "personal"],
+        },
+        {
+          text: "I Disagree With Everyone About This",
+          styleTags: ["contrarian", "personal"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "I DISAGREE",
+        composition: "Face with skeptical/questioning expression",
+        emotionToConvey: "Challenge and debate",
+        colorScheme: "Bold contrast - red/black",
+        avoid: ["Looking arrogant", "Pure negativity"],
+      },
+      keywords: [
+        {
+          text: "unpopular opinion",
+          intent: "browse",
+          monthlySearches: "10K",
+          competition: "low",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+  ];
+
+  return {
+    ideas,
+    nicheInsights: {
+      momentumNow: [
+        "Algorithm and growth content is consistently trending",
+        "Behind-the-scenes and transparency content performing well",
+        "Tool comparisons and reviews driving high engagement",
+      ],
+      winningPatterns: [
+        "Personal story + data combination in hooks",
+        "Numbered lists in titles (5 things, 7 mistakes)",
+        "Before/after transformations in thumbnails",
+      ],
+      contentGaps: [
+        "Intermediate-level content (between beginner and advanced)",
+        "Niche-specific case studies",
+        "Sustainable workflow content",
+      ],
+      avoidThese: [
+        "Generic motivation without actionable advice",
+        "Overly long tutorials without timestamps",
+        "Clickbait titles that don't deliver",
+      ],
+    },
+  };
+}
+
+/**
+ * Test mode fixture for "generate more ideas"
+ */
+function getTestModeMoreIdeasResponse() {
+  return [
+    {
+      id: `new-idea-${Date.now()}-1`,
+      title: "Day in the life as a content creator",
+      angle: "Authentic behind-the-scenes look at your process",
+      format: "long",
+      difficulty: "easy",
+      hooks: [
+        {
+          text: "Here's what creating content actually looks like",
+          typeTags: ["story", "curiosity"],
+        },
+      ],
+      titles: [
+        {
+          text: "A Day in My Life as a Content Creator",
+          styleTags: ["personal"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "MY DAY",
+        composition: "Candid work setup shot",
+        emotionToConvey: "Authenticity",
+        colorScheme: "Natural warm tones",
+        avoid: ["Overly staged", "Fake perfection"],
+      },
+      keywords: [
+        {
+          text: "day in the life",
+          intent: "browse",
+          monthlySearches: "50K",
+          competition: "medium",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: `new-idea-${Date.now()}-2`,
+      title: "Q&A answering your top questions",
+      angle: "Direct engagement with audience questions",
+      format: "long",
+      difficulty: "easy",
+      hooks: [
+        {
+          text: "You asked, I'm answering. Let's do this.",
+          typeTags: ["promise", "story"],
+        },
+      ],
+      titles: [
+        {
+          text: "Answering Your Most Asked Questions",
+          styleTags: ["personal", "specific"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "Q&A",
+        composition: "You with question mark graphics",
+        emotionToConvey: "Approachable and helpful",
+        colorScheme: "Friendly blues",
+        avoid: ["Looking unapproachable", "Too formal"],
+      },
+      keywords: [
+        {
+          text: "q&a",
+          intent: "browse",
+          monthlySearches: "20K",
+          competition: "low",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: `new-idea-${Date.now()}-3`,
+      title: "Collaborating with another creator",
+      angle: "Cross-audience exposure and fresh perspectives",
+      format: "long",
+      difficulty: "medium",
+      hooks: [
+        {
+          text: "I brought in an expert to settle this debate once and for all",
+          typeTags: ["curiosity", "authority"],
+        },
+      ],
+      titles: [
+        {
+          text: "We Need to Talk About This (feat. @Creator)",
+          styleTags: ["curiosity", "personal"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "COLLAB",
+        composition: "Both faces side by side",
+        emotionToConvey: "Collaboration and expertise",
+        colorScheme: "Blend both creators' brand colors",
+        avoid: ["One person overshadowing the other", "Crowded layout"],
+      },
+      keywords: [
+        {
+          text: "collaboration",
+          intent: "browse",
+          monthlySearches: "10K",
+          competition: "low",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: `new-idea-${Date.now()}-4`,
+      title: "What I'd do differently starting over",
+      angle: "Hindsight wisdom for newer creators",
+      format: "long",
+      difficulty: "easy",
+      hooks: [
+        {
+          text: "If I could start over, I'd change everything",
+          typeTags: ["story", "contrarian"],
+        },
+      ],
+      titles: [
+        {
+          text: "What I'd Do Differently If I Started Over",
+          styleTags: ["personal", "contrarian"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "START OVER",
+        composition: "Thoughtful expression, rewind graphic",
+        emotionToConvey: "Reflection and wisdom",
+        colorScheme: "Muted nostalgic tones",
+        avoid: ["Looking regretful", "Negative energy"],
+      },
+      keywords: [
+        {
+          text: "starting over",
+          intent: "search",
+          monthlySearches: "8K",
+          competition: "low",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: `new-idea-${Date.now()}-5`,
+      title: "The thing nobody tells you about",
+      angle: "Reveal hidden truths and insider knowledge",
+      format: "long",
+      difficulty: "medium",
+      hooks: [
+        {
+          text: "Nobody talks about this, but it's the most important thing",
+          typeTags: ["curiosity", "contrarian"],
+        },
+      ],
+      titles: [
+        {
+          text: "The Thing Nobody Tells You About [Topic]",
+          styleTags: ["curiosity", "contrarian"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "THE TRUTH",
+        composition: "Serious expression, secretive vibe",
+        emotionToConvey: "Insider knowledge",
+        colorScheme: "Dark mysterious tones",
+        avoid: ["Clickbaity drama", "Misleading"],
+      },
+      keywords: [
+        {
+          text: "truth about",
+          intent: "search",
+          monthlySearches: "15K",
+          competition: "medium",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+  ];
 }

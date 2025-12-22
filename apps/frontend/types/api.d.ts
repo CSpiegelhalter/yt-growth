@@ -277,7 +277,9 @@ export type IdeaTitle = {
 export type ThumbnailConcept = {
   overlayText: string;
   composition: string;
-  contrastNote: string;
+  contrastNote?: string;
+  emotionToConvey?: string;
+  colorScheme?: string;
   avoid: string[];
   moodboardRefs?: Array<{
     videoId: string;
@@ -300,12 +302,15 @@ export type ProofVideo = {
   whyItWorked?: string[];
   patternToSteal?: string[];
   remixIdea?: string;
+  howToMakeBetter?: string;
 };
 
 export type IdeaKeyword = {
   text: string;
   intent: "search" | "browse" | "suggested";
   fit?: string;
+  monthlySearches?: string;
+  competition?: "low" | "medium" | "high";
 };
 
 export type RemixVariant = {
@@ -313,15 +318,26 @@ export type RemixVariant = {
   titles: IdeaTitle[];
 };
 
+export type IdeaScriptOutline = {
+  hook?: string;
+  setup?: string;
+  mainPoints?: string[];
+  payoff?: string;
+  cta?: string;
+};
+
 export type Idea = {
   id: string;
   title: string;
   angle: string;
+  whyNow?: string;
+  estimatedViews?: string;
   format: "shorts" | "long";
   difficulty: "easy" | "medium" | "stretch";
   hooks: IdeaHook[];
   titles: IdeaTitle[];
   thumbnailConcept: ThumbnailConcept;
+  scriptOutline?: IdeaScriptOutline;
   keywords: IdeaKeyword[];
   proof: {
     basedOn: ProofVideo[];
@@ -337,8 +353,11 @@ export type Idea = {
 
 export type IdeaBoardNicheInsights = {
   momentumNow: string[];
-  patternsToCopy: string[];
-  gapsToExploit: string[];
+  patternsToCopy?: string[];
+  winningPatterns?: string[];
+  gapsToExploit?: string[];
+  contentGaps?: string[];
+  avoidThese?: string[];
 };
 
 export type IdeaBoardSimilarChannel = {

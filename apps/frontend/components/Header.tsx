@@ -330,11 +330,47 @@ export function Header(_props: HeaderProps) {
                     <div className={s.dropdownDivider} />
 
                     <Link
+                      href="/saved-ideas"
+                      className={`${s.dropdownItem} ${s.savedIdeasItem}`}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                      </svg>
+                      Saved Ideas
+                    </Link>
+
+                    <Link
                       href="/profile"
                       className={s.dropdownItem}
                       onClick={() => setMenuOpen(false)}
                     >
                       Profile
+                    </Link>
+
+                    <Link
+                      href="/contact"
+                      className={s.dropdownItem}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
+                      Contact
                     </Link>
 
                     {isAdmin && (
@@ -362,6 +398,9 @@ export function Header(_props: HeaderProps) {
             </div>
           ) : (
             <>
+              <Link href="/contact" className={s.contactBtn}>
+                Contact
+              </Link>
               <Link href="/auth/login" className={s.loginBtn}>
                 Log in
               </Link>

@@ -110,15 +110,6 @@ export default function HomePage() {
         </p>
         <HeroCTAs />
       </section>
-
-      {/* Footer */}
-      <footer className={s.footer}>
-        <p>© {new Date().getFullYear()} YouTube Growth Consultant</p>
-        <div className={s.footerLinks}>
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-        </div>
-      </footer>
     </main>
   );
 }

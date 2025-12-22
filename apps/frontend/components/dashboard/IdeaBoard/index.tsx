@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import Link from "next/link";
 import s from "./style.module.css";
 import type {
   IdeaBoardData,
@@ -42,13 +43,33 @@ export default function IdeaBoard({
   const [range, setRange] = useState<"7d" | "28d">("7d");
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [savedIdeas, setSavedIdeas] = useState<Set<string>>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("savedIdeas");
-      return saved ? new Set(JSON.parse(saved)) : new Set();
-    }
-    return new Set();
-  });
+  const [savedIdeas, setSavedIdeas] = useState<Set<string>>(new Set());
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+
+  // Load saved idea IDs from API on mount
+  useEffect(() => {
+    const loadSavedIds = async () => {
+      try {
+        const res = await fetch("/api/me/saved-ideas");
+        if (res.ok) {
+          const data = await res.json();
+          const ids = new Set(
+            (data.savedIdeas || []).map((s: { ideaId: string }) => s.ideaId)
+          );
+          setSavedIdeas(ids);
+        }
+      } catch (err) {
+        console.error("Failed to load saved ideas:", err);
+      }
+    };
+    loadSavedIds();
+  }, []);
+
+  const showSaveToast = (message: string) => {
+    setSaveToast(message);
+    setTimeout(() => setSaveToast(null), 2500);
+  };
 
   const handleCopy = useCallback(async (text: string, id: string) => {
     const success = await copyToClipboard(text);
@@ -86,18 +107,63 @@ export default function IdeaBoard({
     [onRefresh]
   );
 
-  const toggleSaveIdea = useCallback((ideaId: string) => {
-    setSavedIdeas((prev) => {
-      const next = new Set(prev);
-      if (next.has(ideaId)) {
-        next.delete(ideaId);
-      } else {
-        next.add(ideaId);
+  // Save/unsave idea using API
+  const toggleSaveIdea = useCallback(
+    async (idea: Idea) => {
+      const ideaId = idea.id;
+      const isSaved = savedIdeas.has(ideaId);
+      setSavingId(ideaId);
+
+      try {
+        if (isSaved) {
+          // Unsave
+          const res = await fetch(`/api/me/saved-ideas/${ideaId}`, {
+            method: "DELETE",
+          });
+          if (!res.ok) throw new Error("Failed to unsave");
+          setSavedIdeas((prev) => {
+            const next = new Set(prev);
+            next.delete(ideaId);
+            return next;
+          });
+          showSaveToast("Idea removed from saved");
+        } else {
+          // Save
+          const res = await fetch("/api/me/saved-ideas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ideaId: idea.id,
+              channelId: channelId ? parseInt(channelId, 10) : undefined,
+              title: idea.title || "Untitled Idea",
+              angle: idea.angle || null,
+              format: idea.format || "long",
+              difficulty: idea.difficulty || "medium",
+              ideaJson: idea,
+            }),
+          });
+          if (!res.ok) {
+            const data = await res.json();
+            if (res.status === 409) {
+              // Already saved
+              setSavedIdeas((prev) => new Set([...prev, ideaId]));
+              showSaveToast("Idea already saved");
+              return;
+            }
+            throw new Error(data.error || "Failed to save");
+          }
+          setSavedIdeas((prev) => new Set([...prev, ideaId]));
+          showSaveToast("Idea saved! View in Saved Ideas →");
+        }
+      } catch (err) {
+        console.error("Failed to toggle save:", err);
+        showSaveToast("Failed to save idea");
+      } finally {
+        setSavingId(null);
       }
-      localStorage.setItem("savedIdeas", JSON.stringify([...next]));
-      return next;
-    });
-  }, []);
+    },
+    [savedIdeas, channelId]
+  );
 
   const ideas = data?.ideas ?? [];
 
@@ -240,8 +306,9 @@ export default function IdeaBoard({
             key={idea.id}
             idea={idea}
             isSaved={savedIdeas.has(idea.id)}
+            isSaving={savingId === idea.id}
             onSelect={() => setSelectedIdeaId(idea.id)}
-            onSave={() => toggleSaveIdea(idea.id)}
+            onSave={() => toggleSaveIdea(idea)}
             onCopyHook={(text) => handleCopy(text, `hook-${idea.id}`)}
             copiedId={copiedId}
           />
@@ -253,7 +320,15 @@ export default function IdeaBoard({
         <span className={s.footerMeta}>
           {ideas.length} ideas generated {formatRelativeTime(data.generatedAt)}
         </span>
+        {savedIdeas.size > 0 && (
+          <Link href="/saved-ideas" className={s.savedIdeasLink}>
+            View {savedIdeas.size} saved idea{savedIdeas.size !== 1 ? "s" : ""} →
+          </Link>
+        )}
       </footer>
+
+      {/* Save Toast */}
+      {saveToast && <div className={s.saveToast}>{saveToast}</div>}
 
       {/* Detail Sheet */}
       {selectedIdea && (
@@ -275,6 +350,7 @@ export default function IdeaBoard({
 function IdeaCard({
   idea,
   isSaved,
+  isSaving,
   onSelect,
   onSave,
   onCopyHook,
@@ -282,6 +358,7 @@ function IdeaCard({
 }: {
   idea: Idea;
   isSaved: boolean;
+  isSaving?: boolean;
   onSelect: () => void;
   onSave: () => void;
   onCopyHook: (text: string) => void;
@@ -294,8 +371,26 @@ function IdeaCard({
     <article className={s.ideaCard}>
       {/* Card content - clickable */}
       <div className={s.ideaCardMain} onClick={onSelect}>
-        <h3 className={s.ideaTitle}>{idea.title}</h3>
+        <div className={s.ideaCardHeader}>
+          <h3 className={s.ideaTitle}>{idea.title}</h3>
+          <div className={s.ideaBadges}>
+            <span className={`${s.difficultyBadge} ${s[idea.difficulty]}`}>
+              {idea.difficulty}
+            </span>
+            <span className={`${s.formatBadge} ${s[idea.format]}`}>
+              {idea.format === "shorts" ? "Shorts" : "Long"}
+            </span>
+          </div>
+        </div>
         <p className={s.ideaAngle}>{idea.angle}</p>
+        
+        {/* Why Now - if available */}
+        {idea.whyNow && (
+          <p className={s.ideaWhyNow}>
+            <span className={s.whyNowIcon}>⚡</span>
+            {truncate(idea.whyNow, 100)}
+          </p>
+        )}
 
         {/* Standout hook */}
         {topHook && (
@@ -352,14 +447,17 @@ function IdeaCard({
           </button>
         )}
         <button
-          className={`${s.ideaSaveBtn} ${isSaved ? s.saved : ""}`}
+          className={`${s.ideaSaveBtn} ${isSaved ? s.saved : ""} ${isSaving ? s.saving : ""}`}
           onClick={(e) => {
             e.stopPropagation();
-            onSave();
+            if (!isSaving) onSave();
           }}
-          title={isSaved ? "Unsave" : "Save idea"}
+          disabled={isSaving}
+          title={isSaved ? "Remove from saved" : "Save idea"}
         >
-          {isSaved ? (
+          {isSaving ? (
+            <span className={s.savingSpinner} />
+          ) : isSaved ? (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
@@ -678,6 +776,62 @@ function IdeaDetailSheet({
             </div>
           </section>
 
+          {/* Script Outline Section - if available */}
+          {idea.scriptOutline && (
+            <section className={s.sheetSection}>
+              <h3 className={s.sectionTitle}>Script Outline</h3>
+              <p className={s.sectionIntro}>
+                Structure for your video content
+              </p>
+              <div className={s.scriptOutline}>
+                {idea.scriptOutline.hook && (
+                  <div className={s.scriptBlock}>
+                    <h4 className={s.scriptBlockTitle}>
+                      <span className={s.scriptIcon}>🎬</span> Hook (0-10 sec)
+                    </h4>
+                    <p className={s.scriptBlockText}>{idea.scriptOutline.hook}</p>
+                  </div>
+                )}
+                {idea.scriptOutline.setup && (
+                  <div className={s.scriptBlock}>
+                    <h4 className={s.scriptBlockTitle}>
+                      <span className={s.scriptIcon}>📋</span> Setup (10-40 sec)
+                    </h4>
+                    <p className={s.scriptBlockText}>{idea.scriptOutline.setup}</p>
+                  </div>
+                )}
+                {idea.scriptOutline.mainPoints && idea.scriptOutline.mainPoints.length > 0 && (
+                  <div className={s.scriptBlock}>
+                    <h4 className={s.scriptBlockTitle}>
+                      <span className={s.scriptIcon}>📝</span> Main Points
+                    </h4>
+                    <ul className={s.scriptPoints}>
+                      {idea.scriptOutline.mainPoints.map((point, i) => (
+                        <li key={i}>{point}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {idea.scriptOutline.payoff && (
+                  <div className={s.scriptBlock}>
+                    <h4 className={s.scriptBlockTitle}>
+                      <span className={s.scriptIcon}>🎯</span> Payoff
+                    </h4>
+                    <p className={s.scriptBlockText}>{idea.scriptOutline.payoff}</p>
+                  </div>
+                )}
+                {idea.scriptOutline.cta && (
+                  <div className={s.scriptBlock}>
+                    <h4 className={s.scriptBlockTitle}>
+                      <span className={s.scriptIcon}>👉</span> Call to Action
+                    </h4>
+                    <p className={s.scriptBlockText}>{idea.scriptOutline.cta}</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* Inspired By Section - curated, no load more */}
           {proofVideos.length > 0 && (
             <section className={s.sheetSection}>
@@ -895,10 +1049,16 @@ function NicheInsightsBar({
 }) {
   const [expanded, setExpanded] = useState(false);
 
+  // Combine old and new field names for backwards compatibility
+  const patterns = insights.winningPatterns ?? insights.patternsToCopy ?? [];
+  const gaps = insights.contentGaps ?? insights.gapsToExploit ?? [];
+  const avoid = insights.avoidThese ?? [];
+
   if (
     !insights.momentumNow.length &&
-    !insights.patternsToCopy.length &&
-    !insights.gapsToExploit.length
+    !patterns.length &&
+    !gaps.length &&
+    !avoid.length
   ) {
     return null;
   }
@@ -929,7 +1089,7 @@ function NicheInsightsBar({
         <div className={s.insightsContent}>
           {insights.momentumNow.length > 0 && (
             <div className={s.insightBlock}>
-              <h4 className={s.insightTitle}>Momentum Now</h4>
+              <h4 className={s.insightTitle}>🔥 Momentum Now</h4>
               <ul className={s.insightList}>
                 {insights.momentumNow.map((item, i) => (
                   <li key={i}>{item}</li>
@@ -938,22 +1098,33 @@ function NicheInsightsBar({
             </div>
           )}
 
-          {insights.patternsToCopy.length > 0 && (
+          {patterns.length > 0 && (
             <div className={s.insightBlock}>
-              <h4 className={s.insightTitle}>Patterns to Copy</h4>
+              <h4 className={s.insightTitle}>✓ Winning Patterns</h4>
               <ul className={s.insightList}>
-                {insights.patternsToCopy.map((item, i) => (
+                {patterns.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
               </ul>
             </div>
           )}
 
-          {insights.gapsToExploit.length > 0 && (
+          {gaps.length > 0 && (
             <div className={s.insightBlock}>
-              <h4 className={s.insightTitle}>Gaps to Exploit</h4>
+              <h4 className={s.insightTitle}>💡 Content Gaps</h4>
               <ul className={s.insightList}>
-                {insights.gapsToExploit.map((item, i) => (
+                {gaps.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {avoid.length > 0 && (
+            <div className={s.insightBlock}>
+              <h4 className={s.insightTitle}>⚠️ Avoid These</h4>
+              <ul className={s.insightList}>
+                {avoid.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
               </ul>

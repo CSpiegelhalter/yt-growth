@@ -11,7 +11,7 @@ export function isAdminUser(user: AuthUser | null): boolean {
   if (!user) return false;
 
   const adminEmails = new Set(
-    parseCsv(process.env.ADMIN_EMAILS).map((e) => e.toLowerCase())
+    parseCsv(process.env.NEXT_PUBLIC_ADMIN_EMAILS).map((e) => e.toLowerCase())
   );
   if (adminEmails.size > 0 && adminEmails.has(user.email.toLowerCase()))
     return true;

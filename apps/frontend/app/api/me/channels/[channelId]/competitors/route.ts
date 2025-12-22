@@ -203,18 +203,15 @@ export async function GET(
     ).toISOString();
 
     // Cache the discovery list for 12h (so repeated page views don't burn YouTube quota).
-    // In YT_MOCK_MODE, ignore the cache so UI always has “fresh” large test data.
-    const cached = isYouTubeMockMode()
-      ? null
-      : await prisma.competitorFeedCache.findUnique({
-          where: {
-            userId_channelId_range: {
-              userId: user.id,
-              channelId: channel.id,
-              range,
-            },
-          },
-        });
+    const cached = await prisma.competitorFeedCache.findUnique({
+      where: {
+        userId_channelId_range: {
+          userId: user.id,
+          channelId: channel.id,
+          range,
+        },
+      },
+    });
 
     // Fetch recent videos from all competitor channels
     const rawVideos: Array<{

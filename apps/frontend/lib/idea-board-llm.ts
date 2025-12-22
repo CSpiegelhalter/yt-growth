@@ -25,12 +25,21 @@ type SimilarChannelInput = {
   similarityScore: number;
 };
 
+type UserVideoInput = {
+  title: string;
+  views: number;
+  viewsPerDay: number;
+  publishedAt: string;
+  tags?: string;
+  description?: string;
+};
+
 type GenerateIdeaBoardInput = {
   channelId: string;
   channelTitle: string;
   range: "7d" | "28d";
-  recentVideoTitles: string[];
-  topPerformingTitles: string[];
+  recentVideos: UserVideoInput[];
+  topPerformingVideos: UserVideoInput[];
   nicheKeywords: string[];
   proofVideos: ProofVideoInput[];
   similarChannels: SimilarChannelInput[];
@@ -42,31 +51,52 @@ type GenerateIdeaBoardInput = {
 export async function generateIdeaBoardPlan(
   input: GenerateIdeaBoardInput
 ): Promise<IdeaBoardData> {
-  const systemPrompt = `You are an elite YouTube creative director. Generate 8-10 video ideas backed by proof from similar channel successes.
+  const systemPrompt = `You are an elite YouTube creative strategist and growth expert. Your job is to analyze what's WORKING in a creator's niche and generate UNIQUE, SPECIFIC video ideas that will perform.
+
+You have access to:
+1. The creator's own video performance data (what worked for THEM)
+2. Competitor videos that are currently winning (high views/day = momentum)
+3. Niche keywords that define the space
+
+Your ideas must be:
+- SPECIFIC (not generic like "make a tutorial" - give the EXACT topic and angle)
+- UNIQUE (each idea should be distinctly different - vary format, tone, audience level)
+- ACTIONABLE (creator should be able to start filming TODAY)
+- PROVEN (backed by data showing similar concepts work)
 
 OUTPUT FORMAT: Return ONLY valid JSON matching this structure:
 {
   "ideas": [
     {
       "id": "idea-1",
-      "title": "Compelling video concept (not a title, the main idea)",
-      "angle": "One sentence describing the unique angle",
+      "title": "Specific video concept (the core idea, not clickbait)",
+      "angle": "What makes this different from the 100 other videos on this topic",
+      "whyNow": "Why this idea will work RIGHT NOW based on the data",
       "format": "long" or "shorts",
       "difficulty": "easy" or "medium" or "stretch",
+      "estimatedViews": "Conservative estimate based on proof data",
       "hooks": [
-        { "text": "Opening hook 8-14 words that grabs attention", "typeTags": ["curiosity", "story"] }
+        { "text": "Opening hook 8-14 words that stops the scroll", "typeTags": ["curiosity", "story", "shock", "contrarian", "promise"] }
       ],
       "titles": [
-        { "text": "Clickable title option", "styleTags": ["outcome", "specific"], "basedOnVideoId": "proof-video-id-if-inspired-by", "basedOnChannel": "channel name" }
+        { "text": "Clickable title option", "styleTags": ["outcome", "timebound", "contrarian", "specific", "authority", "personal", "challenge"], "basedOnVideoId": "proof-video-id", "basedOnChannel": "channel name" }
       ],
       "thumbnailConcept": {
-        "overlayText": "3-4 WORDS MAX",
-        "composition": "Subject left, text right / close-up face / split comparison",
-        "contrastNote": "Color contrast guidance",
-        "avoid": ["Don't do this", "Don't do that"]
+        "overlayText": "3-4 WORDS MAX (power words)",
+        "composition": "Specific layout: face placement, text placement, imagery",
+        "emotionToConvey": "The feeling viewers should get",
+        "colorScheme": "Specific colors that will pop",
+        "avoid": ["Common mistakes to avoid"]
+      },
+      "scriptOutline": {
+        "hook": "First 5-10 seconds (CRITICAL)",
+        "setup": "Why viewer should care (30 sec)",
+        "mainPoints": ["Key point 1", "Key point 2", "Key point 3"],
+        "payoff": "The satisfying conclusion",
+        "cta": "What action to drive"
       },
       "keywords": [
-        { "text": "keyword", "intent": "search" or "browse" or "suggested", "fit": "Why this keyword works for this channel" }
+        { "text": "keyword", "intent": "search" or "browse" or "suggested", "monthlySearches": "estimate", "competition": "low/medium/high" }
       ],
       "proof": {
         "basedOn": [
@@ -78,60 +108,116 @@ OUTPUT FORMAT: Return ONLY valid JSON matching this structure:
             "thumbnailUrl": "from proof",
             "publishedAt": "from proof",
             "metrics": { "views": number, "viewsPerDay": number },
-            "whyItWorked": ["Reason 1", "Reason 2"],
-            "patternToSteal": ["Pattern to copy"],
-            "remixIdea": "How to make it unique for this channel"
+            "whyItWorked": ["Specific reason 1", "Specific reason 2"],
+            "patternToSteal": ["Exact pattern to copy"],
+            "howToMakeBetter": "How this creator can IMPROVE on it"
           }
         ]
-      },
-      "remixVariants": {
-        "emotional": { "hooks": [...], "titles": [...] },
-        "contrarian": { "hooks": [...], "titles": [...] },
-        "beginner": { "hooks": [...], "titles": [...] }
       }
     }
   ],
   "nicheInsights": {
-    "momentumNow": ["What's trending in this niche right now"],
-    "patternsToCopy": ["Winning patterns from competitors"],
-    "gapsToExploit": ["Opportunities competitors are missing"]
+    "momentumNow": ["Specific trends with velocity data to back them up"],
+    "winningPatterns": ["Exact patterns from top performers with examples"],
+    "contentGaps": ["Specific gaps competitors are missing that this creator could fill"],
+    "avoidThese": ["Topics/formats that are oversaturated or declining"]
   }
 }
 
-RULES:
-1. Generate 8-10 ideas, varied in difficulty (3 easy, 4 medium, 2 stretch)
-2. Each idea must reference 1-3 proof videos that inspired it
-3. Hooks must be punchy, 8-14 words, with type tags: shock, curiosity, contrarian, story, tutorial, promise
-4. Titles must have style tags: outcome, timebound, contrarian, specific, authority, personal, challenge
-5. Generate at least 4 title options per idea
-6. Generate at least 3 hook options per idea
-7. Include remix variants for at least the top 3 ideas
-8. Thumbnail overlay text must be 4 words or less, impactful
-9. Keywords should include mix of search, browse, and suggested intent
-10. Be specific to THIS channel's niche and style`;
+CRITICAL RULES:
+1. Generate EXACTLY 10 unique ideas with this distribution:
+   - 3 "easy" (can film today with minimal prep, based on creator's existing expertise)
+   - 4 "medium" (requires some research/prep but doable this week)  
+   - 2 "stretch" (bigger production but high ceiling)
+   - 1 "shorts" format idea
+2. EVERY idea must reference at least 1 proof video that inspired it
+3. NO two ideas should target the same audience segment or search intent
+4. Hooks must be SPECIFIC and punchy (8-14 words), not generic
+5. Generate 4-5 title options per idea, each with different style
+6. Thumbnail concepts must be ACTIONABLE (specific colors, specific text, specific composition)
+7. Include script outline for top 5 ideas
+8. Be BRUTALLY specific - vague ideas are useless`;
 
-  const proofContext = input.proofVideos.slice(0, 20).map((v, i) => 
-    `${i + 1}. "${v.title}" by ${v.channelTitle} (${formatViews(v.views)} views, ${formatViews(v.viewsPerDay)}/day) [ID: ${v.videoId}]`
-  ).join("\n");
+  // Build rich context about the creator's own videos
+  const userVideosContext = input.topPerformingVideos
+    .slice(0, 8)
+    .map((v, i) => {
+      const daysOld = Math.floor(
+        (Date.now() - new Date(v.publishedAt).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      return `${i + 1}. "${v.title}" - ${formatViews(
+        v.views
+      )} views (${formatViews(v.viewsPerDay)}/day, ${daysOld}d old)${
+        v.tags ? ` [Tags: ${v.tags.split(",").slice(0, 5).join(", ")}]` : ""
+      }`;
+    })
+    .join("\n");
 
-  const userPrompt = `Channel: ${input.channelTitle}
-Date Range: ${input.range === "7d" ? "Last 7 days" : "Last 28 days"}
+  const recentVideosContext = input.recentVideos
+    .slice(0, 6)
+    .map((v, i) => {
+      return `${i + 1}. "${v.title}" - ${formatViews(
+        v.views
+      )} views (${formatViews(v.viewsPerDay)}/day)`;
+    })
+    .join("\n");
 
-CHANNEL'S RECENT VIDEOS:
-${input.recentVideoTitles.slice(0, 8).map((t, i) => `${i + 1}. ${t}`).join("\n")}
+  // Build rich context about competitor proof videos
+  const proofContext = input.proofVideos
+    .sort((a, b) => b.viewsPerDay - a.viewsPerDay) // Sort by velocity
+    .slice(0, 25)
+    .map((v, i) => {
+      const velocityLabel =
+        v.viewsPerDay > 10000
+          ? "🔥 VIRAL"
+          : v.viewsPerDay > 1000
+          ? "📈 HOT"
+          : "✓ Solid";
+      return `${i + 1}. "${v.title}" by ${v.channelTitle}
+   ${formatViews(v.views)} views | ${formatViews(
+        v.viewsPerDay
+      )}/day ${velocityLabel} | [ID: ${v.videoId}]`;
+    })
+    .join("\n\n");
 
-TOP PERFORMING VIDEOS:
-${input.topPerformingTitles.slice(0, 5).map((t, i) => `${i + 1}. ${t}`).join("\n")}
+  const userPrompt = `CREATOR PROFILE
+Channel: ${input.channelTitle}
+Analysis Window: ${input.range === "7d" ? "Last 7 days" : "Last 28 days"}
+Niche Keywords: ${input.nicheKeywords.join(", ")}
 
-NICHE KEYWORDS: ${input.nicheKeywords.join(", ")}
+═══════════════════════════════════════════════════════════
+CREATOR'S TOP PERFORMING VIDEOS (what's working for THEM)
+═══════════════════════════════════════════════════════════
+${userVideosContext || "No performance data yet - focus on competitor patterns"}
 
-PROOF VIDEOS FROM SIMILAR CHANNELS (use these as inspiration and reference):
-${proofContext || "No competitor videos available - generate ideas based on channel content"}
+CREATOR'S RECENT UPLOADS:
+${recentVideosContext || "No recent uploads"}
 
-SIMILAR CHANNELS TRACKED:
-${input.similarChannels.map(c => `- ${c.channelTitle} (${Math.round(c.similarityScore * 100)}% match)`).join("\n")}
+═══════════════════════════════════════════════════════════
+COMPETITOR PROOF VIDEOS (sorted by velocity - what's HOT now)
+═══════════════════════════════════════════════════════════
+${proofContext || "No competitor data - generate ideas based on niche keywords"}
 
-Generate 8-10 video ideas with full structured details, referencing the proof videos where relevant.`;
+═══════════════════════════════════════════════════════════
+SIMILAR CHANNELS IN NICHE
+═══════════════════════════════════════════════════════════
+${input.similarChannels
+  .map(
+    (c) =>
+      `• ${c.channelTitle} (${Math.round(c.similarityScore * 100)}% relevance)`
+  )
+  .join("\n")}
+
+═══════════════════════════════════════════════════════════
+YOUR TASK
+═══════════════════════════════════════════════════════════
+Generate 10 UNIQUE video ideas for ${input.channelTitle} that:
+1. Build on what's already working for them (their top videos)
+2. Capitalize on competitor momentum (high velocity proof videos)
+3. Fill gaps in the niche that others are missing
+4. Are SPECIFIC enough to film TODAY
+
+Each idea should feel like it was custom-made for THIS creator, not generic advice.`;
 
   try {
     const result = await callLLM(
@@ -139,20 +225,48 @@ Generate 8-10 video ideas with full structured details, referencing the proof vi
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      { maxTokens: 4000, temperature: 0.8 }
+      { maxTokens: 8000, temperature: 0.8 } // Increased for 10 detailed ideas
     );
+
+    console.log("[IdeaBoard] LLM response length:", result.content.length);
 
     // Parse JSON from response
     const jsonMatch = result.content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.warn("No JSON found in LLM response, using fallback");
+      console.warn(
+        "[IdeaBoard] No JSON found in LLM response, using fallback. Response:",
+        result.content.slice(0, 500)
+      );
       return createFallbackIdeaBoard(input);
     }
 
-    const parsed = JSON.parse(jsonMatch[0]) as {
+    let parsed: {
       ideas: Idea[];
       nicheInsights: IdeaBoardData["nicheInsights"];
     };
+
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (parseErr) {
+      console.error("[IdeaBoard] JSON parse error:", parseErr);
+      console.error(
+        "[IdeaBoard] Raw JSON attempt:",
+        jsonMatch[0].slice(0, 1000)
+      );
+      return createFallbackIdeaBoard(input);
+    }
+
+    console.log(
+      "[IdeaBoard] Successfully parsed",
+      parsed.ideas?.length ?? 0,
+      "ideas from LLM"
+    );
+
+    // Ensure ideas is an array
+    if (!Array.isArray(parsed.ideas) || parsed.ideas.length === 0) {
+      console.warn("[IdeaBoard] No ideas in parsed response, using fallback");
+      return createFallbackIdeaBoard(input);
+    }
 
     // Enrich ideas with missing proof video data
     const enrichedIdeas = parsed.ideas.map((idea, index) => ({
@@ -160,6 +274,12 @@ Generate 8-10 video ideas with full structured details, referencing the proof vi
       id: idea.id || `idea-${index + 1}`,
       proof: enrichProofData(idea.proof, input.proofVideos),
     }));
+
+    console.log(
+      "[IdeaBoard] Returning",
+      enrichedIdeas.length,
+      "enriched ideas"
+    );
 
     return {
       channelId: input.channelId,
@@ -176,7 +296,11 @@ Generate 8-10 video ideas with full structured details, referencing the proof vi
       similarChannels: input.similarChannels,
     };
   } catch (err) {
-    console.error("IdeaBoard generation failed:", err);
+    console.error("[IdeaBoard] Generation failed:", err);
+    console.error(
+      "[IdeaBoard] Using fallback with 3 ideas. Error details:",
+      err instanceof Error ? err.message : err
+    );
     return createFallbackIdeaBoard(input);
   }
 }
@@ -268,7 +392,7 @@ function enrichProofData(
 
   // Enrich existing proof with full video data
   const proofMap = new Map(proofVideos.map((v) => [v.videoId, v]));
-  
+
   const enriched: ProofVideo[] = proof.basedOn.map((p) => {
     const fullVideo = proofMap.get(p.videoId);
     return {
@@ -295,33 +419,78 @@ function enrichProofData(
  * Create fallback IdeaBoard when LLM fails
  */
 function createFallbackIdeaBoard(input: GenerateIdeaBoardInput): IdeaBoardData {
+  // Generate ideas based on available data
+  const topProof = input.proofVideos.slice(0, 3);
+  const topKeyword = input.nicheKeywords[0] || "content";
+
   const fallbackIdeas: Idea[] = [
     {
       id: "fallback-1",
-      title: "Tutorial or how-to based on your top content",
-      angle: "Step-by-step guide leveraging your expertise",
+      title: `Deep dive tutorial on ${topKeyword}`,
+      angle: "Comprehensive guide based on your proven expertise",
       format: "long",
       difficulty: "easy",
       hooks: [
-        { text: "Most people overcomplicate this. Here's the simple way.", typeTags: ["contrarian", "promise"] },
-        { text: "I've been doing this for years. Here's what actually works.", typeTags: ["story", "promise"] },
+        {
+          text: "Most people overcomplicate this. Here's the simple way.",
+          typeTags: ["contrarian", "promise"],
+        },
+        {
+          text: "After 100+ videos, here's what actually works.",
+          typeTags: ["authority", "promise"],
+        },
+        {
+          text: "Stop making this mistake. Do this instead.",
+          typeTags: ["shock", "tutorial"],
+        },
       ],
       titles: [
-        { text: "The Complete Guide to [Your Niche Topic]", styleTags: ["authority", "specific"] },
-        { text: "How to [Achieve Outcome] in 2024 (Step by Step)", styleTags: ["outcome", "timebound"] },
+        {
+          text: `The Complete ${topKeyword} Guide (Everything You Need)`,
+          styleTags: ["authority", "specific"],
+        },
+        {
+          text: `${topKeyword} Masterclass: From Zero to Pro`,
+          styleTags: ["outcome", "challenge"],
+        },
+        {
+          text: `I Tested Every ${topKeyword} Method. Here's What Works.`,
+          styleTags: ["personal", "authority"],
+        },
+        {
+          text: `${topKeyword} in 2024: The Only Guide You Need`,
+          styleTags: ["timebound", "specific"],
+        },
       ],
       thumbnailConcept: {
         overlayText: "FULL GUIDE",
-        composition: "Face with pointing gesture, text on right",
-        contrastNote: "High contrast with bold colors",
-        avoid: ["Cluttered background", "Too much text"],
+        composition: "Face with pointing gesture on left, bold text on right",
+        emotionToConvey: "Authority and expertise",
+        colorScheme: "High contrast - dark background with bright accent",
+        avoid: ["Cluttered background", "More than 4 words", "Small text"],
       },
       keywords: [
-        { text: input.nicheKeywords[0] || "tutorial", intent: "search", fit: "High search intent" },
-        { text: "how to", intent: "search", fit: "Evergreen query modifier" },
+        {
+          text: topKeyword,
+          intent: "search",
+          monthlySearches: "10K+",
+          competition: "medium",
+        },
+        {
+          text: `${topKeyword} tutorial`,
+          intent: "search",
+          monthlySearches: "5K+",
+          competition: "medium",
+        },
+        {
+          text: `how to ${topKeyword}`,
+          intent: "search",
+          monthlySearches: "8K+",
+          competition: "low",
+        },
       ],
       proof: {
-        basedOn: input.proofVideos.slice(0, 2).map((v) => ({
+        basedOn: topProof.map((v) => ({
           videoId: v.videoId,
           title: v.title,
           channelId: v.channelId,
@@ -329,11 +498,100 @@ function createFallbackIdeaBoard(input: GenerateIdeaBoardInput): IdeaBoardData {
           thumbnailUrl: v.thumbnailUrl ?? "",
           publishedAt: v.publishedAt,
           metrics: { views: v.views, viewsPerDay: v.viewsPerDay },
-          whyItWorked: ["Clear value proposition", "Searchable topic"],
-          patternToSteal: ["Thumbnail shows end result"],
-          remixIdea: "Apply your unique perspective",
+          whyItWorked: [
+            "Clear value proposition",
+            "Addresses common pain point",
+          ],
+          patternToSteal: ["Structured format", "Strong thumbnail"],
+          howToMakeBetter: "Add your unique perspective and real examples",
         })),
       },
+    },
+    {
+      id: "fallback-2",
+      title: `Reaction/analysis of trending ${topKeyword} content`,
+      angle: "Commentary on what's working in your niche right now",
+      format: "long",
+      difficulty: "easy",
+      hooks: [
+        {
+          text: "This video is blowing up. Here's why.",
+          typeTags: ["curiosity", "story"],
+        },
+        {
+          text: "Everyone's talking about this. Let me explain.",
+          typeTags: ["curiosity", "authority"],
+        },
+      ],
+      titles: [
+        {
+          text: `Why This ${topKeyword} Video Got 1M Views`,
+          styleTags: ["curiosity", "specific"],
+        },
+        {
+          text: `Reacting to the Most Viral ${topKeyword} Content`,
+          styleTags: ["personal", "specific"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "WHY VIRAL?",
+        composition: "Split screen - your face reacting + competitor thumbnail",
+        emotionToConvey: "Curiosity and insight",
+        colorScheme: "Match competitor's colors for recognition",
+        avoid: ["Looking bored", "Too busy composition"],
+      },
+      keywords: [
+        {
+          text: `${topKeyword} reaction`,
+          intent: "browse",
+          monthlySearches: "2K+",
+          competition: "low",
+        },
+      ],
+      proof: { basedOn: [] },
+    },
+    {
+      id: "fallback-3",
+      title: `${topKeyword} mistakes beginners make`,
+      angle: "Help newcomers avoid common pitfalls",
+      format: "long",
+      difficulty: "medium",
+      hooks: [
+        {
+          text: "I wasted months on this mistake. Don't be like me.",
+          typeTags: ["story", "promise"],
+        },
+        {
+          text: "90% of beginners get this wrong. Here's the fix.",
+          typeTags: ["shock", "promise"],
+        },
+      ],
+      titles: [
+        {
+          text: `7 ${topKeyword} Mistakes That Are Killing Your Results`,
+          styleTags: ["specific", "outcome"],
+        },
+        {
+          text: `Stop Doing This! ${topKeyword} Mistakes to Avoid`,
+          styleTags: ["contrarian", "specific"],
+        },
+      ],
+      thumbnailConcept: {
+        overlayText: "STOP THIS",
+        composition: "Face with concerned expression, X mark graphic",
+        emotionToConvey: "Warning and helpfulness",
+        colorScheme: "Red accent for urgency",
+        avoid: ["Looking angry", "Negative imagery"],
+      },
+      keywords: [
+        {
+          text: `${topKeyword} mistakes`,
+          intent: "search",
+          monthlySearches: "3K+",
+          competition: "low",
+        },
+      ],
+      proof: { basedOn: [] },
     },
   ];
 
@@ -345,9 +603,17 @@ function createFallbackIdeaBoard(input: GenerateIdeaBoardInput): IdeaBoardData {
     cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     ideas: fallbackIdeas,
     nicheInsights: {
-      momentumNow: ["Tutorial content performing well in this niche"],
-      patternsToCopy: ["Numbered lists in titles drive clicks"],
-      gapsToExploit: ["More beginner-friendly content needed"],
+      momentumNow: [
+        `${topKeyword} tutorials are gaining traction`,
+        "Reaction content performing well",
+      ],
+      winningPatterns: [
+        "Numbered lists in titles",
+        "Face + text thumbnails",
+        "Problem-solution structure",
+      ],
+      contentGaps: ["Beginner-friendly content", "Behind-the-scenes content"],
+      avoidThese: ["Overly generic topics", "Clickbait without payoff"],
     },
     similarChannels: input.similarChannels,
   };
@@ -358,4 +624,3 @@ function formatViews(num: number): string {
   if (num >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
   return num.toString();
 }
-

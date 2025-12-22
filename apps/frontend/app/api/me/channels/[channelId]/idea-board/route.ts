@@ -187,8 +187,12 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { channelId: string } }
 ) {
+  console.log("[IdeaBoard POST] Starting generation...");
+  console.log("[IdeaBoard POST] isDemoMode:", isDemoMode(), "isYouTubeMockMode:", isYouTubeMockMode());
+  
   // Return demo data if demo mode is enabled
   if (isDemoMode() && !isYouTubeMockMode()) {
+    console.log("[IdeaBoard POST] Returning demo fixture data");
     const demoData = getDemoData("idea-board") as IdeaBoardData;
     return Response.json({ ...demoData, demo: true });
   }
@@ -368,14 +372,36 @@ export async function POST(
       }
     }
 
-    // Prepare input for LLM
-    const recentVideoTitles = channel.Video.map((v) => v.title ?? "Untitled");
+    // Prepare rich input for LLM
+    const recentVideos = channel.Video.slice(0, 10).map((v) => {
+      const views = v.VideoMetrics?.views ?? 0;
+      const daysOld = Math.max(1, Math.floor((Date.now() - new Date(v.publishedAt ?? Date.now()).getTime()) / (1000 * 60 * 60 * 24)));
+      return {
+        title: v.title ?? "Untitled",
+        views,
+        viewsPerDay: Math.round(views / daysOld),
+        publishedAt: v.publishedAt?.toISOString() ?? new Date().toISOString(),
+        tags: v.tags ?? undefined,
+        description: v.description?.slice(0, 200) ?? undefined,
+      };
+    });
+
     const topPerformingVideos = [...channel.Video]
-      .filter((v) => v.VideoMetrics)
-      .sort(
-        (a, b) => (b.VideoMetrics?.views ?? 0) - (a.VideoMetrics?.views ?? 0)
-      )
-      .slice(0, 5);
+      .filter((v) => v.VideoMetrics && (v.VideoMetrics.views ?? 0) > 0)
+      .sort((a, b) => (b.VideoMetrics?.views ?? 0) - (a.VideoMetrics?.views ?? 0))
+      .slice(0, 8)
+      .map((v) => {
+        const views = v.VideoMetrics?.views ?? 0;
+        const daysOld = Math.max(1, Math.floor((Date.now() - new Date(v.publishedAt ?? Date.now()).getTime()) / (1000 * 60 * 60 * 24)));
+        return {
+          title: v.title ?? "Untitled",
+          views,
+          viewsPerDay: Math.round(views / daysOld),
+          publishedAt: v.publishedAt?.toISOString() ?? new Date().toISOString(),
+          tags: v.tags ?? undefined,
+          description: v.description?.slice(0, 200) ?? undefined,
+        };
+      });
 
     const proofVideos = similarChannels.flatMap((sc) =>
       sc.recentWinners.map((v) => ({
@@ -387,17 +413,22 @@ export async function POST(
 
     let ideaBoardData: IdeaBoardData;
 
+    console.log("[IdeaBoard POST] Mode:", mode, "Keywords:", keywords.slice(0, 5), "ProofVideos:", proofVideos.length);
+
     if (mode === "more" && existingData) {
       // Generate more ideas and append
+      console.log("[IdeaBoard POST] Generating MORE ideas, existing:", existingData.ideas.length);
       const existingTitles = existingData.ideas.map((i) => i.title);
 
       const newIdeas = await generateMoreIdeas({
         channelTitle: channel.title ?? "Your Channel",
         existingIdeas: existingTitles,
         nicheKeywords: keywords,
-        proofVideos: proofVideos.slice(0, 10),
+        proofVideos: proofVideos.slice(0, 15),
         count: 5,
       });
+
+      console.log("[IdeaBoard POST] Generated", newIdeas.length, "new ideas");
 
       ideaBoardData = {
         ...existingData,
@@ -405,15 +436,14 @@ export async function POST(
         ideas: [...existingData.ideas, ...newIdeas],
       };
     } else {
-      // Generate new IdeaBoard
+      // Generate new IdeaBoard with rich context
+      console.log("[IdeaBoard POST] Generating NEW IdeaBoard via LLM...");
       ideaBoardData = await generateIdeaBoardPlan({
         channelId,
         channelTitle: channel.title ?? "Your Channel",
         range,
-        recentVideoTitles,
-        topPerformingTitles: topPerformingVideos.map(
-          (v) => v.title ?? "Untitled"
-        ),
+        recentVideos,
+        topPerformingVideos,
         nicheKeywords: keywords,
         proofVideos,
         similarChannels: similarChannels.map((sc) => ({
@@ -423,6 +453,7 @@ export async function POST(
           similarityScore: sc.similarityScore,
         })),
       });
+      console.log("[IdeaBoard POST] Generated", ideaBoardData.ideas.length, "ideas");
     }
 
     // Save to database

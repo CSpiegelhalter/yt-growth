@@ -360,3 +360,27 @@ model OwnedVideoRemixCache {
   @@index([cachedUntil], map: "idx_owned_remix_cache_cached")
   @@index([userId, channelId, videoId], map: "idx_owned_remix_cache_video")
 }
+
+// ============================================
+// SAVED IDEAS - User's bookmarked video ideas
+// ============================================
+
+model SavedIdea {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     Int
+  channelId  Int? // Optional: which channel this idea is for
+  ideaId     String   @db.VarChar(64) // Original idea ID from IdeaBoard
+  title      String   @db.VarChar(500)
+  angle      String?  @db.Text
+  format     String   @db.VarChar(16) // "long" or "shorts"
+  difficulty String   @db.VarChar(16) // "easy", "medium", "stretch"
+  ideaJson   Json // Full idea object for rendering
+  notes      String?  @db.Text // User's personal notes
+  status     String   @default("saved") @db.VarChar(32) // saved, in_progress, filmed, published
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([userId, ideaId], map: "uq_saved_idea_user_idea")
+  @@index([userId, status], map: "idx_saved_idea_user_status")
+  @@index([userId, createdAt(sort: Desc)], map: "idx_saved_idea_user_created")
+}

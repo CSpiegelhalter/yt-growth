@@ -245,7 +245,7 @@ export async function searchCompetitorVideos(
   const normalizedQuery = query.trim().toLowerCase();
   const now = new Date();
   const cacheTtlMs = 24 * 60 * 60 * 1000;
-  if (process.env.YT_MOCK_MODE !== "1" && normalizedQuery) {
+  if (normalizedQuery) {
     const cacheModel = (prisma as any).youTubeSearchCache;
     const cached = cacheModel?.findUnique
       ? await cacheModel.findUnique({
@@ -291,7 +291,7 @@ export async function searchCompetitorVideos(
   }));
 
   // Write cache best-effort (ignore if migrations not applied yet)
-  if (process.env.YT_MOCK_MODE !== "1" && normalizedQuery) {
+  if (normalizedQuery) {
     const cachedUntil = new Date(now.getTime() + cacheTtlMs);
     try {
       const cacheModel = (prisma as any).youTubeSearchCache;
@@ -334,7 +334,7 @@ export async function searchSimilarChannels(
   const cacheTtlMs = 24 * 60 * 60 * 1000;
 
   // Cache expensive search.list calls (100 units) for 24h.
-  if (process.env.YT_MOCK_MODE !== "1" && normalizedQuery) {
+  if (normalizedQuery) {
     const cacheModel = (prisma as any).youTubeSearchCache;
     const cached = cacheModel?.findUnique
       ? await cacheModel.findUnique({
@@ -380,7 +380,7 @@ export async function searchSimilarChannels(
       null,
   }));
 
-  if (process.env.YT_MOCK_MODE !== "1" && normalizedQuery) {
+  if (normalizedQuery) {
     const cachedUntil = new Date(now.getTime() + cacheTtlMs);
     try {
       const cacheModel = (prisma as any).youTubeSearchCache;
@@ -416,6 +416,29 @@ export async function fetchRecentChannelVideos(
   // TEST_MODE: Return fixture data
   if (USE_FIXTURES) {
     return getTestModeRecentVideos(channelId);
+  }
+
+  // Cache per-channel video fetches for 24h to avoid repeated API calls.
+  // Normalize publishedAfter to date only (YYYY-MM-DD) for stable cache keys.
+  const publishedAfterDate = publishedAfter.split("T")[0];
+  const cacheKey = `${channelId}:${publishedAfterDate}`;
+  const now = new Date();
+  const cacheTtlMs = 24 * 60 * 60 * 1000;
+
+  const cacheModel = (prisma as any).youTubeSearchCache;
+  if (cacheModel?.findUnique) {
+    try {
+      const cached = await cacheModel.findUnique({
+        where: { kind_query: { kind: "channelVideos", query: cacheKey } },
+      });
+      if (cached && cached.cachedUntil > now) {
+        const items =
+          (cached.responseJson as unknown as RecentVideoResult[]) ?? [];
+        return items.slice(0, maxResults);
+      }
+    } catch {
+      // ignore cache read errors
+    }
   }
 
   // IMPORTANT: Do NOT use search.list here (100 quota units/call).
@@ -473,7 +496,7 @@ export async function fetchRecentChannelVideos(
       statsMap.set(item.id, parseInt(item.statistics.viewCount ?? "0", 10));
     });
 
-    return (searchData.items ?? []).map((i) => {
+    const fallbackResult = (searchData.items ?? []).map((i) => {
       const views = statsMap.get(i.id.videoId) ?? 0;
       const publishedAt = i.snippet.publishedAt;
       const daysSince = Math.max(
@@ -495,6 +518,30 @@ export async function fetchRecentChannelVideos(
         viewsPerDay: Math.round(views / daysSince),
       };
     });
+
+    // Write fallback result to cache
+    if (cacheModel?.upsert) {
+      const cachedUntil = new Date(now.getTime() + cacheTtlMs);
+      try {
+        await cacheModel.upsert({
+          where: { kind_query: { kind: "channelVideos", query: cacheKey } },
+          create: {
+            kind: "channelVideos",
+            query: cacheKey,
+            responseJson: fallbackResult as unknown as object,
+            cachedUntil,
+          },
+          update: {
+            responseJson: fallbackResult as unknown as object,
+            cachedUntil,
+          },
+        });
+      } catch {
+        // ignore
+      }
+    }
+
+    return fallbackResult;
   }
 
   // 2) Read uploads pages (reverse-chronological). Paginate cheaply until we either:
@@ -559,7 +606,27 @@ export async function fetchRecentChannelVideos(
     if (!pageToken) break;
   }
 
-  if (candidates.length === 0) return [];
+  if (candidates.length === 0) {
+    // Cache empty result to avoid repeated calls for channels with no recent videos
+    if (cacheModel?.upsert) {
+      const cachedUntil = new Date(now.getTime() + cacheTtlMs);
+      try {
+        await cacheModel.upsert({
+          where: { kind_query: { kind: "channelVideos", query: cacheKey } },
+          create: {
+            kind: "channelVideos",
+            query: cacheKey,
+            responseJson: [],
+            cachedUntil,
+          },
+          update: { responseJson: [], cachedUntil },
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+    return [];
+  }
 
   // 3) Fetch view counts for candidates (single videos.list call, up to 50 IDs).
   const ids = candidates.slice(0, 50).map((v) => v.videoId);
@@ -595,7 +662,28 @@ export async function fetchRecentChannelVideos(
   // so the product value stays the same.
   withViews.sort((a, b) => b.views - a.views);
 
-  return withViews.slice(0, maxResults);
+  const result = withViews.slice(0, maxResults);
+
+  // Write to cache (best-effort)
+  if (cacheModel?.upsert) {
+    const cachedUntil = new Date(now.getTime() + cacheTtlMs);
+    try {
+      await cacheModel.upsert({
+        where: { kind_query: { kind: "channelVideos", query: cacheKey } },
+        create: {
+          kind: "channelVideos",
+          query: cacheKey,
+          responseJson: result as unknown as object,
+          cachedUntil,
+        },
+        update: { responseJson: result as unknown as object, cachedUntil },
+      });
+    } catch {
+      // ignore cache write errors
+    }
+  }
+
+  return result;
 }
 
 /**

@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { Providers } from "@/components/Providers";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -59,9 +60,10 @@ export default async function RootLayout({
       </head>
       <body>
         <Providers>
-          <div className="container">
+          <div className="container" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
             <Header session={session} />
-            {children}
+            <main style={{ flex: 1 }}>{children}</main>
+            <Footer />
           </div>
         </Providers>
       </body>
