@@ -11,6 +11,7 @@ import type {
   ProofVideo,
 } from "@/types/api";
 import { copyToClipboard } from "@/components/ui/Toast";
+import { formatCompact } from "@/lib/format";
 
 type Props = {
   data: IdeaBoardData | null;
@@ -1064,12 +1065,6 @@ function NicheInsightsBar({
 /* ================================================
    HELPERS
    ================================================ */
-function formatCompact(num: number): string {
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
-  return num.toString();
-}
-
 function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();

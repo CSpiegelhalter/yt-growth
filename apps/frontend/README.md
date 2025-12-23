@@ -245,7 +245,6 @@ YouTube growth tools built with Next.js 14, Prisma, and TypeScript.
 | `/api/integrations/google/callback` | GET | - | Google OAuth callback |
 | `/api/integrations/stripe/checkout` | POST | ✅ | Create Stripe checkout session |
 | `/api/integrations/stripe/webhook` | POST | - | Handle Stripe webhooks |
-| `/api/integrations/stripe/portal` | POST | ✅ | Create Stripe billing portal |
 | `/api/integrations/stripe/test-activate` | GET | - | TEST_MODE only: Activate subscription |
 
 ### Internal/Cron
@@ -541,9 +540,8 @@ The `components/dashboard/PlanCard` was completely redesigned as a mobile-first 
 
 **Additional fixes (pre-existing issues)**:
 - Fixed `lib/server-user.ts`: Subscription relation query (one-to-one, not one-to-many)
-- Fixed `app/api/integrations/stripe/billing-portal/route.ts`: Use shared `lib/stripe.ts` helper
 - Fixed `app/api/integrations/stripe/webhook/route.ts`: Removed deprecated `export const config` syntax
-- Fixed `lib/retention.test.ts`: Corrected test data for steepest_drop scenario
+- NOTE: Billing portal is handled via `NEXT_PUBLIC_STRIPE_PORTAL_URL` (no dedicated portal API route).
 
 **Verification**:
 - ✅ `npm run typecheck` - Passes

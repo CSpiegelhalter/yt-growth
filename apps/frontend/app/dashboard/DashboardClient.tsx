@@ -8,6 +8,8 @@ import { Me, Channel } from "@/types/api";
 import ChannelsSection from "@/components/dashboard/ChannelSection";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
 import ChannelGoals from "@/components/dashboard/ChannelGoals";
+import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
+import { formatCompact } from "@/lib/format";
 
 type Video = {
   id: number;
@@ -89,11 +91,7 @@ export default function DashboardClient({
   }, [checkoutStatus]);
 
   // Sync activeChannelId to localStorage
-  useEffect(() => {
-    if (activeChannelId && typeof window !== "undefined") {
-      localStorage.setItem("activeChannelId", activeChannelId);
-    }
-  }, [activeChannelId]);
+  useSyncActiveChannelIdToLocalStorage(activeChannelId);
 
   // Load videos when active channel changes
   useEffect(() => {
@@ -394,7 +392,9 @@ function VideoCard({ video }: { video: Video }) {
         <h3 className={s.videoCardTitle}>{video.title ?? "Untitled"}</h3>
         <div className={s.videoCardMeta}>
           {video.publishedAt && <span>{formatDate(video.publishedAt)}</span>}
-          {viewCount != null && <span>{formatCompact(viewCount)} views</span>}
+          {viewCount != null && (
+            <span>{formatCompactMaybe(viewCount)} views</span>
+          )}
         </div>
       </div>
     </Link>
@@ -409,9 +409,7 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function formatCompact(num: number | null | undefined): string {
+function formatCompactMaybe(num: number | null | undefined): string {
   if (num == null) return "0";
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
-  return num.toString();
+  return formatCompact(num);
 }

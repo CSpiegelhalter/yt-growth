@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import s from "./style.module.css";
 import { Me, Channel, IdeaBoardData } from "@/types/api";
 import IdeaBoard from "@/components/dashboard/IdeaBoard";
+import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 
 type Props = {
   initialMe: Me;
@@ -40,12 +41,7 @@ export default function IdeasClient({
     [initialMe]
   );
 
-  // Sync activeChannelId to localStorage
-  useEffect(() => {
-    if (activeChannelId && typeof window !== "undefined") {
-      localStorage.setItem("activeChannelId", activeChannelId);
-    }
-  }, [activeChannelId]);
+  useSyncActiveChannelIdToLocalStorage(activeChannelId);
 
   // Load idea board when channel changes
   useEffect(() => {

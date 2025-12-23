@@ -88,7 +88,7 @@ This document verifies each requirement from the MVP specification.
 ### ✅ Billing Portal
 - **Status**: Verified working (TEST_MODE returns profile URL)
 - **How to verify**: Click "Manage Billing" in profile
-- **Implementation**: `app/api/integrations/stripe/portal/route.ts`
+- **Implementation**: `components/dashboard/BillingCTA/index.tsx` (uses `NEXT_PUBLIC_STRIPE_PORTAL_URL`)
 
 ### ✅ Server-side Gating Enforcement
 - **Status**: Verified working

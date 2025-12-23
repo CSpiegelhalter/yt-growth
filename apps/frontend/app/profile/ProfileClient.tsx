@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Me, Channel } from "@/types/api";
 import AccountStats from "@/components/dashboard/AccountStats";
 import BillingCTA from "@/components/dashboard/BillingCTA";
@@ -10,53 +10,18 @@ import styles from "./style.module.css";
 /**
  * ProfileClient - Interactive client component for profile management
  */
-export default function ProfileClient() {
-  const [me, setMe] = useState<Me | null>(null);
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [err, setErr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function ProfileClient({
+  initialMe,
+  initialChannels,
+}: {
+  initialMe: Me;
+  initialChannels: Channel[];
+}) {
+  const [me] = useState<Me>(initialMe);
+  const [channels] = useState<Channel[]>(initialChannels);
+  const [err] = useState<string | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setErr(null);
-      try {
-        const [mRes, cRes] = await Promise.all([
-          fetch("/api/me", { cache: "no-store" }),
-          fetch("/api/me/channels", { cache: "no-store" }),
-        ]);
-        if (!mRes.ok) throw new Error("Failed to load /api/me");
-        if (!cRes.ok) throw new Error("Failed to load /api/me/channels");
-        const [m, c] = await Promise.all([mRes.json(), cRes.json()]);
-        setMe(m);
-        setChannels(c);
-      } catch (e: unknown) {
-        setErr(e instanceof Error ? e.message : "Failed to load profile");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
-
-  const isSubscribed = me?.subscription?.isActive ?? false;
-
-  if (loading) {
-    return (
-      <main className={styles.page}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Profile</h1>
-          <p className={styles.subtitle}>
-            Manage your account and subscription
-          </p>
-        </div>
-        <div className={styles.loadingState}>
-          <div className={styles.spinner} />
-          <span>Loading profile...</span>
-        </div>
-      </main>
-    );
-  }
+  const isSubscribed = me.subscription?.isActive ?? false;
 
   return (
     <main className={styles.page}>

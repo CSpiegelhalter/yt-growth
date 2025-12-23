@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import s from "./style.module.css";
+import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
+import { formatCompact } from "@/lib/format";
 import type {
   Me,
   Channel,
@@ -52,12 +54,7 @@ export default function CompetitorsClient({
     [initialMe]
   );
 
-  // Sync activeChannelId to localStorage
-  useEffect(() => {
-    if (activeChannelId && typeof window !== "undefined") {
-      localStorage.setItem("activeChannelId", activeChannelId);
-    }
-  }, [activeChannelId]);
+  useSyncActiveChannelIdToLocalStorage(activeChannelId);
 
   // Load competitor feed when channel, range, or sort changes
   useEffect(() => {
@@ -413,12 +410,6 @@ function getSortDescription(sort: SortOption): string {
     default:
       return "";
   }
-}
-
-function formatCompact(num: number): string {
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
-  return num.toString();
 }
 
 function formatDate(dateStr: string): string {

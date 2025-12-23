@@ -6,6 +6,7 @@ import Link from "next/link";
 import s from "./style.module.css";
 import type { CompetitorVideoAnalysis, CompetitorVideo } from "@/types/api";
 import { copyToClipboard } from "@/components/ui/Toast";
+import { formatCompact } from "@/lib/format";
 
 type Props = {
   videoId: string;
@@ -793,12 +794,6 @@ function MetricCard({
 }
 
 /* ---------- Helpers ---------- */
-function formatCompact(num: number): string {
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
-  return num.toLocaleString();
-}
-
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", {
     month: "short",

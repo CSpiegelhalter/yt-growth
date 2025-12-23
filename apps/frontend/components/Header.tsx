@@ -13,16 +13,12 @@ type Channel = {
   thumbnailUrl: string | null;
 };
 
-type HeaderProps = {
-  session?: unknown; // Legacy prop, no longer used
-};
-
 /**
  * Site header with auth-aware navigation and channel selector.
  * Mobile-first design with dropdown menu for logged-in users.
  * Uses useSession() for reactive auth state updates.
  */
-export function Header(_props: HeaderProps) {
+export function Header() {
   const { data: session, status } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [channelDropdownOpen, setChannelDropdownOpen] = useState(false);
@@ -119,14 +115,11 @@ export function Header(_props: HeaderProps) {
     localStorage.setItem("activeChannelId", channelId);
     setChannelDropdownOpen(false);
 
-    // If on a channel-specific page, update the URL
-    if (
-      pathname.includes("/audit/") ||
-      pathname.includes("/ideas") ||
-      pathname.includes("/converters") ||
-      pathname.includes("/competitors")
-    ) {
-      router.push(`${pathname}?channelId=${channelId}`);
+    // If on a channel-scoped page, update the URL (so server bootstrap + page state update).
+    if (isChannelScopedPath(pathname)) {
+      const next = new URLSearchParams(searchParams.toString());
+      next.set("channelId", channelId);
+      router.push(`${pathname}?${next.toString()}`);
     }
   };
 
@@ -520,4 +513,15 @@ function DropdownIcon({ type }: { type: IconType }) {
     default:
       return null;
   }
+}
+
+function isChannelScopedPath(pathname: string): boolean {
+  // Pages where data is scoped to the "active channel" and should respond to channel changes.
+  if (pathname === "/dashboard") return true;
+  if (pathname === "/ideas") return true;
+  if (pathname === "/converters") return true;
+  if (pathname === "/competitors") return true;
+  if (pathname.startsWith("/video/")) return true;
+  if (pathname.startsWith("/competitors/video/")) return true;
+  return false;
 }

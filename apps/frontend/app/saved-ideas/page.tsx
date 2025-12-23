@@ -11,7 +11,7 @@ export default async function SavedIdeasPage() {
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/auth/signin?callbackUrl=/saved-ideas");
+    redirect("/auth/login?callbackUrl=/saved-ideas");
   }
 
   return <SavedIdeasClient />;

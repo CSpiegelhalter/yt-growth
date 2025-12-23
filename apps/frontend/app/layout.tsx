@@ -1,8 +1,7 @@
+import { Suspense } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Providers } from "@/components/Providers";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import "@/app/globals.css";
 import type { Metadata } from "next";
 
@@ -49,8 +48,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-
   return (
     <html lang="en">
       <head>
@@ -61,7 +58,9 @@ export default async function RootLayout({
       <body>
         <Providers>
           <div className="container" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-            <Header session={session} />
+            <Suspense fallback={null}>
+              <Header />
+            </Suspense>
             <main style={{ flex: 1 }}>{children}</main>
             <Footer />
           </div>

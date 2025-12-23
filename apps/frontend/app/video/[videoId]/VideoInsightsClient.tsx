@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import s from "./style.module.css";
 import type { VideoInsightsResponse } from "@/types/api";
+import { formatCompactRounded as formatCompact } from "@/lib/format";
 
 type Props = {
   videoId: string;
@@ -33,16 +34,6 @@ export default function VideoInsightsClient({
     initialInsights
   );
   const [loading, setLoading] = useState(!initialInsights);
-  const [extraRemixes, setExtraRemixes] = useState<
-    Array<{
-      id: string;
-      title: string;
-      hook: string;
-      keywords: string[];
-      isNew?: boolean;
-    }>
-  >([]);
-  const [generatingRemixes, setGeneratingRemixes] = useState(false);
 
   const fetchInsights = useCallback(async () => {
     setLoading(true);
@@ -63,9 +54,6 @@ export default function VideoInsightsClient({
   }, [channelId, videoId]);
 
   useEffect(() => {
-    setExtraRemixes([]);
-    setGeneratingRemixes(false);
-
     if (initialInsights) {
       setInsights(initialInsights);
       setLoading(false);
@@ -95,11 +83,11 @@ export default function VideoInsightsClient({
           ← {backLink.label}
         </Link>
         <div className={s.errorState}>
-          <h2 className={s.errorTitle}>Couldn't load insights</h2>
+          <h2 className={s.errorTitle}>Couldn&apos;t load insights</h2>
           <p className={s.errorDesc}>
             {!channelId
               ? "Please select a channel to view video insights."
-              : "We couldn't analyze this video. Try again later."}
+              : "We couldn&apos;t analyze this video. Try again later."}
           </p>
           <button onClick={() => router.back()} className={s.backBtn}>
             Go Back
@@ -110,69 +98,12 @@ export default function VideoInsightsClient({
   }
 
   const { video, derived, llmInsights } = insights;
-  const baseRemixes = llmInsights?.remixIdeas ?? [];
-  const remixItems = [
-    ...baseRemixes.map((r) => ({
-      id: `base:${r.title}:${r.hook}`,
-      title: r.title,
-      hook: r.hook,
-      keywords: r.keywords ?? [],
-      isNew: false,
-    })),
-    ...extraRemixes,
-  ];
-
-  const handleGenerateMoreRemixes = async () => {
-    if (!channelId) return;
-    setGeneratingRemixes(true);
-    try {
-      const res = await fetch(
-        `/api/me/channels/${channelId}/videos/${videoId}/remixes`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            range: "28d",
-            seed: {
-              title: video.title,
-              tags: video.tags ?? [],
-              currentRemixTitles: remixItems.map((r) => r.title),
-              currentHooks: remixItems.map((r) => r.hook),
-            },
-          }),
-        }
-      );
-
-      if (!res.ok) return;
-
-      const data = (await res.json()) as {
-        remixIdeas: Array<{
-          title: string;
-          hook: string;
-          keywords: string[];
-        }>;
-      };
-      const now = Date.now();
-      const appended = (data.remixIdeas ?? []).map((r, idx) => ({
-        id: `new:${now}:${idx}:${r.title}`,
-        title: r.title,
-        hook: r.hook,
-        keywords: r.keywords ?? [],
-        isNew: true,
-      }));
-
-      setExtraRemixes((prev) => [...prev, ...appended]);
-      setTimeout(() => {
-        setExtraRemixes((prev) =>
-          prev.map((r) => (r.isNew ? { ...r, isNew: false } : r))
-        );
-      }, 2500);
-    } catch (err) {
-      console.error("Failed to generate remixes:", err);
-    } finally {
-      setGeneratingRemixes(false);
-    }
-  };
+  const remixItems = (llmInsights?.remixIdeas ?? []).map((r) => ({
+    id: `base:${r.title}:${r.hook}`,
+    title: r.title,
+    hook: r.hook,
+    keywords: r.keywords ?? [],
+  }));
 
   // Calculate performance indicators
   const avgViewed = insights.analytics.totals.averageViewPercentage ?? 0;
@@ -326,7 +257,7 @@ export default function VideoInsightsClient({
             <div className={s.winsCol}>
               <h3 className={s.colTitle}>
                 <span className={s.winDot} />
-                What's Working
+                What&apos;s Working
               </h3>
               <div className={s.colCards}>
                 {llmInsights.wins.map((win, i) => (
@@ -403,7 +334,7 @@ export default function VideoInsightsClient({
                     {llmInsights.titleAnalysis.score}/10
                   </span>
                 </div>
-                <p className={s.currentValue}>"{video.title}"</p>
+                <p className={s.currentValue}>&quot;{video.title}&quot;</p>
 
                 {llmInsights.titleAnalysis.strengths?.length > 0 && (
                   <div className={s.feedbackGroup}>
@@ -474,7 +405,9 @@ export default function VideoInsightsClient({
       {llmInsights?.actions && llmInsights.actions.length > 0 && (
         <section className={s.actions}>
           <h2 className={s.sectionTitle}>What To Do Next</h2>
-          <p className={s.sectionDesc}>Prioritized actions based on this video's data</p>
+          <p className={s.sectionDesc}>
+            Prioritized actions based on this video&apos;s data
+          </p>
 
           <div className={s.actionsList}>
             {llmInsights.actions.slice(0, 5).map((action, i) => (
@@ -527,9 +460,8 @@ export default function VideoInsightsClient({
           <div className={s.remixGrid}>
             {remixItems.slice(0, 6).map((remix) => (
               <div key={remix.id} className={s.remixCard}>
-                {remix.isNew && <span className={s.newBadge}>New</span>}
                 <h4 className={s.remixTitle}>{remix.title}</h4>
-                <p className={s.remixHook}>"{remix.hook}"</p>
+                <p className={s.remixHook}>&quot;{remix.hook}&quot;</p>
                 <div className={s.remixActions}>
                   <CopyButton text={remix.title} label="Copy title" />
                   <CopyButton text={remix.hook} label="Copy hook" />
@@ -537,16 +469,6 @@ export default function VideoInsightsClient({
               </div>
             ))}
           </div>
-
-          {channelId && (
-            <button
-              className={s.moreRemixesBtn}
-              onClick={handleGenerateMoreRemixes}
-              disabled={generatingRemixes}
-            >
-              {generatingRemixes ? "Generating..." : "Generate More Ideas"}
-            </button>
-          )}
         </section>
       )}
 
@@ -632,8 +554,4 @@ function formatDuration(seconds: number): string {
   return `${secs}s`;
 }
 
-function formatCompact(num: number): string {
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
-  return num.toFixed(0);
-}
+// formatCompact is imported from `@/lib/format` to keep formatting consistent.
