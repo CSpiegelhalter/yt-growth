@@ -21,6 +21,7 @@ type GoogleAccount = {
 const CORE_METRICS = [
   "views",
   "likes",
+  "dislikes",
   "comments",
   "shares",
   "subscribersGained",
@@ -32,7 +33,16 @@ const CORE_METRICS = [
   "videosRemovedFromPlaylists",
 ];
 
-const ENGAGEMENT_METRICS = ["engagedViews"];
+const ENGAGEMENT_METRICS = [
+  "engagedViews",
+  "redViews", // YouTube Premium views
+  "cardClicks",
+  "cardImpressions",
+  "cardClickRate",
+  "annotationClicks",
+  "annotationImpressions",
+  "annotationClickThroughRate",
+];
 
 const MONETIZATION_METRICS = [
   "estimatedRevenue",
@@ -49,6 +59,7 @@ export type DailyAnalyticsRow = {
   views: number;
   engagedViews: number | null;
   likes: number | null;
+  dislikes: number | null;
   comments: number | null;
   shares: number | null;
   estimatedMinutesWatched: number | null;
@@ -58,6 +69,16 @@ export type DailyAnalyticsRow = {
   subscribersLost: number | null;
   videosAddedToPlaylists: number | null;
   videosRemovedFromPlaylists: number | null;
+  // YouTube Premium metrics
+  redViews: number | null;
+  // Card & End Screen performance
+  cardClicks: number | null;
+  cardImpressions: number | null;
+  cardClickRate: number | null;
+  annotationClicks: number | null;
+  annotationImpressions: number | null;
+  annotationClickThroughRate: number | null;
+  // Monetization
   estimatedRevenue: number | null;
   estimatedAdRevenue: number | null;
   grossRevenue: number | null;
@@ -185,6 +206,7 @@ async function tryFetchAnalytics(
         views: Number(obj.views ?? 0),
         engagedViews: obj.engagedViews != null ? Number(obj.engagedViews) : null,
         likes: obj.likes != null ? Number(obj.likes) : null,
+        dislikes: obj.dislikes != null ? Number(obj.dislikes) : null,
         comments: obj.comments != null ? Number(obj.comments) : null,
         shares: obj.shares != null ? Number(obj.shares) : null,
         estimatedMinutesWatched: obj.estimatedMinutesWatched != null ? Number(obj.estimatedMinutesWatched) : null,
@@ -194,6 +216,16 @@ async function tryFetchAnalytics(
         subscribersLost: obj.subscribersLost != null ? Number(obj.subscribersLost) : null,
         videosAddedToPlaylists: obj.videosAddedToPlaylists != null ? Number(obj.videosAddedToPlaylists) : null,
         videosRemovedFromPlaylists: obj.videosRemovedFromPlaylists != null ? Number(obj.videosRemovedFromPlaylists) : null,
+        // YouTube Premium
+        redViews: obj.redViews != null ? Number(obj.redViews) : null,
+        // Card & End Screen
+        cardClicks: obj.cardClicks != null ? Number(obj.cardClicks) : null,
+        cardImpressions: obj.cardImpressions != null ? Number(obj.cardImpressions) : null,
+        cardClickRate: obj.cardClickRate != null ? Number(obj.cardClickRate) : null,
+        annotationClicks: obj.annotationClicks != null ? Number(obj.annotationClicks) : null,
+        annotationImpressions: obj.annotationImpressions != null ? Number(obj.annotationImpressions) : null,
+        annotationClickThroughRate: obj.annotationClickThroughRate != null ? Number(obj.annotationClickThroughRate) : null,
+        // Monetization
         estimatedRevenue: obj.estimatedRevenue != null ? Number(obj.estimatedRevenue) : null,
         estimatedAdRevenue: obj.estimatedAdRevenue != null ? Number(obj.estimatedAdRevenue) : null,
         grossRevenue: obj.grossRevenue != null ? Number(obj.grossRevenue) : null,

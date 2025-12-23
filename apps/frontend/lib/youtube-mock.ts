@@ -744,10 +744,161 @@ export function mockYouTubeApiResponse(urlStr: string): AnyJson {
         1,
         100
       );
-      // Generate deterministic “top comments”
+
+      // Realistic comment templates that mimic actual YouTube comments
+      const commentTemplates = [
+        // Positive/appreciation
+        "This completely changed my perspective on this topic. Thank you for breaking it down so clearly!",
+        "I've been doing this wrong for years. Wish I found this video sooner.",
+        "Finally someone explains this in a way that actually makes sense. Subscribed!",
+        "The part about {topic} at {time} was exactly what I needed to hear.",
+        "This is genuinely one of the best videos I've watched on this subject. No fluff, just value.",
+        "I took notes throughout this entire video. So much actionable advice.",
+        "Came here from your other video and this channel is a goldmine.",
+        "I've watched a lot of videos on this topic but yours is by far the most practical.",
+        "Your editing and pacing is perfect. Kept me engaged the whole time.",
+        "This deserves way more views. The algorithm needs to push this!",
+        // Questions/requests
+        "Can you do a follow-up video on how to apply this to {topic}?",
+        "Would love to see a deep dive into the {topic} you mentioned at {time}.",
+        "What software/tools do you use to create these videos? The quality is amazing.",
+        "How long did it take you to learn all of this? Any tips for beginners?",
+        "Do you have a course or community where we can learn more?",
+        // Sharing results
+        "I tried this and it actually worked! My {metric} increased by {number}%.",
+        "Been implementing your advice for 2 weeks now and already seeing results.",
+        "After watching this 3 times, I finally understand why my approach wasn't working.",
+        "Applied your framework and got {outcome}. Can't thank you enough!",
+        // Discussion
+        "I'd add that {insight} is also really important for this.",
+        "Great video! Though I'd slightly disagree on the point about {topic}.",
+        "This reminded me of what {person} said about {topic}. Similar principles.",
+        "Interesting take. In my experience, {alternative} also works well.",
+        // Timestamps
+        "{time} - This part was gold! Rewatched it 3 times.",
+        "For anyone wondering, the key insight is at {time}.",
+        "Skip to {time} if you want the main strategy.",
+        // Emotional
+        "I needed to hear this today. Thank you ❤️",
+        "This video came at the perfect time for me.",
+        "You have no idea how much this helped me. Seriously.",
+        "Crying a little because this is exactly what I've been struggling with.",
+      ];
+
+      const authorNames = [
+        "Alex Chen",
+        "Sarah Mitchell",
+        "Mike Johnson",
+        "Emma Davis",
+        "Chris Taylor",
+        "Jordan Lee",
+        "Sam Parker",
+        "Morgan Williams",
+        "Casey Brown",
+        "Riley Anderson",
+        "Drew Wilson",
+        "Jamie Martinez",
+        "Pat Thompson",
+        "Quinn Roberts",
+        "Avery Garcia",
+        "Blake Johnson",
+        "Cameron White",
+        "Dana Harris",
+        "Elliott Moore",
+        "Frankie Clark",
+      ];
+
+      const topics = [
+        "retention",
+        "growth",
+        "analytics",
+        "thumbnails",
+        "titles",
+        "hooks",
+        "editing",
+        "scripting",
+        "niching down",
+        "monetization",
+      ];
+      const times = [
+        "2:34",
+        "5:12",
+        "8:45",
+        "3:21",
+        "6:08",
+        "10:15",
+        "4:30",
+        "7:22",
+        "1:45",
+        "9:33",
+      ];
+      const metrics = [
+        "views",
+        "engagement",
+        "CTR",
+        "watch time",
+        "subscribers",
+      ];
+      const numbers = ["20", "35", "50", "75", "100", "150", "200"];
+      const outcomes = [
+        "my first viral video",
+        "10K subscribers",
+        "partner program acceptance",
+        "my best performing video",
+      ];
+      const persons = [
+        "MrBeast",
+        "Paddy Galloway",
+        "Colin and Samir",
+        "Think Media",
+      ];
+
+      // Generate deterministic but realistic comments
       const items = Array.from({ length: maxResults }).map((_, i) => {
         const seed = `${videoId}-c-${i}`;
-        const likeCount = (randHash(`${seed}-likes`) % 500) + 1;
+        const likeCount = Math.floor(
+          Math.pow(1.5, randHash(`${seed}-likes`) % 10) *
+            ((randHash(`${seed}-mult`) % 20) + 1)
+        );
+
+        // Pick a template and fill in placeholders
+        let text = commentTemplates[randHash(seed) % commentTemplates.length];
+        text = text.replace(
+          "{topic}",
+          topics[randHash(`${seed}-topic`) % topics.length]
+        );
+        text = text.replace(
+          "{time}",
+          times[randHash(`${seed}-time`) % times.length]
+        );
+        text = text.replace(
+          "{metric}",
+          metrics[randHash(`${seed}-metric`) % metrics.length]
+        );
+        text = text.replace(
+          "{number}",
+          numbers[randHash(`${seed}-number`) % numbers.length]
+        );
+        text = text.replace(
+          "{outcome}",
+          outcomes[randHash(`${seed}-outcome`) % outcomes.length]
+        );
+        text = text.replace(
+          "{person}",
+          persons[randHash(`${seed}-person`) % persons.length]
+        );
+        text = text.replace(
+          "{insight}",
+          topics[(randHash(`${seed}-insight`) + 3) % topics.length]
+        );
+        text = text.replace(
+          "{alternative}",
+          topics[(randHash(`${seed}-alt`) + 5) % topics.length]
+        );
+
+        const authorName =
+          authorNames[randHash(`${seed}-author`) % authorNames.length];
+
         return {
           kind: "youtube#commentThread",
           etag: `etag-${seed}`,
@@ -758,19 +909,10 @@ export function mockYouTubeApiResponse(urlStr: string): AnyJson {
               etag: `etag-${seed}-c`,
               id: `C_${seed}`,
               snippet: {
-                authorDisplayName: `Viewer ${randHash(seed) % 5000}`,
-                textDisplay: `This is a mock comment about ${pick(
-                  [
-                    "the hook",
-                    "the pacing",
-                    "the clarity",
-                    "the examples",
-                    "the thumbnail",
-                  ],
-                  seed
-                )}. (mock)`,
+                authorDisplayName: authorName,
+                textDisplay: text,
                 likeCount,
-                publishedAt: isoDaysAgo((randHash(`${seed}-age`) % 60) + 1),
+                publishedAt: isoDaysAgo((randHash(`${seed}-age`) % 30) + 1),
               },
             },
           },
@@ -850,6 +992,9 @@ export function mockYouTubeApiResponse(urlStr: string): AnyJson {
           return clamp(base + (n % 60_000), 0, 10_000_000);
         case "likes":
           return clamp(Math.floor((base + (n % 20_000)) * 0.05), 0, 2_000_000);
+        case "dislikes":
+          // Dislikes are typically ~2-5% of likes
+          return clamp(Math.floor((base + (n % 5_000)) * 0.002), 0, 100_000);
         case "comments":
           return clamp(Math.floor((base + (n % 10_000)) * 0.006), 0, 400_000);
         case "shares":
@@ -866,18 +1011,48 @@ export function mockYouTubeApiResponse(urlStr: string): AnyJson {
           return clamp(25 + (n % 55), 1, 100);
         case "engagedViews":
           return clamp(Math.floor((base + (n % 20_000)) * 0.35), 0, 10_000_000);
+        case "redViews":
+          // YouTube Premium views typically 5-15% of total views
+          return clamp(Math.floor((base + (n % 15_000)) * 0.08), 0, 1_000_000);
         case "videosAddedToPlaylists":
+          return clamp(Math.floor((base + (n % 8_000)) * 0.001), 0, 50_000);
         case "videosRemovedFromPlaylists":
-          return clamp(Math.floor((base + (n % 8_000)) * 0.0008), 0, 50_000);
+          // Removals are typically ~10-20% of additions
+          return clamp(Math.floor((base + (n % 4_000)) * 0.0002), 0, 10_000);
+        case "cardImpressions":
+          // Card impressions are shown to viewers who get far enough in the video
+          return clamp(Math.floor((base + (n % 20_000)) * 0.6), 0, 5_000_000);
+        case "cardClicks":
+          // Card click rate is typically 0.5-3%
+          return clamp(Math.floor((base + (n % 5_000)) * 0.012), 0, 100_000);
+        case "cardClickRate":
+          // Return as percentage (0.5-3%)
+          return clamp(0.5 + (n % 250) / 100, 0.1, 5);
+        case "annotationImpressions":
+          // End screen impressions (fewer than card impressions)
+          return clamp(Math.floor((base + (n % 15_000)) * 0.4), 0, 3_000_000);
+        case "annotationClicks":
+          // End screen click rate is typically 1-5%
+          return clamp(Math.floor((base + (n % 8_000)) * 0.015), 0, 150_000);
+        case "annotationClickThroughRate":
+          // Return as percentage (1-5%)
+          return clamp(1 + (n % 400) / 100, 0.5, 8);
         case "estimatedRevenue":
         case "estimatedAdRevenue":
         case "grossRevenue":
+          // Revenue in dollars (realistic RPM of $1-5)
+          return clamp(
+            Math.floor((base / 1000) * (1 + (n % 400) / 100)),
+            0,
+            500_000
+          );
         case "playbackBasedCpm":
         case "cpm":
-          // Return integer-ish cents to avoid floats in consumer code.
-          return clamp(Math.floor((n % 50_000) / 10), 0, 100_000);
+          // CPM typically $2-10
+          return clamp(2 + (n % 800) / 100, 1, 20);
         case "monetizedPlaybacks":
-          return clamp(Math.floor((base + (n % 10_000)) * 0.1), 0, 10_000_000);
+          // Typically 40-70% of views are monetized
+          return clamp(Math.floor((base + (n % 10_000)) * 0.55), 0, 10_000_000);
         case "adImpressions":
           return clamp(Math.floor((base + (n % 20_000)) * 0.6), 0, 50_000_000);
         default:

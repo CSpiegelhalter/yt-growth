@@ -486,6 +486,75 @@ export type CompetitorVideoAnalysis = {
       angle: string;
     }>;
   };
+  // New strategic insights
+  strategicInsights?: {
+    // Title breakdown
+    titleAnalysis: {
+      score: number; // 1-10
+      characterCount: number;
+      hasNumber: boolean;
+      hasPowerWord: boolean;
+      hasCuriosityGap: boolean;
+      hasTimeframe: boolean;
+      strengths: string[];
+      weaknesses: string[];
+    };
+    // How hard is it to compete?
+    competitionDifficulty: {
+      score: "Easy" | "Medium" | "Hard" | "Very Hard";
+      reasons: string[];
+      channelSizeRatio?: number; // Their subs vs avg in niche
+    };
+    // Timing analysis
+    postingTiming: {
+      dayOfWeek: string;
+      hourOfDay: number;
+      daysAgo: number;
+      isWeekend: boolean;
+      timingInsight: string;
+    };
+    // Video length analysis
+    lengthAnalysis: {
+      minutes: number;
+      category: "Short" | "Medium" | "Long" | "Very Long";
+      insight: string;
+      optimalForTopic: boolean;
+    };
+    // Engagement benchmarks
+    engagementBenchmarks: {
+      likeRate: number; // likes per 100 views
+      commentRate: number; // comments per 1000 views
+      likeRateVerdict: "Below Average" | "Average" | "Above Average" | "Exceptional";
+      commentRateVerdict: "Below Average" | "Average" | "Above Average" | "Exceptional";
+    };
+    // Opportunity assessment
+    opportunityScore: {
+      score: number; // 1-10 (10 = huge opportunity)
+      verdict: string;
+      gaps: string[]; // What's missing that you could do
+      angles: string[]; // Fresh angles not covered
+    };
+    // Beat this video checklist
+    beatThisVideo: Array<{
+      action: string;
+      difficulty: "Easy" | "Medium" | "Hard";
+      impact: "Low" | "Medium" | "High";
+    }>;
+    // Description analysis
+    descriptionAnalysis: {
+      hasTimestamps: boolean;
+      hasLinks: boolean;
+      hasCTA: boolean;
+      estimatedWordCount: number;
+      keyElements: string[];
+    };
+    // Content format signals
+    formatSignals: {
+      likelyFormat: string; // "Tutorial", "Vlog", "Review", "Commentary", etc.
+      productionLevel: "Low" | "Medium" | "High";
+      paceEstimate: "Slow" | "Medium" | "Fast";
+    };
+  };
   comments?: CompetitorCommentsAnalysis;
   tags: string[];
   derivedKeywords?: string[]; // If tags absent, derived from title/description
@@ -518,6 +587,7 @@ export type DailyAnalyticsRow = {
   views: number;
   engagedViews: number | null;
   likes: number | null;
+  dislikes: number | null;
   comments: number | null;
   shares: number | null;
   estimatedMinutesWatched: number | null;
@@ -527,6 +597,16 @@ export type DailyAnalyticsRow = {
   subscribersLost: number | null;
   videosAddedToPlaylists: number | null;
   videosRemovedFromPlaylists: number | null;
+  // YouTube Premium
+  redViews: number | null;
+  // Card & End Screen
+  cardClicks: number | null;
+  cardImpressions: number | null;
+  cardClickRate: number | null;
+  annotationClicks: number | null;
+  annotationImpressions: number | null;
+  annotationClickThroughRate: number | null;
+  // Monetization
   estimatedRevenue: number | null;
   estimatedAdRevenue: number | null;
   grossRevenue: number | null;
@@ -543,21 +623,39 @@ export type AnalyticsTotals = DailyAnalyticsRow & {
 };
 
 export type DerivedMetrics = {
+  // Basic
   viewsPerDay: number;
   totalViews: number;
   daysInRange: number;
+  // Normalized per 1K views
   subsPer1k: number | null;
   sharesPer1k: number | null;
   commentsPer1k: number | null;
   likesPer1k: number | null;
   playlistAddsPer1k: number | null;
+  // Advanced engagement metrics
+  netSubsPer1k: number | null;
+  netSavesPer1k: number | null;
+  likeRatio: number | null;
+  // Retention efficiency
   watchTimePerViewSec: number | null;
   avdRatio: number | null;
+  avgWatchTimeMin: number | null;
+  // Engagement
   engagementPerView: number | null;
   engagedViewRate: number | null;
+  // Card & End Screen performance
+  cardClickRate: number | null;
+  endScreenClickRate: number | null;
+  // Audience quality
+  premiumViewRate: number | null;
+  watchTimePerSub: number | null;
+  // Monetization
   rpm: number | null;
   monetizedPlaybackRate: number | null;
   adImpressionsPerView: number | null;
+  cpm: number | null;
+  // Trend metrics
   velocity24h: number | null;
   velocity7d: number | null;
   acceleration24h: number | null;
@@ -599,6 +697,27 @@ export type BaselineComparison = {
 
 export type VideoInsightsLLM = {
   summary: { headline: string; oneLiner: string };
+  // Title & Packaging Analysis
+  titleAnalysis: {
+    score: number; // 1-10
+    strengths: string[];
+    weaknesses: string[];
+    suggestions: string[];
+  };
+  tagAnalysis: {
+    score: number; // 1-10
+    coverage: "excellent" | "good" | "fair" | "poor";
+    missing: string[]; // Suggested tags to add
+    feedback: string;
+  };
+  thumbnailHints: string[]; // What thumbnail should convey based on title/performance
+  // Data-driven insights
+  keyFindings: Array<{
+    finding: string;
+    dataPoint: string;
+    significance: "positive" | "negative" | "neutral";
+    recommendation: string;
+  }>;
   wins: Array<{ label: string; why: string; metricKey: string }>;
   leaks: Array<{ label: string; why: string; metricKey: string }>;
   actions: Array<{
@@ -606,6 +725,7 @@ export type VideoInsightsLLM = {
     action: string;
     reason: string;
     expectedImpact: string;
+    priority: "high" | "medium" | "low";
   }>;
   experiments: Array<{
     type: "Title" | "Hook" | "Structure";
@@ -618,9 +738,12 @@ export type VideoInsightsLLM = {
     visualMoments: string[];
   };
   competitorTakeaways: Array<{
-    pattern: string;
-    evidence: Array<{ videoId: string; title: string; channelTitle: string }>;
-    howToUse: string;
+    channelName?: string;
+    pattern?: string;
+    insight?: string;
+    evidence?: Array<{ videoId: string; title: string; channelTitle: string }>;
+    howToUse?: string;
+    applicableAction?: string;
   }>;
   remixIdeas: Array<{
     title: string;

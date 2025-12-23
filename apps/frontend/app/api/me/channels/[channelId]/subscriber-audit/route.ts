@@ -22,7 +22,11 @@ import {
 } from "@/lib/user";
 import { calcSubsPerThousandViews } from "@/lib/retention";
 import { generateConverterInsights } from "@/lib/llm";
-import { isDemoMode, getDemoData } from "@/lib/demo-fixtures";
+import {
+  isDemoMode,
+  isYouTubeMockMode,
+  getDemoData,
+} from "@/lib/demo-fixtures";
 import type {
   SubscriberMagnetVideo,
   SubscriberAuditResponse,
@@ -44,8 +48,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
-  // Return demo data if demo mode is enabled
-  if (isDemoMode()) {
+  // Return demo data if demo mode or mock mode is enabled
+  if (isDemoMode() || isYouTubeMockMode()) {
     const demoData = getDemoData(
       "subscriber-audit"
     ) as SubscriberAuditResponse | null;

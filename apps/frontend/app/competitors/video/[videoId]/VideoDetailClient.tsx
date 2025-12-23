@@ -31,7 +31,6 @@ export default function VideoDetailClient({
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showAllTags, setShowAllTags] = useState(false);
-  const [showComments, setShowComments] = useState(false);
 
   // Use channelId from server props directly
   const activeChannelId = channelId ?? null;
@@ -124,6 +123,7 @@ export default function VideoDetailClient({
   const {
     video,
     analysis: insights,
+    strategicInsights,
     comments,
     tags,
     derivedKeywords,
@@ -143,6 +143,17 @@ export default function VideoDetailClient({
     howToUse: "Write 2 variants using this pattern with your main keyword.",
   }));
 
+  // Strategic insights
+  const titleAnalysis = strategicInsights?.titleAnalysis;
+  const competitionDifficulty = strategicInsights?.competitionDifficulty;
+  const opportunityScore = strategicInsights?.opportunityScore;
+  const beatChecklist = strategicInsights?.beatThisVideo ?? [];
+  const engagementBenchmarks = strategicInsights?.engagementBenchmarks;
+  const lengthAnalysis = strategicInsights?.lengthAnalysis;
+  const postingTiming = strategicInsights?.postingTiming;
+  const formatSignals = strategicInsights?.formatSignals;
+  const descriptionAnalysis = strategicInsights?.descriptionAnalysis;
+
   return (
     <main className={s.page}>
       {/* Back Link */}
@@ -158,29 +169,41 @@ export default function VideoDetailClient({
 
       {/* Video Header - Compact */}
       <header className={s.videoHeader}>
-        <div className={s.thumbnailWrap}>
-          {video.thumbnailUrl ? (
-            <img src={video.thumbnailUrl} alt="" className={s.thumbnail} />
-          ) : (
-            <div className={s.thumbnailPlaceholder}>
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        <a
+          href={video.videoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={s.thumbnailLink}
+        >
+          <div className={s.thumbnailWrap}>
+            {video.thumbnailUrl ? (
+              <img src={video.thumbnailUrl} alt="" className={s.thumbnail} />
+            ) : (
+              <div className={s.thumbnailPlaceholder}>
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </div>
+            )}
+            {video.durationSec && (
+              <span className={s.durationBadge}>
+                {formatDuration(video.durationSec)}
+              </span>
+            )}
+            <div className={s.playOverlay}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
+                <path d="M8 5v14l11-7z"/>
               </svg>
             </div>
-          )}
-          {video.durationSec && (
-            <span className={s.durationBadge}>
-              {formatDuration(video.durationSec)}
-            </span>
-          )}
-        </div>
+          </div>
+        </a>
 
         <div className={s.videoInfo}>
           {/* Title + Channel */}
@@ -266,23 +289,6 @@ export default function VideoDetailClient({
                 />
               )}
           </div>
-
-          {/* Data status indicator (only if building) */}
-          {video.derived.dataStatus === "building" && (
-            <p className={s.dataStatus}>
-              Velocity data is being collected. Check back soon for more
-              metrics.
-            </p>
-          )}
-
-          <a
-            href={video.videoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={s.watchBtn}
-          >
-            Watch on YouTube
-          </a>
         </div>
       </header>
 
@@ -295,6 +301,229 @@ export default function VideoDetailClient({
             {insights.whatItsAbout || "Analysis not available yet."}
           </p>
         </section>
+
+        {/* Quick Stats Bar - Strategic Overview */}
+        {strategicInsights && (
+          <section className={s.quickStatsSection}>
+            <div className={s.quickStatsGrid}>
+              {/* Title Score */}
+              {titleAnalysis && (
+                <div className={s.quickStat}>
+                  <div className={s.quickStatValue}>
+                    <span className={s.scoreCircle} data-score={titleAnalysis.score >= 7 ? "good" : titleAnalysis.score >= 5 ? "ok" : "poor"}>
+                      {titleAnalysis.score}/10
+                    </span>
+                  </div>
+                  <div className={s.quickStatLabel}>Title Score</div>
+                </div>
+              )}
+
+              {/* Competition Difficulty */}
+              {competitionDifficulty && (
+                <div className={s.quickStat}>
+                  <div className={s.quickStatValue}>
+                    <span className={s.difficultyBadge} data-difficulty={competitionDifficulty.score.toLowerCase().replace(" ", "-")}>
+                      {competitionDifficulty.score}
+                    </span>
+                  </div>
+                  <div className={s.quickStatLabel}>Competition</div>
+                </div>
+              )}
+
+              {/* Opportunity Score */}
+              {opportunityScore && (
+                <div className={s.quickStat}>
+                  <div className={s.quickStatValue}>
+                    <span className={s.scoreCircle} data-score={opportunityScore.score >= 7 ? "good" : opportunityScore.score >= 5 ? "ok" : "poor"}>
+                      {opportunityScore.score}/10
+                    </span>
+                  </div>
+                  <div className={s.quickStatLabel}>Opportunity</div>
+                </div>
+              )}
+
+              {/* Engagement */}
+              {engagementBenchmarks && (
+                <div className={s.quickStat}>
+                  <div className={s.quickStatValue}>
+                    <span className={s.engagementBadge} data-verdict={engagementBenchmarks.likeRateVerdict.toLowerCase().replace(" ", "-")}>
+                      {engagementBenchmarks.likeRateVerdict}
+                    </span>
+                  </div>
+                  <div className={s.quickStatLabel}>Engagement</div>
+                </div>
+              )}
+
+              {/* Format */}
+              {formatSignals && (
+                <div className={s.quickStat}>
+                  <div className={s.quickStatValue}>
+                    <span className={s.formatBadge}>{formatSignals.likelyFormat}</span>
+                  </div>
+                  <div className={s.quickStatLabel}>Format</div>
+                </div>
+              )}
+
+              {/* Length */}
+              {lengthAnalysis && (
+                <div className={s.quickStat}>
+                  <div className={s.quickStatValue}>
+                    <span className={s.lengthValue}>{lengthAnalysis.minutes}m</span>
+                  </div>
+                  <div className={s.quickStatLabel}>{lengthAnalysis.category}</div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Title Analysis */}
+        {titleAnalysis && (
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Title Breakdown</h2>
+            <div className={s.titleAnalysisGrid}>
+              <div className={s.titleScoreCard}>
+                <div className={s.titleScoreCircle} data-score={titleAnalysis.score >= 7 ? "good" : titleAnalysis.score >= 5 ? "ok" : "poor"}>
+                  <span className={s.titleScoreNumber}>{titleAnalysis.score}</span>
+                  <span className={s.titleScoreMax}>/10</span>
+                </div>
+                <div className={s.titleMeta}>
+                  <span>{titleAnalysis.characterCount} chars</span>
+                  {titleAnalysis.hasNumber && <span className={s.titleCheck}>✓ Number</span>}
+                  {titleAnalysis.hasPowerWord && <span className={s.titleCheck}>✓ Power Word</span>}
+                  {titleAnalysis.hasCuriosityGap && <span className={s.titleCheck}>✓ Curiosity Gap</span>}
+                </div>
+              </div>
+              <div className={s.titleFeedback}>
+                {titleAnalysis.strengths.length > 0 && (
+                  <div className={s.titleStrengths}>
+                    <h4 className={s.feedbackTitle}>✓ Strengths</h4>
+                    <ul>
+                      {titleAnalysis.strengths.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {titleAnalysis.weaknesses.length > 0 && (
+                  <div className={s.titleWeaknesses}>
+                    <h4 className={s.feedbackTitle}>⚠ Could Improve</h4>
+                    <ul>
+                      {titleAnalysis.weaknesses.map((w, i) => (
+                        <li key={i}>{w}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Opportunity Assessment */}
+        {opportunityScore && (
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Opportunity Assessment</h2>
+            <div className={s.opportunityHeader}>
+              <div className={s.opportunityScoreBig} data-score={opportunityScore.score >= 7 ? "good" : opportunityScore.score >= 5 ? "ok" : "poor"}>
+                {opportunityScore.score}/10
+              </div>
+              <p className={s.opportunityVerdict}>{opportunityScore.verdict}</p>
+            </div>
+            
+            {opportunityScore.gaps.length > 0 && (
+              <div className={s.opportunityBlock}>
+                <h4 className={s.opportunityBlockTitle}>Gaps to Exploit</h4>
+                <ul className={s.opportunityList}>
+                  {opportunityScore.gaps.map((gap, i) => (
+                    <li key={i}>{gap}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {opportunityScore.angles.length > 0 && (
+              <div className={s.opportunityBlock}>
+                <h4 className={s.opportunityBlockTitle}>Fresh Angles</h4>
+                <ul className={s.opportunityList}>
+                  {opportunityScore.angles.map((angle, i) => (
+                    <li key={i}>{angle}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Beat This Video Checklist */}
+        {beatChecklist.length > 0 && (
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Beat This Video</h2>
+            <p className={s.sectionSubtitle}>
+              Action checklist to outperform this competitor
+            </p>
+            <div className={s.checklistGrid}>
+              {beatChecklist.map((item, i) => (
+                <div key={i} className={s.checklistItem}>
+                  <div className={s.checklistAction}>{item.action}</div>
+                  <div className={s.checklistMeta}>
+                    <span className={s.checklistDifficulty} data-level={item.difficulty.toLowerCase()}>
+                      {item.difficulty}
+                    </span>
+                    <span className={s.checklistImpact} data-level={item.impact.toLowerCase()}>
+                      {item.impact} Impact
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Video Intelligence */}
+        {(postingTiming || lengthAnalysis || descriptionAnalysis) && (
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Video Intelligence</h2>
+            <div className={s.intelligenceGrid}>
+              {postingTiming && (
+                <div className={s.intelCard}>
+                  <h4 className={s.intelTitle}>Posting</h4>
+                  <p className={s.intelValue}>{postingTiming.dayOfWeek} at {postingTiming.hourOfDay}:00</p>
+                  <p className={s.intelNote}>{postingTiming.timingInsight}</p>
+                </div>
+              )}
+              {lengthAnalysis && (
+                <div className={s.intelCard}>
+                  <h4 className={s.intelTitle}>Length</h4>
+                  <p className={s.intelValue}>{lengthAnalysis.minutes} minutes ({lengthAnalysis.category})</p>
+                  <p className={s.intelNote}>{lengthAnalysis.insight}</p>
+                </div>
+              )}
+              {engagementBenchmarks && (
+                <div className={s.intelCard}>
+                  <h4 className={s.intelTitle}>Engagement</h4>
+                  <p className={s.intelValue}>
+                    {engagementBenchmarks.likeRate}% like rate · {engagementBenchmarks.commentRate} comments/1K views
+                  </p>
+                  <p className={s.intelNote}>
+                    Likes: {engagementBenchmarks.likeRateVerdict} · Comments: {engagementBenchmarks.commentRateVerdict}
+                  </p>
+                </div>
+              )}
+              {descriptionAnalysis && (
+                <div className={s.intelCard}>
+                  <h4 className={s.intelTitle}>Description</h4>
+                  <p className={s.intelValue}>{descriptionAnalysis.estimatedWordCount} words</p>
+                  <div className={s.intelTags}>
+                    {descriptionAnalysis.hasTimestamps && <span className={s.intelTag}>Timestamps</span>}
+                    {descriptionAnalysis.hasLinks && <span className={s.intelTag}>Links</span>}
+                    {descriptionAnalysis.hasCTA && <span className={s.intelTag}>CTA</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Why It's Working */}
         {whyCards.length > 0 && (
@@ -495,34 +724,6 @@ export default function VideoDetailClient({
                       </div>
                     </div>
                   )}
-
-                {comments.topComments && comments.topComments.length > 0 && (
-                  <div className={s.topCommentsBlock}>
-                    <button
-                      className={s.commentsToggle}
-                      onClick={() => setShowComments((v) => !v)}
-                    >
-                      {showComments ? "Hide comments" : "Show comments"}
-                    </button>
-                    {showComments && (
-                      <div className={s.topCommentsList}>
-                        {comments.topComments.slice(0, 12).map((comment, i) => (
-                          <div key={i} className={s.topComment}>
-                            <p className={s.commentText}>{comment.text}</p>
-                            <div className={s.commentMeta}>
-                              <span className={s.commentAuthor}>
-                                {comment.authorName}
-                              </span>
-                              <span className={s.commentLikes}>
-                                {comment.likeCount} likes
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
           </section>

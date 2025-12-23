@@ -437,7 +437,7 @@ function createFallbackIdeaBoard(input: GenerateIdeaBoardInput): IdeaBoardData {
         },
         {
           text: "After 100+ videos, here's what actually works.",
-          typeTags: ["authority", "promise"],
+          typeTags: ["story", "promise"],
         },
         {
           text: "Stop making this mistake. Do this instead.",
@@ -520,13 +520,13 @@ function createFallbackIdeaBoard(input: GenerateIdeaBoardInput): IdeaBoardData {
         },
         {
           text: "Everyone's talking about this. Let me explain.",
-          typeTags: ["curiosity", "authority"],
+          typeTags: ["curiosity", "story"],
         },
       ],
       titles: [
         {
-          text: `Why This ${topKeyword} Video Got 1M Views`,
-          styleTags: ["curiosity", "specific"],
+          text: `Why Did This ${topKeyword} Video Go Viral?`,
+          styleTags: ["specific"],
         },
         {
           text: `Reacting to the Most Viral ${topKeyword} Content`,

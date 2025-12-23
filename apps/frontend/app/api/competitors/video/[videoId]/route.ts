@@ -496,10 +496,18 @@ export async function GET(
       );
     }
 
+    // Generate strategic insights
+    const strategicInsights = computeStrategicInsights({
+      video,
+      videoDetails,
+      commentsAnalysis,
+    });
+
     // Build response
     const response: CompetitorVideoAnalysis = {
       video,
       analysis,
+      strategicInsights,
       comments: commentsAnalysis,
       tags: videoDetails.tags ?? [],
       derivedKeywords,
@@ -516,6 +524,429 @@ export async function GET(
       { status: 500 }
     );
   }
+}
+
+// Compute strategic insights from video data
+function computeStrategicInsights(input: {
+  video: CompetitorVideo;
+  videoDetails: {
+    title: string;
+    description?: string;
+    tags?: string[];
+    viewCount: number;
+    likeCount: number;
+    commentCount: number;
+    publishedAt: string;
+    durationSec?: number;
+  };
+  commentsAnalysis?: CompetitorCommentsAnalysis;
+}): CompetitorVideoAnalysis["strategicInsights"] {
+  const { video, videoDetails, commentsAnalysis } = input;
+  const title = videoDetails.title;
+  const description = videoDetails.description ?? "";
+
+  // ===== TITLE ANALYSIS =====
+  const titleLength = title.length;
+  const hasNumber = /\d/.test(title);
+  const powerWords = [
+    "secret",
+    "shocking",
+    "amazing",
+    "ultimate",
+    "best",
+    "worst",
+    "never",
+    "always",
+    "proven",
+    "guaranteed",
+    "free",
+    "instant",
+    "easy",
+    "simple",
+    "fast",
+    "new",
+    "finally",
+    "revealed",
+    "truth",
+    "mistake",
+    "hack",
+    "trick",
+    "strategy",
+  ];
+  const hasPowerWord = powerWords.some((w) => title.toLowerCase().includes(w));
+  const hasCuriosityGap =
+    /\?|\.{3}|how|why|what|secret|truth|reveal|nobody|everyone/i.test(title);
+  const hasTimeframe =
+    /202\d|today|now|this year|\d+\s*(day|week|month|hour)/i.test(title);
+
+  let titleScore = 5;
+  const titleStrengths: string[] = [];
+  const titleWeaknesses: string[] = [];
+
+  if (titleLength >= 40 && titleLength <= 60) {
+    titleScore += 1;
+    titleStrengths.push("Optimal length (40-60 chars)");
+  } else if (titleLength < 30) {
+    titleScore -= 1;
+    titleWeaknesses.push("Title might be too short");
+  } else if (titleLength > 70) {
+    titleWeaknesses.push("Title may get truncated on mobile");
+  }
+
+  if (hasNumber) {
+    titleScore += 1;
+    titleStrengths.push("Uses specific number (increases CTR)");
+  } else {
+    titleWeaknesses.push("No specific number to create curiosity");
+  }
+
+  if (hasPowerWord) {
+    titleScore += 1;
+    titleStrengths.push("Contains emotional trigger word");
+  }
+
+  if (hasCuriosityGap) {
+    titleScore += 1;
+    titleStrengths.push("Creates curiosity gap");
+  } else {
+    titleWeaknesses.push("Could add more curiosity/tension");
+  }
+
+  if (hasTimeframe) {
+    titleScore += 0.5;
+    titleStrengths.push("Time-relevant (freshness signal)");
+  }
+
+  titleScore = Math.min(10, Math.max(1, Math.round(titleScore)));
+
+  // ===== POSTING TIMING =====
+  const publishedDate = new Date(videoDetails.publishedAt);
+  const dayOfWeek = publishedDate.toLocaleDateString("en-US", {
+    weekday: "long",
+  });
+  const hourOfDay = publishedDate.getHours();
+  const isWeekend =
+    publishedDate.getDay() === 0 || publishedDate.getDay() === 6;
+  const daysAgo = Math.floor(
+    (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  let timingInsight = "";
+  if (hourOfDay >= 14 && hourOfDay <= 17) {
+    timingInsight = "Posted during peak viewing hours (2-5pm)";
+  } else if (hourOfDay >= 9 && hourOfDay <= 11) {
+    timingInsight = "Posted mid-morning for afternoon pickup";
+  } else if (hourOfDay >= 18 && hourOfDay <= 21) {
+    timingInsight = "Posted for evening viewers";
+  } else {
+    timingInsight =
+      "Off-peak posting time - may rely more on suggested traffic";
+  }
+
+  // ===== VIDEO LENGTH =====
+  const durationSec = videoDetails.durationSec ?? 0;
+  const durationMin = Math.round(durationSec / 60);
+  let lengthCategory: "Short" | "Medium" | "Long" | "Very Long" = "Medium";
+  let lengthInsight = "";
+
+  if (durationMin < 3) {
+    lengthCategory = "Short";
+    lengthInsight =
+      "Short format - optimized for quick consumption and high retention %";
+  } else if (durationMin < 10) {
+    lengthCategory = "Medium";
+    lengthInsight =
+      "Sweet spot length - long enough for depth, short enough for retention";
+  } else if (durationMin < 20) {
+    lengthCategory = "Long";
+    lengthInsight =
+      "Long-form content - needs strong hooks throughout to maintain attention";
+  } else {
+    lengthCategory = "Very Long";
+    lengthInsight =
+      "Deep-dive format - appeals to highly engaged viewers, lower broad appeal";
+  }
+
+  // ===== ENGAGEMENT BENCHMARKS =====
+  const views = videoDetails.viewCount || 1;
+  const likes = videoDetails.likeCount || 0;
+  const comments = videoDetails.commentCount || 0;
+
+  const likeRate = (likes / views) * 100; // likes per 100 views
+  const commentRate = (comments / views) * 1000; // comments per 1000 views
+
+  let likeRateVerdict:
+    | "Below Average"
+    | "Average"
+    | "Above Average"
+    | "Exceptional" = "Average";
+  if (likeRate < 2) likeRateVerdict = "Below Average";
+  else if (likeRate >= 2 && likeRate < 4) likeRateVerdict = "Average";
+  else if (likeRate >= 4 && likeRate < 6) likeRateVerdict = "Above Average";
+  else likeRateVerdict = "Exceptional";
+
+  let commentRateVerdict:
+    | "Below Average"
+    | "Average"
+    | "Above Average"
+    | "Exceptional" = "Average";
+  if (commentRate < 1) commentRateVerdict = "Below Average";
+  else if (commentRate >= 1 && commentRate < 3) commentRateVerdict = "Average";
+  else if (commentRate >= 3 && commentRate < 6)
+    commentRateVerdict = "Above Average";
+  else commentRateVerdict = "Exceptional";
+
+  // ===== COMPETITION DIFFICULTY =====
+  let difficultyScore: "Easy" | "Medium" | "Hard" | "Very Hard" = "Medium";
+  const difficultyReasons: string[] = [];
+
+  if (views > 1_000_000) {
+    difficultyScore = "Very Hard";
+    difficultyReasons.push("Viral video (1M+ views) - hard to match reach");
+  } else if (views > 100_000) {
+    difficultyScore = "Hard";
+    difficultyReasons.push("High-performing video (100K+ views)");
+  } else if (views > 10_000) {
+    difficultyScore = "Medium";
+    difficultyReasons.push("Solid performer - achievable with good execution");
+  } else {
+    difficultyScore = "Easy";
+    difficultyReasons.push("Lower view count - opportunity to do better");
+  }
+
+  if (likeRateVerdict === "Exceptional") {
+    difficultyReasons.push(
+      "Very high engagement - content is resonating strongly"
+    );
+  }
+
+  if (durationMin > 15) {
+    difficultyReasons.push("Long-form requires significant production time");
+  }
+
+  // ===== OPPORTUNITY SCORE =====
+  let opportunityScore = 5;
+  const gaps: string[] = [];
+  const angles: string[] = [];
+
+  // Check tags for gaps
+  const tags = videoDetails.tags ?? [];
+  if (tags.length < 10) {
+    gaps.push(
+      "Competitor has weak tag coverage - you can rank better with more tags"
+    );
+    opportunityScore += 1;
+  }
+
+  // Check description
+  if (description.length < 200) {
+    gaps.push("Thin description - opportunity to be more comprehensive");
+    opportunityScore += 1;
+  }
+
+  // Check for timestamps
+  const hasTimestamps = /\d{1,2}:\d{2}/.test(description);
+  if (!hasTimestamps && durationMin > 5) {
+    gaps.push("No timestamps - add chapters for better UX");
+    opportunityScore += 0.5;
+  }
+
+  // Fresh angles based on common patterns
+  if (!hasCuriosityGap) {
+    angles.push("Add a stronger curiosity hook in your title");
+  }
+  if (!hasNumber) {
+    angles.push("Use specific numbers (e.g., '5 Ways', 'In 30 Days')");
+  }
+  angles.push("Personal case study angle - 'I tried X for Y days'");
+  angles.push("Contrarian take - challenge the assumptions");
+  if (durationMin > 10) {
+    angles.push("Make a shorter, more focused version");
+  }
+
+  // Comment-based opportunities
+  if (
+    commentsAnalysis?.viewerAskedFor &&
+    commentsAnalysis.viewerAskedFor.length > 0
+  ) {
+    gaps.push(
+      `Viewers asking for: ${commentsAnalysis.viewerAskedFor[0]} - make that video!`
+    );
+    opportunityScore += 1;
+  }
+
+  opportunityScore = Math.min(10, Math.max(1, Math.round(opportunityScore)));
+
+  let opportunityVerdict = "";
+  if (opportunityScore >= 8) {
+    opportunityVerdict = "High opportunity - gaps to exploit!";
+  } else if (opportunityScore >= 6) {
+    opportunityVerdict = "Good opportunity - room to differentiate";
+  } else if (opportunityScore >= 4) {
+    opportunityVerdict = "Moderate - will need strong execution";
+  } else {
+    opportunityVerdict = "Tough to beat - focus on unique angles";
+  }
+
+  // ===== BEAT THIS VIDEO CHECKLIST =====
+  const beatChecklist: Array<{
+    action: string;
+    difficulty: "Easy" | "Medium" | "Hard";
+    impact: "Low" | "Medium" | "High";
+  }> = [];
+
+  beatChecklist.push({
+    action: "Study the first 30 seconds and make your hook even stronger",
+    difficulty: "Medium",
+    impact: "High",
+  });
+
+  if (!hasNumber) {
+    beatChecklist.push({
+      action: "Add specific numbers to your title for higher CTR",
+      difficulty: "Easy",
+      impact: "Medium",
+    });
+  }
+
+  if (!hasTimestamps && durationMin > 5) {
+    beatChecklist.push({
+      action: "Add chapters/timestamps for better retention",
+      difficulty: "Easy",
+      impact: "Medium",
+    });
+  }
+
+  beatChecklist.push({
+    action: "Create a more compelling thumbnail with clear focal point",
+    difficulty: "Medium",
+    impact: "High",
+  });
+
+  if (commentsAnalysis?.viewerAskedFor?.length) {
+    beatChecklist.push({
+      action: `Address what viewers asked for: "${commentsAnalysis.viewerAskedFor[0]}"`,
+      difficulty: "Medium",
+      impact: "High",
+    });
+  }
+
+  beatChecklist.push({
+    action: "Add your unique perspective/experience they can't replicate",
+    difficulty: "Hard",
+    impact: "High",
+  });
+
+  if (durationMin > 10) {
+    beatChecklist.push({
+      action: "Tighter editing - cut 20% of the fluff",
+      difficulty: "Medium",
+      impact: "Medium",
+    });
+  }
+
+  // ===== DESCRIPTION ANALYSIS =====
+  const hasLinks = /https?:\/\/\S+/i.test(description);
+  const hasCTA =
+    /subscribe|like|comment|share|follow|check out|click|link|download/i.test(
+      description
+    );
+  const estimatedWordCount = description.split(/\s+/).filter(Boolean).length;
+
+  const keyElements: string[] = [];
+  if (hasTimestamps) keyElements.push("Chapter timestamps");
+  if (hasLinks) keyElements.push("External links");
+  if (hasCTA) keyElements.push("Call-to-action");
+  if (description.includes("#")) keyElements.push("Hashtags");
+  if (/social|instagram|twitter|tiktok|discord/i.test(description))
+    keyElements.push("Social media links");
+
+  // ===== FORMAT SIGNALS =====
+  let likelyFormat = "General";
+  if (/tutorial|how to|guide|step|learn/i.test(title + " " + description)) {
+    likelyFormat = "Tutorial";
+  } else if (/review|honest|vs |compared|worth/i.test(title)) {
+    likelyFormat = "Review";
+  } else if (/vlog|day in|week in|behind/i.test(title + " " + description)) {
+    likelyFormat = "Vlog";
+  } else if (/react|watch|reacts/i.test(title)) {
+    likelyFormat = "Reaction";
+  } else if (/story|journey|experience/i.test(title + " " + description)) {
+    likelyFormat = "Story/Documentary";
+  } else if (/top \d|best \d|\d things|\d ways/i.test(title)) {
+    likelyFormat = "Listicle";
+  } else if (/explained|what is|why/i.test(title)) {
+    likelyFormat = "Explainer";
+  }
+
+  let productionLevel: "Low" | "Medium" | "High" = "Medium";
+  if (durationMin < 3) {
+    productionLevel = "Low";
+  } else if (durationMin > 15 && views > 50000) {
+    productionLevel = "High";
+  }
+
+  let paceEstimate: "Slow" | "Medium" | "Fast" = "Medium";
+  if (durationMin < 5) {
+    paceEstimate = "Fast";
+  } else if (durationMin > 20) {
+    paceEstimate = "Slow";
+  }
+
+  return {
+    titleAnalysis: {
+      score: titleScore,
+      characterCount: titleLength,
+      hasNumber,
+      hasPowerWord,
+      hasCuriosityGap,
+      hasTimeframe,
+      strengths: titleStrengths.slice(0, 4),
+      weaknesses: titleWeaknesses.slice(0, 3),
+    },
+    competitionDifficulty: {
+      score: difficultyScore,
+      reasons: difficultyReasons.slice(0, 3),
+    },
+    postingTiming: {
+      dayOfWeek,
+      hourOfDay,
+      daysAgo,
+      isWeekend,
+      timingInsight,
+    },
+    lengthAnalysis: {
+      minutes: durationMin,
+      category: lengthCategory,
+      insight: lengthInsight,
+      optimalForTopic: durationMin >= 5 && durationMin <= 12,
+    },
+    engagementBenchmarks: {
+      likeRate: Math.round(likeRate * 100) / 100,
+      commentRate: Math.round(commentRate * 100) / 100,
+      likeRateVerdict,
+      commentRateVerdict,
+    },
+    opportunityScore: {
+      score: opportunityScore,
+      verdict: opportunityVerdict,
+      gaps: gaps.slice(0, 4),
+      angles: angles.slice(0, 4),
+    },
+    beatThisVideo: beatChecklist.slice(0, 6),
+    descriptionAnalysis: {
+      hasTimestamps,
+      hasLinks,
+      hasCTA,
+      estimatedWordCount,
+      keyElements,
+    },
+    formatSignals: {
+      likelyFormat,
+      productionLevel,
+      paceEstimate,
+    },
+  };
 }
 
 // Derive keywords from text when tags are missing
@@ -771,6 +1202,117 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
         "The data at 4:32 was mind-blowing",
         "Finally someone said what we all needed to hear",
       ],
+    },
+    strategicInsights: {
+      titleAnalysis: {
+        score: 8,
+        characterCount: 44,
+        hasNumber: false,
+        hasPowerWord: true, // "DOUBLED"
+        hasCuriosityGap: true, // "This One Change"
+        hasTimeframe: false,
+        strengths: [
+          "Creates curiosity gap with 'This One Change'",
+          "Specific metric 'DOUBLED' builds trust",
+          "Personal pronoun 'My' adds authenticity",
+          "Optimal length (40-60 chars)",
+        ],
+        weaknesses: ["Could add a number for specificity (e.g., '30 Days')"],
+      },
+      competitionDifficulty: {
+        score: "Hard",
+        reasons: [
+          "High-performing video (245K+ views)",
+          "Very high engagement - content is resonating strongly",
+          "Established channel with loyal audience",
+        ],
+      },
+      postingTiming: {
+        dayOfWeek: "Tuesday",
+        hourOfDay: 14,
+        daysAgo: 3,
+        isWeekend: false,
+        timingInsight: "Posted during peak viewing hours (2-5pm)",
+      },
+      lengthAnalysis: {
+        minutes: 14,
+        category: "Long",
+        insight:
+          "Long-form content - needs strong hooks throughout to maintain attention",
+        optimalForTopic: true,
+      },
+      engagementBenchmarks: {
+        likeRate: 4.8,
+        commentRate: 3.0,
+        likeRateVerdict: "Above Average",
+        commentRateVerdict: "Average",
+      },
+      opportunityScore: {
+        score: 7,
+        verdict: "Good opportunity - room to differentiate",
+        gaps: [
+          "Viewers asking for: How to decide which video topics to prioritize",
+          "No case studies for smaller channels under 10K",
+          "Could include more actionable templates/frameworks",
+        ],
+        angles: [
+          "Personal case study - 'I tried posting less for 30 days'",
+          "Contrarian take - 'Why posting MORE actually works better'",
+          "Make a shorter, more focused version (under 10 min)",
+          "Target smaller creators specifically (under 1K subs)",
+        ],
+      },
+      beatThisVideo: [
+        {
+          action: "Study their first 30 seconds and make your hook stronger",
+          difficulty: "Medium",
+          impact: "High",
+        },
+        {
+          action:
+            "Add specific numbers to your title (e.g., '30 Days', '5 Steps')",
+          difficulty: "Easy",
+          impact: "Medium",
+        },
+        {
+          action:
+            "Address what viewers asked for: smaller channel case studies",
+          difficulty: "Medium",
+          impact: "High",
+        },
+        {
+          action: "Create a more compelling thumbnail with clear focal point",
+          difficulty: "Medium",
+          impact: "High",
+        },
+        {
+          action: "Add downloadable templates/checklists as value-add",
+          difficulty: "Easy",
+          impact: "Medium",
+        },
+        {
+          action: "Share YOUR unique results - they can't replicate your data",
+          difficulty: "Hard",
+          impact: "High",
+        },
+      ],
+      descriptionAnalysis: {
+        hasTimestamps: true,
+        hasLinks: true,
+        hasCTA: true,
+        estimatedWordCount: 245,
+        keyElements: [
+          "Chapter timestamps",
+          "Social media links",
+          "Call-to-action",
+          "External links",
+        ],
+      },
+      formatSignals: {
+        likelyFormat: "Tutorial",
+        productionLevel: "High",
+        paceEstimate: "Medium",
+      },
     },
     tags: [
       "youtube growth",

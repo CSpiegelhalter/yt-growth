@@ -54,7 +54,7 @@ export default function IdeaBoard({
         const res = await fetch("/api/me/saved-ideas");
         if (res.ok) {
           const data = await res.json();
-          const ids = new Set(
+          const ids = new Set<string>(
             (data.savedIdeas || []).map((s: { ideaId: string }) => s.ideaId)
           );
           setSavedIdeas(ids);

@@ -14,8 +14,7 @@ type Props = {
 };
 
 /**
- * VideoInsightsClient - Displays owned video analytics and LLM insights
- * Receives initial data from server, handles range changes and refresh client-side
+ * VideoInsightsClient - Clean, story-driven video analytics
  */
 export default function VideoInsightsClient({
   videoId,
@@ -27,93 +26,48 @@ export default function VideoInsightsClient({
   const [insights, setInsights] = useState<VideoInsightsResponse | null>(
     initialInsights
   );
-  const [range, setRange] = useState<"7d" | "28d" | "90d">(initialRange);
-  const [loading, setLoading] = useState(!initialInsights); // Start loading if no initial data
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(!initialInsights);
   const [extraRemixes, setExtraRemixes] = useState<
     Array<{
       id: string;
       title: string;
       hook: string;
       keywords: string[];
-      inspiredByVideoIds?: string[];
       isNew?: boolean;
     }>
   >([]);
   const [generatingRemixes, setGeneratingRemixes] = useState(false);
 
-  const fetchInsights = useCallback(
-    async (newRange: "7d" | "28d" | "90d") => {
-      setLoading(true);
-      try {
-        // Try with channelId if available, otherwise let API return demo data
-        const url = channelId
-          ? `/api/me/channels/${channelId}/videos/${videoId}/insights?range=${newRange}`
-          : `/api/me/channels/_demo/videos/${videoId}/insights?range=${newRange}`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          setInsights(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch insights:", err);
-      } finally {
-        setLoading(false);
+  const fetchInsights = useCallback(async () => {
+    setLoading(true);
+    try {
+      const url = channelId
+        ? `/api/me/channels/${channelId}/videos/${videoId}/insights?range=28d`
+        : `/api/me/channels/_demo/videos/${videoId}/insights?range=28d`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setInsights(data);
       }
-    },
-    [channelId, videoId]
-  );
+    } catch (err) {
+      console.error("Failed to fetch insights:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [channelId, videoId]);
 
-  // Reset local state when the route videoId changes so we never show stale data.
   useEffect(() => {
     setExtraRemixes([]);
     setGeneratingRemixes(false);
-    setRefreshing(false);
-    setRange(initialRange);
 
     if (initialInsights) {
       setInsights(initialInsights);
       setLoading(false);
     } else {
       setInsights(null);
-      // Fetch fresh insights for this videoId
-      fetchInsights(initialRange);
+      fetchInsights();
     }
-    // We intentionally depend on videoId so navigation always resets.
-  }, [videoId, initialRange, initialInsights, fetchInsights]);
-
-  // (No separate "mount" fetch effect needed; the reset-on-videoId effect handles this.)
-
-  const handleRangeChange = useCallback(
-    (newRange: "7d" | "28d" | "90d") => {
-      setRange(newRange);
-      fetchInsights(newRange);
-    },
-    [fetchInsights]
-  );
-
-  const handleRefresh = useCallback(async () => {
-    if (!channelId) return;
-    setRefreshing(true);
-    try {
-      const res = await fetch(
-        `/api/me/channels/${channelId}/videos/${videoId}/insights`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ range }),
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setInsights(data);
-      }
-    } catch (err) {
-      console.error("Failed to refresh insights:", err);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [channelId, videoId, range]);
+  }, [videoId, initialInsights, fetchInsights]);
 
   // Loading state
   if (loading && !insights) {
@@ -121,7 +75,7 @@ export default function VideoInsightsClient({
       <main className={s.page}>
         <div className={s.loading}>
           <div className={s.spinner} />
-          <p>Loading video insights...</p>
+          <p>Analyzing your video...</p>
         </div>
       </main>
     );
@@ -135,24 +89,11 @@ export default function VideoInsightsClient({
           ← Back to Dashboard
         </Link>
         <div className={s.errorState}>
-          <div className={s.errorIcon}>
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 8v4M12 16h.01" />
-            </svg>
-          </div>
-          <h2 className={s.errorTitle}>Insights not available</h2>
+          <h2 className={s.errorTitle}>Couldn't load insights</h2>
           <p className={s.errorDesc}>
             {!channelId
               ? "Please select a channel to view video insights."
-              : "We couldn't load insights for this video. Try refreshing."}
+              : "We couldn't analyze this video. Try again later."}
           </p>
           <button onClick={() => router.back()} className={s.backBtn}>
             Go Back
@@ -162,7 +103,7 @@ export default function VideoInsightsClient({
     );
   }
 
-  const { video, derived, comparison, levers, llmInsights } = insights;
+  const { video, derived, llmInsights } = insights;
   const baseRemixes = llmInsights?.remixIdeas ?? [];
   const remixItems = [
     ...baseRemixes.map((r) => ({
@@ -170,7 +111,6 @@ export default function VideoInsightsClient({
       title: r.title,
       hook: r.hook,
       keywords: r.keywords ?? [],
-      inspiredByVideoIds: r.inspiredByVideoIds ?? [],
       isNew: false,
     })),
     ...extraRemixes,
@@ -186,36 +126,24 @@ export default function VideoInsightsClient({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            range,
+            range: "28d",
             seed: {
               title: video.title,
               tags: video.tags ?? [],
               currentRemixTitles: remixItems.map((r) => r.title),
               currentHooks: remixItems.map((r) => r.hook),
-              keyMetrics: {
-                subsPer1k: derived.subsPer1k ?? null,
-                avgViewPercentage:
-                  insights.analytics.totals.averageViewPercentage ?? null,
-                watchTimePerViewSec: derived.watchTimePerViewSec ?? null,
-                viewsPerDay: derived.viewsPerDay ?? null,
-              },
             },
           }),
         }
       );
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        console.error("Remix generation failed:", data);
-        return;
-      }
+      if (!res.ok) return;
 
       const data = (await res.json()) as {
         remixIdeas: Array<{
           title: string;
           hook: string;
           keywords: string[];
-          inspiredByVideoIds?: string[];
         }>;
       };
       const now = Date.now();
@@ -224,12 +152,10 @@ export default function VideoInsightsClient({
         title: r.title,
         hook: r.hook,
         keywords: r.keywords ?? [],
-        inspiredByVideoIds: r.inspiredByVideoIds ?? [],
         isNew: true,
       }));
 
       setExtraRemixes((prev) => [...prev, ...appended]);
-      // Clear the "New" tag after a moment
       setTimeout(() => {
         setExtraRemixes((prev) =>
           prev.map((r) => (r.isNew ? { ...r, isNew: false } : r))
@@ -242,6 +168,31 @@ export default function VideoInsightsClient({
     }
   };
 
+  // Calculate performance indicators
+  const avgViewed = insights.analytics.totals.averageViewPercentage ?? 0;
+  const engagementRate = derived.engagementPerView
+    ? derived.engagementPerView * 100
+    : 0;
+  const subsPer1k = derived.subsPer1k ?? 0;
+
+  // Determine overall sentiment
+  const getPerformanceLevel = () => {
+    let score = 0;
+    if (avgViewed >= 50) score += 2;
+    else if (avgViewed >= 40) score += 1;
+    if (engagementRate >= 5) score += 2;
+    else if (engagementRate >= 3) score += 1;
+    if (subsPer1k >= 2.5) score += 2;
+    else if (subsPer1k >= 1.5) score += 1;
+
+    if (score >= 5) return { level: "excellent", label: "Performing Well" };
+    if (score >= 3) return { level: "good", label: "Solid Performance" };
+    if (score >= 1) return { level: "fair", label: "Room to Grow" };
+    return { level: "needs-work", label: "Needs Attention" };
+  };
+
+  const performance = getPerformanceLevel();
+
   return (
     <main className={s.page}>
       {/* Back Link */}
@@ -252,28 +203,19 @@ export default function VideoInsightsClient({
       {/* Demo Banner */}
       {insights.demo && (
         <div className={s.demoBanner}>
-          <span className={s.demoBadge}>Demo Data</span>
-          <span>
-            This is sample data. Connect your channel to see real insights.
-          </span>
+          <span className={s.demoBadge}>Demo</span>
+          <span>Sample data - connect your channel for real insights</span>
         </div>
       )}
 
-      {/* Video Header */}
-      <header className={s.videoHeader}>
-        <div className={s.thumbnailWrap}>
+      {/* Hero Header */}
+      <header className={s.hero}>
+        <div className={s.heroMedia}>
           {video.thumbnailUrl ? (
-            <img src={video.thumbnailUrl} alt="" className={s.thumbnail} />
+            <img src={video.thumbnailUrl} alt="" className={s.heroThumbnail} />
           ) : (
-            <div className={s.thumbnailPlaceholder}>
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
+            <div className={s.heroThumbnailPlaceholder}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </div>
@@ -282,338 +224,360 @@ export default function VideoInsightsClient({
             href={`https://youtube.com/watch?v=${videoId}`}
             target="_blank"
             rel="noopener noreferrer"
-            className={s.watchBtn}
+            className={s.watchLink}
           >
-            Watch on YouTube
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+            </svg>
+            Watch
           </a>
         </div>
-        <div className={s.videoMeta}>
-          <h1 className={s.videoTitle}>{video.title}</h1>
-          <div className={s.metaRow}>
+        <div className={s.heroContent}>
+          <h1 className={s.heroTitle}>{video.title}</h1>
+          <div className={s.heroMeta}>
             {video.publishedAt && (
-              <span className={s.metaItem}>
-                Published {formatDate(video.publishedAt)}
-              </span>
+              <span>{formatRelativeDate(video.publishedAt)}</span>
             )}
-            <span className={s.metaItem}>
-              {formatDuration(video.durationSec)}
-            </span>
+            <span>•</span>
+            <span>{formatDuration(video.durationSec)}</span>
+            <span>•</span>
+            <span>{formatCompact(derived.totalViews)} views</span>
           </div>
-          <div className={s.headerChips}>
-            <span
-              className={`${s.healthChip} ${
-                comparison.healthScore >= 60 ? s.healthGood : s.healthWarn
-              }`}
-            >
-              Health Score: {comparison.healthScore.toFixed(0)}
-            </span>
-            <span className={s.healthLabel}>{comparison.healthLabel}</span>
+          <div className={`${s.performanceBadge} ${s[performance.level]}`}>
+            {performance.label}
           </div>
         </div>
       </header>
 
-      {/* Range Selector + Refresh */}
-      <div className={s.controls}>
-        <div className={s.rangeTabs}>
-          {(["7d", "28d", "90d"] as const).map((r) => (
-            <button
-              key={r}
-              className={`${s.rangeTab} ${range === r ? s.rangeTabActive : ""}`}
-              onClick={() => handleRangeChange(r)}
-              disabled={loading}
-            >
-              {r === "7d" ? "7 Days" : r === "28d" ? "28 Days" : "90 Days"}
-            </button>
-          ))}
+      {/* AI Summary - The Main Story */}
+      {llmInsights?.summary && (
+        <section className={s.aiSummary}>
+          <div className={s.aiIcon}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <div className={s.aiText}>
+            <p className={s.aiHeadline}>{llmInsights.summary.headline}</p>
+            <p className={s.aiDetail}>{llmInsights.summary.oneLiner}</p>
+          </div>
+        </section>
+      )}
+
+      {/* Quick Stats - The Numbers That Matter */}
+      <section className={s.quickStats}>
+        <div className={s.statGroup}>
+          <div className={s.statMain}>
+            <span className={s.statValue}>{formatCompact(derived.totalViews)}</span>
+            <span className={s.statLabel}>Total Views</span>
+          </div>
+          <div className={s.statSecondary}>
+            <span>{formatCompact(derived.viewsPerDay)}/day</span>
+          </div>
         </div>
-        <button
-          className={s.refreshBtn}
-          onClick={handleRefresh}
-          disabled={refreshing}
-        >
-          {refreshing ? "Refreshing..." : "Refresh"}
-        </button>
-      </div>
 
-      {/* Content Sections */}
-      <div className={s.sections}>
-        {/* Scorecard */}
-        <section className={s.section}>
-          <h2 className={s.sectionTitle}>Performance</h2>
-          <div className={s.scorecard}>
-            <ScoreCard
-              label="Views"
-              value={formatCompact(derived.totalViews)}
-              sub={`${formatCompact(derived.viewsPerDay)}/day`}
-              delta={comparison.viewsPerDay.delta}
-              vsBaseline={comparison.viewsPerDay.vsBaseline}
-            />
-            <ScoreCard
-              label="Watch Time"
-              value={formatCompact(
-                insights.analytics.totals.estimatedMinutesWatched ?? 0
-              )}
-              sub={
-                derived.watchTimePerViewSec
-                  ? `${formatDuration(derived.watchTimePerViewSec)}/view`
-                  : "-"
-              }
-            />
-            <ScoreCard
-              label="Avg % Viewed"
-              value={
-                insights.analytics.totals.averageViewPercentage != null
-                  ? `${insights.analytics.totals.averageViewPercentage.toFixed(
-                      1
-                    )}%`
-                  : "-"
-              }
-              delta={comparison.avgViewPercentage.delta}
-              vsBaseline={comparison.avgViewPercentage.vsBaseline}
-            />
-            <ScoreCard
-              label="Subscribers"
-              value={`+${insights.analytics.totals.subscribersGained ?? 0}`}
-              sub={
-                derived.subsPer1k
-                  ? `${derived.subsPer1k.toFixed(1)}/1K views`
-                  : "-"
-              }
-              delta={comparison.subsPer1k.delta}
-              vsBaseline={comparison.subsPer1k.vsBaseline}
-            />
-            <ScoreCard
-              label="Engagement"
-              value={
-                derived.engagementPerView != null
-                  ? `${(derived.engagementPerView * 100).toFixed(2)}%`
-                  : "-"
-              }
-              sub={`${insights.analytics.totals.likes ?? 0} likes`}
-              delta={comparison.engagementPerView.delta}
-              vsBaseline={comparison.engagementPerView.vsBaseline}
-            />
-            <ScoreCard
-              label="Shares"
-              value={String(insights.analytics.totals.shares ?? 0)}
-              sub={
-                derived.sharesPer1k
-                  ? `${derived.sharesPer1k.toFixed(1)}/1K`
-                  : "-"
-              }
-              delta={comparison.sharesPer1k.delta}
-              vsBaseline={comparison.sharesPer1k.vsBaseline}
-            />
+        <div className={s.statDivider} />
+
+        <div className={s.statGroup}>
+          <div className={s.statMain}>
+            <span className={s.statValue}>{avgViewed.toFixed(0)}%</span>
+            <span className={s.statLabel}>Avg Watched</span>
+          </div>
+          <div className={s.statSecondary}>
+            <span>{derived.avgWatchTimeMin?.toFixed(1) ?? "-"} min/view</span>
+          </div>
+        </div>
+
+        <div className={s.statDivider} />
+
+        <div className={s.statGroup}>
+          <div className={s.statMain}>
+            <span className={s.statValue}>{engagementRate.toFixed(1)}%</span>
+            <span className={s.statLabel}>Engagement</span>
+          </div>
+          <div className={s.statSecondary}>
+            <span>{insights.analytics.totals.likes ?? 0} likes</span>
+          </div>
+        </div>
+
+        <div className={s.statDivider} />
+
+        <div className={s.statGroup}>
+          <div className={s.statMain}>
+            <span className={s.statValue}>+{(insights.analytics.totals.subscribersGained ?? 0) - (insights.analytics.totals.subscribersLost ?? 0)}</span>
+            <span className={s.statLabel}>Net Subs</span>
+          </div>
+          <div className={s.statSecondary}>
+            <span>{subsPer1k.toFixed(1)}/1K views</span>
+          </div>
+        </div>
+      </section>
+
+      {/* What's Working / Needs Work */}
+      {llmInsights && (llmInsights.wins?.length > 0 || llmInsights.leaks?.length > 0) && (
+        <section className={s.winsLeaks}>
+          {llmInsights.wins?.length > 0 && (
+            <div className={s.winsCol}>
+              <h3 className={s.colTitle}>
+                <span className={s.winDot} />
+                What's Working
+              </h3>
+              <div className={s.colCards}>
+                {llmInsights.wins.map((win, i) => (
+                  <div key={i} className={s.winCard}>
+                    <strong>{win.label}</strong>
+                    <span>{win.why}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {llmInsights.leaks?.length > 0 && (
+            <div className={s.leaksCol}>
+              <h3 className={s.colTitle}>
+                <span className={s.leakDot} />
+                Needs Work
+              </h3>
+              <div className={s.colCards}>
+                {llmInsights.leaks.map((leak, i) => (
+                  <div key={i} className={s.leakCard}>
+                    <strong>{leak.label}</strong>
+                    <span>{leak.why}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Key Findings */}
+      {llmInsights?.keyFindings && llmInsights.keyFindings.length > 0 && (
+        <section className={s.findings}>
+          <h2 className={s.sectionTitle}>Key Findings</h2>
+          <div className={s.findingsList}>
+            {llmInsights.keyFindings.map((finding, i) => (
+              <div
+                key={i}
+                className={`${s.findingItem} ${
+                  finding.significance === "positive" ? s.findingPos :
+                  finding.significance === "negative" ? s.findingNeg : s.findingNeutral
+                }`}
+              >
+                <div className={s.findingIndicator}>
+                  {finding.significance === "positive" ? "↑" :
+                   finding.significance === "negative" ? "↓" : "→"}
+                </div>
+                <div className={s.findingContent}>
+                  <div className={s.findingMeta}>{finding.dataPoint}</div>
+                  <p className={s.findingText}>{finding.finding}</p>
+                  <p className={s.findingAction}>→ {finding.recommendation}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
+      )}
 
-        {/* 3 Levers */}
-        <section className={s.section}>
-          <h2 className={s.sectionTitle}>3 Levers</h2>
-          <p className={s.sectionSubtitle}>
-            Focus areas for improving this video
-          </p>
-          <div className={s.leversGrid}>
-            <LeverCard
-              title="Retention"
-              grade={levers.retention.grade}
-              color={levers.retention.color}
-              reason={levers.retention.reason}
-              action={levers.retention.action}
-            />
-            <LeverCard
-              title="Conversion"
-              grade={levers.conversion.grade}
-              color={levers.conversion.color}
-              reason={levers.conversion.reason}
-              action={levers.conversion.action}
-            />
-            <LeverCard
-              title="Engagement"
-              grade={levers.engagement.grade}
-              color={levers.engagement.color}
-              reason={levers.engagement.reason}
-              action={levers.engagement.action}
-            />
-          </div>
-        </section>
+      {/* Title & Tags Analysis */}
+      {llmInsights && (llmInsights.titleAnalysis || llmInsights.tagAnalysis) && (
+        <section className={s.packaging}>
+          <h2 className={s.sectionTitle}>Packaging Analysis</h2>
+          <p className={s.sectionDesc}>How well your title and tags are optimized for discovery</p>
 
-        {/* Wins & Leaks */}
-        {llmInsights &&
-          (llmInsights.wins.length > 0 || llmInsights.leaks.length > 0) && (
-            <section className={s.section}>
-              <div className={s.winsLeaksGrid}>
-                {llmInsights.wins.length > 0 && (
-                  <div className={s.winsColumn}>
-                    <h3 className={s.columnTitle}>What's Working</h3>
-                    {llmInsights.wins.map((win, i) => (
-                      <div key={i} className={s.winCard}>
-                        <span className={s.winLabel}>{win.label}</span>
-                        <p className={s.winWhy}>{win.why}</p>
-                      </div>
-                    ))}
+          <div className={s.packagingGrid}>
+            {llmInsights.titleAnalysis && (
+              <div className={s.packagingCard}>
+                <div className={s.packagingHeader}>
+                  <span className={s.packagingLabel}>Title</span>
+                  <span className={`${s.packagingScore} ${
+                    llmInsights.titleAnalysis.score >= 8 ? s.scoreGreen :
+                    llmInsights.titleAnalysis.score >= 5 ? s.scoreYellow : s.scoreRed
+                  }`}>
+                    {llmInsights.titleAnalysis.score}/10
+                  </span>
+                </div>
+                <p className={s.currentValue}>"{video.title}"</p>
+
+                {llmInsights.titleAnalysis.strengths?.length > 0 && (
+                  <div className={s.feedbackGroup}>
+                    <span className={s.feedbackLabel}>✓ Strengths</span>
+                    <ul>
+                      {llmInsights.titleAnalysis.strengths.map((str, i) => (
+                        <li key={i}>{str}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
-                {llmInsights.leaks.length > 0 && (
-                  <div className={s.leaksColumn}>
-                    <h3 className={s.columnTitle}>What's Leaking</h3>
-                    {llmInsights.leaks.map((leak, i) => (
-                      <div key={i} className={s.leakCard}>
-                        <span className={s.leakLabel}>{leak.label}</span>
-                        <p className={s.leakWhy}>{leak.why}</p>
+
+                {llmInsights.titleAnalysis.weaknesses?.length > 0 && (
+                  <div className={s.feedbackGroup}>
+                    <span className={s.feedbackLabelWarn}>✗ Could Improve</span>
+                    <ul>
+                      {llmInsights.titleAnalysis.weaknesses.map((w, i) => (
+                        <li key={i}>{w}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {llmInsights.titleAnalysis.suggestions?.length > 0 && (
+                  <div className={s.suggestions}>
+                    <span className={s.feedbackLabelAlt}>💡 Try Instead</span>
+                    {llmInsights.titleAnalysis.suggestions.map((sug, i) => (
+                      <div key={i} className={s.suggestionRow}>
+                        <span>{sug}</span>
+                        <CopyButton text={sug} />
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-            </section>
-          )}
+            )}
 
-        {/* What to change next */}
-        {llmInsights && llmInsights.actions.length > 0 && (
-          <section className={s.section}>
-            <h2 className={s.sectionTitle}>What to change next</h2>
-            <p className={s.sectionSubtitle}>
-              Actionable fixes prioritized by leverage on retention, conversion,
-              and engagement.
-            </p>
-            <div className={s.actionsGrid}>
-              {llmInsights.actions.slice(0, 6).map((action, i) => (
-                <div key={i} className={s.actionCard}>
-                  <div className={s.actionTopRow}>
-                    <span className={s.actionLever}>{action.lever}</span>
-                    {action.expectedImpact && (
-                      <span className={s.actionImpact}>
-                        {action.expectedImpact}
-                      </span>
-                    )}
+            {llmInsights.tagAnalysis && (
+              <div className={s.packagingCard}>
+                <div className={s.packagingHeader}>
+                  <span className={s.packagingLabel}>Tags</span>
+                  <span className={`${s.packagingScore} ${
+                    llmInsights.tagAnalysis.score >= 8 ? s.scoreGreen :
+                    llmInsights.tagAnalysis.score >= 5 ? s.scoreYellow : s.scoreRed
+                  }`}>
+                    {llmInsights.tagAnalysis.score}/10
+                  </span>
+                </div>
+                <p className={s.tagFeedback}>{llmInsights.tagAnalysis.feedback}</p>
+
+                {llmInsights.tagAnalysis.missing?.length > 0 && (
+                  <div className={s.missingTagsSection}>
+                    <span className={s.feedbackLabelAlt}>Add These Tags</span>
+                    <div className={s.missingTagsList}>
+                      {llmInsights.tagAnalysis.missing.map((tag, i) => (
+                        <span key={i} className={s.missingTagChip}>{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Priority Actions */}
+      {llmInsights?.actions && llmInsights.actions.length > 0 && (
+        <section className={s.actions}>
+          <h2 className={s.sectionTitle}>What To Do Next</h2>
+          <p className={s.sectionDesc}>Prioritized actions based on this video's data</p>
+
+          <div className={s.actionsList}>
+            {llmInsights.actions.slice(0, 5).map((action, i) => (
+              <div
+                key={i}
+                className={`${s.actionItem} ${
+                  action.priority === "high" ? s.actionHigh :
+                  action.priority === "medium" ? s.actionMed : s.actionLow
+                }`}
+              >
+                <div className={s.actionNumber}>{i + 1}</div>
+                <div className={s.actionContent}>
+                  <div className={s.actionTop}>
+                    <span className={s.actionLeverBadge}>{action.lever}</span>
+                    {action.priority === "high" && <span className={s.priorityBadge}>High Priority</span>}
                   </div>
                   <p className={s.actionText}>{action.action}</p>
                   <p className={s.actionReason}>{action.reason}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Remix Ideas */}
-        {llmInsights && remixItems.length > 0 && (
-          <section className={s.section}>
-            <h2 className={s.sectionTitle}>Remix Ideas</h2>
-            <p className={s.sectionSubtitle}>
-              Ready-to-film angles inspired by what worked here.
-            </p>
-            <div className={s.remixGrid}>
-              {remixItems.slice(0, 10).map((remix) => (
-                <div key={remix.id} className={s.remixCard}>
-                  <div className={s.remixHeaderRow}>
-                    <h4 className={s.remixTitle}>{remix.title}</h4>
-                    {remix.isNew && <span className={s.newPill}>New</span>}
-                  </div>
-                  <p className={s.remixHook}>&ldquo;{remix.hook}&rdquo;</p>
-                  {remix.keywords.length > 0 && (
-                    <div className={s.remixKeywords}>
-                      {remix.keywords.slice(0, 6).map((kw) => (
-                        <span key={kw} className={s.remixKeyword}>
-                          {kw}
-                        </span>
-                      ))}
-                    </div>
+                  {action.expectedImpact && (
+                    <span className={s.actionImpact}>Expected: {action.expectedImpact}</span>
                   )}
-                  <div className={s.remixActionsRow}>
-                    <CopyButton label="Copy title" text={remix.title} />
-                    <CopyButton label="Copy hook" text={remix.hook} />
-                  </div>
                 </div>
-              ))}
-            </div>
-            <div className={s.remixFooterRow}>
-              <button
-                className={s.primaryBtn}
-                onClick={handleGenerateMoreRemixes}
-                disabled={!channelId || generatingRemixes}
-              >
-                {generatingRemixes ? "Generating..." : "Generate more remixes"}
-              </button>
-              {!channelId && (
-                <span className={s.mutedHint}>
-                  Select a channel to generate more.
-                </span>
-              )}
-            </div>
-          </section>
-        )}
-      </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Thumbnail Hints */}
+      {llmInsights?.thumbnailHints && llmInsights.thumbnailHints.length > 0 && (
+        <section className={s.thumbnailSection}>
+          <h2 className={s.sectionTitle}>Thumbnail Tips</h2>
+          <div className={s.thumbnailHints}>
+            {llmInsights.thumbnailHints.map((hint, i) => (
+              <div key={i} className={s.thumbnailHint}>
+                <span className={s.hintIcon}>🎨</span>
+                <span>{hint}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Remix Ideas */}
+      {remixItems.length > 0 && (
+        <section className={s.remixes}>
+          <h2 className={s.sectionTitle}>Video Ideas From This</h2>
+          <p className={s.sectionDesc}>Spin-off concepts inspired by what worked</p>
+
+          <div className={s.remixGrid}>
+            {remixItems.slice(0, 6).map((remix) => (
+              <div key={remix.id} className={s.remixCard}>
+                {remix.isNew && <span className={s.newBadge}>New</span>}
+                <h4 className={s.remixTitle}>{remix.title}</h4>
+                <p className={s.remixHook}>"{remix.hook}"</p>
+                <div className={s.remixActions}>
+                  <CopyButton text={remix.title} label="Copy title" />
+                  <CopyButton text={remix.hook} label="Copy hook" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {channelId && (
+            <button
+              className={s.moreRemixesBtn}
+              onClick={handleGenerateMoreRemixes}
+              disabled={generatingRemixes}
+            >
+              {generatingRemixes ? "Generating..." : "Generate More Ideas"}
+            </button>
+          )}
+        </section>
+      )}
+
+      {/* Additional Metrics (collapsed by default) */}
+      <details className={s.moreMetrics}>
+        <summary className={s.moreMetricsSummary}>View All Metrics</summary>
+        <div className={s.metricsTable}>
+          <MetricRow label="Watch Time Total" value={`${formatCompact(insights.analytics.totals.estimatedMinutesWatched ?? 0)} min`} />
+          <MetricRow label="Comments" value={String(insights.analytics.totals.comments ?? 0)} sub={derived.commentsPer1k ? `${derived.commentsPer1k.toFixed(1)}/1K` : undefined} />
+          <MetricRow label="Shares" value={String(insights.analytics.totals.shares ?? 0)} sub={derived.sharesPer1k ? `${derived.sharesPer1k.toFixed(1)}/1K` : undefined} />
+          <MetricRow label="Playlist Saves" value={`+${(insights.analytics.totals.videosAddedToPlaylists ?? 0) - (insights.analytics.totals.videosRemovedFromPlaylists ?? 0)}`} />
+          <MetricRow label="Like Ratio" value={derived.likeRatio != null ? `${derived.likeRatio.toFixed(1)}%` : "-"} />
+          {derived.cardClickRate != null && <MetricRow label="Card CTR" value={`${derived.cardClickRate.toFixed(2)}%`} />}
+          {derived.endScreenClickRate != null && <MetricRow label="End Screen CTR" value={`${derived.endScreenClickRate.toFixed(2)}%`} />}
+          {insights.analytics.totals.estimatedRevenue != null && <MetricRow label="Revenue" value={`$${insights.analytics.totals.estimatedRevenue.toFixed(2)}`} />}
+          {derived.rpm != null && <MetricRow label="RPM" value={`$${derived.rpm.toFixed(2)}`} />}
+        </div>
+      </details>
     </main>
   );
 }
 
 /* Sub-components */
 
-function ScoreCard({
-  label,
-  value,
-  sub,
-  delta,
-  vsBaseline,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  delta?: number | null;
-  vsBaseline?: "above" | "at" | "below" | "unknown";
-}) {
+function MetricRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className={s.scoreCard}>
-      <span className={s.scoreLabel}>{label}</span>
-      <span className={s.scoreValue}>{value}</span>
-      {sub && <span className={s.scoreSub}>{sub}</span>}
-      {delta != null && vsBaseline && vsBaseline !== "unknown" && (
-        <span
-          className={`${s.scoreDelta} ${
-            vsBaseline === "above"
-              ? s.deltaPositive
-              : vsBaseline === "below"
-              ? s.deltaNegative
-              : s.deltaNeutral
-          }`}
-        >
-          {delta > 0 ? "+" : ""}
-          {delta.toFixed(1)}% vs avg
-        </span>
-      )}
-    </div>
-  );
-}
-
-function LeverCard({
-  title,
-  grade,
-  color,
-  reason,
-  action,
-}: {
-  title: string;
-  grade: string;
-  color: string;
-  reason: string;
-  action: string;
-}) {
-  return (
-    <div className={s.leverCard}>
-      <div className={s.leverHeader}>
-        <span className={s.leverTitle}>{title}</span>
-        <span className={s.leverGrade} data-color={color}>
-          {grade}
-        </span>
+    <div className={s.metricRow}>
+      <span className={s.metricLabel}>{label}</span>
+      <div className={s.metricValue}>
+        <span>{value}</span>
+        {sub && <span className={s.metricSub}>{sub}</span>}
       </div>
-      <p className={s.leverReason}>{reason}</p>
-      <p className={s.leverAction}>{action}</p>
     </div>
   );
 }
 
-function CopyButton({ label, text }: { label: string; text: string }) {
+function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -623,20 +587,33 @@ function CopyButton({ label, text }: { label: string; text: string }) {
   };
 
   return (
-    <button onClick={handleCopy} className={s.secondaryBtn} type="button">
-      {copied ? "Copied" : label}
+    <button onClick={handleCopy} className={s.copyBtn} type="button">
+      {copied ? "✓" : label}
     </button>
   );
 }
 
 /* Helpers */
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+function formatRelativeDate(dateStr: string): string {
+  const published = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - published.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Published today";
+  if (diffDays === 1) return "Published yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
+  }
+  if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30);
+    return months === 1 ? "1 month ago" : `${months} months ago`;
+  }
+  const years = Math.floor(diffDays / 365);
+  return years === 1 ? "1 year ago" : `${years} years ago`;
 }
 
 function formatDuration(seconds: number): string {

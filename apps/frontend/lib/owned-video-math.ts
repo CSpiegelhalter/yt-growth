@@ -22,18 +22,33 @@ export type DerivedMetrics = {
   likesPer1k: number | null;
   playlistAddsPer1k: number | null;
 
+  // Advanced engagement metrics
+  netSubsPer1k: number | null; // (subscribersGained - subscribersLost) per 1K views
+  netSavesPer1k: number | null; // Net playlist adds per 1K (important for algorithm)
+  likeRatio: number | null; // likes / (likes + dislikes) as 0-100%
+
   // Retention efficiency
   watchTimePerViewSec: number | null;
   avdRatio: number | null; // averageViewDuration / videoDuration
+  avgWatchTimeMin: number | null; // Average watch time in minutes per view
 
   // Engagement
   engagementPerView: number | null;
   engagedViewRate: number | null;
 
+  // Card & End Screen performance
+  cardClickRate: number | null; // cardClicks / cardImpressions as %
+  endScreenClickRate: number | null; // annotationClicks / annotationImpressions as %
+
+  // Audience quality
+  premiumViewRate: number | null; // redViews / views as % (YouTube Premium viewers)
+  watchTimePerSub: number | null; // Minutes watched per subscriber gained (quality indicator)
+
   // Monetization (may be null)
   rpm: number | null;
   monetizedPlaybackRate: number | null;
   adImpressionsPerView: number | null;
+  cpm: number | null; // Cost per 1000 ad impressions
 
   // Trend metrics from daily series
   velocity24h: number | null;
@@ -98,6 +113,24 @@ export function computeDerivedMetrics(
   const likesPer1k = totals.likes != null ? totals.likes / viewsPer1k : null;
   const playlistAddsPer1k = totals.videosAddedToPlaylists != null ? totals.videosAddedToPlaylists / viewsPer1k : null;
 
+  // Advanced engagement metrics
+  // Net subs (gained - lost) per 1K views - the TRUE conversion metric
+  const netSubsPer1k =
+    totals.subscribersGained != null && totals.subscribersLost != null
+      ? (totals.subscribersGained - totals.subscribersLost) / viewsPer1k
+      : null;
+
+  // Net saves per 1K (added - removed) - critical for algorithm favorability
+  const netSavesPer1k =
+    totals.videosAddedToPlaylists != null && totals.videosRemovedFromPlaylists != null
+      ? (totals.videosAddedToPlaylists - totals.videosRemovedFromPlaylists) / viewsPer1k
+      : null;
+
+  // Like ratio: likes / (likes + dislikes) as percentage
+  const likes = totals.likes ?? 0;
+  const dislikes = totals.dislikes ?? 0;
+  const likeRatio = likes + dislikes > 0 ? (likes / (likes + dislikes)) * 100 : null;
+
   // Retention efficiency
   const watchTimePerViewSec =
     totals.estimatedMinutesWatched != null ? (totals.estimatedMinutesWatched * 60) / views : null;
@@ -105,16 +138,45 @@ export function computeDerivedMetrics(
     totals.averageViewDuration != null && videoDurationSec > 0
       ? totals.averageViewDuration / videoDurationSec
       : null;
+  const avgWatchTimeMin =
+    totals.estimatedMinutesWatched != null ? totals.estimatedMinutesWatched / views : null;
 
   // Engagement
   const engagementSum = (totals.likes ?? 0) + (totals.comments ?? 0) + (totals.shares ?? 0);
   const engagementPerView = engagementSum / views;
   const engagedViewRate = totals.engagedViews != null ? totals.engagedViews / views : null;
 
+  // Card & End Screen performance
+  // If cardClickRate is directly available, use it; otherwise compute
+  let cardClickRate: number | null = null;
+  if (totals.cardClickRate != null) {
+    cardClickRate = totals.cardClickRate;
+  } else if (totals.cardClicks != null && totals.cardImpressions != null && totals.cardImpressions > 0) {
+    cardClickRate = (totals.cardClicks / totals.cardImpressions) * 100;
+  }
+
+  // End screen CTR
+  let endScreenClickRate: number | null = null;
+  if (totals.annotationClickThroughRate != null) {
+    endScreenClickRate = totals.annotationClickThroughRate;
+  } else if (totals.annotationClicks != null && totals.annotationImpressions != null && totals.annotationImpressions > 0) {
+    endScreenClickRate = (totals.annotationClicks / totals.annotationImpressions) * 100;
+  }
+
+  // Audience quality metrics
+  const premiumViewRate = totals.redViews != null ? (totals.redViews / views) * 100 : null;
+
+  // Watch time efficiency: how much watch time does it take to gain 1 subscriber?
+  const watchTimePerSub =
+    totals.estimatedMinutesWatched != null && totals.subscribersGained != null && totals.subscribersGained > 0
+      ? totals.estimatedMinutesWatched / totals.subscribersGained
+      : null;
+
   // Monetization
   const rpm = totals.estimatedRevenue != null ? totals.estimatedRevenue / viewsPer1k : null;
   const monetizedPlaybackRate = totals.monetizedPlaybacks != null ? totals.monetizedPlaybacks / views : null;
   const adImpressionsPerView = totals.adImpressions != null ? totals.adImpressions / views : null;
+  const cpm = totals.cpm != null ? totals.cpm : null;
 
   // Trend metrics from daily series
   const { velocity24h, velocity7d, acceleration24h } = computeTrendMetrics(dailySeries);
@@ -128,13 +190,22 @@ export function computeDerivedMetrics(
     commentsPer1k,
     likesPer1k,
     playlistAddsPer1k,
+    netSubsPer1k,
+    netSavesPer1k,
+    likeRatio,
     watchTimePerViewSec,
     avdRatio,
+    avgWatchTimeMin,
     engagementPerView,
     engagedViewRate,
+    cardClickRate,
+    endScreenClickRate,
+    premiumViewRate,
+    watchTimePerSub,
     rpm,
     monetizedPlaybackRate,
     adImpressionsPerView,
+    cpm,
     velocity24h,
     velocity7d,
     acceleration24h,

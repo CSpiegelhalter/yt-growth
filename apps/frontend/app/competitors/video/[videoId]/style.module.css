@@ -66,9 +66,23 @@
 @media (min-width: 768px) {
   .videoHeader {
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
     gap: 20px;
     padding: 20px;
+  }
+}
+
+.thumbnailLink {
+  display: block;
+  position: relative;
+  flex-shrink: 0;
+  text-decoration: none;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .thumbnailLink {
+    width: 280px;
   }
 }
 
@@ -78,14 +92,30 @@
   aspect-ratio: 16 / 9;
   border-radius: 12px;
   overflow: hidden;
-  flex-shrink: 0;
   background: #f1f5f9;
 }
 
-@media (min-width: 768px) {
-  .thumbnailWrap {
-    width: 280px;
-  }
+.thumbnailLink:hover .playOverlay {
+  opacity: 1;
+}
+
+.thumbnailLink:hover .thumbnail {
+  transform: scale(1.02);
+}
+
+.playOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.thumbnail {
+  transition: transform 0.2s ease;
 }
 
 .thumbnail {
@@ -1196,4 +1226,472 @@
 
 .commentLikes {
   color: #94a3b8;
+}
+
+/* ================================
+   Quick Stats Bar
+   ================================ */
+
+.quickStatsSection {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.quickStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .quickStatsGrid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.quickStat {
+  text-align: center;
+  padding: 8px;
+}
+
+.quickStatValue {
+  margin-bottom: 4px;
+}
+
+.quickStatLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.scoreCircle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.scoreCircle[data-score="good"] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.scoreCircle[data-score="ok"] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.scoreCircle[data-score="poor"] {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.difficultyBadge {
+  display: inline-flex;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.difficultyBadge[data-difficulty="easy"] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.difficultyBadge[data-difficulty="medium"] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.difficultyBadge[data-difficulty="hard"] {
+  background: #fed7aa;
+  color: #c2410c;
+}
+
+.difficultyBadge[data-difficulty="very-hard"] {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.engagementBadge {
+  display: inline-flex;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.engagementBadge[data-verdict="exceptional"] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.engagementBadge[data-verdict="above-average"] {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.engagementBadge[data-verdict="average"] {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.engagementBadge[data-verdict="below-average"] {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.formatBadge {
+  display: inline-flex;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #ede9fe;
+  color: #6d28d9;
+  border-radius: 6px;
+}
+
+.lengthValue {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* ================================
+   Title Analysis
+   ================================ */
+
+.titleAnalysisGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .titleAnalysisGrid {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+}
+
+.titleScoreCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.titleScoreCircle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #f1f5f9;
+}
+
+.titleScoreCircle[data-score="good"] {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+.titleScoreCircle[data-score="ok"] {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.titleScoreCircle[data-score="poor"] {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+}
+
+.titleScoreNumber {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.titleScoreMax {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1;
+}
+
+.titleMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  font-size: 0.6875rem;
+  color: #64748b;
+}
+
+.titleCheck {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.titleFeedback {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.titleStrengths,
+.titleWeaknesses {
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.titleStrengths {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.titleWeaknesses {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.feedbackTitle {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px;
+}
+
+.titleStrengths ul,
+.titleWeaknesses ul {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 0.8125rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.titleStrengths li,
+.titleWeaknesses li {
+  margin-bottom: 4px;
+}
+
+/* ================================
+   Opportunity Assessment
+   ================================ */
+
+.opportunityHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.opportunityScoreBig {
+  font-size: 2rem;
+  font-weight: 800;
+  padding: 12px 24px;
+  border-radius: 16px;
+}
+
+.opportunityScoreBig[data-score="good"] {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  color: #166534;
+}
+
+.opportunityScoreBig[data-score="ok"] {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+}
+
+.opportunityScoreBig[data-score="poor"] {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+}
+
+.opportunityVerdict {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.opportunityBlock {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.opportunityBlock:last-child {
+  margin-bottom: 0;
+}
+
+.opportunityBlockTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 10px;
+}
+
+.opportunityList {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.8125rem;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.opportunityList li {
+  margin-bottom: 6px;
+}
+
+/* ================================
+   Beat This Video Checklist
+   ================================ */
+
+.checklistGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checklistItem {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  transition: border-color 0.15s;
+}
+
+.checklistItem:hover {
+  border-color: #c7d2fe;
+}
+
+.checklistAction {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.checklistMeta {
+  display: flex;
+  gap: 8px;
+}
+
+.checklistDifficulty,
+.checklistImpact {
+  padding: 3px 8px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border-radius: 4px;
+}
+
+.checklistDifficulty[data-level="easy"] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.checklistDifficulty[data-level="medium"] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.checklistDifficulty[data-level="hard"] {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.checklistImpact[data-level="high"] {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.checklistImpact[data-level="medium"] {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.checklistImpact[data-level="low"] {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ================================
+   Video Intelligence
+   ================================ */
+
+.intelligenceGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .intelligenceGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.intelCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.intelTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.intelValue {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 4px;
+}
+
+.intelNote {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.intelTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.intelTag {
+  padding: 3px 8px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: #e0e7ff;
+  color: #4338ca;
+  border-radius: 4px;
 }

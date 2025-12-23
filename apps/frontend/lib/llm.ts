@@ -1838,12 +1838,563 @@ Place your subscribe CTA immediately after delivering the first major value mome
     };
   }
 
+  // Detect Video Insights request
+  if (
+    systemMessage.includes("elite YouTube growth strategist") ||
+    lastMessage.includes("ANALYZE THIS VIDEO") ||
+    lastMessage.includes("PERFORMANCE DATA")
+  ) {
+    return {
+      content: JSON.stringify(getTestModeVideoInsightsResponse(lastMessage)),
+      tokensUsed: 2500,
+      model: "gpt-4o-mini-test",
+    };
+  }
+
   // Default response
   return {
     content:
       "This is a test mode response. Configure OPENAI_API_KEY for real responses.",
     tokensUsed: 10,
     model: "gpt-4o-mini-test",
+  };
+}
+
+/**
+ * Test mode fixture for Video Insights - DYNAMIC based on actual video data
+ */
+function getTestModeVideoInsightsResponse(prompt: string) {
+  // Parse video data from the prompt
+  const titleMatch = prompt.match(/TITLE:\s*"([^"]+)"/);
+  const title = titleMatch?.[1] ?? "Untitled Video";
+
+  const tagsMatch = prompt.match(/TAGS:\s*\[([^\]]+)\]/);
+  const tagsStr = tagsMatch?.[1] ?? "";
+  const tags = tagsStr
+    .split(",")
+    .map((t) => t.trim().replace(/"/g, ""))
+    .filter(Boolean);
+
+  const durationMatch = prompt.match(/DURATION:\s*(\d+)\s*minutes/);
+  const duration = parseInt(durationMatch?.[1] ?? "10", 10);
+
+  const viewsMatch = prompt.match(/Total Views:\s*([\d,]+)/);
+  const views = parseInt((viewsMatch?.[1] ?? "1000").replace(/,/g, ""), 10);
+
+  const viewsPerDayMatch = prompt.match(/Views\/Day:\s*([\d.]+)/);
+  const viewsPerDay = parseFloat(viewsPerDayMatch?.[1] ?? "100");
+
+  const avgViewedMatch = prompt.match(/Avg % Viewed:\s*([\d.]+)%/);
+  const avgViewed = parseFloat(avgViewedMatch?.[1] ?? "40");
+
+  const engagementMatch = prompt.match(/Engagement Rate:\s*([\d.]+)%/);
+  const engagementRate = parseFloat(engagementMatch?.[1] ?? "5");
+
+  const subsMatch = prompt.match(/Net Subs Gained:\s*([\d.]+)\/1K/);
+  const subsPer1k = parseFloat(subsMatch?.[1] ?? "2");
+
+  const healthMatch = prompt.match(
+    /OVERALL HEALTH:\s*(\d+)\/100\s*\(([^)]+)\)/
+  );
+  const healthScore = parseInt(healthMatch?.[1] ?? "70", 10);
+
+  // Analyze title characteristics
+  const titleLength = title.length;
+  const hasNumber = /\d/.test(title);
+  const hasQuestion = /\?/.test(title);
+  const hasHowTo = /how\s+(to|i)/i.test(title);
+  const hasPowerWords =
+    /(secret|amazing|ultimate|best|worst|never|always|shocking|insane|crazy)/i.test(
+      title
+    );
+  const isShort = titleLength < 40;
+  const isLong = titleLength > 70;
+
+  // Score the title (1-10)
+  let titleScore = 5;
+  if (hasNumber) titleScore += 1;
+  if (hasQuestion) titleScore += 0.5;
+  if (hasHowTo) titleScore += 1;
+  if (hasPowerWords) titleScore += 1;
+  if (isShort && titleLength > 20) titleScore += 0.5;
+  if (isLong) titleScore -= 1;
+  titleScore = Math.min(10, Math.max(1, Math.round(titleScore)));
+
+  // Generate title-specific feedback
+  const titleStrengths: string[] = [];
+  const titleWeaknesses: string[] = [];
+  const titleSuggestions: string[] = [];
+
+  if (hasNumber)
+    titleStrengths.push(`Uses a specific number which creates curiosity`);
+  else
+    titleWeaknesses.push(
+      `No specific number - adding one can boost CTR by 15-20%`
+    );
+
+  if (hasQuestion)
+    titleStrengths.push(`Question format engages viewers directly`);
+  if (hasHowTo)
+    titleStrengths.push(`"How to" format signals clear value proposition`);
+  else
+    titleSuggestions.push(
+      `Try: "How I ${title.split(" ").slice(0, 4).join(" ")}..."`
+    );
+
+  if (hasPowerWords)
+    titleStrengths.push(`Contains power word(s) that drive emotional clicks`);
+  else
+    titleWeaknesses.push(
+      `Missing emotional triggers - consider words like "secret", "shocking", or "ultimate"`
+    );
+
+  if (isLong)
+    titleWeaknesses.push(
+      `Title is ${titleLength} chars - YouTube truncates around 60-70 chars on mobile`
+    );
+  if (isShort && titleLength > 20)
+    titleStrengths.push(`Concise title that won't get cut off`);
+  if (titleLength < 20)
+    titleWeaknesses.push(`Title might be too short to convey enough value`);
+
+  // Generate specific title alternatives based on this video
+  const titleWords = title.split(" ").filter((w) => w.length > 3);
+  const mainTopic = titleWords.slice(0, 3).join(" ");
+  titleSuggestions.push(
+    `"${hasNumber ? "" : "5 "}${mainTopic} ${
+      hasNumber ? "" : "Secrets "
+    }Nobody Talks About"`
+  );
+  titleSuggestions.push(
+    `"I Tried ${mainTopic} for 30 Days - Here's What Happened"`
+  );
+  if (!hasQuestion)
+    titleSuggestions.push(`"Why ${mainTopic} Will Change Everything in 2024"`);
+
+  // Analyze tags
+  const tagCount = tags.length;
+  let tagScore = Math.min(8, Math.round(tagCount / 3) + 3);
+  const missingTags: string[] = [];
+
+  if (!tags.some((t) => /202\d/.test(t)))
+    missingTags.push(`Add "${mainTopic} 2024" for time-sensitive searches`);
+  if (!tags.some((t) => /tutorial|guide|how/i.test(t)))
+    missingTags.push(`Add "tutorial" or "guide" variations`);
+  if (!tags.some((t) => /beginner|advanced|pro/i.test(t)))
+    missingTags.push(
+      `Add skill level tags like "beginner guide" or "advanced tips"`
+    );
+  if (tagCount < 10)
+    missingTags.push(
+      `Only ${tagCount} tags - YouTube allows up to 500 chars, aim for 10-15 relevant tags`
+    );
+
+  // Determine performance level
+  const isHighPerformer =
+    healthScore >= 75 || engagementRate > 6 || subsPer1k > 3;
+  const isLowPerformer =
+    healthScore < 50 || engagementRate < 3 || avgViewed < 30;
+  const retentionStrong = avgViewed >= 50;
+  const retentionWeak = avgViewed < 35;
+  const engagementStrong = engagementRate > 5;
+  const engagementWeak = engagementRate < 3;
+  const subsStrong = subsPer1k > 2.5;
+  const subsWeak = subsPer1k < 1.5;
+
+  // Build dynamic headline based on THIS video
+  let headline = "";
+  if (isHighPerformer) {
+    headline = `"${title.slice(
+      0,
+      30
+    )}..." is outperforming your channel average`;
+  } else if (isLowPerformer) {
+    headline = `"${title.slice(0, 30)}..." has room for growth - here's how`;
+  } else {
+    headline = `"${title.slice(0, 30)}..." is performing at baseline`;
+  }
+
+  // Build dynamic one-liner based on actual metrics
+  let oneLiner = "";
+  if (retentionWeak && engagementStrong) {
+    oneLiner = `Strong engagement signals this topic resonates, but the ${avgViewed.toFixed(
+      0
+    )}% retention suggests viewers are leaving before your key points. Tightening the middle section could significantly boost watch time.`;
+  } else if (retentionStrong && engagementWeak) {
+    oneLiner = `Great retention at ${avgViewed.toFixed(
+      0
+    )}% shows your content delivers, but the low engagement suggests viewers aren't feeling compelled to interact. Add more discussion prompts and CTAs.`;
+  } else if (retentionStrong && engagementStrong) {
+    oneLiner = `This video is hitting on all cylinders - ${avgViewed.toFixed(
+      0
+    )}% retention with ${engagementRate.toFixed(
+      1
+    )}% engagement. Document what made this work and replicate it.`;
+  } else if (retentionWeak && engagementWeak) {
+    oneLiner = `Both retention (${avgViewed.toFixed(
+      0
+    )}%) and engagement (${engagementRate.toFixed(
+      1
+    )}%) are below target. Focus on tightening the first 30 seconds and adding more hooks throughout.`;
+  } else {
+    oneLiner = `This ${duration}-minute video is performing reasonably with ${views.toLocaleString()} views. There's opportunity to optimize both retention and engagement.`;
+  }
+
+  // Build key findings based on ACTUAL metrics from this video
+  const keyFindings: Array<{
+    finding: string;
+    dataPoint: string;
+    significance: string;
+    recommendation: string;
+  }> = [];
+
+  if (retentionStrong) {
+    keyFindings.push({
+      finding: `Strong retention for a ${duration}-minute video`,
+      dataPoint: `${avgViewed.toFixed(1)}% average viewed`,
+      significance: "positive",
+      recommendation:
+        "Your pacing is working. Note the structure and hooks you used here for future videos.",
+    });
+  } else if (retentionWeak) {
+    keyFindings.push({
+      finding: `Retention drops off early for this ${duration}-minute video`,
+      dataPoint: `${avgViewed.toFixed(1)}% average viewed`,
+      significance: "negative",
+      recommendation: `For ${duration}min content, aim for 45%+ retention. Add preview hooks and pattern interrupts every 2-3 minutes.`,
+    });
+  } else {
+    keyFindings.push({
+      finding: `Average retention for this video length`,
+      dataPoint: `${avgViewed.toFixed(1)}% average viewed`,
+      significance: "neutral",
+      recommendation:
+        "Consider adding chapter markers to help viewers navigate and find value faster.",
+    });
+  }
+
+  if (engagementStrong) {
+    keyFindings.push({
+      finding: `Engagement rate well above typical YouTube videos`,
+      dataPoint: `${engagementRate.toFixed(2)}% engagement rate`,
+      significance: "positive",
+      recommendation: `This topic sparked discussion. Create follow-up content diving deeper into viewer questions.`,
+    });
+  } else if (engagementWeak) {
+    keyFindings.push({
+      finding: `Low engagement relative to views`,
+      dataPoint: `${engagementRate.toFixed(2)}% engagement rate`,
+      significance: "negative",
+      recommendation: `Ask a specific, easy-to-answer question. "What's your experience with ${mainTopic}?" drives 3x more comments.`,
+    });
+  }
+
+  if (subsStrong) {
+    keyFindings.push({
+      finding: `Strong subscriber conversion`,
+      dataPoint: `${subsPer1k.toFixed(2)} subs per 1K views`,
+      significance: "positive",
+      recommendation: `This topic attracts your ideal audience. Create more content in this category.`,
+    });
+  } else if (subsWeak) {
+    keyFindings.push({
+      finding: `Subscribers not converting from views`,
+      dataPoint: `${subsPer1k.toFixed(2)} subs per 1K views`,
+      significance: "negative",
+      recommendation: `Add a subscribe CTA at the moment of highest value delivery - not just at the end.`,
+    });
+  }
+
+  if (viewsPerDay > 500) {
+    keyFindings.push({
+      finding: `High velocity indicates algorithm favor`,
+      dataPoint: `${viewsPerDay.toFixed(0)} views/day`,
+      significance: "positive",
+      recommendation: `Ride this momentum - post a related video within 7 days to capture the interested audience.`,
+    });
+  } else if (viewsPerDay < 50) {
+    keyFindings.push({
+      finding: `Low daily views suggest limited reach`,
+      dataPoint: `${viewsPerDay.toFixed(0)} views/day`,
+      significance: "negative",
+      recommendation: `Consider updating the title/thumbnail. A/B test with a more curiosity-driven hook.`,
+    });
+  }
+
+  // Build wins and leaks based on THIS video's performance
+  const wins: Array<{ label: string; why: string; metricKey: string }> = [];
+  const leaks: Array<{ label: string; why: string; metricKey: string }> = [];
+
+  if (retentionStrong)
+    wins.push({
+      label: `${avgViewed.toFixed(0)}% retention`,
+      why: `Above the 45% target for ${duration}min videos - your pacing works`,
+      metricKey: "avdRatio",
+    });
+  else if (retentionWeak)
+    leaks.push({
+      label: `${avgViewed.toFixed(0)}% retention`,
+      why: `Below target - viewers are leaving before your key insights`,
+      metricKey: "avdRatio",
+    });
+
+  if (engagementStrong)
+    wins.push({
+      label: `${engagementRate.toFixed(1)}% engagement`,
+      why: `This topic sparked real discussion - viewers care`,
+      metricKey: "engagementPerView",
+    });
+  else if (engagementWeak)
+    leaks.push({
+      label: `${engagementRate.toFixed(1)}% engagement`,
+      why: `Viewers watched but didn't interact - add more prompts`,
+      metricKey: "engagementPerView",
+    });
+
+  if (subsStrong)
+    wins.push({
+      label: `${subsPer1k.toFixed(1)} subs/1K`,
+      why: `Converting viewers to subscribers effectively`,
+      metricKey: "subsPer1k",
+    });
+  else if (subsWeak)
+    leaks.push({
+      label: `${subsPer1k.toFixed(1)} subs/1K`,
+      why: `Missing subscribe conversions - CTA timing matters`,
+      metricKey: "subsPer1k",
+    });
+
+  // Build actions based on THIS video's specific weaknesses
+  const actions: Array<{
+    lever: string;
+    action: string;
+    reason: string;
+    expectedImpact: string;
+    priority: string;
+  }> = [];
+
+  if (retentionWeak) {
+    actions.push({
+      lever: "Retention",
+      action: `Add a "here's what's coming" preview at the 30-second mark`,
+      reason: `Your ${avgViewed.toFixed(0)}% retention suggests early drop-off`,
+      expectedImpact: "+8-15% average view duration",
+      priority: "high",
+    });
+    actions.push({
+      lever: "Retention",
+      action: `Insert pattern interrupts (B-roll, graphics, story) every ${Math.max(
+        2,
+        Math.floor(duration / 4)
+      )} minutes`,
+      reason: `${duration}-minute videos need visual variety to maintain attention`,
+      expectedImpact: "+5-10% retention in mid-video",
+      priority: "high",
+    });
+  }
+
+  if (engagementWeak) {
+    actions.push({
+      lever: "Engagement",
+      action: `Pin a comment asking: "What's your biggest challenge with ${mainTopic}?"`,
+      reason: `Low engagement often means viewers don't have an easy entry point to comment`,
+      expectedImpact: "+20-40% comment rate",
+      priority: "medium",
+    });
+  }
+
+  if (subsWeak) {
+    actions.push({
+      lever: "Conversion",
+      action: `Move your subscribe CTA to immediately after your first valuable insight (around ${Math.floor(
+        duration * 0.25
+      )}:00)`,
+      reason: `Only ${subsPer1k.toFixed(
+        1
+      )} subs/1K means viewers aren't hearing or acting on your CTA`,
+      expectedImpact: "+0.5-1.0 subs per 1K views",
+      priority: "high",
+    });
+  }
+
+  if (titleScore < 7) {
+    actions.push({
+      lever: "Discovery",
+      action: `A/B test a new title: "${titleSuggestions[0]}"`,
+      reason: `Your title scores ${titleScore}/10 - ${
+        titleWeaknesses[0] ?? "there's room to optimize"
+      }`,
+      expectedImpact: "+15-30% click-through rate",
+      priority: "high",
+    });
+  }
+
+  if (missingTags.length > 0) {
+    actions.push({
+      lever: "Discovery",
+      action: missingTags[0],
+      reason: `Expanding your tag coverage helps YouTube understand and recommend your content`,
+      expectedImpact: "+10-20% search impressions",
+      priority: "medium",
+    });
+  }
+
+  // Ensure we have at least 3 actions
+  if (actions.length < 3) {
+    actions.push({
+      lever: "Engagement",
+      action: `End the video with a specific question: "Comment below: ${mainTopic} - what worked for you?"`,
+      reason: `Specific questions get 3x more comments than generic CTAs`,
+      expectedImpact: "+15-25% comment rate",
+      priority: "medium",
+    });
+  }
+
+  // Build thumbnail hints based on THIS video's title
+  const thumbnailHints = [
+    `Show a visual that represents "${mainTopic}" - make viewers curious`,
+    hasNumber
+      ? `Display the number "${
+          title.match(/\d+/)?.[0]
+        }" prominently in the thumbnail`
+      : `Consider adding a specific number as text overlay`,
+    `Your face showing ${
+      isHighPerformer ? "excitement/celebration" : "curiosity/intrigue"
+    } matching the title energy`,
+    `Use contrasting colors (complementary to your brand) to stand out in suggested videos`,
+  ];
+
+  // Build remix ideas based on THIS video's topic
+  const remixIdeas = [
+    {
+      title: `${mainTopic}: The Mistakes Everyone Makes (And How to Avoid Them)`,
+      hook: `After my video on "${title.slice(
+        0,
+        40
+      )}...", so many of you had questions about what NOT to do...`,
+      keywords: [mainTopic.toLowerCase(), "mistakes", "avoid", "tips"],
+      inspiredByVideoIds: [],
+    },
+    {
+      title: `I Tested ${mainTopic} for 30 Days - The Results Shocked Me`,
+      hook: `You asked for proof. So I spent an entire month testing everything I talked about in my ${mainTopic} video...`,
+      keywords: [mainTopic.toLowerCase(), "experiment", "results", "30 days"],
+      inspiredByVideoIds: [],
+    },
+    {
+      title: `${mainTopic} for Complete Beginners (Start Here)`,
+      hook: `A lot of you said my last video on ${mainTopic} was too advanced. This is the beginner's version...`,
+      keywords: [mainTopic.toLowerCase(), "beginner", "tutorial", "start"],
+      inspiredByVideoIds: [],
+    },
+  ];
+
+  return {
+    summary: {
+      headline,
+      oneLiner,
+    },
+    titleAnalysis: {
+      score: titleScore,
+      strengths:
+        titleStrengths.length > 0
+          ? titleStrengths
+          : ["Title is clear and readable"],
+      weaknesses:
+        titleWeaknesses.length > 0
+          ? titleWeaknesses
+          : ["Could test more curiosity-driven variations"],
+      suggestions: titleSuggestions.slice(0, 3),
+    },
+    tagAnalysis: {
+      score: tagScore,
+      coverage:
+        tagCount >= 10 ? "good" : tagCount >= 5 ? "moderate" : "limited",
+      missing:
+        missingTags.length > 0
+          ? missingTags
+          : ["Tags look well-optimized - consider adding trending variations"],
+      feedback:
+        tagCount < 5
+          ? `Only ${tagCount} tags detected - you're leaving search traffic on the table`
+          : `${tagCount} tags covering the basics. Add year-specific and skill-level variations for more reach.`,
+    },
+    thumbnailHints,
+    keyFindings,
+    wins:
+      wins.length > 0
+        ? wins
+        : [
+            {
+              label: "Baseline performance",
+              why: "Metrics are at channel average",
+              metricKey: "views",
+            },
+          ],
+    leaks:
+      leaks.length > 0
+        ? leaks
+        : [
+            {
+              label: "Opportunity to optimize",
+              why: "No critical issues, but room for growth",
+              metricKey: "views",
+            },
+          ],
+    actions,
+    experiments: [
+      {
+        type: "Title",
+        test: [
+          titleSuggestions[0] ?? "Add a specific number",
+          `"${hasQuestion ? "Statement version" : "Question version"}: ${
+            hasQuestion ? title.replace("?", "") : title + "?"
+          }"`,
+          `Add "[Year]" at the end for freshness signals`,
+        ],
+        successMetric: "CTR improvement in Analytics",
+      },
+      {
+        type: "Hook",
+        test: [
+          `Open with the result: "After doing ${mainTopic}, here's what happened..."`,
+          `Start with a surprising stat about ${mainTopic}`,
+          `Begin with viewer pain point: "If you've struggled with ${mainTopic}..."`,
+        ],
+        successMetric: "First 30s retention",
+      },
+    ],
+    packaging: {
+      titleAngles: [
+        hasNumber
+          ? "Your number hook is working - test different numbers"
+          : `Add a specific number: "5 ${mainTopic} Tips..."`,
+        hasPowerWords
+          ? "Power words are good - ensure they match content delivery"
+          : "Add emotional trigger words",
+        hasHowTo
+          ? "How-to format converts - stay consistent"
+          : `Test "How I..." personal framing`,
+      ],
+      hookSetups: [
+        `Show the transformation/result from ${mainTopic} in the first 3 seconds`,
+        `Open with a bold claim about ${mainTopic} - then prove it`,
+        `Start with viewer frustration, then promise the solution`,
+      ],
+      visualMoments: [
+        `Before/after comparison related to ${mainTopic}`,
+        `Screen recording or demo showing ${mainTopic} in action`,
+        `Your genuine reaction to results`,
+      ],
+    },
+    competitorTakeaways: [
+      {
+        channelName: "Top creators covering similar topics",
+        insight: `Videos about "${mainTopic}" that use numbered lists tend to rank higher`,
+        applicableAction: `Structure your next ${mainTopic} video as a list format`,
+      },
+    ],
+    remixIdeas,
   };
 }
 
