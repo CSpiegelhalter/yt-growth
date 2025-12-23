@@ -138,10 +138,14 @@ export function Header(_props: HeaderProps) {
 
   const navLinks = useMemo(
     () => [
-      { href: "/dashboard", label: "Videos" },
-      { href: "/ideas", label: "Ideas" },
-      { href: "/converters", label: "Subscriber Drivers" },
-      { href: "/competitors", label: "Competitors" },
+      { href: "/dashboard", label: "Videos", icon: "video" as const },
+      { href: "/ideas", label: "Ideas", icon: "lightbulb" as const },
+      {
+        href: "/converters",
+        label: "Subscriber Drivers",
+        icon: "trending" as const,
+      },
+      { href: "/competitors", label: "Competitors", icon: "trophy" as const },
     ],
     []
   );
@@ -323,6 +327,7 @@ export function Header(_props: HeaderProps) {
                         className={s.dropdownItem}
                         onClick={() => setMenuOpen(false)}
                       >
+                        <DropdownIcon type={link.icon} />
                         {link.label}
                       </Link>
                     ))}
@@ -331,19 +336,10 @@ export function Header(_props: HeaderProps) {
 
                     <Link
                       href="/saved-ideas"
-                      className={`${s.dropdownItem} ${s.savedIdeasItem}`}
+                      className={s.dropdownItem}
                       onClick={() => setMenuOpen(false)}
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                      </svg>
+                      <DropdownIcon type="bookmark" />
                       Saved Ideas
                     </Link>
 
@@ -352,6 +348,7 @@ export function Header(_props: HeaderProps) {
                       className={s.dropdownItem}
                       onClick={() => setMenuOpen(false)}
                     >
+                      <DropdownIcon type="user" />
                       Profile
                     </Link>
 
@@ -360,16 +357,7 @@ export function Header(_props: HeaderProps) {
                       className={s.dropdownItem}
                       onClick={() => setMenuOpen(false)}
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                      </svg>
+                      <DropdownIcon type="mail" />
                       Contact
                     </Link>
 
@@ -379,7 +367,8 @@ export function Header(_props: HeaderProps) {
                         className={s.dropdownItem}
                         onClick={() => setMenuOpen(false)}
                       >
-                        Admin: YouTube Usage
+                        <DropdownIcon type="settings" />
+                        Admin: API Usage
                       </Link>
                     )}
 
@@ -390,6 +379,7 @@ export function Header(_props: HeaderProps) {
                       className={`${s.dropdownItem} ${s.dropdownSignout}`}
                       onClick={() => setMenuOpen(false)}
                     >
+                      <DropdownIcon type="logout" />
                       Sign out
                     </Link>
                   </div>
@@ -433,4 +423,101 @@ function truncateEmail(email: string): string {
   const localPart = email.substring(0, atIndex);
   if (localPart.length <= 8) return localPart;
   return localPart.substring(0, 8) + "…";
+}
+
+/* ---------- Dropdown Icon Component ---------- */
+
+type IconType =
+  | "video"
+  | "lightbulb"
+  | "trending"
+  | "trophy"
+  | "bookmark"
+  | "user"
+  | "mail"
+  | "settings"
+  | "logout";
+
+function DropdownIcon({ type }: { type: IconType }) {
+  const props = {
+    width: 16,
+    height: 16,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  switch (type) {
+    case "video":
+      return (
+        <svg {...props}>
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <path d="M10 9l5 3-5 3V9z" />
+        </svg>
+      );
+    case "lightbulb":
+      return (
+        <svg {...props}>
+          <path d="M9 18h6M10 22h4M12 2v1M4.22 4.22l.71.71M1 12h2M18.36 4.93l.71-.71M23 12h-2M15.5 15a3.5 3.5 0 10-7 0c0 1.57.75 2.97 1.91 3.85.34.26.59.63.59 1.06V21h4v-1.09c0-.43.25-.8.59-1.06A3.98 3.98 0 0015.5 15z" />
+        </svg>
+      );
+    case "trending":
+      return (
+        <svg {...props}>
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+          <polyline points="17 6 23 6 23 12" />
+        </svg>
+      );
+    case "trophy":
+      return (
+        <svg {...props}>
+          <path d="M6 9H4.5a2.5 2.5 0 010-5H6" />
+          <path d="M18 9h1.5a2.5 2.5 0 000-5H18" />
+          <path d="M4 22h16" />
+          <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+          <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+          <path d="M18 2H6v7a6 6 0 1012 0V2z" />
+        </svg>
+      );
+    case "bookmark":
+      return (
+        <svg {...props}>
+          <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+        </svg>
+      );
+    case "user":
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="8" r="4" />
+          <path d="M20 21a8 8 0 00-16 0" />
+        </svg>
+      );
+    case "mail":
+      return (
+        <svg {...props}>
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <path d="M22 6l-10 7L2 6" />
+        </svg>
+      );
+    case "settings":
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+      );
+    case "logout":
+      return (
+        <svg {...props}>
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+      );
+    default:
+      return null;
+  }
 }

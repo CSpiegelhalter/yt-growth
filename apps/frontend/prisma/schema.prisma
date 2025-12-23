@@ -179,25 +179,26 @@ model OAuthState {
 // ============================================
 
 model CompetitorVideo {
-  id                 String                    @id @default(uuid()) @db.Uuid
-  videoId            String                    @unique @db.VarChar(32) // YouTube video ID
-  channelId          String                    @db.VarChar(64) // YouTube channel ID
-  channelTitle       String                    @db.VarChar(255)
-  title              String                    @db.VarChar(512)
-  description        String?                   @db.Text
-  publishedAt        DateTime                  @db.Timestamptz(6)
-  durationSec        Int?
-  thumbnailUrl       String?
-  tags               String[]                  @default([])
-  categoryId         String?                   @db.VarChar(32)
-  topicDetails       Json? // topicDetails from YouTube API
-  analysisJson       Json? // cached LLM analysis for competitor detail view
-  analysisCapturedAt DateTime?                 @db.Timestamptz(6)
-  lastFetchedAt      DateTime                  @default(now()) @db.Timestamptz(6)
-  createdAt          DateTime                  @default(now()) @db.Timestamptz(6)
-  updatedAt          DateTime                  @default(now()) @updatedAt @db.Timestamptz(6)
-  Snapshots          CompetitorVideoSnapshot[]
-  CommentAnalysis    CompetitorVideoComments?
+  id                  String                    @id @default(uuid()) @db.Uuid
+  videoId             String                    @unique @db.VarChar(32) // YouTube video ID
+  channelId           String                    @db.VarChar(64) // YouTube channel ID
+  channelTitle        String                    @db.VarChar(255)
+  title               String                    @db.VarChar(512)
+  description         String?                   @db.Text
+  publishedAt         DateTime                  @db.Timestamptz(6)
+  durationSec         Int?
+  thumbnailUrl        String?
+  tags                String[]                  @default([])
+  categoryId          String?                   @db.VarChar(32)
+  topicDetails        Json? // topicDetails from YouTube API
+  analysisJson        Json? // cached LLM analysis for competitor detail view
+  analysisContentHash String?                   @db.VarChar(32) // Hash for invalidation
+  analysisCapturedAt  DateTime?                 @db.Timestamptz(6)
+  lastFetchedAt       DateTime                  @default(now()) @db.Timestamptz(6)
+  createdAt           DateTime                  @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime                  @default(now()) @updatedAt @db.Timestamptz(6)
+  Snapshots           CompetitorVideoSnapshot[]
+  CommentAnalysis     CompetitorVideoComments?
 
   @@index([channelId], map: "idx_competitor_video_channel")
   @@index([publishedAt], map: "idx_competitor_video_published")
@@ -223,6 +224,7 @@ model CompetitorVideoComments {
   videoId         String          @unique @db.VarChar(32) // YouTube video ID
   capturedAt      DateTime        @default(now()) @db.Timestamptz(6)
   topCommentsJson Json? // Array of top comments for reference
+  contentHash     String?         @db.VarChar(32) // Hash of comments for invalidation
   analysisJson    Json? // LLM analysis result: sentiment, themes, quotes
   sentimentPos    Float? // Percentage positive
   sentimentNeu    Float? // Percentage neutral
@@ -336,6 +338,7 @@ model OwnedVideoInsightsCache {
   channelId   Int
   videoId     String   @db.VarChar(32) // YouTube video ID
   range       String   @db.VarChar(8) // "7d", "28d", "90d"
+  contentHash String?  @db.VarChar(32) // Hash of title+desc+tags for invalidation
   derivedJson Json? // Derived metrics + baselines
   llmJson     Json? // LLM-generated insights
   cachedUntil DateTime @db.Timestamptz(6)
@@ -383,4 +386,23 @@ model SavedIdea {
   @@unique([userId, ideaId], map: "uq_saved_idea_user_idea")
   @@index([userId, status], map: "idx_saved_idea_user_status")
   @@index([userId, createdAt(sort: Desc)], map: "idx_saved_idea_user_created")
+}
+
+// ============================================
+// SUBSCRIBER AUDIT PATTERN ANALYSIS CACHE
+// ============================================
+
+model SubscriberAuditCache {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       Int
+  channelId    Int
+  range        String   @db.VarChar(8) // "28d", "90d"
+  contentHash  String   @db.VarChar(32) // Hash of top videos for invalidation
+  analysisJson Json? // LLM-generated pattern analysis
+  cachedUntil  DateTime @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([userId, channelId, range], map: "uq_subscriber_audit_cache")
+  @@index([cachedUntil], map: "idx_subscriber_audit_cached")
 }

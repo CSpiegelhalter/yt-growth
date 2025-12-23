@@ -445,6 +445,8 @@ export type CompetitorFeedResponse = {
   nextCursor?: string;
   videos: CompetitorVideo[];
   demo?: boolean;
+  /** Description of the competitor channel size range being shown */
+  targetSizeDescription?: string;
 };
 
 export type CompetitorCommentsAnalysis = {

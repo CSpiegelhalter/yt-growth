@@ -40,7 +40,6 @@ export default function IdeaBoard({
 }: Props) {
   const [generating, setGenerating] = useState(false);
   const [generatingMore, setGeneratingMore] = useState(false);
-  const [range, setRange] = useState<"7d" | "28d">("7d");
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [savedIdeas, setSavedIdeas] = useState<Set<string>>(new Set());
@@ -83,29 +82,33 @@ export default function IdeaBoard({
     if (!onGenerate) return;
     setGenerating(true);
     try {
-      await onGenerate({ mode: "default", range });
+      await onGenerate({ mode: "default", range: "7d" });
     } finally {
       setGenerating(false);
     }
-  }, [onGenerate, range]);
+  }, [onGenerate]);
 
   const handleGenerateMore = useCallback(async () => {
     if (!onGenerate) return;
     setGeneratingMore(true);
     try {
-      await onGenerate({ mode: "more", range });
+      await onGenerate({ mode: "more", range: "7d" });
     } finally {
       setGeneratingMore(false);
     }
-  }, [onGenerate, range]);
+  }, [onGenerate]);
 
-  const handleRangeChange = useCallback(
-    (newRange: "7d" | "28d") => {
-      setRange(newRange);
-      onRefresh?.(newRange);
-    },
-    [onRefresh]
-  );
+  // Check if ideas are from a previous day (need refresh)
+  const needsDailyRefresh = useMemo(() => {
+    if (!data?.generatedAt) return false;
+    const generatedDate = new Date(data.generatedAt);
+    const today = new Date();
+    return (
+      generatedDate.getFullYear() !== today.getFullYear() ||
+      generatedDate.getMonth() !== today.getMonth() ||
+      generatedDate.getDate() !== today.getDate()
+    );
+  }, [data?.generatedAt]);
 
   // Save/unsave idea using API
   const toggleSaveIdea = useCallback(
@@ -231,38 +234,28 @@ export default function IdeaBoard({
               stroke="currentColor"
               strokeWidth="1.5"
             >
-              <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           </div>
-          <h2 className={s.emptyTitle}>Your Idea Board</h2>
+          <h2 className={s.emptyTitle}>Ready to spark your next hit?</h2>
           <p className={s.emptyDesc}>
-            Generate video ideas backed by data from similar channels.
-            We&apos;ll show you what&apos;s working and how to make it your own.
+            We analyze what&apos;s working in your niche right now and generate 
+            unique video ideas with hooks, titles, and scripts tailored for you.
           </p>
-          <div className={s.emptyActions}>
-            <select
-              className={s.rangeSelect}
-              value={range}
-              onChange={(e) => setRange(e.target.value as "7d" | "28d")}
-            >
-              <option value="7d">Last 7 days</option>
-              <option value="28d">Last 28 days</option>
-            </select>
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className={s.btnPrimary}
-            >
-              {generating ? (
-                <>
-                  <span className={s.spinner} />
-                  Generating Ideas...
-                </>
-              ) : (
-                "Generate Ideas"
-              )}
-            </button>
-          </div>
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className={s.btnPrimary}
+          >
+            {generating ? (
+              <>
+                <span className={s.spinner} />
+                Brewing ideas...
+              </>
+            ) : (
+              "Generate Today's Ideas"
+            )}
+          </button>
         </div>
       </div>
     );
@@ -277,29 +270,40 @@ export default function IdeaBoard({
           {channelName && <span className={s.channelName}>{channelName}</span>}
           {data.demo && <span className={s.demoBadge}>Demo Data</span>}
         </div>
-        <div className={s.headerRight}>
-          <select
-            className={s.rangeSelect}
-            value={range}
-            onChange={(e) => handleRangeChange(e.target.value as "7d" | "28d")}
-          >
-            <option value="7d">Last 7 days</option>
-            <option value="28d">Last 28 days</option>
-          </select>
+        {needsDailyRefresh && (
           <button
-            onClick={handleGenerateMore}
-            disabled={generatingMore}
-            className={s.btnSecondary}
+            onClick={handleGenerate}
+            disabled={generating}
+            className={s.refreshBtn}
           >
-            {generatingMore ? <span className={s.spinner} /> : "+ More Ideas"}
+            {generating ? (
+              <>
+                <span className={s.spinnerSmall} />
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                New day, fresh ideas
+              </>
+            )}
           </button>
-        </div>
+        )}
       </header>
 
       {/* Niche Insights */}
       {data.nicheInsights && <NicheInsightsBar insights={data.nicheInsights} />}
 
-      {/* Vertical Idea Feed */}
+      {/* Grid Idea Feed */}
       <div className={s.ideaFeed}>
         {ideas.map((idea) => (
           <IdeaCard
@@ -313,6 +317,36 @@ export default function IdeaBoard({
             copiedId={copiedId}
           />
         ))}
+        
+        {/* Bottom Load More */}
+        <div className={s.feedBottom}>
+          <button
+            onClick={handleGenerateMore}
+            disabled={generatingMore}
+            className={s.loadMoreFeed}
+          >
+            {generatingMore ? (
+              <>
+                <span className={s.spinner} />
+                Generating...
+              </>
+            ) : (
+              <>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Load More Ideas
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Footer */}
@@ -500,11 +534,6 @@ function IdeaDetailSheet({
   const [extraHooks, setExtraHooks] = useState<string[]>([]);
   const [extraTitles, setExtraTitles] = useState<string[]>([]);
   const [extraKeywords, setExtraKeywords] = useState<string[]>([]);
-  const [packaging, setPackaging] = useState<{
-    titleAngles: string[];
-    hookSetups: string[];
-    visualMoments: string[];
-  } | null>(null);
 
   // Lock body scroll
   useEffect(() => {
@@ -523,14 +552,6 @@ function IdeaDetailSheet({
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
   }, [onClose]);
-
-  // Generate packaging ideas on mount (client-side derivation)
-  useEffect(() => {
-    if (!packaging) {
-      const derived = derivePackagingIdeas(idea);
-      setPackaging(derived);
-    }
-  }, [idea, packaging]);
 
   const handleGenerateMore = useCallback(async () => {
     if (!channelId || generatingMore) return;
@@ -556,7 +577,6 @@ function IdeaDetailSheet({
         if (data.hooks?.length) setExtraHooks((prev) => [...prev, ...data.hooks]);
         if (data.titles?.length) setExtraTitles((prev) => [...prev, ...data.titles]);
         if (data.keywords?.length) setExtraKeywords((prev) => [...prev, ...data.keywords]);
-        if (data.packaging) setPackaging(data.packaging);
       }
     } catch (err) {
       console.error("Failed to generate more:", err);
@@ -832,39 +852,6 @@ function IdeaDetailSheet({
             </section>
           )}
 
-          {/* Inspired By Section - curated, no load more */}
-          {proofVideos.length > 0 && (
-            <section className={s.sheetSection}>
-              <h3 className={s.sectionTitle}>Inspired By</h3>
-              <p className={s.sectionIntro}>
-                Recent winners that sparked this idea
-              </p>
-              <div className={s.proofScroller}>
-                {proofVideos.map((pv) => (
-                  <a
-                    key={pv.videoId}
-                    href={`/competitors/video/${pv.videoId}`}
-                    className={s.proofCard}
-                  >
-                    <div className={s.proofThumb}>
-                      <img
-                        src={pv.thumbnailUrl || "/placeholder-thumb.jpg"}
-                        alt=""
-                      />
-                      <span className={s.proofViews}>
-                        {formatCompact(pv.metrics.viewsPerDay)}/day
-                      </span>
-                    </div>
-                    <div className={s.proofInfo}>
-                      <h4 className={s.proofTitle}>{truncate(pv.title, 50)}</h4>
-                      <span className={s.proofChannel}>{pv.channelTitle}</span>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </section>
-          )}
-
           {/* Keywords Section */}
           <section className={s.sheetSection}>
             <div className={s.sectionHeader}>
@@ -905,64 +892,6 @@ function IdeaDetailSheet({
             </div>
           </section>
 
-          {/* Packaging Ideas - replaces Thumbnail Recipe */}
-          {packaging && (
-            <section className={s.sheetSection}>
-              <h3 className={s.sectionTitle}>Packaging Ideas</h3>
-              <p className={s.sectionIntro}>
-                How to package this video for maximum impact
-              </p>
-              <div className={s.packagingGrid}>
-                {/* Title Angles */}
-                <div className={s.packagingCard}>
-                  <h4 className={s.packagingCardTitle}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M4 7V4h16v3M9 20h6M12 4v16" />
-                    </svg>
-                    Title Angles
-                  </h4>
-                  <ul className={s.packagingList}>
-                    {packaging.titleAngles.map((angle, i) => (
-                      <li key={i}>{angle}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Hook Setups */}
-                <div className={s.packagingCard}>
-                  <h4 className={s.packagingCardTitle}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7z" />
-                    </svg>
-                    Hook Setups
-                  </h4>
-                  <ul className={s.packagingList}>
-                    {packaging.hookSetups.map((setup, i) => (
-                      <li key={i}>{setup}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Visual Moments */}
-                <div className={s.packagingCard}>
-                  <h4 className={s.packagingCardTitle}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <path d="M21 15l-5-5L5 21" />
-                    </svg>
-                    Visual Moments
-                  </h4>
-                  <ul className={s.packagingList}>
-                    {packaging.visualMoments.map((moment, i) => (
-                      <li key={i}>{moment}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </section>
-          )}
-
           {/* Make It Yours - Remix Suggestions */}
           {idea.remixVariants && Object.keys(idea.remixVariants).length > 0 && (
             <section className={s.sheetSection}>
@@ -994,49 +923,45 @@ function IdeaDetailSheet({
             </section>
           )}
 
+          {/* Inspired By Section - moved to bottom */}
+          {proofVideos.length > 0 && (
+            <section className={s.sheetSection}>
+              <h3 className={s.sectionTitle}>Inspired By</h3>
+              <p className={s.sectionIntro}>
+                Recent winners that sparked this idea
+              </p>
+              <div className={s.proofScroller}>
+                {proofVideos.map((pv) => (
+                  <a
+                    key={pv.videoId}
+                    href={`/competitors/video/${pv.videoId}`}
+                    className={s.proofCard}
+                  >
+                    <div className={s.proofThumb}>
+                      <img
+                        src={pv.thumbnailUrl || "/placeholder-thumb.jpg"}
+                        alt=""
+                      />
+                      <span className={s.proofViews}>
+                        {formatCompact(pv.metrics.viewsPerDay)}/day
+                      </span>
+                    </div>
+                    <div className={s.proofInfo}>
+                      <h4 className={s.proofTitle}>{truncate(pv.title, 50)}</h4>
+                      <span className={s.proofChannel}>{pv.channelTitle}</span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Safe area padding */}
           <div className={s.safeAreaBottom} />
         </div>
       </div>
     </div>
   );
-}
-
-/** Derive packaging ideas client-side from idea data */
-function derivePackagingIdeas(idea: Idea): {
-  titleAngles: string[];
-  hookSetups: string[];
-  visualMoments: string[];
-} {
-  const titleAngles: string[] = [];
-  const hookSetups: string[] = [];
-  const visualMoments: string[] = [];
-
-  // Derive title angles from titles and keywords
-  if (idea.titles.length > 0) {
-    const firstTitle = idea.titles[0].text;
-    titleAngles.push(`Lead with the promise: "${truncate(firstTitle, 40)}"`);
-  }
-  if (idea.keywords.length > 0) {
-    titleAngles.push(`Keyword-first: Start with "${idea.keywords[0].text}"`);
-  }
-  titleAngles.push("Question format: Turn the topic into a curiosity question");
-
-  // Derive hook setups from hooks
-  if (idea.hooks.length > 0) {
-    hookSetups.push("Start with a bold claim from your top hook");
-    hookSetups.push("Open with a relatable problem your audience faces");
-  }
-  hookSetups.push("Show the end result first, then explain how");
-
-  // Derive visual moments from proof/inspired by
-  if (idea.proof.basedOn.length > 0) {
-    visualMoments.push("Show a quick result/transformation in first 3 seconds");
-  }
-  visualMoments.push("Use text overlay matching your title promise");
-  visualMoments.push("Cut to B-roll of your hands demonstrating the concept");
-
-  return { titleAngles, hookSetups, visualMoments };
 }
 
 /* ================================================

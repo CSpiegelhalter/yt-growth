@@ -27,9 +27,11 @@ import {
   isYouTubeMockMode,
   getDemoData,
 } from "@/lib/demo-fixtures";
+import { hashSubscriberAuditContent } from "@/lib/content-hash";
 import type {
   SubscriberMagnetVideo,
   SubscriberAuditResponse,
+  PatternAnalysisJson,
 } from "@/types/api";
 
 const ParamsSchema = z.object({
@@ -237,30 +239,87 @@ export async function GET(
     // Sort based on query param and take limit
     const topVideos = sortedByConversion.slice(0, limit);
 
-    // Generate structured insights
-    let analysisJson = null;
+    // Generate structured insights with content-hash caching
+    let analysisJson: PatternAnalysisJson | null = null;
     let analysisMarkdownFallback: string | null = null;
 
     if (topVideos.length >= 3) {
-      try {
-        const topConverters = sortedByConversion
-          .filter((v) => v.conversionTier === "strong")
-          .slice(0, 10);
+      const topConverters = sortedByConversion
+        .filter((v) => v.conversionTier === "strong")
+        .slice(0, 10);
 
-        const result = await generateConverterInsights(
-          topConverters.map((v) => ({
-            title: v.title,
-            subsPerThousand: v.subsPerThousand,
-            views: v.views,
-            viewsPerDay: v.viewsPerDay ?? 0,
-            engagedRate: v.engagedRate ?? 0,
-          })),
-          avgSubsPerThousand
+      // Compute content hash for the top videos
+      const contentHash = hashSubscriberAuditContent(
+        topConverters.map((v) => ({
+          videoId: v.videoId,
+          title: v.title,
+          subsPerThousand: v.subsPerThousand,
+        }))
+      );
+
+      // Check for cached analysis
+      const cachedAnalysis = await prisma.subscriberAuditCache.findFirst({
+        where: {
+          userId: user.id,
+          channelId: channel.id,
+          range,
+        },
+      });
+
+      const isCacheFresh =
+        cachedAnalysis &&
+        cachedAnalysis.cachedUntil > new Date() &&
+        cachedAnalysis.contentHash === contentHash;
+
+      if (isCacheFresh && cachedAnalysis.analysisJson) {
+        console.log(
+          `[subscriber-audit] Using cached LLM analysis (hash: ${contentHash})`
         );
+        analysisJson = cachedAnalysis.analysisJson as PatternAnalysisJson;
+      } else {
+        try {
+          console.log(
+            `[subscriber-audit] Generating new LLM analysis (hash: ${cachedAnalysis?.contentHash} -> ${contentHash})`
+          );
+          const result = await generateConverterInsights(
+            topConverters.map((v) => ({
+              title: v.title,
+              subsPerThousand: v.subsPerThousand,
+              views: v.views,
+              viewsPerDay: v.viewsPerDay ?? 0,
+              engagedRate: v.engagedRate ?? 0,
+            })),
+            avgSubsPerThousand
+          );
 
-        analysisJson = result;
-      } catch (err) {
-        console.warn("Failed to generate converter insights:", err);
+          analysisJson = result;
+
+          // Cache the analysis
+          await prisma.subscriberAuditCache.upsert({
+            where: {
+              userId_channelId_range: {
+                userId: user.id,
+                channelId: channel.id,
+                range,
+              },
+            },
+            create: {
+              userId: user.id,
+              channelId: channel.id,
+              range,
+              contentHash,
+              analysisJson: result as object,
+              cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+            },
+            update: {
+              contentHash,
+              analysisJson: result as object,
+              cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            },
+          });
+        } catch (err) {
+          console.warn("Failed to generate converter insights:", err);
+        }
       }
     }
 

@@ -233,16 +233,13 @@
   background: #f8fafc;
 }
 
-.savedIdeasItem {
-  color: #f59e0b;
-}
-
-.savedIdeasItem:hover {
-  background: #fffbeb;
-}
-
-.savedIdeasItem svg {
+.dropdownItem svg {
   flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.dropdownItem:hover svg {
+  opacity: 1;
 }
 
 .dropdownDivider {

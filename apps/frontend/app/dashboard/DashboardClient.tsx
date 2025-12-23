@@ -7,6 +7,7 @@ import s from "./style.module.css";
 import { Me, Channel } from "@/types/api";
 import ChannelsSection from "@/components/dashboard/ChannelSection";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
+import ChannelGoals from "@/components/dashboard/ChannelGoals";
 
 type Video = {
   id: number;
@@ -239,6 +240,14 @@ export default function DashboardClient({
               busyId={busy}
             />
           </section>
+        )}
+
+        {/* Channel Goals/Milestones */}
+        {activeChannel && videos.length > 0 && (
+          <ChannelGoals
+            videos={videos}
+            channelTitle={activeChannel.title ?? undefined}
+          />
         )}
 
         {/* Video Grid */}

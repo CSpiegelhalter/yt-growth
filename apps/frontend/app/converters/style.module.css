@@ -152,14 +152,12 @@
 }
 
 .toolbarControls {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr) auto;
+  display: flex;
   gap: 8px;
 }
 
 @media (min-width: 640px) {
   .toolbarControls {
-    display: flex;
     gap: 8px;
   }
 }
@@ -295,21 +293,52 @@
   }
 }
 
-.tiersCounts {
+.tiersDisplay {
   display: flex;
-  justify-content: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.tierCount {
+.tierBar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.tierBarStrong {
+  background: #059669;
+  min-width: 4px;
+}
+
+.tierBarAverage {
+  background: #94a3b8;
+  min-width: 4px;
+}
+
+.tierBarWeak {
+  background: #ef4444;
+  min-width: 4px;
+}
+
+.tierLegend {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.tierLegendItem {
   display: flex;
   align-items: center;
   gap: 4px;
+  font-size: 0.6875rem;
+  color: #64748b;
 }
 
 .tierDot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -323,26 +352,7 @@
 }
 
 .dotWeak {
-  background: #dc2626;
-}
-
-.tierNum {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.tierLabel {
-  font-size: 0.6875rem;
-  color: #64748b;
-}
-
-.thresholdNote {
-  display: block;
-  margin-top: 8px;
-  font-size: 0.6875rem;
-  color: #94a3b8;
-  text-align: center;
+  background: #ef4444;
 }
 
 /* Building Baseline State */
@@ -410,6 +420,8 @@
 
 /* Video Card */
 .videoCard {
+  display: flex;
+  flex-direction: column;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
@@ -470,6 +482,13 @@
 
 .cardContent {
   padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.cardMain {
+  flex: 1;
 }
 
 .videoTitle {
@@ -600,15 +619,22 @@
 .insightsLink {
   display: inline-flex;
   align-items: center;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: #6366f1;
   text-decoration: none;
   transition: color 0.15s;
+  margin-top: auto;
+  padding-top: 10px;
 }
 
 .insightsLink:hover {
   color: #4f46e5;
+}
+
+.insightsLink::after {
+  content: " →";
+  margin-left: 2px;
 }
 
 /* Load More */

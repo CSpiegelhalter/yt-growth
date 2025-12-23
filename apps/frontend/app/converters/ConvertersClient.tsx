@@ -78,7 +78,6 @@ export default function ConvertersClient({
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<RangeOption>(initialRange);
   const [sort, setSort] = useState<SortOption>("subs_per_1k");
-  const [strongOnly, setStrongOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [displayCount, setDisplayCount] = useState(INITIAL_DISPLAY);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -125,11 +124,6 @@ export default function ConvertersClient({
       videos = videos.filter((v) => v.title.toLowerCase().includes(q));
     }
 
-    // Strong only filter
-    if (strongOnly) {
-      videos = videos.filter((v) => v.conversionTier === "strong");
-    }
-
     // Sort
     videos.sort((a, b) => {
       switch (sort) {
@@ -149,7 +143,7 @@ export default function ConvertersClient({
     });
 
     return videos;
-  }, [auditData?.videos, searchQuery, strongOnly, sort]);
+  }, [auditData?.videos, searchQuery, sort]);
 
   // Compute view-specific rollups (from filtered list)
   const viewRollups = useMemo(
@@ -294,24 +288,6 @@ export default function ConvertersClient({
             <option value="engaged_rate">Engaged Rate</option>
             <option value="newest">Newest</option>
           </select>
-          <button
-            type="button"
-            className={`${s.toggleChip} ${strongOnly ? s.toggleActive : ""}`}
-            onClick={() => setStrongOnly(!strongOnly)}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-            Strong only
-          </button>
         </div>
       </div>
 
@@ -346,35 +322,40 @@ export default function ConvertersClient({
             <div className={`${s.summaryCard} ${s.tiersCard}`}>
               {insufficientData ? (
                 <div className={s.buildingBaseline}>
-                  <span className={s.buildingIcon}>⏳</span>
                   <span className={s.buildingText}>Building baseline</span>
                   <span className={s.buildingSubtext}>Need 8+ videos</span>
                 </div>
               ) : (
-                <div className={s.tiersCounts}>
-                  <div className={s.tierCount}>
-                    <span className={`${s.tierDot} ${s.dotStrong}`} />
-                    <span className={s.tierNum}>{viewRollups.strongCount}</span>
-                    <span className={s.tierLabel}>Strong</span>
+                <div className={s.tiersDisplay}>
+                  <div className={s.tierBar}>
+                    <div 
+                      className={s.tierBarStrong} 
+                      style={{ flex: viewRollups.strongCount || 0.1 }}
+                    />
+                    <div 
+                      className={s.tierBarAverage} 
+                      style={{ flex: viewRollups.averageCount || 0.1 }}
+                    />
+                    <div 
+                      className={s.tierBarWeak} 
+                      style={{ flex: viewRollups.weakCount || 0.1 }}
+                    />
                   </div>
-                  <div className={s.tierCount}>
-                    <span className={`${s.tierDot} ${s.dotAverage}`} />
-                    <span className={s.tierNum}>
-                      {viewRollups.averageCount}
+                  <div className={s.tierLegend}>
+                    <span className={s.tierLegendItem}>
+                      <span className={`${s.tierDot} ${s.dotStrong}`} />
+                      {viewRollups.strongCount} strong
                     </span>
-                    <span className={s.tierLabel}>Average</span>
-                  </div>
-                  <div className={s.tierCount}>
-                    <span className={`${s.tierDot} ${s.dotWeak}`} />
-                    <span className={s.tierNum}>{viewRollups.weakCount}</span>
-                    <span className={s.tierLabel}>Weak</span>
+                    <span className={s.tierLegendItem}>
+                      <span className={`${s.tierDot} ${s.dotAverage}`} />
+                      {viewRollups.averageCount} avg
+                    </span>
+                    <span className={s.tierLegendItem}>
+                      <span className={`${s.tierDot} ${s.dotWeak}`} />
+                      {viewRollups.weakCount} weak
+                    </span>
                   </div>
                 </div>
-              )}
-              {!insufficientData && strongThreshold !== null && (
-                <span className={s.thresholdNote}>
-                  Strong = top 25% ({strongThreshold.toFixed(1)}+ subs/1k)
-                </span>
               )}
             </div>
           </div>
@@ -449,8 +430,8 @@ export default function ConvertersClient({
             <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
           <p>
-            {searchQuery || strongOnly
-              ? "No videos match your filters."
+            {searchQuery
+              ? "No videos match your search."
               : "No subscriber data available yet. Videos need time to gather analytics."}
           </p>
         </div>
@@ -486,7 +467,7 @@ function VideoCard({
   insufficientData: boolean;
 }) {
   const tierLabel = insufficientData
-    ? "Building baseline"
+    ? "Building"
     : video.conversionTier === "strong"
     ? "Strong"
     : video.conversionTier === "weak"
@@ -506,9 +487,11 @@ function VideoCard({
       ? ((delta / avgSubsPerThousand) * 100).toFixed(0)
       : "0";
 
+  const videoUrl = `/video/${video.videoId}?from=converters`;
+
   return (
     <div className={s.videoCard}>
-      <Link href={`/video/${video.videoId}`} className={s.thumbnailWrap}>
+      <Link href={videoUrl} className={s.thumbnailWrap}>
         {video.thumbnailUrl ? (
           <img
             src={video.thumbnailUrl}
@@ -539,51 +522,53 @@ function VideoCard({
       </Link>
 
       <div className={s.cardContent}>
-        <Link href={`/video/${video.videoId}`} className={s.videoTitle}>
-          {video.title}
-        </Link>
+        <div className={s.cardMain}>
+          <Link href={videoUrl} className={s.videoTitle}>
+            {video.title}
+          </Link>
 
-        <div className={s.metaRow}>
-          <span>{formatDate(video.publishedAt)}</span>
-          <span>{formatNumber(video.views)} views</span>
-        </div>
+          <div className={s.metaRow}>
+            <span>{formatDate(video.publishedAt)}</span>
+            <span>{formatNumber(video.views)} views</span>
+          </div>
 
-        {/* Hero Metric + Tier */}
-        <div className={s.heroRow}>
-          <div className={s.heroMetric}>
-            <span className={s.heroValue}>
-              {video.subsPerThousand.toFixed(1)}
+          {/* Hero Metric + Tier */}
+          <div className={s.heroRow}>
+            <div className={s.heroMetric}>
+              <span className={s.heroValue}>
+                {video.subsPerThousand.toFixed(1)}
+              </span>
+              <span className={s.heroLabel}>subs/1K</span>
+              {delta !== 0 && !insufficientData && (
+                <span
+                  className={`${s.deltaBadge} ${
+                    delta > 0 ? s.deltaUp : s.deltaDown
+                  }`}
+                >
+                  {delta > 0 ? "+" : ""}
+                  {deltaPercent}%
+                </span>
+              )}
+            </div>
+            <span className={`${s.tierBadge} ${tierClass}`}>{tierLabel}</span>
+          </div>
+
+          {/* Compact Metrics */}
+          <div className={s.metricsRow}>
+            <span className={s.metricPill}>
+              +{formatNumber(video.subscribersGained)} subs
             </span>
-            <span className={s.heroLabel}>subs/1K</span>
-            {delta !== 0 && !insufficientData && (
-              <span
-                className={`${s.deltaBadge} ${
-                  delta > 0 ? s.deltaUp : s.deltaDown
-                }`}
-              >
-                {delta > 0 ? "+" : ""}
-                {deltaPercent}%
+            {video.engagedRate !== null && video.engagedRate !== undefined && (
+              <span className={s.metricPill}>
+                {(video.engagedRate * 100).toFixed(1)}% engaged
               </span>
             )}
           </div>
-          <span className={`${s.tierBadge} ${tierClass}`}>{tierLabel}</span>
         </div>
 
-        {/* Compact Metrics */}
-        <div className={s.metricsRow}>
-          <span className={s.metricPill}>
-            +{formatNumber(video.subscribersGained)} subs
-          </span>
-          {video.engagedRate !== null && video.engagedRate !== undefined && (
-            <span className={s.metricPill}>
-              {(video.engagedRate * 100).toFixed(1)}% engaged
-            </span>
-          )}
-        </div>
-
-        {/* View Insights Link */}
-        <Link href={`/video/${video.videoId}`} className={s.insightsLink}>
-          View Insights →
+        {/* View Insights Link - Always at bottom */}
+        <Link href={videoUrl} className={s.insightsLink}>
+          View Insights
         </Link>
       </div>
     </div>

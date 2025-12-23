@@ -35,6 +35,7 @@ import {
 } from "@/lib/llm";
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { hashVideoContent, hashCommentsContent } from "@/lib/content-hash";
 import type {
   CompetitorVideoAnalysis,
   CompetitorVideo,
@@ -267,6 +268,7 @@ export async function GET(
 
     if (isCacheFresh && cachedComments?.analysisJson) {
       // Use cached analysis
+      console.log(`[competitor.video] Using cached comments analysis`);
       commentsAnalysis =
         cachedComments.analysisJson as unknown as CompetitorCommentsAnalysis;
     } else {
@@ -301,14 +303,22 @@ export async function GET(
             error: commentsResult.error,
           };
         } else if (commentsResult.comments.length > 0) {
-          // Analyze comments with LLM
-          try {
-            commentsAnalysis = await analyzeVideoComments(
-              commentsResult.comments.slice(0, 30), // Limit for token efficiency
-              video.title
-            );
+          // Compute content hash for comments
+          const commentsContentHash = hashCommentsContent(
+            commentsResult.comments
+          );
+          const cachedCommentsHash = cachedComments?.contentHash;
+          const commentsUnchanged =
+            cachedCommentsHash && cachedCommentsHash === commentsContentHash;
 
-            // Add top comments to response
+          // Reuse cached LLM analysis if comments haven't changed
+          if (commentsUnchanged && cachedComments?.analysisJson) {
+            console.log(
+              `[competitor.video] Reusing cached comments LLM (hash: ${commentsContentHash})`
+            );
+            commentsAnalysis =
+              cachedComments.analysisJson as unknown as CompetitorCommentsAnalysis;
+            // Update top comments with fresh data
             commentsAnalysis.topComments = commentsResult.comments
               .slice(0, 10)
               .map((c) => ({
@@ -317,46 +327,69 @@ export async function GET(
                 authorName: c.authorName,
                 publishedAt: c.publishedAt,
               }));
+          } else {
+            // Analyze comments with LLM
+            console.log(
+              `[competitor.video] Generating new comments analysis (hash: ${cachedCommentsHash} -> ${commentsContentHash})`
+            );
+            try {
+              commentsAnalysis = await analyzeVideoComments(
+                commentsResult.comments.slice(0, 30), // Limit for token efficiency
+                video.title
+              );
 
-            // Cache the analysis
-            await prisma.competitorVideoComments.upsert({
-              where: { videoId },
-              create: {
-                videoId,
-                capturedAt: now,
-                topCommentsJson: commentsResult.comments.slice(0, 20),
-                analysisJson: commentsAnalysis as object,
-                sentimentPos: commentsAnalysis.sentiment.positive,
-                sentimentNeu: commentsAnalysis.sentiment.neutral,
-                sentimentNeg: commentsAnalysis.sentiment.negative,
-                themesJson: commentsAnalysis.themes,
-              },
-              update: {
-                capturedAt: now,
-                topCommentsJson: commentsResult.comments.slice(0, 20),
-                analysisJson: commentsAnalysis as object,
-                sentimentPos: commentsAnalysis.sentiment.positive,
-                sentimentNeu: commentsAnalysis.sentiment.neutral,
-                sentimentNeg: commentsAnalysis.sentiment.negative,
-                themesJson: commentsAnalysis.themes,
-              },
-            });
-          } catch (err) {
-            console.warn("Failed to analyze comments:", err);
-            commentsAnalysis = {
-              topComments: commentsResult.comments.slice(0, 10).map((c) => ({
-                text: c.text,
-                likeCount: c.likeCount,
-                authorName: c.authorName,
-                publishedAt: c.publishedAt,
-              })),
-              sentiment: { positive: 50, neutral: 30, negative: 20 }, // Fallback
-              themes: [],
-              viewerLoved: [],
-              viewerAskedFor: [],
-              hookInspiration: [],
-              error: "Analysis unavailable",
-            };
+              // Add top comments to response
+              commentsAnalysis.topComments = commentsResult.comments
+                .slice(0, 10)
+                .map((c) => ({
+                  text: c.text,
+                  likeCount: c.likeCount,
+                  authorName: c.authorName,
+                  publishedAt: c.publishedAt,
+                }));
+
+              // Cache the analysis with content hash
+              await prisma.competitorVideoComments.upsert({
+                where: { videoId },
+                create: {
+                  videoId,
+                  capturedAt: now,
+                  topCommentsJson: commentsResult.comments.slice(0, 20),
+                  contentHash: commentsContentHash,
+                  analysisJson: commentsAnalysis as object,
+                  sentimentPos: commentsAnalysis.sentiment.positive,
+                  sentimentNeu: commentsAnalysis.sentiment.neutral,
+                  sentimentNeg: commentsAnalysis.sentiment.negative,
+                  themesJson: commentsAnalysis.themes,
+                },
+                update: {
+                  capturedAt: now,
+                  topCommentsJson: commentsResult.comments.slice(0, 20),
+                  contentHash: commentsContentHash,
+                  analysisJson: commentsAnalysis as object,
+                  sentimentPos: commentsAnalysis.sentiment.positive,
+                  sentimentNeu: commentsAnalysis.sentiment.neutral,
+                  sentimentNeg: commentsAnalysis.sentiment.negative,
+                  themesJson: commentsAnalysis.themes,
+                },
+              });
+            } catch (err) {
+              console.warn("Failed to analyze comments:", err);
+              commentsAnalysis = {
+                topComments: commentsResult.comments.slice(0, 10).map((c) => ({
+                  text: c.text,
+                  likeCount: c.likeCount,
+                  authorName: c.authorName,
+                  publishedAt: c.publishedAt,
+                })),
+                sentiment: { positive: 50, neutral: 30, negative: 20 }, // Fallback
+                themes: [],
+                viewerLoved: [],
+                viewerAskedFor: [],
+                hookInspiration: [],
+                error: "Analysis unavailable",
+              };
+            }
           }
         }
       }
@@ -399,16 +432,39 @@ export async function GET(
     // Generate analysis using LLM (includes comments context if available)
     let analysis: CompetitorVideoAnalysis["analysis"];
 
+    // Compute content hash for the current video
+    const currentContentHash = hashVideoContent({
+      title: video.title,
+      description: videoDetails.description,
+      tags: videoDetails.tags,
+      durationSec: video.durationSec,
+      categoryId: videoDetails.category,
+    });
+
+    // Check if cached analysis is still valid:
+    // 1. Must have analysis captured
+    // 2. Content hash must match (or be within time window for older entries without hash)
     const analysisCacheDays = 30;
-    const isAnalysisCacheFresh =
+    const isWithinTimeWindow =
       dbVideo?.analysisCapturedAt &&
       now.getTime() - dbVideo.analysisCapturedAt.getTime() <
         analysisCacheDays * 24 * 60 * 60 * 1000;
+    const contentHashMatches =
+      dbVideo?.analysisContentHash === currentContentHash;
+    const isAnalysisCacheFresh =
+      isWithinTimeWindow &&
+      (contentHashMatches || !dbVideo?.analysisContentHash);
 
     if (isAnalysisCacheFresh && dbVideo?.analysisJson) {
+      console.log(
+        `[competitor.video] Using cached analysis (hash: ${currentContentHash})`
+      );
       analysis =
         dbVideo.analysisJson as unknown as CompetitorVideoAnalysis["analysis"];
     } else {
+      console.log(
+        `[competitor.video] Generating new analysis (hash changed: ${dbVideo?.analysisContentHash} -> ${currentContentHash})`
+      );
       try {
         analysis = await generateCompetitorVideoAnalysis(
           {
@@ -462,7 +518,7 @@ export async function GET(
         : [],
     };
 
-    // Persist normalized analysis (cache) so the “What it’s about” stays useful without re-calling the LLM.
+    // Persist normalized analysis (cache) so the "What it's about" stays useful without re-calling the LLM.
     // Only write when cache was missing/stale.
     if (!isAnalysisCacheFresh) {
       try {
@@ -470,6 +526,7 @@ export async function GET(
           where: { videoId },
           data: {
             analysisJson: analysis as object,
+            analysisContentHash: currentContentHash,
             analysisCapturedAt: now,
           },
         });

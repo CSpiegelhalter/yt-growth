@@ -31,6 +31,8 @@ import {
   searchSimilarChannels,
   fetchRecentChannelVideos,
   fetchVideosStatsBatch,
+  fetchChannelStats,
+  getCompetitorSizeRange,
 } from "@/lib/youtube-api";
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { ensureMockChannelSeeded } from "@/lib/mock-seed";
@@ -213,6 +215,11 @@ export async function GET(
       },
     });
 
+    // Get user's channel subscriber count for size-based filtering
+    const userChannelStats = await fetchChannelStats(ga, [channelId]);
+    const userSubCount = userChannelStats.get(channelId)?.subscriberCount ?? 0;
+    const sizeRange = getCompetitorSizeRange(userSubCount);
+
     // Fetch recent videos from all competitor channels
     const rawVideos: Array<{
       videoId: string;
@@ -241,17 +248,57 @@ export async function GET(
         rawVideos.push(v);
       });
     } else {
-      // Search for similar channels
+      console.log(
+        `[Competitors] User has ${userSubCount} subs, looking for channels with ${sizeRange.min}-${sizeRange.max} subs`
+      );
+
+      // Search for similar channels (get more to filter by size)
       const similarChannelResults = await searchSimilarChannels(
         ga,
         userKeywords,
-        8
+        20 // Get more to filter down
       );
 
       // Filter out the user's own channel
-      const filteredChannels = similarChannelResults
-        .filter((c) => c.channelId !== channelId)
+      const candidateChannels = similarChannelResults.filter(
+        (c) => c.channelId !== channelId
+      );
+
+      // Fetch subscriber counts for candidate channels
+      const channelStats = await fetchChannelStats(
+        ga,
+        candidateChannels.map((c) => c.channelId)
+      );
+
+      // Filter channels by size - find channels larger than user but not too large
+      const sizeFilteredChannels = candidateChannels
+        .map((c) => ({
+          ...c,
+          subscriberCount: channelStats.get(c.channelId)?.subscriberCount ?? 0,
+        }))
+        .filter((c) => {
+          // Must be within our target range
+          return (
+            c.subscriberCount >= sizeRange.min &&
+            c.subscriberCount <= sizeRange.max
+          );
+        })
+        // Sort by subscriber count (prefer channels closer to user's next milestone)
+        .sort((a, b) => a.subscriberCount - b.subscriberCount)
         .slice(0, 6);
+
+      console.log(
+        `[Competitors] Found ${sizeFilteredChannels.length} size-appropriate channels:`,
+        sizeFilteredChannels.map(
+          (c) => `${c.channelTitle} (${c.subscriberCount})`
+        )
+      );
+
+      // If not enough size-appropriate channels, fall back to any similar channels
+      const filteredChannels =
+        sizeFilteredChannels.length >= 3
+          ? sizeFilteredChannels
+          : candidateChannels.slice(0, 6);
 
       await Promise.all(
         filteredChannels.map(async (sc) => {
@@ -482,6 +529,7 @@ export async function GET(
       cachedUntil: cachedUntil.toISOString(),
       nextCursor,
       videos: paginatedVideos,
+      targetSizeDescription: sizeRange.description,
     } as CompetitorFeedResponse);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";

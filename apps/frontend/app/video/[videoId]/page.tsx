@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ videoId: string }>;
-  searchParams: Promise<{ channelId?: string; range?: string }>;
+  searchParams: Promise<{ channelId?: string; range?: string; from?: string }>;
 };
 
 /**
@@ -68,6 +68,7 @@ export default async function VideoPage({ params, searchParams }: Props) {
       channelId={bootstrap.activeChannelId ?? undefined}
       initialInsights={initialInsights}
       initialRange={range}
+      from={search.from}
     />
   );
 }

@@ -46,15 +46,31 @@
 /* Controls */
 .controls {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12px;
   margin-bottom: 24px;
 }
 
-.controlGroup {
+@media (min-width: 480px) {
+  .controls {
+    flex-direction: row;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+}
+
+.filterGroup {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filterLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .select {
@@ -67,6 +83,7 @@
   border-radius: 10px;
   cursor: pointer;
   min-height: 44px;
+  min-width: 160px;
   transition: all 0.15s;
 }
 
@@ -78,6 +95,22 @@
   outline: none;
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.sortHint {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  padding: 8px 0;
+  flex-basis: 100%;
+}
+
+@media (min-width: 480px) {
+  .sortHint {
+    flex-basis: auto;
+    margin-left: auto;
+    padding: 0;
+    align-self: center;
+  }
 }
 
 /* Banners */

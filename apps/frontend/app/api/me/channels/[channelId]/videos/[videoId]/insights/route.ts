@@ -42,6 +42,7 @@ import {
   type BaselineComparison,
 } from "@/lib/owned-video-math";
 import { callLLM } from "@/lib/llm";
+import { hashVideoContent } from "@/lib/content-hash";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -114,18 +115,23 @@ export async function GET(
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    // Check cache
+    // Check cache - look for any cached entry (we'll validate hash later)
     const cached = await prisma.ownedVideoInsightsCache.findFirst({
       where: {
         userId: user.id,
         channelId: channel.id,
         videoId,
         range,
-        cachedUntil: { gt: new Date() },
       },
     });
 
-    if (cached?.derivedJson && cached?.llmJson) {
+    // If cache is fresh (time-based) and has LLM data, return it
+    // Content hash will be checked during regeneration
+    if (
+      cached?.derivedJson &&
+      cached?.llmJson &&
+      cached.cachedUntil > new Date()
+    ) {
       const derivedData = cached.derivedJson as any;
       const llmData = cached.llmJson as any;
       return Response.json({
@@ -156,17 +162,28 @@ export async function GET(
       );
     }
 
+    // Pass cached data for content-hash comparison
     const result = await generateInsights(
       ga,
       channel.id,
       channelId,
       videoId,
       range,
-      user.id
+      user.id,
+      cached?.contentHash ?? null,
+      cached?.llmJson ?? null
     );
 
     // Cache result (handle null for llmJson)
     const llmJsonValue = result.llmInsights ?? Prisma.JsonNull;
+    const currentContentHash = hashVideoContent({
+      title: result.video.title,
+      description: result.video.description,
+      tags: result.video.tags,
+      durationSec: result.video.durationSec,
+      categoryId: result.video.categoryId,
+    });
+
     await prisma.ownedVideoInsightsCache.upsert({
       where: {
         userId_channelId_videoId_range: {
@@ -181,6 +198,7 @@ export async function GET(
         channelId: channel.id,
         videoId,
         range,
+        contentHash: currentContentHash,
         derivedJson: {
           video: result.video,
           analytics: result.analytics,
@@ -193,6 +211,7 @@ export async function GET(
         cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
       update: {
+        contentHash: currentContentHash,
         derivedJson: {
           video: result.video,
           analytics: result.analytics,
@@ -282,17 +301,37 @@ export async function POST(
       );
     }
 
+    // Fetch existing cache for content hash comparison (even on refresh)
+    const existingCache = await prisma.ownedVideoInsightsCache.findFirst({
+      where: {
+        userId: user.id,
+        channelId: channel.id,
+        videoId,
+        range,
+      },
+    });
+
     const result = await generateInsights(
       ga,
       channel.id,
       channelId,
       videoId,
       range,
-      user.id
+      user.id,
+      existingCache?.contentHash ?? null,
+      existingCache?.llmJson ?? null
     );
 
     // Update cache (handle null for llmJson)
     const llmJsonValuePost = result.llmInsights ?? Prisma.JsonNull;
+    const currentContentHash = hashVideoContent({
+      title: result.video.title,
+      description: result.video.description,
+      tags: result.video.tags,
+      durationSec: result.video.durationSec,
+      categoryId: result.video.categoryId,
+    });
+
     await prisma.ownedVideoInsightsCache.upsert({
       where: {
         userId_channelId_videoId_range: {
@@ -307,6 +346,7 @@ export async function POST(
         channelId: channel.id,
         videoId,
         range,
+        contentHash: currentContentHash,
         derivedJson: {
           video: result.video,
           analytics: result.analytics,
@@ -319,6 +359,7 @@ export async function POST(
         cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
       update: {
+        contentHash: currentContentHash,
         derivedJson: {
           video: result.video,
           analytics: result.analytics,
@@ -345,6 +386,8 @@ export async function POST(
 
 /**
  * Generate insights for a video
+ * @param cachedContentHash - Content hash from previous cache (for LLM reuse)
+ * @param cachedLlmJson - Cached LLM insights (reused if hash matches)
  */
 async function generateInsights(
   ga: {
@@ -356,7 +399,9 @@ async function generateInsights(
   youtubeChannelId: string,
   videoId: string,
   range: "7d" | "28d" | "90d",
-  userId: number
+  userId: number,
+  cachedContentHash: string | null = null,
+  cachedLlmJson: unknown = null
 ): Promise<VideoInsightsResponse> {
   const { startDate, endDate } = getDateRange(range);
 
@@ -365,6 +410,18 @@ async function generateInsights(
   if (!videoMeta) {
     throw new Error("Could not fetch video metadata");
   }
+
+  // Check if content has changed - compute hash of current video content
+  const currentContentHash = hashVideoContent({
+    title: videoMeta.title,
+    description: videoMeta.description,
+    tags: videoMeta.tags,
+    durationSec: videoMeta.durationSec,
+    categoryId: videoMeta.categoryId,
+  });
+
+  const contentUnchanged =
+    cachedContentHash && cachedContentHash === currentContentHash;
 
   // Fetch analytics
   const [totals, dailySeries, comments] = await Promise.all([
@@ -431,14 +488,26 @@ async function generateInsights(
     },
   };
 
-  // Generate LLM insights
-  const llmInsights = await generateLLMInsights(
-    videoMeta,
-    derived,
-    comparison,
-    levers,
-    comments
-  );
+  // Reuse cached LLM insights if content hasn't changed
+  let llmInsights: VideoInsightsLLM | null = null;
+  if (contentUnchanged && cachedLlmJson) {
+    console.log(
+      `[VideoInsights] Reusing cached LLM insights (content hash: ${currentContentHash})`
+    );
+    llmInsights = cachedLlmJson as VideoInsightsLLM;
+  } else {
+    // Generate fresh LLM insights
+    console.log(
+      `[VideoInsights] Generating new LLM insights (hash changed: ${cachedContentHash} -> ${currentContentHash})`
+    );
+    llmInsights = await generateLLMInsights(
+      videoMeta,
+      derived,
+      comparison,
+      levers,
+      comments
+    );
+  }
 
   // Store daily data in analytics table for future baseline calculations
   await storeDailyAnalytics(userId, dbChannelId, videoId, dailySeries);

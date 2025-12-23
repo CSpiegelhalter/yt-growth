@@ -506,23 +506,53 @@ export function mockYouTubeApiResponse(urlStr: string): AnyJson {
 
     if (resource === "channels") {
       const ids = parseCommaList(url.searchParams.get("id"));
+      const part = url.searchParams.get("part") ?? "";
+      const wantSnippet = part.includes("snippet");
+      const wantStats = part.includes("statistics");
+      const wantContent = part.includes("contentDetails");
+
       const items = ids
         .map((id) => ensureChannel(db, id))
-        .map((ch) => ({
-          kind: "youtube#channel",
-          etag: `etag-${ch!.id}`,
-          id: ch!.id,
-          snippet: {
-            title: ch!.title,
-            description: ch!.description,
-            thumbnails: ch!.thumbnails,
-          },
-          contentDetails: {
-            relatedPlaylists: {
-              uploads: ch!.uploadsPlaylistId,
-            },
-          },
-        }));
+        .map((ch) => {
+          // Generate deterministic stats based on channel ID
+          const h = randHash(ch!.id);
+          const subscriberCount = 1000 + (h % 100000);
+          const viewCount = subscriberCount * (50 + (h % 150));
+          const videoCount = 10 + (h % 200);
+
+          const out: AnyJson = {
+            kind: "youtube#channel",
+            etag: `etag-${ch!.id}`,
+            id: ch!.id,
+          };
+
+          if (wantSnippet || !part) {
+            out.snippet = {
+              title: ch!.title,
+              description: ch!.description,
+              thumbnails: ch!.thumbnails,
+            };
+          }
+
+          if (wantContent || !part) {
+            out.contentDetails = {
+              relatedPlaylists: {
+                uploads: ch!.uploadsPlaylistId,
+              },
+            };
+          }
+
+          if (wantStats) {
+            out.statistics = {
+              subscriberCount: String(subscriberCount),
+              viewCount: String(viewCount),
+              videoCount: String(videoCount),
+              hiddenSubscriberCount: false,
+            };
+          }
+
+          return out;
+        });
 
       return {
         kind: "youtube#channelListResponse",

@@ -154,15 +154,21 @@ export default function CompetitorsClient({
         <div>
           <h1 className={s.title}>Competitor Winners</h1>
           <p className={s.subtitle}>
-            Videos working right now for channels similar to{" "}
-            <strong>{activeChannel.title}</strong>
+            Videos from{" "}
+            {feedData?.targetSizeDescription ? (
+              <strong>{feedData.targetSizeDescription}</strong>
+            ) : (
+              "similar channels"
+            )}{" "}
+            in your niche
           </p>
         </div>
       </div>
 
-      {/* Controls */}
+      {/* Controls - Side by side */}
       <div className={s.controls}>
-        <div className={s.controlGroup}>
+        <div className={s.filterGroup}>
+          <label className={s.filterLabel}>Time Range</label>
           <select
             className={s.select}
             value={range}
@@ -171,18 +177,25 @@ export default function CompetitorsClient({
             <option value="7d">Last 7 days</option>
             <option value="28d">Last 28 days</option>
           </select>
+        </div>
 
+        <div className={s.filterGroup}>
+          <label className={s.filterLabel}>Sort By</label>
           <select
             className={s.select}
             value={sort}
             onChange={(e) => handleSortChange(e.target.value as SortOption)}
+            title={getSortDescription(sort)}
           >
-            <option value="velocity">Trending Now</option>
-            <option value="engagement">Best Engagement</option>
-            <option value="newest">Newest</option>
-            <option value="outliers">Biggest Outliers</option>
+            <option value="velocity">Gaining Views Fast</option>
+            <option value="outliers">Outperforming Average</option>
+            <option value="engagement">High Engagement</option>
+            <option value="newest">Recently Posted</option>
           </select>
         </div>
+
+        {/* Sort explanation */}
+        <div className={s.sortHint}>{getSortDescription(sort)}</div>
       </div>
 
       {!isSubscribed && (
@@ -387,6 +400,21 @@ function CompetitorVideoCard({
 }
 
 /* ---------- Helpers ---------- */
+function getSortDescription(sort: SortOption): string {
+  switch (sort) {
+    case "velocity":
+      return "Videos gaining the most views in the last 24 hours";
+    case "outliers":
+      return "Videos performing significantly above the channel's average";
+    case "engagement":
+      return "Videos with the highest like and comment rates";
+    case "newest":
+      return "Most recently published videos";
+    default:
+      return "";
+  }
+}
+
 function formatCompact(num: number): string {
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
   if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;

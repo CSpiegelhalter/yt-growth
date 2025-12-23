@@ -11,6 +11,7 @@ type Props = {
   channelId?: string;
   initialInsights: VideoInsightsResponse | null;
   initialRange: "7d" | "28d" | "90d";
+  from?: string;
 };
 
 /**
@@ -21,7 +22,12 @@ export default function VideoInsightsClient({
   channelId,
   initialInsights,
   initialRange,
+  from,
 }: Props) {
+  // Determine back link based on where user came from
+  const backLink = from === "converters" 
+    ? { href: "/converters", label: "Back to Subscriber Drivers" }
+    : { href: "/dashboard", label: "Back to Dashboard" };
   const router = useRouter();
   const [insights, setInsights] = useState<VideoInsightsResponse | null>(
     initialInsights
@@ -85,8 +91,8 @@ export default function VideoInsightsClient({
   if (!insights) {
     return (
       <main className={s.page}>
-        <Link href="/dashboard" className={s.backLink}>
-          ← Back to Dashboard
+        <Link href={backLink.href} className={s.backLink}>
+          ← {backLink.label}
         </Link>
         <div className={s.errorState}>
           <h2 className={s.errorTitle}>Couldn't load insights</h2>
@@ -196,8 +202,8 @@ export default function VideoInsightsClient({
   return (
     <main className={s.page}>
       {/* Back Link */}
-      <Link href="/dashboard" className={s.backLink}>
-        ← Back to Dashboard
+      <Link href={backLink.href} className={s.backLink}>
+        ← {backLink.label}
       </Link>
 
       {/* Demo Banner */}

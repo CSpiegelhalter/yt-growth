@@ -405,6 +405,131 @@ export async function searchSimilarChannels(
 }
 
 /**
+ * Fetch channel statistics (subscriber count, view count, video count)
+ */
+export async function fetchChannelStats(
+  ga: GoogleAccount,
+  channelIds: string[]
+): Promise<
+  Map<
+    string,
+    { subscriberCount: number; viewCount: number; videoCount: number }
+  >
+> {
+  const results = new Map<
+    string,
+    { subscriberCount: number; viewCount: number; videoCount: number }
+  >();
+
+  if (channelIds.length === 0) return results;
+
+  // TEST_MODE: Return fixture data
+  if (USE_FIXTURES) {
+    channelIds.forEach((id, idx) => {
+      // Generate realistic-ish subscriber counts for test mode
+      const hash = id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+      results.set(id, {
+        subscriberCount: 1000 + (hash % 100000),
+        viewCount: 10000 + (hash % 1000000),
+        videoCount: 10 + (hash % 200),
+      });
+    });
+    return results;
+  }
+
+  // Batch in groups of 50
+  const batches: string[][] = [];
+  for (let i = 0; i < channelIds.length; i += 50) {
+    batches.push(channelIds.slice(i, i + 50));
+  }
+
+  for (const batch of batches) {
+    const url = new URL(`${YOUTUBE_DATA_API}/channels`);
+    url.searchParams.set("part", "statistics");
+    url.searchParams.set("id", batch.join(","));
+
+    try {
+      const data = await googleFetchWithAutoRefresh<{
+        items?: Array<{
+          id: string;
+          statistics: {
+            subscriberCount?: string;
+            viewCount?: string;
+            videoCount?: string;
+            hiddenSubscriberCount?: boolean;
+          };
+        }>;
+      }>(ga, url.toString());
+
+      for (const item of data.items ?? []) {
+        const stats = item.statistics;
+        if (!stats) continue; // Skip items without statistics
+
+        results.set(item.id, {
+          subscriberCount: stats.hiddenSubscriberCount
+            ? 0
+            : parseInt(stats.subscriberCount ?? "0", 10),
+          viewCount: parseInt(stats.viewCount ?? "0", 10),
+          videoCount: parseInt(stats.videoCount ?? "0", 10),
+        });
+      }
+    } catch (err) {
+      console.warn("Failed to fetch channel stats batch:", err);
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Calculate target subscriber range for competitor discovery.
+ * We want channels that are larger than the user but not unreachably large.
+ */
+export function getCompetitorSizeRange(userSubscribers: number): {
+  min: number;
+  max: number;
+  description: string;
+} {
+  // Scale based on user's current size
+  if (userSubscribers < 100) {
+    // Just starting out - look at channels 1K-50K
+    return {
+      min: 1000,
+      max: 50000,
+      description: "Growing channels (1K-50K subs)",
+    };
+  } else if (userSubscribers < 1000) {
+    // Small channel - look at 5K-100K
+    return {
+      min: 5000,
+      max: 100000,
+      description: "Established small channels (5K-100K subs)",
+    };
+  } else if (userSubscribers < 10000) {
+    // Growing channel - look at 10K-500K
+    return {
+      min: 10000,
+      max: 500000,
+      description: "Growing channels (10K-500K subs)",
+    };
+  } else if (userSubscribers < 100000) {
+    // Established channel - look at 50K-1M
+    return {
+      min: 50000,
+      max: 1000000,
+      description: "Established channels (50K-1M subs)",
+    };
+  } else {
+    // Large channel - look at 100K-5M
+    return {
+      min: 100000,
+      max: 5000000,
+      description: "Large channels (100K-5M subs)",
+    };
+  }
+}
+
+/**
  * Fetch recent videos from a channel (for similar channel analysis)
  */
 export async function fetchRecentChannelVideos(
