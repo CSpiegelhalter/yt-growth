@@ -769,6 +769,7 @@ Analyze what's working for these similar channels.`;
 /**
  * Analyze video comments for sentiment, themes, and hook inspiration.
  * Uses LLM to extract structured insights from viewer comments.
+ * Throws on failure - caller should handle and show appropriate error state.
  */
 export async function analyzeVideoComments(
   comments: Array<{
@@ -790,6 +791,10 @@ export async function analyzeVideoComments(
   viewerAskedFor: string[];
   hookInspiration: string[];
 }> {
+  if (!comments || comments.length === 0) {
+    throw new Error("No comments to analyze");
+  }
+
   const systemPrompt = `You are analyzing YouTube video comments to extract viewer insights.
 
 Return ONLY valid JSON with this structure:
@@ -805,58 +810,63 @@ Return ONLY valid JSON with this structure:
 
 Rules:
 - Sentiment percentages must add up to 100
-- Extract 3-5 themes with real counts and short quote examples
-- 3-5 items for viewerLoved and viewerAskedFor
-- 3-5 hookInspiration quotes (under 25 words each, from actual comments)`;
+- Extract 3-5 themes with real counts and short quote examples from ACTUAL comments provided
+- 3-5 items for viewerLoved - summarize what viewers explicitly praised
+- 3-5 items for viewerAskedFor - things viewers requested or asked about
+- 3-5 hookInspiration quotes (under 25 words each, from actual comments that could inspire video hooks)`;
 
   const commentTexts = comments
     .slice(0, 30)
     .map((c) => `[${c.likeCount} likes] ${c.text}`)
     .join("\n");
 
-  const userPrompt = `Analyze these comments for the video "${videoTitle}":
+  const userPrompt = `Analyze these ${comments.length} comments for the video "${videoTitle}":
 
 ${commentTexts}
 
-Extract sentiment, themes, what viewers loved, what they asked for, and hook-worthy quotes.`;
+Extract sentiment, themes, what viewers loved, what they asked for, and hook-worthy quotes from THESE ACTUAL COMMENTS.`;
 
-  try {
-    const result = await callLLM(
-      [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      { temperature: 0.5, maxTokens: 1000 }
-    );
+  const result = await callLLM(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    { temperature: 0.5, maxTokens: 1000 }
+  );
 
-    const jsonMatch = result.content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      return {
-        topComments: [], // Filled in by caller
-        sentiment: parsed.sentiment ?? {
-          positive: 50,
-          neutral: 30,
-          negative: 20,
-        },
-        themes: parsed.themes ?? [],
-        viewerLoved: parsed.viewerLoved ?? [],
-        viewerAskedFor: parsed.viewerAskedFor ?? [],
-        hookInspiration: parsed.hookInspiration ?? [],
-      };
-    }
-  } catch (err) {
-    console.warn("Failed to analyze video comments:", err);
+  const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error("Failed to parse LLM response for comment analysis");
   }
 
-  // Fallback
+  const parsed = JSON.parse(jsonMatch[0]);
+
+  // Validate we got real sentiment data
+  const sentiment = parsed.sentiment;
+  if (
+    !sentiment ||
+    typeof sentiment.positive !== "number" ||
+    typeof sentiment.neutral !== "number" ||
+    typeof sentiment.negative !== "number"
+  ) {
+    throw new Error("Invalid sentiment data from LLM");
+  }
+
   return {
-    topComments: [],
-    sentiment: { positive: 50, neutral: 30, negative: 20 },
-    themes: [],
-    viewerLoved: [],
-    viewerAskedFor: [],
-    hookInspiration: [],
+    topComments: [], // Filled in by caller
+    sentiment: {
+      positive: sentiment.positive,
+      neutral: sentiment.neutral,
+      negative: sentiment.negative,
+    },
+    themes: Array.isArray(parsed.themes) ? parsed.themes : [],
+    viewerLoved: Array.isArray(parsed.viewerLoved) ? parsed.viewerLoved : [],
+    viewerAskedFor: Array.isArray(parsed.viewerAskedFor)
+      ? parsed.viewerAskedFor
+      : [],
+    hookInspiration: Array.isArray(parsed.hookInspiration)
+      ? parsed.hookInspiration
+      : [],
   };
 }
 
@@ -906,6 +916,67 @@ export async function generateCompetitorVideoAnalysis(
     const noTimestamps = noUrls.replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "");
     const noHashtags = noTimestamps.replace(/#[\p{L}\p{N}_-]+/gu, "");
     return noHashtags.replace(/\s+/g, " ").trim();
+  }
+
+  /**
+   * Detect if a description is mostly useless boilerplate (social links, stream dates, etc.)
+   * Returns true if the description should be ignored and the model should infer from title/tags.
+   */
+  function isUselessDescription(desc: string): boolean {
+    if (!desc || desc.length < 20) return true;
+
+    const cleaned = cleanDescriptionForAbout(desc).toLowerCase();
+    if (cleaned.length < 30) return true;
+
+    // Common boilerplate patterns in stream VODs and low-effort descriptions
+    const boilerplatePatterns = [
+      /^streamed?\s+(on\s+)?[a-z]+\s+\d/i, // "Streamed Dec 8, 2025" or "Streamed on Dec 8"
+      /watch live at/i,
+      /original stream date/i,
+      /vods? managed by/i,
+      /artwork\s*\/?\s*emotes? by/i,
+      /follow me on/i,
+      /subscribe.*notification/i,
+      /links below/i,
+      /check out my/i,
+      /business inquir/i,
+      /contact.*email/i,
+      /^\s*subscribe/i,
+    ];
+
+    for (const pattern of boilerplatePatterns) {
+      if (pattern.test(cleaned)) return true;
+    }
+
+    // Check if description is mostly social platform names and labels
+    const socialPatterns =
+      /\b(twitch|twitter|discord|instagram|tiktok|facebook|merch|patreon|bluesky|youtube|channel|subscribe)\b/gi;
+    const socialMatches = cleaned.match(socialPatterns) || [];
+
+    // Count actual meaningful words (longer than 4 chars, not common words)
+    const meaningfulWords = cleaned
+      .split(/\s+/)
+      .filter(
+        (w) =>
+          w.length > 4 &&
+          !/^(twitch|twitter|discord|instagram|tiktok|facebook|merch|patreon|bluesky|youtube|channel|subscribe|https|watch|stream|live|follow|link|check|below|click|more|info|about|video|content)$/i.test(
+            w
+          )
+      );
+
+    // If social mentions dominate or very few meaningful words, it's useless
+    if (
+      socialMatches.length >= meaningfulWords.length &&
+      socialMatches.length > 3
+    ) {
+      return true;
+    }
+
+    if (meaningfulWords.length < 5) {
+      return true;
+    }
+
+    return false;
   }
 
   const ABOUT_STOPWORDS = new Set([
@@ -982,6 +1053,38 @@ export async function generateCompetitorVideoAnalysis(
     return sim >= 0.75;
   }
 
+  /**
+   * Check if the about text contains garbage from a description (social links, stream metadata, etc.)
+   */
+  function aboutContainsDescriptionGarbage(about: string): boolean {
+    if (!about) return false;
+    const lower = about.toLowerCase();
+
+    // Check for common garbage patterns
+    const garbagePatterns = [
+      /▶/,
+      /twitch:/i,
+      /merch:/i,
+      /twitter:/i,
+      /discord:/i,
+      /instagram:/i,
+      /bluesky:/i,
+      /patreon:/i,
+      /streamed\s+(on\s+)?[a-z]+\s+\d/i,
+      /watch live at/i,
+      /vods? managed by/i,
+      /artwork.*emotes? by/i,
+      /\bmanaged by\b/i,
+      /\bemotes by\b/i,
+    ];
+
+    for (const pattern of garbagePatterns) {
+      if (pattern.test(about)) return true;
+    }
+
+    return false;
+  }
+
   async function rewriteWhatItsAbout(input: {
     title: string;
     description?: string;
@@ -989,24 +1092,38 @@ export async function generateCompetitorVideoAnalysis(
     channelTitle: string;
     previous: string;
   }): Promise<string | null> {
+    const descIsUseless = isUselessDescription(input.description ?? "");
+
     const sys = `You write high-signal YouTube topic summaries.
 Return ONLY valid JSON:
-{ "whatItsAbout": "2 sentences max. Plain English. Overall feel + what viewers get." }
+{ "whatItsAbout": "2 sentences max. Plain English. What the video content actually is." }
 
-Rules:
-- Do NOT quote or restate the title.
-- Use the description + tags to infer the true subject matter.
-- Mention format/tone implicitly (e.g., tutorial, breakdown, story, review) if clear.
-- No markdown. No bullets. No colons.`;
+CRITICAL:
+- NEVER copy the description - it's usually just social media links and garbage.
+- NEVER include: ▶TWITCH, ▶MERCH, social handles, stream dates, or attribution text.
+- You must INFER what the video is about from the title, channel name, and tags.
+- Examples of good summaries:
+  * "A Minecraft stream where the creator explores caves and interacts with chat."
+  * "A coding tutorial teaching Python basics for complete beginners."
+  * "A reaction video breaking down viral TikToks from the gaming community."
+- Describe the CONTENT, not metadata.`;
 
     const user = `TITLE: ${input.title}
 CHANNEL: ${input.channelTitle}
-TAGS: ${(input.tags ?? []).slice(0, 25).join(", ")}
-DESCRIPTION: ${cleanDescriptionForAbout(input.description ?? "").slice(0, 1400)}
+TAGS: ${(input.tags ?? []).slice(0, 25).join(", ") || "[none]"}
+${
+  descIsUseless
+    ? "DESCRIPTION: [IGNORE - boilerplate/links only]"
+    : `DESCRIPTION: ${cleanDescriptionForAbout(input.description ?? "").slice(
+        0,
+        800
+      )}`
+}
 
-BAD SUMMARY (too title-like): ${input.previous}
+THE PREVIOUS SUMMARY WAS BAD: "${input.previous}"
+(It either copied garbage from the description or just restated the title)
 
-Rewrite the summary.`;
+Write a NEW summary that describes what viewers actually watch in this video.`;
 
     try {
       const result = await callLLM(
@@ -1020,7 +1137,18 @@ Rewrite the summary.`;
       if (!jsonMatch) return null;
       const parsed = JSON.parse(jsonMatch[0]) as { whatItsAbout?: string };
       const rewritten = (parsed.whatItsAbout ?? "").trim();
-      return rewritten ? rewritten : null;
+
+      // Verify the rewrite doesn't contain the same garbage
+      if (
+        rewritten &&
+        !rewritten.includes("▶") &&
+        !rewritten.includes("TWITCH") &&
+        !rewritten.includes("MERCH") &&
+        !rewritten.toLowerCase().includes("streamed")
+      ) {
+        return rewritten;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -1031,7 +1159,7 @@ Your goal is to extract actionable insights from a competitor's successful video
 
 Return ONLY valid JSON with this structure:
 {
-  "whatItsAbout": "2 sentences max. What it is actually about (topic + promise) and the overall feel/format implied by description + tags (e.g., tutorial, breakdown, story, review). Do NOT restate the title.",
+  "whatItsAbout": "2 sentences max describing the actual video content.",
   "whyItsWorking": ["Specific reason 1", "Specific reason 2", "Specific reason 3", "..."],
   "themesToRemix": [
     { "theme": "Theme name", "why": "Why this theme resonates with viewers" }
@@ -1048,9 +1176,27 @@ Return ONLY valid JSON with this structure:
   ]
 }
 
-Rules:
+CRITICAL RULES for "whatItsAbout":
+- This is the MOST IMPORTANT field. You must describe what the VIDEO CONTENT actually is.
+- NEVER copy or echo the description text - it's often just social links and garbage.
+- NEVER output social media handles, link labels (▶TWITCH, ▶MERCH), stream dates, or attribution text.
+- If the description looks like stream boilerplate, COMPLETELY IGNORE IT.
+- Instead, INFER what the video is about from:
+  1. The title (what topic/game/activity does it mention?)
+  2. The channel name (what kind of content do they make?)
+  3. The tags (what keywords describe this content?)
+- Examples of GOOD summaries:
+  * Gaming: "A Minecraft stream highlights reel featuring building challenges and viewer interactions."
+  * Tutorial: "A step-by-step guide to setting up a home studio for podcasting on a budget."
+  * Vlog: "A day-in-the-life video documenting a cross-country road trip with camping highlights."
+  * React: "Commentary and reactions to viral TikTok clips from the past week."
+- Examples of BAD summaries (NEVER DO THIS):
+  * "▶TWITCH: ▶MERCH: ▶Twitter..." (just copying description garbage)
+  * "Streamed Dec 8, 2025..." (echoing metadata)
+  * "A video about [exact title here]" (just restating the title)
+
+Other rules:
 - Keep insights specific and actionable, not generic
-- For whatItsAbout: do not quote, copy, or closely paraphrase the title; use description + tags
 - 4-6 items for whyItsWorking
 - 2-3 items for themesToRemix
 - 2-3 items for titlePatterns and packagingNotes
@@ -1087,12 +1233,18 @@ Rules:
   }
 
   const cleanedDescription = cleanDescriptionForAbout(video.description ?? "");
+  const descriptionIsUseless = isUselessDescription(video.description ?? "");
+
   const userPrompt = `Analyze this competitor video for "${userChannelTitle}":
 
 Title: "${video.title}"
 Channel: ${video.channelTitle}
-Description: ${cleanedDescription.slice(0, 1400)}
-Tags: ${(video.tags ?? []).slice(0, 25).join(", ")}
+${
+  descriptionIsUseless
+    ? `Description: [IGNORE - just social links/stream boilerplate. Infer topic from title and tags only.]`
+    : `Description: ${cleanedDescription.slice(0, 1400)}`
+}
+Tags: ${(video.tags ?? []).slice(0, 25).join(", ") || "[none provided]"}
 Views: ${video.stats.viewCount.toLocaleString()}
 Views/day: ${video.derived.viewsPerDay.toLocaleString()}
 ${
@@ -1112,7 +1264,7 @@ ${
 }${commentsContext}
 
 Extract:
-1. What the video is actually about (2 sentences max; use description + tags; don't restate title)
+1. What the video is ACTUALLY ABOUT - describe the content/topic/activity (DO NOT copy description text)
 2. Specific reasons why it's working (incorporate comment insights if available)
 3. Themes that could be remixed for my channel
 4. Title patterns to learn from
@@ -1145,7 +1297,12 @@ Extract:
       };
 
       const about = (parsed.whatItsAbout ?? "").trim();
-      if (about && aboutSeemsTitleLike(about, video.title)) {
+      // Rewrite if the summary is too title-like OR contains description garbage
+      const needsRewrite =
+        (about && aboutSeemsTitleLike(about, video.title)) ||
+        aboutContainsDescriptionGarbage(about);
+
+      if (needsRewrite) {
         const rewritten = await rewriteWhatItsAbout({
           title: video.title,
           description: video.description,
@@ -3087,4 +3244,125 @@ function getTestModeMoreIdeasResponse() {
       proof: { basedOn: [] },
     },
   ];
+}
+
+/**
+ * Use LLM to determine the user's niche and generate search queries
+ * for finding competitor channels.
+ */
+export async function generateNicheQueries(input: {
+  videoTitles: string[];
+  topTags: string[];
+  categoryName: string | null;
+}): Promise<{
+  niche: string;
+  queries: string[];
+}> {
+  const { videoTitles, topTags, categoryName } = input;
+
+  // TEST_MODE: Return fixture
+  if (process.env.TEST_MODE === "1") {
+    return {
+      niche: "YouTube Creator Education",
+      queries: [
+        "youtube tips",
+        "grow youtube channel",
+        "youtube strategy",
+        "content creator tips",
+        "youtube analytics",
+      ],
+    };
+  }
+
+  const systemPrompt = `You are a YouTube niche analyst. Given a creator's video data, identify their specific niche and generate YouTube search queries to find similar channels.
+
+Rules:
+- Be SPECIFIC about the niche (not just "gaming" but "indie roguelike gameplay")
+- Generate 8-10 search queries that would find channels making similar content
+- Queries should be what someone would type into YouTube search to find this type of content
+- Focus on the CONTENT TYPE, not generic terms
+- Output valid JSON only`;
+
+  const userPrompt = `Analyze this YouTube channel and generate search queries to find similar competitor channels:
+
+VIDEO TITLES (recent):
+${videoTitles
+  .slice(0, 8)
+  .map((t, i) => `${i + 1}. ${t}`)
+  .join("\n")}
+
+TOP TAGS USED:
+${topTags.slice(0, 15).join(", ") || "None available"}
+
+YOUTUBE CATEGORY:
+${categoryName || "Unknown"}
+
+Respond with JSON:
+{
+  "niche": "Specific description of the channel's niche (e.g., 'YouTube growth tips and creator education' or 'indie roguelike game playthroughs')",
+  "queries": ["search query 1", "search query 2", ...] // 8-10 queries to find similar channels
+}`;
+
+  try {
+    const response = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      {
+        temperature: 0.3, // Lower temperature for more consistent results
+        maxTokens: 500,
+      }
+    );
+
+    // Parse JSON response
+    const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error(
+        "[generateNicheQueries] Failed to parse JSON from LLM response"
+      );
+      return fallbackNicheQueries(topTags, categoryName);
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    if (
+      !parsed.niche ||
+      !Array.isArray(parsed.queries) ||
+      parsed.queries.length === 0
+    ) {
+      console.error("[generateNicheQueries] Invalid response structure");
+      return fallbackNicheQueries(topTags, categoryName);
+    }
+
+    console.log(`[generateNicheQueries] Identified niche: "${parsed.niche}"`);
+    console.log(
+      `[generateNicheQueries] Generated ${parsed.queries.length} queries`
+    );
+
+    return {
+      niche: parsed.niche,
+      queries: parsed.queries.slice(0, 10),
+    };
+  } catch (err) {
+    console.error("[generateNicheQueries] Error:", err);
+    return fallbackNicheQueries(topTags, categoryName);
+  }
+}
+
+/**
+ * Fallback niche queries when LLM fails
+ */
+function fallbackNicheQueries(
+  topTags: string[],
+  categoryName: string | null
+): { niche: string; queries: string[] } {
+  const queries = topTags.slice(0, 8);
+  if (queries.length < 3 && categoryName) {
+    queries.push(categoryName.toLowerCase());
+  }
+  return {
+    niche: categoryName || "General Content",
+    queries: queries.length > 0 ? queries : ["youtube videos"],
+  };
 }

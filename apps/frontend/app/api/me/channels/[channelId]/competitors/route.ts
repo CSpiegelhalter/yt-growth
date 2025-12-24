@@ -29,6 +29,7 @@ import {
 import {
   getGoogleAccount,
   searchSimilarChannels,
+  searchNicheVideos,
   fetchRecentChannelVideos,
   fetchVideosStatsBatch,
   fetchChannelStats,
@@ -37,7 +38,30 @@ import {
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { ensureMockChannelSeeded } from "@/lib/mock-seed";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { generateNicheQueries } from "@/lib/llm";
 import type { CompetitorFeedResponse, CompetitorVideo } from "@/types/api";
+
+// In-memory cache for niche queries (per channel, cleared on server restart)
+const nicheCache = new Map<string, { niche: string; queries: string[] }>();
+
+// YouTube Video Category ID to Name mapping
+const YOUTUBE_CATEGORIES: Record<string, string> = {
+  "1": "Film & Animation",
+  "2": "Autos & Vehicles",
+  "10": "Music",
+  "15": "Pets & Animals",
+  "17": "Sports",
+  "19": "Travel & Events",
+  "20": "Gaming",
+  "22": "People & Blogs",
+  "23": "Comedy",
+  "24": "Entertainment",
+  "25": "News & Politics",
+  "26": "Howto & Style",
+  "27": "Education",
+  "28": "Science & Technology",
+  "29": "Nonprofits & Activism",
+};
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -51,11 +75,16 @@ const QuerySchema = z.object({
   cursor: z.string().optional(),
   // Product constraint: only return 10 at a time to reduce downstream YouTube calls.
   limit: z.coerce.number().min(1).max(10).default(10),
+  // Scale factor to find larger channels (1 = normal, 2 = 2x bigger, etc.)
+  scale: z.coerce.number().min(1).max(5).default(1),
+  // Page number for fetching additional batches of competitor videos (0 = first batch)
+  page: z.coerce.number().min(0).max(10).default(0),
 });
 
 // Minimum hours between snapshots for a video
 const SNAPSHOT_INTERVAL_HOURS = 6;
-const MAX_VIDEOS_PER_COMPETITOR_CHANNEL = 3;
+const BASE_VIDEOS_PER_CHANNEL = 5;
+const MAX_COMPETITOR_CHANNELS = 8;
 
 export async function GET(
   req: NextRequest,
@@ -118,6 +147,8 @@ export async function GET(
       sort: url.searchParams.get("sort") ?? "velocity",
       cursor: url.searchParams.get("cursor") ?? undefined,
       limit: url.searchParams.get("limit") ?? "10",
+      scale: url.searchParams.get("scale") ?? "1",
+      page: url.searchParams.get("page") ?? "0",
     });
 
     if (!queryResult.success) {
@@ -127,7 +158,7 @@ export async function GET(
       );
     }
 
-    const { range, sort, cursor, limit } = queryResult.data;
+    const { range, sort, cursor, limit, scale, page } = queryResult.data;
 
     // Get channel and verify ownership
     let channel = await prisma.channel.findFirst({
@@ -137,6 +168,11 @@ export async function GET(
       },
       include: {
         Video: {
+          select: {
+            title: true,
+            tags: true,
+            categoryId: true,
+          },
           orderBy: { publishedAt: "desc" },
           take: 10,
         },
@@ -145,7 +181,7 @@ export async function GET(
 
     // In YT_MOCK_MODE, auto-seed the channel/videos if missing so pages work immediately.
     if (isYouTubeMockMode()) {
-      const ga = await getGoogleAccount(user.id);
+      const ga = await getGoogleAccount(user.id, channelId);
       if (!ga) {
         return Response.json(
           { error: "Google account not connected" },
@@ -161,7 +197,11 @@ export async function GET(
       channel = await prisma.channel.findFirst({
         where: { youtubeChannelId: channelId, userId: user.id },
         include: {
-          Video: { orderBy: { publishedAt: "desc" }, take: 10 },
+          Video: {
+            select: { title: true, tags: true, categoryId: true },
+            orderBy: { publishedAt: "desc" },
+            take: 10,
+          },
         },
       });
     }
@@ -171,7 +211,7 @@ export async function GET(
     }
 
     // Get Google account for API calls
-    const ga = await getGoogleAccount(user.id);
+    const ga = await getGoogleAccount(user.id, channelId);
     if (!ga) {
       return Response.json(
         { error: "Google account not connected" },
@@ -179,15 +219,66 @@ export async function GET(
       );
     }
 
-    // Extract keywords from recent video titles and tags for niche matching
-    const userKeywords = extractKeywords(
-      channel.Video.map((v) => ({
-        title: v.title ?? "",
-        tags: v.tags ?? "",
-      }))
+    // Extract video data for niche analysis
+    const videoTitles = channel.Video.map((v) => v.title ?? "").filter(Boolean);
+    const allTags: string[] = [];
+    channel.Video.forEach((v) => {
+      if (v.tags) {
+        v.tags.split(",").forEach((t) => {
+          const cleaned = t.trim().toLowerCase();
+          if (cleaned.length > 2) allTags.push(cleaned);
+        });
+      }
+    });
+
+    // Count tag frequency and get top tags
+    const tagCounts = new Map<string, number>();
+    allTags.forEach((tag) => tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1));
+    const topTags = [...tagCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([tag]) => tag);
+
+    // Get primary category
+    const categoryCounts = new Map<string, number>();
+    channel.Video.forEach((v) => {
+      if (v.categoryId) {
+        categoryCounts.set(
+          v.categoryId,
+          (categoryCounts.get(v.categoryId) ?? 0) + 1
+        );
+      }
+    });
+    const primaryCategoryId =
+      [...categoryCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    const categoryName = primaryCategoryId
+      ? YOUTUBE_CATEGORIES[primaryCategoryId]
+      : null;
+
+    console.log(
+      `[Competitors] Category: ${categoryName}, Tags: ${topTags
+        .slice(0, 5)
+        .join(", ")}`
     );
 
-    if (userKeywords.length === 0) {
+    // Use LLM to generate niche queries (cached per channel for 24h)
+    const nicheCacheKey = `niche:${channel.id}`;
+    let nicheData = nicheCache.get(nicheCacheKey);
+
+    if (!nicheData) {
+      console.log(`[Competitors] Generating niche queries via LLM...`);
+      nicheData = await generateNicheQueries({
+        videoTitles,
+        topTags,
+        categoryName,
+      });
+      nicheCache.set(nicheCacheKey, nicheData);
+      console.log(`[Competitors] LLM identified niche: "${nicheData.niche}"`);
+    }
+
+    const nicheQueries = nicheData.queries;
+
+    if (nicheQueries.length === 0) {
       return Response.json({
         channelId,
         range,
@@ -195,8 +286,21 @@ export async function GET(
         generatedAt: new Date().toISOString(),
         cachedUntil: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
         videos: [],
+        message: "Could not determine niche. Please add tags to your videos.",
       } as CompetitorFeedResponse);
     }
+
+    // Use different query for each page (cycles through available queries)
+    const queryIndex = page % nicheQueries.length;
+    const searchQuery = nicheQueries[queryIndex];
+
+    console.log(
+      `[Competitors] Page ${page} using query: "${searchQuery}" (${nicheQueries.length} queries available)`
+    );
+    console.log(`[Competitors] Niche: "${nicheData.niche}"`);
+
+    // For backward compatibility with searchSimilarChannels
+    const userKeywords = searchQuery.split(/\s+/).filter((w) => w.length > 2);
 
     // Calculate date range
     const rangeDays = range === "7d" ? 7 : 28;
@@ -205,12 +309,14 @@ export async function GET(
     ).toISOString();
 
     // Cache the discovery list for 12h (so repeated page views don't burn YouTube quota).
+    // Include page in the range key to store different batches separately
+    const cacheRange = page > 0 ? `${range}_page${page}` : range;
     const cached = await prisma.competitorFeedCache.findUnique({
       where: {
         userId_channelId_range: {
           userId: user.id,
           channelId: channel.id,
-          range,
+          range: cacheRange,
         },
       },
     });
@@ -218,7 +324,7 @@ export async function GET(
     // Get user's channel subscriber count for size-based filtering
     const userChannelStats = await fetchChannelStats(ga, [channelId]);
     const userSubCount = userChannelStats.get(channelId)?.subscriberCount ?? 0;
-    const sizeRange = getCompetitorSizeRange(userSubCount);
+    const sizeRange = getCompetitorSizeRange(userSubCount, scale);
 
     // Fetch recent videos from all competitor channels
     const rawVideos: Array<{
@@ -243,7 +349,7 @@ export async function GET(
       const perChannelCounts = new Map<string, number>();
       cachedRaw.forEach((v) => {
         const n = perChannelCounts.get(v.channelId) ?? 0;
-        if (n >= MAX_VIDEOS_PER_COMPETITOR_CHANNEL) return;
+        if (n >= BASE_VIDEOS_PER_CHANNEL) return;
         perChannelCounts.set(v.channelId, n + 1);
         rawVideos.push(v);
       });
@@ -252,15 +358,19 @@ export async function GET(
         `[Competitors] User has ${userSubCount} subs, looking for channels with ${sizeRange.min}-${sizeRange.max} subs`
       );
 
-      // Search for similar channels (get more to filter by size)
-      const similarChannelResults = await searchSimilarChannels(
+      // Search for videos in the niche (more accurate than channel search)
+      const { uniqueChannels: videoBasedChannels } = await searchNicheVideos(
         ga,
-        userKeywords,
-        20 // Get more to filter down
+        searchQuery,
+        50
+      );
+
+      console.log(
+        `[Competitors] Video search found ${videoBasedChannels.length} unique channels for query: "${searchQuery}"`
       );
 
       // Filter out the user's own channel
-      const candidateChannels = similarChannelResults.filter(
+      const candidateChannels = videoBasedChannels.filter(
         (c) => c.channelId !== channelId
       );
 
@@ -285,20 +395,56 @@ export async function GET(
         })
         // Sort by subscriber count (prefer channels closer to user's next milestone)
         .sort((a, b) => a.subscriberCount - b.subscriberCount)
-        .slice(0, 6);
+        .slice(0, MAX_COMPETITOR_CHANNELS);
 
       console.log(
-        `[Competitors] Found ${sizeFilteredChannels.length} size-appropriate channels:`,
+        `[Competitors] Page ${page} (query: "${searchQuery}"): Found ${sizeFilteredChannels.length} size-appropriate channels:`,
         sizeFilteredChannels.map(
           (c) => `${c.channelTitle} (${c.subscriberCount})`
         )
       );
 
-      // If not enough size-appropriate channels, fall back to any similar channels
-      const filteredChannels =
-        sizeFilteredChannels.length >= 3
-          ? sizeFilteredChannels
-          : candidateChannels.slice(0, 6);
+      // If not enough size-appropriate channels from video search, also try channel search as backup
+      let filteredChannels = sizeFilteredChannels;
+      if (filteredChannels.length < 3) {
+        console.log(
+          `[Competitors] Few channels found via video search, trying channel search as backup...`
+        );
+        const channelSearchResults = await searchSimilarChannels(
+          ga,
+          userKeywords,
+          30
+        );
+        const additionalChannels = channelSearchResults
+          .filter((c) => c.channelId !== channelId)
+          .filter(
+            (c) =>
+              !sizeFilteredChannels.some((sc) => sc.channelId === c.channelId)
+          );
+
+        const additionalStats = await fetchChannelStats(
+          ga,
+          additionalChannels.map((c) => c.channelId)
+        );
+
+        const additionalFiltered = additionalChannels
+          .map((c) => ({
+            ...c,
+            subscriberCount:
+              additionalStats.get(c.channelId)?.subscriberCount ?? 0,
+          }))
+          .filter(
+            (c) =>
+              c.subscriberCount >= sizeRange.min &&
+              c.subscriberCount <= sizeRange.max
+          )
+          .slice(0, MAX_COMPETITOR_CHANNELS - filteredChannels.length);
+
+        filteredChannels = [...filteredChannels, ...additionalFiltered];
+        console.log(
+          `[Competitors] After backup channel search: ${filteredChannels.length} total channels`
+        );
+      }
 
       await Promise.all(
         filteredChannels.map(async (sc) => {
@@ -307,7 +453,7 @@ export async function GET(
               ga,
               sc.channelId,
               publishedAfter,
-              MAX_VIDEOS_PER_COMPETITOR_CHANNEL
+              BASE_VIDEOS_PER_CHANNEL
             );
 
             recentVideos.forEach((v) => {
@@ -337,13 +483,13 @@ export async function GET(
           userId_channelId_range: {
             userId: user.id,
             channelId: channel.id,
-            range,
+            range: cacheRange,
           },
         },
         create: {
           userId: user.id,
           channelId: channel.id,
-          range,
+          range: cacheRange,
           // Ensure we never store too many from a single channel (idea diversity).
           videosJson: rawVideos as unknown as object,
           cachedUntil,
@@ -521,6 +667,9 @@ export async function GET(
     const hasMore = cursorOffset + limit < allVideos.length;
     const nextCursor = hasMore ? String(cursorOffset + limit) : undefined;
 
+    // Determine if there are more pages available (based on available unique queries)
+    const hasMoreUniqueQueries = page + 1 < nicheQueries.length;
+
     return Response.json({
       channelId,
       range,
@@ -530,6 +679,9 @@ export async function GET(
       nextCursor,
       videos: paginatedVideos,
       targetSizeDescription: sizeRange.description,
+      currentPage: page,
+      hasMorePages: hasMoreUniqueQueries,
+      totalQueries: nicheQueries.length,
     } as CompetitorFeedResponse);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -677,30 +829,6 @@ function sortVideos(videos: CompetitorVideo[], sort: string): void {
   }
 }
 
-// Extract keywords from video titles and tags
-function extractKeywords(
-  videos: Array<{ title: string; tags: string }>
-): string[] {
-  const titleWords = videos
-    .flatMap((v) => v.title.toLowerCase().split(/\s+/))
-    .filter((w) => w.length > 3 && !commonWords.has(w));
-
-  const tagWords = videos
-    .flatMap((v) => v.tags.split(",").map((t) => t.trim().toLowerCase()))
-    .filter(Boolean);
-
-  // Count word frequency and get top keywords
-  const wordCounts = new Map<string, number>();
-  [...titleWords, ...tagWords].forEach((word) => {
-    wordCounts.set(word, (wordCounts.get(word) ?? 0) + 1);
-  });
-
-  return [...wordCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([word]) => word);
-}
-
 // Generate demo competitor feed data
 function generateDemoCompetitorFeed(input: {
   range: "7d" | "28d";
@@ -802,83 +930,3 @@ function generateDemoCompetitorFeed(input: {
     videos: paginated,
   };
 }
-
-// Common words to filter out from keyword extraction
-const commonWords = new Set([
-  "the",
-  "and",
-  "for",
-  "with",
-  "this",
-  "that",
-  "from",
-  "have",
-  "you",
-  "what",
-  "when",
-  "where",
-  "how",
-  "why",
-  "who",
-  "which",
-  "your",
-  "will",
-  "can",
-  "all",
-  "are",
-  "been",
-  "being",
-  "but",
-  "each",
-  "had",
-  "has",
-  "her",
-  "here",
-  "his",
-  "into",
-  "just",
-  "like",
-  "made",
-  "make",
-  "more",
-  "most",
-  "much",
-  "must",
-  "not",
-  "now",
-  "only",
-  "other",
-  "our",
-  "out",
-  "over",
-  "own",
-  "said",
-  "same",
-  "she",
-  "should",
-  "some",
-  "such",
-  "than",
-  "them",
-  "then",
-  "there",
-  "these",
-  "they",
-  "their",
-  "through",
-  "too",
-  "under",
-  "very",
-  "was",
-  "way",
-  "were",
-  "about",
-  "after",
-  "also",
-  "video",
-  "videos",
-  "watch",
-  "watching",
-  "today",
-  "new",
-]);

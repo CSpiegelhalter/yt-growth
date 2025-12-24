@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { BRAND } from "@/lib/brand";
 import ConvertersClient from "./ConvertersClient";
 
 export const metadata: Metadata = {
-  title: "Subscriber Drivers | YT Growth",
+  title: `Subscriber Drivers | ${BRAND.name}`,
   description:
     "See which videos turn viewers into subscribers and what to replicate",
   robots: { index: false, follow: false },

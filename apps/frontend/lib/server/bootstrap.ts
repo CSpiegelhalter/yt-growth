@@ -53,8 +53,8 @@ export async function getCurrentUserServer(): Promise<BootstrapUser | null> {
       typeof sessionUser.id === "string"
         ? Number(sessionUser.id)
         : typeof sessionUser.id === "number"
-          ? sessionUser.id
-          : undefined;
+        ? sessionUser.id
+        : undefined;
 
     // Only query by ID if it's within safe integer range for the database
     if (
@@ -117,6 +117,8 @@ export async function getChannelsServer(userId: number): Promise<Channel[]> {
       youtubeChannelId: true,
       title: true,
       thumbnailUrl: true,
+      totalVideoCount: true,
+      subscriberCount: true,
       connectedAt: true,
       lastSyncedAt: true,
       syncStatus: true,
@@ -135,6 +137,9 @@ export async function getChannelsServer(userId: number): Promise<Channel[]> {
     id: ch.id,
     title: ch.title,
     thumbnailUrl: ch.thumbnailUrl,
+    totalVideoCount: ch.totalVideoCount,
+    subscriberCount: ch.subscriberCount,
+    syncedVideoCount: ch._count.Video,
     connectedAt: ch.connectedAt?.toISOString() ?? "",
     lastSyncedAt: ch.lastSyncedAt?.toISOString() ?? null,
     syncStatus: ch.syncStatus ?? "idle",

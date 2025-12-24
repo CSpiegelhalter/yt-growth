@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { BRAND } from "@/lib/brand";
 import ProfileClient from "./ProfileClient";
 
 export const metadata: Metadata = {
-  title: "Profile | YT Growth",
+  title: `Profile | ${BRAND.name}`,
   description: "Manage your account and subscription",
   robots: { index: false, follow: false },
 };

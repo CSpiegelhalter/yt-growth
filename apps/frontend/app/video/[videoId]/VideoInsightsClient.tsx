@@ -186,21 +186,6 @@ export default function VideoInsightsClient({
         </div>
       </header>
 
-      {/* AI Summary - The Main Story */}
-      {llmInsights?.summary && (
-        <section className={s.aiSummary}>
-          <div className={s.aiIcon}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <div className={s.aiText}>
-            <p className={s.aiHeadline}>{llmInsights.summary.headline}</p>
-            <p className={s.aiDetail}>{llmInsights.summary.oneLiner}</p>
-          </div>
-        </section>
-      )}
-
       {/* Quick Stats - The Numbers That Matter */}
       <section className={s.quickStats}>
         <div className={s.statGroup}>
@@ -250,8 +235,8 @@ export default function VideoInsightsClient({
         </div>
       </section>
 
-      {/* What's Working / Needs Work */}
-      {llmInsights && (llmInsights.wins?.length > 0 || llmInsights.leaks?.length > 0) && (
+      {/* What's Working / Needs Work - Only show if we have enough data */}
+      {llmInsights && derived.totalViews >= 100 && (llmInsights.wins?.length > 0 || llmInsights.leaks?.length > 0) && (
         <section className={s.winsLeaks}>
           {llmInsights.wins?.length > 0 && (
             <div className={s.winsCol}>
@@ -288,6 +273,17 @@ export default function VideoInsightsClient({
         </section>
       )}
 
+      {/* Low views notice */}
+      {derived.totalViews < 100 && (
+        <section className={s.lowViewsNotice}>
+          <div className={s.noticeIcon}>📊</div>
+          <div className={s.noticeText}>
+            <strong>Not enough data yet</strong>
+            <p>This video has {derived.totalViews} view{derived.totalViews !== 1 ? 's' : ''}. Performance insights like engagement rate and subscriber conversion become meaningful after ~100 views.</p>
+          </div>
+        </section>
+      )}
+
       {/* Key Findings */}
       {llmInsights?.keyFindings && llmInsights.keyFindings.length > 0 && (
         <section className={s.findings}>
@@ -319,8 +315,8 @@ export default function VideoInsightsClient({
       {/* Title & Tags Analysis */}
       {llmInsights && (llmInsights.titleAnalysis || llmInsights.tagAnalysis) && (
         <section className={s.packaging}>
-          <h2 className={s.sectionTitle}>Packaging Analysis</h2>
-          <p className={s.sectionDesc}>How well your title and tags are optimized for discovery</p>
+          <h2 className={s.sectionTitle}>Title & Tags Optimization</h2>
+          <p className={s.sectionDesc}>How well your title and tags are optimized for clicks and discovery</p>
 
           <div className={s.packagingGrid}>
             {llmInsights.titleAnalysis && (

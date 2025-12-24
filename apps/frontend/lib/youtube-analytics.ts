@@ -235,8 +235,13 @@ async function tryFetchAnalytics(
         cpm: obj.cpm != null ? Number(obj.cpm) : null,
       };
     });
-  } catch (err) {
-    console.error(`Analytics fetch failed for metrics ${metrics.join(",")}:`, err);
+  } catch (err: any) {
+    // Clean error message for scope/permission issues
+    if (err?.isScopeError || err?.message?.includes("SCOPE_ERROR")) {
+      console.warn(`[Analytics] Permission denied - user may have declined required scopes`);
+    } else {
+      console.error(`[Analytics] Fetch failed for metrics ${metrics.join(",")}:`, err?.message || err);
+    }
     return null;
   }
 }
@@ -377,9 +382,14 @@ export async function fetchOwnedVideoComments(
       likes: item.snippet.topLevelComment.snippet.likeCount,
       publishedAt: item.snippet.topLevelComment.snippet.publishedAt,
     }));
-  } catch (err) {
-    // Comments may be disabled
-    console.error("Failed to fetch comments:", err);
+  } catch (err: any) {
+    // Clean error message for scope/permission issues
+    if (err?.isScopeError || err?.message?.includes("SCOPE_ERROR")) {
+      console.warn(`[Comments] Permission denied - user may have declined youtube.force-ssl scope`);
+    } else {
+      // Comments may be disabled on the video
+      console.warn(`[Comments] Could not fetch:`, err?.message || err);
+    }
     return [];
   }
 }

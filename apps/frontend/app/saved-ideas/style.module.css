@@ -157,34 +157,41 @@
    IDEAS GRID
    ================================================ */
 .ideasGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .ideasGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* ================================================
-   IDEA CARD
+   IDEA CARD - Compact style matching Ideas page
    ================================================ */
 .ideaCard {
   background: white;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   overflow: hidden;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: all 0.2s ease;
 }
 
 .ideaCard:hover {
-  border-color: #c7d2fe;
+  border-color: #a5b4fc;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+  transform: translateY(-1px);
 }
 
 .ideaCardMain {
-  padding: 20px;
+  padding: 14px;
 }
 
 @media (min-width: 768px) {
   .ideaCardMain {
-    padding: 24px;
+    padding: 16px;
   }
 }
 
@@ -192,22 +199,22 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .ideaTitle {
-  font-size: 1.125rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   margin: 0;
   color: #1e293b;
-  line-height: 1.3;
+  line-height: 1.35;
   flex: 1;
 }
 
 .ideaBadges {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
   flex-wrap: wrap;
 }
@@ -215,12 +222,12 @@
 .difficultyBadge,
 .formatBadge,
 .statusBadge {
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
 }
 
 .difficultyBadge.easy {
@@ -269,62 +276,66 @@
 }
 
 .ideaAngle {
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   color: #64748b;
-  margin: 0 0 12px;
-  line-height: 1.5;
+  margin: 0 0 8px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .ideaMeta {
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 0.8125rem;
+  gap: 12px;
+  font-size: 0.75rem;
   color: #94a3b8;
 }
 
 .ideaMetaItem {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 /* Notes Section */
 .notesSection {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid #f1f5f9;
 }
 
 .notesLabel {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .notesText {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: #475569;
-  line-height: 1.5;
+  line-height: 1.45;
   margin: 0;
   white-space: pre-wrap;
 }
 
 .notesInput {
   width: 100%;
-  padding: 12px;
-  font-size: 0.875rem;
+  padding: 10px;
+  font-size: 0.8125rem;
   color: #1e293b;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 6px;
   resize: vertical;
-  min-height: 80px;
+  min-height: 60px;
   font-family: inherit;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .notesInput:focus {
@@ -341,8 +352,8 @@
 .ideaActions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: 6px;
+  padding: 10px 14px;
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
   flex-wrap: wrap;
@@ -350,20 +361,20 @@
 
 @media (min-width: 768px) {
   .ideaActions {
-    padding: 12px 24px;
+    padding: 10px 16px;
   }
 }
 
 .statusSelect {
-  padding: 10px 14px;
-  font-size: 0.875rem;
+  padding: 7px 10px;
+  font-size: 0.8125rem;
   font-weight: 500;
   background: white;
   color: #475569;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  min-height: 44px;
+  min-height: 36px;
 }
 
 .statusSelect:focus {
@@ -372,16 +383,16 @@
 }
 
 .actionBtn {
-  padding: 10px 16px;
-  font-size: 0.875rem;
+  padding: 7px 12px;
+  font-size: 0.8125rem;
   font-weight: 500;
   background: white;
   color: #475569;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s;
-  min-height: 44px;
+  min-height: 36px;
 }
 
 .actionBtn:hover {
@@ -398,16 +409,16 @@
 }
 
 .actionBtnPrimary {
-  padding: 10px 16px;
-  font-size: 0.875rem;
+  padding: 7px 12px;
+  font-size: 0.8125rem;
   font-weight: 600;
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s;
-  min-height: 44px;
+  min-height: 36px;
 }
 
 .actionBtnPrimary:hover {

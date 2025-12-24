@@ -74,10 +74,9 @@ export const authOptions: NextAuthOptions = {
             "email",
             "profile",
             "https://www.googleapis.com/auth/youtube.readonly",
-            // Needed for commentThreads.list on some projects/tokens
-            "https://www.googleapis.com/auth/youtube.force-ssl",
+            "https://www.googleapis.com/auth/youtube.force-ssl", // Required for comments API
             "https://www.googleapis.com/auth/yt-analytics.readonly",
-            // "https://www.googleapis.com/auth/yt-analytics-monetary.readonly", // optional
+            // "https://www.googleapis.com/auth/yt-analytics-monetary.readonly", // optional: for revenue data
           ].join(" "),
         },
       },

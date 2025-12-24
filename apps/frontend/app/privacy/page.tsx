@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
+import { BRAND } from "@/lib/brand";
 import s from "./style.module.css";
 
-export const metadata = {
-  title: "Privacy Policy | YT Growth",
-  description: "Privacy Policy for YT Growth",
+export const metadata: Metadata = {
+  title: `Privacy Policy | ${BRAND.name}`,
+  description: `Privacy Policy for ${BRAND.name} - How we handle your data and protect your privacy.`,
+  robots: { index: false, follow: true },
 };
 
 export default function PrivacyPage() {
@@ -15,7 +18,7 @@ export default function PrivacyPage() {
         <section className={s.section}>
           <h2>1. Information We Collect</h2>
           <p>
-            When you use YT Growth, we collect information you provide directly to us, including:
+            When you use {BRAND.name}, we collect information you provide directly to us, including:
           </p>
           <ul>
             <li>Account information (email address, name)</li>
@@ -38,7 +41,7 @@ export default function PrivacyPage() {
         <section className={s.section}>
           <h2>3. YouTube API Services</h2>
           <p>
-            YT Growth uses YouTube API Services. By using our service, you are also agreeing to be 
+            {BRAND.name} uses YouTube API Services. By using our service, you are also agreeing to be 
             bound by the{" "}
             <a 
               href="https://www.youtube.com/t/terms" 
@@ -98,4 +101,3 @@ export default function PrivacyPage() {
     </main>
   );
 }
-

@@ -1,0 +1,138 @@
+/**
+ * Central brand configuration for ChannelBoost
+ * Use this everywhere to ensure consistent branding and avoid hardcoded strings.
+ */
+
+export const BRAND = {
+  name: "ChannelBoost",
+  domain: "getchannelboost.com",
+  url: "https://getchannelboost.com",
+  tagline: "YouTube Growth Analytics for Creators",
+  description:
+    "YouTube growth tool with channel audits, retention analysis, competitor insights, and AI-powered video ideas. Get more subscribers and views with data-driven content strategy.",
+  shortDescription:
+    "Data-driven video ideas, retention insights, and subscriber analysis to grow your YouTube channel faster.",
+  twitterHandle: "@channelboost",
+  ogImagePath: "/og/channelboost.png",
+  themeColor: "#2563eb",
+  email: "hello@getchannelboost.com",
+} as const;
+
+/**
+ * SEO-focused keywords and phrases
+ */
+export const SEO = {
+  primary: [
+    "youtube growth tool",
+    "youtube analytics tool",
+    "youtube channel audit",
+    "youtube retention analysis",
+    "youtube competitor analysis",
+    "youtube video ideas generator",
+  ],
+  secondary: [
+    "get more subscribers on youtube",
+    "get more views on youtube",
+    "improve youtube watch time",
+    "youtube content strategy",
+    "youtube trending videos in niche",
+    "youtube outlier videos",
+    "youtube video performance insights",
+    "youtube creator dashboard",
+  ],
+} as const;
+
+/**
+ * Feature pillars for landing page and marketing
+ */
+export const FEATURES = {
+  channelAudit: {
+    title: "YouTube Channel Audit",
+    description:
+      "Get a comprehensive audit of your channel's performance with actionable insights to improve your content strategy.",
+    keywords: [
+      "youtube channel audit",
+      "channel analysis",
+      "performance review",
+    ],
+  },
+  retentionAnalysis: {
+    title: "Retention & Drop-Off Insights",
+    description:
+      "See exactly where viewers stop watching and get AI-powered recommendations to keep them engaged longer.",
+    keywords: [
+      "youtube retention analysis",
+      "audience retention",
+      "watch time optimization",
+    ],
+  },
+  subscriberDrivers: {
+    title: "Subscriber Drivers",
+    description:
+      "Discover which videos convert viewers into subscribers and learn the patterns that drive channel growth.",
+    keywords: [
+      "get more subscribers on youtube",
+      "subscriber conversion",
+      "channel growth",
+    ],
+  },
+  competitorAnalysis: {
+    title: "Competitor & Trending Videos",
+    description:
+      "Monitor what's working for similar channels. Find trending videos in your niche before they blow up.",
+    keywords: [
+      "youtube competitor analysis",
+      "trending videos",
+      "niche research",
+    ],
+  },
+  ideaEngine: {
+    title: "Video Ideas Engine",
+    description:
+      "Generate proven video ideas based on what's working in your niche. Get titles, hooks, and thumbnail concepts.",
+    keywords: [
+      "youtube video ideas generator",
+      "content ideas",
+      "video topic research",
+    ],
+  },
+} as const;
+
+/**
+ * Structured data helpers
+ */
+export const STRUCTURED_DATA = {
+  organization: {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: BRAND.name,
+    url: BRAND.url,
+    logo: `${BRAND.url}/logo.svg`,
+    sameAs: [`https://twitter.com/${BRAND.twitterHandle.replace("@", "")}`],
+    description: BRAND.description,
+  },
+  softwareApplication: {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: BRAND.name,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    url: BRAND.url,
+    description: BRAND.description,
+    offers: {
+      "@type": "Offer",
+      price: "19",
+      priceCurrency: "USD",
+      priceValidUntil: new Date(
+        new Date().setFullYear(new Date().getFullYear() + 1)
+      )
+        .toISOString()
+        .split("T")[0],
+    },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.8",
+      ratingCount: "127",
+    },
+  },
+} as const;

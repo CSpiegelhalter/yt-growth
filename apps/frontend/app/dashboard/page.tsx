@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { BRAND } from "@/lib/brand";
 import DashboardClient from "./DashboardClient";
 
 export const metadata: Metadata = {
-  title: "Dashboard | YT Growth",
+  title: `Dashboard | ${BRAND.name}`,
   description: "Your YouTube growth insights at a glance",
   robots: { index: false, follow: false },
 };

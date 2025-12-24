@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { BRAND } from "@/lib/brand";
 import s from "./style.module.css";
 
 /**
@@ -64,8 +65,8 @@ export default function LoginForm() {
       <div className={s.card}>
         {/* Branding */}
         <div className={s.branding}>
-          <h1 className={s.logo}>YT Growth</h1>
-          <p className={s.tagline}>Data-driven insights for creators</p>
+          <h1 className={s.logo}>{BRAND.name}</h1>
+          <p className={s.tagline}>{BRAND.tagline}</p>
         </div>
 
         {/* Header */}

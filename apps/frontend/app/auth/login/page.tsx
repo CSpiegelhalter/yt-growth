@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import LoginForm from "./LoginForm";
+import { BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Sign In | YT Growth",
-  description: "Sign in to your YT Growth account",
+  title: `Sign In | ${BRAND.name}`,
+  description: `Sign in to your ${BRAND.name} account to access your YouTube growth dashboard.`,
+  robots: { index: false, follow: false },
 };
 
 /**

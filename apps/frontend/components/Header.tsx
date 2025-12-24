@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import s from "./Header.module.css";
+import { BRAND } from "@/lib/brand";
 
 type Channel = {
   id: number;
@@ -65,6 +66,9 @@ export function Header() {
           } else if (data.length > 0) {
             setActiveChannelId(data[0].channel_id);
             localStorage.setItem("activeChannelId", data[0].channel_id);
+          } else {
+            // No channels - clear active channel
+            setActiveChannelId(null);
           }
         }
       } catch (error) {
@@ -74,6 +78,41 @@ export function Header() {
 
     loadChannels();
   }, [session?.user, searchParams]);
+
+  // Listen for channel-removed events (from Profile page)
+  useEffect(() => {
+    const handleChannelRemoved = (e: CustomEvent<{ channelId: string }>) => {
+      const removedChannelId = e.detail.channelId;
+
+      setChannels((prev) => {
+        const updated = prev.filter((c) => c.channel_id !== removedChannelId);
+
+        // If the removed channel was active, select another or clear
+        if (activeChannelId === removedChannelId) {
+          if (updated.length > 0) {
+            setActiveChannelId(updated[0].channel_id);
+            localStorage.setItem("activeChannelId", updated[0].channel_id);
+          } else {
+            setActiveChannelId(null);
+            localStorage.removeItem("activeChannelId");
+          }
+        }
+
+        return updated;
+      });
+    };
+
+    window.addEventListener(
+      "channel-removed",
+      handleChannelRemoved as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        "channel-removed",
+        handleChannelRemoved as EventListener
+      );
+    };
+  }, [activeChannelId]);
 
   // Close menu on outside click
   useEffect(() => {
@@ -170,7 +209,7 @@ export function Header() {
               <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </span>
-          <span className={s.logoText}>YT Growth</span>
+          <span className={s.logoText}>{BRAND.name}</span>
         </Link>
       </div>
 

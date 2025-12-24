@@ -18,8 +18,81 @@ export default function ProfileClient({
   initialChannels: Channel[];
 }) {
   const [me] = useState<Me>(initialMe);
-  const [channels] = useState<Channel[]>(initialChannels);
-  const [err] = useState<string | null>(null);
+  const [channels, setChannels] = useState<Channel[]>(initialChannels);
+  const [err, setErr] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [removingChannelId, setRemovingChannelId] = useState<string | null>(
+    null
+  );
+  const [refreshingChannelId, setRefreshingChannelId] = useState<string | null>(
+    null
+  );
+
+  const removeChannel = async (channelId: string) => {
+    if (
+      !confirm(
+        "Are you sure you want to remove this channel? This will delete all associated data."
+      )
+    ) {
+      return;
+    }
+
+    setRemovingChannelId(channelId);
+    setErr(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await fetch(`/api/me/channels/${channelId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to remove channel");
+      }
+
+      setChannels((prev) => prev.filter((c) => c.channel_id !== channelId));
+
+      // Notify the Header to refresh its channel list
+      window.dispatchEvent(
+        new CustomEvent("channel-removed", { detail: { channelId } })
+      );
+
+      // Clear from localStorage if this was the active channel
+      const activeChannelId = localStorage.getItem("activeChannelId");
+      if (activeChannelId === channelId) {
+        localStorage.removeItem("activeChannelId");
+      }
+    } catch (e: any) {
+      setErr(e.message || "Failed to remove channel");
+    } finally {
+      setRemovingChannelId(null);
+    }
+  };
+
+  const refreshVideos = async (channelId: string) => {
+    setRefreshingChannelId(channelId);
+    setErr(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await fetch(`/api/me/channels/${channelId}/refresh-videos`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to refresh videos");
+      }
+
+      setSuccessMsg(data.message || "Videos refreshed successfully");
+    } catch (e: any) {
+      setErr(e.message || "Failed to refresh videos");
+    } finally {
+      setRefreshingChannelId(null);
+    }
+  };
 
   const isSubscribed = me.subscription?.isActive ?? false;
 
@@ -32,6 +105,22 @@ export default function ProfileClient({
       </div>
 
       {err && <ErrorAlert message={err} />}
+      {successMsg && (
+        <div className={styles.successAlert}>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          {successMsg}
+        </div>
+      )}
 
       <div className={styles.grid}>
         {/* Account Info */}
@@ -92,33 +181,64 @@ export default function ProfileClient({
                       {ch.videoCount ?? 0} videos • {ch.planCount ?? 0} plans
                     </div>
                   </div>
-                  <span
-                    className={`${styles.statusBadge} ${
-                      ch.syncStatus === "idle"
-                        ? styles.statusSuccess
-                        : styles.statusWarning
-                    }`}
-                  >
-                    {ch.syncStatus}
-                  </span>
+                  <div className={styles.channelActions}>
+                    <span
+                      className={`${styles.statusBadge} ${
+                        ch.syncStatus === "idle"
+                          ? styles.statusSuccess
+                          : styles.statusWarning
+                      }`}
+                    >
+                      {ch.syncStatus}
+                    </span>
+                    <button
+                      className={styles.refreshBtn}
+                      onClick={() => refreshVideos(ch.channel_id)}
+                      disabled={refreshingChannelId === ch.channel_id}
+                      title="Refresh video metadata (tags, descriptions)"
+                    >
+                      {refreshingChannelId === ch.channel_id ? (
+                        <span className={styles.spinner} />
+                      ) : (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M23 4v6h-6M1 20v-6h6" />
+                          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      className={styles.removeBtn}
+                      onClick={() => removeChannel(ch.channel_id)}
+                      disabled={removingChannelId === ch.channel_id}
+                      title="Remove channel"
+                    >
+                      {removingChannelId === ch.channel_id ? (
+                        <span className={styles.spinner} />
+                      ) : (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
-        </section>
-
-        {/* Danger Zone */}
-        <section className={styles.dangerCard}>
-          <h2 className={styles.dangerTitle}>Danger Zone</h2>
-          <p className={styles.dangerDesc}>
-            These actions are irreversible. Please be certain.
-          </p>
-          <button
-            className={styles.dangerBtn}
-            onClick={() => alert("Account deletion would be handled here")}
-          >
-            Delete Account
-          </button>
         </section>
       </div>
     </main>

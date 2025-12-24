@@ -237,9 +237,10 @@ export async function googleFetchWithAutoRefresh<T>(
     const body = await r.text();
     const units = estimateYouTubeQuotaUnits(url);
     recordGoogleApiCall({ url, status: r.status, estimatedUnits: units });
+
+    // Check for quota exceeded
     if (r.status === 403 && body.includes('"reason": "quotaExceeded"')) {
       googleApiStats.quotaExceededSeen = true;
-      // Optionally return mock response instead of error once quota is exhausted.
       if (
         process.env.YT_AUTO_MOCK_ON_QUOTA === "1" &&
         isYouTubeOrAnalyticsUrl(url)
@@ -248,6 +249,26 @@ export async function googleFetchWithAutoRefresh<T>(
         return mockYouTubeApiResponse(url) as T;
       }
     }
+
+    // Check for scope/permission errors - create a cleaner error
+    const isScopeError =
+      body.includes("ACCESS_TOKEN_SCOPE_INSUFFICIENT") ||
+      body.includes("insufficientPermissions") ||
+      body.includes("Insufficient Permission");
+
+    const isAnalyticsPermError =
+      r.status === 401 &&
+      body.includes("Insufficient permission to access this report");
+
+    if (isScopeError || isAnalyticsPermError) {
+      const err = new Error(
+        `SCOPE_ERROR: User denied required permissions for this feature`
+      );
+      (err as any).isScopeError = true;
+      (err as any).status = r.status;
+      throw err;
+    }
+
     throw new Error(`google_api_error_${r.status}: ${body}`);
   }
 

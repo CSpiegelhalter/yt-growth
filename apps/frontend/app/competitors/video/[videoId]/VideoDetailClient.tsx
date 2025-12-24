@@ -629,6 +629,31 @@ export default function VideoDetailClient({
             <h2 className={s.sectionTitle}>Top comments &amp; sentiment</h2>
             {comments.error ? (
               <p className={s.commentsError}>{comments.error}</p>
+            ) : comments.sentiment.positive === 0 &&
+              comments.sentiment.neutral === 0 &&
+              comments.sentiment.negative === 0 ? (
+              <div className={s.commentsAnalysis}>
+                <p className={s.commentsNote}>
+                  Comment analysis is processing. Showing raw top comments below.
+                </p>
+                {comments.topComments && comments.topComments.length > 0 && (
+                  <div className={s.topCommentsList}>
+                    {comments.topComments.slice(0, 8).map((comment, i) => (
+                      <div key={i} className={s.topComment}>
+                        <div className={s.topCommentHeader}>
+                          <span className={s.topCommentAuthor}>
+                            {comment.authorName}
+                          </span>
+                          <span className={s.topCommentLikes}>
+                            ♥ {comment.likeCount}
+                          </span>
+                        </div>
+                        <p className={s.topCommentText}>{comment.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <div className={s.commentsAnalysis}>
                 <div className={s.sentimentSection}>

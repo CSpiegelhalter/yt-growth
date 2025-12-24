@@ -43,12 +43,12 @@ export function HeroCTAs() {
     );
   }
 
-  // Signed out - show trial + sign in
+  // Signed out - show signup + sign in
   if (authState === "signed-out") {
     return (
       <div className={s.ctas}>
         <Link href="/auth/signup" className={s.btnPrimary}>
-          Start Free Trial
+          Get Started
         </Link>
         <Link href="/auth/login" className={s.btnSecondary}>
           Sign In

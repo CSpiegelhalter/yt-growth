@@ -9,6 +9,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { Resend } from "resend";
+import { BRAND } from "@/lib/brand";
 
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -166,7 +167,7 @@ export async function POST(req: NextRequest) {
     // Build email content
     const timestamp = new Date().toISOString();
     const textContent = `
-New contact form submission from YT Growth
+New contact form submission from ${BRAND.name}
 
 From: ${sanitizedEmail}
 Subject: ${subjectLine}
@@ -176,7 +177,7 @@ Message:
 ${sanitizedMessage}
 
 ---
-This message was sent via the YT Growth contact form.
+This message was sent via the ${BRAND.name} contact form.
 IP: ${ip}
     `.trim();
 
@@ -223,8 +224,8 @@ IP: ${ip}
     </p>
   </div>
   
-  <p style="margin-top: 16px; font-size: 11px; color: #94a3b8; text-align: center;">
-    Sent via YT Growth Contact Form • IP: ${ip}
+    <p style="margin-top: 16px; font-size: 11px; color: #94a3b8; text-align: center;">
+    Sent via ${BRAND.name} Contact Form • IP: ${ip}
   </p>
 </body>
 </html>
@@ -232,10 +233,12 @@ IP: ${ip}
 
     // Send email via Resend
     const { data, error } = await resend.emails.send({
-      from: `YT Growth <noreply@${process.env.RESEND_DOMAIN || "resend.dev"}>`,
+      from: `${BRAND.name} <noreply@${
+        process.env.RESEND_DOMAIN || "resend.dev"
+      }>`,
       to: CONTACT_EMAIL,
       replyTo: sanitizedEmail,
-      subject: `[YT Growth] ${subjectLine} - from ${sanitizedEmail}`,
+      subject: `[${BRAND.name}] ${subjectLine} - from ${sanitizedEmail}`,
       text: textContent,
       html: htmlContent,
     });

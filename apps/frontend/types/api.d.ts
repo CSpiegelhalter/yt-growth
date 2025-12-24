@@ -23,11 +23,14 @@ export type Channel = {
   id: number;
   title: string | null;
   thumbnailUrl: string | null;
+  totalVideoCount: number | null;   // Total videos on YouTube
+  subscriberCount: number | null;   // Subscriber count from YouTube
+  syncedVideoCount?: number;        // Videos synced locally
   connectedAt: string;
   lastSyncedAt: string | null;
   syncStatus: string;
   syncError: string | null;
-  videoCount: number;
+  videoCount: number;               // Synced videos (backwards compat)
   planCount: number;
 };
 
@@ -447,6 +450,14 @@ export type CompetitorFeedResponse = {
   demo?: boolean;
   /** Description of the competitor channel size range being shown */
   targetSizeDescription?: string;
+  /** Current page number (for loading more batches) */
+  currentPage?: number;
+  /** Whether there are more unique search queries (pages) available */
+  hasMorePages?: boolean;
+  /** Total number of unique niche queries available */
+  totalQueries?: number;
+  /** Error/info message */
+  message?: string;
 };
 
 export type CompetitorCommentsAnalysis = {

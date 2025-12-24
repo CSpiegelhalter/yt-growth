@@ -15,7 +15,7 @@ function Stat({
   return (
     <div className={`${s.stat} ${tone ? s[`tone-${tone}`] : ""}`}>
       <div className={s.statLabel}>{label}</div>
-      <div className={s.statValue}>{value}</div>
+      <div className={s.statValue} title={value}>{value}</div>
     </div>
   );
 }

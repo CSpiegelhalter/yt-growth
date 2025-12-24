@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { BRAND } from "@/lib/brand";
 import IdeasClient from "./IdeasClient";
 
 export const metadata: Metadata = {
-  title: "Idea Engine | YT Growth",
-  description: "Video ideas based on what's working in your niche",
+  title: `Video Ideas Engine | ${BRAND.name}`,
+  description: "Generate video ideas based on what's working in your niche",
   robots: { index: false, follow: false },
 };
 

@@ -454,6 +454,43 @@
   line-height: 1.45;
 }
 
+/* ===== LOW VIEWS NOTICE ===== */
+.lowViewsNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 28px;
+}
+
+.noticeIcon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.noticeText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.noticeText strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.noticeText p {
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* ===== FINDINGS ===== */
 .findings {
   margin-bottom: 28px;

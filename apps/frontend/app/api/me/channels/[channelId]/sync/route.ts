@@ -76,8 +76,8 @@ export async function POST(
       );
     }
 
-    // Get Google account
-    const ga = await getGoogleAccount(user.id);
+    // Get Google account for this channel
+    const ga = await getGoogleAccount(user.id, channelId);
     if (!ga) {
       return Response.json({ error: "Google account not connected" }, { status: 400 });
     }

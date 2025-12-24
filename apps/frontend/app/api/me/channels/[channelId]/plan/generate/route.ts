@@ -288,7 +288,7 @@ export async function POST(
 
     // 3) Last resort: YouTube search (costly: search.list = 100 units)
     if (competitorTitles.length === 0 && nicheKeywords.length > 0) {
-      const ga = await getGoogleAccount(user.id);
+      const ga = await getGoogleAccount(user.id, channelId);
       if (ga) {
         try {
           const competitors = await searchCompetitorVideos(

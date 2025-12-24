@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { BRAND } from "@/lib/brand";
 import CompetitorsClient from "./CompetitorsClient";
 
 export const metadata: Metadata = {
-  title: "Competitor Winners | YT Growth",
+  title: `Competitor Analysis | ${BRAND.name}`,
   description:
     "See what's working for competitors in your niche right now. Get actionable insights to grow your channel.",
   robots: { index: false, follow: false },

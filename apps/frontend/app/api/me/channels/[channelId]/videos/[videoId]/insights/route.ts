@@ -153,8 +153,8 @@ export async function GET(
       );
     }
 
-    // Fetch fresh data
-    const ga = await getGoogleAccount(user.id);
+    // Fetch fresh data - use the GoogleAccount that owns this channel
+    const ga = await getGoogleAccount(user.id, channelId);
     if (!ga) {
       return Response.json(
         { error: "Google account not connected" },
@@ -293,7 +293,7 @@ export async function POST(
       );
     }
 
-    const ga = await getGoogleAccount(user.id);
+    const ga = await getGoogleAccount(user.id, channelId);
     if (!ga) {
       return Response.json(
         { error: "Google account not connected" },
@@ -732,12 +732,12 @@ OUTPUT FORMAT: Return ONLY valid JSON (no markdown, no code blocks, no extra tex
     "score": 7,
     "strengths": ["What makes this title work"],
     "weaknesses": ["What could be improved"],
-    "suggestions": ["Better title option 1", "Better title option 2"]
+    "suggestions": ["Better title option 1", "Better title option 2", "Better title option 3"]
   },
   "tagAnalysis": {
     "score": 6,
     "coverage": "good",
-    "missing": ["suggested tag 1", "suggested tag 2"],
+    "missing": ["exact tag to add 1", "exact tag to add 2"],
     "feedback": "Specific feedback about the tags"
   },
   "thumbnailHints": ["What the thumbnail should communicate based on title/data"],
@@ -772,13 +772,14 @@ OUTPUT FORMAT: Return ONLY valid JSON (no markdown, no code blocks, no extra tex
 
 CRITICAL RULES:
 1. NEVER give generic advice - everything must reference THIS video's actual data
-2. Title analysis must critique the ACTUAL title provided
-3. Tag analysis must evaluate the ACTUAL tags provided
+2. Title suggestions MUST be complete, grammatically correct titles that make sense for THIS video's topic and content. Each suggestion should be a full, usable title (not a fragment or template). Understand what the video is ABOUT from the title, description, and tags before suggesting alternatives.
+3. Tag suggestions in "missing" must be SPECIFIC tags ready to copy-paste (e.g., "Blue Prince gameplay 2024", not "Add year-specific variations")
 4. Key findings must cite ACTUAL metrics from the data
-5. Actions must be specific enough that the creator knows exactly what to do
+5. Actions must be specific enough that the creator knows exactly what to do. Avoid jargon - say "subscribe reminder" instead of "CTA", "call out viewers to comment" instead of "engagement prompt"
 6. Compare to the channel baseline when relevant - if above average, celebrate; if below, diagnose why
 7. Be honest - if metrics are poor, say so constructively
-8. No emojis, no hashtags, no markdown`;
+8. No emojis, no hashtags, no markdown
+9. For videos with very few views (<100), focus on title/thumbnail/discoverability improvements rather than engagement metrics which aren't meaningful yet`;
 
   const topComments = comments
     .slice(0, 10)
@@ -946,13 +947,13 @@ function getConversionReason(
 function getConversionAction(grade: string): string {
   switch (grade) {
     case "Needs Work":
-      return "Add a clear subscribe CTA after delivering value.";
+      return "Add a subscribe reminder after delivering value.";
     case "OK":
-      return "Test different CTA placements in the video.";
+      return "Test different subscribe reminder placements.";
     case "Good":
       return "Experiment with end screen timing.";
     default:
-      return "Your CTAs are working well.";
+      return "Your subscribe prompts are working well.";
   }
 }
 
@@ -1203,7 +1204,8 @@ function getDemoInsights(opts?: {
         grade: "Good",
         color: "lime",
         reason: "3.0 subs per 1K views is +20% above your average.",
-        action: "Replicate the CTA style from this video in future content.",
+        action:
+          "Replicate the subscribe reminder style from this video in future content.",
       },
       engagement: {
         grade: "Great",
@@ -1345,7 +1347,7 @@ function getDemoInsights(opts?: {
         {
           lever: "Conversion",
           action:
-            "Add a subscribe CTA right after sharing your first major milestone",
+            "Add a subscribe reminder right after sharing your first major milestone",
           reason: "Capitalize on the emotional peak when viewers feel inspired",
           expectedImpact: "+0.3-0.5 subs per 1K views",
           priority: "medium",

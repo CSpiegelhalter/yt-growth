@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import SignupForm from "./SignupForm";
+import { BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Create Account | YT Growth",
-  description: "Create your YT Growth account to start growing your channel",
+  title: `Create Account | ${BRAND.name}`,
+  description: `Create your ${BRAND.name} account to start growing your YouTube channel with data-driven insights.`,
+  robots: { index: false, follow: false },
 };
 
 /**

@@ -289,8 +289,8 @@ export async function POST(
       }
     }
 
-    // Get Google account for API calls
-    const ga = await getGoogleAccount(user.id);
+    // Get Google account for this channel
+    const ga = await getGoogleAccount(user.id, channelId);
 
     // Extract keywords from channel content
     const titleWords = channel.Video.flatMap((v) =>

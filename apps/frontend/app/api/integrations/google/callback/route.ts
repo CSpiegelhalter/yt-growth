@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
   const tokenExpiresAt = new Date(Date.now() + tok.expires_in * 1000);
   const scopes = tok.scope ?? "";
 
-  await prisma.googleAccount.upsert({
+  const googleAccount = await prisma.googleAccount.upsert({
     where: {
       provider_providerAccountId: { provider: "google", providerAccountId },
     },
@@ -80,7 +80,8 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  await syncUserChannels(row.userId);
+  // Sync channels for this specific Google account
+  await syncUserChannels(row.userId, googleAccount.id);
 
   return NextResponse.redirect(new URL("/dashboard", baseUrl));
 }

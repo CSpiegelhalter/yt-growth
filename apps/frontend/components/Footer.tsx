@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BRAND } from "@/lib/brand";
 import s from "./Footer.module.css";
 
 export function Footer() {
@@ -11,11 +12,15 @@ export function Footer() {
       <div className={s.inner}>
         <div className={s.left}>
           <span className={s.copyright}>
-            © {currentYear} YT Growth
+            © {currentYear} {BRAND.name}
           </span>
         </div>
 
         <div className={s.links}>
+          <Link href="/learn/youtube-channel-audit" className={s.link}>
+            Learn
+          </Link>
+          <span className={s.divider}>·</span>
           <Link href="/contact" className={s.link}>
             Contact
           </Link>
@@ -32,4 +37,3 @@ export function Footer() {
     </footer>
   );
 }
-

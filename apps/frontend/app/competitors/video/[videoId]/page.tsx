@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { BRAND } from "@/lib/brand";
 import VideoDetailClient from "./VideoDetailClient";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { videoId } = await params;
   return {
-    title: `Competitor Video Analysis | YT Growth`,
+    title: `Competitor Video Analysis | ${BRAND.name}`,
     description: `Deep analysis of competitor video ${videoId} with actionable insights.`,
     robots: { index: false, follow: false },
   };

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { BRAND } from "@/lib/brand";
 import nextDynamic from "next/dynamic";
 import { cookies } from "next/headers";
 
@@ -8,7 +9,7 @@ const VideoInsightsClient = nextDynamic(() => import("./VideoInsightsClient"), {
 });
 
 export const metadata: Metadata = {
-  title: "Video Insights | YT Growth",
+  title: `Video Insights | ${BRAND.name}`,
   description:
     "Deep dive into your video's retention, subscriber conversion, and improvement suggestions",
   robots: { index: false, follow: false },
@@ -39,7 +40,8 @@ export default async function VideoPage({ params, searchParams }: Props) {
   if (bootstrap.activeChannelId) {
     try {
       const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-      const cookieHeader = cookies()
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore
         .getAll()
         .map((c) => `${c.name}=${c.value}`)
         .join("; ");

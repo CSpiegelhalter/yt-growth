@@ -1,10 +1,12 @@
+import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { BRAND } from "@/lib/brand";
 import ContactClient from "./ContactClient";
 
-export const metadata = {
-  title: "Contact | YT Growth",
-  description: "Get in touch with us",
+export const metadata: Metadata = {
+  title: `Contact | ${BRAND.name}`,
+  description: `Get in touch with the ${BRAND.name} team. We're here to help with questions about YouTube growth, channel analytics, and our platform.`,
 };
 
 export default async function ContactPage() {
@@ -14,4 +16,3 @@ export default async function ContactPage() {
 
   return <ContactClient userEmail={userEmail} />;
 }
-

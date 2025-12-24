@@ -311,8 +311,15 @@ export async function GET(
           const commentsUnchanged =
             cachedCommentsHash && cachedCommentsHash === commentsContentHash;
 
-          // Reuse cached LLM analysis if comments haven't changed
-          if (commentsUnchanged && cachedComments?.analysisJson) {
+          // Check if cached analysis is real (has actual themes/insights, not just fallback)
+          const cachedHasRealAnalysis =
+            cachedComments?.analysisJson &&
+            (cachedComments.analysisJson as { themes?: unknown[] }).themes &&
+            (cachedComments.analysisJson as { themes?: unknown[] }).themes!
+              .length > 0;
+
+          // Reuse cached LLM analysis if comments haven't changed AND we have real analysis
+          if (commentsUnchanged && cachedHasRealAnalysis) {
             console.log(
               `[competitor.video] Reusing cached comments LLM (hash: ${commentsContentHash})`
             );
@@ -330,7 +337,7 @@ export async function GET(
           } else {
             // Analyze comments with LLM
             console.log(
-              `[competitor.video] Generating new comments analysis (hash: ${cachedCommentsHash} -> ${commentsContentHash})`
+              `[competitor.video] Generating new comments analysis (hash: ${cachedCommentsHash} -> ${commentsContentHash}, hadRealAnalysis: ${cachedHasRealAnalysis})`
             );
             try {
               commentsAnalysis = await analyzeVideoComments(
@@ -348,33 +355,39 @@ export async function GET(
                   publishedAt: c.publishedAt,
                 }));
 
-              // Cache the analysis with content hash
-              await prisma.competitorVideoComments.upsert({
-                where: { videoId },
-                create: {
-                  videoId,
-                  capturedAt: now,
-                  topCommentsJson: commentsResult.comments.slice(0, 20),
-                  contentHash: commentsContentHash,
-                  analysisJson: commentsAnalysis as object,
-                  sentimentPos: commentsAnalysis.sentiment.positive,
-                  sentimentNeu: commentsAnalysis.sentiment.neutral,
-                  sentimentNeg: commentsAnalysis.sentiment.negative,
-                  themesJson: commentsAnalysis.themes,
-                },
-                update: {
-                  capturedAt: now,
-                  topCommentsJson: commentsResult.comments.slice(0, 20),
-                  contentHash: commentsContentHash,
-                  analysisJson: commentsAnalysis as object,
-                  sentimentPos: commentsAnalysis.sentiment.positive,
-                  sentimentNeu: commentsAnalysis.sentiment.neutral,
-                  sentimentNeg: commentsAnalysis.sentiment.negative,
-                  themesJson: commentsAnalysis.themes,
-                },
-              });
+              // Only cache if we got real analysis (has themes)
+              if (
+                commentsAnalysis.themes &&
+                commentsAnalysis.themes.length > 0
+              ) {
+                await prisma.competitorVideoComments.upsert({
+                  where: { videoId },
+                  create: {
+                    videoId,
+                    capturedAt: now,
+                    topCommentsJson: commentsResult.comments.slice(0, 20),
+                    contentHash: commentsContentHash,
+                    analysisJson: commentsAnalysis as object,
+                    sentimentPos: commentsAnalysis.sentiment.positive,
+                    sentimentNeu: commentsAnalysis.sentiment.neutral,
+                    sentimentNeg: commentsAnalysis.sentiment.negative,
+                    themesJson: commentsAnalysis.themes,
+                  },
+                  update: {
+                    capturedAt: now,
+                    topCommentsJson: commentsResult.comments.slice(0, 20),
+                    contentHash: commentsContentHash,
+                    analysisJson: commentsAnalysis as object,
+                    sentimentPos: commentsAnalysis.sentiment.positive,
+                    sentimentNeu: commentsAnalysis.sentiment.neutral,
+                    sentimentNeg: commentsAnalysis.sentiment.negative,
+                    themesJson: commentsAnalysis.themes,
+                  },
+                });
+              }
             } catch (err) {
               console.warn("Failed to analyze comments:", err);
+              // Show raw comments without fake sentiment data
               commentsAnalysis = {
                 topComments: commentsResult.comments.slice(0, 10).map((c) => ({
                   text: c.text,
@@ -382,13 +395,16 @@ export async function GET(
                   authorName: c.authorName,
                   publishedAt: c.publishedAt,
                 })),
-                sentiment: { positive: 50, neutral: 30, negative: 20 }, // Fallback
+                // Zero sentiment indicates no analysis was done
+                sentiment: { positive: 0, neutral: 0, negative: 0 },
                 themes: [],
                 viewerLoved: [],
                 viewerAskedFor: [],
                 hookInspiration: [],
-                error: "Analysis unavailable",
+                error:
+                  "Comment analysis unavailable - showing raw comments only",
               };
+              // DO NOT cache this fallback data
             }
           }
         }

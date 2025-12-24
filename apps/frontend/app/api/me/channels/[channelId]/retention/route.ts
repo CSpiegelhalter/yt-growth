@@ -21,7 +21,11 @@ import {
 import { getGoogleAccount, fetchRetentionCurve } from "@/lib/youtube-api";
 import { computeRetentionCliff, formatTimestamp } from "@/lib/retention";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDemoMode, getDemoData, isYouTubeMockMode } from "@/lib/demo-fixtures";
+import {
+  isDemoMode,
+  getDemoData,
+  isYouTubeMockMode,
+} from "@/lib/demo-fixtures";
 import { ensureMockChannelSeeded } from "@/lib/mock-seed";
 
 const ParamsSchema = z.object({
@@ -75,6 +79,7 @@ export async function GET(
             id: true,
             youtubeVideoId: true,
             title: true,
+            thumbnailUrl: true,
             durationSec: true,
             publishedAt: true,
           },
@@ -84,7 +89,7 @@ export async function GET(
 
     // In YT_MOCK_MODE, auto-seed the channel/videos if missing so pages work immediately.
     if (!channel && isYouTubeMockMode()) {
-      const ga = await getGoogleAccount(user.id);
+      const ga = await getGoogleAccount(user.id, channelId);
       if (!ga) {
         return Response.json(
           { error: "Google account not connected" },
@@ -107,6 +112,7 @@ export async function GET(
               id: true,
               youtubeVideoId: true,
               title: true,
+              thumbnailUrl: true,
               durationSec: true,
               publishedAt: true,
             },
@@ -139,8 +145,8 @@ export async function GET(
       );
     }
 
-    // Get Google account
-    const ga = await getGoogleAccount(user.id);
+    // Get Google account for this channel
+    const ga = await getGoogleAccount(user.id, channelId);
     if (!ga) {
       return Response.json(
         { error: "Google account not connected" },
@@ -162,48 +168,50 @@ export async function GET(
       (v) => !cachedVideoIds.has(v.id)
     );
 
-    // Fetch retention for uncached videos
+    // Fetch retention for uncached videos IN PARALLEL (much faster)
     const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours
 
-    for (const video of videosToFetch) {
-      try {
-        const points = await fetchRetentionCurve(
-          ga,
-          channelId,
-          video.youtubeVideoId
-        );
+    await Promise.allSettled(
+      videosToFetch.map(async (video) => {
+        try {
+          const points = await fetchRetentionCurve(
+            ga,
+            channelId,
+            video.youtubeVideoId
+          );
 
-        // Compute cliff
-        const cliff = computeRetentionCliff(video.durationSec ?? 0, points);
+          // Compute cliff
+          const cliff = computeRetentionCliff(video.durationSec ?? 0, points);
 
-        await prisma.retentionBlob.upsert({
-          where: { videoId: video.id },
-          update: {
-            dataJson: JSON.stringify(points),
-            cliffTimeSec: cliff?.cliffTimeSec ?? null,
-            cliffReason: cliff?.cliffReason ?? null,
-            cliffSlope: cliff?.slope ?? null,
-            fetchedAt: new Date(),
-            cachedUntil,
-          },
-          create: {
-            videoId: video.id,
-            channelId: channel.id,
-            dataJson: JSON.stringify(points),
-            cliffTimeSec: cliff?.cliffTimeSec ?? null,
-            cliffReason: cliff?.cliffReason ?? null,
-            cliffSlope: cliff?.slope ?? null,
-            cachedUntil,
-          },
-        });
-      } catch (err) {
-        console.error(
-          `Failed to fetch retention for video ${video.youtubeVideoId}:`,
-          err
-        );
-        // Continue with other videos
-      }
-    }
+          await prisma.retentionBlob.upsert({
+            where: { videoId: video.id },
+            update: {
+              dataJson: JSON.stringify(points),
+              cliffTimeSec: cliff?.cliffTimeSec ?? null,
+              cliffReason: cliff?.cliffReason ?? null,
+              cliffSlope: cliff?.slope ?? null,
+              fetchedAt: new Date(),
+              cachedUntil,
+            },
+            create: {
+              videoId: video.id,
+              channelId: channel.id,
+              dataJson: JSON.stringify(points),
+              cliffTimeSec: cliff?.cliffTimeSec ?? null,
+              cliffReason: cliff?.cliffReason ?? null,
+              cliffSlope: cliff?.slope ?? null,
+              cachedUntil,
+            },
+          });
+        } catch (err) {
+          console.error(
+            `Failed to fetch retention for video ${video.youtubeVideoId}:`,
+            err
+          );
+          // Continue with other videos (Promise.allSettled handles this)
+        }
+      })
+    );
 
     // Fetch all retention data (including newly fetched)
     const allRetention = await prisma.retentionBlob.findMany({
@@ -221,6 +229,7 @@ export async function GET(
       return {
         videoId: v.youtubeVideoId,
         title: v.title,
+        thumbnailUrl: v.thumbnailUrl,
         durationSec: v.durationSec,
         publishedAt: v.publishedAt,
         retention: retention

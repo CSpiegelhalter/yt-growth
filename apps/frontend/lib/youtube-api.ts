@@ -24,11 +24,30 @@ type GoogleAccount = {
 };
 
 /**
- * Get Google account for a user
+ * Get Google account for a user.
+ * If youtubeChannelId is provided, returns the specific GoogleAccount that owns that channel.
+ * Otherwise returns the first GoogleAccount for the user (fallback behavior).
  */
 export async function getGoogleAccount(
-  userId: number
+  userId: number,
+  youtubeChannelId?: string
 ): Promise<GoogleAccount | null> {
+  // If a channel ID is provided, look up the specific GoogleAccount for that channel
+  if (youtubeChannelId) {
+    const channel = await prisma.channel.findFirst({
+      where: { userId, youtubeChannelId },
+      select: { googleAccountId: true },
+    });
+
+    if (channel?.googleAccountId) {
+      const ga = await prisma.googleAccount.findUnique({
+        where: { id: channel.googleAccountId },
+      });
+      if (ga) return ga;
+    }
+  }
+
+  // Fallback: return first GoogleAccount for user
   const ga = await prisma.googleAccount.findFirst({ where: { userId } });
   if (ga) return ga;
 
@@ -405,6 +424,156 @@ export async function searchSimilarChannels(
 }
 
 /**
+ * Search for videos matching a niche query and extract unique channels.
+ * This is more accurate for niche matching than channel search.
+ */
+export async function searchNicheVideos(
+  ga: GoogleAccount,
+  query: string,
+  maxVideos: number = 50
+): Promise<{
+  videos: Array<{
+    videoId: string;
+    channelId: string;
+    channelTitle: string;
+    title: string;
+    description: string;
+    thumbnailUrl: string | null;
+    publishedAt: string;
+  }>;
+  uniqueChannels: SimilarChannelResult[];
+}> {
+  // TEST_MODE: Return fixture data
+  if (USE_FIXTURES) {
+    const fixtureChannels = getTestModeSimilarChannels(query.split(" "));
+    return {
+      videos: fixtureChannels.map((c) => ({
+        videoId: `fixture-${c.channelId}`,
+        channelId: c.channelId,
+        channelTitle: c.channelTitle,
+        title: `Fixture Video from ${c.channelTitle}`,
+        description: c.description,
+        thumbnailUrl: c.thumbnailUrl,
+        publishedAt: new Date().toISOString(),
+      })),
+      uniqueChannels: fixtureChannels,
+    };
+  }
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const now = new Date();
+  const cacheTtlMs = 12 * 60 * 60 * 1000; // 12 hours for video search
+
+  // Check cache
+  if (normalizedQuery) {
+    const cacheModel = (prisma as any).youTubeSearchCache;
+    const cached = cacheModel?.findUnique
+      ? await cacheModel.findUnique({
+          where: { kind_query: { kind: "video", query: normalizedQuery } },
+        })
+      : null;
+    if (cached && cached.cachedUntil > now) {
+      const data = cached.responseJson as unknown as {
+        videos: Array<{
+          videoId: string;
+          channelId: string;
+          channelTitle: string;
+          title: string;
+          description: string;
+          thumbnailUrl: string | null;
+          publishedAt: string;
+        }>;
+        uniqueChannels: SimilarChannelResult[];
+      };
+      return data;
+    }
+  }
+
+  // Search for videos (costs 100 quota units)
+  const url = new URL(`${YOUTUBE_DATA_API}/search`);
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("type", "video");
+  url.searchParams.set("q", query);
+  url.searchParams.set("maxResults", String(Math.min(50, maxVideos)));
+  url.searchParams.set("order", "relevance");
+  url.searchParams.set("relevanceLanguage", "en");
+  // Only get videos from the last 6 months for relevance
+  const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+  url.searchParams.set("publishedAfter", sixMonthsAgo.toISOString());
+
+  const data = await googleFetchWithAutoRefresh<{
+    items: Array<{
+      id: { videoId: string };
+      snippet: {
+        channelId: string;
+        channelTitle: string;
+        title: string;
+        description: string;
+        publishedAt: string;
+        thumbnails: { medium?: { url: string }; default?: { url: string } };
+      };
+    }>;
+  }>(ga, url.toString());
+
+  const videos = (data.items ?? []).map((i) => ({
+    videoId: i.id.videoId,
+    channelId: i.snippet.channelId,
+    channelTitle: i.snippet.channelTitle,
+    title: i.snippet.title,
+    description: i.snippet.description,
+    thumbnailUrl:
+      i.snippet.thumbnails?.medium?.url ??
+      i.snippet.thumbnails?.default?.url ??
+      null,
+    publishedAt: i.snippet.publishedAt,
+  }));
+
+  // Extract unique channels
+  const channelMap = new Map<string, SimilarChannelResult>();
+  videos.forEach((v) => {
+    if (!channelMap.has(v.channelId)) {
+      channelMap.set(v.channelId, {
+        channelId: v.channelId,
+        channelTitle: v.channelTitle,
+        description: v.description.substring(0, 200),
+        thumbnailUrl: null, // Will be fetched separately if needed
+      });
+    }
+  });
+
+  const result = {
+    videos,
+    uniqueChannels: Array.from(channelMap.values()),
+  };
+
+  // Cache the result
+  if (normalizedQuery) {
+    try {
+      const cacheModel = (prisma as any).youTubeSearchCache;
+      if (cacheModel?.upsert) {
+        await cacheModel.upsert({
+          where: { kind_query: { kind: "video", query: normalizedQuery } },
+          create: {
+            kind: "video",
+            query: normalizedQuery,
+            responseJson: result as unknown as object,
+            cachedUntil: new Date(now.getTime() + cacheTtlMs),
+          },
+          update: {
+            responseJson: result as unknown as object,
+            cachedUntil: new Date(now.getTime() + cacheTtlMs),
+          },
+        });
+      }
+    } catch {
+      // ignore cache errors
+    }
+  }
+
+  return result;
+}
+
+/**
  * Fetch channel statistics (subscriber count, view count, video count)
  */
 export async function fetchChannelStats(
@@ -484,49 +653,61 @@ export async function fetchChannelStats(
 /**
  * Calculate target subscriber range for competitor discovery.
  * We want channels that are larger than the user but not unreachably large.
+ * @param scaleFactor - Multiplier to look for larger channels (1 = normal, 2 = 2x bigger, etc.)
  */
-export function getCompetitorSizeRange(userSubscribers: number): {
+export function getCompetitorSizeRange(
+  userSubscribers: number,
+  scaleFactor: number = 1
+): {
   min: number;
   max: number;
   description: string;
 } {
-  // Scale based on user's current size
+  // Base ranges scaled based on user's current size
+  let min: number;
+  let max: number;
+  let baseDescription: string;
+
   if (userSubscribers < 100) {
-    // Just starting out - look at channels 1K-50K
-    return {
-      min: 1000,
-      max: 50000,
-      description: "Growing channels (1K-50K subs)",
-    };
+    min = 1000;
+    max = 50000;
+    baseDescription = "Growing channels";
   } else if (userSubscribers < 1000) {
-    // Small channel - look at 5K-100K
-    return {
-      min: 5000,
-      max: 100000,
-      description: "Established small channels (5K-100K subs)",
-    };
+    min = 5000;
+    max = 100000;
+    baseDescription = "Established small channels";
   } else if (userSubscribers < 10000) {
-    // Growing channel - look at 10K-500K
-    return {
-      min: 10000,
-      max: 500000,
-      description: "Growing channels (10K-500K subs)",
-    };
+    min = 10000;
+    max = 500000;
+    baseDescription = "Growing channels";
   } else if (userSubscribers < 100000) {
-    // Established channel - look at 50K-1M
-    return {
-      min: 50000,
-      max: 1000000,
-      description: "Established channels (50K-1M subs)",
-    };
+    min = 50000;
+    max = 1000000;
+    baseDescription = "Established channels";
   } else {
-    // Large channel - look at 100K-5M
-    return {
-      min: 100000,
-      max: 5000000,
-      description: "Large channels (100K-5M subs)",
-    };
+    min = 100000;
+    max = 5000000;
+    baseDescription = "Large channels";
   }
+
+  // Apply scale factor to find larger channels
+  if (scaleFactor > 1) {
+    min = Math.round(min * scaleFactor);
+    max = Math.round(max * scaleFactor);
+  }
+
+  // Format subscriber counts for description
+  const formatSubs = (n: number) => {
+    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1000) return `${Math.round(n / 1000)}K`;
+    return String(n);
+  };
+
+  const description = `${baseDescription} (${formatSubs(min)}-${formatSubs(
+    max
+  )} subs)`;
+
+  return { min, max, description };
 }
 
 /**

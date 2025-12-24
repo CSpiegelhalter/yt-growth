@@ -39,6 +39,8 @@ export default function CompetitorsClient({
   const [feedData, setFeedData] = useState<CompetitorFeedResponse | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingMoreVideos, setLoadingMoreVideos] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
 
   // Filters
   const [range, setRange] = useState<"7d" | "28d">("7d");
@@ -76,7 +78,7 @@ export default function CompetitorsClient({
       .finally(() => setDataLoading(false));
   }, [activeChannelId, range, sort]);
 
-  // Load more videos
+  // Load more videos (pagination through existing results)
   const handleLoadMore = useCallback(async () => {
     if (!activeChannelId || !feedData?.nextCursor || loadingMore) return;
 
@@ -102,12 +104,53 @@ export default function CompetitorsClient({
   const handleRangeChange = useCallback((newRange: "7d" | "28d") => {
     setRange(newRange);
     setFeedData(null);
+    setCurrentPage(0); // Reset page when range changes
   }, []);
 
   const handleSortChange = useCallback((newSort: SortOption) => {
     setSort(newSort);
     setFeedData(null);
+    setCurrentPage(0); // Reset page when sort changes
   }, []);
+
+  // Fetch more competitor videos (loads next page of different channels)
+  const handleFetchMoreVideos = useCallback(async () => {
+    if (!activeChannelId || loadingMoreVideos) return;
+
+    const nextPage = currentPage + 1;
+    setLoadingMoreVideos(true);
+
+    try {
+      const res = await fetch(
+        `/api/me/channels/${activeChannelId}/competitors?range=${range}&sort=${sort}&page=${nextPage}&limit=10`
+      );
+      const data = await res.json();
+
+      if (data.videos && data.videos.length > 0) {
+        // Append new videos to existing ones (dedupe by videoId)
+        setFeedData((prev) => {
+          if (!prev) return data as CompetitorFeedResponse;
+          const existingIds = new Set(prev.videos.map((v) => v.videoId));
+          const newVideos = data.videos.filter(
+            (v: CompetitorVideo) => !existingIds.has(v.videoId)
+          );
+          if (newVideos.length === 0) {
+            // No new videos found, keep existing data but update page
+            return prev;
+          }
+          return {
+            ...data,
+            videos: [...prev.videos, ...newVideos],
+          };
+        });
+        setCurrentPage(nextPage);
+      }
+    } catch (err) {
+      console.error("Failed to fetch more videos:", err);
+    } finally {
+      setLoadingMoreVideos(false);
+    }
+  }, [activeChannelId, range, sort, currentPage, loadingMoreVideos]);
 
   // No channels state
   if (!activeChannel) {
@@ -238,25 +281,23 @@ export default function CompetitorsClient({
             ))}
           </div>
 
-          {/* Load More */}
-          {feedData.nextCursor && (
-            <div className={s.loadMoreWrap}>
-              <button
-                className={s.loadMoreBtn}
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-              >
-                {loadingMore ? (
-                  <>
-                    <span className={s.spinnerSmall} />
-                    Loading...
-                  </>
-                ) : (
-                  "Load More Videos"
-                )}
-              </button>
-            </div>
-          )}
+          {/* Load More Competitor Videos */}
+          <div className={s.fetchMoreWrap}>
+            <button
+              className={s.fetchMoreBtn}
+              onClick={handleFetchMoreVideos}
+              disabled={loadingMoreVideos}
+            >
+              {loadingMoreVideos ? (
+                <>
+                  <span className={s.spinnerSmall} />
+                  Loading more videos...
+                </>
+              ) : (
+                "Load More Competitor Videos"
+              )}
+            </button>
+          </div>
 
           {/* Last Updated */}
           {feedData.generatedAt && (

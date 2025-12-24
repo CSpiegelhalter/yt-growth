@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
+import { BRAND } from "@/lib/brand";
 import s from "./style.module.css";
 
-export const metadata = {
-  title: "Terms of Service | YT Growth",
-  description: "Terms of Service for YT Growth",
+export const metadata: Metadata = {
+  title: `Terms of Service | ${BRAND.name}`,
+  description: `Terms of Service for ${BRAND.name} - YouTube growth analytics platform for creators.`,
+  robots: { index: false, follow: true },
 };
 
 export default function TermsPage() {
@@ -15,7 +18,7 @@ export default function TermsPage() {
         <section className={s.section}>
           <h2>1. Acceptance of Terms</h2>
           <p>
-            By accessing or using YT Growth, you agree to be bound by these Terms of Service. 
+            By accessing or using {BRAND.name}, you agree to be bound by these Terms of Service. 
             If you do not agree to these terms, please do not use our service.
           </p>
         </section>
@@ -23,7 +26,7 @@ export default function TermsPage() {
         <section className={s.section}>
           <h2>2. Description of Service</h2>
           <p>
-            YT Growth provides YouTube channel analytics, video insights, competitor analysis, 
+            {BRAND.name} provides YouTube channel analytics, video insights, competitor analysis, 
             and AI-powered content ideation tools to help creators grow their channels.
           </p>
         </section>
@@ -40,7 +43,7 @@ export default function TermsPage() {
         <section className={s.section}>
           <h2>4. YouTube API Services</h2>
           <p>
-            Our service uses YouTube API Services. By using YT Growth, you agree to be bound by the{" "}
+            Our service uses YouTube API Services. By using {BRAND.name}, you agree to be bound by the{" "}
             <a 
               href="https://www.youtube.com/t/terms" 
               target="_blank" 
@@ -77,7 +80,7 @@ export default function TermsPage() {
           <h2>6. Intellectual Property</h2>
           <p>
             The service and its original content, features, and functionality are owned by 
-            YT Growth and are protected by international copyright, trademark, and other 
+            {BRAND.name} and are protected by international copyright, trademark, and other 
             intellectual property laws.
           </p>
         </section>
@@ -94,7 +97,7 @@ export default function TermsPage() {
         <section className={s.section}>
           <h2>8. Limitation of Liability</h2>
           <p>
-            YT Growth shall not be liable for any indirect, incidental, special, consequential, 
+            {BRAND.name} shall not be liable for any indirect, incidental, special, consequential, 
             or punitive damages resulting from your use of or inability to use the service.
           </p>
         </section>
@@ -118,4 +121,3 @@ export default function TermsPage() {
     </main>
   );
 }
-
