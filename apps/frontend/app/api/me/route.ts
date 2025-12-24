@@ -1,12 +1,19 @@
 /**
  * GET /api/me
  *
- * Get current user profile with subscription status.
+ * Get current user profile with subscription status and usage info.
  *
  * Auth: Required
  */
 import { getCurrentUserWithSubscription } from "@/lib/user";
 import { getSubscriptionStatus } from "@/lib/stripe";
+import {
+  getPlanFromSubscription,
+  getLimits,
+  getResetAt,
+  type Plan,
+} from "@/lib/entitlements";
+import { getAllUsage } from "@/lib/usage";
 
 export async function GET() {
   try {
@@ -18,6 +25,18 @@ export async function GET() {
 
     // Get detailed subscription status
     const subscription = await getSubscriptionStatus(user.id);
+
+    // Compute plan and get limits
+    const plan = getPlanFromSubscription(subscription) as Plan;
+    const limits = getLimits(plan);
+    const resetAt = getResetAt();
+
+    // Get today's usage
+    const usageRecords = await getAllUsage(user.id);
+    const usageMap: Record<string, number> = {};
+    for (const record of usageRecords) {
+      usageMap[record.featureKey] = record.count;
+    }
 
     const payload = {
       id: user.id,
@@ -33,6 +52,26 @@ export async function GET() {
         cancelAt: subscription.cancelAt,
         canceledAt: subscription.canceledAt,
       },
+      // Add usage information for UI display
+      usage: {
+        owned_video_analysis: {
+          used: usageMap["owned_video_analysis"] ?? 0,
+          limit: limits.owned_video_analysis,
+        },
+        competitor_video_analysis: {
+          used: usageMap["competitor_video_analysis"] ?? 0,
+          limit: limits.competitor_video_analysis,
+        },
+        idea_generate: {
+          used: usageMap["idea_generate"] ?? 0,
+          limit: limits.idea_generate,
+        },
+        channel_sync: {
+          used: usageMap["channel_sync"] ?? 0,
+          limit: limits.channel_sync,
+        },
+      },
+      resetAt: resetAt.toISOString(),
     };
 
     return Response.json(payload, { headers: { "cache-control": "no-store" } });

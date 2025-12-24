@@ -5,7 +5,7 @@
  * Also fetches metrics from YouTube Analytics API.
  *
  * Auth: Required
- * Subscription: Not required (free users can sync)
+ * Entitlements: channel_sync (3/day FREE, 50/day PRO)
  * Rate limit: 10 per hour per channel
  * Caching: Updates lastSyncedAt, short-circuits if synced within 5 minutes
  */
@@ -15,6 +15,10 @@ import { prisma } from "@/prisma";
 import { getCurrentUser } from "@/lib/user";
 import { getGoogleAccount, fetchChannelVideos, fetchVideoMetrics } from "@/lib/youtube-api";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import {
+  checkEntitlement,
+  entitlementErrorResponse,
+} from "@/lib/with-entitlements";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -25,19 +29,22 @@ export async function POST(
   { params }: { params: { channelId: string } }
 ) {
   try {
-    // Auth check
-    const user = await getCurrentUser();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Validate params
+    // Validate params first (before auth/entitlement to give useful error)
     const parsed = ParamsSchema.safeParse(params);
     if (!parsed.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }
-
     const { channelId } = parsed.data;
+
+    // Entitlement check - channel sync is a usage-limited feature
+    const entitlementResult = await checkEntitlement({
+      featureKey: "channel_sync",
+      increment: false, // We'll increment only if not recently synced
+    });
+    if (!entitlementResult.ok) {
+      return entitlementErrorResponse(entitlementResult.error);
+    }
+    const user = entitlementResult.context.user;
 
     // Get channel and verify ownership
     const channel = await prisma.channel.findFirst({
@@ -51,7 +58,7 @@ export async function POST(
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    // Check if recently synced (within 5 minutes)
+    // Check if recently synced (within 5 minutes) - this doesn't count against limit
     if (channel.lastSyncedAt) {
       const minsSinceSync = (Date.now() - channel.lastSyncedAt.getTime()) / 60000;
       if (minsSinceSync < 5) {
@@ -63,7 +70,37 @@ export async function POST(
       }
     }
 
-    // Rate limit check
+    // Now increment usage since we're actually going to sync
+    const { checkAndIncrement } = await import("@/lib/usage");
+    const { getLimit, getPlanFromSubscription } = await import("@/lib/entitlements");
+    const { getSubscriptionStatus } = await import("@/lib/stripe");
+    
+    const subscription = await getSubscriptionStatus(user.id);
+    const plan = getPlanFromSubscription(subscription);
+    const limit = getLimit(plan, "channel_sync");
+    
+    const usageResult = await checkAndIncrement({
+      userId: user.id,
+      featureKey: "channel_sync",
+      limit,
+    });
+    
+    if (!usageResult.allowed) {
+      return Response.json(
+        {
+          error: "limit_reached",
+          featureKey: "channel_sync",
+          used: usageResult.used,
+          limit: usageResult.limit,
+          remaining: usageResult.remaining,
+          resetAt: usageResult.resetAt,
+          upgrade: plan === "FREE",
+        },
+        { status: 403 }
+      );
+    }
+
+    // Rate limit check (per-hour limit for API protection)
     const rateKey = rateLimitKey("videoSync", channel.id);
     const rateResult = checkRateLimit(rateKey, RATE_LIMITS.videoSync);
     if (!rateResult.success) {

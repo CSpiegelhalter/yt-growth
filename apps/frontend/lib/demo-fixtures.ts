@@ -19,9 +19,12 @@ export type DemoDataType = "retention" | "subscriber-audit" | "idea-board";
 export function isDemoMode(): boolean {
   // Demo mode is opt-in via an env var.
   // Support both DEMO_MODE (server-only) and NEXT_PUBLIC_DEMO_MODE (legacy/dev convenience).
-  return (
-    process.env.DEMO_MODE === "1" || process.env.NEXT_PUBLIC_DEMO_MODE === "1"
-  );
+  const isDemo =
+    process.env.DEMO_MODE === "1" || process.env.NEXT_PUBLIC_DEMO_MODE === "1";
+  if (isDemo) {
+    console.log("[Demo] DEMO MODE ACTIVE");
+  }
+  return isDemo;
 }
 
 /**
@@ -29,7 +32,8 @@ export function isDemoMode(): boolean {
  * This is ideal when quota is exhausted and you still want realistic, high-volume data.
  */
 export function isYouTubeMockMode(): boolean {
-  return process.env.YT_MOCK_MODE === "1";
+  const isMock = process.env.YT_MOCK_MODE === "1";
+  return isMock;
 }
 
 /**

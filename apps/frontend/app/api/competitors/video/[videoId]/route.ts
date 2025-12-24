@@ -10,7 +10,7 @@
  * Subscriber gain, watch time, AVD are NOT available for competitors.
  *
  * Auth: Required
- * Subscription: Required
+ * Entitlements: competitor_video_analysis (5/day FREE, 100/day PRO)
  * Caching: 7-30 days per videoId
  *
  * Query params:
@@ -36,6 +36,10 @@ import {
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { hashVideoContent, hashCommentsContent } from "@/lib/content-hash";
+import {
+  checkEntitlement,
+  entitlementErrorResponse,
+} from "@/lib/with-entitlements";
 import type {
   CompetitorVideoAnalysis,
   CompetitorVideo,
@@ -61,13 +65,17 @@ export async function GET(
   }
 
   try {
-    // Auth check
-    const user = await getCurrentUserWithSubscription();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    // Entitlement check - competitor video analysis is a usage-limited feature
+    const entitlementResult = await checkEntitlement({
+      featureKey: "competitor_video_analysis",
+      increment: true,
+    });
+    if (!entitlementResult.ok) {
+      return entitlementErrorResponse(entitlementResult.error);
     }
+    const user = entitlementResult.context.user;
 
-    // Rate limit check
+    // Rate limit check (per-hour limit for API protection)
     const rlKey = rateLimitKey("competitorDetail", user.id);
     const rlResult = checkRateLimit(rlKey, RATE_LIMITS.competitorDetail);
     if (!rlResult.success) {
@@ -77,14 +85,6 @@ export async function GET(
           resetAt: new Date(rlResult.resetAt).toISOString(),
         },
         { status: 429 }
-      );
-    }
-
-    // Subscription check (paid feature)
-    if (!hasActiveSubscription(user.subscription)) {
-      return Response.json(
-        { error: "Subscription required", code: "SUBSCRIPTION_REQUIRED" },
-        { status: 403 }
       );
     }
 

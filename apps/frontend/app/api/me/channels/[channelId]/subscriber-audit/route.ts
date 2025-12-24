@@ -50,8 +50,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
-  // Return demo data if demo mode or mock mode is enabled
-  if (isDemoMode() || isYouTubeMockMode()) {
+  // Return demo data ONLY if demo mode is on AND mock mode is off
+  if (isDemoMode() && !isYouTubeMockMode()) {
     const demoData = getDemoData(
       "subscriber-audit"
     ) as SubscriberAuditResponse | null;

@@ -7,6 +7,7 @@
  * Auth: Required
  * Rate limit: 30 per hour per user
  * Cache: 24h per video + range
+ * Entitlements: owned_video_analysis (5/day FREE, 100/day PRO)
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -18,6 +19,10 @@ import {
 } from "@/lib/user";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
+import {
+  checkEntitlement,
+  entitlementErrorResponse,
+} from "@/lib/with-entitlements";
 import { getGoogleAccount } from "@/lib/youtube-api";
 import {
   fetchVideoAnalyticsDaily,
@@ -127,6 +132,7 @@ export async function GET(
 
     // If cache is fresh (time-based) and has LLM data, return it
     // Content hash will be checked during regeneration
+    // NOTE: Cached responses don't count against usage limits
     if (
       cached?.derivedJson &&
       cached?.llmJson &&
@@ -141,7 +147,16 @@ export async function GET(
       });
     }
 
-    // Rate limit check
+    // Entitlement check - only count fresh analysis (not cached)
+    const entitlementResult = await checkEntitlement({
+      featureKey: "owned_video_analysis",
+      increment: true,
+    });
+    if (!entitlementResult.ok) {
+      return entitlementErrorResponse(entitlementResult.error);
+    }
+
+    // Rate limit check (per-hour limit for API protection)
     const rateResult = checkRateLimit(
       rateLimitKey("videoInsights", user.id),
       RATE_LIMITS.videoInsights
@@ -250,17 +265,15 @@ export async function POST(
   }
 
   try {
-    const user = await getCurrentUserWithSubscription();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    // Entitlement check (POST = force refresh, always counts as a use)
+    const entitlementResult = await checkEntitlement({
+      featureKey: "owned_video_analysis",
+      increment: true,
+    });
+    if (!entitlementResult.ok) {
+      return entitlementErrorResponse(entitlementResult.error);
     }
-
-    if (!hasActiveSubscription(user.subscription)) {
-      return Response.json(
-        { error: "Subscription required", code: "SUBSCRIPTION_REQUIRED" },
-        { status: 403 }
-      );
-    }
+    const user = entitlementResult.context.user;
 
     const resolvedParams = await params;
     const parsedParams = ParamsSchema.safeParse(resolvedParams);

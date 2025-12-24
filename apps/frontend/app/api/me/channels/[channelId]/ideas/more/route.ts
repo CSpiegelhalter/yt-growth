@@ -5,7 +5,7 @@
  * This expands on an idea without replacing it.
  *
  * Auth: Required
- * Subscription: Required
+ * Entitlements: idea_generate (10/day FREE, 200/day PRO)
  * Caching: 24h via in-memory cache (simple approach)
  */
 import { NextRequest } from "next/server";
@@ -17,6 +17,10 @@ import {
 } from "@/lib/user";
 import { isDemoMode } from "@/lib/demo-fixtures";
 import { callLLM } from "@/lib/llm";
+import {
+  checkEntitlement,
+  entitlementErrorResponse,
+} from "@/lib/with-entitlements";
 import crypto from "crypto";
 
 const ParamsSchema = z.object({
@@ -91,19 +95,15 @@ export async function POST(
   }
 
   try {
-    // Auth check
-    const user = await getCurrentUserWithSubscription();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    // Entitlement check - idea generation is a usage-limited feature
+    const entitlementResult = await checkEntitlement({
+      featureKey: "idea_generate",
+      increment: true,
+    });
+    if (!entitlementResult.ok) {
+      return entitlementErrorResponse(entitlementResult.error);
     }
-
-    // Subscription check
-    if (!hasActiveSubscription(user.subscription)) {
-      return Response.json(
-        { error: "Subscription required", code: "SUBSCRIPTION_REQUIRED" },
-        { status: 403 }
-      );
-    }
+    const user = entitlementResult.context.user;
 
     // Validate params
     const resolvedParams = await params;

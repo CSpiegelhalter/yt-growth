@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma";
 import { syncUserChannels } from "@/lib/sync-youtube";
+import { checkChannelLimit, channelLimitResponse } from "@/lib/with-entitlements";
 
 async function exchangeCode(code: string) {
   const redirectUri = process.env.GOOGLE_REDIRECT_URI ?? process.env.GOOGLE_OAUTH_REDIRECT!;
@@ -48,6 +49,20 @@ export async function GET(req: NextRequest) {
   const row = await prisma.oAuthState.findUnique({ where: { state } });
   if (!row || row.expiresAt < new Date()) {
     return NextResponse.redirect(new URL("/integrations/error?m=state", baseUrl));
+  }
+
+  // Check channel limit before proceeding
+  const channelCheck = await checkChannelLimit(row.userId);
+  if (!channelCheck.allowed) {
+    // Clean up the state since we're not proceeding
+    await prisma.oAuthState.delete({ where: { state } });
+    // Redirect with channel limit error
+    const limitMsg = channelCheck.plan === "FREE"
+      ? `Free plan allows ${channelCheck.limit} channel. Upgrade to Pro for more.`
+      : `You have reached the maximum of ${channelCheck.limit} channels.`;
+    return NextResponse.redirect(
+      new URL(`/dashboard?error=channel_limit&message=${encodeURIComponent(limitMsg)}`, baseUrl)
+    );
   }
 
   // consume state

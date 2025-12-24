@@ -93,6 +93,83 @@ export default function DashboardClient({
   // Sync activeChannelId to localStorage
   useSyncActiveChannelIdToLocalStorage(activeChannelId);
 
+  // Listen for channel-removed events (from profile page or elsewhere)
+  useEffect(() => {
+    const handleChannelRemoved = (e: CustomEvent<{ channelId: string }>) => {
+      const removedId = e.detail.channelId;
+      setChannels((prev) => prev.filter((c) => c.channel_id !== removedId));
+      if (activeChannelId === removedId) {
+        setActiveChannelId(null);
+        localStorage.removeItem("activeChannelId");
+      }
+    };
+
+    window.addEventListener(
+      "channel-removed",
+      handleChannelRemoved as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        "channel-removed",
+        handleChannelRemoved as EventListener
+      );
+    };
+  }, [activeChannelId]);
+
+  // Refresh channels when page becomes visible (handles navigation back from profile)
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible") {
+        try {
+          const res = await fetch("/api/me/channels", { cache: "no-store" });
+          if (res.ok) {
+            const freshChannels = await res.json();
+            setChannels(freshChannels);
+            // If active channel no longer exists, clear it
+            if (
+              activeChannelId &&
+              !freshChannels.some(
+                (c: Channel) => c.channel_id === activeChannelId
+              )
+            ) {
+              const newActiveId = freshChannels[0]?.channel_id ?? null;
+              setActiveChannelId(newActiveId);
+              if (!newActiveId) {
+                localStorage.removeItem("activeChannelId");
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Failed to refresh channels:", err);
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [activeChannelId]);
+
+  // Clear stale activeChannelId if it doesn't exist in channels
+  useEffect(() => {
+    if (activeChannelId && channels.length > 0) {
+      const exists = channels.some((c) => c.channel_id === activeChannelId);
+      if (!exists) {
+        // Active channel was deleted, switch to first available or clear
+        const newActiveId = channels[0]?.channel_id ?? null;
+        setActiveChannelId(newActiveId);
+        if (!newActiveId) {
+          localStorage.removeItem("activeChannelId");
+        }
+      }
+    } else if (activeChannelId && channels.length === 0) {
+      // All channels deleted, clear the stale ID
+      setActiveChannelId(null);
+      localStorage.removeItem("activeChannelId");
+    }
+  }, [activeChannelId, channels]);
+
   // Load videos when active channel changes
   useEffect(() => {
     if (!activeChannelId) {
@@ -225,8 +302,8 @@ export default function DashboardClient({
 
       {/* Main Content */}
       <div className={s.content}>
-        {/* No Channels State */}
-        {channels.length === 0 && (
+        {/* No Channels State - show when no channels OR when activeChannel doesn't exist */}
+        {(channels.length === 0 || !activeChannel) && (
           <section className={s.channelsSection}>
             <ChannelsSection
               channels={channels}

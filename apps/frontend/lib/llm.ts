@@ -3274,16 +3274,18 @@ export async function generateNicheQueries(input: {
     };
   }
 
-  const systemPrompt = `You are a YouTube niche analyst. Given a creator's video data, identify their specific niche and generate YouTube search queries to find similar channels.
+  const systemPrompt = `You are a YouTube niche analyst. Given a creator's video data, identify their specific niche and generate YouTube search queries to find POPULAR, HIGH-QUALITY channels making similar content.
 
 Rules:
 - Be SPECIFIC about the niche (not just "gaming" but "indie roguelike gameplay")
-- Generate 8-10 search queries that would find channels making similar content
-- Queries should be what someone would type into YouTube search to find this type of content
-- Focus on the CONTENT TYPE, not generic terms
+- Generate 8-10 search queries that would find SUCCESSFUL channels making similar content
+- Queries should find channels with good production quality and established audiences
+- Include specific game/topic names, creator niches, or format types
+- AVOID generic queries like "vlogs" or "daily videos" - be specific
+- Think about what POPULAR creators in this niche would title their videos
 - Output valid JSON only`;
 
-  const userPrompt = `Analyze this YouTube channel and generate search queries to find similar competitor channels:
+  const userPrompt = `Analyze this YouTube channel and generate search queries to find POPULAR competitor channels with established audiences (20K+ subscribers):
 
 VIDEO TITLES (recent):
 ${videoTitles
@@ -3297,10 +3299,15 @@ ${topTags.slice(0, 15).join(", ") || "None available"}
 YOUTUBE CATEGORY:
 ${categoryName || "Unknown"}
 
+Generate queries that will find SUCCESSFUL creators in this niche. Think about:
+- What specific topics/games/subjects does this creator cover?
+- What format do they use (let's plays, tutorials, reviews, commentary)?
+- What would a popular video in this niche be titled?
+
 Respond with JSON:
 {
-  "niche": "Specific description of the channel's niche (e.g., 'YouTube growth tips and creator education' or 'indie roguelike game playthroughs')",
-  "queries": ["search query 1", "search query 2", ...] // 8-10 queries to find similar channels
+  "niche": "Specific description of the channel's niche",
+  "queries": ["specific search query 1", "specific search query 2", ...] // 8-10 queries targeting POPULAR content in this niche
 }`;
 
   try {

@@ -413,3 +413,20 @@ model SubscriberAuditCache {
   @@unique([userId, channelId, range], map: "uq_subscriber_audit_cache")
   @@index([cachedUntil], map: "idx_subscriber_audit_cached")
 }
+
+// ============================================
+// USAGE TRACKING (Daily limits enforcement)
+// ============================================
+
+model UsageCounter {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     Int
+  date       DateTime @db.Date // Store date at midnight (date-only)
+  featureKey String   @db.VarChar(64) // owned_video_analysis, competitor_video_analysis, etc.
+  count      Int      @default(0)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([userId, date, featureKey], map: "uq_usage_counter")
+  @@index([userId, date], map: "idx_usage_counter_user_date")
+}

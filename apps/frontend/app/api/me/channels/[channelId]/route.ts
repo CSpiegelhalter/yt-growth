@@ -45,7 +45,45 @@ export async function DELETE(
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    // Delete channel (cascades to videos, metrics, retention, plans)
+    // Clear all caches related to this channel BEFORE deleting
+    // These tables don't have foreign key cascades
+    await Promise.all([
+      // Similar channels cache
+      prisma.similarChannelsCache.deleteMany({
+        where: { userId: user.id, channelId: channel.id },
+      }),
+      // Competitor feed cache
+      prisma.competitorFeedCache.deleteMany({
+        where: { userId: user.id, channelId: channel.id },
+      }),
+      // Owned video analytics (daily data)
+      prisma.ownedVideoAnalyticsDay.deleteMany({
+        where: { userId: user.id, channelId: channel.id },
+      }),
+      // Owned video insights cache
+      prisma.ownedVideoInsightsCache.deleteMany({
+        where: { userId: user.id, channelId: channel.id },
+      }),
+      // Owned video remix cache
+      prisma.ownedVideoRemixCache.deleteMany({
+        where: { userId: user.id, channelId: channel.id },
+      }),
+      // Subscriber audit cache
+      prisma.subscriberAuditCache.deleteMany({
+        where: { userId: user.id, channelId: channel.id },
+      }),
+      // Saved ideas for this channel (keep user's ideas but clear channel association)
+      prisma.savedIdea.updateMany({
+        where: { userId: user.id, channelId: channel.id },
+        data: { channelId: null },
+      }),
+    ]);
+
+    console.log(
+      `[Channel Delete] Cleared caches for channel ${channel.id} (user ${user.id})`
+    );
+
+    // Delete channel (cascades to videos, metrics, retention, plans via FK)
     await prisma.channel.delete({
       where: { id: channel.id },
     });

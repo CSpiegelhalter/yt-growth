@@ -28,12 +28,8 @@ import {
 } from "@/lib/user";
 import {
   getGoogleAccount,
-  searchSimilarChannels,
   searchNicheVideos,
-  fetchRecentChannelVideos,
   fetchVideosStatsBatch,
-  fetchChannelStats,
-  getCompetitorSizeRange,
 } from "@/lib/youtube-api";
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { ensureMockChannelSeeded } from "@/lib/mock-seed";
@@ -73,18 +69,20 @@ const QuerySchema = z.object({
     .enum(["velocity", "engagement", "newest", "outliers"])
     .default("velocity"),
   cursor: z.string().optional(),
-  // Product constraint: only return 10 at a time to reduce downstream YouTube calls.
-  limit: z.coerce.number().min(1).max(10).default(10),
+  // Return 12 videos at a time to fill the page on mobile and desktop
+  limit: z.coerce.number().min(1).max(12).default(12),
   // Scale factor to find larger channels (1 = normal, 2 = 2x bigger, etc.)
   scale: z.coerce.number().min(1).max(5).default(1),
   // Page number for fetching additional batches of competitor videos (0 = first batch)
-  page: z.coerce.number().min(0).max(10).default(0),
+  page: z.coerce.number().min(0).max(30).default(0),
+  // YouTube pageToken for pagination within a query
+  pageToken: z.string().optional(),
+  // Which query index we're currently on (0 = first niche query)
+  queryIndex: z.coerce.number().min(0).max(10).default(0),
 });
 
 // Minimum hours between snapshots for a video
 const SNAPSHOT_INTERVAL_HOURS = 6;
-const BASE_VIDEOS_PER_CHANNEL = 5;
-const MAX_COMPETITOR_CHANNELS = 8;
 
 export async function GET(
   req: NextRequest,
@@ -97,7 +95,7 @@ export async function GET(
       range: url.searchParams.get("range") ?? "7d",
       sort: url.searchParams.get("sort") ?? "velocity",
       cursor: url.searchParams.get("cursor") ?? undefined,
-      limit: url.searchParams.get("limit") ?? "10",
+      limit: url.searchParams.get("limit") ?? "12",
     });
     const q = queryResult.success ? queryResult.data : QuerySchema.parse({});
     const demoData = generateDemoCompetitorFeed(q);
@@ -146,9 +144,11 @@ export async function GET(
       range: url.searchParams.get("range") ?? "7d",
       sort: url.searchParams.get("sort") ?? "velocity",
       cursor: url.searchParams.get("cursor") ?? undefined,
-      limit: url.searchParams.get("limit") ?? "10",
+      limit: url.searchParams.get("limit") ?? "12",
       scale: url.searchParams.get("scale") ?? "1",
       page: url.searchParams.get("page") ?? "0",
+      pageToken: url.searchParams.get("pageToken") ?? undefined,
+      queryIndex: url.searchParams.get("queryIndex") ?? "0",
     });
 
     if (!queryResult.success) {
@@ -158,7 +158,8 @@ export async function GET(
       );
     }
 
-    const { range, sort, cursor, limit, scale, page } = queryResult.data;
+    const { range, sort, cursor, limit, scale, page, pageToken, queryIndex } =
+      queryResult.data;
 
     // Get channel and verify ownership
     let channel = await prisma.channel.findFirst({
@@ -290,23 +291,32 @@ export async function GET(
       } as CompetitorFeedResponse);
     }
 
-    // Use different query for each page (cycles through available queries)
-    const queryIndex = page % nicheQueries.length;
-    const searchQuery = nicheQueries[queryIndex];
+    // Use one query at a time, ranked by relevance
+    // Shorter, more specific queries first (they tend to be more relevant)
+    const rankedQueries = [...nicheQueries].sort((a, b) => {
+      // Prefer shorter queries (more specific)
+      const lenDiff = a.length - b.length;
+      if (Math.abs(lenDiff) > 10) return lenDiff;
+      // Otherwise keep original order (LLM ranked them)
+      return 0;
+    });
+
+    // Select which query to use based on queryIndex
+    const currentQueryIndex = Math.min(queryIndex, rankedQueries.length - 1);
+    const currentQuery = rankedQueries[currentQueryIndex] ?? rankedQueries[0];
 
     console.log(
-      `[Competitors] Page ${page} using query: "${searchQuery}" (${nicheQueries.length} queries available)`
+      `[Competitors] Page ${page}, Query ${currentQueryIndex + 1}/${
+        rankedQueries.length
+      }: "${currentQuery}"${
+        pageToken ? ` (pageToken: ${pageToken.substring(0, 20)}...)` : ""
+      }`
     );
     console.log(`[Competitors] Niche: "${nicheData.niche}"`);
 
     // For backward compatibility with searchSimilarChannels
-    const userKeywords = searchQuery.split(/\s+/).filter((w) => w.length > 2);
-
-    // Calculate date range
-    const rangeDays = range === "7d" ? 7 : 28;
-    const publishedAfter = new Date(
-      Date.now() - rangeDays * 24 * 60 * 60 * 1000
-    ).toISOString();
+    const userKeywords =
+      currentQuery?.split(/\s+/).filter((w) => w.length > 2) ?? [];
 
     // Cache the discovery list for 12h (so repeated page views don't burn YouTube quota).
     // Include page in the range key to store different batches separately
@@ -321,12 +331,8 @@ export async function GET(
       },
     });
 
-    // Get user's channel subscriber count for size-based filtering
-    const userChannelStats = await fetchChannelStats(ga, [channelId]);
-    const userSubCount = userChannelStats.get(channelId)?.subscriberCount ?? 0;
-    const sizeRange = getCompetitorSizeRange(userSubCount, scale);
-
-    // Fetch recent videos from all competitor channels
+    // Simplified approach: Use videos directly from search results
+    // No channel size filtering - if YouTube returns it for our niche query, it's relevant
     const rawVideos: Array<{
       videoId: string;
       title: string;
@@ -342,142 +348,74 @@ export async function GET(
     const now = new Date();
     const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours
 
+    // Track YouTube pagination token (set when fetching fresh data)
+    let nextPageToken: string | undefined;
+
     if (cached && cached.cachedUntil > now) {
       const cachedRaw = cached.videosJson as unknown as typeof rawVideos;
-      // Backward compatible: older caches may have too many per channel.
-      // Enforce per-channel cap at read time too.
-      const perChannelCounts = new Map<string, number>();
-      cachedRaw.forEach((v) => {
-        const n = perChannelCounts.get(v.channelId) ?? 0;
-        if (n >= BASE_VIDEOS_PER_CHANNEL) return;
-        perChannelCounts.set(v.channelId, n + 1);
-        rawVideos.push(v);
-      });
+      rawVideos.push(...cachedRaw);
+      // When serving from cache, we don't have a pageToken
+      // Client should move to next query if they want more results
     } else {
-      console.log(
-        `[Competitors] User has ${userSubCount} subs, looking for channels with ${sizeRange.min}-${sizeRange.max} subs`
-      );
-
-      // Search for videos in the niche (more accurate than channel search)
-      const { uniqueChannels: videoBasedChannels } = await searchNicheVideos(
+      // Search for videos in the niche directly - returns up to 50 videos per call
+      const searchResult = await searchNicheVideos(
         ga,
-        searchQuery,
-        50
+        currentQuery,
+        50,
+        pageToken
+      );
+      nextPageToken = searchResult.nextPageToken;
+
+      // Filter out user's own channel videos
+      const searchVideos = searchResult.videos.filter(
+        (v) => v.channelId !== channelId
       );
 
       console.log(
-        `[Competitors] Video search found ${videoBasedChannels.length} unique channels for query: "${searchQuery}"`
+        `[Competitors] Search returned ${
+          searchVideos.length
+        } videos for query: "${currentQuery}"${
+          nextPageToken ? " (more pages available)" : " (last page)"
+        }`
       );
 
-      // Filter out the user's own channel
-      const candidateChannels = videoBasedChannels.filter(
-        (c) => c.channelId !== channelId
-      );
-
-      // Fetch subscriber counts for candidate channels
-      const channelStats = await fetchChannelStats(
-        ga,
-        candidateChannels.map((c) => c.channelId)
-      );
-
-      // Filter channels by size - find channels larger than user but not too large
-      const sizeFilteredChannels = candidateChannels
-        .map((c) => ({
-          ...c,
-          subscriberCount: channelStats.get(c.channelId)?.subscriberCount ?? 0,
-        }))
-        .filter((c) => {
-          // Must be within our target range
-          return (
-            c.subscriberCount >= sizeRange.min &&
-            c.subscriberCount <= sizeRange.max
-          );
-        })
-        // Sort by subscriber count (prefer channels closer to user's next milestone)
-        .sort((a, b) => a.subscriberCount - b.subscriberCount)
-        .slice(0, MAX_COMPETITOR_CHANNELS);
-
-      console.log(
-        `[Competitors] Page ${page} (query: "${searchQuery}"): Found ${sizeFilteredChannels.length} size-appropriate channels:`,
-        sizeFilteredChannels.map(
-          (c) => `${c.channelTitle} (${c.subscriberCount})`
-        )
-      );
-
-      // If not enough size-appropriate channels from video search, also try channel search as backup
-      let filteredChannels = sizeFilteredChannels;
-      if (filteredChannels.length < 3) {
-        console.log(
-          `[Competitors] Few channels found via video search, trying channel search as backup...`
-        );
-        const channelSearchResults = await searchSimilarChannels(
+      if (searchVideos.length > 0) {
+        // Get video stats (views, likes, comments) for the search results
+        const videoStats = await fetchVideosStatsBatch(
           ga,
-          userKeywords,
-          30
+          searchVideos.map((v) => v.videoId)
         );
-        const additionalChannels = channelSearchResults
-          .filter((c) => c.channelId !== channelId)
-          .filter(
-            (c) =>
-              !sizeFilteredChannels.some((sc) => sc.channelId === c.channelId)
+
+        // Transform search results into rawVideos format
+        searchVideos.forEach((v) => {
+          const stats = videoStats.get(v.videoId);
+          const views = stats?.viewCount ?? 0;
+          const publishedDate = new Date(v.publishedAt);
+          const ageInDays = Math.max(
+            1,
+            (now.getTime() - publishedDate.getTime()) / (1000 * 60 * 60 * 24)
           );
+          const viewsPerDay = views / ageInDays;
 
-        const additionalStats = await fetchChannelStats(
-          ga,
-          additionalChannels.map((c) => c.channelId)
-        );
+          rawVideos.push({
+            videoId: v.videoId,
+            title: v.title,
+            channelId: v.channelId,
+            channelTitle: v.channelTitle,
+            channelThumbnailUrl: null, // Not needed - we have video thumbnail
+            thumbnailUrl: v.thumbnailUrl,
+            publishedAt: v.publishedAt,
+            views,
+            viewsPerDay,
+          });
+        });
 
-        const additionalFiltered = additionalChannels
-          .map((c) => ({
-            ...c,
-            subscriberCount:
-              additionalStats.get(c.channelId)?.subscriberCount ?? 0,
-          }))
-          .filter(
-            (c) =>
-              c.subscriberCount >= sizeRange.min &&
-              c.subscriberCount <= sizeRange.max
-          )
-          .slice(0, MAX_COMPETITOR_CHANNELS - filteredChannels.length);
-
-        filteredChannels = [...filteredChannels, ...additionalFiltered];
         console.log(
-          `[Competitors] After backup channel search: ${filteredChannels.length} total channels`
+          `[Competitors] Processed ${rawVideos.length} videos with stats`
         );
       }
 
-      await Promise.all(
-        filteredChannels.map(async (sc) => {
-          try {
-            const recentVideos = await fetchRecentChannelVideos(
-              ga,
-              sc.channelId,
-              publishedAfter,
-              BASE_VIDEOS_PER_CHANNEL
-            );
-
-            recentVideos.forEach((v) => {
-              rawVideos.push({
-                videoId: v.videoId,
-                title: v.title,
-                channelId: sc.channelId,
-                channelTitle: sc.channelTitle,
-                channelThumbnailUrl: sc.thumbnailUrl,
-                thumbnailUrl: v.thumbnailUrl,
-                publishedAt: v.publishedAt,
-                views: v.views,
-                viewsPerDay: v.viewsPerDay,
-              });
-            });
-          } catch (err) {
-            console.warn(
-              `Failed to fetch videos for channel ${sc.channelId}:`,
-              err
-            );
-          }
-        })
-      );
-
+      // Cache the results
       await prisma.competitorFeedCache.upsert({
         where: {
           userId_channelId_range: {
@@ -490,7 +428,6 @@ export async function GET(
           userId: user.id,
           channelId: channel.id,
           range: cacheRange,
-          // Ensure we never store too many from a single channel (idea diversity).
           videosJson: rawVideos as unknown as object,
           cachedUntil,
         },
@@ -661,14 +598,23 @@ export async function GET(
     // Sort based on requested sort type
     sortVideos(allVideos, sort);
 
-    // Apply pagination
-    const cursorOffset = cursor ? parseInt(cursor, 10) : 0;
-    const paginatedVideos = allVideos.slice(cursorOffset, cursorOffset + limit);
-    const hasMore = cursorOffset + limit < allVideos.length;
-    const nextCursor = hasMore ? String(cursorOffset + limit) : undefined;
+    // Return all videos - client handles displaying in batches of 12
+    // Determine pagination state:
+    // - If we have a nextPageToken, we can get more results from the same query
+    // - If not, we can try the next query (if available)
+    const hasMoreYouTubePages = !!nextPageToken;
+    const hasMoreQueries = currentQueryIndex + 1 < rankedQueries.length;
+    const hasMorePages = hasMoreYouTubePages || hasMoreQueries;
 
-    // Determine if there are more pages available (based on available unique queries)
-    const hasMoreUniqueQueries = page + 1 < nicheQueries.length;
+    // Determine what the next request should use
+    let nextQueryIndex = currentQueryIndex;
+    let nextYouTubePageToken: string | undefined = nextPageToken;
+
+    if (!hasMoreYouTubePages && hasMoreQueries) {
+      // Move to next query, reset pageToken
+      nextQueryIndex = currentQueryIndex + 1;
+      nextYouTubePageToken = undefined;
+    }
 
     return Response.json({
       channelId,
@@ -676,12 +622,15 @@ export async function GET(
       sort,
       generatedAt: new Date().toISOString(),
       cachedUntil: cachedUntil.toISOString(),
-      nextCursor,
-      videos: paginatedVideos,
-      targetSizeDescription: sizeRange.description,
+      videos: allVideos,
       currentPage: page,
-      hasMorePages: hasMoreUniqueQueries,
-      totalQueries: nicheQueries.length,
+      hasMorePages,
+      totalQueries: rankedQueries.length,
+      // Pagination fields
+      currentQueryIndex,
+      nextQueryIndex: hasMorePages ? nextQueryIndex : undefined,
+      nextPageToken: nextYouTubePageToken,
+      currentQuery,
     } as CompetitorFeedResponse);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";

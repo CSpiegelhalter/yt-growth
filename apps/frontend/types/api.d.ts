@@ -2,6 +2,11 @@
  * API type definitions
  */
 
+export type UsageInfo = {
+  used: number;
+  limit: number;
+};
+
 export type Me = {
   id: number;
   email: string;
@@ -16,6 +21,15 @@ export type Me = {
     cancelAt?: string | null;
     canceledAt?: string | null;
   };
+  /** Daily usage info for feature gating */
+  usage?: {
+    owned_video_analysis: UsageInfo;
+    competitor_video_analysis: UsageInfo;
+    idea_generate: UsageInfo;
+    channel_sync: UsageInfo;
+  };
+  /** When usage counters reset (ISO string) */
+  resetAt?: string;
 };
 
 export type Channel = {
@@ -249,6 +263,13 @@ export type ApiError = {
   code?: string;
   detail?: string;
   resetAt?: string;
+  // Usage limit error fields
+  featureKey?: string;
+  used?: number;
+  limit?: number;
+  remaining?: number;
+  upgrade?: boolean;
+  message?: string;
 };
 
 /* ============================================
@@ -452,12 +473,20 @@ export type CompetitorFeedResponse = {
   targetSizeDescription?: string;
   /** Current page number (for loading more batches) */
   currentPage?: number;
-  /** Whether there are more unique search queries (pages) available */
+  /** Whether there are more pages available (either YouTube pages or more queries) */
   hasMorePages?: boolean;
   /** Total number of unique niche queries available */
   totalQueries?: number;
   /** Error/info message */
   message?: string;
+  /** Current query index (which niche query we're using) */
+  currentQueryIndex?: number;
+  /** Next query index to use (if hasMorePages is true) */
+  nextQueryIndex?: number;
+  /** YouTube pageToken for pagination within current query */
+  nextPageToken?: string;
+  /** Current query being used */
+  currentQuery?: string;
 };
 
 export type CompetitorCommentsAnalysis = {

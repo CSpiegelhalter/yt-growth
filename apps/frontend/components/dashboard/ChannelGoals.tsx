@@ -20,17 +20,20 @@ type Milestone = {
   target: number;
   icon: "video" | "calendar" | "streak" | "trophy";
   unlocked: boolean;
+  category: "videos" | "streak";
 };
 
 /**
  * ChannelGoals - Gamified progress milestones for channel growth
+ * Shows ONE milestone at a time per category - once reached, shows the next
  */
 export default function ChannelGoals({ videos, channelTitle }: Props) {
-  const milestones = useMemo(() => {
+  const { currentMilestone, nextMilestone, totalUnlocked, totalMilestones } = useMemo(() => {
     const videoCount = videos.length;
-    const { weeklyStreak, postsPerMonth, isConsistent } = analyzePostingSchedule(videos);
+    const { weeklyStreak } = analyzePostingSchedule(videos);
 
-    const goals: Milestone[] = [
+    // Video count milestones (progressive)
+    const videoMilestones: Milestone[] = [
       {
         id: "videos-25",
         label: "Getting Started",
@@ -39,6 +42,7 @@ export default function ChannelGoals({ videos, channelTitle }: Props) {
         target: 25,
         icon: "video",
         unlocked: videoCount >= 25,
+        category: "videos",
       },
       {
         id: "videos-50",
@@ -48,6 +52,7 @@ export default function ChannelGoals({ videos, channelTitle }: Props) {
         target: 50,
         icon: "video",
         unlocked: videoCount >= 50,
+        category: "videos",
       },
       {
         id: "videos-100",
@@ -57,7 +62,12 @@ export default function ChannelGoals({ videos, channelTitle }: Props) {
         target: 100,
         icon: "trophy",
         unlocked: videoCount >= 100,
+        category: "videos",
       },
+    ];
+
+    // Streak milestones (progressive)
+    const streakMilestones: Milestone[] = [
       {
         id: "consistency",
         label: "Consistent Creator",
@@ -66,6 +76,7 @@ export default function ChannelGoals({ videos, channelTitle }: Props) {
         target: 4,
         icon: "calendar",
         unlocked: weeklyStreak >= 4,
+        category: "streak",
       },
       {
         id: "streak-8",
@@ -75,36 +86,68 @@ export default function ChannelGoals({ videos, channelTitle }: Props) {
         target: 8,
         icon: "streak",
         unlocked: weeklyStreak >= 8,
+        category: "streak",
       },
     ];
 
-    return goals;
+    // Find the NEXT milestone to show for each category (first unlocked one, or first unachieved)
+    const getActiveMilestone = (milestones: Milestone[]): Milestone | null => {
+      // Find first unachieved milestone
+      const nextUnachieved = milestones.find((m) => !m.unlocked);
+      if (nextUnachieved) return nextUnachieved;
+      // All achieved - show the last one as "complete"
+      return milestones[milestones.length - 1] ?? null;
+    };
+
+    const activeVideoMilestone = getActiveMilestone(videoMilestones);
+    const activeStreakMilestone = getActiveMilestone(streakMilestones);
+
+    // Count total unlocked
+    const allMilestones = [...videoMilestones, ...streakMilestones];
+    const unlocked = allMilestones.filter((m) => m.unlocked).length;
+
+    // Determine which to show as "current" (closest to completion)
+    const currentActive = [activeVideoMilestone, activeStreakMilestone]
+      .filter(Boolean)
+      .filter((m) => !m!.unlocked)
+      .sort((a, b) => {
+        const aProgress = a!.current / a!.target;
+        const bProgress = b!.current / b!.target;
+        return bProgress - aProgress; // Higher progress first
+      })[0];
+
+    return {
+      currentMilestone: activeVideoMilestone, // Always show video milestone
+      nextMilestone: activeStreakMilestone, // And streak milestone if available
+      totalUnlocked: unlocked,
+      totalMilestones: allMilestones.length,
+    };
   }, [videos]);
 
-  const unlockedCount = milestones.filter((m) => m.unlocked).length;
-  const nextMilestone = milestones.find((m) => !m.unlocked);
-
   if (videos.length === 0) return null;
+
+  // Determine what to show based on progress
+  const milestonesToShow: Milestone[] = [];
+  if (currentMilestone) milestonesToShow.push(currentMilestone);
+  if (nextMilestone && nextMilestone.id !== currentMilestone?.id) {
+    milestonesToShow.push(nextMilestone);
+  }
+
+  if (milestonesToShow.length === 0) return null;
 
   return (
     <div className={s.container}>
       <div className={s.header}>
         <div className={s.headerLeft}>
-          <h2 className={s.title}>Channel Milestones</h2>
+          <h2 className={s.title}>Your Progress</h2>
           <span className={s.progress}>
-            {unlockedCount}/{milestones.length} unlocked
+            {totalUnlocked}/{totalMilestones} milestones
           </span>
         </div>
-        {nextMilestone && (
-          <div className={s.nextUp}>
-            <span className={s.nextLabel}>Next:</span>
-            <span className={s.nextGoal}>{nextMilestone.label}</span>
-          </div>
-        )}
       </div>
 
       <div className={s.milestones}>
-        {milestones.map((milestone) => (
+        {milestonesToShow.map((milestone) => (
           <MilestoneCard key={milestone.id} milestone={milestone} />
         ))}
       </div>

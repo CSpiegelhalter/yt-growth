@@ -137,15 +137,28 @@ function isYouTubeOrAnalyticsUrl(urlStr: string): boolean {
 
 function shouldMockYouTubeRequests(): boolean {
   // YT_MOCK_MODE: forces returning raw YouTube-shaped JSON without network calls.
-  // YT_AUTO_MOCK_ON_QUOTA: after we see quotaExceeded once, we’ll auto-mock further YouTube calls.
-  if (process.env.YT_MOCK_MODE === "1") return true;
+  // YT_AUTO_MOCK_ON_QUOTA: after we see quotaExceeded once, we'll auto-mock further YouTube calls.
+  if (process.env.YT_MOCK_MODE === "1") {
+    console.log("[YouTube] MOCK MODE ACTIVE (YT_MOCK_MODE=1)");
+    return true;
+  }
   if (
     process.env.YT_AUTO_MOCK_ON_QUOTA === "1" &&
     googleApiStats.quotaExceededSeen
-  )
+  ) {
+    console.log("[YouTube] MOCK MODE ACTIVE (quota exceeded previously)");
     return true;
+  }
+  // Log when we're using real API
   return false;
 }
+
+// Log env vars on module load
+console.log("[YouTube] Config:", {
+  YT_MOCK_MODE: process.env.YT_MOCK_MODE ?? "not set",
+  YT_AUTO_MOCK_ON_QUOTA: process.env.YT_AUTO_MOCK_ON_QUOTA ?? "not set",
+  DEMO_MODE: process.env.DEMO_MODE ?? "not set",
+});
 
 export async function getAccessToken(ga: GA): Promise<string> {
   const now = Date.now();

@@ -317,35 +317,6 @@
   margin-bottom: 10px;
 }
 
-/* Metric Chips Row */
-.metricChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: auto;
-}
-
-.metricChip {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  background: #f1f5f9;
-  color: #64748b;
-  border-radius: 6px;
-}
-
-.outlierChip {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.buildingChip {
-  background: #e0e7ff;
-  color: #6366f1;
-}
-
 /* Keep old class for backwards compatibility */
 .engagementChip {
   display: inline-flex;
@@ -462,6 +433,19 @@
   font-size: 0.8125rem;
   color: #64748b;
   margin: 0;
+}
+
+.queryHint {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: 0;
+  text-align: center;
+  max-width: 400px;
+}
+
+.queryProgress {
+  color: #94a3b8;
+  font-size: 0.75rem;
 }
 
 .fetchMoreBtn {

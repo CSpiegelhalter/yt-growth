@@ -430,29 +430,29 @@ export async function searchSimilarChannels(
 export async function searchNicheVideos(
   ga: GoogleAccount,
   query: string,
-  maxVideos: number = 50
+  maxVideos: number = 25,
+  pageToken?: string
 ): Promise<{
   videos: Array<{
     videoId: string;
     channelId: string;
     channelTitle: string;
     title: string;
-    description: string;
     thumbnailUrl: string | null;
     publishedAt: string;
   }>;
   uniqueChannels: SimilarChannelResult[];
+  nextPageToken?: string;
 }> {
   // TEST_MODE: Return fixture data
   if (USE_FIXTURES) {
-    const fixtureChannels = getTestModeSimilarChannels(query.split(" "));
+    const fixtureChannels = getTestModeSimilarChannels(query.split("|"));
     return {
       videos: fixtureChannels.map((c) => ({
         videoId: `fixture-${c.channelId}`,
         channelId: c.channelId,
         channelTitle: c.channelTitle,
         title: `Fixture Video from ${c.channelTitle}`,
-        description: c.description,
         thumbnailUrl: c.thumbnailUrl,
         publishedAt: new Date().toISOString(),
       })),
@@ -460,46 +460,34 @@ export async function searchNicheVideos(
     };
   }
 
-  const normalizedQuery = query.trim().toLowerCase();
   const now = new Date();
-  const cacheTtlMs = 12 * 60 * 60 * 1000; // 12 hours for video search
 
-  // Check cache
-  if (normalizedQuery) {
-    const cacheModel = (prisma as any).youTubeSearchCache;
-    const cached = cacheModel?.findUnique
-      ? await cacheModel.findUnique({
-          where: { kind_query: { kind: "video", query: normalizedQuery } },
-        })
-      : null;
-    if (cached && cached.cachedUntil > now) {
-      const data = cached.responseJson as unknown as {
-        videos: Array<{
-          videoId: string;
-          channelId: string;
-          channelTitle: string;
-          title: string;
-          description: string;
-          thumbnailUrl: string | null;
-          publishedAt: string;
-        }>;
-        uniqueChannels: SimilarChannelResult[];
-      };
-      return data;
-    }
+  // Build the search URL with ACTUAL spaces in query (not encoded)
+  // YouTube API handles unencoded spaces in the q parameter
+  const baseUrl = `${YOUTUBE_DATA_API}/search`;
+  const params = new URLSearchParams();
+  params.set("part", "snippet");
+  params.set("type", "video");
+  params.set("maxResults", String(Math.min(50, maxVideos)));
+  params.set("order", "relevance");
+  params.set("regionCode", "US");
+  params.set("relevanceLanguage", "en");
+  // HD videos only for better quality
+  params.set("videoDefinition", "high");
+  // Only get videos from the last 6 months
+  const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+  params.set("publishedAfter", sixMonthsAgo.toISOString());
+
+  // Add pageToken for pagination if provided
+  if (pageToken) {
+    params.set("pageToken", pageToken);
   }
 
-  // Search for videos (costs 100 quota units)
-  const url = new URL(`${YOUTUBE_DATA_API}/search`);
-  url.searchParams.set("part", "snippet");
-  url.searchParams.set("type", "video");
-  url.searchParams.set("q", query);
-  url.searchParams.set("maxResults", String(Math.min(50, maxVideos)));
-  url.searchParams.set("order", "relevance");
-  url.searchParams.set("relevanceLanguage", "en");
-  // Only get videos from the last 6 months for relevance
-  const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
-  url.searchParams.set("publishedAfter", sixMonthsAgo.toISOString());
+  // Build URL with query parameter with ACTUAL SPACES (not %20 or +)
+  // The query is appended directly without encoding
+  const url = `${baseUrl}?${params.toString()}&q=${query}`;
+
+  console.log(`[YouTube Search] URL: ${url}`);
 
   const data = await googleFetchWithAutoRefresh<{
     items: Array<{
@@ -508,19 +496,20 @@ export async function searchNicheVideos(
         channelId: string;
         channelTitle: string;
         title: string;
-        description: string;
         publishedAt: string;
         thumbnails: { medium?: { url: string }; default?: { url: string } };
       };
     }>;
-  }>(ga, url.toString());
+    nextPageToken?: string;
+    prevPageToken?: string;
+  }>(ga, url);
 
+  // Don't store description - we'll fetch full description when analyzing specific video
   const videos = (data.items ?? []).map((i) => ({
     videoId: i.id.videoId,
     channelId: i.snippet.channelId,
     channelTitle: i.snippet.channelTitle,
     title: i.snippet.title,
-    description: i.snippet.description,
     thumbnailUrl:
       i.snippet.thumbnails?.medium?.url ??
       i.snippet.thumbnails?.default?.url ??
@@ -535,8 +524,8 @@ export async function searchNicheVideos(
       channelMap.set(v.channelId, {
         channelId: v.channelId,
         channelTitle: v.channelTitle,
-        description: v.description.substring(0, 200),
-        thumbnailUrl: null, // Will be fetched separately if needed
+        description: "", // Will be fetched later when analyzing specific video
+        thumbnailUrl: null,
       });
     }
   });
@@ -544,31 +533,11 @@ export async function searchNicheVideos(
   const result = {
     videos,
     uniqueChannels: Array.from(channelMap.values()),
+    nextPageToken: data.nextPageToken,
   };
 
-  // Cache the result
-  if (normalizedQuery) {
-    try {
-      const cacheModel = (prisma as any).youTubeSearchCache;
-      if (cacheModel?.upsert) {
-        await cacheModel.upsert({
-          where: { kind_query: { kind: "video", query: normalizedQuery } },
-          create: {
-            kind: "video",
-            query: normalizedQuery,
-            responseJson: result as unknown as object,
-            cachedUntil: new Date(now.getTime() + cacheTtlMs),
-          },
-          update: {
-            responseJson: result as unknown as object,
-            cachedUntil: new Date(now.getTime() + cacheTtlMs),
-          },
-        });
-      }
-    } catch {
-      // ignore cache errors
-    }
-  }
+  // Note: Not caching video search results anymore since we use pageToken for pagination
+  // The competitor feed cache handles caching at a higher level
 
   return result;
 }
@@ -653,6 +622,7 @@ export async function fetchChannelStats(
 /**
  * Calculate target subscriber range for competitor discovery.
  * We want channels that are larger than the user but not unreachably large.
+ * Minimum is always 20K subscribers to ensure quality content.
  * @param scaleFactor - Multiplier to look for larger channels (1 = normal, 2 = 2x bigger, etc.)
  */
 export function getCompetitorSizeRange(
@@ -663,21 +633,20 @@ export function getCompetitorSizeRange(
   max: number;
   description: string;
 } {
+  // MINIMUM 20K subscribers regardless of user size - ensures quality competitors
+  const ABSOLUTE_MIN_SUBS = 20000;
+
   // Base ranges scaled based on user's current size
   let min: number;
   let max: number;
   let baseDescription: string;
 
-  if (userSubscribers < 100) {
-    min = 1000;
-    max = 50000;
-    baseDescription = "Growing channels";
-  } else if (userSubscribers < 1000) {
-    min = 5000;
+  if (userSubscribers < 1000) {
+    min = 20000;
     max = 100000;
-    baseDescription = "Established small channels";
+    baseDescription = "Established channels";
   } else if (userSubscribers < 10000) {
-    min = 10000;
+    min = 20000;
     max = 500000;
     baseDescription = "Growing channels";
   } else if (userSubscribers < 100000) {
@@ -695,6 +664,9 @@ export function getCompetitorSizeRange(
     min = Math.round(min * scaleFactor);
     max = Math.round(max * scaleFactor);
   }
+
+  // Enforce absolute minimum
+  min = Math.max(min, ABSOLUTE_MIN_SUBS);
 
   // Format subscriber counts for description
   const formatSubs = (n: number) => {

@@ -38,9 +38,10 @@ export default function CompetitorsClient({
   // Feed data and loading states
   const [feedData, setFeedData] = useState<CompetitorFeedResponse | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [loadingMoreVideos, setLoadingMoreVideos] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
+
+  // How many videos to display (show 12 more each time)
+  const [visibleCount, setVisibleCount] = useState(12);
 
   // Filters
   const [range, setRange] = useState<"7d" | "28d">("7d");
@@ -63,6 +64,7 @@ export default function CompetitorsClient({
     if (!activeChannelId) return;
 
     setDataLoading(true);
+    setVisibleCount(12); // Reset visible count
     fetch(
       `/api/me/channels/${activeChannelId}/competitors?range=${range}&sort=${sort}`
     )
@@ -78,51 +80,54 @@ export default function CompetitorsClient({
       .finally(() => setDataLoading(false));
   }, [activeChannelId, range, sort]);
 
-  // Load more videos (pagination through existing results)
-  const handleLoadMore = useCallback(async () => {
-    if (!activeChannelId || !feedData?.nextCursor || loadingMore) return;
-
-    setLoadingMore(true);
-    try {
-      const res = await fetch(
-        `/api/me/channels/${activeChannelId}/competitors?range=${range}&sort=${sort}&cursor=${feedData.nextCursor}`
-      );
-      const data = await res.json();
-      if (data.videos) {
-        setFeedData((prev) => ({
-          ...data,
-          videos: [...(prev?.videos || []), ...data.videos],
-        }));
-      }
-    } catch (err) {
-      console.error("Failed to load more:", err);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [activeChannelId, feedData?.nextCursor, range, sort, loadingMore]);
-
   const handleRangeChange = useCallback((newRange: "7d" | "28d") => {
     setRange(newRange);
     setFeedData(null);
-    setCurrentPage(0); // Reset page when range changes
+    setVisibleCount(12);
   }, []);
 
   const handleSortChange = useCallback((newSort: SortOption) => {
     setSort(newSort);
     setFeedData(null);
-    setCurrentPage(0); // Reset page when sort changes
+    setVisibleCount(12);
   }, []);
 
-  // Fetch more competitor videos (loads next page of different channels)
-  const handleFetchMoreVideos = useCallback(async () => {
-    if (!activeChannelId || loadingMoreVideos) return;
+  // Handle "Load More" - show 12 more videos, fetch from YouTube if needed
+  const handleLoadMore = useCallback(async () => {
+    if (!feedData) return;
 
-    const nextPage = currentPage + 1;
+    const totalFetched = feedData.videos.length;
+    const currentlyVisible = visibleCount;
+
+    // If we have more videos already fetched, just show more
+    if (currentlyVisible < totalFetched) {
+      setVisibleCount((prev) => Math.min(prev + 12, totalFetched));
+      return;
+    }
+
+    // Need to fetch more from YouTube
+    if (!activeChannelId || loadingMoreVideos || !feedData.hasMorePages) return;
+
+    // Use pagination info from the last API response
+    const nextQueryIndex =
+      feedData.nextQueryIndex ?? feedData.currentQueryIndex ?? 0;
+    const nextPageToken = feedData.nextPageToken;
+
     setLoadingMoreVideos(true);
 
     try {
+      // Build URL with pagination parameters
+      const params = new URLSearchParams({
+        range,
+        sort,
+        queryIndex: String(nextQueryIndex),
+      });
+      if (nextPageToken) {
+        params.set("pageToken", nextPageToken);
+      }
+
       const res = await fetch(
-        `/api/me/channels/${activeChannelId}/competitors?range=${range}&sort=${sort}&page=${nextPage}&limit=10`
+        `/api/me/channels/${activeChannelId}/competitors?${params.toString()}`
       );
       const data = await res.json();
 
@@ -134,23 +139,23 @@ export default function CompetitorsClient({
           const newVideos = data.videos.filter(
             (v: CompetitorVideo) => !existingIds.has(v.videoId)
           );
-          if (newVideos.length === 0) {
-            // No new videos found, keep existing data but update page
-            return prev;
-          }
           return {
             ...data,
             videos: [...prev.videos, ...newVideos],
           };
         });
-        setCurrentPage(nextPage);
+        // Show 12 more of the new videos
+        setVisibleCount((prev) => prev + 12);
+      } else {
+        // No more videos, update state to reflect that
+        setFeedData((prev) => (prev ? { ...prev, hasMorePages: false } : null));
       }
     } catch (err) {
       console.error("Failed to fetch more videos:", err);
     } finally {
       setLoadingMoreVideos(false);
     }
-  }, [activeChannelId, range, sort, currentPage, loadingMoreVideos]);
+  }, [activeChannelId, range, sort, loadingMoreVideos, feedData, visibleCount]);
 
   // No channels state
   if (!activeChannel) {
@@ -228,7 +233,6 @@ export default function CompetitorsClient({
             title={getSortDescription(sort)}
           >
             <option value="velocity">Gaining Views Fast</option>
-            <option value="outliers">Outperforming Average</option>
             <option value="engagement">High Engagement</option>
             <option value="newest">Recently Posted</option>
           </select>
@@ -272,7 +276,7 @@ export default function CompetitorsClient({
       ) : feedData && feedData.videos.length > 0 ? (
         <>
           <div className={s.videoGrid}>
-            {feedData.videos.map((video) => (
+            {feedData.videos.slice(0, visibleCount).map((video) => (
               <CompetitorVideoCard
                 key={video.videoId}
                 video={video}
@@ -281,23 +285,32 @@ export default function CompetitorsClient({
             ))}
           </div>
 
-          {/* Load More Competitor Videos */}
-          <div className={s.fetchMoreWrap}>
-            <button
-              className={s.fetchMoreBtn}
-              onClick={handleFetchMoreVideos}
-              disabled={loadingMoreVideos}
-            >
-              {loadingMoreVideos ? (
-                <>
-                  <span className={s.spinnerSmall} />
-                  Loading more videos...
-                </>
-              ) : (
-                "Load More Competitor Videos"
+          {/* Load More Videos */}
+          {(visibleCount < feedData.videos.length || feedData.hasMorePages) && (
+            <div className={s.fetchMoreWrap}>
+              {feedData.currentQuery && (
+                <p className={s.queryHint}>
+                  Showing {Math.min(visibleCount, feedData.videos.length)} of{" "}
+                  {feedData.videos.length} videos
+                  {feedData.hasMorePages && " (more available)"}
+                </p>
               )}
-            </button>
-          </div>
+              <button
+                className={s.fetchMoreBtn}
+                onClick={handleLoadMore}
+                disabled={loadingMoreVideos}
+              >
+                {loadingMoreVideos ? (
+                  <>
+                    <span className={s.spinnerSmall} />
+                    Loading more videos...
+                  </>
+                ) : (
+                  "Load More Videos"
+                )}
+              </button>
+            </div>
+          )}
 
           {/* Last Updated */}
           {feedData.generatedAt && (
@@ -337,9 +350,7 @@ function CompetitorVideoCard({
   video: CompetitorVideo;
   channelId: string;
 }) {
-  const isBuilding = video.derived.dataStatus === "building";
   const hasVelocity = video.derived.velocity24h !== undefined;
-  const hasOutlier = video.derived.outlierScore !== undefined;
 
   return (
     <Link
@@ -407,30 +418,6 @@ function CompetitorVideoCard({
         <div className={s.videoCardMeta}>
           <span>{formatCompact(video.stats.viewCount)} views</span>
           <span>{formatDate(video.publishedAt)}</span>
-        </div>
-
-        {/* Metric chips row */}
-        <div className={s.metricChips}>
-          {/* Engagement chip */}
-          {video.derived.engagementPerView !== undefined && (
-            <span className={s.metricChip}>
-              {(video.derived.engagementPerView * 100).toFixed(1)}% eng
-            </span>
-          )}
-
-          {/* Outlier score chip */}
-          {hasOutlier && video.derived.outlierScore! > 1.5 && (
-            <span className={`${s.metricChip} ${s.outlierChip}`}>
-              Outlier +{video.derived.outlierScore!.toFixed(1)}σ
-            </span>
-          )}
-
-          {/* Building data indicator */}
-          {isBuilding && (
-            <span className={`${s.metricChip} ${s.buildingChip}`}>
-              Building data
-            </span>
-          )}
         </div>
       </div>
     </Link>
