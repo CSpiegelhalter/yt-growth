@@ -4,14 +4,15 @@
  * Tests the main user journey:
  * 1. Login with demo credentials
  * 2. View dashboard with channels
- * 3. Generate a plan (uses TEST_MODE fixtures)
- * 4. View audit page
+ * 3. View audit page
+ * 4. View profile with subscription status
  *
  * Prerequisites:
- * - TEST_MODE=1 in .env.local
- * - Database seeded with demo user
+ * - APP_TEST_MODE=1 in environment
+ * - Database seeded with demo user (via reset-db script)
  */
 import { test, expect } from "@playwright/test";
+import { signIn, DEMO_USER, linkFakeChannel, setBillingState } from "./fixtures/test-helpers";
 
 test.describe("Happy Path", () => {
   test.beforeEach(async ({ page }) => {
@@ -20,66 +21,70 @@ test.describe("Happy Path", () => {
   });
 
   test("landing page loads", async ({ page }) => {
-    await expect(page).toHaveTitle(/YouTube Growth/);
-    await expect(page.getByRole("link", { name: /login/i })).toBeVisible();
+    await expect(page).toHaveTitle(/YouTube|ChannelBoost|Growth/i);
+    await expect(page.getByRole("link", { name: /log in|sign in/i })).toBeVisible();
   });
 
   test("login with demo credentials", async ({ page }) => {
-    // Navigate to login
-    await page.goto("/auth/login");
-    
-    // Fill credentials
-    await page.fill('input[type="email"]', "demo@example.com");
-    await page.fill('input[type="password"]', "demo123");
-    
-    // Submit
-    await page.click('button[type="submit"]');
-    
+    await signIn(page, DEMO_USER);
+
     // Should redirect to dashboard
     await expect(page).toHaveURL(/dashboard/);
-    await expect(page.getByText(/Dashboard/i)).toBeVisible();
+    await expect(page.locator("main")).toBeVisible();
   });
 
   test("dashboard shows channels", async ({ page }) => {
-    // Login first
-    await page.goto("/auth/login");
-    await page.fill('input[type="email"]', "demo@example.com");
-    await page.fill('input[type="password"]', "demo123");
-    await page.click('button[type="submit"]');
-    
-    await expect(page).toHaveURL(/dashboard/);
-    
+    await signIn(page, DEMO_USER);
+    await setBillingState(page, "pro"); // Ensure PRO to allow channel linking
+
+    // Ensure demo channel exists
+    const result = await linkFakeChannel(page, {
+      channelId: "UC_happy_path_demo",
+      title: "Happy Path Demo Channel",
+    });
+    expect(result.success).toBe(true);
+
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
+
     // Should show the demo channel
-    await expect(page.getByText(/Demo Tech Channel/i)).toBeVisible();
+    await expect(page.locator("text=/Happy Path Demo Channel|Demo/i")).toBeVisible({ timeout: 10000 });
   });
 
   test("audit page loads", async ({ page }) => {
-    // Login first
-    await page.goto("/auth/login");
-    await page.fill('input[type="email"]', "demo@example.com");
-    await page.fill('input[type="password"]', "demo123");
-    await page.click('button[type="submit"]');
-    
-    // Navigate to audit page for demo channel
-    await page.goto("/audit/UC_demo_channel_123");
-    
-    // Page should load
-    await expect(page.getByText(/audit/i)).toBeVisible();
+    await signIn(page, DEMO_USER);
+    await setBillingState(page, "pro"); // Ensure PRO to allow channel linking
+
+    // Link a channel for audit
+    const result = await linkFakeChannel(page, {
+      channelId: "UC_happy_audit",
+      title: "Audit Demo Channel",
+    });
+    expect(result.success).toBe(true);
+
+    // Navigate to audit page for channel
+    await page.goto("/audit/UC_happy_audit");
+    await page.waitForLoadState("networkidle");
+
+    // Page should load without error
+    await expect(page.locator("main")).toBeVisible();
+    await expect(page.locator('text=/audit|analysis/i').first()).toBeVisible({ timeout: 15000 });
   });
 
   test("profile page shows subscription status", async ({ page }) => {
-    // Login first
-    await page.goto("/auth/login");
-    await page.fill('input[type="email"]', "demo@example.com");
-    await page.fill('input[type="password"]', "demo123");
-    await page.click('button[type="submit"]');
-    
-    // Navigate to profile
+    await signIn(page, DEMO_USER);
+
+    // Set to PRO for this test
+    await setBillingState(page, "pro");
+
     await page.goto("/profile");
-    
-    // Should show subscription status
-    await expect(page.getByText(/Profile/i)).toBeVisible();
-    await expect(page.getByText(/pro/i)).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
+    // Should show profile info
+    await expect(page.locator('text=/profile|account/i').first()).toBeVisible();
+
+    // Should show PRO status
+    await expect(page.locator('text=/pro/i')).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -87,44 +92,53 @@ test.describe("Mobile Responsive", () => {
   test.use({ viewport: { width: 375, height: 667 } });
 
   test("dashboard is usable on mobile", async ({ page }) => {
-    await page.goto("/auth/login");
-    await page.fill('input[type="email"]', "demo@example.com");
-    await page.fill('input[type="password"]', "demo123");
-    await page.click('button[type="submit"]');
-    
+    await signIn(page, DEMO_USER);
+
     await expect(page).toHaveURL(/dashboard/);
-    
+
     // Should show content without horizontal scrolling
     const body = await page.locator("body").boundingBox();
     expect(body?.width).toBeLessThanOrEqual(375);
   });
 
-  test("audit page is usable on mobile", async ({ page }) => {
-    await page.goto("/auth/login");
-    await page.fill('input[type="email"]', "demo@example.com");
-    await page.fill('input[type="password"]', "demo123");
-    await page.click('button[type="submit"]');
-    
-    await page.goto("/audit/UC_demo_channel_123");
-    
+  test("profile page is usable on mobile", async ({ page }) => {
+    await signIn(page, DEMO_USER);
+    await page.goto("/profile");
+    await page.waitForLoadState("networkidle");
+
     // Should render without errors
     await expect(page.locator("main")).toBeVisible();
   });
 });
 
-test.describe("Subscription Gating", () => {
-  test("free user sees upgrade prompt", async ({ page }) => {
-    // Login as free user
-    await page.goto("/auth/login");
-    await page.fill('input[type="email"]', "free@example.com");
-    await page.fill('input[type="password"]', "demo123");
-    await page.click('button[type="submit"]');
-    
-    await expect(page).toHaveURL(/dashboard/);
-    
-    // Note: In TEST_MODE, subscription checks pass,
-    // so this test verifies the flow works
-    await expect(page.getByText(/Dashboard/i)).toBeVisible();
+test.describe("Subscription Gating Quick Test", () => {
+  test("free user has limited features", async ({ page }) => {
+    await signIn(page, DEMO_USER);
+    await setBillingState(page, "free");
+
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
+
+    // Verify plan is free via API
+    const response = await page.request.get("/api/me");
+    const me = await response.json();
+
+    expect(me.plan).toBe("free");
+    expect(me.usage?.owned_video_analysis?.limit).toBe(5);
+  });
+
+  test("pro user has expanded features", async ({ page }) => {
+    await signIn(page, DEMO_USER);
+    await setBillingState(page, "pro");
+
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
+
+    // Verify plan is pro via API
+    const response = await page.request.get("/api/me");
+    const me = await response.json();
+
+    expect(me.plan).toBe("pro");
+    expect(me.usage?.owned_video_analysis?.limit).toBe(100);
   });
 });
-

@@ -44,6 +44,15 @@ export function Header() {
     async function loadChannels() {
       try {
         const res = await fetch("/api/me/channels", { cache: "no-store" });
+
+        // Handle stale session - if we get 401, the session is invalid
+        // Force sign out to clear the stale JWT
+        if (res.status === 401) {
+          console.warn("Session appears stale, signing out...");
+          window.location.href = "/api/auth/signout";
+          return;
+        }
+
         if (res.ok) {
           const data = await res.json();
           setChannels(data);

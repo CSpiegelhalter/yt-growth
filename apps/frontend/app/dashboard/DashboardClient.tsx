@@ -69,10 +69,9 @@ export default function DashboardClient({
   );
 
   const canAddAnother = useMemo(() => {
-    return (
-      channels.length < (me.channel_limit ?? 1) &&
-      me.subscription?.isActive !== false
-    );
+    // Channel limit already accounts for plan (FREE=1, PRO=3)
+    // No need to check isActive - FREE users can still add up to their limit
+    return channels.length < (me.channel_limit ?? 1);
   }, [me, channels]);
 
   const isSubscribed = useMemo(() => {

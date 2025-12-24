@@ -119,6 +119,26 @@ async function stripeRequest<T>(
 }
 
 /**
+ * Check if a Stripe customer ID is valid (exists in Stripe)
+ */
+async function isValidStripeCustomer(customerId: string): Promise<boolean> {
+  // Skip validation for obviously fake test IDs
+  if (customerId.startsWith("cus_test_") || customerId === "cus_demo") {
+    return false;
+  }
+
+  try {
+    await stripeRequest<StripeCustomer>(`/customers/${customerId}`, {
+      method: "GET",
+    });
+    return true;
+  } catch (err) {
+    // Customer doesn't exist or other error
+    return false;
+  }
+}
+
+/**
  * Get or create a Stripe customer for a user
  */
 export async function getOrCreateStripeCustomer(
@@ -131,8 +151,16 @@ export async function getOrCreateStripeCustomer(
     select: { stripeCustomerId: true },
   });
 
+  // If we have a customer ID, validate it exists in Stripe
   if (subscription?.stripeCustomerId) {
-    return subscription.stripeCustomerId;
+    const isValid = await isValidStripeCustomer(subscription.stripeCustomerId);
+    if (isValid) {
+      return subscription.stripeCustomerId;
+    }
+    // Customer ID is invalid/fake, we'll create a new one below
+    console.log(
+      `[Stripe] Invalid customer ID ${subscription.stripeCustomerId} for user ${userId}, creating new customer`
+    );
   }
 
   // Create new Stripe customer
