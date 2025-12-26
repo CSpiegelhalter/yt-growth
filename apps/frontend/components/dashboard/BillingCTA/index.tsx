@@ -50,6 +50,16 @@ export default function BillingCTA({
   };
 
   if (isSubscribed) {
+    const isCanceling = cancelAtPeriodEnd || cancelAt;
+    const endDate = cancelAt ?? currentPeriodEnd;
+    const formattedEndDate = endDate
+      ? new Date(endDate).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      : null;
+
     return (
       <div className={s.card}>
         <div className={s.header}>
@@ -57,17 +67,37 @@ export default function BillingCTA({
             <h3 className={s.title}>
               {plan.charAt(0).toUpperCase() + plan.slice(1)} Plan
             </h3>
-            <span className={`${s.badge} ${s.badgeSuccess}`}>Active</span>
+            <span
+              className={`${s.badge} ${isCanceling ? s.badgeWarning : s.badgeSuccess}`}
+            >
+              {isCanceling ? "Canceling" : "Active"}
+            </span>
           </div>
         </div>
+
+        {/* Cancellation Notice */}
+        {isCanceling && formattedEndDate && (
+          <div className={s.cancelNotice} data-testid="cancellation-notice">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4M12 16h.01" />
+            </svg>
+            <span>
+              Good until <strong>{formattedEndDate}</strong>
+            </span>
+          </div>
+        )}
+
         <div className={s.details}>
-          {(cancelAt || currentPeriodEnd) && (
-            <p className={s.meta}>
-              {cancelAt || cancelAtPeriodEnd
-                ? "Cancels on: "
-                : "Next billing date: "}
-              {new Date(cancelAt ?? currentPeriodEnd!).toLocaleDateString()}
-            </p>
+          {!isCanceling && formattedEndDate && (
+            <p className={s.meta}>Next billing date: {formattedEndDate}</p>
           )}
           <ul className={s.features}>
             <li>Unlimited idea generations</li>
@@ -81,7 +111,7 @@ export default function BillingCTA({
           disabled={loading}
           className={s.btn}
         >
-          {loading ? "Loading..." : "Manage Billing"}
+          {loading ? "Loading..." : "Manage Subscription"}
         </button>
       </div>
     );

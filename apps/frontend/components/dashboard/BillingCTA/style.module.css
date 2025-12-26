@@ -60,6 +60,33 @@
   color: #065f46;
 }
 
+.badgeWarning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.cancelNotice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: var(--space-md, 16px);
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.875rem;
+  color: #92400e;
+}
+
+.cancelNotice svg {
+  flex-shrink: 0;
+  stroke: #f59e0b;
+}
+
+.cancelNotice strong {
+  font-weight: 600;
+}
+
 .details {
   margin-bottom: var(--space-md, 16px);
 }

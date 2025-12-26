@@ -51,24 +51,56 @@ export async function signUp(
 }
 
 /**
- * Sign in an existing user via the UI
+ * Sign in an existing user
+ * 
+ * First tries the test API (faster), then falls back to UI login
  */
 export async function signIn(
   page: Page,
   user: { email: string; password: string } = TEST_USER
 ): Promise<void> {
+  // Try test API first (faster and more reliable)
+  const response = await page.request.post("/api/test/auth/signin", {
+    data: { email: user.email, password: user.password },
+  });
+
+  if (response.ok()) {
+    const data = await response.json();
+    console.log(`Signed in via test API: ${data.user?.email}`);
+    // Navigate to dashboard to verify session works
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
+    return;
+  }
+
+  // Fall back to UI login
+  console.log("Test auth API not available, using UI login...");
   await page.goto("/auth/login");
   await page.waitForLoadState("networkidle");
 
+  // Wait for form to be visible
+  const emailInput = page.locator('input#email, input[name="email"]').first();
+  await emailInput.waitFor({ state: "visible", timeout: 10000 });
+
   // Fill login form
-  await page.fill('input[name="email"], input[type="email"]', user.email);
-  await page.fill('input[name="password"], input[type="password"]', user.password);
+  await emailInput.fill(user.email);
+  await page.locator('input#password, input[name="password"]').first().fill(user.password);
 
   // Submit
   await page.click('button[type="submit"]');
 
-  // Wait for redirect to dashboard
-  await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+  // Wait for redirect to dashboard (or check for error)
+  try {
+    await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+  } catch {
+    // Check if there's a login error
+    const errorAlert = page.locator('[role="alert"], [class*="error"]');
+    if (await errorAlert.isVisible()) {
+      const errorText = await errorAlert.textContent();
+      throw new Error(`Login failed: ${errorText}`);
+    }
+    throw new Error(`Login failed - not redirected to dashboard. Current URL: ${page.url()}`);
+  }
 }
 
 /**
@@ -177,9 +209,32 @@ export async function getMe(page: Page): Promise<{
   email: string;
   plan: string;
   usage?: Record<string, { used: number; limit: number }>;
+  subscription?: {
+    isActive: boolean;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+    cancelAt: string | null;
+    canceledAt: string | null;
+  };
 }> {
   const response = await page.request.get("/api/me");
-  expect(response.ok()).toBeTruthy();
+  
+  // Check if response is OK
+  if (!response.ok()) {
+    const text = await response.text();
+    throw new Error(`/api/me failed with status ${response.status()}: ${text.slice(0, 200)}`);
+  }
+  
+  // Check if response is JSON (not HTML login page)
+  const contentType = response.headers()["content-type"] || "";
+  if (!contentType.includes("application/json")) {
+    const text = await response.text();
+    if (text.includes("<!DOCTYPE") || text.includes("<html")) {
+      throw new Error("Not authenticated - /api/me returned HTML (likely login page). Make sure signIn() completed successfully.");
+    }
+    throw new Error(`/api/me returned non-JSON: ${text.slice(0, 200)}`);
+  }
+  
   return response.json();
 }
 

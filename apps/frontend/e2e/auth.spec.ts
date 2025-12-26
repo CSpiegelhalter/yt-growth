@@ -8,7 +8,13 @@
  * 4. Sign out works
  */
 import { test, expect } from "@playwright/test";
-import { TEST_USER, signUp, signIn, signOut, isSignedIn } from "./fixtures/test-helpers";
+import {
+  TEST_USER,
+  signUp,
+  signIn,
+  signOut,
+  isSignedIn,
+} from "./fixtures/test-helpers";
 
 test.describe("Authentication", () => {
   // Use a unique email for signup tests to avoid conflicts
@@ -26,8 +32,14 @@ test.describe("Authentication", () => {
     await expect(page).toHaveURL(/signup/);
 
     // Fill signup form
-    await page.fill('input[name="email"], input[type="email"]', uniqueUser.email);
-    await page.fill('input[name="password"], input[type="password"]', uniqueUser.password);
+    await page.fill(
+      'input[name="email"], input[type="email"]',
+      uniqueUser.email
+    );
+    await page.fill(
+      'input[name="password"], input[type="password"]',
+      uniqueUser.password
+    );
 
     // Fill name if the field exists
     const nameInput = page.locator('input[name="name"]');
@@ -57,8 +69,14 @@ test.describe("Authentication", () => {
     await page.goto("/auth/signup");
 
     // Try to sign up with the same email as demo user (which is seeded)
-    await page.fill('input[name="email"], input[type="email"]', "demo@example.com");
-    await page.fill('input[name="password"], input[type="password"]', "Password123!");
+    await page.fill(
+      'input[name="email"], input[type="email"]',
+      "demo@example.com"
+    );
+    await page.fill(
+      'input[name="password"], input[type="password"]',
+      "Password123!"
+    );
 
     await page.click('button[type="submit"]');
 
@@ -75,16 +93,22 @@ test.describe("Authentication", () => {
     // Use the demo user that's seeded
     await page.goto("/auth/login");
 
-    await page.fill('input[name="email"], input[type="email"]', "demo@example.com");
-    await page.fill('input[name="password"], input[type="password"]', "demo123");
+    await page.fill(
+      'input[name="email"], input[type="email"]',
+      "demo@example.com"
+    );
+    await page.fill(
+      'input[name="password"], input[type="password"]',
+      "demo123"
+    );
 
     await page.click('button[type="submit"]');
 
     // Should redirect to dashboard
     await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
 
-    // Verify dashboard content loads
-    await expect(page.locator("main")).toBeVisible();
+    // Verify dashboard content loads (use .first() since there may be nested mains)
+    await expect(page.locator("main").first()).toBeVisible();
   });
 
   test("sign out works", async ({ page }) => {
@@ -95,7 +119,9 @@ test.describe("Authentication", () => {
     await expect(page).toHaveURL(/dashboard/);
 
     // Find and click sign out (might be in a dropdown menu)
-    const userMenu = page.locator('[aria-label="User menu"], [class*="userMenu"]');
+    const userMenu = page.locator(
+      '[aria-label="User menu"], [class*="userMenu"]'
+    );
     if (await userMenu.isVisible()) {
       await userMenu.click();
     }
@@ -103,19 +129,35 @@ test.describe("Authentication", () => {
     // Click sign out link
     await page.click('a[href*="signout"], button:has-text("Sign out")');
 
-    // Should redirect to home or login
-    await expect(page).toHaveURL(/login|\/$/);
+    // Wait for navigation (may stay on signout page with confirmation)
+    await page.waitForTimeout(3000);
 
-    // Verify we're signed out
+    // If on signout confirmation page, click confirm button
+    const confirmButton = page.locator(
+      'button:has-text("Sign out"), input[type="submit"]'
+    );
+    if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await confirmButton.click();
+      await page.waitForTimeout(2000);
+    }
+
+    // Verify we're signed out by trying to access dashboard
     await page.goto("/dashboard");
-    await expect(page).toHaveURL(/login/);
+    // Should redirect to login (or stay on dashboard with login prompt)
+    await expect(page).toHaveURL(/login|auth/, { timeout: 10000 });
   });
 
   test("invalid credentials shows error", async ({ page }) => {
     await page.goto("/auth/login");
 
-    await page.fill('input[name="email"], input[type="email"]', "nonexistent@example.com");
-    await page.fill('input[name="password"], input[type="password"]', "wrongpassword");
+    await page.fill(
+      'input[name="email"], input[type="email"]',
+      "nonexistent@example.com"
+    );
+    await page.fill(
+      'input[name="password"], input[type="password"]',
+      "wrongpassword"
+    );
 
     await page.click('button[type="submit"]');
 
@@ -128,4 +170,3 @@ test.describe("Authentication", () => {
     await expect(page).toHaveURL(/login/);
   });
 });
-

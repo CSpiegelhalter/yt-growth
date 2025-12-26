@@ -101,6 +101,9 @@ export async function getMeServer(user: BootstrapUser): Promise<Me> {
     subscription: {
       isActive: subscription.isActive,
       currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd ?? false,
+      cancelAt: subscription.cancelAt?.toISOString() ?? null,
+      canceledAt: subscription.canceledAt?.toISOString() ?? null,
     },
   };
 }

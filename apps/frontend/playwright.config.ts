@@ -4,10 +4,20 @@ import { defineConfig, devices } from "@playwright/test";
  * Playwright E2E Test Configuration
  *
  * Run tests:
- *   bun run test:e2e        # Headless, with orchestration
+ *   bun run test:e2e        # All tests (headless)
  *   bun run test:e2e:ui     # Interactive UI mode
- *   bun run test:e2e:headed # Headless with browser visible
- *   bun run test:e2e:stripe # Real Stripe checkout tests
+ *   bun run test:e2e:headed # With browser visible
+ *
+ * Test order (alphabetical by file):
+ *   1. channel-limits.spec.ts - Channel limit enforcement
+ *   2. gating.spec.ts - Feature gating & usage limits
+ *   3. happy-path.spec.ts - Core user journeys
+ *   4. smoke.spec.ts - Basic app functionality
+ *   5. youtube.spec.ts - Fake YouTube integration
+ *   6. z-stripe-checkout.spec.ts - Stripe checkout (runs last)
+ *
+ * Requirements for Stripe tests:
+ *   - Stripe CLI running: stripe listen --forward-to localhost:3000/api/integrations/stripe/webhook
  *
  * Environment:
  *   APP_TEST_MODE=1   - Enables test-only API routes
@@ -15,12 +25,14 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: false, // Run sequentially for reliability
+  // Run tests sequentially to avoid state conflicts (all tests share the same user)
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
-  workers: 1, // Single worker for predictable state
+  // Single worker to prevent billing state conflicts between tests
+  workers: 1,
   reporter: process.env.CI ? "github" : [["list"], ["html", { open: "never" }]],
-  timeout: 60_000, // 60 seconds per test
+  timeout: 60_000, // 1 minute per test
   expect: {
     timeout: 10_000, // 10 seconds for assertions
   },
@@ -45,30 +57,15 @@ export default defineConfig({
       name: "cleanup",
       testMatch: /global-teardown\.ts/,
     },
-    // Main test project
+    // Main test project - chromium only (mobile disabled to prevent state conflicts)
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
-      dependencies: ["setup"],
-      // Skip stripe checkout tests in normal E2E (they need special setup)
-      testIgnore: /stripe-checkout/,
-    },
-    // Mobile testing
-    {
-      name: "mobile",
-      use: { ...devices["Pixel 5"] },
-      dependencies: ["setup"],
-      testIgnore: /gating|billing|stripe-checkout/, // Skip complex flows on mobile
-    },
-    // Stripe checkout tests - separate project, no fake mode
-    {
-      name: "stripe",
-      testMatch: /stripe-checkout\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
-        // Headed mode for Stripe (helps with debugging)
-        headless: false,
+        // Headed mode helps with Stripe checkout debugging
+        headless: process.env.CI ? true : false,
       },
+      dependencies: ["setup"],
     },
   ],
   webServer: {

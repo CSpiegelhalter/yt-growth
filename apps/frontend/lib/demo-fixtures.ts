@@ -32,7 +32,8 @@ export function isDemoMode(): boolean {
  * This is ideal when quota is exhausted and you still want realistic, high-volume data.
  */
 export function isYouTubeMockMode(): boolean {
-  const isMock = process.env.YT_MOCK_MODE === "1";
+  // Check both env vars for backwards compatibility
+  const isMock = process.env.YT_MOCK_MODE === "1" || process.env.FAKE_YOUTUBE === "1";
   return isMock;
 }
 

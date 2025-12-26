@@ -82,7 +82,15 @@ function isEntitledFromStripe(
   if (!periodEnd) return false;
   if (periodEnd.getTime() <= Date.now()) return false;
   const s = (sub.status ?? "").toLowerCase();
-  return ["active", "trialing", "past_due", "canceled", "unpaid"].includes(s);
+
+  // For "canceled" status, only entitled if cancel_at_period_end is true
+  // (user chose to cancel at end of billing period, keeps access until then)
+  // If cancel_at_period_end is false, it's an immediate cancellation - no access
+  if (s === "canceled") {
+    return Boolean(sub.cancel_at_period_end);
+  }
+
+  return ["active", "trialing", "past_due", "unpaid"].includes(s);
 }
 
 /**
