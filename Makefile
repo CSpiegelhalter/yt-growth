@@ -53,7 +53,6 @@ db-apply: db-up
 
 db-migrate: db-diff db-apply
 
-FRONTEND_DIR := apps/frontend
 PRISMA_SCHEMA := prisma/schema.prisma
 DB_URL := postgres://app:app@localhost:5432/appdb?sslmode=disable
 
@@ -61,10 +60,10 @@ DB_URL := postgres://app:app@localhost:5432/appdb?sslmode=disable
 prisma: prisma-pull prisma-generate
 
 prisma-pull:
-	cd $(FRONTEND_DIR) && DATABASE_URL="$(DB_URL)" bunx prisma db pull --schema $(PRISMA_SCHEMA)
+	DATABASE_URL="$(DB_URL)" bunx prisma db pull --schema $(PRISMA_SCHEMA)
 
 prisma-generate:
-	cd $(FRONTEND_DIR) && DATABASE_URL="$(DB_URL)" bunx prisma generate --schema $(PRISMA_SCHEMA)
+	DATABASE_URL="$(DB_URL)" bunx prisma generate --schema $(PRISMA_SCHEMA)
 
 
 
