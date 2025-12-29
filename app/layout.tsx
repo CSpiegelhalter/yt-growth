@@ -64,8 +64,11 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
+    ],
+    apple: "/apple-touch-icon.svg",
   },
   manifest: "/manifest.json",
   alternates: {
@@ -81,8 +84,8 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
         <meta name="theme-color" content={BRAND.themeColor} />
         {/* Structured Data */}
         <script

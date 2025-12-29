@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import { LearnCTA } from "@/components/LearnCTA";
+import { learnArticles } from "../articles";
 import s from "../style.module.css";
 
 export const metadata: Metadata = {
@@ -21,12 +22,28 @@ export const metadata: Metadata = {
 };
 
 export default function YouTubeRetentionAnalysisPage() {
+  const currentSlug = "youtube-retention-analysis";
+
   return (
     <main className={s.page}>
+      {/* Article Navigation */}
+      <nav className={s.articleNav}>
+        <span className={s.articleNavLabel}>Topics:</span>
+        {learnArticles.map((article) => (
+          <Link
+            key={article.slug}
+            href={`/learn/${article.slug}`}
+            className={`${s.articleNavLink} ${article.slug === currentSlug ? s.articleNavLinkActive : ""}`}
+          >
+            {article.label}
+          </Link>
+        ))}
+      </nav>
+
       {/* Hero */}
       <header className={s.hero}>
         <nav className={s.breadcrumb}>
-          <Link href="/">Home</Link> / <Link href="/learn/youtube-channel-audit">Learn</Link> / Retention Analysis
+          <Link href="/">Home</Link> / <Link href="/learn">Learn</Link> / Retention Analysis
         </nav>
         <h1 className={s.title}>YouTube Retention Analysis</h1>
         <p className={s.subtitle}>
