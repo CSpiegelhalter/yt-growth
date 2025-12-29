@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import s from "./style.module.css";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
-import { formatCompact } from "@/lib/format";
+import { formatCompact, formatCompactFloored } from "@/lib/format";
 import type {
   Me,
   Channel,
@@ -380,7 +380,7 @@ function CompetitorVideoCard({
 
         {/* Views/day badge */}
         <span className={s.vpdBadge}>
-          {formatCompact(video.derived.viewsPerDay)}/day
+          {formatCompactFloored(video.derived.viewsPerDay)}/day
         </span>
 
         {/* Velocity badge if available */}

@@ -6,6 +6,21 @@
 
 import { callLLM } from "./llm";
 import type { IdeaBoardData, Idea, ProofVideo } from "@/types/api";
+import { normalizeIdeaBoardData } from "@/lib/idea-board-normalize";
+
+function extractYouTubeVideoId(candidate: string | null | undefined): string | null {
+  const s = String(candidate ?? "").trim();
+  if (!s) return null;
+  if (/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
+  const m = s.match(/(?:v=|\/vi\/|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m?.[1] ?? null;
+}
+
+function youTubeThumbFromVideoId(candidate: string | null | undefined): string | null {
+  const id = extractYouTubeVideoId(candidate);
+  if (!id) return null;
+  return `https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg`;
+}
 
 type ProofVideoInput = {
   videoId: string;
@@ -269,12 +284,15 @@ Each idea should feel like it was custom-made for THIS creator, not generic advi
       return createFallbackIdeaBoard(input);
     }
 
-    // Enrich ideas with missing proof video data
-    const enrichedIdeas = parsed.ideas.map((idea, index) => ({
-      ...idea,
-      id: idea.id || `idea-${index + 1}`,
-      proof: enrichProofData(idea.proof, input.proofVideos),
-    }));
+    // Enrich ideas with missing proof video data, then normalize shape so UI never gets partial ideas.
+    const enrichedIdeas = parsed.ideas.map((idea, index) => {
+      const enriched = {
+        ...idea,
+        id: idea.id || `idea-${index + 1}`,
+        proof: enrichProofData(idea.proof, input.proofVideos),
+      };
+      return enriched;
+    });
 
     console.log(
       "[IdeaBoard] Returning",
@@ -282,7 +300,7 @@ Each idea should feel like it was custom-made for THIS creator, not generic advi
       "enriched ideas"
     );
 
-    return {
+    const rawBoard: IdeaBoardData = {
       channelId: input.channelId,
       channelTitle: input.channelTitle,
       range: input.range,
@@ -296,6 +314,11 @@ Each idea should feel like it was custom-made for THIS creator, not generic advi
       },
       similarChannels: input.similarChannels,
     };
+
+    return (
+      normalizeIdeaBoardData(rawBoard, { nicheKeywords: input.nicheKeywords }) ??
+      rawBoard
+    );
   } catch (err) {
     console.error("[IdeaBoard] Generation failed:", err);
     console.error(
@@ -357,10 +380,25 @@ Generate ${input.count} completely different ideas.`;
     }
 
     const ideas = JSON.parse(jsonMatch[0]) as Idea[];
-    return ideas.map((idea, index) => ({
+    const withIds = ideas.map((idea, index) => ({
       ...idea,
       id: idea.id || `new-idea-${Date.now()}-${index}`,
     }));
+    // Normalize into a board shape and extract normalized ideas (ensures hooks/titles/keywords exist).
+    const normalizedBoard = normalizeIdeaBoardData(
+      {
+        channelId: "TEMP",
+        channelTitle: input.channelTitle,
+        range: "7d",
+        generatedAt: new Date().toISOString(),
+        cachedUntil: new Date(Date.now() + 60_000).toISOString(),
+        ideas: withIds,
+        nicheInsights: { momentumNow: [], patternsToCopy: [], gapsToExploit: [] },
+        similarChannels: [],
+      },
+      { nicheKeywords: input.nicheKeywords }
+    );
+    return normalizedBoard?.ideas ?? withIds;
   } catch (err) {
     console.error("Generate more ideas failed:", err);
     return [];
@@ -387,7 +425,10 @@ function enrichProofData(
       title: normalizeText(v.title, "Untitled video"),
       channelId: v.channelId,
       channelTitle: normalizeText(v.channelTitle, "Unknown channel"),
-      thumbnailUrl: v.thumbnailUrl ?? "",
+      thumbnailUrl:
+        v.thumbnailUrl ??
+        youTubeThumbFromVideoId(v.videoId) ??
+        "",
       publishedAt: v.publishedAt,
       metrics: { views: v.views, viewsPerDay: v.viewsPerDay },
       whyItWorked: ["Strong title and thumbnail combination"],
@@ -402,6 +443,9 @@ function enrichProofData(
 
   const enriched: ProofVideo[] = proof.basedOn.map((p) => {
     const fullVideo = proofMap.get(p.videoId);
+    const derivedThumb =
+      youTubeThumbFromVideoId(p.videoId) ??
+      youTubeThumbFromVideoId(fullVideo?.videoId);
     return {
       videoId: p.videoId,
       title: normalizeText(
@@ -413,7 +457,7 @@ function enrichProofData(
         p.channelTitle,
         normalizeText(fullVideo?.channelTitle, "Unknown channel")
       ),
-      thumbnailUrl: p.thumbnailUrl || fullVideo?.thumbnailUrl || "",
+      thumbnailUrl: p.thumbnailUrl || fullVideo?.thumbnailUrl || derivedThumb || "",
       publishedAt: p.publishedAt || fullVideo?.publishedAt || "",
       metrics: p.metrics || {
         views: fullVideo?.views ?? 0,

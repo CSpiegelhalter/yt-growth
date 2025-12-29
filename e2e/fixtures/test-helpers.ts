@@ -107,15 +107,18 @@ export async function signIn(
  * Sign out the current user
  */
 export async function signOut(page: Page): Promise<void> {
-  // Try to find and click sign out link
-  const signOutLink = page.getByRole("link", { name: /sign out|logout/i });
-  if (await signOutLink.isVisible()) {
-    await signOutLink.click();
-    await page.waitForURL(/login|\/$/);
+  // Try to find and click sign out control (may be a link or button)
+  const signOutControl = page
+    .getByRole("link", { name: /sign out|logout/i })
+    .or(page.getByRole("button", { name: /sign out|logout/i }));
+
+  if (await signOutControl.isVisible().catch(() => false)) {
+    await signOutControl.click();
+    await page.waitForURL(/\/($|\?)|login|auth/i, { timeout: 15000 });
     return;
   }
 
-  // Fallback: navigate directly
+  // Fallback: attempt the auth endpoint (may show confirmation in some configs)
   await page.goto("/api/auth/signout");
   await page.waitForLoadState("networkidle");
 }

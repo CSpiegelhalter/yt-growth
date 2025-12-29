@@ -26,4 +26,24 @@ export function formatCompactRounded(num: number): string {
   return num.toFixed(0);
 }
 
+/**
+ * Compact formatter that always rounds DOWN at the displayed precision.
+ *
+ * - < 1000: whole numbers (floor)
+ * - >= 1000: 1 decimal K/M, floored (e.g. 1.09K -> 1.0K)
+ */
+export function formatCompactFloored(num: number): string {
+  if (num >= 1_000_000) {
+    const scaled = num / 1_000_000;
+    const floored = Math.floor(scaled * 10) / 10;
+    return `${floored.toFixed(1)}M`;
+  }
+  if (num >= 1_000) {
+    const scaled = num / 1_000;
+    const floored = Math.floor(scaled * 10) / 10;
+    return `${floored.toFixed(1)}K`;
+  }
+  return Math.floor(num).toFixed(0);
+}
+
 

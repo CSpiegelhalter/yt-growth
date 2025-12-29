@@ -37,6 +37,7 @@ import {
   isYouTubeMockMode,
 } from "@/lib/demo-fixtures";
 import { generateIdeaBoardPlan, generateMoreIdeas } from "@/lib/idea-board-llm";
+import { normalizeIdeaBoardData } from "@/lib/idea-board-normalize";
 import type { IdeaBoardData, SimilarChannel } from "@/types/api";
 
 const ParamsSchema = z.object({
@@ -162,7 +163,9 @@ export async function GET(
           typeof cached.outputJson === "string"
             ? JSON.parse(cached.outputJson)
             : cached.outputJson;
-        return Response.json({ ...data, fromCache: true });
+        const normalized =
+          normalizeIdeaBoardData(data) ?? (data as IdeaBoardData);
+        return Response.json({ ...normalized, fromCache: true });
       } catch {
         // Fall through to return empty state
       }
@@ -500,6 +503,11 @@ export async function POST(
         "ideas"
       );
     }
+
+    // Normalize before saving/returning so the UI always has hooks/titles/keywords populated.
+    ideaBoardData =
+      normalizeIdeaBoardData(ideaBoardData, { nicheKeywords: keywords }) ??
+      ideaBoardData;
 
     // Save to database
     const cachedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours

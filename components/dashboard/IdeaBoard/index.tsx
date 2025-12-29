@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import s from "./style.module.css";
 import type {
   IdeaBoardData,
@@ -381,24 +380,6 @@ export default function IdeaBoard({
   );
 }
 
-function safeImageSrc(src: string | null | undefined): string | null {
-  if (!src) return null;
-  const s = String(src).trim();
-  if (!s) return null;
-
-  // Handle protocol-relative URLs like //i.ytimg.com/...
-  const normalized = s.startsWith("//") ? `https:${s}` : s;
-
-  // Allow absolute URLs. For relative URLs, only allow app-local paths.
-  try {
-    // eslint-disable-next-line no-new
-    new URL(normalized);
-    return normalized;
-  } catch {
-    return normalized.startsWith("/") ? normalized : null;
-  }
-}
-
 /* ================================================
    IDEA CARD - Vertical Feed Card
    ================================================ */
@@ -419,9 +400,10 @@ function IdeaCard({
   onCopyHook: (text: string) => void;
   copiedId: string | null;
 }) {
-  const topHook = idea.hooks[0];
-  const proofVideos = idea.proof.basedOn.slice(0, 3);
-  const proofThumbs = proofVideos.map((pv) => safeImageSrc(pv.thumbnailUrl));
+  const hooksArr = Array.isArray((idea as any)?.hooks)
+    ? ((idea as any).hooks as any[])
+    : [];
+  const topHook = hooksArr[0] as any;
 
   return (
     <article className={s.ideaCard}>
@@ -455,39 +437,6 @@ function IdeaCard({
             <span className={s.hookText}>
               &ldquo;{truncate(topHook.text, 80)}&rdquo;
             </span>
-          </div>
-        )}
-
-        {/* Inspired by strip */}
-        {proofVideos.length > 0 && (
-          <div className={s.inspiredBy}>
-            <span className={s.inspiredLabel}>Inspired by:</span>
-            <div className={s.inspiredThumbs}>
-              {proofVideos.map((pv, idx) => (
-                <div
-                  key={pv.videoId}
-                  className={s.inspiredThumb}
-                  title={pv.title}
-                >
-                  {proofThumbs[idx] ? (
-                    <Image
-                      src={proofThumbs[idx] as string}
-                      alt={`${pv.title} thumbnail`}
-                      width={48}
-                      height={27}
-                      sizes="48px"
-                    />
-                  ) : (
-                    <div className={s.inspiredThumbPlaceholder} aria-hidden />
-                  )}
-                </div>
-              ))}
-              {proofVideos[0] && (
-                <span className={s.inspiredChannel}>
-                  {proofVideos[0].channelTitle}
-                </span>
-              )}
-            </div>
           </div>
         )}
       </div>
@@ -565,6 +514,16 @@ function IdeaDetailSheet({
   const [extraTitles, setExtraTitles] = useState<string[]>([]);
   const [extraKeywords, setExtraKeywords] = useState<string[]>([]);
 
+  const keywordObjs = Array.isArray((idea as any)?.keywords)
+    ? ((idea as any).keywords as any[])
+    : [];
+  const hookObjs = Array.isArray((idea as any)?.hooks)
+    ? ((idea as any).hooks as any[])
+    : [];
+  const titleObjs = Array.isArray((idea as any)?.titles)
+    ? ((idea as any).titles as any[])
+    : [];
+
   // Lock body scroll
   useEffect(() => {
     const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -595,11 +554,14 @@ function IdeaDetailSheet({
             ideaId: idea.id,
             title: idea.title,
             summary: idea.angle,
-            keywords: idea.keywords.slice(0, 5).map((k) => k.text),
-            hooks: idea.hooks.slice(0, 2).map((h) => h.text),
-            inspiredByVideoIds: idea.proof.basedOn
-              .slice(0, 3)
-              .map((p) => p.videoId),
+            keywords: keywordObjs
+              .slice(0, 5)
+              .map((k) => String(k?.text ?? ""))
+              .filter(Boolean),
+            hooks: hookObjs
+              .slice(0, 2)
+              .map((h) => String(h?.text ?? ""))
+              .filter(Boolean),
           },
         }),
       });
@@ -621,17 +583,19 @@ function IdeaDetailSheet({
   }, [channelId, generatingMore, idea]);
 
   const allKeywords = [
-    ...idea.keywords.map((k) => k.text),
+    ...keywordObjs.map((k) => String(k?.text ?? "")).filter(Boolean),
     ...extraKeywords,
   ].join(", ");
 
   // Combine original + extra content
-  const allHooks = [...idea.hooks.map((h) => h.text), ...extraHooks];
-  const allTitles = [...idea.titles.map((t) => t.text), ...extraTitles];
-
-  // Limit inspired by to 6 max, no load more
-  const proofVideos = idea.proof.basedOn.slice(0, 6);
-  const proofThumbs = proofVideos.map((pv) => safeImageSrc(pv.thumbnailUrl));
+  const allHooks = [
+    ...hookObjs.map((h) => String(h?.text ?? "")).filter(Boolean),
+    ...extraHooks,
+  ];
+  const allTitles = [
+    ...titleObjs.map((t) => String(t?.text ?? "")).filter(Boolean),
+    ...extraTitles,
+  ];
 
   return (
     <div className={s.sheetOverlay} onClick={onClose}>
@@ -702,20 +666,29 @@ function IdeaDetailSheet({
               Opening lines to grab attention in the first 5 seconds
             </p>
             <div className={s.hookCards}>
-              {idea.hooks.map((hook, i) => (
+              {hookObjs.map((hook, i) => (
                 <div key={`orig-${i}`} className={s.hookCard}>
-                  <p className={s.hookCardText}>&ldquo;{hook.text}&rdquo;</p>
+                  <p className={s.hookCardText}>
+                    &ldquo;{String((hook as any)?.text ?? "")}&rdquo;
+                  </p>
                   <div className={s.hookCardFooter}>
                     <div className={s.hookTags}>
-                      {hook.typeTags.slice(0, 2).map((tag) => (
-                        <span key={tag} className={s.hookTag}>
-                          {tag}
-                        </span>
-                      ))}
+                      {(Array.isArray((hook as any)?.typeTags)
+                        ? ((hook as any).typeTags as any[])
+                        : []
+                      )
+                        .slice(0, 2)
+                        .map((tag) => (
+                          <span key={String(tag)} className={s.hookTag}>
+                            {String(tag)}
+                          </span>
+                        ))}
                     </div>
                     <button
                       className={s.copyIconBtn}
-                      onClick={() => onCopy(hook.text, `hook-${i}`)}
+                      onClick={() =>
+                        onCopy(String((hook as any)?.text ?? ""), `hook-${i}`)
+                      }
                       title="Copy"
                     >
                       {copiedId === `hook-${i}` ? (
@@ -799,21 +772,28 @@ function IdeaDetailSheet({
               Title options with style patterns that work
             </p>
             <div className={s.titleCards}>
-              {idea.titles.map((title, i) => (
+              {titleObjs.map((title, i) => (
                 <div key={`orig-${i}`} className={s.titleCard}>
                   <div className={s.titleCardContent}>
-                    <p className={s.titleCardText}>{title.text}</p>
+                    <p className={s.titleCardText}>
+                      {String((title as any)?.text ?? "")}
+                    </p>
                     <div className={s.styleTags}>
-                      {title.styleTags.map((tag) => (
-                        <span key={tag} className={s.styleTag}>
-                          {tag}
+                      {(Array.isArray((title as any)?.styleTags)
+                        ? ((title as any).styleTags as any[])
+                        : []
+                      ).map((tag) => (
+                        <span key={String(tag)} className={s.styleTag}>
+                          {String(tag)}
                         </span>
                       ))}
                     </div>
                   </div>
                   <button
                     className={s.copyIconBtn}
-                    onClick={() => onCopy(title.text, `title-${i}`)}
+                    onClick={() =>
+                      onCopy(String((title as any)?.text ?? ""), `title-${i}`)
+                    }
                     title="Copy"
                   >
                     {copiedId === `title-${i}` ? (
@@ -964,13 +944,15 @@ function IdeaDetailSheet({
             </div>
             <p className={s.sectionIntro}>Tags for discoverability</p>
             <div className={s.keywordChips}>
-              {idea.keywords.map((kw, i) => (
+              {keywordObjs.map((kw, i) => (
                 <button
                   key={i}
                   className={s.keywordChip}
-                  onClick={() => onCopy(kw.text, `kw-${i}`)}
+                  onClick={() =>
+                    onCopy(String((kw as any)?.text ?? ""), `kw-${i}`)
+                  }
                 >
-                  {kw.text}
+                  {String((kw as any)?.text ?? "")}
                   {copiedId === `kw-${i}` && (
                     <span className={s.chipCheck}>✓</span>
                   )}
@@ -1018,45 +1000,6 @@ function IdeaDetailSheet({
                       )}
                     </div>
                   ))}
-              </div>
-            </section>
-          )}
-
-          {/* Inspired By Section - moved to bottom */}
-          {proofVideos.length > 0 && (
-            <section className={s.sheetSection}>
-              <h3 className={s.sectionTitle}>Inspired By</h3>
-              <p className={s.sectionIntro}>
-                Recent winners that sparked this idea
-              </p>
-              <div className={s.proofScroller}>
-                {proofVideos.map((pv, idx) => (
-                  <a
-                    key={pv.videoId}
-                    href={`/competitors/video/${pv.videoId}`}
-                    className={s.proofCard}
-                  >
-                    <div className={s.proofThumb}>
-                      {proofThumbs[idx] ? (
-                        <Image
-                          src={proofThumbs[idx] as string}
-                          alt={`${pv.title} thumbnail`}
-                          fill
-                          sizes="200px"
-                        />
-                      ) : (
-                        <div className={s.proofThumbPlaceholder} aria-hidden />
-                      )}
-                      <span className={s.proofViews}>
-                        {formatCompact(pv.metrics.viewsPerDay)}/day
-                      </span>
-                    </div>
-                    <div className={s.proofInfo}>
-                      <h4 className={s.proofTitle}>{truncate(pv.title, 50)}</h4>
-                      <span className={s.proofChannel}>{pv.channelTitle}</span>
-                    </div>
-                  </a>
-                ))}
               </div>
             </section>
           )}

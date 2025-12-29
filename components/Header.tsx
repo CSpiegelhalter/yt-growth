@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import s from "./Header.module.css";
 import { BRAND } from "@/lib/brand";
 
@@ -27,6 +27,7 @@ export function Header() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const autoSignOutTriggeredRef = useRef(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -49,8 +50,11 @@ export function Header() {
         // Handle stale session - if we get 401, the session is invalid
         // Force sign out to clear the stale JWT
         if (res.status === 401) {
-          console.warn("Session appears stale, signing out...");
-          window.location.href = "/api/auth/signout";
+          if (!autoSignOutTriggeredRef.current) {
+            autoSignOutTriggeredRef.current = true;
+            console.warn("Session appears stale, signing out...");
+            await signOut({ callbackUrl: "/" });
+          }
           return;
         }
 
@@ -434,7 +438,11 @@ export function Header() {
                     <Link
                       href="/api/auth/signout"
                       className={`${s.dropdownItem} ${s.dropdownSignout}`}
-                      onClick={() => setMenuOpen(false)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setMenuOpen(false);
+                        void signOut({ callbackUrl: "/" });
+                      }}
                     >
                       <DropdownIcon type="logout" />
                       Sign out

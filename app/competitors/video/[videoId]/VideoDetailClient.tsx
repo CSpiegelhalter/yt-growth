@@ -7,7 +7,7 @@ import Image from "next/image";
 import s from "./style.module.css";
 import type { CompetitorVideoAnalysis, CompetitorVideo } from "@/types/api";
 import { copyToClipboard } from "@/components/ui/Toast";
-import { formatCompact } from "@/lib/format";
+import { formatCompact, formatCompactFloored } from "@/lib/format";
 
 type Props = {
   videoId: string;
@@ -173,10 +173,10 @@ export default function VideoDetailClient({
 
   if (loading) {
     return (
-      <main className={s.page}>
+      <main className={s.loadingPage}>
         <div className={s.loading}>
           <div className={s.spinner} />
-          <p>{loadingStage}</p>
+          <p className={s.loadingStage}>{loadingStage}</p>
           <div className={s.loadingProgress}>
             <div
               className={s.progressTrack}
@@ -375,7 +375,7 @@ export default function VideoDetailClient({
             />
             <MetricCard
               label="Views/Day"
-              value={formatCompact(video.derived.viewsPerDay)}
+              value={formatCompactFloored(video.derived.viewsPerDay)}
               highlight
             />
             {video.derived.velocity24h !== undefined && (

@@ -52,35 +52,84 @@ export default function VideoInsightsClient({
   const [loading, setLoading] = useState(!initialInsights);
   const [error, setError] = useState<InsightsError | null>(null);
   const lastAutoFetchKeyRef = useRef<string | null>(null);
-  const [llmRefreshing, setLlmRefreshing] = useState(false);
   const llmAutoKeyRef = useRef<string | null>(null);
   const [llmProgress, setLlmProgress] = useState(0);
+  const [loadingStage, setLoadingStage] = useState("Preparing analysis...");
+  const [allowPartial, setAllowPartial] = useState(false);
 
-  const refreshInsights = useCallback(async () => {
-    if (!channelId) return;
-    setLlmRefreshing(true);
-    try {
-      const res = await fetch(
-        `/api/me/channels/${channelId}/videos/${videoId}/insights`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ range, llmOnly: true }),
+  const refreshInsights =
+    useCallback(async (): Promise<VideoInsightsResponse> => {
+      if (!channelId) throw new Error("No channel selected");
+      setLoadingStage("Generating AI insights...");
+      try {
+        const res = await fetch(
+          `/api/me/channels/${channelId}/videos/${videoId}/insights`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ range, llmOnly: true }),
+          }
+        );
+        if (!res.ok) {
+          let body: any = null;
+          try {
+            body = await res.json();
+          } catch {
+            body = null;
+          }
+          const msg =
+            body?.error ?? body?.message ?? `Request failed (${res.status})`;
+          throw new Error(String(msg));
         }
-      );
-      if (res.ok) {
-        const data = (await res.json()) as VideoInsightsResponse;
-        setInsights(data);
+        return (await res.json()) as VideoInsightsResponse;
+      } finally {
+        // no-op; caller owns loading state
       }
-    } finally {
-      setLlmRefreshing(false);
-    }
-  }, [channelId, videoId, range]);
+    }, [channelId, videoId, range]);
 
-  // Smooth progress bar for "insights generation" (we don't have real progress).
+  const needsBlockingLLM =
+    !!insights &&
+    !allowPartial &&
+    !insights.demo &&
+    !!channelId &&
+    insights.llmInsights == null;
+  const isBlockingLoading = loading || needsBlockingLLM;
+
+  // Prevent scroll while we're showing the blocking loader.
   useEffect(() => {
-    if (!llmRefreshing) return;
+    if (!isBlockingLoading) return;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      document.body.style.overflow = prevBodyOverflow;
+    };
+  }, [isBlockingLoading]);
+
+  // Smooth progress bar + stage text while the analysis is running (we don't have real progress).
+  useEffect(() => {
+    if (!isBlockingLoading) return;
     setLlmProgress(12);
+    setLoadingStage("Fetching video analytics...");
+
+    const stages: Array<{ atMs: number; text: string }> = [
+      { atMs: 0, text: "Fetching video analytics..." },
+      { atMs: 1400, text: "Comparing to your channel baseline..." },
+      { atMs: 3200, text: "Reading top comments..." },
+      { atMs: 5200, text: "Generating recommendations..." },
+    ];
+    const startedAt = Date.now();
+
+    const stageTimer = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const next =
+        [...stages].reverse().find((s) => elapsed >= s.atMs)?.text ??
+        "Analyzing...";
+      setLoadingStage(next);
+    }, 450);
+
     const t = window.setInterval(() => {
       setLlmProgress((p) => {
         const target = 92;
@@ -88,12 +137,16 @@ export default function VideoInsightsClient({
         return Math.min(target, next);
       });
     }, 350);
-    return () => window.clearInterval(t);
-  }, [llmRefreshing]);
+    return () => {
+      window.clearInterval(stageTimer);
+      window.clearInterval(t);
+    };
+  }, [isBlockingLoading]);
 
   const fetchInsights = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setAllowPartial(false);
     try {
       const url = channelId
         ? `/api/me/channels/${channelId}/videos/${videoId}/insights?range=${range}`
@@ -147,18 +200,29 @@ export default function VideoInsightsClient({
         return;
       }
 
-      const data = await res.json();
-      setInsights(data);
+      const data = (await res.json()) as VideoInsightsResponse;
 
-      // Performance: auto-generate full insights in a separate request if missing.
-      // This keeps initial page load fast (analytics/derived first, narrative later).
+      // Make this page blocking: if AI insights are missing, wait for the llmOnly
+      // request to complete before rendering the rest of the page.
       if (data && !data.demo && data.llmInsights == null && channelId) {
         const k = `${channelId}:${videoId}:${range}`;
         if (llmAutoKeyRef.current !== k) {
           llmAutoKeyRef.current = k;
-          // Don't await; keep UI responsive
-          void refreshInsights();
         }
+
+        try {
+          const full = await refreshInsights();
+          setLlmProgress(100);
+          setInsights(full);
+        } catch (err) {
+          // Fallback: show non-AI analytics instead of blocking forever.
+          console.error("Failed to generate AI insights:", err);
+          setAllowPartial(true);
+          setInsights(data);
+        }
+      } else {
+        setLlmProgress(100);
+        setInsights(data);
       }
     } catch (err) {
       console.error("Failed to fetch insights:", err);
@@ -190,12 +254,31 @@ export default function VideoInsightsClient({
   }, [videoId, initialInsights, fetchInsights, channelId, range]);
 
   // Loading state
-  if (loading && !insights) {
+  if (isBlockingLoading && (!insights || needsBlockingLLM)) {
     return (
-      <main className={s.page}>
+      <main className={s.loadingPage}>
         <div className={s.loading}>
           <div className={s.spinner} />
-          <p>Analyzing your video...</p>
+          <p className={s.loadingStage}>{loadingStage}</p>
+          <div className={s.loadingProgress}>
+            <div
+              className={s.progressTrack}
+              role="progressbar"
+              aria-label="Analyzing your video"
+              aria-valuenow={Math.round(Math.max(8, llmProgress || 12))}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className={s.progressFill}
+                style={{ width: `${Math.max(8, llmProgress || 12)}%` }}
+              />
+            </div>
+            <div className={s.loadingProgressHint}>
+              This can take a bit on first view (we cache results for next
+              time).
+            </div>
+          </div>
         </div>
       </main>
     );
@@ -316,26 +399,6 @@ export default function VideoInsightsClient({
       <Link href={backLink.href} className={s.backLink}>
         ← {backLink.label}
       </Link>
-
-      {/* Insights generation progress (background) */}
-      {!insights.demo && insights.llmInsights == null && channelId && (
-        <div className={s.insightsProgress}>
-          <div className={s.insightsProgressTitle}>Generating insights…</div>
-          <div
-            className={s.progressTrack}
-            role="progressbar"
-            aria-label="Generating insights"
-          >
-            <div
-              className={s.progressFill}
-              style={{ width: `${Math.max(8, llmProgress || 12)}%` }}
-            />
-          </div>
-          <div className={s.insightsProgressHint}>
-            You can keep browsing — this usually takes 5–20 seconds.
-          </div>
-        </div>
-      )}
 
       {/* Demo Banner */}
       {insights.demo && (

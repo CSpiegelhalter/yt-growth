@@ -3,8 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "i.ytimg.com", pathname: "/**" },
-      { protocol: "https", hostname: "yt3.ggpht.com", pathname: "/**" },
+      // YouTube thumbnails + channel avatars (hosts can vary by region/CDN)
+      { protocol: "https", hostname: "**.ytimg.com", pathname: "/**" },
+      { protocol: "https", hostname: "**.ggpht.com", pathname: "/**" },
     ],
   },
   experimental: { serverActions: { allowedOrigins: ["*"] } },

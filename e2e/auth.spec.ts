@@ -129,17 +129,8 @@ test.describe("Authentication", () => {
     // Click sign out link
     await page.click('a[href*="signout"], button:has-text("Sign out")');
 
-    // Wait for navigation (may stay on signout page with confirmation)
-    await page.waitForTimeout(3000);
-
-    // If on signout confirmation page, click confirm button
-    const confirmButton = page.locator(
-      'button:has-text("Sign out"), input[type="submit"]'
-    );
-    if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await confirmButton.click();
-      await page.waitForTimeout(2000);
-    }
+    // Should sign out immediately and land on the homepage
+    await expect(page).toHaveURL(/\/($|\?)/, { timeout: 15000 });
 
     // Verify we're signed out by trying to access dashboard
     await page.goto("/dashboard");

@@ -901,6 +901,10 @@ function computeStrategicInsights(input: {
     difficultyReasons.push("Long-form requires significant production time");
   }
 
+  // ===== FORMAT SIGNALS (used for both angles + display) =====
+  const likelyFormat = guessLikelyFormat(title, description);
+  const productionLevel = guessProductionLevel(durationMin, views);
+
   // ===== OPPORTUNITY SCORE =====
   let opportunityScore = 5;
   const gaps: string[] = [];
@@ -928,18 +932,21 @@ function computeStrategicInsights(input: {
     opportunityScore += 0.5;
   }
 
-  // Fresh angles based on common patterns
-  if (!hasCuriosityGap) {
-    angles.push("Add a stronger curiosity hook in your title");
-  }
-  if (!hasNumber) {
-    angles.push("Use specific numbers (e.g., '5 Ways', 'In 30 Days')");
-  }
-  angles.push("Personal case study angle - 'I tried X for Y days'");
-  angles.push("Contrarian take - challenge the assumptions");
-  if (durationMin > 10) {
-    angles.push("Make a shorter, more focused version");
-  }
+  // Fresh angles (dynamic + video-specific)
+  angles.push(
+    ...generateFreshAngles({
+      seed: `${video.videoId}|${title}`,
+      title,
+      description,
+      tags: videoDetails.tags ?? [],
+      likelyFormat,
+      durationMin,
+      productionLevel,
+      hasCuriosityGap,
+      hasNumber,
+      commentsAnalysis,
+    })
+  );
 
   // Comment-based opportunities
   if (
@@ -1053,30 +1060,6 @@ function computeStrategicInsights(input: {
     keyElements.push("Social media links");
 
   // ===== FORMAT SIGNALS =====
-  let likelyFormat = "General";
-  if (/tutorial|how to|guide|step|learn/i.test(title + " " + description)) {
-    likelyFormat = "Tutorial";
-  } else if (/review|honest|vs |compared|worth/i.test(title)) {
-    likelyFormat = "Review";
-  } else if (/vlog|day in|week in|behind/i.test(title + " " + description)) {
-    likelyFormat = "Vlog";
-  } else if (/react|watch|reacts/i.test(title)) {
-    likelyFormat = "Reaction";
-  } else if (/story|journey|experience/i.test(title + " " + description)) {
-    likelyFormat = "Story/Documentary";
-  } else if (/top \d|best \d|\d things|\d ways/i.test(title)) {
-    likelyFormat = "Listicle";
-  } else if (/explained|what is|why/i.test(title)) {
-    likelyFormat = "Explainer";
-  }
-
-  let productionLevel: "Low" | "Medium" | "High" = "Medium";
-  if (durationMin < 3) {
-    productionLevel = "Low";
-  } else if (durationMin > 15 && views > 50000) {
-    productionLevel = "High";
-  }
-
   let paceEstimate: "Slow" | "Medium" | "Fast" = "Medium";
   if (durationMin < 5) {
     paceEstimate = "Fast";
@@ -1157,6 +1140,213 @@ function deriveKeywordsFromText(text: string): string[] {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)
     .map(([word]) => word);
+}
+
+function guessLikelyFormat(
+  title: string,
+  description: string
+):
+  | "General"
+  | "Tutorial"
+  | "Review"
+  | "Vlog"
+  | "Reaction"
+  | "Story/Documentary"
+  | "Listicle"
+  | "Explainer" {
+  const haystack = `${title} ${description}`;
+  if (/tutorial|how to|guide|step|learn/i.test(haystack)) return "Tutorial";
+  if (/review|honest|vs |compared|worth/i.test(title)) return "Review";
+  if (/vlog|day in|week in|behind/i.test(haystack)) return "Vlog";
+  if (/react|watch|reacts/i.test(title)) return "Reaction";
+  if (/story|journey|experience/i.test(haystack)) return "Story/Documentary";
+  if (/top \d|best \d|\d things|\d ways/i.test(title)) return "Listicle";
+  if (/explained|what is|why/i.test(title)) return "Explainer";
+  return "General";
+}
+
+function guessProductionLevel(
+  durationMin: number,
+  views: number
+): "Low" | "Medium" | "High" {
+  if (durationMin < 3) return "Low";
+  if (durationMin > 15 && views > 50_000) return "High";
+  return "Medium";
+}
+
+function hashStringToUint32(input: string): number {
+  // FNV-1a 32-bit
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function mulberry32(seed: number): () => number {
+  return () => {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function pickTopicHint(input: {
+  title: string;
+  tags: string[];
+  description: string;
+}): string {
+  const tag = (input.tags ?? [])
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .find((t) => !/youtube|subscribe|video|views/i.test(t.toLowerCase()));
+  if (tag) return tag;
+
+  const kws = deriveKeywordsFromText(`${input.title} ${input.description}`.slice(0, 800));
+  if (kws.length >= 2) return `${kws[0]} ${kws[1]}`;
+  if (kws.length === 1) return kws[0];
+  return "this topic";
+}
+
+function generateFreshAngles(input: {
+  seed: string;
+  title: string;
+  description: string;
+  tags: string[];
+  likelyFormat: ReturnType<typeof guessLikelyFormat>;
+  durationMin: number;
+  productionLevel: "Low" | "Medium" | "High";
+  hasCuriosityGap: boolean;
+  hasNumber: boolean;
+  commentsAnalysis?: CompetitorCommentsAnalysis;
+}): string[] {
+  const rng = mulberry32(hashStringToUint32(input.seed));
+  const topic = pickTopicHint({
+    title: input.title,
+    description: input.description,
+    tags: input.tags,
+  });
+
+  const numberChoices = [3, 5, 7, 9];
+  const dayChoices = [7, 14, 30];
+  const pick = <T,>(arr: T[]) => arr[Math.floor(rng() * arr.length)]!;
+  const n = pick(numberChoices);
+  const days = pick(dayChoices);
+
+  const candidates: string[] = [];
+
+  if (!input.hasCuriosityGap) {
+    candidates.push(
+      `Open-loop hook: “The part about ${topic} nobody tells you…” (build curiosity before the payoff)`
+    );
+  }
+  if (!input.hasNumber) {
+    candidates.push(
+      `Add a concrete promise: “${n} ${topic} mistakes to avoid” or “${topic} in ${days} days”`
+    );
+  } else {
+    candidates.push(
+      `Refresh the constraint: try a tighter time-box (“${topic} in ${days} days”) or a ranked list (“Top ${n} ${topic} moves”)`
+    );
+  }
+
+  // Format-specific remixes (forces variety across different types of videos)
+  switch (input.likelyFormat) {
+    case "Tutorial":
+      candidates.push(
+        `Beginner-friendly variant: “${topic} for absolute beginners” (step-by-step + printable checklist)`
+      );
+      candidates.push(
+        `Troubleshooting angle: “Why your ${topic} isn’t working (and the ${n} fixes)”`
+      );
+      break;
+    case "Review":
+      candidates.push(
+        `Long-term update: “${topic} after ${days} days — what held up, what I’d buy instead”`
+      );
+      candidates.push(
+        `Budget showdown: “The ${topic} alternative that’s 80% as good for half the cost”`
+      );
+      break;
+    case "Explainer":
+      candidates.push(
+        `One-model explanation: “${topic} explained with 1 simple framework + real examples”`
+      );
+      candidates.push(`Myth-busting: “${n} myths about ${topic} that waste your time”`);
+      break;
+    case "Listicle":
+      candidates.push(
+        `Ranked comparison: “${n} ${topic} approaches ranked (beginner → advanced)”`
+      );
+      candidates.push(
+        `Tiers/scorecard: “I scored ${topic} options on 5 criteria — here’s the winner”`
+      );
+      break;
+    case "Vlog":
+    case "Story/Documentary":
+      candidates.push(
+        `Case study story: “I tried ${topic} for ${days} days — results, mistakes, and what I’d do differently”`
+      );
+      candidates.push(
+        `Behind-the-scenes: “What it really takes to do ${topic} (the messy parts included)”`
+      );
+      break;
+    case "Reaction":
+      candidates.push(
+        `Expert scorecard reaction: “Reacting to ${topic} — what’s good, what’s wrong, and the fixes”`
+      );
+      candidates.push(
+        `Before/after reaction: “I react, then rebuild it properly (so you can copy the template)”`
+      );
+      break;
+    default:
+      candidates.push(
+        `Tighter promise: “${topic} — the simplest path from 0 → 1 (no fluff, just steps)”`
+      );
+      candidates.push(
+        `Contrarian framing: “Most advice about ${topic} is backwards — do this instead”`
+      );
+  }
+
+  if (input.durationMin > 10) {
+    candidates.push(
+      `Shorter remix: “${topic} — the 5-minute version” (faster pacing + only the essentials)`
+    );
+  } else if (input.durationMin < 4) {
+    candidates.push(
+      `Deep-dive companion: “Everything about ${topic} (full walkthrough + examples)”`
+    );
+  }
+
+  if (input.productionLevel === "High") {
+    candidates.push(
+      `Low-production version: “${topic} with zero fancy gear” (phone-only / simple setup)`
+    );
+  }
+
+  const topAsk = input.commentsAnalysis?.viewerAskedFor?.[0]?.trim();
+  if (topAsk) {
+    const clipped = topAsk.length > 90 ? `${topAsk.slice(0, 87)}...` : topAsk;
+    candidates.push(
+      `Answer the #1 viewer request directly: “${clipped}” (make it the main promise)`
+    );
+  }
+
+  // De-dupe + deterministic shuffle (stable per video)
+  const uniq = [...new Set(candidates)].filter(Boolean);
+  for (let i = uniq.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [uniq[i], uniq[j]] = [uniq[j]!, uniq[i]!];
+  }
+
+  // Ensure we always return enough angles
+  const out = uniq.slice(0, 6);
+  while (out.length < 4) {
+    out.push(`Add specificity by focusing on one sub-problem of ${topic} (a single “before → after” transformation)`);
+  }
+  return out.slice(0, 6);
 }
 
 function fallbackWhatItsAbout(input: {
@@ -1447,10 +1637,10 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
           "Could include more actionable templates/frameworks",
         ],
         angles: [
-          "Personal case study - 'I tried posting less for 30 days'",
-          "Contrarian take - 'Why posting MORE actually works better'",
-          "Make a shorter, more focused version (under 10 min)",
-          "Target smaller creators specifically (under 1K subs)",
+          "Open-loop hook: “The real reason posting ‘more’ fails (and what works instead)”",
+          "Add a concrete promise: “3 posting rules I used for 14 days (with results)”",
+          "Scorecard format: “I ranked posting strategies on 5 criteria — here’s the winner”",
+          "Shorter remix: “The 5-minute posting strategy for small channels (0 → 1K subs)”",
         ],
       },
       beatThisVideo: [

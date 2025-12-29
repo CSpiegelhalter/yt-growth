@@ -330,7 +330,7 @@ export default function DashboardClient({
           <section className={s.videosSection}>
             {videosLoading ? (
               <div className={s.videoList}>
-                {[1, 2, 3, 4].map((i) => (
+                {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className={s.videoCardSkeleton}>
                     <div className={s.skeletonThumb} />
                     <div className={s.skeletonContent}>
