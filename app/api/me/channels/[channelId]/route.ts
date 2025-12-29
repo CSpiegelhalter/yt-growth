@@ -16,7 +16,7 @@ const ParamsSchema = z.object({
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { channelId: string } }
+  { params }: { params: Promise<{ channelId: string }> }
 ) {
   try {
     // Auth check
@@ -26,7 +26,8 @@ export async function DELETE(
     }
 
     // Validate params
-    const parsed = ParamsSchema.safeParse(params);
+    const paramsObj = await params;
+    const parsed = ParamsSchema.safeParse(paramsObj);
     if (!parsed.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }
@@ -107,7 +108,7 @@ export async function DELETE(
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { channelId: string } }
+  { params }: { params: Promise<{ channelId: string }> }
 ) {
   try {
     // Auth check
@@ -117,7 +118,8 @@ export async function GET(
     }
 
     // Validate params
-    const parsed = ParamsSchema.safeParse(params);
+    const paramsObj = await params;
+    const parsed = ParamsSchema.safeParse(paramsObj);
     if (!parsed.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }

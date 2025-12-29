@@ -86,8 +86,10 @@ const SNAPSHOT_INTERVAL_HOURS = 6;
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { channelId: string } }
+  { params }: { params: Promise<{ channelId: string }> }
 ) {
+  const paramsObj = await params;
+
   // Fixture demo mode short-circuits. If YT_MOCK_MODE=1, we want to run real codepaths instead.
   if (isDemoMode() && !isYouTubeMockMode()) {
     const url = new URL(req.url);
@@ -131,7 +133,7 @@ export async function GET(
     }
 
     // Validate params
-    const parsedParams = ParamsSchema.safeParse(params);
+    const parsedParams = ParamsSchema.safeParse(paramsObj);
     if (!parsedParams.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }

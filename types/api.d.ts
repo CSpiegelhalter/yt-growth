@@ -37,14 +37,14 @@ export type Channel = {
   id: number;
   title: string | null;
   thumbnailUrl: string | null;
-  totalVideoCount: number | null;   // Total videos on YouTube
-  subscriberCount: number | null;   // Subscriber count from YouTube
-  syncedVideoCount?: number;        // Videos synced locally
+  totalVideoCount: number | null; // Total videos on YouTube
+  subscriberCount: number | null; // Subscriber count from YouTube
+  syncedVideoCount?: number; // Videos synced locally
   connectedAt: string;
   lastSyncedAt: string | null;
   syncStatus: string;
   syncError: string | null;
-  videoCount: number;               // Synced videos (backwards compat)
+  videoCount: number; // Synced videos (backwards compat)
   planCount: number;
 };
 
@@ -168,7 +168,7 @@ export type ConversionVideoIdea = {
   ctaSuggestion: string;
 };
 
-export type ConverterInsights = {
+export type SubscriberInsights = {
   commonPatterns: ConversionPattern[];
   conversionRecipe: ConversionRecipe;
   nextIdeas: ConversionVideoIdea[];
@@ -182,7 +182,7 @@ export type PatternAnalysisJson = {
   nextExperiments: string[];
   hooksToTry: string[];
   // New structured format
-  structuredInsights?: ConverterInsights;
+  structuredInsights?: SubscriberInsights;
 };
 
 export type SubscriberAuditResponse = {
@@ -200,7 +200,7 @@ export type SubscriberAuditResponse = {
     avgSubsPerThousand: number;
     totalSubscribersGained: number;
     totalViews: number;
-    strongConverterCount: number;
+    strongSubscriberDriverCount: number;
     avgPlaylistAddsPer1k?: number;
     avgEngagedRate?: number;
   };
@@ -566,8 +566,16 @@ export type CompetitorVideoAnalysis = {
     engagementBenchmarks: {
       likeRate: number; // likes per 100 views
       commentRate: number; // comments per 1000 views
-      likeRateVerdict: "Below Average" | "Average" | "Above Average" | "Exceptional";
-      commentRateVerdict: "Below Average" | "Average" | "Above Average" | "Exceptional";
+      likeRateVerdict:
+        | "Below Average"
+        | "Average"
+        | "Above Average"
+        | "Exceptional";
+      commentRateVerdict:
+        | "Below Average"
+        | "Average"
+        | "Above Average"
+        | "Exceptional";
     };
     // Opportunity assessment
     opportunityScore: {
@@ -746,11 +754,50 @@ export type VideoInsightsLLM = {
     weaknesses: string[];
     suggestions: string[];
   };
+  descriptionAnalysis?: {
+    score: number; // 1-10
+    strengths: string[];
+    weaknesses: string[];
+    // A rewritten first ~200 chars (high signal for SEO + viewers)
+    rewrittenOpening: string;
+    // Specific lines/blocks the creator can paste into the description
+    addTheseLines: string[];
+    // Optional keyword list to include naturally (no stuffing)
+    targetKeywords?: string[];
+  };
   tagAnalysis: {
     score: number; // 1-10
     coverage: "excellent" | "good" | "fair" | "poor";
     missing: string[]; // Suggested tags to add
     feedback: string;
+  };
+  /**
+   * A practical, prioritized playbook to increase reach for THIS video.
+   * Should be tied to the available metrics (views/day vs baseline, retention, engagement, subs).
+   */
+  visibilityPlan?: {
+    bottleneck:
+      | "Packaging (CTR)"
+      | "Retention"
+      | "Distribution"
+      | "Topic/Intent"
+      | "Too early to tell";
+    confidence: "high" | "medium" | "low";
+    why: string; // tie to metrics + baseline comparison when possible
+    doNext: Array<{
+      action: string; // very specific
+      reason: string; // metric-backed
+      expectedImpact: string;
+      priority: "high" | "medium" | "low";
+    }>;
+    experiments: Array<{
+      name: string;
+      variants: string[]; // e.g. titles, hook options
+      successMetric: string; // e.g. CTR, avg view duration, views/day
+      window: string; // e.g. "24-48h"
+    }>;
+    promotionChecklist: string[]; // 5-10 concrete distribution steps (non-spammy)
+    whatToMeasureNext: string[]; // metrics we should fetch or the user should check in YT Studio
   };
   thumbnailHints: string[]; // What thumbnail should convey based on title/performance
   // Data-driven insights
@@ -793,6 +840,16 @@ export type VideoInsightsLLM = {
     keywords: string[];
     inspiredByVideoIds: string[];
   }>;
+  /**
+   * Viewer voice, derived from the video's top comments (when available).
+   */
+  commentInsights?: {
+    sentiment: { positive: number; neutral: number; negative: number };
+    themes: Array<{ theme: string; count: number; examples: string[] }>;
+    viewerLoved: string[];
+    viewerAskedFor: string[];
+    hookInspiration: string[];
+  };
 };
 
 export type VideoInsightsResponse = {

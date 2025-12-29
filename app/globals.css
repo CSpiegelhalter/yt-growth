@@ -27,6 +27,25 @@
   /* Typography */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "SF Mono", Monaco, Consolas, monospace;
+
+  /* Page typography/layout tokens (keep key pages uniform) */
+  --page-max-width: 1200px;
+  --page-padding-mobile: 16px;
+  --page-padding-desktop: 24px;
+
+  --page-title-size: 1.5rem;
+  --page-title-size-lg: 1.75rem;
+  --page-title-weight: 700;
+
+  --page-subtitle-size: 0.9375rem;
+  --page-subtitle-line-height: 1.5;
+
+  --section-title-size: 1.125rem;
+  --section-title-weight: 600;
+  --section-subtitle-size: 0.875rem;
+
+  --control-font-size: 0.875rem;
+  --control-font-size-sm: 0.8125rem;
   
   /* Border radius */
   --radius-sm: 6px;

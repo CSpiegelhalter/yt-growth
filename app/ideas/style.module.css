@@ -3,14 +3,14 @@
    ================================ */
 
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 16px;
+  padding: var(--page-padding-mobile);
 }
 
 @media (min-width: 768px) {
   .page {
-    padding: 24px;
+    padding: var(--page-padding-desktop);
   }
 }
 
@@ -20,23 +20,23 @@
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--page-title-size);
+  font-weight: var(--page-title-weight);
   color: #1e293b;
   margin: 0 0 6px;
 }
 
 @media (min-width: 640px) {
   .title {
-    font-size: 1.75rem;
+    font-size: var(--page-title-size-lg);
   }
 }
 
 .subtitle {
-  font-size: 0.9375rem;
+  font-size: var(--page-subtitle-size);
   color: #64748b;
   margin: 0;
-  line-height: 1.5;
+  line-height: var(--page-subtitle-line-height);
 }
 
 .subtitle strong {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import s from "./style.module.css";
 import type { CompetitorVideoAnalysis, CompetitorVideo } from "@/types/api";
 import { copyToClipboard } from "@/components/ui/Toast";
@@ -29,29 +30,78 @@ export default function VideoDetailClient({
     null
   );
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStage, setLoadingStage] = useState("Preparing analysis...");
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showAllTags, setShowAllTags] = useState(false);
+  const lastAutoFetchKeyRef = useRef<string | null>(null);
+  const moreFromChannelKeyRef = useRef<string | null>(null);
+  const mountedRef = useRef(false);
 
   // Use channelId from server props directly
   const activeChannelId = channelId ?? null;
 
+  // Smooth progress bar while the analysis request is running (we don't have real progress).
+  useEffect(() => {
+    if (!loading) return;
+    setLoadingProgress(12);
+    setLoadingStage("Fetching video details...");
+
+    const stages: Array<{ atMs: number; text: string }> = [
+      { atMs: 0, text: "Fetching video details..." },
+      { atMs: 1400, text: "Reading top comments..." },
+      { atMs: 3200, text: "Finding patterns that made it work..." },
+      { atMs: 5200, text: "Generating remix ideas..." },
+    ];
+    const startedAt = Date.now();
+
+    const stageTimer = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const next =
+        [...stages].reverse().find((s) => elapsed >= s.atMs)?.text ??
+        "Analyzing...";
+      setLoadingStage(next);
+    }, 450);
+
+    const progressTimer = window.setInterval(() => {
+      setLoadingProgress((p) => {
+        const target = 92;
+        const next = p + Math.max(1, Math.round((target - p) * 0.08));
+        return Math.min(target, next);
+      });
+    }, 350);
+
+    return () => {
+      window.clearInterval(stageTimer);
+      window.clearInterval(progressTimer);
+    };
+  }, [loading]);
+
   // Load video analysis
   useEffect(() => {
+    mountedRef.current = true;
     async function loadAnalysis() {
       if (!activeChannelId) {
+        if (!mountedRef.current) return;
         setError("No channel selected");
         setLoading(false);
         return;
       }
 
+      // Avoid double-fetch in React 18 StrictMode (dev) which can double-count entitlements.
+      const k = `${activeChannelId}:${videoId}`;
+      if (lastAutoFetchKeyRef.current === k) return;
+      lastAutoFetchKeyRef.current = k;
+
+      if (!mountedRef.current) return;
       setLoading(true);
       setError(null);
 
       try {
         const res = await fetch(
-          `/api/competitors/video/${videoId}?channelId=${activeChannelId}`,
-          { cache: "no-store" }
+          `/api/competitors/video/${videoId}?channelId=${activeChannelId}&includeMoreFromChannel=0`,
+          {}
         );
 
         if (!res.ok) {
@@ -60,18 +110,58 @@ export default function VideoDetailClient({
         }
 
         const data = await res.json();
+        if (!mountedRef.current) return;
+        setLoadingProgress(100);
         setAnalysis(data as CompetitorVideoAnalysis);
       } catch (err) {
+        if (!mountedRef.current) return;
         setError(
           err instanceof Error ? err.message : "Failed to load analysis"
         );
       } finally {
+        if (!mountedRef.current) return;
         setLoading(false);
       }
     }
 
-    loadAnalysis();
+    void loadAnalysis();
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, [videoId, activeChannelId]);
+
+  // Fetch "More from this channel" in the background (not critical path for the initial render).
+  useEffect(() => {
+    if (!analysis) return;
+    if (!activeChannelId) return;
+    if (analysis.moreFromChannel && analysis.moreFromChannel.length > 0) return;
+
+    const k = `${activeChannelId}:${videoId}`;
+    if (moreFromChannelKeyRef.current === k) return;
+    moreFromChannelKeyRef.current = k;
+
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/competitors/video/${videoId}/more?channelId=${activeChannelId}`,
+          { signal: ac.signal }
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as CompetitorVideo[];
+        if (!Array.isArray(data)) return;
+        setAnalysis((prev) =>
+          prev ? { ...prev, moreFromChannel: data } : prev
+        );
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        // Non-critical; ignore
+      }
+    })();
+
+    return () => ac.abort();
+  }, [analysis, activeChannelId, videoId]);
 
   const handleCopy = useCallback(async (text: string, id: string) => {
     const success = await copyToClipboard(text);
@@ -86,7 +176,26 @@ export default function VideoDetailClient({
       <main className={s.page}>
         <div className={s.loading}>
           <div className={s.spinner} />
-          <p>Analyzing video...</p>
+          <p>{loadingStage}</p>
+          <div className={s.loadingProgress}>
+            <div
+              className={s.progressTrack}
+              role="progressbar"
+              aria-label="Analyzing competitor video"
+              aria-valuenow={Math.round(Math.max(8, loadingProgress || 12))}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className={s.progressFill}
+                style={{ width: `${Math.max(8, loadingProgress || 12)}%` }}
+              />
+            </div>
+            <div className={s.loadingProgressHint}>
+              This can take a bit on first view (we cache results for next
+              time).
+            </div>
+          </div>
         </div>
       </main>
     );
@@ -111,7 +220,7 @@ export default function VideoDetailClient({
           </div>
           <h2 className={s.errorTitle}>{error || "Video not found"}</h2>
           <p className={s.errorDesc}>
-            We couldn&apos;t analyze this competitor video.
+            We couldn't analyze this competitor video.
           </p>
           <button onClick={() => router.back()} className={s.backBtn}>
             Go Back
@@ -178,7 +287,14 @@ export default function VideoDetailClient({
         >
           <div className={s.thumbnailWrap}>
             {video.thumbnailUrl ? (
-              <img src={video.thumbnailUrl} alt="" className={s.thumbnail} />
+              <Image
+                src={video.thumbnailUrl}
+                alt={`${video.title} thumbnail`}
+                fill
+                className={s.thumbnail}
+                sizes="(max-width: 768px) 100vw, 280px"
+                priority
+              />
             ) : (
               <div className={s.thumbnailPlaceholder}>
                 <svg
@@ -200,7 +316,7 @@ export default function VideoDetailClient({
             )}
             <div className={s.playOverlay}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
-                <path d="M8 5v14l11-7z"/>
+                <path d="M8 5v14l11-7z" />
               </svg>
             </div>
           </div>
@@ -297,7 +413,7 @@ export default function VideoDetailClient({
       <div className={s.sections}>
         {/* What It's About */}
         <section className={s.section}>
-          <h2 className={s.sectionTitle}>What It&apos;s About</h2>
+          <h2 className={s.sectionTitle}>What It's About</h2>
           <p className={s.aboutText}>
             {insights.whatItsAbout || "Analysis not available yet."}
           </p>
@@ -311,7 +427,16 @@ export default function VideoDetailClient({
               {titleAnalysis && (
                 <div className={s.quickStat}>
                   <div className={s.quickStatValue}>
-                    <span className={s.scoreCircle} data-score={titleAnalysis.score >= 7 ? "good" : titleAnalysis.score >= 5 ? "ok" : "poor"}>
+                    <span
+                      className={s.scoreCircle}
+                      data-score={
+                        titleAnalysis.score >= 7
+                          ? "good"
+                          : titleAnalysis.score >= 5
+                          ? "ok"
+                          : "poor"
+                      }
+                    >
                       {titleAnalysis.score}/10
                     </span>
                   </div>
@@ -323,7 +448,12 @@ export default function VideoDetailClient({
               {competitionDifficulty && (
                 <div className={s.quickStat}>
                   <div className={s.quickStatValue}>
-                    <span className={s.difficultyBadge} data-difficulty={competitionDifficulty.score.toLowerCase().replace(" ", "-")}>
+                    <span
+                      className={s.difficultyBadge}
+                      data-difficulty={competitionDifficulty.score
+                        .toLowerCase()
+                        .replace(" ", "-")}
+                    >
                       {competitionDifficulty.score}
                     </span>
                   </div>
@@ -335,7 +465,16 @@ export default function VideoDetailClient({
               {opportunityScore && (
                 <div className={s.quickStat}>
                   <div className={s.quickStatValue}>
-                    <span className={s.scoreCircle} data-score={opportunityScore.score >= 7 ? "good" : opportunityScore.score >= 5 ? "ok" : "poor"}>
+                    <span
+                      className={s.scoreCircle}
+                      data-score={
+                        opportunityScore.score >= 7
+                          ? "good"
+                          : opportunityScore.score >= 5
+                          ? "ok"
+                          : "poor"
+                      }
+                    >
                       {opportunityScore.score}/10
                     </span>
                   </div>
@@ -347,7 +486,12 @@ export default function VideoDetailClient({
               {engagementBenchmarks && (
                 <div className={s.quickStat}>
                   <div className={s.quickStatValue}>
-                    <span className={s.engagementBadge} data-verdict={engagementBenchmarks.likeRateVerdict.toLowerCase().replace(" ", "-")}>
+                    <span
+                      className={s.engagementBadge}
+                      data-verdict={engagementBenchmarks.likeRateVerdict
+                        .toLowerCase()
+                        .replace(" ", "-")}
+                    >
                       {engagementBenchmarks.likeRateVerdict}
                     </span>
                   </div>
@@ -359,7 +503,9 @@ export default function VideoDetailClient({
               {formatSignals && (
                 <div className={s.quickStat}>
                   <div className={s.quickStatValue}>
-                    <span className={s.formatBadge}>{formatSignals.likelyFormat}</span>
+                    <span className={s.formatBadge}>
+                      {formatSignals.likelyFormat}
+                    </span>
                   </div>
                   <div className={s.quickStatLabel}>Format</div>
                 </div>
@@ -369,9 +515,13 @@ export default function VideoDetailClient({
               {lengthAnalysis && (
                 <div className={s.quickStat}>
                   <div className={s.quickStatValue}>
-                    <span className={s.lengthValue}>{lengthAnalysis.minutes}m</span>
+                    <span className={s.lengthValue}>
+                      {lengthAnalysis.minutes}m
+                    </span>
                   </div>
-                  <div className={s.quickStatLabel}>{lengthAnalysis.category}</div>
+                  <div className={s.quickStatLabel}>
+                    {lengthAnalysis.category}
+                  </div>
                 </div>
               )}
             </div>
@@ -384,15 +534,32 @@ export default function VideoDetailClient({
             <h2 className={s.sectionTitle}>Title Breakdown</h2>
             <div className={s.titleAnalysisGrid}>
               <div className={s.titleScoreCard}>
-                <div className={s.titleScoreCircle} data-score={titleAnalysis.score >= 7 ? "good" : titleAnalysis.score >= 5 ? "ok" : "poor"}>
-                  <span className={s.titleScoreNumber}>{titleAnalysis.score}</span>
+                <div
+                  className={s.titleScoreCircle}
+                  data-score={
+                    titleAnalysis.score >= 7
+                      ? "good"
+                      : titleAnalysis.score >= 5
+                      ? "ok"
+                      : "poor"
+                  }
+                >
+                  <span className={s.titleScoreNumber}>
+                    {titleAnalysis.score}
+                  </span>
                   <span className={s.titleScoreMax}>/10</span>
                 </div>
                 <div className={s.titleMeta}>
                   <span>{titleAnalysis.characterCount} chars</span>
-                  {titleAnalysis.hasNumber && <span className={s.titleCheck}>✓ Number</span>}
-                  {titleAnalysis.hasPowerWord && <span className={s.titleCheck}>✓ Power Word</span>}
-                  {titleAnalysis.hasCuriosityGap && <span className={s.titleCheck}>✓ Curiosity Gap</span>}
+                  {titleAnalysis.hasNumber && (
+                    <span className={s.titleCheck}>✓ Number</span>
+                  )}
+                  {titleAnalysis.hasPowerWord && (
+                    <span className={s.titleCheck}>✓ Power Word</span>
+                  )}
+                  {titleAnalysis.hasCuriosityGap && (
+                    <span className={s.titleCheck}>✓ Curiosity Gap</span>
+                  )}
                 </div>
               </div>
               <div className={s.titleFeedback}>
@@ -426,12 +593,21 @@ export default function VideoDetailClient({
           <section className={s.section}>
             <h2 className={s.sectionTitle}>Opportunity Assessment</h2>
             <div className={s.opportunityHeader}>
-              <div className={s.opportunityScoreBig} data-score={opportunityScore.score >= 7 ? "good" : opportunityScore.score >= 5 ? "ok" : "poor"}>
+              <div
+                className={s.opportunityScoreBig}
+                data-score={
+                  opportunityScore.score >= 7
+                    ? "good"
+                    : opportunityScore.score >= 5
+                    ? "ok"
+                    : "poor"
+                }
+              >
                 {opportunityScore.score}/10
               </div>
               <p className={s.opportunityVerdict}>{opportunityScore.verdict}</p>
             </div>
-            
+
             {opportunityScore.gaps.length > 0 && (
               <div className={s.opportunityBlock}>
                 <h4 className={s.opportunityBlockTitle}>Gaps to Exploit</h4>
@@ -468,10 +644,16 @@ export default function VideoDetailClient({
                 <div key={i} className={s.checklistItem}>
                   <div className={s.checklistAction}>{item.action}</div>
                   <div className={s.checklistMeta}>
-                    <span className={s.checklistDifficulty} data-level={item.difficulty.toLowerCase()}>
+                    <span
+                      className={s.checklistDifficulty}
+                      data-level={item.difficulty.toLowerCase()}
+                    >
                       {item.difficulty}
                     </span>
-                    <span className={s.checklistImpact} data-level={item.impact.toLowerCase()}>
+                    <span
+                      className={s.checklistImpact}
+                      data-level={item.impact.toLowerCase()}
+                    >
                       {item.impact} Impact
                     </span>
                   </div>
@@ -489,14 +671,18 @@ export default function VideoDetailClient({
               {postingTiming && (
                 <div className={s.intelCard}>
                   <h4 className={s.intelTitle}>Posting</h4>
-                  <p className={s.intelValue}>{postingTiming.dayOfWeek} at {postingTiming.hourOfDay}:00</p>
+                  <p className={s.intelValue}>
+                    {postingTiming.dayOfWeek} at {postingTiming.hourOfDay}:00
+                  </p>
                   <p className={s.intelNote}>{postingTiming.timingInsight}</p>
                 </div>
               )}
               {lengthAnalysis && (
                 <div className={s.intelCard}>
                   <h4 className={s.intelTitle}>Length</h4>
-                  <p className={s.intelValue}>{lengthAnalysis.minutes} minutes ({lengthAnalysis.category})</p>
+                  <p className={s.intelValue}>
+                    {lengthAnalysis.minutes} minutes ({lengthAnalysis.category})
+                  </p>
                   <p className={s.intelNote}>{lengthAnalysis.insight}</p>
                 </div>
               )}
@@ -504,21 +690,31 @@ export default function VideoDetailClient({
                 <div className={s.intelCard}>
                   <h4 className={s.intelTitle}>Engagement</h4>
                   <p className={s.intelValue}>
-                    {engagementBenchmarks.likeRate}% like rate · {engagementBenchmarks.commentRate} comments/1K views
+                    {engagementBenchmarks.likeRate}% like rate ·{" "}
+                    {engagementBenchmarks.commentRate} comments/1K views
                   </p>
                   <p className={s.intelNote}>
-                    Likes: {engagementBenchmarks.likeRateVerdict} · Comments: {engagementBenchmarks.commentRateVerdict}
+                    Likes: {engagementBenchmarks.likeRateVerdict} · Comments:{" "}
+                    {engagementBenchmarks.commentRateVerdict}
                   </p>
                 </div>
               )}
               {descriptionAnalysis && (
                 <div className={s.intelCard}>
                   <h4 className={s.intelTitle}>Description</h4>
-                  <p className={s.intelValue}>{descriptionAnalysis.estimatedWordCount} words</p>
+                  <p className={s.intelValue}>
+                    {descriptionAnalysis.estimatedWordCount} words
+                  </p>
                   <div className={s.intelTags}>
-                    {descriptionAnalysis.hasTimestamps && <span className={s.intelTag}>Timestamps</span>}
-                    {descriptionAnalysis.hasLinks && <span className={s.intelTag}>Links</span>}
-                    {descriptionAnalysis.hasCTA && <span className={s.intelTag}>CTA</span>}
+                    {descriptionAnalysis.hasTimestamps && (
+                      <span className={s.intelTag}>Timestamps</span>
+                    )}
+                    {descriptionAnalysis.hasLinks && (
+                      <span className={s.intelTag}>Links</span>
+                    )}
+                    {descriptionAnalysis.hasCTA && (
+                      <span className={s.intelTag}>CTA</span>
+                    )}
                   </div>
                 </div>
               )}
@@ -529,9 +725,9 @@ export default function VideoDetailClient({
         {/* Why It's Working */}
         {whyCards.length > 0 && (
           <section className={s.section}>
-            <h2 className={s.sectionTitle}>Why it&apos;s working</h2>
+            <h2 className={s.sectionTitle}>Why it's working</h2>
             <p className={s.sectionSubtitle}>
-              The strongest drivers behind this video&apos;s performance.
+              The strongest drivers behind this video's performance.
             </p>
             <div className={s.cardGrid}>
               {whyCards.map((text, i) => (
@@ -634,7 +830,8 @@ export default function VideoDetailClient({
               comments.sentiment.negative === 0 ? (
               <div className={s.commentsAnalysis}>
                 <p className={s.commentsNote}>
-                  Comment analysis is processing. Showing raw top comments below.
+                  Comment analysis is processing. Showing raw top comments
+                  below.
                 </p>
                 {comments.topComments && comments.topComments.length > 0 && (
                   <div className={s.topCommentsList}>
@@ -730,7 +927,14 @@ export default function VideoDetailClient({
                 {comments.hookInspiration &&
                   comments.hookInspiration.length > 0 && (
                     <div className={s.commentThemeBlock}>
-                      <h4 className={s.subSectionTitle}>Hook inspiration</h4>
+                      <h4 className={s.subSectionTitle}>
+                        Hook lines (inspired by comments)
+                      </h4>
+                      <p className={s.subSectionHint}>
+                        Short openers you can adapt for your first 5–10 seconds.
+                        These are generated based on patterns in top comments
+                        (not direct viewer quotes).
+                      </p>
                       <div className={s.hookQuotes}>
                         {comments.hookInspiration
                           .slice(0, 6)
@@ -774,11 +978,13 @@ export default function VideoDetailClient({
                   className={s.moreCard}
                 >
                   {v.thumbnailUrl ? (
-                    <img
+                    <Image
                       src={v.thumbnailUrl}
-                      alt=""
+                      alt={`${v.title} thumbnail`}
+                      width={320}
+                      height={180}
                       className={s.moreThumb}
-                      loading="lazy"
+                      sizes="(max-width: 639px) 50vw, 25vw"
                     />
                   ) : (
                     <div className={s.moreThumbPlaceholder} />

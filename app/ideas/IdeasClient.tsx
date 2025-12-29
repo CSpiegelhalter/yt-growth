@@ -5,6 +5,7 @@ import s from "./style.module.css";
 import { Me, Channel, IdeaBoardData } from "@/types/api";
 import IdeaBoard from "@/components/dashboard/IdeaBoard";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
+import { useToast } from "@/components/ui/Toast";
 
 type Props = {
   initialMe: Me;
@@ -21,11 +22,11 @@ export default function IdeasClient({
   initialChannels,
   initialActiveChannelId,
 }: Props) {
+  const { toast } = useToast();
+
   // State initialized from server props
   const [channels] = useState<Channel[]>(initialChannels);
-  const [activeChannelId, setActiveChannelId] = useState<string | null>(
-    initialActiveChannelId
-  );
+  const [activeChannelId] = useState<string | null>(initialActiveChannelId);
 
   // Idea board state
   const [ideaBoard, setIdeaBoard] = useState<IdeaBoardData | null>(null);
@@ -57,34 +58,73 @@ export default function IdeasClient({
           setIdeaBoard(null);
         }
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error(err);
+        toast("Failed to load idea board. Please refresh.", "error");
+      })
       .finally(() => setIdeaBoardLoading(false));
-  }, [activeChannelId]);
+  }, [activeChannelId, toast]);
 
   const handleGenerate = useCallback(
     async (options?: { mode?: "default" | "more"; range?: "7d" | "28d" }) => {
-      if (!activeChannelId) return;
+      if (!activeChannelId) {
+        toast("Select a channel first.", "info");
+        return;
+      }
 
       const mode = options?.mode ?? "default";
       const range = options?.range ?? "7d";
 
-      const r = await fetch(`/api/me/channels/${activeChannelId}/idea-board`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode, range }),
-      });
+      try {
+        const r = await fetch(`/api/me/channels/${activeChannelId}/idea-board`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode, range }),
+        });
 
-      const data = await r.json();
-      if (r.ok && data.ideas) {
-        setIdeaBoard(data as IdeaBoardData);
+        const data = await r.json().catch(() => ({}));
+
+        if (!r.ok) {
+          if (r.status === 401) {
+            toast("Session expired. Please log in again.", "error");
+            return;
+          }
+          if (r.status === 403) {
+            toast(
+              data?.code === "SUBSCRIPTION_REQUIRED"
+                ? "Subscription required to generate ideas."
+                : "Not allowed to generate ideas for this channel.",
+              "error"
+            );
+            return;
+          }
+          if (r.status === 429) {
+            toast("Rate limit hit. Try again a bit later.", "error");
+            return;
+          }
+          toast(data?.error ?? "Failed to generate ideas.", "error");
+          return;
+        }
+
+        if (data.ideas) {
+          setIdeaBoard(data as IdeaBoardData);
+        } else {
+          toast("No ideas returned. Please try again.", "error");
+        }
+      } catch (err) {
+        console.error(err);
+        toast("Failed to generate ideas. Please try again.", "error");
       }
     },
-    [activeChannelId]
+    [activeChannelId, toast]
   );
 
   const handleRefresh = useCallback(
     (range: "7d" | "28d") => {
-      if (!activeChannelId) return;
+      if (!activeChannelId) {
+        toast("Select a channel first.", "info");
+        return;
+      }
 
       setIdeaBoardLoading(true);
       fetch(`/api/me/channels/${activeChannelId}/idea-board?range=${range}`)
@@ -94,10 +134,13 @@ export default function IdeasClient({
             setIdeaBoard(data as IdeaBoardData);
           }
         })
-        .catch(console.error)
+        .catch((err) => {
+          console.error(err);
+          toast("Failed to refresh ideas. Please try again.", "error");
+        })
         .finally(() => setIdeaBoardLoading(false));
     },
-    [activeChannelId]
+    [activeChannelId, toast]
   );
 
   // No channels state
@@ -107,7 +150,7 @@ export default function IdeasClient({
         <div className={s.header}>
           <h1 className={s.title}>Idea Engine</h1>
           <p className={s.subtitle}>
-            Get video ideas based on what&apos;s working in your niche
+            Get video ideas based on what's working in your niche
           </p>
         </div>
         <div className={s.emptyState}>

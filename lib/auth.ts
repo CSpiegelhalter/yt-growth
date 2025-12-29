@@ -44,7 +44,9 @@ export const authOptions: NextAuthOptions = {
       },
     },
     pkceCodeVerifier: {
-      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.pkce.code_verifier`,
+      name: `${
+        useSecureCookies ? "__Secure-" : ""
+      }next-auth.pkce.code_verifier`,
       options: {
         httpOnly: true,
         sameSite: "lax",
@@ -84,7 +86,8 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       authorize: async (creds) => {
-        const ip = headers().get("x-forwarded-for") ?? "unknown";
+        const h = await headers();
+        const ip = h.get("x-forwarded-for") ?? "unknown";
 
         if (!creds?.email || !creds?.password)
           throw new Error("Missing credentials");
@@ -112,7 +115,8 @@ export const authOptions: NextAuthOptions = {
       name: "Email Token",
       credentials: { token: { label: "Token", type: "text" } },
       authorize: async (creds) => {
-        const ip = headers().get("x-forwarded-for") ?? "unknown";
+        const h = await headers();
+        const ip = h.get("x-forwarded-for") ?? "unknown";
 
         if (!creds?.token) throw new Error("Token missing");
         const { id, email } = verifyEmailToken(creds.token);

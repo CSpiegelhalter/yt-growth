@@ -21,7 +21,7 @@ import {
   hasActiveSubscription,
 } from "@/lib/user";
 import { calcSubsPerThousandViews } from "@/lib/retention";
-import { generateConverterInsights } from "@/lib/llm";
+import { generateSubscriberInsights } from "@/lib/llm";
 import {
   isDemoMode,
   isYouTubeMockMode,
@@ -145,7 +145,7 @@ export async function GET(
           avgSubsPerThousand: 0,
           totalSubscribersGained: 0,
           totalViews: 0,
-          strongConverterCount: 0,
+          strongSubscriberDriverCount: 0,
         },
       });
     }
@@ -231,8 +231,8 @@ export async function GET(
       }
     });
 
-    // Count strong converters
-    const strongConverterCount = videosWithMetrics.filter(
+    // Count strong subscriber-driver videos
+    const strongSubscriberDriverCount = videosWithMetrics.filter(
       (v) => v.conversionTier === "strong"
     ).length;
 
@@ -244,13 +244,13 @@ export async function GET(
     let analysisMarkdownFallback: string | null = null;
 
     if (topVideos.length >= 3) {
-      const topConverters = sortedByConversion
+      const topSubscriberDrivers = sortedByConversion
         .filter((v) => v.conversionTier === "strong")
         .slice(0, 10);
 
       // Compute content hash for the top videos
       const contentHash = hashSubscriberAuditContent(
-        topConverters.map((v) => ({
+        topSubscriberDrivers.map((v) => ({
           videoId: v.videoId,
           title: v.title,
           subsPerThousand: v.subsPerThousand,
@@ -281,8 +281,8 @@ export async function GET(
           console.log(
             `[subscriber-audit] Generating new LLM analysis (hash: ${cachedAnalysis?.contentHash} -> ${contentHash})`
           );
-          const result = await generateConverterInsights(
-            topConverters.map((v) => ({
+          const result = await generateSubscriberInsights(
+            topSubscriberDrivers.map((v) => ({
               title: v.title,
               subsPerThousand: v.subsPerThousand,
               views: v.views,
@@ -318,7 +318,7 @@ export async function GET(
             },
           });
         } catch (err) {
-          console.warn("Failed to generate converter insights:", err);
+          console.warn("Failed to generate subscriber insights:", err);
         }
       }
     }
@@ -345,7 +345,7 @@ export async function GET(
         avgSubsPerThousand,
         totalSubscribersGained: totalSubs,
         totalViews,
-        strongConverterCount,
+        strongSubscriberDriverCount,
         avgEngagedRate: avgEngagedRate > 0 ? avgEngagedRate : undefined,
       },
     } satisfies SubscriberAuditResponse);

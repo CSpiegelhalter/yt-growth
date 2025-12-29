@@ -31,7 +31,11 @@ import {
   fetchRecentChannelVideos,
 } from "@/lib/youtube-api";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDemoMode, getDemoData, isYouTubeMockMode } from "@/lib/demo-fixtures";
+import {
+  isDemoMode,
+  getDemoData,
+  isYouTubeMockMode,
+} from "@/lib/demo-fixtures";
 import { generateIdeaBoardPlan, generateMoreIdeas } from "@/lib/idea-board-llm";
 import type { IdeaBoardData, SimilarChannel } from "@/types/api";
 
@@ -81,7 +85,7 @@ const commonWords = new Set([
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { channelId: string } }
+  { params }: { params: Promise<{ channelId: string }> }
 ) {
   // Return demo data if demo mode is enabled
   if (isDemoMode() && !isYouTubeMockMode()) {
@@ -90,6 +94,8 @@ export async function GET(
   }
 
   try {
+    const paramsObj = await params;
+
     // Auth check
     const user = await getCurrentUserWithSubscription();
     if (!user) {
@@ -105,7 +111,7 @@ export async function GET(
     }
 
     // Validate params
-    const parsedParams = ParamsSchema.safeParse(params);
+    const parsedParams = ParamsSchema.safeParse(paramsObj);
     if (!parsedParams.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }
@@ -185,11 +191,16 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { channelId: string } }
+  { params }: { params: Promise<{ channelId: string }> }
 ) {
   console.log("[IdeaBoard POST] Starting generation...");
-  console.log("[IdeaBoard POST] isDemoMode:", isDemoMode(), "isYouTubeMockMode:", isYouTubeMockMode());
-  
+  console.log(
+    "[IdeaBoard POST] isDemoMode:",
+    isDemoMode(),
+    "isYouTubeMockMode:",
+    isYouTubeMockMode()
+  );
+
   // Return demo data if demo mode is enabled
   if (isDemoMode() && !isYouTubeMockMode()) {
     console.log("[IdeaBoard POST] Returning demo fixture data");
@@ -198,6 +209,8 @@ export async function POST(
   }
 
   try {
+    const paramsObj = await params;
+
     // Auth check
     const user = await getCurrentUserWithSubscription();
     if (!user) {
@@ -213,7 +226,7 @@ export async function POST(
     }
 
     // Validate params
-    const parsedParams = ParamsSchema.safeParse(params);
+    const parsedParams = ParamsSchema.safeParse(paramsObj);
     if (!parsedParams.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }
@@ -308,7 +321,7 @@ export async function POST(
 
     const keywords = [...wordCounts.entries()]
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
+      .slice(0, 8)
       .map(([word]) => word);
 
     // Fetch similar channels and their winners
@@ -316,10 +329,11 @@ export async function POST(
 
     if (ga && keywords.length > 0) {
       try {
-        const similarResults = await searchSimilarChannels(ga, keywords, 6);
+        // Keep this light: fewer channels = fewer downstream API calls + faster generation.
+        const similarResults = await searchSimilarChannels(ga, keywords, 4);
         const filteredChannels = similarResults
           .filter((c) => c.channelId !== channelId)
-          .slice(0, 5);
+          .slice(0, 3);
 
         const rangeDays = range === "7d" ? 7 : 28;
         const publishedAfter = new Date(
@@ -333,7 +347,7 @@ export async function POST(
                 ga,
                 sc.channelId,
                 publishedAfter,
-                3
+                2
               );
               const similarityScore = Math.max(0.3, 1 - index * 0.1);
 
@@ -345,7 +359,10 @@ export async function POST(
                 // Cap winners per channel for diversity + quota efficiency
                 recentWinners: recentVideos.slice(0, 3).map((v) => ({
                   videoId: v.videoId,
-                  title: v.title,
+                  title:
+                    v.title && v.title.trim() && v.title.trim() !== "N/A"
+                      ? v.title
+                      : "Untitled video",
                   publishedAt: v.publishedAt,
                   thumbnailUrl: v.thumbnailUrl,
                   views: v.views,
@@ -373,33 +390,47 @@ export async function POST(
     }
 
     // Prepare rich input for LLM
-    const recentVideos = channel.Video.slice(0, 10).map((v) => {
+    const recentVideos = channel.Video.slice(0, 6).map((v) => {
       const views = v.VideoMetrics?.views ?? 0;
-      const daysOld = Math.max(1, Math.floor((Date.now() - new Date(v.publishedAt ?? Date.now()).getTime()) / (1000 * 60 * 60 * 24)));
+      const daysOld = Math.max(
+        1,
+        Math.floor(
+          (Date.now() - new Date(v.publishedAt ?? Date.now()).getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      );
       return {
         title: v.title ?? "Untitled",
         views,
         viewsPerDay: Math.round(views / daysOld),
         publishedAt: v.publishedAt?.toISOString() ?? new Date().toISOString(),
         tags: v.tags ?? undefined,
-        description: v.description?.slice(0, 200) ?? undefined,
+        description: v.description?.slice(0, 120) ?? undefined,
       };
     });
 
     const topPerformingVideos = [...channel.Video]
       .filter((v) => v.VideoMetrics && (v.VideoMetrics.views ?? 0) > 0)
-      .sort((a, b) => (b.VideoMetrics?.views ?? 0) - (a.VideoMetrics?.views ?? 0))
-      .slice(0, 8)
+      .sort(
+        (a, b) => (b.VideoMetrics?.views ?? 0) - (a.VideoMetrics?.views ?? 0)
+      )
+      .slice(0, 6)
       .map((v) => {
         const views = v.VideoMetrics?.views ?? 0;
-        const daysOld = Math.max(1, Math.floor((Date.now() - new Date(v.publishedAt ?? Date.now()).getTime()) / (1000 * 60 * 60 * 24)));
+        const daysOld = Math.max(
+          1,
+          Math.floor(
+            (Date.now() - new Date(v.publishedAt ?? Date.now()).getTime()) /
+              (1000 * 60 * 60 * 24)
+          )
+        );
         return {
           title: v.title ?? "Untitled",
           views,
           viewsPerDay: Math.round(views / daysOld),
           publishedAt: v.publishedAt?.toISOString() ?? new Date().toISOString(),
           tags: v.tags ?? undefined,
-          description: v.description?.slice(0, 200) ?? undefined,
+          description: v.description?.slice(0, 120) ?? undefined,
         };
       });
 
@@ -413,19 +444,29 @@ export async function POST(
 
     let ideaBoardData: IdeaBoardData;
 
-    console.log("[IdeaBoard POST] Mode:", mode, "Keywords:", keywords.slice(0, 5), "ProofVideos:", proofVideos.length);
+    console.log(
+      "[IdeaBoard POST] Mode:",
+      mode,
+      "Keywords:",
+      keywords.slice(0, 5),
+      "ProofVideos:",
+      proofVideos.length
+    );
 
     if (mode === "more" && existingData) {
       // Generate more ideas and append
-      console.log("[IdeaBoard POST] Generating MORE ideas, existing:", existingData.ideas.length);
+      console.log(
+        "[IdeaBoard POST] Generating MORE ideas, existing:",
+        existingData.ideas.length
+      );
       const existingTitles = existingData.ideas.map((i) => i.title);
 
       const newIdeas = await generateMoreIdeas({
         channelTitle: channel.title ?? "Your Channel",
         existingIdeas: existingTitles,
         nicheKeywords: keywords,
-        proofVideos: proofVideos.slice(0, 15),
-        count: 5,
+        proofVideos: proofVideos.slice(0, 12),
+        count: 6,
       });
 
       console.log("[IdeaBoard POST] Generated", newIdeas.length, "new ideas");
@@ -453,7 +494,11 @@ export async function POST(
           similarityScore: sc.similarityScore,
         })),
       });
-      console.log("[IdeaBoard POST] Generated", ideaBoardData.ideas.length, "ideas");
+      console.log(
+        "[IdeaBoard POST] Generated",
+        ideaBoardData.ideas.length,
+        "ideas"
+      );
     }
 
     // Save to database

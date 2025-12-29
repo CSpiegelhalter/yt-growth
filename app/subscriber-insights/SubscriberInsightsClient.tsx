@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import s from "./style.module.css";
 import type {
   Me,
@@ -62,7 +63,7 @@ function computeRollups(videos: SubscriberMagnetVideo[]) {
   };
 }
 
-export default function ConvertersClient({
+export default function SubscriberInsightsClient({
   initialMe,
   initialChannels,
   initialActiveChannelId,
@@ -92,7 +93,7 @@ export default function ConvertersClient({
     [initialMe]
   );
 
-  // Load converter data
+  // Load subscriber insights data
   useEffect(() => {
     if (!activeChannelId) {
       setLoading(false);
@@ -487,17 +488,18 @@ function VideoCard({
       ? ((delta / avgSubsPerThousand) * 100).toFixed(0)
       : "0";
 
-  const videoUrl = `/video/${video.videoId}?from=converters`;
+  const videoUrl = `/video/${video.videoId}?from=subscriber-insights`;
 
   return (
     <div className={s.videoCard}>
       <Link href={videoUrl} className={s.thumbnailWrap}>
         {video.thumbnailUrl ? (
-          <img
+          <Image
             src={video.thumbnailUrl}
-            alt=""
+            alt={`${video.title} thumbnail`}
+            fill
             className={s.thumbnail}
-            loading="lazy"
+            sizes="(max-width: 768px) 100vw, 33vw"
           />
         ) : (
           <div className={s.thumbnailPlaceholder}>
@@ -610,7 +612,7 @@ function InsightsSection({ analysis, onCopy, copiedId }: InsightsSectionProps) {
         {/* Card A: Common Patterns */}
         <div className={s.insightCard}>
           <h3 className={s.insightCardTitle}>
-            What your top converters have in common
+            What your top subscriber drivers have in common
           </h3>
           {commonPatterns.length > 0 ? (
             <div className={s.patternList}>

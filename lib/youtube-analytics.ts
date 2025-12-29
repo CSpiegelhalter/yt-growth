@@ -17,6 +17,14 @@ type GoogleAccount = {
   tokenExpiresAt: Date | null;
 };
 
+type AnalyticsPermissionStatus =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: "permission_denied";
+      message?: string;
+    };
+
 // Metrics we attempt to fetch (some may not be available for all channels)
 const CORE_METRICS = [
   "views",
@@ -104,23 +112,69 @@ export async function fetchVideoAnalyticsDaily(
   startDate: string,
   endDate: string
 ): Promise<DailyAnalyticsRow[]> {
+  const { rows } = await fetchVideoAnalyticsDailyWithStatus(
+    ga,
+    channelId,
+    videoId,
+    startDate,
+    endDate
+  );
+  return rows;
+}
+
+/**
+ * Fetch daily analytics for a single video + permission status
+ * (Used by owned-video insights route to fail fast when scopes are missing)
+ */
+export async function fetchVideoAnalyticsDailyWithStatus(
+  ga: GoogleAccount,
+  channelId: string,
+  videoId: string,
+  startDate: string,
+  endDate: string
+): Promise<{ rows: DailyAnalyticsRow[]; permission: AnalyticsPermissionStatus }> {
   // First try with all metrics
-  const allMetrics = [...CORE_METRICS, ...ENGAGEMENT_METRICS, ...MONETIZATION_METRICS];
+  const allMetrics = [
+    ...CORE_METRICS,
+    ...ENGAGEMENT_METRICS,
+    ...MONETIZATION_METRICS,
+  ];
 
-  let result = await tryFetchAnalytics(ga, channelId, videoId, startDate, endDate, allMetrics, "day");
+  const attempts: Array<string[]> = [
+    allMetrics,
+    [...CORE_METRICS, ...ENGAGEMENT_METRICS],
+    CORE_METRICS,
+  ];
 
-  // If that fails, try without monetization
-  if (!result) {
-    const withoutMonetization = [...CORE_METRICS, ...ENGAGEMENT_METRICS];
-    result = await tryFetchAnalytics(ga, channelId, videoId, startDate, endDate, withoutMonetization, "day");
+  let sawPermissionDenied = false;
+  let permissionMessage: string | undefined;
+
+  for (const metrics of attempts) {
+    const result = await tryFetchAnalyticsWithStatus(
+      ga,
+      channelId,
+      videoId,
+      startDate,
+      endDate,
+      metrics,
+      "day"
+    );
+    if (result.ok) {
+      return { rows: result.rows, permission: { ok: true } };
+    }
+    if (result.reason === "permission_denied") {
+      sawPermissionDenied = true;
+      permissionMessage = result.message;
+      continue;
+    }
   }
 
-  // If still fails, try just core metrics
-  if (!result) {
-    result = await tryFetchAnalytics(ga, channelId, videoId, startDate, endDate, CORE_METRICS, "day");
-  }
-
-  return result ?? [];
+  return {
+    rows: [],
+    permission: sawPermissionDenied
+      ? { ok: false, reason: "permission_denied", message: permissionMessage }
+      : { ok: true },
+  };
 }
 
 /**
@@ -133,20 +187,14 @@ export async function fetchVideoAnalyticsTotals(
   startDate: string,
   endDate: string
 ): Promise<AnalyticsTotals | null> {
-  const allMetrics = [...CORE_METRICS, ...ENGAGEMENT_METRICS, ...MONETIZATION_METRICS];
-
-  let result = await tryFetchAnalyticsTotals(ga, channelId, videoId, startDate, endDate, allMetrics);
-
-  if (!result) {
-    const withoutMonetization = [...CORE_METRICS, ...ENGAGEMENT_METRICS];
-    result = await tryFetchAnalyticsTotals(ga, channelId, videoId, startDate, endDate, withoutMonetization);
-  }
-
-  if (!result) {
-    result = await tryFetchAnalyticsTotals(ga, channelId, videoId, startDate, endDate, CORE_METRICS);
-  }
-
-  if (!result) return null;
+  const { totals } = await fetchVideoAnalyticsTotalsWithStatus(
+    ga,
+    channelId,
+    videoId,
+    startDate,
+    endDate
+  );
+  if (!totals) return null;
 
   // Calculate days in range
   const start = new Date(startDate);
@@ -154,7 +202,7 @@ export async function fetchVideoAnalyticsTotals(
   const daysInRange = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 
   return {
-    ...result,
+    ...totals,
     startDate,
     endDate,
     daysInRange,
@@ -163,9 +211,80 @@ export async function fetchVideoAnalyticsTotals(
 }
 
 /**
+ * Fetch totals for a single video + permission status
+ */
+export async function fetchVideoAnalyticsTotalsWithStatus(
+  ga: GoogleAccount,
+  channelId: string,
+  videoId: string,
+  startDate: string,
+  endDate: string
+): Promise<{ totals: AnalyticsTotals | null; permission: AnalyticsPermissionStatus }> {
+  const allMetrics = [
+    ...CORE_METRICS,
+    ...ENGAGEMENT_METRICS,
+    ...MONETIZATION_METRICS,
+  ];
+
+  const attempts: Array<string[]> = [
+    allMetrics,
+    [...CORE_METRICS, ...ENGAGEMENT_METRICS],
+    CORE_METRICS,
+  ];
+
+  let sawPermissionDenied = false;
+  let permissionMessage: string | undefined;
+
+  for (const metrics of attempts) {
+    const result = await tryFetchAnalyticsTotalsWithStatus(
+      ga,
+      channelId,
+      videoId,
+      startDate,
+      endDate,
+      metrics
+    );
+    if (result.ok) {
+      if (!result.totals) continue;
+      const totalsRaw = result.totals;
+      // Calculate days in range
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const daysInRange = Math.max(
+        1,
+        Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+      );
+
+      return {
+        totals: {
+          ...totalsRaw,
+          startDate,
+          endDate,
+          daysInRange,
+          date: startDate,
+        },
+        permission: { ok: true },
+      };
+    }
+    if (result.reason === "permission_denied") {
+      sawPermissionDenied = true;
+      permissionMessage = result.message;
+      continue;
+    }
+  }
+
+  return {
+    totals: null,
+    permission: sawPermissionDenied
+      ? { ok: false, reason: "permission_denied", message: permissionMessage }
+      : { ok: true },
+  };
+}
+
+/**
  * Try to fetch analytics with a specific set of metrics
  */
-async function tryFetchAnalytics(
+async function tryFetchAnalyticsWithStatus(
   ga: GoogleAccount,
   channelId: string,
   videoId: string,
@@ -173,7 +292,10 @@ async function tryFetchAnalytics(
   endDate: string,
   metrics: string[],
   dimension: "day" | null
-): Promise<DailyAnalyticsRow[] | null> {
+): Promise<
+  | { ok: true; rows: DailyAnalyticsRow[] }
+  | { ok: false; reason: "permission_denied" | "other"; message?: string }
+> {
   try {
     const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
     url.searchParams.set("ids", `channel==${channelId}`);
@@ -191,11 +313,13 @@ async function tryFetchAnalytics(
       rows?: Array<Array<string | number>>;
     }>(ga, url.toString());
 
-    if (!data.rows || data.rows.length === 0) return [];
+    if (!data.rows || data.rows.length === 0) return { ok: true, rows: [] };
 
     const headers = data.columnHeaders.map((h) => h.name);
 
-    return data.rows.map((row) => {
+    return {
+      ok: true,
+      rows: data.rows.map((row) => {
       const obj: Record<string, string | number | null> = {};
       headers.forEach((h, i) => {
         obj[h] = row[i] ?? null;
@@ -234,32 +358,46 @@ async function tryFetchAnalytics(
         adImpressions: obj.adImpressions != null ? Number(obj.adImpressions) : null,
         cpm: obj.cpm != null ? Number(obj.cpm) : null,
       };
-    });
+      }),
+    };
   } catch (err: any) {
     // Clean error message for scope/permission issues
     if (err?.isScopeError || err?.message?.includes("SCOPE_ERROR")) {
       console.warn(`[Analytics] Permission denied - user may have declined required scopes`);
+      return { ok: false, reason: "permission_denied", message: err?.message };
     } else {
       console.error(`[Analytics] Fetch failed for metrics ${metrics.join(",")}:`, err?.message || err);
+      return { ok: false, reason: "other", message: err?.message };
     }
-    return null;
   }
 }
 
 /**
  * Try to fetch totals without dimension (aggregated)
  */
-async function tryFetchAnalyticsTotals(
+async function tryFetchAnalyticsTotalsWithStatus(
   ga: GoogleAccount,
   channelId: string,
   videoId: string,
   startDate: string,
   endDate: string,
   metrics: string[]
-): Promise<Omit<DailyAnalyticsRow, "date"> | null> {
-  const result = await tryFetchAnalytics(ga, channelId, videoId, startDate, endDate, metrics, null);
-  if (!result || result.length === 0) return null;
-  return result[0];
+): Promise<
+  | { ok: true; totals: Omit<DailyAnalyticsRow, "date"> | null }
+  | { ok: false; reason: "permission_denied" | "other"; message?: string }
+> {
+  const result = await tryFetchAnalyticsWithStatus(
+    ga,
+    channelId,
+    videoId,
+    startDate,
+    endDate,
+    metrics,
+    null
+  );
+  if (!result.ok) return result;
+  if (!result.rows || result.rows.length === 0) return { ok: true, totals: null };
+  return { ok: true, totals: result.rows[0] as any };
 }
 
 /**
@@ -383,13 +521,40 @@ export async function fetchOwnedVideoComments(
       publishedAt: item.snippet.topLevelComment.snippet.publishedAt,
     }));
   } catch (err: any) {
+    const msg = String(err?.message ?? err ?? "");
+
     // Clean error message for scope/permission issues
     if (err?.isScopeError || err?.message?.includes("SCOPE_ERROR")) {
       console.warn(`[Comments] Permission denied - user may have declined youtube.force-ssl scope`);
-    } else {
-      // Comments may be disabled on the video
-      console.warn(`[Comments] Could not fetch:`, err?.message || err);
+      return [];
     }
+
+    // Explicit handling: comments disabled for this video (NOT a permission issue)
+    // YouTube returns 403 with reason "commentsDisabled"
+    if (msg.includes("commentsDisabled") || msg.includes("disabled comments")) {
+      console.info(`[Comments] Disabled for this video (${videoId}); skipping comments fetch`);
+      return [];
+    }
+
+    // If the error is wrapped as google_api_error_403: {json}, parse it for reason=commentsDisabled
+    if (msg.startsWith("google_api_error_403:")) {
+      const jsonPart = msg.slice("google_api_error_403:".length).trim();
+      try {
+        const parsed = JSON.parse(jsonPart) as any;
+        const reasons: string[] =
+          parsed?.error?.errors?.map((e: any) => String(e?.reason ?? "")).filter(Boolean) ??
+          [];
+        if (reasons.includes("commentsDisabled")) {
+          console.info(`[Comments] Disabled for this video (${videoId}); skipping comments fetch`);
+          return [];
+        }
+      } catch {
+        // ignore parse failure; fall through to generic warning
+      }
+    }
+
+    // Other errors (quota, transient, etc.)
+    console.warn(`[Comments] Could not fetch (video ${videoId})`);
     return [];
   }
 }

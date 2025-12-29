@@ -167,7 +167,7 @@ export default function LoginForm() {
 
         {/* Footer */}
         <p className={s.footer}>
-          Don&apos;t have an account?{" "}
+          Don't have an account?{" "}
           <Link href="/auth/signup" className={s.link}>
             Create one
           </Link>
@@ -176,4 +176,3 @@ export default function LoginForm() {
     </main>
   );
 }
-

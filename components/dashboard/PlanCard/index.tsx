@@ -146,8 +146,8 @@ export default function PlanCard({
           </div>
           <h3 className={s.lockedTitle}>Unlock the Idea Engine</h3>
           <p className={s.lockedDesc}>
-            Get video ideas with titles, hooks, angles, and
-            thumbnail guidance tailored to your channel.
+            Get video ideas with titles, hooks, angles, and thumbnail guidance
+            tailored to your channel.
           </p>
           <a href="/api/integrations/stripe/checkout" className={s.btnPrimary}>
             Subscribe to Pro
@@ -650,7 +650,7 @@ function NicheInsightsSection({
       <div className={s.insightsGrid}>
         {insights.whatIsWorkingNow.length > 0 && (
           <div className={s.insightBlock}>
-            <h4 className={s.insightBlockTitle}>What&apos;s Working Now</h4>
+            <h4 className={s.insightBlockTitle}>What's Working Now</h4>
             <ul className={s.insightList}>
               {insights.whatIsWorkingNow.map((item, i) => (
                 <li key={i}>{item}</li>
@@ -672,7 +672,7 @@ function NicheInsightsSection({
 
         {(insights.doDont.do.length > 0 || insights.doDont.dont.length > 0) && (
           <div className={s.insightBlock + " " + s.fullWidth}>
-            <h4 className={s.insightBlockTitle}>Do&apos;s and Don&apos;ts</h4>
+            <h4 className={s.insightBlockTitle}>Do's and Don'ts</h4>
             <div className={s.doDontGrid}>
               {insights.doDont.do.length > 0 && (
                 <div className={s.doSection}>
@@ -686,7 +686,7 @@ function NicheInsightsSection({
               )}
               {insights.doDont.dont.length > 0 && (
                 <div className={s.dontSection}>
-                  <span className={s.dontLabel}>✗ Don&apos;t</span>
+                  <span className={s.dontLabel}>✗ Don't</span>
                   <ul className={s.dontList}>
                     {insights.doDont.dont.map((item, i) => (
                       <li key={i}>{item}</li>

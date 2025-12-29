@@ -35,26 +35,39 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   } | null;
   if (!sessionUser) return null;
 
-  const idAsNumber =
-    typeof sessionUser.id === "string"
-      ? Number(sessionUser.id)
-      : typeof sessionUser.id === "number"
-      ? sessionUser.id
-      : undefined;
+  let user: AuthUser | null = null;
 
-  let user = null;
-  if (Number.isFinite(idAsNumber)) {
-    user = await prisma.user.findUnique({
-      where: { id: idAsNumber as number },
-      select: { id: true, email: true, name: true },
-    });
-  }
-  if (!user && sessionUser.email) {
+  // Prefer email lookup (most reliable, especially for OAuth users where `id`
+  // can be a very large string/number that exceeds JS safe integer range).
+  if (sessionUser.email) {
     user = await prisma.user.findUnique({
       where: { email: sessionUser.email },
       select: { id: true, email: true, name: true },
     });
   }
+
+  // Fallback to ID lookup only if it's a safe integer.
+  if (!user && sessionUser.id !== undefined) {
+    const idAsNumber =
+      typeof sessionUser.id === "string"
+        ? Number(sessionUser.id)
+        : typeof sessionUser.id === "number"
+        ? sessionUser.id
+        : undefined;
+
+    if (
+      idAsNumber !== undefined &&
+      Number.isFinite(idAsNumber) &&
+      Number.isSafeInteger(idAsNumber) &&
+      idAsNumber > 0
+    ) {
+      user = await prisma.user.findUnique({
+        where: { id: idAsNumber },
+        select: { id: true, email: true, name: true },
+      });
+    }
+  }
+
   return user;
 }
 

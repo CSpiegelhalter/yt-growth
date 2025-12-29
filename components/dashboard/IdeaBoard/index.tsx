@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import s from "./style.module.css";
 import type {
   IdeaBoardData,
@@ -209,9 +210,9 @@ export default function IdeaBoard({
           </div>
           <h2 className={s.lockedTitle}>Unlock the Idea Board</h2>
           <p className={s.lockedDesc}>
-            Get video ideas backed by real data from similar
-            channels. See what&apos;s working in your niche and get actionable
-            hooks, titles, and thumbnails.
+            Get video ideas backed by real data from similar channels. See
+            what's working in your niche and get actionable hooks, titles, and
+            thumbnails.
           </p>
           <a href="/api/integrations/stripe/checkout" className={s.btnPrimary}>
             Subscribe to Pro
@@ -240,7 +241,7 @@ export default function IdeaBoard({
           </div>
           <h2 className={s.emptyTitle}>Ready to spark your next hit?</h2>
           <p className={s.emptyDesc}>
-            We analyze what&apos;s working in your niche right now and generate 
+            We analyze what's working in your niche right now and generate
             unique video ideas with hooks, titles, and scripts tailored for you.
           </p>
           <button
@@ -318,7 +319,7 @@ export default function IdeaBoard({
             copiedId={copiedId}
           />
         ))}
-        
+
         {/* Bottom Load More */}
         <div className={s.feedBottom}>
           <button
@@ -357,7 +358,8 @@ export default function IdeaBoard({
         </span>
         {savedIdeas.size > 0 && (
           <Link href="/saved-ideas" className={s.savedIdeasLink}>
-            View {savedIdeas.size} saved idea{savedIdeas.size !== 1 ? "s" : ""} →
+            View {savedIdeas.size} saved idea{savedIdeas.size !== 1 ? "s" : ""}{" "}
+            →
           </Link>
         )}
       </footer>
@@ -377,6 +379,24 @@ export default function IdeaBoard({
       )}
     </div>
   );
+}
+
+function safeImageSrc(src: string | null | undefined): string | null {
+  if (!src) return null;
+  const s = String(src).trim();
+  if (!s) return null;
+
+  // Handle protocol-relative URLs like //i.ytimg.com/...
+  const normalized = s.startsWith("//") ? `https:${s}` : s;
+
+  // Allow absolute URLs. For relative URLs, only allow app-local paths.
+  try {
+    // eslint-disable-next-line no-new
+    new URL(normalized);
+    return normalized;
+  } catch {
+    return normalized.startsWith("/") ? normalized : null;
+  }
 }
 
 /* ================================================
@@ -401,6 +421,7 @@ function IdeaCard({
 }) {
   const topHook = idea.hooks[0];
   const proofVideos = idea.proof.basedOn.slice(0, 3);
+  const proofThumbs = proofVideos.map((pv) => safeImageSrc(pv.thumbnailUrl));
 
   return (
     <article className={s.ideaCard}>
@@ -418,7 +439,7 @@ function IdeaCard({
           </div>
         </div>
         <p className={s.ideaAngle}>{idea.angle}</p>
-        
+
         {/* Why Now - if available */}
         {idea.whyNow && (
           <p className={s.ideaWhyNow}>
@@ -442,17 +463,23 @@ function IdeaCard({
           <div className={s.inspiredBy}>
             <span className={s.inspiredLabel}>Inspired by:</span>
             <div className={s.inspiredThumbs}>
-              {proofVideos.map((pv) => (
+              {proofVideos.map((pv, idx) => (
                 <div
                   key={pv.videoId}
                   className={s.inspiredThumb}
                   title={pv.title}
                 >
-                  <img
-                    src={pv.thumbnailUrl || "/placeholder-thumb.jpg"}
-                    alt=""
-                    loading="lazy"
-                  />
+                  {proofThumbs[idx] ? (
+                    <Image
+                      src={proofThumbs[idx] as string}
+                      alt={`${pv.title} thumbnail`}
+                      width={48}
+                      height={27}
+                      sizes="48px"
+                    />
+                  ) : (
+                    <div className={s.inspiredThumbPlaceholder} aria-hidden />
+                  )}
                 </div>
               ))}
               {proofVideos[0] && (
@@ -482,7 +509,9 @@ function IdeaCard({
           </button>
         )}
         <button
-          className={`${s.ideaSaveBtn} ${isSaved ? s.saved : ""} ${isSaving ? s.saving : ""}`}
+          className={`${s.ideaSaveBtn} ${isSaved ? s.saved : ""} ${
+            isSaving ? s.saving : ""
+          }`}
           onClick={(e) => {
             e.stopPropagation();
             if (!isSaving) onSave();
@@ -568,16 +597,21 @@ function IdeaDetailSheet({
             summary: idea.angle,
             keywords: idea.keywords.slice(0, 5).map((k) => k.text),
             hooks: idea.hooks.slice(0, 2).map((h) => h.text),
-            inspiredByVideoIds: idea.proof.basedOn.slice(0, 3).map((p) => p.videoId),
+            inspiredByVideoIds: idea.proof.basedOn
+              .slice(0, 3)
+              .map((p) => p.videoId),
           },
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        if (data.hooks?.length) setExtraHooks((prev) => [...prev, ...data.hooks]);
-        if (data.titles?.length) setExtraTitles((prev) => [...prev, ...data.titles]);
-        if (data.keywords?.length) setExtraKeywords((prev) => [...prev, ...data.keywords]);
+        if (data.hooks?.length)
+          setExtraHooks((prev) => [...prev, ...data.hooks]);
+        if (data.titles?.length)
+          setExtraTitles((prev) => [...prev, ...data.titles]);
+        if (data.keywords?.length)
+          setExtraKeywords((prev) => [...prev, ...data.keywords]);
       }
     } catch (err) {
       console.error("Failed to generate more:", err);
@@ -592,17 +626,12 @@ function IdeaDetailSheet({
   ].join(", ");
 
   // Combine original + extra content
-  const allHooks = [
-    ...idea.hooks.map((h) => h.text),
-    ...extraHooks,
-  ];
-  const allTitles = [
-    ...idea.titles.map((t) => t.text),
-    ...extraTitles,
-  ];
+  const allHooks = [...idea.hooks.map((h) => h.text), ...extraHooks];
+  const allTitles = [...idea.titles.map((t) => t.text), ...extraTitles];
 
   // Limit inspired by to 6 max, no load more
   const proofVideos = idea.proof.basedOn.slice(0, 6);
+  const proofThumbs = proofVideos.map((pv) => safeImageSrc(pv.thumbnailUrl));
 
   return (
     <div className={s.sheetOverlay} onClick={onClose}>
@@ -690,11 +719,25 @@ function IdeaDetailSheet({
                       title="Copy"
                     >
                       {copiedId === `hook-${i}` ? (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <path d="M20 6L9 17l-5-5" />
                         </svg>
                       ) : (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <rect x="9" y="9" width="13" height="13" rx="2" />
                           <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                         </svg>
@@ -705,7 +748,10 @@ function IdeaDetailSheet({
               ))}
               {/* Extra hooks from Generate More */}
               {extraHooks.map((hookText, i) => (
-                <div key={`extra-${i}`} className={`${s.hookCard} ${s.newItem}`}>
+                <div
+                  key={`extra-${i}`}
+                  className={`${s.hookCard} ${s.newItem}`}
+                >
                   <span className={s.newBadge}>New</span>
                   <p className={s.hookCardText}>&ldquo;{hookText}&rdquo;</p>
                   <div className={s.hookCardFooter}>
@@ -716,11 +762,25 @@ function IdeaDetailSheet({
                       title="Copy"
                     >
                       {copiedId === `extra-hook-${i}` ? (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <path d="M20 6L9 17l-5-5" />
                         </svg>
                       ) : (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <rect x="9" y="9" width="13" height="13" rx="2" />
                           <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                         </svg>
@@ -757,11 +817,25 @@ function IdeaDetailSheet({
                     title="Copy"
                   >
                     {copiedId === `title-${i}` ? (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <path d="M20 6L9 17l-5-5" />
                       </svg>
                     ) : (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <rect x="9" y="9" width="13" height="13" rx="2" />
                         <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                       </svg>
@@ -771,7 +845,10 @@ function IdeaDetailSheet({
               ))}
               {/* Extra titles from Generate More */}
               {extraTitles.map((titleText, i) => (
-                <div key={`extra-${i}`} className={`${s.titleCard} ${s.newItem}`}>
+                <div
+                  key={`extra-${i}`}
+                  className={`${s.titleCard} ${s.newItem}`}
+                >
                   <span className={s.newBadge}>New</span>
                   <div className={s.titleCardContent}>
                     <p className={s.titleCardText}>{titleText}</p>
@@ -782,11 +859,25 @@ function IdeaDetailSheet({
                     title="Copy"
                   >
                     {copiedId === `extra-title-${i}` ? (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <path d="M20 6L9 17l-5-5" />
                       </svg>
                     ) : (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <rect x="9" y="9" width="13" height="13" rx="2" />
                         <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                       </svg>
@@ -801,16 +892,16 @@ function IdeaDetailSheet({
           {idea.scriptOutline && (
             <section className={s.sheetSection}>
               <h3 className={s.sectionTitle}>Script Outline</h3>
-              <p className={s.sectionIntro}>
-                Structure for your video content
-              </p>
+              <p className={s.sectionIntro}>Structure for your video content</p>
               <div className={s.scriptOutline}>
                 {idea.scriptOutline.hook && (
                   <div className={s.scriptBlock}>
                     <h4 className={s.scriptBlockTitle}>
                       <span className={s.scriptIcon}>🎬</span> Hook (0-10 sec)
                     </h4>
-                    <p className={s.scriptBlockText}>{idea.scriptOutline.hook}</p>
+                    <p className={s.scriptBlockText}>
+                      {idea.scriptOutline.hook}
+                    </p>
                   </div>
                 )}
                 {idea.scriptOutline.setup && (
@@ -818,27 +909,32 @@ function IdeaDetailSheet({
                     <h4 className={s.scriptBlockTitle}>
                       <span className={s.scriptIcon}>📋</span> Setup (10-40 sec)
                     </h4>
-                    <p className={s.scriptBlockText}>{idea.scriptOutline.setup}</p>
+                    <p className={s.scriptBlockText}>
+                      {idea.scriptOutline.setup}
+                    </p>
                   </div>
                 )}
-                {idea.scriptOutline.mainPoints && idea.scriptOutline.mainPoints.length > 0 && (
-                  <div className={s.scriptBlock}>
-                    <h4 className={s.scriptBlockTitle}>
-                      <span className={s.scriptIcon}>📝</span> Main Points
-                    </h4>
-                    <ul className={s.scriptPoints}>
-                      {idea.scriptOutline.mainPoints.map((point, i) => (
-                        <li key={i}>{point}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {idea.scriptOutline.mainPoints &&
+                  idea.scriptOutline.mainPoints.length > 0 && (
+                    <div className={s.scriptBlock}>
+                      <h4 className={s.scriptBlockTitle}>
+                        <span className={s.scriptIcon}>📝</span> Main Points
+                      </h4>
+                      <ul className={s.scriptPoints}>
+                        {idea.scriptOutline.mainPoints.map((point, i) => (
+                          <li key={i}>{point}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 {idea.scriptOutline.payoff && (
                   <div className={s.scriptBlock}>
                     <h4 className={s.scriptBlockTitle}>
                       <span className={s.scriptIcon}>🎯</span> Payoff
                     </h4>
-                    <p className={s.scriptBlockText}>{idea.scriptOutline.payoff}</p>
+                    <p className={s.scriptBlockText}>
+                      {idea.scriptOutline.payoff}
+                    </p>
                   </div>
                 )}
                 {idea.scriptOutline.cta && (
@@ -846,7 +942,9 @@ function IdeaDetailSheet({
                     <h4 className={s.scriptBlockTitle}>
                       <span className={s.scriptIcon}>👉</span> Call to Action
                     </h4>
-                    <p className={s.scriptBlockText}>{idea.scriptOutline.cta}</p>
+                    <p className={s.scriptBlockText}>
+                      {idea.scriptOutline.cta}
+                    </p>
                   </div>
                 )}
               </div>
@@ -932,17 +1030,23 @@ function IdeaDetailSheet({
                 Recent winners that sparked this idea
               </p>
               <div className={s.proofScroller}>
-                {proofVideos.map((pv) => (
+                {proofVideos.map((pv, idx) => (
                   <a
                     key={pv.videoId}
                     href={`/competitors/video/${pv.videoId}`}
                     className={s.proofCard}
                   >
                     <div className={s.proofThumb}>
-                      <img
-                        src={pv.thumbnailUrl || "/placeholder-thumb.jpg"}
-                        alt=""
-                      />
+                      {proofThumbs[idx] ? (
+                        <Image
+                          src={proofThumbs[idx] as string}
+                          alt={`${pv.title} thumbnail`}
+                          fill
+                          sizes="200px"
+                        />
+                      ) : (
+                        <div className={s.proofThumbPlaceholder} aria-hidden />
+                      )}
                       <span className={s.proofViews}>
                         {formatCompact(pv.metrics.viewsPerDay)}/day
                       </span>

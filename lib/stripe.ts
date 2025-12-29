@@ -25,7 +25,7 @@ type StripePortalSession = {
   url: string;
 };
 
-type StripeSubscription = {
+export type StripeSubscription = {
   id: string;
   status: string;
   customer: string;
@@ -96,7 +96,7 @@ function isEntitledFromStripe(
 /**
  * Make a Stripe API request
  */
-async function stripeRequest<T>(
+export async function stripeRequest<T>(
   endpoint: string,
   options: {
     method?: string;

@@ -31,6 +31,7 @@ export async function callLLM(
     model?: string;
     maxTokens?: number;
     temperature?: number;
+    responseFormat?: "json_object";
   }
 ): Promise<LLMResponse> {
   // TEST_MODE: Return fixture response
@@ -46,6 +47,7 @@ export async function callLLM(
   const model = options?.model ?? DEFAULT_MODEL;
   const maxTokens = options?.maxTokens ?? MAX_TOKENS;
   const temperature = options?.temperature ?? 0.7;
+  const responseFormat = options?.responseFormat;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -58,6 +60,7 @@ export async function callLLM(
       messages,
       max_tokens: maxTokens,
       temperature,
+      ...(responseFormat ? { response_format: { type: responseFormat } } : {}),
     }),
   });
 
@@ -546,10 +549,10 @@ ${analysis.hooksToTry.map((p) => `- ${p}`).join("\n")}`;
 }
 
 /**
- * Generate structured converter insights for Subscriber Drivers page.
+ * Generate structured subscriber insights for Subscriber Drivers page.
  * Returns patterns, recipe, and video ideas optimized for subscriber conversion.
  */
-export async function generateConverterInsights(
+export async function generateSubscriberInsights(
   videos: Array<{
     title: string;
     subsPerThousand: number;
@@ -637,7 +640,7 @@ Return ONLY JSON, no explanation.`;
       return parsed;
     }
   } catch (err) {
-    console.warn("Failed to generate converter insights:", err);
+    console.warn("Failed to generate subscriber insights:", err);
   }
 
   // Fallback with reasonable defaults
@@ -668,7 +671,7 @@ Return ONLY JSON, no explanation.`;
         },
         {
           pattern: "Value delivered before CTA",
-          evidence: "Top converters give value first",
+          evidence: "Top subscriber drivers give value first",
           howToUse: "Share a quick win before asking for subscribe",
         },
       ],
@@ -882,6 +885,7 @@ export async function generateCompetitorVideoAnalysis(
     description?: string;
     tags?: string[];
     channelTitle: string;
+    durationSec?: number;
     stats: { viewCount: number; likeCount?: number; commentCount?: number };
     derived: {
       viewsPerDay: number;
@@ -903,6 +907,11 @@ export async function generateCompetitorVideoAnalysis(
   themesToRemix: Array<{ theme: string; why: string }>;
   titlePatterns: string[];
   packagingNotes: string[];
+  beatThisVideo: Array<{
+    action: string;
+    difficulty: "Easy" | "Medium" | "Hard";
+    impact: "Low" | "Medium" | "High";
+  }>;
   remixIdeasForYou: Array<{
     title: string;
     hook: string;
@@ -1166,6 +1175,9 @@ Return ONLY valid JSON with this structure:
   ],
   "titlePatterns": ["Pattern 1 observed in this title", "Pattern 2", "..."],
   "packagingNotes": ["Note about thumbnail/title combo", "Emotional trigger used", "..."],
+  "beatThisVideo": [
+    { "action": "Concrete step tied to THIS video (not generic)", "difficulty": "Easy|Medium|Hard", "impact": "Low|Medium|High" }
+  ],
   "remixIdeasForYou": [
     {
       "title": "Specific title idea for the user's channel",
@@ -1200,6 +1212,7 @@ Other rules:
 - 4-6 items for whyItsWorking
 - 2-3 items for themesToRemix
 - 2-3 items for titlePatterns and packagingNotes
+- 6-8 items for beatThisVideo. EACH item must be unique to this video and must reference something from the inputs (topic, format, length, comments, or metrics). Avoid universal advice like "make a better thumbnail" unless you specify what to change and why for THIS topic.
 - 3-4 remix ideas tailored for the user's channel
 - No markdown formatting within JSON values`;
 
@@ -1240,6 +1253,11 @@ Other rules:
 Title: "${video.title}"
 Channel: ${video.channelTitle}
 ${
+  video.durationSec
+    ? `Duration: ${Math.max(1, Math.round(video.durationSec / 60))} minutes`
+    : ""
+}
+${
   descriptionIsUseless
     ? `Description: [IGNORE - just social links/stream boilerplate. Infer topic from title and tags only.]`
     : `Description: ${cleanedDescription.slice(0, 1400)}`
@@ -1268,8 +1286,9 @@ Extract:
 2. Specific reasons why it's working (incorporate comment insights if available)
 3. Themes that could be remixed for my channel
 4. Title patterns to learn from
-5. 3-4 specific remix ideas for "${userChannelTitle}"
-6. Optional packaging notes ONLY if clearly implied by title/description/comments (keep short)`;
+5. "Beat this video" checklist: 6-8 actions that are highly specific to THIS video/topic/audience. Each action should help me outperform them, not just "do the basics."
+6. 3-4 specific remix ideas for "${userChannelTitle}"
+7. Optional packaging notes ONLY if clearly implied by title/description/comments (keep short)`;
 
   try {
     const result = await callLLM(
@@ -1288,6 +1307,11 @@ Extract:
         themesToRemix?: Array<{ theme: string; why: string }>;
         titlePatterns?: string[];
         packagingNotes?: string[];
+        beatThisVideo?: Array<{
+          action: string;
+          difficulty: "Easy" | "Medium" | "Hard";
+          impact: "Low" | "Medium" | "High";
+        }>;
         remixIdeasForYou?: Array<{
           title: string;
           hook: string;
@@ -1346,6 +1370,44 @@ Extract:
       "Clear value proposition visible at a glance",
       "Likely uses emotional triggers in thumbnail",
     ],
+    beatThisVideo: [
+      {
+        action:
+          "Outperform them with a clearer framework: name it, break it into 3–5 steps, and recap it at the end",
+        difficulty: "Medium",
+        impact: "High",
+      },
+      {
+        action:
+          "Add one concrete example/case study that directly matches the video's topic and audience level",
+        difficulty: "Medium",
+        impact: "High",
+      },
+      {
+        action:
+          "Answer the #1 follow-up viewers asked for in comments (explicitly and early)",
+        difficulty: "Easy",
+        impact: "High",
+      },
+      {
+        action:
+          "Differentiate by targeting a specific audience slice (beginner vs advanced) with a tailored promise",
+        difficulty: "Medium",
+        impact: "Medium",
+      },
+      {
+        action:
+          "Include one contrarian insight or common mistake-to-avoid to reframe the topic",
+        difficulty: "Medium",
+        impact: "Medium",
+      },
+      {
+        action:
+          "Make your opening promise more measurable and specific than theirs (time, number, or outcome)",
+        difficulty: "Easy",
+        impact: "Medium",
+      },
+    ],
     remixIdeasForYou: [
       {
         title: `My Version of ${video.title.slice(0, 30)}`,
@@ -1355,6 +1417,153 @@ Extract:
       },
     ],
   };
+}
+
+/**
+ * Generate a per-video "Beat this video" checklist for competitor analysis.
+ * Smaller than full analysis so we can backfill/correct older cached analyses
+ * without regenerating everything.
+ */
+export async function generateCompetitorBeatChecklist(input: {
+  title: string;
+  channelTitle: string;
+  description?: string;
+  tags?: string[];
+  durationSec?: number;
+  viewCount: number;
+  viewsPerDay: number;
+  likeCount?: number;
+  commentCount?: number;
+  engagementPerView?: number;
+  userChannelTitle: string;
+  commentsAnalysis?: {
+    sentiment?: { positive: number; neutral: number; negative: number };
+    themes?: Array<{ theme: string; count: number; examples: string[] }>;
+    viewerLoved?: string[];
+    viewerAskedFor?: string[];
+  };
+}): Promise<
+  Array<{
+    action: string;
+    difficulty: "Easy" | "Medium" | "Hard";
+    impact: "Low" | "Medium" | "High";
+  }>
+> {
+  function cleanDescription(raw: string): string {
+    const noUrls = raw.replace(/https?:\/\/\S+/gi, "");
+    const noTimestamps = noUrls.replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "");
+    const noHashtags = noTimestamps.replace(/#[\p{L}\p{N}_-]+/gu, "");
+    return noHashtags.replace(/\s+/g, " ").trim();
+  }
+
+  const systemPrompt = `You are an expert YouTube growth strategist.
+
+Create a "Beat this video" checklist that is HIGHLY SPECIFIC to the competitor video.
+
+Return ONLY valid JSON with this structure:
+{
+  "beatThisVideo": [
+    { "action": "Concrete step", "difficulty": "Easy|Medium|Hard", "impact": "Low|Medium|High" }
+  ]
+}
+
+Rules:
+- Provide 6-8 items.
+- Each item must reference something from the inputs (topic, format, length, comments, metrics, or audience).
+- Avoid generic items like "make a better thumbnail" or "improve your hook" unless you specify WHAT to change for THIS topic and WHY.
+- Actions should be phrased as what to do (not observations).
+- No markdown.`;
+
+  let commentsContext = "";
+  const ca = input.commentsAnalysis;
+  if (ca) {
+    if (ca.sentiment) {
+      commentsContext += `\nComment sentiment: ${ca.sentiment.positive}% positive, ${ca.sentiment.neutral}% neutral, ${ca.sentiment.negative}% negative`;
+    }
+    if (ca.themes?.length) {
+      commentsContext += `\nTop comment themes: ${ca.themes
+        .slice(0, 6)
+        .map((t) => t.theme)
+        .join(", ")}`;
+    }
+    if (ca.viewerLoved?.length) {
+      commentsContext += `\nWhat viewers loved: ${ca.viewerLoved
+        .slice(0, 4)
+        .join("; ")}`;
+    }
+    if (ca.viewerAskedFor?.length) {
+      commentsContext += `\nViewers asked for: ${ca.viewerAskedFor
+        .slice(0, 4)
+        .join("; ")}`;
+    }
+  }
+
+  const userPrompt = `Channel I'm making videos for: "${input.userChannelTitle}"
+
+Competitor video:
+Title: "${input.title}"
+Channel: ${input.channelTitle}
+Duration: ${
+    input.durationSec
+      ? `${Math.max(1, Math.round(input.durationSec / 60))} min`
+      : "unknown"
+  }
+Description: ${
+    cleanDescription(input.description ?? "").slice(0, 1200) || "[none]"
+  }
+Tags: ${(input.tags ?? []).slice(0, 25).join(", ") || "[none]"}
+Views: ${input.viewCount.toLocaleString()}
+Views/day: ${input.viewsPerDay.toLocaleString()}
+${
+  input.engagementPerView
+    ? `Engagement rate: ${(input.engagementPerView * 100).toFixed(2)}%`
+    : ""
+}${commentsContext}
+
+Generate a beat checklist that helps me outperform this specific video with better content strategy, structure, and differentiation.`;
+
+  const result = await callLLM(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    { temperature: 0.6, maxTokens: 700 }
+  );
+
+  const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error("Failed to parse LLM response for beat checklist");
+  }
+  const parsed = JSON.parse(jsonMatch[0]) as {
+    beatThisVideo?: Array<{
+      action: unknown;
+      difficulty: unknown;
+      impact: unknown;
+    }>;
+  };
+
+  const list = Array.isArray(parsed.beatThisVideo) ? parsed.beatThisVideo : [];
+  const cleaned = list
+    .map((x) => ({
+      action: typeof x.action === "string" ? x.action.trim() : "",
+      difficulty:
+        x.difficulty === "Easy" ||
+        x.difficulty === "Medium" ||
+        x.difficulty === "Hard"
+          ? (x.difficulty as "Easy" | "Medium" | "Hard")
+          : "Medium",
+      impact:
+        x.impact === "Low" || x.impact === "Medium" || x.impact === "High"
+          ? (x.impact as "Low" | "Medium" | "High")
+          : "High",
+    }))
+    .filter((x) => x.action.length >= 16)
+    .slice(0, 8);
+
+  if (cleaned.length < 4) {
+    throw new Error("Beat checklist too small/invalid");
+  }
+  return cleaned;
 }
 
 /**

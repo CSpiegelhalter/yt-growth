@@ -81,7 +81,9 @@ export default function ContactClient({ userEmail }: Props) {
     } catch (err) {
       console.error("Contact form error:", err);
       setServerError(
-        err instanceof Error ? err.message : "Something went wrong. Please try again."
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
       );
     } finally {
       setSubmitting(false);
@@ -95,17 +97,31 @@ export default function ContactClient({ userEmail }: Props) {
         <div className={s.inner}>
           <div className={s.successCard}>
             <div className={s.successIcon}>
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="36"
+                height="36"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M20 6L9 17l-5-5" />
               </svg>
             </div>
             <h1 className={s.successTitle}>Message Sent!</h1>
             <p className={s.successText}>
-              Thanks for reaching out. I&apos;ll get back to you as soon as possible,
+              Thanks for reaching out. I'll get back to you as soon as possible,
               usually within 24-48 hours.
             </p>
             <Link href="/dashboard" className={s.successBtn}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M19 12H5M12 19l-7-7 7-7" />
               </svg>
               Back to Dashboard
@@ -122,14 +138,21 @@ export default function ContactClient({ userEmail }: Props) {
         {/* Header */}
         <header className={s.header}>
           <div className={s.iconWrap}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
           </div>
           <h1 className={s.title}>Get in Touch</h1>
           <p className={s.subtitle}>
-            Have a question, feedback, or running into an issue? 
-            I&apos;d love to hear from you.
+            Have a question, feedback, or running into an issue? I'd love to
+            hear from you.
           </p>
         </header>
 
@@ -139,7 +162,14 @@ export default function ContactClient({ userEmail }: Props) {
           {serverError && (
             <div className={s.errorAlert}>
               <div className={s.errorAlertIcon}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 8v4M12 16h.01" />
                 </svg>
@@ -162,13 +192,21 @@ export default function ContactClient({ userEmail }: Props) {
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                  if (errors.email)
+                    setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
                 autoComplete="email"
               />
               {errors.email && (
                 <p className={s.fieldError}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <circle cx="12" cy="12" r="10" />
                     <path d="M12 8v4M12 16h.01" />
                   </svg>
@@ -180,7 +218,7 @@ export default function ContactClient({ userEmail }: Props) {
             {/* Subject */}
             <div className={s.fieldGroup}>
               <label htmlFor="subject" className={s.label}>
-                What&apos;s this about?
+                What's this about?
               </label>
               <select
                 id="subject"
@@ -203,36 +241,40 @@ export default function ContactClient({ userEmail }: Props) {
               </label>
               <textarea
                 id="message"
-                className={`${s.textarea} ${errors.message ? s.inputError : ""}`}
+                className={`${s.textarea} ${
+                  errors.message ? s.inputError : ""
+                }`}
                 placeholder="Tell me what's on your mind..."
                 value={message}
                 onChange={(e) => {
                   setMessage(e.target.value);
-                  if (errors.message) setErrors((prev) => ({ ...prev, message: undefined }));
+                  if (errors.message)
+                    setErrors((prev) => ({ ...prev, message: undefined }));
                 }}
                 rows={6}
               />
               {errors.message ? (
                 <p className={s.fieldError}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <circle cx="12" cy="12" r="10" />
                     <path d="M12 8v4M12 16h.01" />
                   </svg>
                   {errors.message}
                 </p>
               ) : (
-                <p className={s.fieldHint}>
-                  {message.length}/5000 characters
-                </p>
+                <p className={s.fieldHint}>{message.length}/5000 characters</p>
               )}
             </div>
 
             {/* Submit */}
-            <button
-              type="submit"
-              className={s.submitBtn}
-              disabled={submitting}
-            >
+            <button type="submit" className={s.submitBtn} disabled={submitting}>
               {submitting ? (
                 <>
                   <span className={s.spinner} />
@@ -240,7 +282,14 @@ export default function ContactClient({ userEmail }: Props) {
                 </>
               ) : (
                 <>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
                   </svg>
                   Send Message
@@ -260,4 +309,3 @@ export default function ContactClient({ userEmail }: Props) {
     </div>
   );
 }
-

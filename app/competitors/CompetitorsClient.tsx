@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import s from "./style.module.css";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 import { formatCompact } from "@/lib/format";
@@ -164,7 +165,7 @@ export default function CompetitorsClient({
         <div className={s.header}>
           <h1 className={s.title}>Competitor Winners</h1>
           <p className={s.subtitle}>
-            See what&apos;s working for competitors in your niche
+            See what's working for competitors in your niche
           </p>
         </div>
         <div className={s.emptyState}>
@@ -182,7 +183,7 @@ export default function CompetitorsClient({
           </div>
           <h2 className={s.emptyTitle}>Connect a Channel First</h2>
           <p className={s.emptyDesc}>
-            Connect your YouTube channel to discover what&apos;s working for
+            Connect your YouTube channel to discover what's working for
             competitors in your niche.
           </p>
           <a href="/dashboard" className={s.emptyBtn}>
@@ -288,13 +289,6 @@ export default function CompetitorsClient({
           {/* Load More Videos */}
           {(visibleCount < feedData.videos.length || feedData.hasMorePages) && (
             <div className={s.fetchMoreWrap}>
-              {feedData.currentQuery && (
-                <p className={s.queryHint}>
-                  Showing {Math.min(visibleCount, feedData.videos.length)} of{" "}
-                  {feedData.videos.length} videos
-                  {feedData.hasMorePages && " (more available)"}
-                </p>
-              )}
               <button
                 className={s.fetchMoreBtn}
                 onClick={handleLoadMore}
@@ -351,6 +345,8 @@ function CompetitorVideoCard({
   channelId: string;
 }) {
   const hasVelocity = video.derived.velocity24h !== undefined;
+  const [thumbOk, setThumbOk] = useState(true);
+  const [avatarOk, setAvatarOk] = useState(true);
 
   return (
     <Link
@@ -358,16 +354,14 @@ function CompetitorVideoCard({
       className={s.videoCard}
     >
       <div className={s.videoThumbWrap}>
-        {video.thumbnailUrl ? (
-          <img
+        {video.thumbnailUrl && thumbOk ? (
+          <Image
             src={video.thumbnailUrl}
-            alt=""
+            alt={`${video.title} thumbnail`}
+            fill
             className={s.videoThumb}
-            loading="lazy"
-            onError={(e) => {
-              // Hide broken thumbnails gracefully.
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
+            sizes="(max-width: 768px) 100vw, 33vw"
+            onError={() => setThumbOk(false)}
           />
         ) : (
           <div className={s.videoThumbPlaceholder}>
@@ -401,17 +395,17 @@ function CompetitorVideoCard({
         <h3 className={s.videoCardTitle}>{video.title}</h3>
 
         <div className={s.channelRow}>
-          {video.channelThumbnailUrl && (
-            <img
+          {video.channelThumbnailUrl && avatarOk ? (
+            <Image
               src={video.channelThumbnailUrl}
-              alt=""
+              alt={`${video.channelTitle} channel avatar`}
+              width={24}
+              height={24}
               className={s.channelAvatar}
-              loading="lazy"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
+              sizes="24px"
+              onError={() => setAvatarOk(false)}
             />
-          )}
+          ) : null}
           <span className={s.channelName}>{video.channelTitle}</span>
         </div>
 

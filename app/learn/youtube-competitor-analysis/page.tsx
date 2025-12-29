@@ -50,7 +50,7 @@ export default function YouTubeCompetitorAnalysisPage() {
         </nav>
         <h1 className={s.title}>YouTube Competitor Analysis</h1>
         <p className={s.subtitle}>
-          Learn what&apos;s working for similar channels in your niche and apply
+          Learn what's working for similar channels in your niche and apply
           those insights to accelerate your own growth.
         </p>
       </header>
@@ -75,10 +75,10 @@ export default function YouTubeCompetitorAnalysisPage() {
             Why Competitor Analysis Matters
           </h2>
           <p className={s.sectionText}>
-            Competitor analysis isn&apos;t about copying—it&apos;s about
-            understanding what your audience already responds to. Channels in
-            your niche have tested ideas, formats, and topics. Learn from their
-            experiments to avoid their mistakes and build on their successes.
+            Competitor analysis isn't about copying—it's about understanding
+            what your audience already responds to. Channels in your niche have
+            tested ideas, formats, and topics. Learn from their experiments to
+            avoid their mistakes and build on their successes.
           </p>
           <p className={s.sectionText}>
             The goal is to identify patterns, not individual videos. What topics
@@ -108,7 +108,7 @@ export default function YouTubeCompetitorAnalysisPage() {
           <ul className={s.list}>
             <li>
               <strong>Outlier videos:</strong> Videos that perform 2-3x above
-              the channel&apos;s average indicate resonant topics
+              the channel's average indicate resonant topics
             </li>
             <li>
               <strong>Title patterns:</strong> What structures do they use?
@@ -152,14 +152,14 @@ export default function YouTubeCompetitorAnalysisPage() {
           </h2>
           <p className={s.sectionText}>
             Outlier videos are the gold mine of competitor analysis. These are
-            videos that significantly outperform a channel&apos;s average—often
+            videos that significantly outperform a channel's average—often
             indicating a topic, format, or approach that resonates strongly with
             audiences.
           </p>
           <ol className={s.numberedList}>
             <li>
-              <strong>Calculate the channel&apos;s average views</strong> over
-              the last 20-30 videos to establish a baseline
+              <strong>Calculate the channel's average views</strong> over the
+              last 20-30 videos to establish a baseline
             </li>
             <li>
               <strong>Identify videos with 2x+ the average</strong>—these are
@@ -213,10 +213,10 @@ export default function YouTubeCompetitorAnalysisPage() {
             </li>
             <li>
               <strong>Focusing on views only:</strong> High views with low
-              engagement might indicate clickbait that doesn&apos;t convert
+              engagement might indicate clickbait that doesn't convert
             </li>
             <li>
-              <strong>Analysis paralysis:</strong> Don&apos;t spend so much time
+              <strong>Analysis paralysis:</strong> Don't spend so much time
               researching that you never create
             </li>
           </ul>
@@ -253,7 +253,7 @@ export default function YouTubeCompetitorAnalysisPage() {
               </h3>
               <p className={s.faqAnswer}>
                 Outlier videos are videos that perform significantly better than
-                a channel&apos;s average (usually 2x+). They indicate topics or
+                a channel's average (usually 2x+). They indicate topics or
                 formats that resonate strongly with audiences. Studying outliers
                 helps you identify proven opportunities.
               </p>

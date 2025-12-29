@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import s from "./Header.module.css";
@@ -182,8 +183,8 @@ export function Header() {
       { href: "/dashboard", label: "Videos", icon: "video" as const },
       { href: "/ideas", label: "Ideas", icon: "lightbulb" as const },
       {
-        href: "/converters",
-        label: "Subscriber Drivers",
+        href: "/subscriber-insights",
+        label: "Subscriber Insights",
         icon: "trending" as const,
       },
       { href: "/competitors", label: "Competitors", icon: "trophy" as const },
@@ -234,10 +235,13 @@ export function Header() {
               type="button"
             >
               {activeChannel?.thumbnailUrl ? (
-                <img
+                <Image
                   src={activeChannel.thumbnailUrl}
-                  alt=""
+                  alt={`${activeChannel.title ?? "Selected channel"} avatar`}
+                  width={24}
+                  height={24}
                   className={s.channelThumb}
+                  sizes="24px"
                 />
               ) : (
                 <div className={s.channelThumbPlaceholder}>
@@ -282,10 +286,13 @@ export function Header() {
                     type="button"
                   >
                     {channel.thumbnailUrl ? (
-                      <img
+                      <Image
                         src={channel.thumbnailUrl}
-                        alt=""
+                        alt={`${channel.title ?? "YouTube channel"} avatar`}
+                        width={32}
+                        height={32}
                         className={s.channelOptionThumb}
+                        sizes="32px"
                       />
                     ) : (
                       <div className={s.channelOptionThumbPlaceholder} />
@@ -584,7 +591,7 @@ function isChannelScopedPath(pathname: string): boolean {
   // Pages where data is scoped to the "active channel" and should respond to channel changes.
   if (pathname === "/dashboard") return true;
   if (pathname === "/ideas") return true;
-  if (pathname === "/converters") return true;
+  if (pathname === "/subscriber-insights") return true;
   if (pathname === "/competitors") return true;
   if (pathname.startsWith("/video/")) return true;
   if (pathname.startsWith("/competitors/video/")) return true;

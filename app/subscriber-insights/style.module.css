@@ -3,14 +3,14 @@
    ================================ */
 
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 20px 16px 40px;
+  padding: var(--page-padding-mobile);
 }
 
 @media (min-width: 768px) {
   .page {
-    padding: 24px 24px 60px;
+    padding: var(--page-padding-desktop);
   }
 }
 
@@ -20,23 +20,23 @@
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--page-title-size);
+  font-weight: var(--page-title-weight);
   color: #1e293b;
   margin: 0 0 4px;
 }
 
 @media (min-width: 640px) {
   .title {
-    font-size: 1.75rem;
+    font-size: var(--page-title-size-lg);
   }
 }
 
 .subtitle {
-  font-size: 0.9375rem;
+  font-size: var(--page-subtitle-size);
   color: #64748b;
   margin: 0;
-  line-height: 1.4;
+  line-height: var(--page-subtitle-line-height);
 }
 
 /* Upgrade Banner */
@@ -61,7 +61,7 @@
 
 .upgradeBanner p {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--control-font-size);
   color: #92400e;
   font-weight: 500;
 }
@@ -71,7 +71,7 @@
   align-items: center;
   justify-content: center;
   padding: 10px 20px;
-  font-size: 0.8125rem;
+  font-size: var(--control-font-size);
   font-weight: 600;
   color: white;
   background: #92400e;
@@ -133,7 +133,7 @@
 .searchInput {
   width: 100%;
   padding: 10px 12px 10px 38px;
-  font-size: 0.875rem;
+  font-size: var(--control-font-size);
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   background: white;
@@ -164,7 +164,7 @@
 
 .select {
   padding: 10px 12px;
-  font-size: 0.8125rem;
+  font-size: var(--control-font-size);
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   background: white;
@@ -186,7 +186,7 @@
   justify-content: center;
   gap: 6px;
   padding: 10px 14px;
-  font-size: 0.8125rem;
+  font-size: var(--control-font-size);
   font-weight: 500;
   border: 1px solid #e2e8f0;
   border-radius: 10px;

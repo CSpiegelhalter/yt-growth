@@ -23,7 +23,7 @@ type YouTubeVideoDetails = {
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { channelId: string } }
+  { params }: { params: Promise<{ channelId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   const userIdRaw = (session?.user as { id?: string } | undefined)?.id;
@@ -32,7 +32,7 @@ export async function POST(
   }
 
   const userId = Number(userIdRaw);
-  const { channelId } = params;
+  const { channelId } = await params;
 
   try {
     // Find the channel and verify ownership

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import s from "./style.module.css";
 import { Channel } from "@/types/api";
 
@@ -39,11 +40,13 @@ export default function ChannelCard({
       <div className={s.header}>
         <div className={s.channelInfo}>
           {channel.thumbnailUrl ? (
-            <img
+            <Image
               src={channel.thumbnailUrl}
-              alt=""
+              alt={`${channel.title ?? "YouTube channel"} avatar`}
+              width={48}
+              height={48}
               className={s.avatar}
-              loading="lazy"
+              sizes="48px"
             />
           ) : (
             <div className={s.avatarPlaceholder}>
@@ -174,7 +177,7 @@ export default function ChannelCard({
             <h4 className={s.confirmTitle}>Remove Channel?</h4>
             <p className={s.confirmText}>
               This will remove {channel.title ?? "this channel"} from your
-              account. Your YouTube channel won&apos;t be affected.
+              account. Your YouTube channel won't be affected.
             </p>
             <div className={s.confirmActions}>
               <button

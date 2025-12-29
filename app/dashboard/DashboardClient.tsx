@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import s from "./style.module.css";
 import { Me, Channel } from "@/types/api";
 import ChannelsSection from "@/components/dashboard/ChannelSection";
@@ -438,11 +439,12 @@ function VideoCard({ video }: { video: Video }) {
     >
       <div className={s.videoThumbWrap}>
         {video.thumbnailUrl ? (
-          <img
+          <Image
             src={video.thumbnailUrl}
-            alt=""
+            alt={`${video.title ?? "Video"} thumbnail`}
+            fill
             className={s.videoThumb}
-            loading="lazy"
+            sizes="(max-width: 768px) 100vw, 33vw"
           />
         ) : (
           <div className={s.videoThumbPlaceholder}>

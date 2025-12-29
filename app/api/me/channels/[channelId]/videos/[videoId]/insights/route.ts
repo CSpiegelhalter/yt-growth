@@ -25,8 +25,8 @@ import {
 } from "@/lib/with-entitlements";
 import { getGoogleAccount } from "@/lib/youtube-api";
 import {
-  fetchVideoAnalyticsDaily,
-  fetchVideoAnalyticsTotals,
+  fetchVideoAnalyticsDailyWithStatus,
+  fetchVideoAnalyticsTotalsWithStatus,
   fetchOwnedVideoMetadata,
   fetchOwnedVideoComments,
   getDateRange,
@@ -60,6 +60,14 @@ const QuerySchema = z.object({
 
 // Import types from shared types file
 import type { VideoInsightsResponse, VideoInsightsLLM } from "@/types/api";
+
+class YouTubePermissionDeniedError extends Error {
+  code = "youtube_permissions" as const;
+  constructor(message: string) {
+    super(message);
+    this.name = "YouTubePermissionDeniedError";
+  }
+}
 
 /**
  * GET - Fetch insights (from cache or generate)
@@ -130,30 +138,18 @@ export async function GET(
       },
     });
 
-    // If cache is fresh (time-based) and has LLM data, return it
-    // Content hash will be checked during regeneration
-    // NOTE: Cached responses don't count against usage limits
-    if (
-      cached?.derivedJson &&
-      cached?.llmJson &&
-      cached.cachedUntil > new Date()
-    ) {
+    // If cache is fresh (time-based), return it (even if llmJson is null)
+    // NOTE: Cached responses don't count against usage limits.
+    // This is critical: if the LLM fails (or returns null), we still want to cache/serve
+    // the computed analytics+derived metrics so we don't burn multiple daily credits on refresh.
+    if (cached?.derivedJson && cached.cachedUntil > new Date()) {
       const derivedData = cached.derivedJson as any;
-      const llmData = cached.llmJson as any;
+      const llmData = (cached.llmJson as any) ?? null;
       return Response.json({
         ...derivedData,
         llmInsights: llmData,
         cachedUntil: cached.cachedUntil.toISOString(),
       });
-    }
-
-    // Entitlement check - only count fresh analysis (not cached)
-    const entitlementResult = await checkEntitlement({
-      featureKey: "owned_video_analysis",
-      increment: true,
-    });
-    if (!entitlementResult.ok) {
-      return entitlementErrorResponse(entitlementResult.error);
     }
 
     // Rate limit check (per-hour limit for API protection)
@@ -175,6 +171,34 @@ export async function GET(
         { error: "Google account not connected" },
         { status: 400 }
       );
+    }
+
+    // Fast permission probe (DON'T increment entitlements if user denied scopes)
+    // This should return quickly with a 403 instead of hanging / attempting LLM work.
+    const { startDate: probeStart, endDate: probeEnd } = getDateRange("7d");
+    const probe = await fetchVideoAnalyticsTotalsWithStatus(
+      ga,
+      channelId,
+      videoId,
+      probeStart,
+      probeEnd
+    );
+    if (
+      !probe.permission.ok &&
+      probe.permission.reason === "permission_denied"
+    ) {
+      throw new YouTubePermissionDeniedError(
+        "Google account is missing required YouTube Analytics permissions. Reconnect Google to grant access."
+      );
+    }
+
+    // Entitlement check - only count fresh analysis (not cached) AND only after we know scopes exist
+    const entitlementResult = await checkEntitlement({
+      featureKey: "owned_video_analysis",
+      increment: true,
+    });
+    if (!entitlementResult.ok) {
+      return entitlementErrorResponse(entitlementResult.error);
     }
 
     // Pass cached data for content-hash comparison
@@ -242,6 +266,12 @@ export async function GET(
 
     return Response.json(result);
   } catch (err: unknown) {
+    if (err instanceof YouTubePermissionDeniedError) {
+      return Response.json(
+        { error: err.message, code: err.code },
+        { status: 403 }
+      );
+    }
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Video insights error:", err);
     return Response.json(
@@ -265,15 +295,10 @@ export async function POST(
   }
 
   try {
-    // Entitlement check (POST = force refresh, always counts as a use)
-    const entitlementResult = await checkEntitlement({
-      featureKey: "owned_video_analysis",
-      increment: true,
-    });
-    if (!entitlementResult.ok) {
-      return entitlementErrorResponse(entitlementResult.error);
+    const user = await getCurrentUserWithSubscription();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const user = entitlementResult.context.user;
 
     const resolvedParams = await params;
     const parsedParams = ParamsSchema.safeParse(resolvedParams);
@@ -287,6 +312,7 @@ export async function POST(
     const range = ["7d", "28d", "90d"].includes(body.range)
       ? body.range
       : "28d";
+    const llmOnly = body.llmOnly === true;
 
     const channel = await prisma.channel.findFirst({
       where: { youtubeChannelId: channelId, userId: user.id },
@@ -312,6 +338,98 @@ export async function POST(
         { error: "Google account not connected" },
         { status: 400 }
       );
+    }
+
+    // If llmOnly, regenerate AI insights using cached derived data (no analytics calls, no daily credit burn)
+    if (llmOnly) {
+      const cached = await prisma.ownedVideoInsightsCache.findFirst({
+        where: {
+          userId: user.id,
+          channelId: channel.id,
+          videoId,
+          range,
+        },
+      });
+
+      if (!cached?.derivedJson || cached.cachedUntil <= new Date()) {
+        return Response.json(
+          {
+            error: "no_cached_analysis",
+            message:
+              "No cached analysis available to generate AI insights. Run a full analysis first.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const derivedData = cached.derivedJson as any;
+      const video = derivedData.video as VideoMetadata;
+      const derived = derivedData.derived as DerivedMetrics;
+      const comparison = derivedData.comparison as BaselineComparison;
+      const levers = derivedData.levers as VideoInsightsResponse["levers"];
+
+      const comments = await fetchOwnedVideoComments(ga, videoId, 30);
+      const llmInsights = await generateLLMInsights(
+        video,
+        derived,
+        comparison,
+        levers,
+        comments
+      );
+
+      // Update just llmJson; keep cachedUntil as-is.
+      await prisma.ownedVideoInsightsCache.update({
+        where: {
+          userId_channelId_videoId_range: {
+            userId: user.id,
+            channelId: channel.id,
+            videoId,
+            range,
+          },
+        },
+        data: {
+          llmJson: llmInsights ?? Prisma.JsonNull,
+        },
+      });
+
+      return Response.json({
+        ...derivedData,
+        llmInsights,
+        cachedUntil: cached.cachedUntil.toISOString(),
+      });
+    }
+
+    // Fast permission probe (don't count as a use if scopes are missing)
+    const { startDate: probeStartPost, endDate: probeEndPost } =
+      getDateRange("7d");
+    const probePost = await fetchVideoAnalyticsTotalsWithStatus(
+      ga,
+      channelId,
+      videoId,
+      probeStartPost,
+      probeEndPost
+    );
+    if (
+      !probePost.permission.ok &&
+      probePost.permission.reason === "permission_denied"
+    ) {
+      return Response.json(
+        {
+          error:
+            "Google account is missing required YouTube Analytics permissions. Reconnect Google to grant access.",
+          code: "youtube_permissions",
+        },
+        { status: 403 }
+      );
+    }
+
+    // Entitlement check (POST = force refresh, always counts as a use)
+    const entitlementResult = await checkEntitlement({
+      featureKey: "owned_video_analysis",
+      increment: true,
+    });
+    if (!entitlementResult.ok) {
+      return entitlementErrorResponse(entitlementResult.error);
     }
 
     // Fetch existing cache for content hash comparison (even on refresh)
@@ -437,17 +555,35 @@ async function generateInsights(
     cachedContentHash && cachedContentHash === currentContentHash;
 
   // Fetch analytics
-  const [totals, dailySeries, comments] = await Promise.all([
-    fetchVideoAnalyticsTotals(
+  const [totalsResult, dailyResult, comments] = await Promise.all([
+    fetchVideoAnalyticsTotalsWithStatus(
       ga,
       youtubeChannelId,
       videoId,
       startDate,
       endDate
     ),
-    fetchVideoAnalyticsDaily(ga, youtubeChannelId, videoId, startDate, endDate),
+    fetchVideoAnalyticsDailyWithStatus(
+      ga,
+      youtubeChannelId,
+      videoId,
+      startDate,
+      endDate
+    ),
     fetchOwnedVideoComments(ga, videoId, 30),
   ]);
+
+  if (
+    !totalsResult.permission.ok &&
+    totalsResult.permission.reason === "permission_denied"
+  ) {
+    throw new YouTubePermissionDeniedError(
+      "Google account is missing required YouTube Analytics permissions. Reconnect Google to grant access."
+    );
+  }
+
+  const totals = totalsResult.totals;
+  const dailySeries = dailyResult.rows;
 
   if (!totals) {
     throw new Error("Could not fetch analytics totals");
@@ -509,17 +645,12 @@ async function generateInsights(
     );
     llmInsights = cachedLlmJson as VideoInsightsLLM;
   } else {
-    // Generate fresh LLM insights
+    // Performance: do NOT block the main insights response on LLM generation.
+    // The client will call POST { llmOnly: true } to populate llmInsights asynchronously.
     console.log(
-      `[VideoInsights] Generating new LLM insights (hash changed: ${cachedContentHash} -> ${currentContentHash})`
+      `[VideoInsights] Skipping LLM generation for fast response (hash changed: ${cachedContentHash} -> ${currentContentHash})`
     );
-    llmInsights = await generateLLMInsights(
-      videoMeta,
-      derived,
-      comparison,
-      levers,
-      comments
-    );
+    llmInsights = null;
   }
 
   // Store daily data in analytics table for future baseline calculations
@@ -656,63 +787,71 @@ async function storeDailyAnalytics(
   videoId: string,
   dailySeries: DailyAnalyticsRow[]
 ): Promise<void> {
-  for (const day of dailySeries) {
-    await prisma.ownedVideoAnalyticsDay.upsert({
-      where: {
-        userId_channelId_videoId_date: {
-          userId,
-          channelId,
-          videoId,
-          date: new Date(day.date),
-        },
-      },
-      create: {
-        userId,
-        channelId,
-        videoId,
-        date: new Date(day.date),
-        views: day.views,
-        engagedViews: day.engagedViews,
-        comments: day.comments,
-        likes: day.likes,
-        shares: day.shares,
-        estimatedMinutesWatched: day.estimatedMinutesWatched,
-        averageViewDuration: day.averageViewDuration,
-        averageViewPercentage: day.averageViewPercentage,
-        subscribersGained: day.subscribersGained,
-        subscribersLost: day.subscribersLost,
-        videosAddedToPlaylists: day.videosAddedToPlaylists,
-        videosRemovedFromPlaylists: day.videosRemovedFromPlaylists,
-        estimatedRevenue: day.estimatedRevenue,
-        estimatedAdRevenue: day.estimatedAdRevenue,
-        grossRevenue: day.grossRevenue,
-        monetizedPlaybacks: day.monetizedPlaybacks,
-        playbackBasedCpm: day.playbackBasedCpm,
-        adImpressions: day.adImpressions,
-        cpm: day.cpm,
-      },
-      update: {
-        views: day.views,
-        engagedViews: day.engagedViews,
-        comments: day.comments,
-        likes: day.likes,
-        shares: day.shares,
-        estimatedMinutesWatched: day.estimatedMinutesWatched,
-        averageViewDuration: day.averageViewDuration,
-        averageViewPercentage: day.averageViewPercentage,
-        subscribersGained: day.subscribersGained,
-        subscribersLost: day.subscribersLost,
-        videosAddedToPlaylists: day.videosAddedToPlaylists,
-        videosRemovedFromPlaylists: day.videosRemovedFromPlaylists,
-        estimatedRevenue: day.estimatedRevenue,
-        estimatedAdRevenue: day.estimatedAdRevenue,
-        grossRevenue: day.grossRevenue,
-        monetizedPlaybacks: day.monetizedPlaybacks,
-        playbackBasedCpm: day.playbackBasedCpm,
-        adImpressions: day.adImpressions,
-        cpm: day.cpm,
-      },
-    });
+  // Performance: batch upserts instead of sequential awaits.
+  // Chunk to avoid huge transactions.
+  const chunkSize = 25;
+  for (let i = 0; i < dailySeries.length; i += chunkSize) {
+    const chunk = dailySeries.slice(i, i + chunkSize);
+    await prisma.$transaction(
+      chunk.map((day) =>
+        prisma.ownedVideoAnalyticsDay.upsert({
+          where: {
+            userId_channelId_videoId_date: {
+              userId,
+              channelId,
+              videoId,
+              date: new Date(day.date),
+            },
+          },
+          create: {
+            userId,
+            channelId,
+            videoId,
+            date: new Date(day.date),
+            views: day.views,
+            engagedViews: day.engagedViews,
+            comments: day.comments,
+            likes: day.likes,
+            shares: day.shares,
+            estimatedMinutesWatched: day.estimatedMinutesWatched,
+            averageViewDuration: day.averageViewDuration,
+            averageViewPercentage: day.averageViewPercentage,
+            subscribersGained: day.subscribersGained,
+            subscribersLost: day.subscribersLost,
+            videosAddedToPlaylists: day.videosAddedToPlaylists,
+            videosRemovedFromPlaylists: day.videosRemovedFromPlaylists,
+            estimatedRevenue: day.estimatedRevenue,
+            estimatedAdRevenue: day.estimatedAdRevenue,
+            grossRevenue: day.grossRevenue,
+            monetizedPlaybacks: day.monetizedPlaybacks,
+            playbackBasedCpm: day.playbackBasedCpm,
+            adImpressions: day.adImpressions,
+            cpm: day.cpm,
+          },
+          update: {
+            views: day.views,
+            engagedViews: day.engagedViews,
+            comments: day.comments,
+            likes: day.likes,
+            shares: day.shares,
+            estimatedMinutesWatched: day.estimatedMinutesWatched,
+            averageViewDuration: day.averageViewDuration,
+            averageViewPercentage: day.averageViewPercentage,
+            subscribersGained: day.subscribersGained,
+            subscribersLost: day.subscribersLost,
+            videosAddedToPlaylists: day.videosAddedToPlaylists,
+            videosRemovedFromPlaylists: day.videosRemovedFromPlaylists,
+            estimatedRevenue: day.estimatedRevenue,
+            estimatedAdRevenue: day.estimatedAdRevenue,
+            grossRevenue: day.grossRevenue,
+            monetizedPlaybacks: day.monetizedPlaybacks,
+            playbackBasedCpm: day.playbackBasedCpm,
+            adImpressions: day.adImpressions,
+            cpm: day.cpm,
+          },
+        })
+      )
+    );
   }
 }
 
@@ -726,9 +865,10 @@ async function generateLLMInsights(
   _levers: VideoInsightsResponse["levers"],
   comments: VideoComment[]
 ): Promise<VideoInsightsLLM | null> {
-  const systemPrompt = `You are an elite YouTube growth strategist with expertise in:
+  const systemPrompt = `You are an elite YouTube growth strategist AND SEO specialist with expertise in:
 - Video packaging (titles, thumbnails, hooks)
 - YouTube SEO and discoverability
+- Writing descriptions that rank AND convert (search intent, keyword placement, scannability)
 - Audience retention psychology
 - Converting viewers to subscribers
 - Data interpretation for YouTube creators
@@ -747,11 +887,32 @@ OUTPUT FORMAT: Return ONLY valid JSON (no markdown, no code blocks, no extra tex
     "weaknesses": ["What could be improved"],
     "suggestions": ["Better title option 1", "Better title option 2", "Better title option 3"]
   },
+  "descriptionAnalysis": {
+    "score": 7,
+    "strengths": ["What is good for SEO + viewers"],
+    "weaknesses": ["What is missing / hurting SEO or CTR"],
+    "rewrittenOpening": "Rewrite the first ~200 characters to be stronger for search + humans",
+    "addTheseLines": ["Copy/paste line 1", "Copy/paste line 2"],
+    "targetKeywords": ["keyword phrase 1", "keyword phrase 2"]
+  },
   "tagAnalysis": {
     "score": 6,
     "coverage": "good",
-    "missing": ["exact tag to add 1", "exact tag to add 2"],
+    "missing": ["copy-paste tag 1", "copy-paste tag 2"],
     "feedback": "Specific feedback about the tags"
+  },
+  "visibilityPlan": {
+    "bottleneck": "Packaging (CTR)",
+    "confidence": "medium",
+    "why": "Explain why, using actual metrics/baseline comparisons we provided",
+    "doNext": [
+      { "action": "Specific next step", "reason": "Metric-backed why", "expectedImpact": "Likely impact", "priority": "high" }
+    ],
+    "experiments": [
+      { "name": "Title test", "variants": ["A", "B"], "successMetric": "CTR", "window": "24-48h" }
+    ],
+    "promotionChecklist": ["Concrete step 1", "Concrete step 2"],
+    "whatToMeasureNext": ["Impressions", "CTR", "Traffic sources", "Search terms"]
   },
   "thumbnailHints": ["What the thumbnail should communicate based on title/data"],
   "keyFindings": [
@@ -779,24 +940,50 @@ OUTPUT FORMAT: Return ONLY valid JSON (no markdown, no code blocks, no extra tex
     "hookSetups": ["Opening hook idea 1", "Opening hook idea 2"],
     "visualMoments": ["Key visual moment to highlight"]
   },
+  "commentInsights": {
+    "sentiment": { "positive": 0, "neutral": 0, "negative": 0 },
+    "themes": [{ "theme": "Theme name", "count": 0, "examples": ["short quote"] }],
+    "viewerLoved": ["What viewers explicitly praised"],
+    "viewerAskedFor": ["What viewers asked about or requested next"],
+    "hookInspiration": ["Short hook-worthy quote under 25 words"]
+  },
   "competitorTakeaways": [],
   "remixIdeas": [{ "title": "Spinoff idea", "hook": "Opening line", "keywords": ["kw1"], "inspiredByVideoIds": [] }]
 }
 
 CRITICAL RULES:
 1. NEVER give generic advice - everything must reference THIS video's actual data
-2. Title suggestions MUST be complete, grammatically correct titles that make sense for THIS video's topic and content. Each suggestion should be a full, usable title (not a fragment or template). Understand what the video is ABOUT from the title, description, and tags before suggesting alternatives.
+2. Title suggestions MUST be complete, grammatically correct titles that make sense for THIS video's topic and content. Each suggestion should be a full, usable title (not a fragment or template).
+   Think like an SEO-minded YouTube growth expert: optimize for real search intent + high CTR (clarity + curiosity), but DO NOT clickbait.
+   Understand what the video is ABOUT from the title, description, and tags before suggesting alternatives.
 3. Tag suggestions in "missing" must be SPECIFIC tags ready to copy-paste (e.g., "Blue Prince gameplay 2024", not "Add year-specific variations")
+3a. Provide 15-25 tags in "missing" when possible. These should be SEO-first, highly relevant to THIS video, and easy to paste into YouTube.
+    - Include a mix of: 2-5 broad tags + the rest long-tail phrases
+    - Include key variants: synonyms, audience intent ("tutorial", "guide", "how to"), and year/version when relevant
+    - Avoid generic filler ("youtube", "viral", "trending") unless the video is literally about that topic
+    - No hashtags, no commas inside tag strings, no duplicates
+    - Keep tags reasonably short (aim <= 30 characters each)
+3b. Description analysis MUST focus on SEO + viewer conversion:
+    - The first 2 lines (first ~200 chars) should clearly state the main topic + promise and include the primary keyword naturally.
+    - Improve scannability: short paragraphs, bullets, timestamps (if relevant), and a clear CTA.
+    - Provide specific copy/paste lines in "addTheseLines" (e.g., keyword-rich summary, resources, related videos, CTAs).
+    - Never recommend keyword stuffing.
+3c. visibilityPlan MUST be a diagnosis + playbook:
+    - Choose ONE bottleneck (Packaging/Retention/Distribution/Topic/Too early to tell)
+    - Justify it with the metrics we provided (views/day vs baseline, avg % viewed, engagement %, subs per 1K)
+    - If key metrics like impressions/CTR/search terms are missing, say so in whatToMeasureNext and reduce confidence.
 4. Key findings must cite ACTUAL metrics from the data
 5. Actions must be specific enough that the creator knows exactly what to do. Avoid jargon - say "subscribe reminder" instead of "CTA", "call out viewers to comment" instead of "engagement prompt"
 6. Compare to the channel baseline when relevant - if above average, celebrate; if below, diagnose why
 7. Be honest - if metrics are poor, say so constructively
 8. No emojis, no hashtags, no markdown
-9. For videos with very few views (<100), focus on title/thumbnail/discoverability improvements rather than engagement metrics which aren't meaningful yet`;
+9. Use TOP VIEWER COMMENTS to fill commentInsights. If comments are missing/unavailable, set sentiment to {positive:0,neutral:100,negative:0} and use empty arrays.
+10. For videos with very few views (<100), focus on title/thumbnail/discoverability improvements rather than engagement metrics which aren't meaningful yet`;
 
-  const topComments = comments
-    .slice(0, 10)
-    .map((c) => `"${c.text.slice(0, 150)}"`)
+  const topComments = [...comments]
+    .sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0))
+    .slice(0, 20)
+    .map((c) => `[${c.likes ?? 0} likes] "${c.text.slice(0, 200)}"`)
     .join("\n");
 
   const durationMin = Math.round(video.durationSec / 60);
@@ -893,20 +1080,19 @@ TASK: Provide strategic analysis for this creator to improve this video and lear
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      { maxTokens: 3000, temperature: 0.7 }
+      { maxTokens: 3000, temperature: 0.3, responseFormat: "json_object" }
     );
 
-    const jsonMatch = result.content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error(
-        "LLM response did not contain JSON:",
-        result.content.slice(0, 500)
-      );
-      return null;
+    const raw = (result.content ?? "").trim();
+    // In json_object mode, we should get a JSON object as the entire response.
+    try {
+      return JSON.parse(raw) as VideoInsightsLLM;
+    } catch {
+      // Fallback: if the model ever returns extra text, extract the first {...} block.
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return null;
+      return JSON.parse(jsonMatch[0]) as VideoInsightsLLM;
     }
-
-    const parsed = JSON.parse(jsonMatch[0]) as VideoInsightsLLM;
-    return parsed;
   } catch (err) {
     console.error("LLM insights generation failed:", err);
     return null;

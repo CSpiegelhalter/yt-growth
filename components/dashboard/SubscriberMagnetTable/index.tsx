@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Image from "next/image";
 import s from "./style.module.css";
 import type { SubscriberMagnetVideo, PatternAnalysisJson } from "@/types/api";
 import { copyToClipboard } from "@/components/ui/Toast";
@@ -269,11 +270,13 @@ function VideoCard({
       <button className={s.videoCardMain} onClick={onToggle} type="button">
         <div className={s.rankBadge}>#{rank}</div>
         {video.thumbnailUrl ? (
-          <img
+          <Image
             src={video.thumbnailUrl}
-            alt=""
+            alt={`${video.title} thumbnail`}
+            width={120}
+            height={68}
             className={s.thumbnail}
-            loading="lazy"
+            sizes="(max-width: 479px) 80px, 120px"
           />
         ) : (
           <div className={s.thumbnailPlaceholder}>

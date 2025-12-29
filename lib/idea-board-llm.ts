@@ -125,22 +125,22 @@ OUTPUT FORMAT: Return ONLY valid JSON matching this structure:
 }
 
 CRITICAL RULES:
-1. Generate EXACTLY 10 unique ideas with this distribution:
-   - 3 "easy" (can film today with minimal prep, based on creator's existing expertise)
-   - 4 "medium" (requires some research/prep but doable this week)  
-   - 2 "stretch" (bigger production but high ceiling)
+1. Generate EXACTLY 6 unique ideas with this distribution:
+   - 2 "easy" (can film today with minimal prep, based on creator's existing expertise)
+   - 2 "medium" (requires some research/prep but doable this week)
+   - 1 "stretch" (bigger production but high ceiling)
    - 1 "shorts" format idea
 2. EVERY idea must reference at least 1 proof video that inspired it
 3. NO two ideas should target the same audience segment or search intent
 4. Hooks must be SPECIFIC and punchy (8-14 words), not generic
-5. Generate 4-5 title options per idea, each with different style
+5. Generate exactly 3 title options per idea, each with different style
 6. Thumbnail concepts must be ACTIONABLE (specific colors, specific text, specific composition)
-7. Include script outline for top 5 ideas
+7. Include script outline for top 2 ideas (omit for the rest)
 8. Be BRUTALLY specific - vague ideas are useless`;
 
   // Build rich context about the creator's own videos
   const userVideosContext = input.topPerformingVideos
-    .slice(0, 8)
+    .slice(0, 6)
     .map((v, i) => {
       const daysOld = Math.floor(
         (Date.now() - new Date(v.publishedAt).getTime()) / (1000 * 60 * 60 * 24)
@@ -154,7 +154,7 @@ CRITICAL RULES:
     .join("\n");
 
   const recentVideosContext = input.recentVideos
-    .slice(0, 6)
+    .slice(0, 4)
     .map((v, i) => {
       return `${i + 1}. "${v.title}" - ${formatViews(
         v.views
@@ -165,7 +165,7 @@ CRITICAL RULES:
   // Build rich context about competitor proof videos
   const proofContext = input.proofVideos
     .sort((a, b) => b.viewsPerDay - a.viewsPerDay) // Sort by velocity
-    .slice(0, 25)
+    .slice(0, 12)
     .map((v, i) => {
       const velocityLabel =
         v.viewsPerDay > 10000
@@ -211,7 +211,7 @@ ${input.similarChannels
 ═══════════════════════════════════════════════════════════
 YOUR TASK
 ═══════════════════════════════════════════════════════════
-Generate 10 UNIQUE video ideas for ${input.channelTitle} that:
+Generate 6 UNIQUE video ideas for ${input.channelTitle} that:
 1. Build on what's already working for them (their top videos)
 2. Capitalize on competitor momentum (high velocity proof videos)
 3. Fill gaps in the niche that others are missing
@@ -225,7 +225,8 @@ Each idea should feel like it was custom-made for THIS creator, not generic advi
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      { maxTokens: 8000, temperature: 0.8 } // Increased for 10 detailed ideas
+      // Keep this tight for speed: 6 ideas with limited titles/outlines.
+      { maxTokens: 3200, temperature: 0.8 }
     );
 
     console.log("[IdeaBoard] LLM response length:", result.content.length);
@@ -373,13 +374,19 @@ function enrichProofData(
   proof: Idea["proof"] | undefined,
   proofVideos: ProofVideoInput[]
 ): Idea["proof"] {
+  const normalizeText = (s: unknown, fallback: string) => {
+    const t = typeof s === "string" ? s.trim() : "";
+    if (!t || t === "N/A") return fallback;
+    return t;
+  };
+
   if (!proof?.basedOn?.length) {
     // Assign random proof videos if none specified
     const randomProof = proofVideos.slice(0, 2).map((v) => ({
       videoId: v.videoId,
-      title: v.title,
+      title: normalizeText(v.title, "Untitled video"),
       channelId: v.channelId,
-      channelTitle: v.channelTitle,
+      channelTitle: normalizeText(v.channelTitle, "Unknown channel"),
       thumbnailUrl: v.thumbnailUrl ?? "",
       publishedAt: v.publishedAt,
       metrics: { views: v.views, viewsPerDay: v.viewsPerDay },
@@ -397,9 +404,15 @@ function enrichProofData(
     const fullVideo = proofMap.get(p.videoId);
     return {
       videoId: p.videoId,
-      title: p.title || fullVideo?.title || "Untitled",
+      title: normalizeText(
+        p.title,
+        normalizeText(fullVideo?.title, "Untitled")
+      ),
       channelId: p.channelId || fullVideo?.channelId || "",
-      channelTitle: p.channelTitle || fullVideo?.channelTitle || "",
+      channelTitle: normalizeText(
+        p.channelTitle,
+        normalizeText(fullVideo?.channelTitle, "Unknown channel")
+      ),
       thumbnailUrl: p.thumbnailUrl || fullVideo?.thumbnailUrl || "",
       publishedAt: p.publishedAt || fullVideo?.publishedAt || "",
       metrics: p.metrics || {

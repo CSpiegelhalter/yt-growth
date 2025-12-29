@@ -994,8 +994,41 @@
   margin-bottom: 12px;
 }
 
+.loadingProgress {
+  width: min(520px, 100%);
+  margin-top: 14px;
+}
+
+.progressTrack {
+  height: 10px;
+  width: 100%;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%);
+  background-size: 200% 100%;
+  animation: progressShimmer 1.2s linear infinite;
+}
+
+.loadingProgressHint {
+  margin-top: 10px;
+  font-size: 0.8125rem;
+  color: #475569;
+  text-align: center;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes progressShimmer {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
 }
 
 /* ================================
@@ -1039,6 +1072,13 @@
   font-weight: 600;
   color: #1e293b;
   margin: 0 0 10px;
+}
+
+.subSectionHint {
+  margin: -6px 0 10px;
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.35;
 }
 
 .sentimentBar {

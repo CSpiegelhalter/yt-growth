@@ -3,14 +3,14 @@
    ================================ */
 
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 16px;
+  padding: var(--page-padding-mobile);
 }
 
 @media (min-width: 768px) {
   .page {
-    padding: 24px;
+    padding: var(--page-padding-desktop);
   }
 }
 
@@ -20,22 +20,23 @@
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--page-title-size);
+  font-weight: var(--page-title-weight);
   color: #1e293b;
   margin: 0 0 4px;
 }
 
 @media (min-width: 640px) {
   .title {
-    font-size: 1.75rem;
+    font-size: var(--page-title-size-lg);
   }
 }
 
 .subtitle {
-  font-size: 0.9375rem;
+  font-size: var(--page-subtitle-size);
   color: #64748b;
   margin: 0;
+  line-height: var(--page-subtitle-line-height);
 }
 
 .subtitle strong {
@@ -67,14 +68,14 @@
 
 /* Section Titles */
 .sectionTitle {
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: var(--section-title-size);
+  font-weight: var(--section-title-weight);
   color: #1e293b;
   margin: 0 0 4px;
 }
 
 .sectionSubtitle {
-  font-size: 0.875rem;
+  font-size: var(--section-subtitle-size);
   color: #64748b;
   margin: 0 0 16px;
 }

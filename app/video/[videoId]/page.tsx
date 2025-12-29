@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/brand";
-import nextDynamic from "next/dynamic";
-import { cookies } from "next/headers";
-
-const VideoInsightsClient = nextDynamic(() => import("./VideoInsightsClient"), {
-  ssr: false,
-});
+import VideoInsightsClientNoSSR from "./VideoInsightsClientNoSSR";
 
 export const metadata: Metadata = {
   title: `Video Insights | ${BRAND.name}`,
@@ -24,7 +19,9 @@ type Props = {
 
 /**
  * Video Insights Page - Server component
- * Fetches bootstrap data and initial insights server-side
+ * 
+ * Renders immediately with skeleton, data is fetched client-side.
+ * This ensures the page navigates instantly when clicked.
  */
 export default async function VideoPage({ params, searchParams }: Props) {
   const [{ videoId }, search] = await Promise.all([params, searchParams]);
@@ -32,43 +29,17 @@ export default async function VideoPage({ params, searchParams }: Props) {
     ["7d", "28d", "90d"].includes(search.range ?? "") ? search.range : "28d"
   ) as "7d" | "28d" | "90d";
 
-  // Get bootstrap data (user, channels, active channel)
+  // Get bootstrap data (user, channels, active channel) - fast DB lookup only
   const bootstrap = await getAppBootstrap({ channelId: search.channelId });
 
-  // Fetch initial insights server-side
-  let initialInsights = null;
-  if (bootstrap.activeChannelId) {
-    try {
-      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-      const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join("; ");
-      const res = await fetch(
-        `${baseUrl}/api/me/channels/${bootstrap.activeChannelId}/videos/${videoId}/insights?range=${range}`,
-        {
-          headers: {
-            // Forward auth cookies so the route runs as the current user.
-            ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-          },
-          cache: "no-store",
-        }
-      );
-      if (res.ok) {
-        initialInsights = await res.json();
-      }
-    } catch (err) {
-      console.error("Failed to fetch initial insights:", err);
-    }
-  }
-
+  // Don't fetch insights server-side - let client fetch them with loading state
+  // This ensures the page loads immediately when navigating
   return (
-    <VideoInsightsClient
+    <VideoInsightsClientNoSSR
       key={videoId}
       videoId={videoId}
       channelId={bootstrap.activeChannelId ?? undefined}
-      initialInsights={initialInsights}
+      initialInsights={null}
       initialRange={range}
       from={search.from}
     />

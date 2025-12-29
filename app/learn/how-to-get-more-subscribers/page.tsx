@@ -75,11 +75,11 @@ export default function HowToGetMoreSubscribersPage() {
             Why Subscribers Matter for YouTube Growth
           </h2>
           <p className={s.sectionText}>
-            Subscribers are more than a vanity metric. They&apos;re your
-            built-in audience—people who&apos;ve signaled they want to see more
-            from you. Subscribers get notified of new uploads and are more
-            likely to watch, like, and comment, all of which boost your videos
-            in the algorithm.
+            Subscribers are more than a vanity metric. They're your built-in
+            audience—people who've signaled they want to see more from you.
+            Subscribers get notified of new uploads and are more likely to
+            watch, like, and comment, all of which boost your videos in the
+            algorithm.
           </p>
           <div className={s.statsGrid}>
             <div className={s.stat}>
@@ -125,7 +125,7 @@ export default function HowToGetMoreSubscribersPage() {
               something valuable make viewers want more
             </li>
             <li>
-              <strong>Unique perspective:</strong> Content they can&apos;t get
+              <strong>Unique perspective:</strong> Content they can't get
               elsewhere creates loyalty
             </li>
             <li>
@@ -162,14 +162,13 @@ export default function HowToGetMoreSubscribersPage() {
           </h2>
           <ol className={s.numberedList}>
             <li>
-              <strong>Ask for the subscription (strategically):</strong>{" "}
-              Don&apos;t ask in the intro—ask after you&apos;ve delivered value.
-              &quot;If this tip helped you, consider subscribing for more.&quot;
+              <strong>Ask for the subscription (strategically):</strong> Don't
+              ask in the intro—ask after you've delivered value. &quot;If this
+              tip helped you, consider subscribing for more.&quot;
             </li>
             <li>
               <strong>Create series content:</strong> Multi-part series give
-              viewers a reason to subscribe so they don&apos;t miss the next
-              episode.
+              viewers a reason to subscribe so they don't miss the next episode.
             </li>
             <li>
               <strong>Optimize your channel page:</strong> Your channel trailer
@@ -210,8 +209,8 @@ export default function HowToGetMoreSubscribersPage() {
           </h2>
           <p className={s.sectionText}>
             Some videos convert viewers to subscribers at 2-3x your channel
-            average. These &quot;subscriber driver&quot; videos are
-            gold—they&apos;re the content your audience values most.
+            average. These &quot;subscriber driver&quot; videos are gold—they're
+            the content your audience values most.
           </p>
           <ul className={s.list}>
             <li>Check YouTube Studio → Analytics → Subscribers → See more</li>
@@ -224,8 +223,8 @@ export default function HowToGetMoreSubscribersPage() {
               for view count
             </li>
             <li>
-              Analyze what your top converters have in common (topic, format,
-              length, style)
+              Analyze what your top subscriber drivers have in common (topic,
+              format, length, style)
             </li>
             <li>Create more content that matches those patterns</li>
           </ul>
@@ -252,7 +251,7 @@ export default function HowToGetMoreSubscribersPage() {
           <ul className={s.list}>
             <li>
               <strong>Begging for subscribers in the intro:</strong> Viewers
-              haven&apos;t seen value yet—earn the ask first
+              haven't seen value yet—earn the ask first
             </li>
             <li>
               <strong>Sub4Sub schemes:</strong> These subscribers never watch
@@ -268,7 +267,7 @@ export default function HowToGetMoreSubscribersPage() {
             </li>
             <li>
               <strong>Ignoring analytics:</strong> Not knowing what converts
-              means you can&apos;t optimize for it
+              means you can't optimize for it
             </li>
           </ul>
         </section>
@@ -276,7 +275,7 @@ export default function HowToGetMoreSubscribersPage() {
         {/* ChannelBoost CTA */}
         <div className={s.highlight}>
           <p>
-            <strong>{BRAND.name}&apos;s Subscriber Drivers feature</strong>{" "}
+            <strong>{BRAND.name}'s Subscriber Drivers feature</strong>{" "}
             automatically identifies your highest-converting videos and shows
             you the patterns that turn viewers into subscribers. Stop guessing
             and start growing.
@@ -289,12 +288,12 @@ export default function HowToGetMoreSubscribersPage() {
           <div className={s.faqList}>
             <div className={s.faqItem}>
               <h3 className={s.faqQuestion}>
-                What&apos;s a good subscriber-to-view ratio?
+                What's a good subscriber-to-view ratio?
               </h3>
               <p className={s.faqAnswer}>
                 On average, 1-3% of views convert to subscribers. Higher rates
-                indicate content that resonates strongly. If you&apos;re below
-                1%, focus on creating content that demonstrates ongoing value.
+                indicate content that resonates strongly. If you're below 1%,
+                focus on creating content that demonstrates ongoing value.
               </p>
             </div>
             <div className={s.faqItem}>
@@ -311,8 +310,8 @@ export default function HowToGetMoreSubscribersPage() {
             <div className={s.faqItem}>
               <h3 className={s.faqQuestion}>Should I buy subscribers?</h3>
               <p className={s.faqAnswer}>
-                Never. Bought subscribers don&apos;t watch your content, which
-                tanks your engagement metrics. YouTube may also penalize or ban
+                Never. Bought subscribers don't watch your content, which tanks
+                your engagement metrics. YouTube may also penalize or ban
                 channels for artificial inflation. Build real subscribers with
                 real content.
               </p>

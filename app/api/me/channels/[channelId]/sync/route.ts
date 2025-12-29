@@ -26,11 +26,12 @@ const ParamsSchema = z.object({
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { channelId: string } }
+  { params }: { params: Promise<{ channelId: string }> }
 ) {
   try {
     // Validate params first (before auth/entitlement to give useful error)
-    const parsed = ParamsSchema.safeParse(params);
+    const paramsObj = await params;
+    const parsed = ParamsSchema.safeParse(paramsObj);
     if (!parsed.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }

@@ -77,9 +77,9 @@ export default function YouTubeVideoIdeasPage() {
           </h2>
           <p className={s.sectionText}>
             Most creators brainstorm video ideas based on gut feeling or what
-            they personally find interesting. The problem? Your interests
-            don&apos;t always align with what your audience searches for or what
-            the algorithm promotes.
+            they personally find interesting. The problem? Your interests don't
+            always align with what your audience searches for or what the
+            algorithm promotes.
           </p>
           <p className={s.sectionText}>
             Data-driven idea generation flips this approach: start with what
@@ -113,7 +113,7 @@ export default function YouTubeVideoIdeasPage() {
             </li>
             <li>
               <strong>Competitor outliers:</strong> Find videos that performed
-              2-3x above a competitor&apos;s average. These indicate topics your
+              2-3x above a competitor's average. These indicate topics your
               shared audience cares about.
             </li>
             <li>
@@ -128,8 +128,8 @@ export default function YouTubeVideoIdeasPage() {
             </li>
             <li>
               <strong>Trending topics in adjacent niches:</strong> Look for
-              successful formats or topics in related niches that haven&apos;t
-              been applied to yours yet.
+              successful formats or topics in related niches that haven't been
+              applied to yours yet.
             </li>
           </ol>
         </section>
@@ -153,7 +153,7 @@ export default function YouTubeVideoIdeasPage() {
           </h2>
           <p className={s.sectionText}>
             Not every idea is worth your time. Before spending hours creating,
-            validate that there&apos;s demand and that you can compete.
+            validate that there's demand and that you can compete.
           </p>
           <ul className={s.list}>
             <li>
@@ -203,7 +203,7 @@ export default function YouTubeVideoIdeasPage() {
           </p>
           <ol className={s.numberedList}>
             <li>
-              <strong>Start with the title:</strong> If you can&apos;t write a
+              <strong>Start with the title:</strong> If you can't write a
               compelling title, reconsider the idea
             </li>
             <li>
@@ -228,9 +228,9 @@ export default function YouTubeVideoIdeasPage() {
         {/* ChannelBoost CTA */}
         <div className={s.highlight}>
           <p>
-            <strong>{BRAND.name}&apos;s Video Ideas Engine</strong> generates
-            personalized content ideas based on what&apos;s working in your
-            niche. Get proven topics with title options, hook suggestions, and
+            <strong>{BRAND.name}'s Video Ideas Engine</strong> generates
+            personalized content ideas based on what's working in your niche.
+            Get proven topics with title options, hook suggestions, and
             thumbnail concepts—all backed by data.
           </p>
         </div>

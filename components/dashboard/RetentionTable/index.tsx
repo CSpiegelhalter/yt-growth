@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import Image from "next/image";
 import s from "./style.module.css";
 import type { VideoWithRetention } from "@/types/api";
 import { formatReasonHuman } from "@/lib/retention-labels";
@@ -111,7 +112,7 @@ export default function RetentionTable({
             Connect your channel to unlock insights
           </h4>
           <p className={s.emptyDesc}>
-            Once synced, you&apos;ll get access to powerful growth tools:
+            Once synced, you'll get access to powerful growth tools:
           </p>
           <ul className={s.emptyFeatures}>
             <li className={s.emptyFeature}>
@@ -142,8 +143,8 @@ export default function RetentionTable({
                 <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
               <span>
-                <strong>Idea Engine</strong> — Video ideas based on
-                what&apos;s working in your niche
+                <strong>Idea Engine</strong> — Video ideas based on what's
+                working in your niche
               </span>
             </li>
             <li className={s.emptyFeature}>
@@ -158,8 +159,8 @@ export default function RetentionTable({
                 <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
               <span>
-                <strong>Competitor Winners</strong> — See what&apos;s working
-                for similar channels
+                <strong>Competitor Winners</strong> — See what's working for
+                similar channels
               </span>
             </li>
             <li className={s.emptyFeature}>
@@ -268,11 +269,13 @@ function VideoRetentionCard({
       >
         {/* Thumbnail */}
         {video.thumbnailUrl ? (
-          <img
+          <Image
             src={video.thumbnailUrl}
-            alt=""
+            alt={`${video.title ?? "Video"} thumbnail`}
+            width={120}
+            height={68}
             className={s.thumbnail}
-            loading="lazy"
+            sizes="(max-width: 479px) 80px, 120px"
           />
         ) : (
           <div className={s.thumbnailPlaceholder}>

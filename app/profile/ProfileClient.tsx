@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import type { Me, Channel } from "@/types/api";
 import AccountStats from "@/components/dashboard/AccountStats";
 import BillingCTA from "@/components/dashboard/BillingCTA";
@@ -167,10 +168,13 @@ export default function ProfileClient({
               {channels.map((ch) => (
                 <div key={ch.channel_id} className={styles.channelItem}>
                   {ch.thumbnailUrl && (
-                    <img
+                    <Image
                       src={ch.thumbnailUrl}
-                      alt=""
+                      alt={`${ch.title ?? "YouTube channel"} avatar`}
+                      width={44}
+                      height={44}
                       className={styles.channelThumb}
+                      sizes="44px"
                     />
                   )}
                   <div className={styles.channelInfo}>

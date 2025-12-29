@@ -32,6 +32,7 @@ import {
 import {
   generateCompetitorVideoAnalysis,
   analyzeVideoComments,
+  generateCompetitorBeatChecklist,
 } from "@/lib/llm";
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
@@ -52,15 +53,20 @@ const ParamsSchema = z.object({
 
 const QuerySchema = z.object({
   channelId: z.string().min(1),
+  includeMoreFromChannel: z.union([z.literal("0"), z.literal("1")])
+    .optional()
+    .default("1"),
 });
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { videoId: string } }
+  { params }: { params: Promise<{ videoId: string }> }
 ) {
+  const paramsObj = await params;
+
   // Return demo data if demo mode is enabled
   if (isDemoMode() && !isYouTubeMockMode()) {
-    const demoData = generateDemoVideoAnalysis(params.videoId);
+    const demoData = generateDemoVideoAnalysis(paramsObj.videoId);
     return Response.json(demoData);
   }
 
@@ -89,7 +95,7 @@ export async function GET(
     }
 
     // Validate params
-    const parsedParams = ParamsSchema.safeParse(params);
+    const parsedParams = ParamsSchema.safeParse(paramsObj);
     if (!parsedParams.success) {
       return Response.json({ error: "Invalid video ID" }, { status: 400 });
     }
@@ -100,6 +106,9 @@ export async function GET(
     const url = new URL(req.url);
     const queryResult = QuerySchema.safeParse({
       channelId: url.searchParams.get("channelId") ?? "",
+      includeMoreFromChannel:
+        (url.searchParams.get("includeMoreFromChannel") as "0" | "1" | null) ??
+        undefined,
     });
 
     if (!queryResult.success) {
@@ -109,7 +118,8 @@ export async function GET(
       );
     }
 
-    const { channelId } = queryResult.data;
+    const { channelId, includeMoreFromChannel } = queryResult.data;
+    const shouldIncludeMoreFromChannel = includeMoreFromChannel !== "0";
 
     // Verify the user owns this channel
     const channel = await prisma.channel.findFirst({
@@ -411,42 +421,74 @@ export async function GET(
       }
     }
 
-    // Fetch more videos from the same channel
+    // Fetch more videos from the same channel (optional; not critical path for initial render)
     const rangeDays = 28;
     const publishedAfter = new Date(
       now.getTime() - rangeDays * 24 * 60 * 60 * 1000
     ).toISOString();
     let moreFromChannel: CompetitorVideo[] = [];
 
-    try {
-      const channelVideos = await fetchRecentChannelVideos(
-        ga,
-        videoDetails.channelId,
-        publishedAfter,
-        6
-      );
-      moreFromChannel = channelVideos
-        .filter((v) => v.videoId !== videoId)
-        .slice(0, 4)
-        .map((v) => ({
-          videoId: v.videoId,
-          title: v.title,
-          channelId: videoDetails.channelId,
-          channelTitle: videoDetails.channelTitle,
-          channelThumbnailUrl: null,
-          videoUrl: `https://youtube.com/watch?v=${v.videoId}`,
-          channelUrl: `https://youtube.com/channel/${videoDetails.channelId}`,
-          thumbnailUrl: v.thumbnailUrl,
-          publishedAt: v.publishedAt,
-          stats: { viewCount: v.views },
-          derived: { viewsPerDay: v.viewsPerDay },
-        }));
-    } catch (err) {
-      console.warn("Failed to fetch more videos from channel:", err);
+    if (shouldIncludeMoreFromChannel) {
+      try {
+        const channelVideos = await fetchRecentChannelVideos(
+          ga,
+          videoDetails.channelId,
+          publishedAfter,
+          6
+        );
+        moreFromChannel = channelVideos
+          .filter((v) => v.videoId !== videoId)
+          .slice(0, 4)
+          .map((v) => ({
+            videoId: v.videoId,
+            title: v.title,
+            channelId: videoDetails.channelId,
+            channelTitle: videoDetails.channelTitle,
+            channelThumbnailUrl: null,
+            videoUrl: `https://youtube.com/watch?v=${v.videoId}`,
+            channelUrl: `https://youtube.com/channel/${videoDetails.channelId}`,
+            thumbnailUrl: v.thumbnailUrl,
+            publishedAt: v.publishedAt,
+            stats: { viewCount: v.views },
+            derived: { viewsPerDay: v.viewsPerDay },
+          }));
+      } catch (err) {
+        console.warn("Failed to fetch more videos from channel:", err);
+      }
     }
 
     // Generate analysis using LLM (includes comments context if available)
     let analysis: CompetitorVideoAnalysis["analysis"];
+    let beatThisVideoLLM:
+      | Array<{
+          action: string;
+          difficulty: "Easy" | "Medium" | "Hard";
+          impact: "Low" | "Medium" | "High";
+        }>
+      | undefined;
+
+    const normalizeBeatChecklist = (input: unknown) => {
+      if (!Array.isArray(input)) return undefined;
+      const out = input
+        .map((x: any) => ({
+          action: typeof x?.action === "string" ? x.action.trim() : "",
+          difficulty:
+            x?.difficulty === "Easy" ||
+            x?.difficulty === "Medium" ||
+            x?.difficulty === "Hard"
+              ? x.difficulty
+              : "Medium",
+          impact:
+            x?.impact === "Low" ||
+            x?.impact === "Medium" ||
+            x?.impact === "High"
+              ? x.impact
+              : "High",
+        }))
+        .filter((x) => x.action.length >= 16)
+        .slice(0, 10);
+      return out.length > 0 ? out : undefined;
+    };
 
     // Compute content hash for the current video
     const currentContentHash = hashVideoContent({
@@ -475,20 +517,22 @@ export async function GET(
       console.log(
         `[competitor.video] Using cached analysis (hash: ${currentContentHash})`
       );
-      analysis =
-        dbVideo.analysisJson as unknown as CompetitorVideoAnalysis["analysis"];
+      const cached = dbVideo.analysisJson as any;
+      analysis = cached as CompetitorVideoAnalysis["analysis"];
+      beatThisVideoLLM = normalizeBeatChecklist(cached?.beatThisVideo);
     } else {
       console.log(
         `[competitor.video] Generating new analysis (hash changed: ${dbVideo?.analysisContentHash} -> ${currentContentHash})`
       );
       try {
-        analysis = await generateCompetitorVideoAnalysis(
+        const llm = await generateCompetitorVideoAnalysis(
           {
             videoId: video.videoId,
             title: video.title,
             description: videoDetails.description,
             tags: videoDetails.tags ?? [],
             channelTitle: video.channelTitle,
+            durationSec: video.durationSec,
             stats: video.stats,
             derived: {
               viewsPerDay: video.derived.viewsPerDay,
@@ -498,6 +542,11 @@ export async function GET(
           channel.title ?? "Your Channel",
           commentsAnalysis
         );
+        beatThisVideoLLM = normalizeBeatChecklist((llm as any).beatThisVideo);
+        // Keep analysisJson compatible (beat checklist is stored separately)
+        const analysisOnly = { ...(llm as any) };
+        delete (analysisOnly as any).beatThisVideo;
+        analysis = analysisOnly as CompetitorVideoAnalysis["analysis"];
       } catch (err) {
         console.warn(
           "Failed to generate competitor analysis, using defaults:",
@@ -534,6 +583,52 @@ export async function GET(
         : [],
     };
 
+    // Backfill beat checklist (LLM) if missing from cache.
+    // This keeps "Beat this video" from being generic across all videos.
+    if (!beatThisVideoLLM || beatThisVideoLLM.length === 0) {
+      try {
+        beatThisVideoLLM = await generateCompetitorBeatChecklist({
+          title: video.title,
+          channelTitle: video.channelTitle,
+          description: videoDetails.description,
+          tags: videoDetails.tags ?? [],
+          durationSec: video.durationSec,
+          viewCount: video.stats.viewCount,
+          viewsPerDay: video.derived.viewsPerDay,
+          likeCount: video.stats.likeCount,
+          commentCount: video.stats.commentCount,
+          engagementPerView,
+          userChannelTitle: channel.title ?? "Your Channel",
+          commentsAnalysis,
+        });
+      } catch (err) {
+        console.warn("Failed to generate beat checklist:", err);
+      }
+    }
+
+    // If analysis was served from cache but beat checklist was missing, persist just the beat list
+    // so subsequent loads are fast and consistent.
+    if (
+      isAnalysisCacheFresh &&
+      dbVideo?.analysisJson &&
+      beatThisVideoLLM &&
+      !Array.isArray((dbVideo.analysisJson as any)?.beatThisVideo)
+    ) {
+      try {
+        await prisma.competitorVideo.update({
+          where: { videoId },
+          data: {
+            analysisJson: {
+              ...(dbVideo.analysisJson as any),
+              beatThisVideo: beatThisVideoLLM,
+            } as object,
+          },
+        });
+      } catch (err) {
+        console.warn("Failed to backfill beat checklist cache:", err);
+      }
+    }
+
     // Persist normalized analysis (cache) so the "What it's about" stays useful without re-calling the LLM.
     // Only write when cache was missing/stale.
     if (!isAnalysisCacheFresh) {
@@ -541,7 +636,10 @@ export async function GET(
         await prisma.competitorVideo.update({
           where: { videoId },
           data: {
-            analysisJson: analysis as object,
+            analysisJson: {
+              ...analysis,
+              beatThisVideo: beatThisVideoLLM,
+            } as object,
             analysisContentHash: currentContentHash,
             analysisCapturedAt: now,
           },
@@ -574,6 +672,7 @@ export async function GET(
       video,
       videoDetails,
       commentsAnalysis,
+      beatThisVideo: beatThisVideoLLM,
     });
 
     // Build response
@@ -613,6 +712,11 @@ function computeStrategicInsights(input: {
     durationSec?: number;
   };
   commentsAnalysis?: CompetitorCommentsAnalysis;
+  beatThisVideo?: Array<{
+    action: string;
+    difficulty: "Easy" | "Medium" | "Hard";
+    impact: "Low" | "Medium" | "High";
+  }>;
 }): CompetitorVideoAnalysis["strategicInsights"] {
   const { video, videoDetails, commentsAnalysis } = input;
   const title = videoDetails.title;
@@ -862,61 +966,75 @@ function computeStrategicInsights(input: {
   }
 
   // ===== BEAT THIS VIDEO CHECKLIST =====
-  const beatChecklist: Array<{
+  const fallbackBeatChecklist: Array<{
     action: string;
     difficulty: "Easy" | "Medium" | "Hard";
     impact: "Low" | "Medium" | "High";
   }> = [];
 
-  beatChecklist.push({
-    action: "Study the first 30 seconds and make your hook even stronger",
-    difficulty: "Medium",
-    impact: "High",
-  });
-
-  if (!hasNumber) {
-    beatChecklist.push({
-      action: "Add specific numbers to your title for higher CTR",
+  // (Fallback only) Keep it a bit more tailored than the previous mostly-static list.
+  if (durationMin <= 4) {
+    fallbackBeatChecklist.push({
+      action:
+        "Deliver the payoff faster: cut intro to <5 seconds and show the result upfront",
       difficulty: "Easy",
-      impact: "Medium",
+      impact: "High",
     });
-  }
-
-  if (!hasTimestamps && durationMin > 5) {
-    beatChecklist.push({
-      action: "Add chapters/timestamps for better retention",
-      difficulty: "Easy",
-      impact: "Medium",
-    });
-  }
-
-  beatChecklist.push({
-    action: "Create a more compelling thumbnail with clear focal point",
-    difficulty: "Medium",
-    impact: "High",
-  });
-
-  if (commentsAnalysis?.viewerAskedFor?.length) {
-    beatChecklist.push({
-      action: `Address what viewers asked for: "${commentsAnalysis.viewerAskedFor[0]}"`,
+  } else {
+    fallbackBeatChecklist.push({
+      action:
+        "Use a sharper opening promise than theirs, then validate it with a quick preview of what’s coming",
       difficulty: "Medium",
       impact: "High",
     });
   }
 
-  beatChecklist.push({
-    action: "Add your unique perspective/experience they can't replicate",
-    difficulty: "Hard",
+  if (!hasNumber && /how|why|what|best|stop|fix|make/i.test(title)) {
+    fallbackBeatChecklist.push({
+      action:
+        "Make the title more specific with a number or constraint (time, steps, or result)",
+      difficulty: "Easy",
+      impact: "Medium",
+    });
+  }
+
+  if (!hasTimestamps && durationMin >= 8) {
+    fallbackBeatChecklist.push({
+      action:
+        "Add clear chapters and reference them on-screen to reduce drop-off in the middle",
+      difficulty: "Easy",
+      impact: "Medium",
+    });
+  }
+
+  if (commentsAnalysis?.viewerAskedFor?.length) {
+    fallbackBeatChecklist.push({
+      action: `Directly answer what viewers asked for most: "${commentsAnalysis.viewerAskedFor[0]}"`,
+      difficulty: "Medium",
+      impact: "High",
+    });
+  }
+
+  fallbackBeatChecklist.push({
+    action:
+      "Differentiate with a unique angle they didn’t cover (a contrarian take, a case study, or a tighter framework)",
+    difficulty: "Medium",
     impact: "High",
   });
 
-  if (durationMin > 10) {
-    beatChecklist.push({
-      action: "Tighter editing - cut 20% of the fluff",
+  if (durationMin > 12) {
+    fallbackBeatChecklist.push({
+      action:
+        "Tighten pacing: remove repetition and add pattern interrupts every ~60–90 seconds",
       difficulty: "Medium",
       impact: "Medium",
     });
   }
+
+  const beatChecklist =
+    input.beatThisVideo && input.beatThisVideo.length > 0
+      ? input.beatThisVideo
+      : fallbackBeatChecklist;
 
   // ===== DESCRIPTION ANALYSIS =====
   const hasLinks = /https?:\/\/\S+/i.test(description);
