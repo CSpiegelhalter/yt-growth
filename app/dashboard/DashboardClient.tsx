@@ -169,7 +169,7 @@ export default function DashboardClient({
     }
   }, [activeChannelId, channels]);
 
-  // Load videos when active channel changes
+  // Load videos when active channel changes (FREE endpoint - no subscription required)
   useEffect(() => {
     if (!activeChannelId) {
       setVideos([]);
@@ -180,7 +180,7 @@ export default function DashboardClient({
       setVideosLoading(true);
       try {
         const res = await fetch(
-          `/api/me/channels/${activeChannelId}/retention`,
+          `/api/me/channels/${activeChannelId}/videos`,
           { cache: "no-store" }
         );
         if (res.ok) {

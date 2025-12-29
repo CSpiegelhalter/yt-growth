@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { subscription: true },
+      include: { Subscription: true },
     });
 
     if (!user) {
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
-        plan: user.subscription?.plan || "free",
+        plan: user.Subscription?.plan || "free",
       },
     });
   } catch (err: unknown) {

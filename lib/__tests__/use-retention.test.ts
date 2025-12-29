@@ -1,6 +1,6 @@
 /**
  * Tests for useRetention hook
- * Ensures retention endpoint is called only once on mount (no infinite loops)
+ * Ensures video-analytics endpoint is called only once on mount (no infinite loops)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
@@ -18,7 +18,7 @@ describe("useRetention hook behavior", () => {
     vi.restoreAllMocks();
   });
 
-  it("should call retention endpoint only once on mount", async () => {
+  it("should call video-analytics endpoint only once on mount", async () => {
     // Mock successful response
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -33,27 +33,27 @@ describe("useRetention hook behavior", () => {
             },
           ],
           fetchedAt: new Date().toISOString(),
+          usage: { used: 1, limit: 5, resetAt: new Date().toISOString() },
         }),
     });
 
-    // Simulate what the hook does: fetch retention data
+    // Simulate what the hook does: fetch video analytics data
     const channelId = "test-channel";
-    const isSubscribed = true;
 
     // First fetch (simulating mount)
-    if (isSubscribed) {
-      await fetch(`/api/me/channels/${channelId}/retention`);
-    }
+    await fetch(`/api/me/channels/${channelId}/video-analytics`);
 
     // Assert fetch was called exactly once
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch).toHaveBeenCalledWith(`/api/me/channels/${channelId}/retention`);
+    expect(mockFetch).toHaveBeenCalledWith(
+      `/api/me/channels/${channelId}/video-analytics`
+    );
   });
 
   it("should not fetch if already fetched (no refetch without explicit refresh)", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ videos: [] }),
+      json: () => Promise.resolve({ videos: [], usage: { used: 0, limit: 5 } }),
     });
 
     const channelId = "test-channel";
@@ -63,7 +63,7 @@ describe("useRetention hook behavior", () => {
     const fetchRetention = async () => {
       if (hasFetched) return; // Guard against refetch
       hasFetched = true;
-      await fetch(`/api/me/channels/${channelId}/retention`);
+      await fetch(`/api/me/channels/${channelId}/video-analytics`);
     };
 
     // Call multiple times (simulating re-renders)
@@ -75,22 +75,10 @@ describe("useRetention hook behavior", () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
-  it("should not fetch if user is not subscribed", async () => {
-    const channelId = "test-channel";
-    const isSubscribed = false;
-
-    // Simulate guard check
-    if (isSubscribed) {
-      await fetch(`/api/me/channels/${channelId}/retention`);
-    }
-
-    expect(mockFetch).not.toHaveBeenCalled();
-  });
-
   it("should allow explicit refresh to refetch data", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ videos: [] }),
+      json: () => Promise.resolve({ videos: [], usage: { used: 0, limit: 5 } }),
     });
 
     const channelId = "test-channel";
@@ -99,7 +87,7 @@ describe("useRetention hook behavior", () => {
     const fetchRetention = async (force = false) => {
       if (hasFetched && !force) return;
       hasFetched = true;
-      await fetch(`/api/me/channels/${channelId}/retention`);
+      await fetch(`/api/me/channels/${channelId}/video-analytics`);
     };
 
     // Initial fetch
@@ -122,8 +110,12 @@ describe("useRetention hook behavior", () => {
       status: 429,
       json: () =>
         Promise.resolve({
-          error: "Rate limit exceeded",
+          error: "Daily limit reached",
+          code: "LIMIT_REACHED",
+          used: 5,
+          limit: 5,
           resetAt: new Date(Date.now() + 3600000).toISOString(),
+          message: "You've used all 5 video analyses for today.",
         }),
     });
 
@@ -131,7 +123,7 @@ describe("useRetention hook behavior", () => {
     let error: string | null = null;
 
     try {
-      const res = await fetch(`/api/me/channels/${channelId}/retention`);
+      const res = await fetch(`/api/me/channels/${channelId}/video-analytics`);
       if (!res.ok) {
         const data = await res.json();
         error = data.error;
@@ -140,8 +132,34 @@ describe("useRetention hook behavior", () => {
       error = err instanceof Error ? err.message : "Unknown error";
     }
 
-    expect(error).toBe("Rate limit exceeded");
+    expect(error).toBe("Daily limit reached");
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
-});
 
+  it("should include usage info in response for free tier users", async () => {
+    const usageInfo = {
+      used: 3,
+      limit: 5,
+      resetAt: new Date(Date.now() + 3600000).toISOString(),
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          channelId: "test-channel",
+          videos: [],
+          fetchedAt: new Date().toISOString(),
+          usage: usageInfo,
+        }),
+    });
+
+    const channelId = "test-channel";
+    const res = await fetch(`/api/me/channels/${channelId}/video-analytics`);
+    const data = await res.json();
+
+    expect(data.usage).toBeDefined();
+    expect(data.usage.used).toBe(3);
+    expect(data.usage.limit).toBe(5);
+  });
+});

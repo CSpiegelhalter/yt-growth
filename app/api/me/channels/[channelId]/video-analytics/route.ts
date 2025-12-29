@@ -1,11 +1,13 @@
 /**
- * GET /api/me/channels/[channelId]/retention
+ * GET /api/me/channels/[channelId]/video-analytics
  *
- * Fetch/cache retention curves and compute cliff analysis for last 10 videos.
- * This is a PAID feature - requires active subscription.
+ * Fetch/cache retention curves and compute cliff analysis for videos.
+ * Available to all users with usage limits:
+ * - FREE: 5 analyses per day
+ * - PRO: 100 analyses per day
  *
  * Auth: Required
- * Subscription: Required
+ * Entitlement: owned_video_analysis (usage-limited, not locked)
  * Rate limit: 20 per hour per channel
  * Caching: 12-24 hours
  *
@@ -14,10 +16,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
-import {
-  getCurrentUserWithSubscription,
-  hasActiveSubscription,
-} from "@/lib/user";
 import { getGoogleAccount, fetchRetentionCurve } from "@/lib/youtube-api";
 import { computeRetentionCliff, formatTimestamp } from "@/lib/retention";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
@@ -27,6 +25,10 @@ import {
   isYouTubeMockMode,
 } from "@/lib/demo-fixtures";
 import { ensureMockChannelSeeded } from "@/lib/mock-seed";
+import {
+  checkEntitlement,
+  entitlementErrorResponse,
+} from "@/lib/with-entitlements";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -43,19 +45,18 @@ export async function GET(
   }
 
   try {
-    // Auth check
-    const user = await getCurrentUserWithSubscription();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    // Check entitlement (includes auth check and usage limit)
+    // Set increment: false initially - we'll only increment if we actually fetch new data
+    const entitlementResult = await checkEntitlement({
+      featureKey: "owned_video_analysis",
+      increment: false, // Don't increment yet - only if we fetch new data
+    });
+
+    if (!entitlementResult.ok) {
+      return entitlementErrorResponse(entitlementResult.error);
     }
 
-    // Subscription check (paid feature)
-    if (!isYouTubeMockMode() && !hasActiveSubscription(user.subscription)) {
-      return Response.json(
-        { error: "Subscription required", code: "SUBSCRIPTION_REQUIRED" },
-        { status: 403 }
-      );
-    }
+    const { user, plan, usage } = entitlementResult.context;
 
     // Validate params
     const parsed = ParamsSchema.safeParse(params);
@@ -168,6 +169,19 @@ export async function GET(
       (v) => !cachedVideoIds.has(v.id)
     );
 
+    // If we need to fetch new data, check if we have usage remaining and increment
+    if (videosToFetch.length > 0) {
+      // Re-check with increment to count this usage
+      const usageResult = await checkEntitlement({
+        featureKey: "owned_video_analysis",
+        increment: true,
+      });
+
+      if (!usageResult.ok) {
+        return entitlementErrorResponse(usageResult.error);
+      }
+    }
+
     // Fetch retention for uncached videos IN PARALLEL (much faster)
     const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours
 
@@ -255,11 +269,18 @@ export async function GET(
       channelId,
       videos,
       fetchedAt: new Date(),
+      usage: usage
+        ? {
+            used: usage.used + (videosToFetch.length > 0 ? 1 : 0),
+            limit: usage.limit,
+            resetAt: usage.resetAt,
+          }
+        : undefined,
     });
   } catch (err: any) {
-    console.error("Retention error:", err);
+    console.error("Video analytics error:", err);
     return Response.json(
-      { error: "Failed to fetch retention data", detail: err.message },
+      { error: "Failed to fetch video analytics", detail: err.message },
       { status: 500 }
     );
   }

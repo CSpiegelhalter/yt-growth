@@ -44,6 +44,10 @@
   text-decoration: none;
 }
 
+.logo:hover {
+  text-decoration: none;
+}
+
 .logoIcon {
   display: flex;
   align-items: center;

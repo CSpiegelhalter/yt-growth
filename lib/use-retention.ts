@@ -10,13 +10,16 @@ type RetentionState = {
   fetchedAt: Date | null;
   cachedUntil: Date | null;
   isDemo: boolean;
+  usage?: {
+    used: number;
+    limit: number;
+    resetAt: string;
+  };
 };
 
 type UseRetentionOptions = {
   /** Whether to fetch on mount. Default: true */
   fetchOnMount?: boolean;
-  /** Whether the user is subscribed (required for retention API) */
-  isSubscribed: boolean;
 };
 
 type UseRetentionReturn = RetentionState & {
@@ -27,14 +30,15 @@ type UseRetentionReturn = RetentionState & {
 };
 
 /**
- * Hook to fetch retention data for a channel with proper request deduping.
- * Prevents infinite loops by using refs for in-flight tracking and stable callbacks.
+ * Hook to fetch video analytics (retention) data for a channel.
+ * Available to all users with usage limits (FREE: 5/day, PRO: 100/day).
+ * Uses proper request deduping to prevent infinite loops.
  */
 export function useRetention(
   channelId: string,
-  options: UseRetentionOptions
+  options: UseRetentionOptions = {}
 ): UseRetentionReturn {
-  const { fetchOnMount = true, isSubscribed } = options;
+  const { fetchOnMount = true } = options;
 
   const [state, setState] = useState<RetentionState>({
     videos: [],
@@ -79,11 +83,6 @@ export function useRetention(
         return;
       }
 
-      // Guard: subscription required
-      if (!isSubscribed) {
-        return;
-      }
-
       // Abort any pending request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -96,7 +95,7 @@ export function useRetention(
       setState((prev) => ({ ...prev, loading: true, error: null }));
 
       try {
-        const res = await fetch(`/api/me/channels/${channelId}/retention`, {
+        const res = await fetch(`/api/me/channels/${channelId}/video-analytics`, {
           signal: controller.signal,
         });
 
@@ -108,7 +107,7 @@ export function useRetention(
         const data = await res.json();
 
         if (!res.ok) {
-          throw new Error(data.error || "Failed to load retention");
+          throw new Error(data.message || data.error || "Failed to load video analytics");
         }
 
         hasFetchedRef.current = true;
@@ -122,6 +121,7 @@ export function useRetention(
             ? new Date(data.videos[0].retention.cachedUntil)
             : null,
           isDemo: Boolean(data.demo),
+          usage: data.usage,
         });
       } catch (err: unknown) {
         // Ignore abort errors
@@ -132,18 +132,18 @@ export function useRetention(
         setState((prev) => ({
           ...prev,
           loading: false,
-          error: err instanceof Error ? err.message : "Failed to load retention",
+          error: err instanceof Error ? err.message : "Failed to load video analytics",
         }));
       } finally {
         inFlightRef.current = false;
       }
     },
-    [channelId, isSubscribed]
+    [channelId]
   );
 
   // Fetch on mount (once) if enabled
   useEffect(() => {
-    if (fetchOnMount && !hasFetchedRef.current && isSubscribed) {
+    if (fetchOnMount && !hasFetchedRef.current) {
       fetchRetention();
     }
 
@@ -153,7 +153,7 @@ export function useRetention(
         abortControllerRef.current.abort();
       }
     };
-  }, [fetchOnMount, isSubscribed, fetchRetention]);
+  }, [fetchOnMount, fetchRetention]);
 
   const refresh = useCallback(async () => {
     await fetchRetention(true);

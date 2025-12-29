@@ -238,6 +238,98 @@ test.describe("Feature Gating - Free Tier", () => {
       );
     }
   });
+
+  test("free user can see videos on dashboard after linking channel", async ({
+    page,
+  }) => {
+    // This test verifies that FREE users can:
+    // 1. Link a channel (creates fake videos)
+    // 2. See those videos on the dashboard
+    // 3. Access the /videos API endpoint
+
+    // Step 1: Verify /videos API returns videos for free user
+    const videosResponse = await page.request.get(
+      "/api/me/channels/UC_test_gating/videos"
+    );
+    expect(videosResponse.ok()).toBe(true);
+
+    const videosData = await videosResponse.json();
+    expect(videosData.videos).toBeDefined();
+    expect(videosData.videos.length).toBeGreaterThan(0);
+    console.log(
+      `✓ FREE user can access /videos API (${videosData.videos.length} videos)`
+    );
+
+    // Step 2: Navigate to dashboard and verify videos are displayed
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
+
+    // Wait for video cards to appear (the linkFakeChannel creates 10 videos)
+    const videoCards = page.locator('[class*="videoCard"], [class*="video-card"]');
+    await expect(videoCards.first()).toBeVisible({ timeout: 10000 });
+
+    const videoCount = await videoCards.count();
+    expect(videoCount).toBeGreaterThan(0);
+    console.log(`✓ FREE user sees ${videoCount} video cards on dashboard`);
+
+    // Step 3: Verify video titles are visible
+    const firstVideoTitle = page
+      .locator('[class*="videoCard"] h3, [class*="video-card"] h3')
+      .first();
+    await expect(firstVideoTitle).toBeVisible();
+    const titleText = await firstVideoTitle.textContent();
+    expect(titleText).toBeTruthy();
+    console.log(`✓ Video title visible: "${titleText?.slice(0, 30)}..."`);
+  });
+
+  test("free user can refresh channel and see videos", async ({ page }) => {
+    // This test simulates the flow:
+    // 1. Free user has a channel
+    // 2. User clicks "Refresh Channel"
+    // 3. Videos are still visible (sync doesn't block free users)
+
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
+
+    // Initial state: videos should be visible
+    const initialVideos = page.locator(
+      '[class*="videoCard"], [class*="video-card"]'
+    );
+    await expect(initialVideos.first()).toBeVisible({ timeout: 10000 });
+    const initialCount = await initialVideos.count();
+    console.log(`✓ Initial video count: ${initialCount}`);
+
+    // Call sync endpoint (simulating refresh button click)
+    const syncResponse = await page.request.post(
+      "/api/me/channels/UC_test_gating/sync"
+    );
+
+    // Sync should succeed for free users (within daily limits)
+    if (syncResponse.ok()) {
+      console.log("✓ Sync API succeeded for FREE user");
+    } else {
+      const syncData = await syncResponse.json();
+      // May fail if synced recently (5 min cooldown) - that's OK
+      if (syncData.error?.includes("recently") || syncData.error?.includes("cooldown")) {
+        console.log("✓ Sync blocked by cooldown (expected if recently synced)");
+      } else {
+        console.log(`Sync response: ${syncResponse.status()} - ${JSON.stringify(syncData)}`);
+      }
+    }
+
+    // Reload dashboard
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    // Videos should still be visible
+    const videosAfterSync = page.locator(
+      '[class*="videoCard"], [class*="video-card"]'
+    );
+    await expect(videosAfterSync.first()).toBeVisible({ timeout: 10000 });
+    const afterCount = await videosAfterSync.count();
+    expect(afterCount).toBeGreaterThan(0);
+    console.log(`✓ After sync: ${afterCount} videos visible`);
+  });
 });
 
 test.describe("Feature Gating - Pro Tier", () => {

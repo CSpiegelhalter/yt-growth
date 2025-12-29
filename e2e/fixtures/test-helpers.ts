@@ -283,3 +283,77 @@ export async function navigateAuthenticated(
   await page.waitForLoadState("networkidle");
 }
 
+/**
+ * Link a fake YouTube channel WITHOUT any videos
+ * Use this to test the "no videos → upload → see videos" flow
+ */
+export async function linkEmptyChannel(
+  page: Page,
+  options?: { channelId?: string; title?: string; bypassLimit?: boolean }
+): Promise<{
+  success: boolean;
+  channelId: string;
+  error?: string;
+  current?: number;
+  limit?: number;
+  plan?: string;
+}> {
+  const response = await page.request.post("/api/test/youtube/link-empty", {
+    data: options || {},
+  });
+
+  const data = await response.json();
+
+  if (!response.ok()) {
+    return {
+      success: false,
+      channelId: options?.channelId || "",
+      error: data.error,
+      current: data.current,
+      limit: data.limit,
+      plan: data.plan,
+    };
+  }
+
+  return {
+    success: true,
+    channelId: data.channelId,
+  };
+}
+
+/**
+ * Add a fake video to an existing channel
+ * Simulates a user uploading a new video to YouTube
+ */
+export async function addFakeVideo(
+  page: Page,
+  channelId: string,
+  options?: { videoId?: string; title?: string }
+): Promise<{
+  success: boolean;
+  videoId: string;
+  error?: string;
+}> {
+  const response = await page.request.post("/api/test/youtube/add-video", {
+    data: {
+      channelId,
+      ...options,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok()) {
+    return {
+      success: false,
+      videoId: options?.videoId || "",
+      error: data.error,
+    };
+  }
+
+  return {
+    success: true,
+    videoId: data.videoId,
+  };
+}
+
