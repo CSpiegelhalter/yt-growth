@@ -1,0 +1,56 @@
+/* PageHeader - Standardized page header */
+
+.header {
+  margin-bottom: var(--page-header-margin);
+}
+
+@media (min-width: 640px) {
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--page-title-size);
+  font-weight: var(--page-title-weight);
+  color: var(--text);
+  margin: 0 0 var(--space-1);
+  line-height: var(--leading-tight);
+}
+
+@media (min-width: 640px) {
+  .title {
+    font-size: var(--page-title-size-lg);
+  }
+}
+
+.subtitle {
+  font-size: var(--page-subtitle-size);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: var(--page-subtitle-line-height);
+}
+
+.subtitle strong {
+  color: var(--text);
+}
+
+.action {
+  margin-top: var(--space-4);
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .action {
+    margin-top: 0;
+  }
+}
+

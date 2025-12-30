@@ -171,7 +171,7 @@ export default function CompetitorsClient({
       let allVideos = [...(feedData.videos ?? [])];
       let currentQueryIndex = feedData.nextQueryIndex ?? feedData.currentQueryIndex ?? 0;
       let currentPageToken = feedData.nextPageToken;
-      let hasMore = feedData.hasMorePages ?? false;
+      let hasMore: boolean = feedData.hasMorePages ?? false;
       let latestData = feedData;
 
       // Keep fetching until we have enough qualifying videos or run out of pages

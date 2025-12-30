@@ -1,44 +1,45 @@
 .container {
   min-height: 100vh;
-  padding: 80px 20px 60px;
-  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+  padding: var(--space-2xl) var(--space-md) var(--space-xl);
+  background: var(--color-bg);
 }
 
 .content {
   max-width: 720px;
   margin: 0 auto;
-  background: white;
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
 }
 
 @media (max-width: 640px) {
   .container {
-    padding: 60px 16px 40px;
+    padding: var(--space-xl) var(--space-md) var(--space-lg);
   }
 
   .content {
-    padding: 24px;
-    border-radius: 12px;
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
   }
 }
 
 .title {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #1e293b;
-  margin: 0 0 8px;
+  font-size: var(--page-title-size-lg);
+  font-weight: var(--page-title-weight);
+  color: var(--color-text);
+  margin: 0 0 var(--space-xs);
 }
 
 .updated {
   font-size: 0.875rem;
-  color: #64748b;
-  margin: 0 0 32px;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-lg);
 }
 
 .section {
-  margin-bottom: 28px;
+  margin-bottom: var(--space-lg);
 }
 
 .section:last-child {
@@ -46,17 +47,17 @@
 }
 
 .section h2 {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 12px;
+  font-size: var(--section-title-size);
+  font-weight: var(--section-title-weight);
+  color: var(--color-text);
+  margin: 0 0 var(--space-sm);
 }
 
 .section p {
   font-size: 0.9375rem;
-  color: #475569;
+  color: var(--color-text-secondary);
   line-height: 1.7;
-  margin: 0 0 12px;
+  margin: 0 0 var(--space-sm);
 }
 
 .section p:last-child {
@@ -64,15 +65,15 @@
 }
 
 .section ul {
-  margin: 8px 0 0;
+  margin: var(--space-xs) 0 0;
   padding: 0 0 0 20px;
 }
 
 .section li {
   font-size: 0.9375rem;
-  color: #475569;
+  color: var(--color-text-secondary);
   line-height: 1.6;
-  margin-bottom: 6px;
+  margin-bottom: var(--space-xs);
 }
 
 .section li:last-child {
@@ -80,12 +81,17 @@
 }
 
 .link {
-  color: #6366f1;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
 }
 
 .link:hover {
   text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 

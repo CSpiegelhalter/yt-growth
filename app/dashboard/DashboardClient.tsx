@@ -123,7 +123,9 @@ export default function DashboardClient({
         try {
           const res = await fetch("/api/me/channels", { cache: "no-store" });
           if (res.ok) {
-            const freshChannels = await res.json();
+            const data = await res.json();
+            // Handle both old format (array) and new format ({channels, channelLimit, plan})
+            const freshChannels = Array.isArray(data) ? data : data.channels;
             setChannels(freshChannels);
             // If active channel no longer exists, clear it
             if (
@@ -206,7 +208,9 @@ export default function DashboardClient({
         fetch("/api/me/channels", { cache: "no-store" }),
       ]);
       if (mRes.ok && cRes.ok) {
-        const [m, c] = await Promise.all([mRes.json(), cRes.json()]);
+        const [m, cData] = await Promise.all([mRes.json(), cRes.json()]);
+        // Handle both old format (array) and new format ({channels, channelLimit, plan})
+        const c = Array.isArray(cData) ? cData : cData.channels;
         setMe(m);
         setChannels(c);
       }

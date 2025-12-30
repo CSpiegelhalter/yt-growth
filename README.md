@@ -143,20 +143,24 @@ YouTube growth tools built with Next.js 14, Prisma, and TypeScript.
 
 **GET /api/me/channels Response:**
 ```json
-[
-  {
-    "channel_id": "UC_abc123",
-    "id": 1,
-    "title": "My Tech Channel",
-    "thumbnailUrl": "https://...",
-    "connectedAt": "2024-01-01T00:00:00.000Z",
-    "lastSyncedAt": "2024-01-15T12:00:00.000Z",
-    "syncStatus": "idle",
-    "syncError": null,
-    "videoCount": 10,
-    "planCount": 3
-  }
-]
+{
+  "channels": [
+    {
+      "channel_id": "UC_abc123",
+      "id": 1,
+      "title": "My Tech Channel",
+      "thumbnailUrl": "https://...",
+      "connectedAt": "2024-01-01T00:00:00.000Z",
+      "lastSyncedAt": "2024-01-15T12:00:00.000Z",
+      "syncStatus": "idle",
+      "syncError": null,
+      "videoCount": 10,
+      "planCount": 3
+    }
+  ],
+  "channelLimit": 1,
+  "plan": "FREE"
+}
 ```
 
 ### Paid Features

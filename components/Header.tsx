@@ -15,6 +15,8 @@ type Channel = {
   thumbnailUrl: string | null;
 };
 
+type Plan = "FREE" | "PRO" | "ENTERPRISE";
+
 /**
  * Site header with auth-aware navigation and channel selector.
  * Mobile-first design with dropdown menu for logged-in users.
@@ -26,6 +28,9 @@ export function Header() {
   const [channelDropdownOpen, setChannelDropdownOpen] = useState(false);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
+  const [channelLimit, setChannelLimit] = useState<number>(1);
+  const [plan, setPlan] = useState<Plan>("FREE");
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [mounted, setMounted] = useState(false);
   const autoSignOutTriggeredRef = useRef(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -60,7 +65,17 @@ export function Header() {
 
         if (res.ok) {
           const data = await res.json();
-          setChannels(data);
+          // Handle both old format (array) and new format ({channels, channelLimit, plan})
+          const channelList = Array.isArray(data) ? data : data.channels;
+          setChannels(channelList);
+
+          // Set channel limit and plan from response
+          if (data.channelLimit !== undefined) {
+            setChannelLimit(data.channelLimit);
+          }
+          if (data.plan) {
+            setPlan(data.plan);
+          }
 
           // Set active channel from URL or localStorage or first channel
           const urlChannelId = searchParams.get("channelId");
@@ -68,18 +83,18 @@ export function Header() {
 
           if (
             urlChannelId &&
-            data.some((c: Channel) => c.channel_id === urlChannelId)
+            channelList.some((c: Channel) => c.channel_id === urlChannelId)
           ) {
             setActiveChannelId(urlChannelId);
             localStorage.setItem("activeChannelId", urlChannelId);
           } else if (
             storedChannelId &&
-            data.some((c: Channel) => c.channel_id === storedChannelId)
+            channelList.some((c: Channel) => c.channel_id === storedChannelId)
           ) {
             setActiveChannelId(storedChannelId);
-          } else if (data.length > 0) {
-            setActiveChannelId(data[0].channel_id);
-            localStorage.setItem("activeChannelId", data[0].channel_id);
+          } else if (channelList.length > 0) {
+            setActiveChannelId(channelList[0].channel_id);
+            localStorage.setItem("activeChannelId", channelList[0].channel_id);
           } else {
             // No channels - clear active channel
             setActiveChannelId(null);
@@ -206,267 +221,357 @@ export function Header() {
     return allow.includes(email);
   }, [session?.user?.email]);
 
-  return (
-    <header className={s.header}>
-      <div className={s.leftSection}>
-        {/* Logo */}
-        <Link href="/" className={s.logo}>
-          <span className={s.logoIcon}>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          </span>
-          <span className={s.logoText}>{BRAND.name}</span>
-        </Link>
-      </div>
+  // Helper to determine if user can add more channels
+  const canAddChannel = channels.length < channelLimit;
 
-      <div className={s.centerSection}>
-        {/* Channel Selector (only when logged in and has channels) */}
-        {mounted && isLoggedIn && channels.length > 0 && (
-          <div ref={channelRef} className={s.channelSelector}>
-            <button
-              className={s.channelBtn}
-              onClick={() => setChannelDropdownOpen(!channelDropdownOpen)}
-              aria-expanded={channelDropdownOpen}
-              aria-label="Select channel"
-              type="button"
-            >
-              {activeChannel?.thumbnailUrl ? (
-                <Image
-                  src={activeChannel.thumbnailUrl}
-                  alt={`${activeChannel.title ?? "Selected channel"} avatar`}
-                  width={24}
-                  height={24}
-                  className={s.channelThumb}
-                  sizes="24px"
-                />
-              ) : (
-                <div className={s.channelThumbPlaceholder}>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
-                  </svg>
-                </div>
-              )}
-              <span className={s.channelName}>
-                {activeChannel?.title ?? "Select Channel"}
-              </span>
+  return (
+    <>
+      <header className={s.header}>
+        <div className={s.leftSection}>
+          {/* Logo */}
+          <Link href="/" className={s.logo}>
+            <span className={s.logoIcon}>
               <svg
-                width="12"
-                height="12"
+                width="20"
+                height="20"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                className={channelDropdownOpen ? s.chevronUp : ""}
               >
-                <path d="M6 9l6 6 6-6" />
+                <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
-            </button>
+            </span>
+            <span className={s.logoText}>{BRAND.name}</span>
+          </Link>
+        </div>
 
-            {/* Channel Dropdown */}
-            {channelDropdownOpen && (
-              <div className={s.channelDropdown}>
-                {channels.map((channel) => (
-                  <button
-                    key={channel.channel_id}
-                    className={`${s.channelOption} ${
-                      channel.channel_id === activeChannelId
-                        ? s.channelOptionActive
-                        : ""
-                    }`}
-                    onClick={() => handleChannelSelect(channel.channel_id)}
-                    type="button"
-                  >
-                    {channel.thumbnailUrl ? (
-                      <Image
-                        src={channel.thumbnailUrl}
-                        alt={`${channel.title ?? "YouTube channel"} avatar`}
-                        width={32}
-                        height={32}
-                        className={s.channelOptionThumb}
-                        sizes="32px"
-                      />
-                    ) : (
-                      <div className={s.channelOptionThumbPlaceholder} />
-                    )}
-                    <span className={s.channelOptionName}>
-                      {channel.title ?? "Untitled Channel"}
-                    </span>
-                    {channel.channel_id === activeChannelId && (
+        <div className={s.centerSection}>
+          {/* Channel Selector (only when logged in and has channels) */}
+          {mounted && isLoggedIn && channels.length > 0 && (
+            <div ref={channelRef} className={s.channelSelector}>
+              <button
+                className={s.channelBtn}
+                onClick={() => setChannelDropdownOpen(!channelDropdownOpen)}
+                aria-expanded={channelDropdownOpen}
+                aria-label="Select channel"
+                type="button"
+              >
+                {activeChannel?.thumbnailUrl ? (
+                  <Image
+                    src={activeChannel.thumbnailUrl}
+                    alt={`${activeChannel.title ?? "Selected channel"} avatar`}
+                    width={24}
+                    height={24}
+                    className={s.channelThumb}
+                    sizes="24px"
+                  />
+                ) : (
+                  <div className={s.channelThumbPlaceholder}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
+                    </svg>
+                  </div>
+                )}
+                <span className={s.channelName}>
+                  {activeChannel?.title ?? "Select Channel"}
+                </span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className={channelDropdownOpen ? s.chevronUp : ""}
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+
+              {/* Channel Dropdown */}
+              {channelDropdownOpen && (
+                <div className={s.channelDropdown}>
+                  {channels.map((channel) => (
+                    <button
+                      key={channel.channel_id}
+                      className={`${s.channelOption} ${
+                        channel.channel_id === activeChannelId
+                          ? s.channelOptionActive
+                          : ""
+                      }`}
+                      onClick={() => handleChannelSelect(channel.channel_id)}
+                      type="button"
+                    >
+                      {channel.thumbnailUrl ? (
+                        <Image
+                          src={channel.thumbnailUrl}
+                          alt={`${channel.title ?? "YouTube channel"} avatar`}
+                          width={32}
+                          height={32}
+                          className={s.channelOptionThumb}
+                          sizes="32px"
+                        />
+                      ) : (
+                        <div className={s.channelOptionThumbPlaceholder} />
+                      )}
+                      <span className={s.channelOptionName}>
+                        {channel.title ?? "Untitled Channel"}
+                      </span>
+                      {channel.channel_id === activeChannelId && (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          className={s.checkIcon}
+                        >
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                  {channels.length < channelLimit ? (
+                    <Link
+                      href="/api/integrations/google/start"
+                      className={s.addChannelLink}
+                      onClick={() => setChannelDropdownOpen(false)}
+                    >
                       <svg
                         width="16"
                         height="16"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
-                        strokeWidth="2.5"
-                        className={s.checkIcon}
+                        strokeWidth="2"
                       >
-                        <path d="M20 6L9 17l-5-5" />
+                        <path d="M12 5v14M5 12h14" />
                       </svg>
-                    )}
-                  </button>
-                ))}
-                <Link
-                  href="/api/integrations/google/start"
-                  className={s.addChannelLink}
-                  onClick={() => setChannelDropdownOpen(false)}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  Add Channel
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className={s.rightSection}>
-        {/* Auth Section */}
-        <div className={s.authSection}>
-          {!mounted || isLoading ? (
-            <div className={s.placeholder} />
-          ) : isLoggedIn ? (
-            <div ref={menuRef} style={{ position: "relative" }}>
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className={s.userMenuBtn}
-                aria-label="User menu"
-                aria-expanded={menuOpen}
-                type="button"
-              >
-                <div className={s.avatar}>{userInitials}</div>
-                <span className={s.userName}>
-                  {session?.user?.name || truncateEmail(userEmail)}
-                </span>
-                <span className={s.menuChevron}>{menuOpen ? "▲" : "▼"}</span>
-              </button>
-
-              {menuOpen && (
-                <>
-                  <div
-                    className={s.backdrop}
-                    onClick={() => setMenuOpen(false)}
-                  />
-                  <div className={s.dropdown}>
-                    <div className={s.dropdownEmail}>{userEmail}</div>
-
-                    {navLinks.map((link) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={s.dropdownItem}
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        <DropdownIcon type={link.icon} />
-                        {link.label}
-                      </Link>
-                    ))}
-
-                    <div className={s.dropdownDivider} />
-
-                    <Link
-                      href="/saved-ideas"
-                      className={s.dropdownItem}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <DropdownIcon type="bookmark" />
-                      Saved Ideas
+                      Add Channel
                     </Link>
-
-                    <Link
-                      href="/profile"
-                      className={s.dropdownItem}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <DropdownIcon type="user" />
-                      Profile
-                    </Link>
-
-                    <Link
-                      href="/contact"
-                      className={s.dropdownItem}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <DropdownIcon type="mail" />
-                      Contact
-                    </Link>
-
-                    <Link
-                      href="/learn"
-                      className={s.dropdownItem}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <DropdownIcon type="book" />
-                      Learn
-                    </Link>
-
-                    {isAdmin && (
-                      <Link
-                        href="/admin/youtube-usage"
-                        className={s.dropdownItem}
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        <DropdownIcon type="settings" />
-                        Admin: API Usage
-                      </Link>
-                    )}
-
-                    <div className={s.dropdownDivider} />
-
-                    <Link
-                      href="/api/auth/signout"
-                      className={`${s.dropdownItem} ${s.dropdownSignout}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setMenuOpen(false);
-                        void signOut({ callbackUrl: "/" });
+                  ) : (
+                    <button
+                      className={s.addChannelLink}
+                      onClick={() => {
+                        setChannelDropdownOpen(false);
+                        setShowUpgradePrompt(true);
                       }}
+                      type="button"
                     >
-                      <DropdownIcon type="logout" />
-                      Sign out
-                    </Link>
-                  </div>
-                </>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                      Add Channel
+                    </button>
+                  )}
+                </div>
               )}
             </div>
-          ) : (
-            <>
-              <Link href="/contact" className={s.contactBtn}>
-                Contact
-              </Link>
-              <Link href="/auth/login" className={s.loginBtn}>
-                Log in
-              </Link>
-              <Link href="/auth/signup" className={s.signupBtn}>
-                Sign up
-              </Link>
-            </>
           )}
         </div>
-      </div>
-    </header>
+
+        <div className={s.rightSection}>
+          {/* Auth Section */}
+          <div className={s.authSection}>
+            {!mounted || isLoading ? (
+              <div className={s.placeholder} />
+            ) : isLoggedIn ? (
+              <div ref={menuRef} style={{ position: "relative" }}>
+                <button
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  className={s.userMenuBtn}
+                  aria-label="User menu"
+                  aria-expanded={menuOpen}
+                  type="button"
+                >
+                  <div className={s.avatar}>{userInitials}</div>
+                  <span className={s.userName}>
+                    {session?.user?.name || truncateEmail(userEmail)}
+                  </span>
+                  <span className={s.menuChevron}>{menuOpen ? "▲" : "▼"}</span>
+                </button>
+
+                {menuOpen && (
+                  <>
+                    <div
+                      className={s.backdrop}
+                      onClick={() => setMenuOpen(false)}
+                    />
+                    <div className={s.dropdown}>
+                      <div className={s.dropdownEmail}>{userEmail}</div>
+
+                      {navLinks.map((link) => (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          className={s.dropdownItem}
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <DropdownIcon type={link.icon} />
+                          {link.label}
+                        </Link>
+                      ))}
+
+                      <div className={s.dropdownDivider} />
+
+                      <Link
+                        href="/saved-ideas"
+                        className={s.dropdownItem}
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <DropdownIcon type="bookmark" />
+                        Saved Ideas
+                      </Link>
+
+                      <Link
+                        href="/profile"
+                        className={s.dropdownItem}
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <DropdownIcon type="user" />
+                        Profile
+                      </Link>
+
+                      <Link
+                        href="/contact"
+                        className={s.dropdownItem}
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <DropdownIcon type="mail" />
+                        Contact
+                      </Link>
+
+                      <Link
+                        href="/learn"
+                        className={s.dropdownItem}
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <DropdownIcon type="book" />
+                        Learn
+                      </Link>
+
+                      {isAdmin && (
+                        <Link
+                          href="/admin/youtube-usage"
+                          className={s.dropdownItem}
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <DropdownIcon type="settings" />
+                          Admin: API Usage
+                        </Link>
+                      )}
+
+                      <div className={s.dropdownDivider} />
+
+                      <Link
+                        href="/api/auth/signout"
+                        className={`${s.dropdownItem} ${s.dropdownSignout}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setMenuOpen(false);
+                          void signOut({ callbackUrl: "/" });
+                        }}
+                      >
+                        <DropdownIcon type="logout" />
+                        Sign out
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link href="/contact" className={s.contactBtn}>
+                  Contact
+                </Link>
+                <Link href="/auth/login" className={s.loginBtn}>
+                  Log in
+                </Link>
+                <Link href="/auth/signup" className={s.signupBtn}>
+                  Sign up
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Upgrade Prompt Modal */}
+      {showUpgradePrompt && (
+        <div
+          className={s.modalOverlay}
+          onClick={() => setShowUpgradePrompt(false)}
+        >
+          <div className={s.modal} onClick={(e) => e.stopPropagation()}>
+            <button
+              className={s.modalClose}
+              onClick={() => setShowUpgradePrompt(false)}
+              type="button"
+              aria-label="Close"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+            <div className={s.modalIcon}>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h3 className={s.modalTitle}>Channel Limit Reached</h3>
+            <p className={s.modalDesc}>
+              {plan === "FREE"
+                ? "Free accounts can connect 1 YouTube channel. Upgrade to Pro to connect up to 3 channels."
+                : `You've reached the maximum of ${channelLimit} channels for your plan.`}
+            </p>
+            {plan === "FREE" && (
+              <Link
+                href="/api/integrations/stripe/checkout"
+                className={s.modalUpgradeBtn}
+                onClick={() => setShowUpgradePrompt(false)}
+              >
+                Upgrade to Pro
+              </Link>
+            )}
+            <button
+              className={s.modalDismissBtn}
+              onClick={() => setShowUpgradePrompt(false)}
+              type="button"
+            >
+              {plan === "FREE" ? "Maybe later" : "Got it"}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

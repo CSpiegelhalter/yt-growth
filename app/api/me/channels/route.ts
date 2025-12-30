@@ -2,15 +2,17 @@
  * GET /api/me/channels
  *
  * Get all channels for the current user.
+ * Also returns subscription info (channel limit, plan) for UI gating.
  *
  * Auth: Required
  */
 import { prisma } from "@/prisma";
-import { getCurrentUser } from "@/lib/user";
+import { getCurrentUserWithSubscription } from "@/lib/user";
+import { getSubscriptionStatus } from "@/lib/stripe";
 
 export async function GET() {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUserWithSubscription();
 
     if (!user) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -39,6 +41,9 @@ export async function GET() {
       },
     });
 
+    // Get subscription info for channel limit gating
+    const subscription = await getSubscriptionStatus(user.id);
+
     // Transform to expected format
     const transformed = channels.map((ch) => ({
       channel_id: ch.youtubeChannelId,
@@ -56,7 +61,11 @@ export async function GET() {
       planCount: ch._count.Plan,
     }));
 
-    return Response.json(transformed, {
+    return Response.json({
+      channels: transformed,
+      channelLimit: subscription.channelLimit,
+      plan: subscription.plan,
+    }, {
       headers: { "cache-control": "no-store" },
     });
   } catch (err: any) {

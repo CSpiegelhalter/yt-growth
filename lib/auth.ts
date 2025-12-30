@@ -193,13 +193,28 @@ export const authOptions: NextAuthOptions = {
 
         if (!dbUser) {
           // Create new user for Google OAuth sign-in
-          dbUser = await prisma.user.create({
-            data: {
-              email: user.email,
-              name: user.name ?? profile?.name ?? null,
-            },
-          });
-          log("google oauth new user", dbUser.id, dbUser.email);
+          try {
+            dbUser = await prisma.user.create({
+              data: {
+                email: user.email,
+                name: user.name ?? profile?.name ?? null,
+              },
+            });
+            log("google oauth new user", dbUser.id, dbUser.email);
+          } catch (error: any) {
+            // Handle race condition - user was created by another concurrent request
+            if (error?.code === "P2002") {
+              dbUser = await prisma.user.findUnique({
+                where: { email: user.email },
+              });
+              if (!dbUser) {
+                throw new Error("Failed to create or find user");
+              }
+              log("google oauth user found after race", dbUser.id, dbUser.email);
+            } else {
+              throw error;
+            }
+          }
         }
 
         // Upsert into GoogleAccount table
