@@ -21,6 +21,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import {
   getCurrentUserWithSubscription,
   hasActiveSubscription,
@@ -88,7 +89,7 @@ const commonWords = new Set([
 /**
  * GET - Return cached IdeaBoard or demo data
  */
-export async function GET(
+async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -194,10 +195,15 @@ export async function GET(
   }
 }
 
+export const GET = createApiRoute(
+  { route: "/api/me/channels/[channelId]/idea-board" },
+  async (req, ctx) => GETHandler(req, ctx as any)
+);
+
 /**
  * POST - Generate new IdeaBoard or add more ideas
  */
-export async function POST(
+async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -551,3 +557,8 @@ export async function POST(
     );
   }
 }
+
+export const POST = createApiRoute(
+  { route: "/api/me/channels/[channelId]/idea-board" },
+  async (req, ctx) => POSTHandler(req, ctx as any)
+);

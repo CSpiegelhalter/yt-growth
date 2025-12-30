@@ -16,6 +16,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/prisma";
 import { getGoogleAccount, fetchVideosStatsBatch } from "@/lib/youtube-api";
+import { createApiRoute } from "@/lib/api/route";
 
 // Minimum hours between snapshots
 const SNAPSHOT_INTERVAL_HOURS = 6;
@@ -23,7 +24,7 @@ const SNAPSHOT_INTERVAL_HOURS = 6;
 // Maximum videos to process per cron run (to stay within quota)
 const MAX_VIDEOS_PER_RUN = 100;
 
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   // Verify cron secret
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
@@ -145,4 +146,9 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export const GET = createApiRoute(
+  { route: "/api/private/cron/competitors-snapshot" },
+  async (req) => GETHandler(req)
+);
 

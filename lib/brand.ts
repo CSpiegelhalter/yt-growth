@@ -135,4 +135,11 @@ export const STRUCTURED_DATA = {
       ratingCount: "127",
     },
   },
+  website: {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: BRAND.name,
+    url: BRAND.url,
+    description: BRAND.description,
+  },
 } as const;

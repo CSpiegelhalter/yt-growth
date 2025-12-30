@@ -5,7 +5,8 @@ import s from "./style.module.css";
 export const metadata: Metadata = {
   title: `Terms of Service | ${BRAND.name}`,
   description: `Terms of Service for ${BRAND.name} - YouTube growth analytics platform for creators.`,
-  robots: { index: false, follow: true },
+  alternates: { canonical: `${BRAND.url}/terms` },
+  robots: { index: true, follow: true },
 };
 
 export default function TermsPage() {

@@ -10,6 +10,11 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { Resend } from "resend";
 import { BRAND } from "@/lib/brand";
+import { createApiRoute } from "@/lib/api/route";
+import { withValidation } from "@/lib/api/withValidation";
+import { withRateLimit } from "@/lib/api/withRateLimit";
+import { ApiError } from "@/lib/api/errors";
+import { jsonOk } from "@/lib/api/response";
 
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -38,9 +43,9 @@ const ContactSchema = z.object({
 // Subject line mapping
 const SUBJECT_MAP: Record<string, string> = {
   general: "General Question",
-  bug: "🐛 Bug Report",
-  feature: "💡 Feature Request",
-  billing: "💳 Billing / Subscription",
+  bug: "Bug Report",
+  feature: "Feature Request",
+  billing: "Billing / Subscription",
   other: "Other",
 };
 
@@ -90,83 +95,39 @@ function sanitizeMessage(text: string): string {
   );
 }
 
-/**
- * Rate limiting: simple in-memory store
- * In production, use Redis or a database
- */
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 5; // max requests
-const RATE_WINDOW = 60 * 60 * 1000; // 1 hour in ms
+export const POST = createApiRoute(
+  { route: "/api/contact" },
+  withRateLimit(
+    { operation: "contactForm", identifier: (api) => api.ip },
+    withValidation({ body: ContactSchema }, async (_req: NextRequest, _ctx, api, validated) => {
+      // Check for required config
+      if (!CONTACT_EMAIL) {
+        throw new ApiError({
+          code: "INTERNAL",
+          status: 500,
+          message: "Contact form is not configured",
+        });
+      }
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
+      if (!process.env.RESEND_API_KEY) {
+        throw new ApiError({
+          code: "INTERNAL",
+          status: 500,
+          message: "Email service is not configured",
+        });
+      }
 
-  if (!entry || entry.resetAt < now) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW });
-    return true;
-  }
+      const { email, subject, message } = validated.body!;
 
-  if (entry.count >= RATE_LIMIT) {
-    return false;
-  }
+      // Sanitize inputs
+      const sanitizedEmail = sanitize(email);
+      const sanitizedMessage = sanitizeMessage(message);
+      const subjectKey = ((subject ?? "general") as keyof typeof SUBJECT_MAP) || "general";
+      const subjectLine = SUBJECT_MAP[subjectKey] || "General Question";
 
-  entry.count++;
-  return true;
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    // Check for required config
-    if (!CONTACT_EMAIL) {
-      console.error("[Contact] CONTACT_EMAIL or ADMIN_EMAIL not configured");
-      return Response.json(
-        { error: "Contact form is not configured" },
-        { status: 500 }
-      );
-    }
-
-    if (!process.env.RESEND_API_KEY) {
-      console.error("[Contact] RESEND_API_KEY not configured");
-      return Response.json(
-        { error: "Email service is not configured" },
-        { status: 500 }
-      );
-    }
-
-    // Get client IP for rate limiting
-    const forwardedFor = req.headers.get("x-forwarded-for");
-    const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
-
-    // Check rate limit
-    if (!checkRateLimit(ip)) {
-      return Response.json(
-        { error: "Too many messages. Please try again later." },
-        { status: 429 }
-      );
-    }
-
-    // Parse and validate body
-    const body = await req.json();
-    const parsed = ContactSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return Response.json(
-        { error: "Invalid request", details: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
-
-    const { email, subject, message } = parsed.data;
-
-    // Sanitize inputs
-    const sanitizedEmail = sanitize(email);
-    const sanitizedMessage = sanitizeMessage(message);
-    const subjectLine = SUBJECT_MAP[subject] || "General Question";
-
-    // Build email content
-    const timestamp = new Date().toISOString();
-    const textContent = `
+      // Build email content
+      const timestamp = new Date().toISOString();
+      const textContent = `
 New contact form submission from ${BRAND.name}
 
 From: ${sanitizedEmail}
@@ -178,10 +139,10 @@ ${sanitizedMessage}
 
 ---
 This message was sent via the ${BRAND.name} contact form.
-IP: ${ip}
+IP: ${api.ip ?? "unknown"}
     `.trim();
 
-    const htmlContent = `
+      const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -190,7 +151,7 @@ IP: ${ip}
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 24px; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 20px;">📬 New Contact Form Submission</h1>
+    <h1 style="color: white; margin: 0; font-size: 20px;">New Contact Form Submission</h1>
   </div>
   
   <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
@@ -225,43 +186,35 @@ IP: ${ip}
   </div>
   
     <p style="margin-top: 16px; font-size: 11px; color: #94a3b8; text-align: center;">
-    Sent via ${BRAND.name} Contact Form • IP: ${ip}
+    Sent via ${BRAND.name} Contact Form • IP: ${api.ip ?? "unknown"}
   </p>
 </body>
 </html>
     `.trim();
 
-    // Send email via Resend
-    const { data, error } = await resend.emails.send({
-      from: `${BRAND.name} <noreply@${
-        process.env.RESEND_DOMAIN || "resend.dev"
-      }>`,
-      to: CONTACT_EMAIL,
-      replyTo: sanitizedEmail,
-      subject: `[${BRAND.name}] ${subjectLine} - from ${sanitizedEmail}`,
-      text: textContent,
-      html: htmlContent,
-    });
+      // Send email via Resend
+      const { data, error } = await resend.emails.send({
+        from: `${BRAND.name} <noreply@${process.env.RESEND_DOMAIN || "resend.dev"}>`,
+        to: CONTACT_EMAIL,
+        replyTo: sanitizedEmail,
+        subject: `[${BRAND.name}] ${subjectLine} - from ${sanitizedEmail}`,
+        text: textContent,
+        html: htmlContent,
+      });
 
-    if (error) {
-      console.error("[Contact] Resend error:", error);
-      return Response.json(
-        { error: "Failed to send message. Please try again." },
-        { status: 500 }
+      if (error) {
+        throw new ApiError({
+          code: "INTEGRATION_ERROR",
+          status: 502,
+          message: "Failed to send message. Please try again.",
+          details: { provider: "resend" },
+        });
+      }
+
+      return jsonOk(
+        { success: true, message: "Your message has been sent!", id: data?.id ?? null },
+        { requestId: api.requestId }
       );
-    }
-
-    console.log("[Contact] Email sent successfully:", data?.id);
-
-    return Response.json({
-      success: true,
-      message: "Your message has been sent!",
-    });
-  } catch (err) {
-    console.error("[Contact] Unexpected error:", err);
-    return Response.json(
-      { error: "Something went wrong. Please try again." },
-      { status: 500 }
-    );
-  }
-}
+    })
+  )
+);

@@ -14,10 +14,11 @@ type InsightsError =
       remaining: number;
       resetAt: string;
       upgrade: boolean;
+      requestId?: string;
     }
-  | { kind: "upgrade_required"; message: string }
-  | { kind: "youtube_permissions"; message: string }
-  | { kind: "generic"; message: string; status: number };
+  | { kind: "upgrade_required"; message: string; requestId?: string }
+  | { kind: "youtube_permissions"; message: string; requestId?: string }
+  | { kind: "generic"; message: string; status: number; requestId?: string };
 
 type ErrorStateProps = {
   error: InsightsError | null;
@@ -71,6 +72,11 @@ export function ErrorState({
       <div className={s.errorState}>
         <h2 className={s.errorTitle}>{getErrorTitle()}</h2>
         <p className={s.errorDesc}>{getErrorDescription()}</p>
+        {error?.requestId && (
+          <p className={s.muted} style={{ marginTop: 8 }}>
+            Request ID: <code>{error.requestId}</code>
+          </p>
+        )}
 
         <div className={s.errorActions}>
           {error?.kind === "youtube_permissions" && (

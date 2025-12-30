@@ -16,6 +16,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import {
   getCurrentUserWithSubscription,
   hasActiveSubscription,
@@ -46,7 +47,7 @@ const QuerySchema = z.object({
     .default("subs_per_1k"),
 });
 
-export async function GET(
+async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -359,3 +360,8 @@ export async function GET(
     );
   }
 }
+
+export const GET = createApiRoute(
+  { route: "/api/me/channels/[channelId]/subscriber-audit" },
+  async (req, ctx) => GETHandler(req, ctx as any)
+);

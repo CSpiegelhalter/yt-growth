@@ -8,10 +8,11 @@
  */
 import { NextRequest } from "next/server";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   try {
     // Verify cron secret
     const secret = req.headers.get("x-cron-secret");
@@ -103,4 +104,9 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = createApiRoute(
+  { route: "/api/private/cron/refresh" },
+  async (req) => POSTHandler(req)
+);
 

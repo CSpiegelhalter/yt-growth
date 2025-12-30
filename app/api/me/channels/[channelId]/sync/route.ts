@@ -19,12 +19,13 @@ import {
   checkEntitlement,
   entitlementErrorResponse,
 } from "@/lib/with-entitlements";
+import { createApiRoute } from "@/lib/api/route";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
 });
 
-export async function POST(
+async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -251,4 +252,9 @@ export async function POST(
     );
   }
 }
+
+export const POST = createApiRoute(
+  { route: "/api/me/channels/[channelId]/sync" },
+  async (req, ctx) => POSTHandler(req, ctx as any)
+);
 

@@ -7,58 +7,63 @@
  * Auth: Required
  */
 import { NextRequest } from "next/server";
-import { getCurrentUser } from "@/lib/user";
+import { createApiRoute } from "@/lib/api/route";
+import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
+import { ApiError } from "@/lib/api/errors";
+import { jsonOk } from "@/lib/api/response";
 import { prisma } from "@/prisma";
 import { stripeRequest, StripeSubscription } from "@/lib/stripe";
 import { LIMITS } from "@/lib/product";
 
-export async function POST(req: NextRequest) {
-  try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const runtime = "nodejs";
 
+export const POST = createApiRoute(
+  { route: "/api/integrations/stripe/sync" },
+  withAuth({ mode: "required" }, async (_req: NextRequest, _ctx, api) => {
+    const user = (api as ApiAuthContext).user!;
     // Get current subscription record
     const subscription = await prisma.subscription.findUnique({
       where: { userId: user.id },
       select: {
         stripeCustomerId: true,
-        stripeSubscriptionId: true,
-        status: true,
-        plan: true,
       },
     });
 
     if (!subscription?.stripeCustomerId) {
-      return Response.json(
-        { error: "No Stripe customer found", synced: false },
-        { status: 404 }
-      );
-    }
-
-    console.log(`[Stripe Sync] Syncing subscription for user ${user.id}`);
-
-    // Fetch customer's subscriptions from Stripe
-    const customerSubs = await stripeRequest<{ data: StripeSubscription[] }>(
-      `/subscriptions?customer=${subscription.stripeCustomerId}&status=all&limit=1`
-    );
-
-    if (!customerSubs.data || customerSubs.data.length === 0) {
-      console.log(`[Stripe Sync] No subscriptions found for customer`);
-      return Response.json({
-        synced: true,
-        message: "No active subscription found",
-        plan: "free",
+      throw new ApiError({
+        code: "NOT_FOUND",
+        status: 404,
+        message: "No Stripe customer found",
       });
     }
 
+    // Fetch customer's subscriptions from Stripe
+    let customerSubs: { data: StripeSubscription[] };
+    try {
+      customerSubs = await stripeRequest<{ data: StripeSubscription[] }>(
+        `/subscriptions?customer=${subscription.stripeCustomerId}&status=all&limit=1`
+      );
+    } catch (err) {
+      throw new ApiError({
+        code: "INTEGRATION_ERROR",
+        status: 502,
+        message: "Stripe sync failed",
+        details: { provider: "stripe" },
+      });
+    }
+
+    if (!customerSubs.data || customerSubs.data.length === 0) {
+      return jsonOk(
+        {
+        synced: true,
+        message: "No active subscription found",
+        plan: "free",
+        },
+        { requestId: api.requestId }
+      );
+    }
+
     const stripeSub = customerSubs.data[0];
-    console.log(`[Stripe Sync] Found subscription:`, {
-      id: stripeSub.id,
-      status: stripeSub.status,
-      current_period_end: stripeSub.current_period_end,
-    });
 
     // Determine plan and status
     const isActive = ["active", "trialing"].includes(stripeSub.status);
@@ -82,20 +87,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log(`[Stripe Sync] Updated subscription: plan=${plan}, status=${isActive ? "active" : "inactive"}`);
-
-    return Response.json({
-      synced: true,
-      plan,
-      status: isActive ? "active" : "inactive",
-      currentPeriodEnd: periodEnd?.toISOString(),
-    });
-  } catch (err: unknown) {
-    console.error("[Stripe Sync] Error:", err);
-    return Response.json(
-      { error: err instanceof Error ? err.message : "Sync failed", synced: false },
-      { status: 500 }
+    return jsonOk(
+      {
+        synced: true,
+        plan,
+        status: isActive ? "active" : "inactive",
+        currentPeriodEnd: periodEnd?.toISOString(),
+      },
+      { requestId: api.requestId }
     );
-  }
-}
+  })
+);
 

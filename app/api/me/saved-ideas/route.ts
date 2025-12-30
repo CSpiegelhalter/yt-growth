@@ -11,6 +11,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/user";
 import type { Idea } from "@/types/api";
 
@@ -45,7 +46,7 @@ export type SavedIdeaResponse = {
 /**
  * GET - Fetch all saved ideas
  */
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -64,7 +65,11 @@ export async function GET(req: NextRequest) {
     });
 
     const channelIds = Array.from(
-      new Set(savedIdeas.map((i) => i.channelId).filter((id): id is number => typeof id === "number"))
+      new Set(
+        savedIdeas
+          .map((i) => i.channelId)
+          .filter((id): id is number => typeof id === "number")
+      )
     );
     const channels = channelIds.length
       ? await prisma.channel.findMany({
@@ -81,7 +86,7 @@ export async function GET(req: NextRequest) {
       ideaId: idea.ideaId,
       youtubeChannelId:
         typeof idea.channelId === "number"
-          ? (channelMap.get(idea.channelId) ?? null)
+          ? channelMap.get(idea.channelId) ?? null
           : null,
       title: idea.title,
       angle: idea.angle,
@@ -107,10 +112,15 @@ export async function GET(req: NextRequest) {
   }
 }
 
+export const GET = createApiRoute(
+  { route: "/api/me/saved-ideas" },
+  async (req) => GETHandler(req)
+);
+
 /**
  * POST - Save a new idea
  */
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -119,7 +129,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     console.log("[SaveIdea] Request body:", JSON.stringify(body, null, 2));
-    
+
     const parsed = SaveIdeaSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -130,8 +140,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { ideaId, channelId, title, angle, format, difficulty, ideaJson, notes } =
-      parsed.data;
+    const {
+      ideaId,
+      channelId,
+      title,
+      angle,
+      format,
+      difficulty,
+      ideaJson,
+      notes,
+    } = parsed.data;
 
     let resolvedChannelId: number | null = null;
     if (typeof channelId === "number") {
@@ -193,3 +211,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export const POST = createApiRoute(
+  { route: "/api/me/saved-ideas" },
+  async (req) => POSTHandler(req)
+);

@@ -10,8 +10,9 @@ import { requireTestMode, logTestAction } from "@/lib/test-mode";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { encode } from "next-auth/jwt";
+import { createApiRoute } from "@/lib/api/route";
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   const guardResponse = requireTestMode();
   if (guardResponse) return guardResponse;
 
@@ -106,3 +107,8 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = createApiRoute(
+  { route: "/api/test/auth/signin" },
+  async (req) => POSTHandler(req)
+);

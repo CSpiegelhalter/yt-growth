@@ -19,6 +19,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     // Learn pages - high priority for SEO
     {
+      url: `${baseUrl}/learn`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/learn/youtube-channel-audit`,
       lastModified: now,
       changeFrequency: "monthly",

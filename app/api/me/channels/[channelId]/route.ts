@@ -8,13 +8,14 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/user";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
 });
 
-export async function DELETE(
+async function DELETEHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -99,6 +100,11 @@ export async function DELETE(
   }
 }
 
+export const DELETE = createApiRoute(
+  { route: "/api/me/channels/[channelId]" },
+  async (req, ctx) => DELETEHandler(req, ctx as any)
+);
+
 /**
  * GET /api/me/channels/[channelId]
  *
@@ -106,7 +112,7 @@ export async function DELETE(
  *
  * Auth: Required
  */
-export async function GET(
+async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -180,3 +186,8 @@ export async function GET(
     );
   }
 }
+
+export const GET = createApiRoute(
+  { route: "/api/me/channels/[channelId]" },
+  async (req, ctx) => GETHandler(req, ctx as any)
+);

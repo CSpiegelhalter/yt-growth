@@ -16,8 +16,9 @@ import { prisma } from "@/prisma";
 import { getCurrentUser } from "@/lib/user";
 import { requireTestMode, logTestAction } from "@/lib/test-mode";
 import { LIMITS } from "@/lib/product";
+import { createApiRoute } from "@/lib/api/route";
 
-export async function POST() {
+async function POSTHandler() {
   // Guard: only available in test mode
   const guardResponse = requireTestMode();
   if (guardResponse) return guardResponse;
@@ -79,4 +80,9 @@ export async function POST() {
     );
   }
 }
+
+export const POST = createApiRoute(
+  { route: "/api/test/billing/set-pro" },
+  async () => POSTHandler()
+);
 

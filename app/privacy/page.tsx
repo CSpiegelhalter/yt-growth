@@ -5,7 +5,8 @@ import s from "./style.module.css";
 export const metadata: Metadata = {
   title: `Privacy Policy | ${BRAND.name}`,
   description: `Privacy Policy for ${BRAND.name} - How we handle your data and protect your privacy.`,
-  robots: { index: false, follow: true },
+  alternates: { canonical: `${BRAND.url}/privacy` },
+  robots: { index: true, follow: true },
 };
 
 export default function PrivacyPage() {

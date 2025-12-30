@@ -16,6 +16,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUserWithSubscription, hasActiveSubscription } from "@/lib/user";
 import { getGoogleAccount, searchCompetitorVideos } from "@/lib/youtube-api";
 import { generateDecideForMePlan, generateMoreTopics } from "@/lib/llm";
@@ -32,7 +33,7 @@ const BodySchema = z.object({
   limit: z.number().min(1).max(15).optional().default(5),
 });
 
-export async function POST(
+async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -360,3 +361,8 @@ export async function POST(
     );
   }
 }
+
+export const POST = createApiRoute(
+  { route: "/api/me/channels/[channelId]/plan/generate" },
+  async (req, ctx) => POSTHandler(req, ctx as any)
+);

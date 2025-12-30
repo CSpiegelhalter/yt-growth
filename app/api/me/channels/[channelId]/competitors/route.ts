@@ -22,6 +22,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import {
   getCurrentUserWithSubscription,
   hasActiveSubscription,
@@ -84,7 +85,7 @@ const QuerySchema = z.object({
 // Minimum hours between snapshots for a video
 const SNAPSHOT_INTERVAL_HOURS = 6;
 
-export async function GET(
+async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -650,6 +651,11 @@ export async function GET(
     );
   }
 }
+
+export const GET = createApiRoute(
+  { route: "/api/me/channels/[channelId]/competitors" },
+  async (req, ctx) => GETHandler(req, ctx as any)
+);
 
 // Calculate derived metrics from snapshots
 function calculateDerivedMetrics(

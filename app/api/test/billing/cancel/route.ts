@@ -10,10 +10,11 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/prisma";
 import { getCurrentUser } from "@/lib/user";
 import { requireTestMode, logTestAction } from "@/lib/test-mode";
+import { createApiRoute } from "@/lib/api/route";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   const guardResponse = requireTestMode();
   if (guardResponse) return guardResponse;
 
@@ -93,4 +94,9 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = createApiRoute(
+  { route: "/api/test/billing/cancel" },
+  async (req) => POSTHandler(req)
+);
 

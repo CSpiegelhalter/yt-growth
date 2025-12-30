@@ -9,6 +9,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import {
   getCurrentUserWithSubscription,
   hasActiveSubscription,
@@ -20,7 +21,7 @@ const ParamsSchema = z.object({
   channelId: z.string().min(1),
 });
 
-export async function POST(
+async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -94,6 +95,11 @@ export async function POST(
     );
   }
 }
+
+export const POST = createApiRoute(
+  { route: "/api/me/channels/[channelId]/subscriber-audit/ideas" },
+  async (req, ctx) => POSTHandler(req, ctx as any)
+);
 
 async function generateMoreConversionIdeas(
   channelTitle: string,

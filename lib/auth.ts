@@ -4,7 +4,7 @@ import { cookies, headers } from "next/headers";
 import { prisma } from "@/prisma";
 import { compare } from "@/lib/crypto";
 import { issueEmailToken, verifyEmailToken } from "@/lib/jwt";
-import { log } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 import Google from "next-auth/providers/google";
 
 // Determine if we're in development (localhost)
@@ -86,9 +86,6 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       authorize: async (creds) => {
-        const h = await headers();
-        const ip = h.get("x-forwarded-for") ?? "unknown";
-
         if (!creds?.email || !creds?.password)
           throw new Error("Missing credentials");
 
@@ -100,7 +97,7 @@ export const authOptions: NextAuthOptions = {
         const ok = await compare(creds.password, user.passwordHash);
         if (!ok) throw new Error("Invalid credentials");
 
-        log("login ok", user.id, user.email);
+        logger.info("auth.login.ok", { userId: user.id });
         return {
           id: String(user.id),
           email: user.email,
@@ -115,14 +112,11 @@ export const authOptions: NextAuthOptions = {
       name: "Email Token",
       credentials: { token: { label: "Token", type: "text" } },
       authorize: async (creds) => {
-        const h = await headers();
-        const ip = h.get("x-forwarded-for") ?? "unknown";
-
         if (!creds?.token) throw new Error("Token missing");
         const { id, email } = verifyEmailToken(creds.token);
 
-        log("email verified", id, email);
-        return { id: String(id), email: email, name: name ?? undefined };
+        logger.info("auth.email_token.verified", { userId: id });
+        return { id: String(id), email: email, name: undefined };
       },
     }),
     Google({
@@ -200,7 +194,7 @@ export const authOptions: NextAuthOptions = {
                 name: user.name ?? profile?.name ?? null,
               },
             });
-            log("google oauth new user", dbUser.id, dbUser.email);
+            logger.info("auth.google.new_user", { userId: dbUser.id });
           } catch (error: any) {
             // Handle race condition - user was created by another concurrent request
             if (error?.code === "P2002") {
@@ -210,7 +204,9 @@ export const authOptions: NextAuthOptions = {
               if (!dbUser) {
                 throw new Error("Failed to create or find user");
               }
-              log("google oauth user found after race", dbUser.id, dbUser.email);
+              logger.info("auth.google.user_found_after_race", {
+                userId: dbUser.id,
+              });
             } else {
               throw error;
             }

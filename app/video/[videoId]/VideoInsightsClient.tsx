@@ -36,10 +36,11 @@ type InsightsError =
       remaining: number;
       resetAt: string;
       upgrade: boolean;
+      requestId?: string;
     }
-  | { kind: "upgrade_required"; message: string }
-  | { kind: "youtube_permissions"; message: string }
-  | { kind: "generic"; message: string; status: number };
+  | { kind: "upgrade_required"; message: string; requestId?: string }
+  | { kind: "youtube_permissions"; message: string; requestId?: string }
+  | { kind: "generic"; message: string; status: number; requestId?: string };
 
 /**
  * VideoInsightsClient - Clean, story-driven video analytics
@@ -177,42 +178,81 @@ export default function VideoInsightsClient({
           body = null;
         }
 
-        if (body?.code === "youtube_permissions") {
+        const requestId =
+          (body &&
+            typeof body === "object" &&
+            body.error &&
+            typeof body.error === "object" &&
+            typeof body.error.requestId === "string" &&
+            body.error.requestId) ||
+          res.headers.get("x-request-id") ||
+          undefined;
+
+        const errObj =
+          body && typeof body === "object" && body.error && typeof body.error === "object"
+            ? body.error
+            : null;
+        const details =
+          body && typeof body === "object" && body.details && typeof body.details === "object"
+            ? body.details
+            : null;
+        const legacyError =
+          (details && typeof (details as any).error === "string" && (details as any).error) ||
+          (body && typeof body === "object" && typeof body.error === "string" && body.error) ||
+          null;
+
+        if (body?.code === "youtube_permissions" || details?.code === "youtube_permissions") {
           setError({
             kind: "youtube_permissions",
             message:
-              body?.error ??
+              (typeof body?.error === "string" ? body?.error : errObj?.message) ??
               "Google account is missing required YouTube permissions. Reconnect Google and try again.",
+            requestId,
           });
           setInsights(null);
           return;
         }
 
-        if (body?.error === "limit_reached") {
+        if (errObj?.code === "LIMIT_REACHED" && legacyError === "limit_reached") {
           setError({
             kind: "limit_reached",
-            used: Number(body.used ?? 0),
-            limit: Number(body.limit ?? 0),
-            remaining: Number(body.remaining ?? 0),
-            resetAt: String(body.resetAt ?? ""),
-            upgrade: Boolean(body.upgrade),
+            used: Number((details as any)?.used ?? 0),
+            limit: Number((details as any)?.limit ?? 0),
+            remaining: Number((details as any)?.remaining ?? 0),
+            resetAt: String((details as any)?.resetAt ?? ""),
+            upgrade: Boolean((details as any)?.upgrade),
+            requestId,
           });
           setInsights(null);
           return;
         }
 
-        if (body?.error === "upgrade_required") {
+        if (errObj?.code === "LIMIT_REACHED" && legacyError === "upgrade_required") {
           setError({
             kind: "upgrade_required",
-            message: body?.message ?? "Upgrade required to use this feature.",
+            message:
+              errObj?.message ??
+              (typeof (details as any)?.message === "string"
+                ? (details as any).message
+                : null) ??
+              "Upgrade required to use this feature.",
+            requestId,
           });
           setInsights(null);
           return;
         }
 
         const msg =
-          body?.error ?? body?.message ?? `Request failed (${res.status})`;
-        setError({ kind: "generic", message: String(msg), status: res.status });
+          errObj?.message ??
+          legacyError ??
+          body?.message ??
+          `Request failed (${res.status})`;
+        setError({
+          kind: "generic",
+          message: String(msg),
+          status: res.status,
+          requestId,
+        });
         setInsights(null);
         return;
       }

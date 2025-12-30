@@ -97,6 +97,8 @@ export const RATE_LIMITS = {
   videoInsights: { limit: 30, windowSec: 3600 },
   // Owned video remixes generation: 20 per hour per user
   videoRemixes: { limit: 20, windowSec: 3600 },
+  // Contact form: 5 per hour per IP
+  contactForm: { limit: 5, windowSec: 3600 },
 } as const;
 
 /**

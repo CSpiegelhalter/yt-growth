@@ -6,8 +6,9 @@ import {
 } from "@/lib/google-tokens";
 import { getCurrentUser } from "@/lib/user";
 import { isAdminUser } from "@/lib/admin";
+import { createApiRoute } from "@/lib/api/route";
 
-export async function GET(_req: NextRequest) {
+async function GETHandler(_req: NextRequest) {
   const user = await getCurrentUser();
   if (!isAdminUser(user)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
@@ -88,7 +89,12 @@ export async function GET(_req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+export const GET = createApiRoute(
+  { route: "/api/dev/youtube-usage" },
+  async (req) => GETHandler(req)
+);
+
+async function POSTHandler(req: NextRequest) {
   const user = await getCurrentUser();
   if (!isAdminUser(user)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
@@ -144,3 +150,8 @@ export async function POST(req: NextRequest) {
 
   return Response.json({ ok: false, error: "Unknown action" }, { status: 400 });
 }
+
+export const POST = createApiRoute(
+  { route: "/api/dev/youtube-usage" },
+  async (req) => POSTHandler(req)
+);

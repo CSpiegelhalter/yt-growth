@@ -3,6 +3,7 @@
 import { ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ToastProvider } from "@/components/ui/Toast";
+import { ClientErrorReporter } from "@/components/ClientErrorReporter";
 
 /**
  * Client-side providers wrapper
@@ -11,7 +12,10 @@ import { ToastProvider } from "@/components/ui/Toast";
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>
+        <ClientErrorReporter />
+        {children}
+      </ToastProvider>
     </SessionProvider>
   );
 }

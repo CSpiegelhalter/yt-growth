@@ -11,6 +11,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import {
   getCurrentUserWithSubscription,
   hasActiveSubscription,
@@ -85,7 +86,7 @@ function hashSeed(seed: Seed, channelId: string): string {
 /**
  * POST - Generate more content for an existing idea
  */
-export async function POST(
+async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -177,6 +178,11 @@ export async function POST(
     );
   }
 }
+
+export const POST = createApiRoute(
+  { route: "/api/me/channels/[channelId]/ideas/more" },
+  async (req, ctx) => POSTHandler(req, ctx as any)
+);
 
 /**
  * Generate more content using LLM

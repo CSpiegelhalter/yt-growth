@@ -7,10 +7,11 @@
  * Auth: Required
  */
 import { NextRequest } from "next/server";
+import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/user";
 import { resetUserUsage, getAllUsage } from "@/lib/usage";
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   // Block in production
   if (process.env.NODE_ENV === "production") {
     return Response.json(
@@ -51,13 +52,18 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export const POST = createApiRoute(
+  { route: "/api/private/dev/reset-usage" },
+  async (req) => POSTHandler(req)
+);
+
 /**
  * GET /api/private/dev/reset-usage
  *
  * Get current usage counters for the current user.
  * DEV-ONLY: This route only works when NODE_ENV !== "production"
  */
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   // Block in production
   if (process.env.NODE_ENV === "production") {
     return Response.json(
@@ -99,4 +105,9 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export const GET = createApiRoute(
+  { route: "/api/private/dev/reset-usage" },
+  async (req) => GETHandler(req)
+);
 

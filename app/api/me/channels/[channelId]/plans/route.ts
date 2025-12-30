@@ -9,13 +9,14 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/user";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
 });
 
-export async function GET(
+async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -90,4 +91,9 @@ export async function GET(
     );
   }
 }
+
+export const GET = createApiRoute(
+  { route: "/api/me/channels/[channelId]/plans" },
+  async (req, ctx) => GETHandler(req, ctx as any)
+);
 

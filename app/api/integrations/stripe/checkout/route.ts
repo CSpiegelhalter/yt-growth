@@ -9,84 +9,64 @@
  * Rate limit: 3 per minute per user
  */
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/user";
+import { z } from "zod";
+import { createApiRoute } from "@/lib/api/route";
+import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
+import { withRateLimit } from "@/lib/api/withRateLimit";
+import { withValidation } from "@/lib/api/withValidation";
+import { jsonOk } from "@/lib/api/response";
+import { ApiError } from "@/lib/api/errors";
 import { createCheckoutSession } from "@/lib/stripe";
-import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
-async function handleCheckout(returnJson: boolean) {
-  // Auth check
-  const user = await getCurrentUser();
-  if (!user) {
-    if (returnJson) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    // Redirect to login for GET requests
-    return NextResponse.redirect(
-      new URL(
-        "/auth/login?redirect=/api/integrations/stripe/checkout",
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-      )
-    );
-  }
+export const runtime = "nodejs";
 
-  // Rate limit check
-  const rateKey = rateLimitKey("checkout", user.id);
-  const rateResult = checkRateLimit(rateKey, RATE_LIMITS.checkout);
-  if (!rateResult.success) {
-    if (returnJson) {
-      return Response.json(
-        {
-          error: "Too many checkout attempts. Please try again later.",
-          resetAt: new Date(rateResult.resetAt),
-        },
-        { status: 429 }
-      );
-    }
-    return NextResponse.redirect(
-      new URL(
-        "/dashboard?error=rate_limit",
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-      )
-    );
-  }
+const QuerySchema = z.object({
+  redirect: z.string().optional(),
+});
 
-  // Create checkout session
-  const { url } = await createCheckoutSession(user.id, user.email);
+export const GET = createApiRoute(
+  { route: "/api/integrations/stripe/checkout" },
+  withAuth(
+    { mode: "optional" },
+    withRateLimit(
+      { operation: "checkout", identifier: (api) => api.userId },
+      withValidation({ query: QuerySchema }, async (_req: NextRequest, _ctx, api) => {
+        const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const user = (api as ApiAuthContext).user;
+        if (!user) {
+          const res = NextResponse.redirect(
+            new URL("/auth/login?redirect=/api/integrations/stripe/checkout", base)
+          );
+          res.headers.set("x-request-id", api.requestId);
+          return res;
+        }
 
-  if (returnJson) {
-    return Response.json({ url });
-  }
+        const { url } = await createCheckoutSession(user.id, user.email);
+        const res = NextResponse.redirect(url);
+        res.headers.set("x-request-id", api.requestId);
+        return res;
+      })
+    )
+  )
+);
 
-  // Redirect to Stripe checkout
-  return NextResponse.redirect(url);
-}
-
-export async function GET(req: NextRequest) {
-  try {
-    return await handleCheckout(false);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Checkout error:", err);
-    return NextResponse.redirect(
-      new URL(
-        `/dashboard?error=checkout_failed&message=${encodeURIComponent(
-          message
-        )}`,
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-      )
-    );
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    return await handleCheckout(true);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Checkout error:", err);
-    return Response.json(
-      { error: "Failed to create checkout session", detail: message },
-      { status: 500 }
-    );
-  }
-}
+export const POST = createApiRoute(
+  { route: "/api/integrations/stripe/checkout" },
+  withAuth(
+    { mode: "required" },
+    withRateLimit({ operation: "checkout", identifier: (api) => api.userId }, async (_req, _ctx, api) => {
+      const user = (api as ApiAuthContext).user!;
+      try {
+        const { url } = await createCheckoutSession(user.id, user.email);
+        return jsonOk({ url }, { requestId: api.requestId });
+      } catch (err) {
+        throw new ApiError({
+          code: "INTEGRATION_ERROR",
+          status: 502,
+          message: "Failed to create checkout session",
+          details: { provider: "stripe" },
+        });
+      }
+    })
+  )
+);

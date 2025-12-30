@@ -7,6 +7,7 @@ import ContactClient from "./ContactClient";
 export const metadata: Metadata = {
   title: `Contact | ${BRAND.name}`,
   description: `Get in touch with the ${BRAND.name} team. We're here to help with questions about YouTube growth, channel analytics, and our platform.`,
+  alternates: { canonical: `${BRAND.url}/contact` },
 };
 
 export default async function ContactPage() {

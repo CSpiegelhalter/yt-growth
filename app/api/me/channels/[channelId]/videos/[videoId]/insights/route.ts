@@ -13,6 +13,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import {
   getCurrentUserWithSubscription,
   hasActiveSubscription,
@@ -72,7 +73,7 @@ class YouTubePermissionDeniedError extends Error {
 /**
  * GET - Fetch insights (from cache or generate)
  */
-export async function GET(
+async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string; videoId: string }> }
 ) {
@@ -281,10 +282,15 @@ export async function GET(
   }
 }
 
+export const GET = createApiRoute(
+  { route: "/api/me/channels/[channelId]/videos/[videoId]/insights" },
+  async (req, ctx) => GETHandler(req, ctx as any)
+);
+
 /**
  * POST - Force refresh insights
  */
-export async function POST(
+async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string; videoId: string }> }
 ) {
@@ -514,6 +520,11 @@ export async function POST(
     );
   }
 }
+
+export const POST = createApiRoute(
+  { route: "/api/me/channels/[channelId]/videos/[videoId]/insights" },
+  async (req, ctx) => POSTHandler(req, ctx as any)
+);
 
 /**
  * Generate insights for a video

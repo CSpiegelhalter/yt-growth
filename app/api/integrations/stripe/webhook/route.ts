@@ -7,21 +7,27 @@
  */
 import { NextRequest } from "next/server";
 import { handleStripeWebhook } from "@/lib/stripe";
+import { createApiRoute } from "@/lib/api/route";
+import { ApiError } from "@/lib/api/errors";
+import { jsonOk } from "@/lib/api/response";
 
-export async function POST(req: NextRequest) {
-  try {
+export const runtime = "nodejs";
+
+export const POST = createApiRoute(
+  { route: "/api/integrations/stripe/webhook" },
+  async (req: NextRequest, _ctx, api) => {
     const payload = await req.text();
     const signature = req.headers.get("stripe-signature") ?? "";
+    if (!signature) {
+      throw new ApiError({
+        code: "INTEGRATION_ERROR",
+        status: 400,
+        message: "Missing Stripe signature",
+      });
+    }
 
     const result = await handleStripeWebhook(payload, signature);
 
-    return Response.json(result);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Webhook error:", err);
-    return Response.json(
-      { error: "Webhook handling failed", detail: message },
-      { status: 400 }
-    );
+    return jsonOk(result, { requestId: api.requestId });
   }
-}
+);

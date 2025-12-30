@@ -7,17 +7,15 @@
  * Auth: Required
  */
 import { prisma } from "@/prisma";
-import { getCurrentUserWithSubscription } from "@/lib/user";
+import { createApiRoute } from "@/lib/api/route";
+import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
+import { jsonOk } from "@/lib/api/response";
 import { getSubscriptionStatus } from "@/lib/stripe";
 
-export async function GET() {
-  try {
-    const user = await getCurrentUserWithSubscription();
-
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const GET = createApiRoute(
+  { route: "/api/me/channels" },
+  withAuth({ mode: "required" }, async (_req, _ctx, api: ApiAuthContext) => {
+    const user = api.user!;
     const channels = await prisma.channel.findMany({
       where: { userId: user.id },
       orderBy: [{ connectedAt: "desc" }],
@@ -61,18 +59,17 @@ export async function GET() {
       planCount: ch._count.Plan,
     }));
 
-    return Response.json({
-      channels: transformed,
-      channelLimit: subscription.channelLimit,
-      plan: subscription.plan,
-    }, {
-      headers: { "cache-control": "no-store" },
-    });
-  } catch (err: any) {
-    console.error("Get channels error:", err);
-    return Response.json(
-      { error: "Server error", detail: String(err) },
-      { status: 500 }
+    return jsonOk(
+      {
+        channels: transformed,
+        channelLimit: subscription.channelLimit,
+        plan: subscription.plan,
+      },
+      {
+        headers: { "cache-control": "no-store" },
+        requestId: api.requestId,
+      }
     );
-  }
-}
+  })
+);
+

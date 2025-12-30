@@ -19,6 +19,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import {
   getCurrentUserWithSubscription,
   hasActiveSubscription,
@@ -58,7 +59,7 @@ const QuerySchema = z.object({
     .default("1"),
 });
 
-export async function GET(
+async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ videoId: string }> }
 ) {
@@ -697,6 +698,11 @@ export async function GET(
     );
   }
 }
+
+export const GET = createApiRoute(
+  { route: "/api/competitors/video/[videoId]" },
+  async (req, ctx) => GETHandler(req, ctx as any)
+);
 
 // Compute strategic insights from video data
 function computeStrategicInsights(input: {

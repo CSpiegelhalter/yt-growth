@@ -11,6 +11,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/user";
 
 const UpdateIdeaSchema = z.object({
@@ -24,7 +25,7 @@ type RouteContext = { params: Promise<{ ideaId: string }> };
 /**
  * DELETE - Remove a saved idea
  */
-export async function DELETE(req: NextRequest, ctx: RouteContext) {
+async function DELETEHandler(req: NextRequest, ctx: RouteContext) {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -61,10 +62,15 @@ export async function DELETE(req: NextRequest, ctx: RouteContext) {
   }
 }
 
+export const DELETE = createApiRoute(
+  { route: "/api/me/saved-ideas/[ideaId]" },
+  async (req, ctx) => DELETEHandler(req, ctx as any)
+);
+
 /**
  * PATCH - Update a saved idea (notes, status)
  */
-export async function PATCH(req: NextRequest, ctx: RouteContext) {
+async function PATCHHandler(req: NextRequest, ctx: RouteContext) {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -126,4 +132,9 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     );
   }
 }
+
+export const PATCH = createApiRoute(
+  { route: "/api/me/saved-ideas/[ideaId]" },
+  async (req, ctx) => PATCHHandler(req, ctx as any)
+);
 

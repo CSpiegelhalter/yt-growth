@@ -45,7 +45,13 @@ export default function AdminYoutubeUsageClient() {
       const res = await fetch("/api/dev/youtube-usage", { cache: "no-store" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error || `Request failed (${res.status})`);
+        const msg =
+          body?.error?.message ??
+          body?.details?.error ??
+          body?.error ??
+          `Request failed (${res.status})`;
+        const rid = body?.error?.requestId ?? res.headers.get("x-request-id");
+        throw new Error(rid ? `${msg} (requestId: ${rid})` : msg);
       }
       const json = (await res.json()) as Usage;
       setData(json);

@@ -2,7 +2,8 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma";
 import { syncUserChannels } from "@/lib/sync-youtube";
-import { checkChannelLimit, channelLimitResponse } from "@/lib/with-entitlements";
+import { checkChannelLimit } from "@/lib/with-entitlements";
+import { createApiRoute } from "@/lib/api/route";
 
 async function exchangeCode(code: string) {
   const redirectUri = process.env.GOOGLE_REDIRECT_URI ?? process.env.GOOGLE_OAUTH_REDIRECT!;
@@ -36,67 +37,80 @@ async function getUserInfo(accessToken: string) {
   return res.json() as Promise<{ sub: string; email?: string; name?: string }>;
 }
 
-export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const baseUrl = process.env.NEXT_PUBLIC_WEB_URL || url.origin;
-  const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state");
+export const GET = createApiRoute(
+  { route: "/api/integrations/google/callback" },
+  async (req: NextRequest, _ctx, api) => {
+    const url = new URL(req.url);
+    const baseUrl = process.env.NEXT_PUBLIC_WEB_URL || url.origin;
+    const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
 
-  if (!code || !state) {
-    return NextResponse.redirect(new URL("/integrations/error?m=missing", baseUrl));
+    const redirect = (path: string) => {
+      const res = NextResponse.redirect(new URL(path, baseUrl));
+      res.headers.set("x-request-id", api.requestId);
+      return res;
+    };
+
+    try {
+      if (!code || !state) {
+        return redirect(`/integrations/error?m=missing&rid=${api.requestId}`);
+      }
+
+      const row = await prisma.oAuthState.findUnique({ where: { state } });
+      if (!row || row.expiresAt < new Date()) {
+        return redirect(`/integrations/error?m=state&rid=${api.requestId}`);
+      }
+
+      // Check channel limit before proceeding
+      const channelCheck = await checkChannelLimit(row.userId);
+      if (!channelCheck.allowed) {
+        await prisma.oAuthState.delete({ where: { state } });
+        const limitMsg =
+          channelCheck.plan === "FREE"
+            ? `Free plan allows ${channelCheck.limit} channel. Upgrade to Pro for more.`
+            : `You have reached the maximum of ${channelCheck.limit} channels.`;
+        return redirect(
+          `/dashboard?error=channel_limit&message=${encodeURIComponent(
+            limitMsg
+          )}&rid=${api.requestId}`
+        );
+      }
+
+      // consume state
+      await prisma.oAuthState.delete({ where: { state } });
+
+      const tok = await exchangeCode(code);
+      const me = await getUserInfo(tok.access_token);
+      const providerAccountId = me.sub;
+      const tokenExpiresAt = new Date(Date.now() + tok.expires_in * 1000);
+      const scopes = tok.scope ?? "";
+
+      const googleAccount = await prisma.googleAccount.upsert({
+        where: {
+          provider_providerAccountId: { provider: "google", providerAccountId },
+        },
+        update: {
+          userId: row.userId,
+          tokenExpiresAt,
+          scopes,
+          ...(tok.refresh_token ? { refreshTokenEnc: tok.refresh_token } : {}),
+          updatedAt: new Date(),
+        },
+        create: {
+          userId: row.userId,
+          provider: "google",
+          providerAccountId,
+          refreshTokenEnc: tok.refresh_token ?? null,
+          scopes,
+          tokenExpiresAt,
+        },
+      });
+
+      await syncUserChannels(row.userId, googleAccount.id);
+
+      return redirect(`/dashboard?rid=${api.requestId}`);
+    } catch {
+      return redirect(`/integrations/error?m=oauth&rid=${api.requestId}`);
+    }
   }
-
-  const row = await prisma.oAuthState.findUnique({ where: { state } });
-  if (!row || row.expiresAt < new Date()) {
-    return NextResponse.redirect(new URL("/integrations/error?m=state", baseUrl));
-  }
-
-  // Check channel limit before proceeding
-  const channelCheck = await checkChannelLimit(row.userId);
-  if (!channelCheck.allowed) {
-    // Clean up the state since we're not proceeding
-    await prisma.oAuthState.delete({ where: { state } });
-    // Redirect with channel limit error
-    const limitMsg = channelCheck.plan === "FREE"
-      ? `Free plan allows ${channelCheck.limit} channel. Upgrade to Pro for more.`
-      : `You have reached the maximum of ${channelCheck.limit} channels.`;
-    return NextResponse.redirect(
-      new URL(`/dashboard?error=channel_limit&message=${encodeURIComponent(limitMsg)}`, baseUrl)
-    );
-  }
-
-  // consume state
-  await prisma.oAuthState.delete({ where: { state } });
-
-  const tok = await exchangeCode(code);
-  const me = await getUserInfo(tok.access_token);
-  const providerAccountId = me.sub;
-  const tokenExpiresAt = new Date(Date.now() + tok.expires_in * 1000);
-  const scopes = tok.scope ?? "";
-
-  const googleAccount = await prisma.googleAccount.upsert({
-    where: {
-      provider_providerAccountId: { provider: "google", providerAccountId },
-    },
-    update: {
-      userId: row.userId,
-      tokenExpiresAt,
-      scopes,
-      ...(tok.refresh_token ? { refreshTokenEnc: tok.refresh_token } : {}),
-      updatedAt: new Date(),
-    },
-    create: {
-      userId: row.userId,
-      provider: "google",
-      providerAccountId,
-      refreshTokenEnc: tok.refresh_token ?? null,
-      scopes,
-      tokenExpiresAt,
-    },
-  });
-
-  // Sync channels for this specific Google account
-  await syncUserChannels(row.userId, googleAccount.id);
-
-  return NextResponse.redirect(new URL("/dashboard", baseUrl));
-}
+);

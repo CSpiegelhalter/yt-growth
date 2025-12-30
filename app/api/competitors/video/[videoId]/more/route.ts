@@ -11,6 +11,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
+import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUserWithSubscription } from "@/lib/user";
 import {
   fetchRecentChannelVideos,
@@ -28,7 +29,7 @@ const QuerySchema = z.object({
   channelId: z.string().min(1),
 });
 
-export async function GET(
+async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ videoId: string }> }
 ) {
@@ -147,5 +148,10 @@ export async function GET(
     );
   }
 }
+
+export const GET = createApiRoute(
+  { route: "/api/competitors/video/[videoId]/more" },
+  async (req, ctx) => GETHandler(req, ctx as any)
+);
 
 

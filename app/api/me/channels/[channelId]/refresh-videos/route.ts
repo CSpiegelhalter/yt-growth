@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/prisma";
 import { googleFetchWithAutoRefresh } from "@/lib/google-tokens";
+import { createApiRoute } from "@/lib/api/route";
 
 type YouTubeVideoDetails = {
   id: string;
@@ -21,7 +22,7 @@ type YouTubeVideoDetails = {
  * POST /api/me/channels/[channelId]/refresh-videos
  * Refreshes video metadata (tags, description) for all videos in a channel
  */
-export async function POST(
+async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
@@ -118,4 +119,9 @@ export async function POST(
     );
   }
 }
+
+export const POST = createApiRoute(
+  { route: "/api/me/channels/[channelId]/refresh-videos" },
+  async (req, ctx) => POSTHandler(req, ctx as any)
+);
 

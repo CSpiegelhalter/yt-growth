@@ -5,7 +5,10 @@
  *
  * Auth: Required
  */
-import { getCurrentUserWithSubscription } from "@/lib/user";
+import { createApiRoute, emptyParamsContext } from "@/lib/api/route";
+import { withAuth } from "@/lib/api/withAuth";
+import { jsonOk } from "@/lib/api/response";
+import type { ApiAuthContext } from "@/lib/api/withAuth";
 import { getSubscriptionStatus } from "@/lib/stripe";
 import {
   getPlanFromSubscription,
@@ -15,13 +18,10 @@ import {
 } from "@/lib/entitlements";
 import { getAllUsage } from "@/lib/usage";
 
-export async function GET() {
-  try {
-    const user = await getCurrentUserWithSubscription();
-
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const GET = createApiRoute(
+  { route: "/api/me" },
+  withAuth({ mode: "required" }, async (_req, _ctx, api: ApiAuthContext) => {
+    const user = api.user!;
 
     // Get detailed subscription status
     const subscription = await getSubscriptionStatus(user.id);
@@ -74,12 +74,13 @@ export async function GET() {
       resetAt: resetAt.toISOString(),
     };
 
-    return Response.json(payload, { headers: { "cache-control": "no-store" } });
-  } catch (err: any) {
-    console.error("Get user error:", err);
-    return Response.json(
-      { error: "Server error", detail: String(err?.message ?? err) },
-      { status: 500 }
-    );
-  }
-}
+    return jsonOk(payload, {
+      headers: { "cache-control": "no-store" },
+      requestId: api.requestId,
+    });
+  })
+);
+
+// Backwards-compatible signature guard (Next sometimes calls with no ctx)
+export const runtime = "nodejs";
+

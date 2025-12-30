@@ -1,15 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
+import { createApiRoute } from "@/lib/api/route";
+import { withValidation } from "@/lib/api/withValidation";
+import { ApiError } from "@/lib/api/errors";
+import { jsonOk } from "@/lib/api/response";
 
-export async function POST(req: NextRequest) {
-  try {
-    const { name, email, password } = await req.json();
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
-    }
+const BodySchema = z.object({
+  name: z.string().trim().min(1).max(80).optional(),
+  email: z.string().trim().toLowerCase().email().max(255),
+  password: z.string().min(8).max(200),
+});
+
+export const POST = createApiRoute(
+  { route: "/api/auth/signup" },
+  withValidation({ body: BodySchema }, async (_req, _ctx, api, validated) => {
+    const { name, email, password } = validated.body!;
+
     const exists = await prisma.user.findUnique({ where: { email } });
-    if (exists) return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+    if (exists) {
+      throw new ApiError({
+        code: "VALIDATION_ERROR",
+        status: 409,
+        message: "Email already registered",
+      });
+    }
 
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
@@ -17,8 +33,7 @@ export async function POST(req: NextRequest) {
       select: { id: true, email: true, name: true },
     });
 
-    return NextResponse.json({ user }, { status: 201 });
-  } catch (e) {
-    return NextResponse.json({ error: "Failed to sign up" }, { status: 500 });
-  }
-}
+    return jsonOk({ user }, { status: 201, requestId: api.requestId });
+  })
+);
+
