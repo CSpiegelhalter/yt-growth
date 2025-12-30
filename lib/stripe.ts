@@ -5,11 +5,70 @@
  */
 import { prisma } from "@/prisma";
 import { LIMITS } from "@/lib/product";
+import crypto from "crypto";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+// Stripe recommends a tolerance of 5 minutes for webhook signatures.
+const STRIPE_WEBHOOK_TOLERANCE_SECONDS = 5 * 60;
+
+function timingSafeEqualHex(a: string, b: string): boolean {
+  try {
+    const ab = Buffer.from(a, "hex");
+    const bb = Buffer.from(b, "hex");
+    if (ab.length !== bb.length) return false;
+    return crypto.timingSafeEqual(ab, bb);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Minimal Stripe webhook signature verification (no stripe SDK required).
+ *
+ * Stripe-Signature header format: "t=timestamp,v1=signature[,v1=signature2...]"
+ * Signature = HMAC_SHA256(secret, `${t}.${payload}`) as hex.
+ */
+function verifyStripeWebhookSignature(
+  payload: string,
+  signatureHeader: string
+) {
+  if (!STRIPE_WEBHOOK_SECRET) {
+    throw new Error("STRIPE_WEBHOOK_SECRET not configured");
+  }
+  if (!signatureHeader) {
+    throw new Error("Missing Stripe signature header");
+  }
+
+  const parts = signatureHeader.split(",").map((p) => p.trim());
+  const tPart = parts.find((p) => p.startsWith("t="));
+  const v1Parts = parts.filter((p) => p.startsWith("v1="));
+  const tsRaw = tPart?.slice(2) ?? "";
+  const timestamp = Number(tsRaw);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+    throw new Error("Invalid Stripe signature timestamp");
+  }
+
+  const age = Math.abs(Date.now() / 1000 - timestamp);
+  if (age > STRIPE_WEBHOOK_TOLERANCE_SECONDS) {
+    throw new Error("Stripe signature timestamp outside tolerance");
+  }
+
+  const signedPayload = `${timestamp}.${payload}`;
+  const expected = crypto
+    .createHmac("sha256", STRIPE_WEBHOOK_SECRET)
+    .update(signedPayload, "utf8")
+    .digest("hex");
+
+  const provided = v1Parts.map((p) => p.slice(3)).filter(Boolean);
+  const ok = provided.some((sig) => timingSafeEqualHex(sig, expected));
+  if (!ok) {
+    throw new Error("Invalid Stripe webhook signature");
+  }
+}
 
 type StripeCustomer = {
   id: string;
@@ -264,8 +323,9 @@ export async function handleStripeWebhook(
   payload: string,
   signature: string
 ): Promise<{ received: boolean }> {
-  // In production, verify webhook signature
-  // For MVP, we'll trust the payload structure
+  // Always verify webhook signature in production-like deployments.
+  // (Prevents anyone from spoofing subscription state changes.)
+  verifyStripeWebhookSignature(payload, signature);
 
   const event = JSON.parse(payload);
   const eventType = event.type;
