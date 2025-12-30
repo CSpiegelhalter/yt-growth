@@ -94,15 +94,9 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
   }, [toast.id, onRemove]);
 
   const bgColor = {
-    success: "#059669",
-    error: "#dc2626",
-    info: "#2563eb",
-  }[toast.type];
-
-  const icon = {
-    success: "✓",
-    error: "✕",
-    info: "ℹ",
+    success: "var(--success)",
+    error: "var(--danger)",
+    info: "var(--info)",
   }[toast.type];
 
   return (
@@ -114,17 +108,16 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
         padding: "12px 16px",
         background: bgColor,
         color: "white",
-        borderRadius: 10,
+        borderRadius: "var(--radius-md)",
         fontSize: "0.875rem",
         fontWeight: 500,
-        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        boxShadow: "var(--shadow-lg)",
         pointerEvents: "auto",
         transform: visible && !leaving ? "translateY(0)" : "translateY(20px)",
         opacity: visible && !leaving ? 1 : 0,
         transition: "all 0.2s ease",
       }}
     >
-      <span style={{ fontSize: "1rem" }}>{icon}</span>
       <span>{toast.message}</span>
     </div>
   );

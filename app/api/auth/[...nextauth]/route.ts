@@ -1,15 +1,12 @@
 import NextAuth from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createApiRoute } from "@/lib/api/route";
 
+/**
+ * NextAuth route handler
+ *
+ * Note: NextAuth handles its own request/response lifecycle and cannot be
+ * wrapped with createApiRoute. It expects the raw handler exported directly.
+ */
 const handler = NextAuth(authOptions);
 
-export const GET = createApiRoute(
-  { route: "/api/auth/[...nextauth]" },
-  async (req) => handler(req)
-);
-
-export const POST = createApiRoute(
-  { route: "/api/auth/[...nextauth]" },
-  async (req) => handler(req)
-);
+export { handler as GET, handler as POST };

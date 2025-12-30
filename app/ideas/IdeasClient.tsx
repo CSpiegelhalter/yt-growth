@@ -7,6 +7,7 @@ import { Me, Channel, IdeaBoardData } from "@/types/api";
 import IdeaBoard from "@/components/dashboard/IdeaBoard";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 import { useToast } from "@/components/ui/Toast";
+import { apiFetchJson, isApiClientError } from "@/lib/client/api";
 
 type Props = {
   initialMe: Me;
@@ -63,21 +64,34 @@ export default function IdeasClient({
   useEffect(() => {
     if (!activeChannelId) return;
 
-    setIdeaBoardLoading(true);
-    fetch(`/api/me/channels/${activeChannelId}/idea-board?range=7d`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.ideas) {
-          setIdeaBoard(data as IdeaBoardData);
-        } else {
-          setIdeaBoard(null);
-        }
-      })
-      .catch((err) => {
+    let cancelled = false;
+    (async () => {
+      setIdeaBoardLoading(true);
+      try {
+        const data = await apiFetchJson<any>(
+          `/api/me/channels/${activeChannelId}/idea-board?range=7d`,
+          { cache: "no-store" }
+        );
+        if (cancelled) return;
+        setIdeaBoard(data?.ideas ? (data as IdeaBoardData) : null);
+      } catch (err) {
+        if (cancelled) return;
         console.error(err);
-        toast("Failed to load idea board. Please refresh.", "error");
-      })
-      .finally(() => setIdeaBoardLoading(false));
+        const rid = isApiClientError(err) ? err.requestId : undefined;
+        toast(
+          rid
+            ? `Failed to load idea board. (requestId: ${rid})`
+            : "Failed to load idea board.",
+          "error"
+        );
+        setIdeaBoard(null);
+      } finally {
+        if (!cancelled) setIdeaBoardLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [activeChannelId, toast]);
 
   const handleGenerate = useCallback(
@@ -91,43 +105,47 @@ export default function IdeasClient({
       const range = options?.range ?? "7d";
 
       try {
-        const r = await fetch(`/api/me/channels/${activeChannelId}/idea-board`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode, range }),
-        });
-
-        const data = await r.json().catch(() => ({}));
-
-        if (!r.ok) {
-          if (r.status === 401) {
+        const data = await apiFetchJson<any>(
+          `/api/me/channels/${activeChannelId}/idea-board`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mode, range }),
+          }
+        );
+        if (data?.ideas) setIdeaBoard(data as IdeaBoardData);
+        else toast("No ideas returned. Please try again.", "error");
+      } catch (err) {
+        console.error(err);
+        if (isApiClientError(err)) {
+          if (err.status === 401) {
             toast("Session expired. Please log in again.", "error");
             return;
           }
-          if (r.status === 403) {
+          if (err.status === 403 && err.code === "SUBSCRIPTION_REQUIRED") {
             toast(
-              data?.code === "SUBSCRIPTION_REQUIRED"
-                ? "Subscription required to generate ideas."
-                : "Not allowed to generate ideas for this channel.",
+              err.requestId
+                ? `Subscription required. (requestId: ${err.requestId})`
+                : "Subscription required.",
               "error"
             );
             return;
           }
-          if (r.status === 429) {
-            toast("Rate limit hit. Try again a bit later.", "error");
+          if (err.status === 429) {
+            toast(
+              err.requestId
+                ? `Rate limit hit. Try again later. (requestId: ${err.requestId})`
+                : "Rate limit hit. Try again later.",
+              "error"
+            );
             return;
           }
-          toast(data?.error ?? "Failed to generate ideas.", "error");
+          toast(
+            err.requestId ? `${err.message} (requestId: ${err.requestId})` : err.message,
+            "error"
+          );
           return;
         }
-
-        if (data.ideas) {
-          setIdeaBoard(data as IdeaBoardData);
-        } else {
-          toast("No ideas returned. Please try again.", "error");
-        }
-      } catch (err) {
-        console.error(err);
         toast("Failed to generate ideas. Please try again.", "error");
       }
     },
@@ -141,19 +159,25 @@ export default function IdeasClient({
         return;
       }
 
-      setIdeaBoardLoading(true);
-      fetch(`/api/me/channels/${activeChannelId}/idea-board?range=${range}`)
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.ideas) {
-            setIdeaBoard(data as IdeaBoardData);
-          }
-        })
-        .catch((err) => {
+      (async () => {
+        setIdeaBoardLoading(true);
+        try {
+          const data = await apiFetchJson<any>(
+            `/api/me/channels/${activeChannelId}/idea-board?range=${range}`,
+            { cache: "no-store" }
+          );
+          if (data?.ideas) setIdeaBoard(data as IdeaBoardData);
+        } catch (err) {
           console.error(err);
-          toast("Failed to refresh ideas. Please try again.", "error");
-        })
-        .finally(() => setIdeaBoardLoading(false));
+          const rid = isApiClientError(err) ? err.requestId : undefined;
+          toast(
+            rid ? `Failed to refresh ideas. (requestId: ${rid})` : "Failed to refresh ideas.",
+            "error"
+          );
+        } finally {
+          setIdeaBoardLoading(false);
+        }
+      })();
     },
     [activeChannelId, toast]
   );

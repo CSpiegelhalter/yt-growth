@@ -3,29 +3,51 @@ import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import { LearnCTA } from "@/components/LearnCTA";
 import { learnArticles } from "../articles";
+import { generateArticleSchema, generateBreadcrumbSchema } from "@/lib/seo";
 import s from "../style.module.css";
 
-export const metadata: Metadata = {
+const ARTICLE = {
+  slug: "youtube-channel-audit",
   title: "YouTube Channel Audit: How to Analyze Your Channel Performance",
   description:
     "Learn how to perform a comprehensive YouTube channel audit. Identify underperforming content, analyze growth patterns, and get actionable insights to improve your channel.",
+};
+
+export const metadata: Metadata = {
+  title: ARTICLE.title,
+  description: ARTICLE.description,
   alternates: {
-    canonical: `${BRAND.url}/learn/youtube-channel-audit`,
+    canonical: `${BRAND.url}/learn/${ARTICLE.slug}`,
   },
   openGraph: {
     title: "YouTube Channel Audit: Complete Guide for Creators",
     description:
       "Learn how to audit your YouTube channel performance and identify growth opportunities.",
-    url: `${BRAND.url}/learn/youtube-channel-audit`,
+    url: `${BRAND.url}/learn/${ARTICLE.slug}`,
     type: "article",
   },
 };
 
+const articleSchema = generateArticleSchema(ARTICLE);
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: "Home", url: BRAND.url },
+  { name: "Learn", url: `${BRAND.url}/learn` },
+  { name: "Channel Audit", url: `${BRAND.url}/learn/${ARTICLE.slug}` },
+]);
+
 export default function YouTubeChannelAuditPage() {
-  const currentSlug = "youtube-channel-audit";
+  const currentSlug = ARTICLE.slug;
 
   return (
     <main className={s.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       {/* Article Navigation */}
       <nav className={s.articleNav}>
         <span className={s.articleNavLabel}>Topics:</span>

@@ -113,9 +113,11 @@ export default function VideoInsightsClient({
     insights.llmInsights == null;
   const isBlockingLoading = loading || needsBlockingLLM;
 
-  // Prevent scroll while we're showing the blocking loader.
+  // Prevent scroll while showing the blocking loader, and ensure we start at top
   useEffect(() => {
     if (!isBlockingLoading) return;
+    // Scroll to top BEFORE locking scroll, so we don't lock at wrong position
+    window.scrollTo(0, 0);
     const prevHtmlOverflow = document.documentElement.style.overflow;
     const prevBodyOverflow = document.body.style.overflow;
     document.documentElement.style.overflow = "hidden";
@@ -123,6 +125,8 @@ export default function VideoInsightsClient({
     return () => {
       document.documentElement.style.overflow = prevHtmlOverflow;
       document.body.style.overflow = prevBodyOverflow;
+      // Scroll to top again when unlocking, in case position drifted
+      window.scrollTo(0, 0);
     };
   }, [isBlockingLoading]);
 

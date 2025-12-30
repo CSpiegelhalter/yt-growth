@@ -3,29 +3,51 @@ import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import { LearnCTA } from "@/components/LearnCTA";
 import { learnArticles } from "../articles";
+import { generateArticleSchema, generateBreadcrumbSchema } from "@/lib/seo";
 import s from "../style.module.css";
 
-export const metadata: Metadata = {
+const ARTICLE = {
+  slug: "youtube-retention-analysis",
   title: "YouTube Retention Analysis: How to Keep Viewers Watching",
   description:
     "Master YouTube audience retention analysis. Learn to identify drop-off points, understand viewer behavior, and improve watch time with proven strategies.",
+};
+
+export const metadata: Metadata = {
+  title: ARTICLE.title,
+  description: ARTICLE.description,
   alternates: {
-    canonical: `${BRAND.url}/learn/youtube-retention-analysis`,
+    canonical: `${BRAND.url}/learn/${ARTICLE.slug}`,
   },
   openGraph: {
     title: "YouTube Retention Analysis: Complete Guide",
     description:
       "Learn how to analyze and improve your YouTube audience retention to keep viewers watching longer.",
-    url: `${BRAND.url}/learn/youtube-retention-analysis`,
+    url: `${BRAND.url}/learn/${ARTICLE.slug}`,
     type: "article",
   },
 };
 
+const articleSchema = generateArticleSchema(ARTICLE);
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: "Home", url: BRAND.url },
+  { name: "Learn", url: `${BRAND.url}/learn` },
+  { name: "Retention Analysis", url: `${BRAND.url}/learn/${ARTICLE.slug}` },
+]);
+
 export default function YouTubeRetentionAnalysisPage() {
-  const currentSlug = "youtube-retention-analysis";
+  const currentSlug = ARTICLE.slug;
 
   return (
     <main className={s.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       {/* Article Navigation */}
       <nav className={s.articleNav}>
         <span className={s.articleNavLabel}>Topics:</span>

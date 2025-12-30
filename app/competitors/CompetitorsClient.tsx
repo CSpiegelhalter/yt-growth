@@ -14,6 +14,7 @@ import type {
   CompetitorVideo,
 } from "@/types/api";
 import { SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { apiFetchJson, isApiClientError } from "@/lib/client/api";
 
 type SortOption = "velocity" | "engagement" | "newest" | "outliers";
 
@@ -96,38 +97,35 @@ export default function CompetitorsClient({
     setRateLimitError(null); // Clear previous rate limit errors
     setFetchError(null); // Clear previous fetch errors
     
-    fetch(
-      `/api/me/channels/${activeChannelId}/competitors?range=${range}&sort=${sort}`
-    )
-      .then(async (r) => {
-        const data = await r.json();
-        
-        if (r.status === 429) {
-          // Rate limited
-          setRateLimitError({
-            resetAt: data.resetAt,
-            message: "You've made too many requests. Please wait before trying again.",
-          });
-          return;
-        }
-        
-        if (!r.ok) {
-          // Other server error
-          setFetchError(data.error || "Failed to load competitor videos. Please try again.");
-          return;
-        }
-        
-        if (data.videos) {
-          setFeedData(data as CompetitorFeedResponse);
-        } else {
-          setFeedData(null);
-        }
-      })
-      .catch((err) => {
+    (async () => {
+      try {
+        const data = await apiFetchJson<any>(
+          `/api/me/channels/${activeChannelId}/competitors?range=${range}&sort=${sort}`,
+          { cache: "no-store" }
+        );
+        setFeedData(data?.videos ? (data as CompetitorFeedResponse) : null);
+      } catch (err) {
         console.error("Competitor feed fetch error:", err);
-        setFetchError("Failed to load competitor videos. Please check your connection and try again.");
-      })
-      .finally(() => setDataLoading(false));
+        if (isApiClientError(err) && err.status === 429) {
+          setRateLimitError({
+            resetAt: String((err.details as any)?.resetAt ?? ""),
+            message: err.requestId
+              ? `Too many requests. Try again soon. (requestId: ${err.requestId})`
+              : "Too many requests. Try again soon.",
+          });
+        } else if (isApiClientError(err)) {
+          setFetchError(
+            err.requestId ? `${err.message} (requestId: ${err.requestId})` : err.message
+          );
+        } else {
+          setFetchError(
+            "Failed to load competitor videos. Please check your connection and try again."
+          );
+        }
+      } finally {
+        setDataLoading(false);
+      }
+    })();
   }, [activeChannelId, range, sort]);
 
   const handleRangeChange = useCallback((newRange: "7d" | "28d") => {
@@ -213,24 +211,33 @@ export default function CompetitorsClient({
         const res = await fetch(
           `/api/me/channels/${activeChannelId}/competitors?${params.toString()}`
         );
-        const data = await res.json();
-
-        // Handle rate limiting
-        if (res.status === 429) {
-          setRateLimitError({
-            resetAt: data.resetAt,
-            message: "You've made too many requests. Please wait before trying again.",
-          });
-          return;
+        let data: any = null;
+        try {
+          data = await res.json();
+        } catch {
+          data = null;
         }
-
-        // Handle other errors
         if (!res.ok) {
-          setFetchError(data.error || "Failed to load more videos. Please try again.");
+          const rid =
+            (data?.error?.requestId as string | undefined) ??
+            res.headers.get("x-request-id") ??
+            undefined;
+          if (res.status === 429) {
+            setRateLimitError({
+              resetAt: data?.details?.resetAt ?? data?.resetAt ?? "",
+              message: rid
+                ? `Too many requests. Try again soon. (requestId: ${rid})`
+                : "Too many requests. Try again soon.",
+            });
+            return;
+          }
+          setFetchError(
+            rid
+              ? `${data?.error?.message ?? data?.error ?? "Failed to load more videos."} (requestId: ${rid})`
+              : data?.error?.message ?? data?.error ?? "Failed to load more videos."
+          );
           return;
         }
-
-        console.log(`[LoadMore] Fetch returned ${data.videos?.length ?? 0} videos, hasMorePages=${data.hasMorePages}`);
 
         if (!data.videos || data.videos.length === 0) {
           hasMore = false;

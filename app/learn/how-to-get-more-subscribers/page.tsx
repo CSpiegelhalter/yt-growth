@@ -3,29 +3,51 @@ import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import { LearnCTA } from "@/components/LearnCTA";
 import { learnArticles } from "../articles";
+import { generateArticleSchema, generateBreadcrumbSchema } from "@/lib/seo";
 import s from "../style.module.css";
 
-export const metadata: Metadata = {
+const ARTICLE = {
+  slug: "how-to-get-more-subscribers",
   title: "How to Get More Subscribers on YouTube: Proven Strategies",
   description:
     "Learn proven strategies to get more YouTube subscribers. Discover which content converts viewers into subscribers and how to optimize your channel for growth.",
+};
+
+export const metadata: Metadata = {
+  title: ARTICLE.title,
+  description: ARTICLE.description,
   alternates: {
-    canonical: `${BRAND.url}/learn/how-to-get-more-subscribers`,
+    canonical: `${BRAND.url}/learn/${ARTICLE.slug}`,
   },
   openGraph: {
     title: "How to Get More Subscribers on YouTube",
     description:
       "Proven strategies to grow your YouTube subscriber count based on data and real channel analysis.",
-    url: `${BRAND.url}/learn/how-to-get-more-subscribers`,
+    url: `${BRAND.url}/learn/${ARTICLE.slug}`,
     type: "article",
   },
 };
 
+const articleSchema = generateArticleSchema(ARTICLE);
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: "Home", url: BRAND.url },
+  { name: "Learn", url: `${BRAND.url}/learn` },
+  { name: "Get More Subscribers", url: `${BRAND.url}/learn/${ARTICLE.slug}` },
+]);
+
 export default function HowToGetMoreSubscribersPage() {
-  const currentSlug = "how-to-get-more-subscribers";
+  const currentSlug = ARTICLE.slug;
 
   return (
     <main className={s.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       {/* Article Navigation */}
       <nav className={s.articleNav}>
         <span className={s.articleNavLabel}>Topics:</span>

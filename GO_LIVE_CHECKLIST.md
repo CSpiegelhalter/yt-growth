@@ -41,6 +41,14 @@
 - **indexability**:
   - Public: `/`, `/learn`, learn articles, `/contact`, `/terms`, `/privacy` should be indexable.
   - Private: `/dashboard`, `/ideas`, `/competitors`, `/saved-ideas`, `/subscriber-insights`, `/video/*` should be `noindex`.
+- **Structured data**: landing page has WebSite/Organization JSON-LD; learn articles have Article schema.
+
+### Frontend quality
+- **Design tokens**: `app/globals.css` contains all color/spacing/typography tokens.
+- **Mobile-first**: all pages render properly on 375px+; no horizontal scroll.
+- **Loading states**: skeleton loading for all data-dependent UI.
+- **Error states**: `ErrorState` component shows friendly message + requestId + retry.
+- **Empty states**: `EmptyState` component with helpful CTA for no-data scenarios.
 
 ### Smoke tests
 - **Local**: `bun run typecheck` and `bun run build`

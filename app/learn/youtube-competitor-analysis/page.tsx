@@ -3,29 +3,51 @@ import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import { LearnCTA } from "@/components/LearnCTA";
 import { learnArticles } from "../articles";
+import { generateArticleSchema, generateBreadcrumbSchema } from "@/lib/seo";
 import s from "../style.module.css";
 
-export const metadata: Metadata = {
+const ARTICLE = {
+  slug: "youtube-competitor-analysis",
   title: "YouTube Competitor Analysis: Find What Works in Your Niche",
   description:
     "Learn how to analyze YouTube competitors effectively. Find trending topics, discover outlier videos, and understand what content strategies drive growth in your niche.",
+};
+
+export const metadata: Metadata = {
+  title: ARTICLE.title,
+  description: ARTICLE.description,
   alternates: {
-    canonical: `${BRAND.url}/learn/youtube-competitor-analysis`,
+    canonical: `${BRAND.url}/learn/${ARTICLE.slug}`,
   },
   openGraph: {
     title: "YouTube Competitor Analysis: Complete Guide",
     description:
       "Discover what's working for similar channels and apply those insights to grow your own YouTube channel.",
-    url: `${BRAND.url}/learn/youtube-competitor-analysis`,
+    url: `${BRAND.url}/learn/${ARTICLE.slug}`,
     type: "article",
   },
 };
 
+const articleSchema = generateArticleSchema(ARTICLE);
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: "Home", url: BRAND.url },
+  { name: "Learn", url: `${BRAND.url}/learn` },
+  { name: "Competitor Analysis", url: `${BRAND.url}/learn/${ARTICLE.slug}` },
+]);
+
 export default function YouTubeCompetitorAnalysisPage() {
-  const currentSlug = "youtube-competitor-analysis";
+  const currentSlug = ARTICLE.slug;
 
   return (
     <main className={s.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       {/* Article Navigation */}
       <nav className={s.articleNav}>
         <span className={s.articleNavLabel}>Topics:</span>

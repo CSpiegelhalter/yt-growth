@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import s from "./HeroCTAs.module.css";
 import { SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { apiFetchJson } from "@/lib/client/api";
+import type { Me } from "@/types/api";
 
 type AuthState = "loading" | "signed-out" | "signed-in-free" | "signed-in-subscribed";
 
@@ -17,14 +19,8 @@ export function HeroCTAs() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch("/api/me", { cache: "no-store" });
-        if (!res.ok) {
-          setAuthState("signed-out");
-          return;
-        }
-        
-        const data = await res.json();
-        const isSubscribed = data?.subscription?.isActive ?? false;
+        const me = await apiFetchJson<Me>("/api/me", { cache: "no-store" });
+        const isSubscribed = me?.subscription?.isActive ?? false;
         setAuthState(isSubscribed ? "signed-in-subscribed" : "signed-in-free");
       } catch {
         setAuthState("signed-out");

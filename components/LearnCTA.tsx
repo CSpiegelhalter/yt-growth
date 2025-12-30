@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import s from "./LearnCTA.module.css";
+import { apiFetchJson } from "@/lib/client/api";
+import type { Me } from "@/types/api";
 
 type AuthState = "loading" | "signed-out" | "signed-in";
 
@@ -21,11 +24,7 @@ export function LearnCTA({ title, description, className }: Props) {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch("/api/me", { cache: "no-store" });
-        if (!res.ok) {
-          setAuthState("signed-out");
-          return;
-        }
+        await apiFetchJson<Me>("/api/me", { cache: "no-store" });
         setAuthState("signed-in");
       } catch {
         setAuthState("signed-out");
@@ -39,53 +38,17 @@ export function LearnCTA({ title, description, className }: Props) {
   const buttonHref = authState === "signed-in" ? "/dashboard" : "/auth/signup";
 
   return (
-    <section className={className}>
-      <h2 style={styles.title}>{title}</h2>
-      <p style={styles.text}>{description}</p>
+    <section className={`${s.cta} ${className ?? ""}`.trim()}>
+      <h2 className={s.title}>{title}</h2>
+      <p className={s.text}>{description}</p>
       {authState === "loading" ? (
-        <div style={styles.skeleton} />
+        <div className={s.skeleton} />
       ) : (
-        <Link href={buttonHref} style={styles.btn}>
+        <Link href={buttonHref} className={s.btn}>
           {buttonText}
         </Link>
       )}
     </section>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  title: {
-    fontSize: "1.5rem",
-    fontWeight: 700,
-    marginBottom: "8px",
-  },
-  text: {
-    fontSize: "1rem",
-    opacity: 0.9,
-    marginBottom: "24px",
-    maxWidth: "400px",
-    marginLeft: "auto",
-    marginRight: "auto",
-  },
-  btn: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "14px 32px",
-    fontSize: "1rem",
-    fontWeight: 600,
-    background: "white",
-    color: "#1e3a5f",
-    borderRadius: "10px",
-    textDecoration: "none",
-    transition: "all 0.15s ease",
-  },
-  skeleton: {
-    width: "140px",
-    height: "48px",
-    background: "rgba(255, 255, 255, 0.2)",
-    borderRadius: "10px",
-    margin: "0 auto",
-  },
-};
 

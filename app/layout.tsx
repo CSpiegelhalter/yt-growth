@@ -116,14 +116,11 @@ export default async function RootLayout({
       </head>
       <body>
         <Providers>
-          <div
-            className="container"
-            style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
-          >
+          <div className="appShell">
             <Suspense fallback={null}>
               <Header />
             </Suspense>
-            <main style={{ flex: 1 }}>{children}</main>
+            <div className="appMain">{children}</div>
             <Footer />
           </div>
         </Providers>

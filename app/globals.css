@@ -76,6 +76,7 @@
   --color-border-light: var(--border-light);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-contrast: var(--primary-contrast);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
@@ -195,6 +196,10 @@
   --z-modal-backdrop: 300;
   --z-modal: 400;
   --z-toast: 500;
+
+  /* App shell */
+  --header-height: 64px;
+  --shell-gap: var(--space-6);
 }
 
 * {
@@ -214,29 +219,40 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: var(--color-bg);
+  background: var(--bg);
   color: var(--color-text);
   line-height: 1.5;
   min-height: 100%;
   overflow-x: hidden;
-  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: none;
-  touch-action: pan-y;
 }
 
-/* Container */
+/* ===========================================
+   App Shell Layout Helpers
+   =========================================== */
+
+.appShell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.appMain {
+  flex: 1;
+}
+
+/* Container (legacy) */
 .container {
   width: 100%;
-  max-width: 1040px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: var(--space-md);
-  touch-action: pan-x pan-y;
+  padding: var(--page-padding-mobile);
 }
 
 @media (min-width: 768px) {
   .container {
-    padding: var(--space-lg);
+    padding: var(--page-padding-desktop);
   }
 }
 
@@ -349,7 +365,7 @@ input, textarea, select {
 input:focus, textarea:focus, select:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 label {
@@ -368,26 +384,31 @@ label {
 }
 
 .alert-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: var(--color-danger);
+  background: var(--danger-light);
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--danger-light));
+  color: var(--danger-dark);
 }
 
 .alert-success {
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: var(--color-success);
+  background: var(--success-light);
+  border: 1px solid color-mix(in srgb, var(--success) 25%, var(--success-light));
+  color: var(--success-dark);
 }
 
 .alert-warning {
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  color: var(--color-warning);
+  background: var(--warning-light);
+  border: 1px solid color-mix(in srgb, var(--warning) 25%, var(--warning-light));
+  color: var(--warning-dark);
 }
 
 /* Skeleton loading */
 .skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--surface-alt) 55%, white) 25%,
+    color-mix(in srgb, var(--surface-alt) 75%, white) 50%,
+    color-mix(in srgb, var(--surface-alt) 55%, white) 75%
+  );
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s infinite;
   border-radius: var(--radius-sm);
@@ -438,23 +459,23 @@ label {
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: 9999px;
-  background: #e0e7ff;
-  color: #3730a3;
+  background: var(--primary-light);
+  color: color-mix(in srgb, var(--primary) 45%, black);
 }
 
 .badge-success {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-light);
+  color: var(--success-dark);
 }
 
 .badge-warning {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-light);
+  color: var(--warning-dark);
 }
 
 .badge-danger {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-light);
+  color: var(--danger-dark);
 }
 
 /* Grid utilities */

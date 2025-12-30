@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   title: `Contact | ${BRAND.name}`,
   description: `Get in touch with the ${BRAND.name} team. We're here to help with questions about YouTube growth, channel analytics, and our platform.`,
   alternates: { canonical: `${BRAND.url}/contact` },
+  openGraph: {
+    title: `Contact ${BRAND.name}`,
+    description: `Get in touch with the ${BRAND.name} team for support and questions.`,
+    url: `${BRAND.url}/contact`,
+    type: "website",
+  },
 };
 
 export default async function ContactPage() {

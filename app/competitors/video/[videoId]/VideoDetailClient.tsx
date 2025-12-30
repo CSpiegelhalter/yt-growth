@@ -42,6 +42,11 @@ export default function VideoDetailClient({
   // Use channelId from server props directly
   const activeChannelId = channelId ?? null;
 
+  // Scroll to top when navigating to this page
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [videoId]);
+
   // Smooth progress bar while the analysis request is running (we don't have real progress).
   useEffect(() => {
     if (!loading) return;
