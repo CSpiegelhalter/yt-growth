@@ -425,8 +425,8 @@ function IdeaCard({
         {/* Why Now - if available */}
         {idea.whyNow && (
           <p className={s.ideaWhyNow}>
-            <span className={s.whyNowIcon}>⚡</span>
-            {truncate(idea.whyNow, 100)}
+            <span className={s.whyNowLabel}>Why now:</span>
+            {truncate(idea.whyNow, 110)}
           </p>
         )}
 
@@ -508,11 +508,22 @@ function IdeaDetailSheet({
   onClose: () => void;
   channelId?: string;
 }) {
+  type CreativeDirections = {
+    titleAngles: string[];
+    hookSetups: string[];
+    visualMoments: string[];
+  };
+
   const panelRef = useRef<HTMLDivElement>(null);
   const [generatingMore, setGeneratingMore] = useState(false);
   const [extraHooks, setExtraHooks] = useState<string[]>([]);
   const [extraTitles, setExtraTitles] = useState<string[]>([]);
   const [extraKeywords, setExtraKeywords] = useState<string[]>([]);
+  const [creativeDirections, setCreativeDirections] =
+    useState<CreativeDirections | null>(null);
+  const [aiRemixes, setAiRemixes] = useState<
+    Array<{ title: string; hook: string; angle: string }>
+  >([]);
 
   const keywordObjs = Array.isArray((idea as any)?.keywords)
     ? ((idea as any).keywords as any[])
@@ -574,6 +585,61 @@ function IdeaDetailSheet({
           setExtraTitles((prev) => [...prev, ...data.titles]);
         if (data.keywords?.length)
           setExtraKeywords((prev) => [...prev, ...data.keywords]);
+
+        if (data.packaging) {
+          const normalizeArr = (v: unknown) =>
+            Array.isArray(v)
+              ? (v
+                  .map((x) => String(x ?? "").trim())
+                  .filter(Boolean) as string[])
+              : [];
+
+          const nextDirections: CreativeDirections = {
+            titleAngles: normalizeArr(data.packaging.titleAngles),
+            hookSetups: normalizeArr(data.packaging.hookSetups),
+            visualMoments: normalizeArr(data.packaging.visualMoments),
+          };
+
+          setCreativeDirections((prev) => {
+            if (!prev) return nextDirections;
+            const uniq = (arr: string[]) => Array.from(new Set(arr));
+            return {
+              titleAngles: uniq([
+                ...prev.titleAngles,
+                ...nextDirections.titleAngles,
+              ]).slice(0, 12),
+              hookSetups: uniq([
+                ...prev.hookSetups,
+                ...nextDirections.hookSetups,
+              ]).slice(0, 12),
+              visualMoments: uniq([
+                ...prev.visualMoments,
+                ...nextDirections.visualMoments,
+              ]).slice(0, 12),
+            };
+          });
+        }
+
+        if (Array.isArray(data.remixes) && data.remixes.length) {
+          const cleaned = data.remixes
+            .map((r: any) => ({
+              title: String(r?.title ?? "").trim(),
+              hook: String(r?.hook ?? "").trim(),
+              angle: String(r?.angle ?? "").trim(),
+            }))
+            .filter((r: any) => r.title || r.hook || r.angle);
+
+          setAiRemixes((prev) => {
+            const key = (r: { title: string; hook: string; angle: string }) =>
+              `${r.title}||${r.hook}||${r.angle}`;
+            const map = new Map<
+              string,
+              { title: string; hook: string; angle: string }
+            >();
+            [...prev, ...cleaned].forEach((r) => map.set(key(r), r));
+            return Array.from(map.values()).slice(0, 8);
+          });
+        }
       }
     } catch (err) {
       console.error("Failed to generate more:", err);
@@ -623,8 +689,9 @@ function IdeaDetailSheet({
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
+          <div className={s.sheetKicker}>Idea</div>
           <h2 className={s.sheetTitle}>{idea.title}</h2>
-          <p className={s.sheetAngle}>{idea.angle}</p>
+          {idea.angle && <p className={s.sheetAngle}>{idea.angle}</p>}
 
           {/* Generate More Like This - Primary CTA */}
           {channelId && (
@@ -659,36 +726,192 @@ function IdeaDetailSheet({
 
         {/* Scrollable Content */}
         <div className={s.sheetContent}>
-          {/* Hooks Section */}
+          {/* Idea Brief */}
           <section className={s.sheetSection}>
-            <h3 className={s.sectionTitle}>Hooks</h3>
+            <div className={s.sectionHeader}>
+              <h3 className={s.sectionTitle}>Idea brief</h3>
+              <button
+                className={s.copyAllBtn}
+                onClick={() =>
+                  onCopy(`${idea.title}\n\n${idea.angle}`.trim(), "premise")
+                }
+              >
+                {copiedId === "premise" ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <div className={s.briefGrid}>
+              <div className={s.briefCard}>
+                <div className={s.briefLabel}>Angle</div>
+                <p className={s.briefText}>{idea.angle}</p>
+              </div>
+              <div className={s.briefCard}>
+                <div className={s.briefLabel}>Why it should work now</div>
+                <p className={s.briefText}>{idea.whyNow ? idea.whyNow : "—"}</p>
+              </div>
+            </div>
+          </section>
+
+          {/* Title Options */}
+          <section className={s.sheetSection}>
+            <div className={s.sectionHeader}>
+              <h3 className={s.sectionTitle}>Title options</h3>
+              <button
+                className={s.copyAllBtn}
+                onClick={() => onCopy(allTitles.join("\n"), "all-titles")}
+              >
+                {copiedId === "all-titles" ? "Copied" : "Copy all"}
+              </button>
+            </div>
             <p className={s.sectionIntro}>
-              Opening lines to grab attention in the first 5 seconds
+              Choose one that matches your tone, then film the premise above.
             </p>
-            <div className={s.hookCards}>
-              {hookObjs.map((hook, i) => (
-                <div key={`orig-${i}`} className={s.hookCard}>
-                  <p className={s.hookCardText}>
-                    &ldquo;{String((hook as any)?.text ?? "")}&rdquo;
-                  </p>
-                  <div className={s.hookCardFooter}>
-                    <div className={s.hookTags}>
-                      {(Array.isArray((hook as any)?.typeTags)
-                        ? ((hook as any).typeTags as any[])
-                        : []
-                      )
-                        .slice(0, 2)
-                        .map((tag) => (
-                          <span key={String(tag)} className={s.hookTag}>
-                            {String(tag)}
-                          </span>
-                        ))}
+            <div className={s.optionList}>
+              {titleObjs.map((title, i) => {
+                const text = String((title as any)?.text ?? "").trim();
+                const styleTags = Array.isArray((title as any)?.styleTags)
+                  ? ((title as any).styleTags as any[])
+                  : [];
+                if (!text) return null;
+                return (
+                  <div key={`orig-${i}`} className={s.optionRow}>
+                    <div className={s.optionIndex}>{i + 1}</div>
+                    <div className={s.optionBody}>
+                      <p className={s.optionText}>{text}</p>
+                      {styleTags.length > 0 && (
+                        <div className={s.optionMeta}>
+                          {styleTags.slice(0, 3).map((tag) => (
+                            <span key={String(tag)} className={s.optionTag}>
+                              {String(tag)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <button
                       className={s.copyIconBtn}
-                      onClick={() =>
-                        onCopy(String((hook as any)?.text ?? ""), `hook-${i}`)
-                      }
+                      onClick={() => onCopy(text, `title-${i}`)}
+                      title="Copy"
+                    >
+                      {copiedId === `title-${i}` ? (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      ) : (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect x="9" y="9" width="13" height="13" rx="2" />
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+              {extraTitles.map((titleText, i) => {
+                const text = String(titleText ?? "").trim();
+                if (!text) return null;
+                const idx = titleObjs.length + i + 1;
+                return (
+                  <div
+                    key={`extra-${i}`}
+                    className={`${s.optionRow} ${s.newItem}`}
+                  >
+                    <div className={s.optionIndex}>{idx}</div>
+                    <div className={s.optionBody}>
+                      <p className={s.optionText}>{text}</p>
+                      <div className={s.optionMeta}>
+                        <span className={s.optionTagNew}>New</span>
+                      </div>
+                    </div>
+                    <button
+                      className={s.copyIconBtn}
+                      onClick={() => onCopy(text, `extra-title-${i}`)}
+                      title="Copy"
+                    >
+                      {copiedId === `extra-title-${i}` ? (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      ) : (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect x="9" y="9" width="13" height="13" rx="2" />
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Hooks */}
+          <section className={s.sheetSection}>
+            <div className={s.sectionHeader}>
+              <h3 className={s.sectionTitle}>Hooks</h3>
+              <button
+                className={s.copyAllBtn}
+                onClick={() => onCopy(allHooks.join("\n"), "all-hooks")}
+              >
+                {copiedId === "all-hooks" ? "Copied" : "Copy all"}
+              </button>
+            </div>
+            <p className={s.sectionIntro}>
+              Use one as your first line and commit to it in the first 10
+              seconds.
+            </p>
+            <div className={s.optionList}>
+              {hookObjs.map((hook, i) => {
+                const text = String((hook as any)?.text ?? "").trim();
+                const typeTags = Array.isArray((hook as any)?.typeTags)
+                  ? ((hook as any).typeTags as any[])
+                  : [];
+                if (!text) return null;
+                return (
+                  <div key={`hook-${i}`} className={s.optionRow}>
+                    <div className={s.optionIndex}>{i + 1}</div>
+                    <div className={s.optionBody}>
+                      <p className={s.optionText}>&ldquo;{text}&rdquo;</p>
+                      {typeTags.length > 0 && (
+                        <div className={s.optionMeta}>
+                          {typeTags.slice(0, 2).map((tag) => (
+                            <span key={String(tag)} className={s.optionTag}>
+                              {String(tag)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      className={s.copyIconBtn}
+                      onClick={() => onCopy(text, `hook-${i}`)}
                       title="Copy"
                     >
                       {copiedId === `hook-${i}` ? (
@@ -717,21 +940,27 @@ function IdeaDetailSheet({
                       )}
                     </button>
                   </div>
-                </div>
-              ))}
-              {/* Extra hooks from Generate More */}
-              {extraHooks.map((hookText, i) => (
-                <div
-                  key={`extra-${i}`}
-                  className={`${s.hookCard} ${s.newItem}`}
-                >
-                  <span className={s.newBadge}>New</span>
-                  <p className={s.hookCardText}>&ldquo;{hookText}&rdquo;</p>
-                  <div className={s.hookCardFooter}>
-                    <div />
+                );
+              })}
+              {extraHooks.map((hookText, i) => {
+                const text = String(hookText ?? "").trim();
+                if (!text) return null;
+                const idx = hookObjs.length + i + 1;
+                return (
+                  <div
+                    key={`extra-hook-${i}`}
+                    className={`${s.optionRow} ${s.newItem}`}
+                  >
+                    <div className={s.optionIndex}>{idx}</div>
+                    <div className={s.optionBody}>
+                      <p className={s.optionText}>&ldquo;{text}&rdquo;</p>
+                      <div className={s.optionMeta}>
+                        <span className={s.optionTagNew}>New</span>
+                      </div>
+                    </div>
                     <button
                       className={s.copyIconBtn}
-                      onClick={() => onCopy(hookText, `extra-hook-${i}`)}
+                      onClick={() => onCopy(text, `extra-hook-${i}`)}
                       title="Copy"
                     >
                       {copiedId === `extra-hook-${i}` ? (
@@ -760,225 +989,212 @@ function IdeaDetailSheet({
                       )}
                     </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 
-          {/* Titles Section */}
-          <section className={s.sheetSection}>
-            <h3 className={s.sectionTitle}>Titles</h3>
-            <p className={s.sectionIntro}>
-              Title options with style patterns that work
-            </p>
-            <div className={s.titleCards}>
-              {titleObjs.map((title, i) => (
-                <div key={`orig-${i}`} className={s.titleCard}>
-                  <div className={s.titleCardContent}>
-                    <p className={s.titleCardText}>
-                      {String((title as any)?.text ?? "")}
-                    </p>
-                    <div className={s.styleTags}>
-                      {(Array.isArray((title as any)?.styleTags)
-                        ? ((title as any).styleTags as any[])
-                        : []
-                      ).map((tag) => (
-                        <span key={String(tag)} className={s.styleTag}>
-                          {String(tag)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <button
-                    className={s.copyIconBtn}
-                    onClick={() =>
-                      onCopy(String((title as any)?.text ?? ""), `title-${i}`)
-                    }
-                    title="Copy"
-                  >
-                    {copiedId === `title-${i}` ? (
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                    ) : (
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <rect x="9" y="9" width="13" height="13" rx="2" />
-                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              ))}
-              {/* Extra titles from Generate More */}
-              {extraTitles.map((titleText, i) => (
-                <div
-                  key={`extra-${i}`}
-                  className={`${s.titleCard} ${s.newItem}`}
-                >
-                  <span className={s.newBadge}>New</span>
-                  <div className={s.titleCardContent}>
-                    <p className={s.titleCardText}>{titleText}</p>
-                  </div>
-                  <button
-                    className={s.copyIconBtn}
-                    onClick={() => onCopy(titleText, `extra-title-${i}`)}
-                    title="Copy"
-                  >
-                    {copiedId === `extra-title-${i}` ? (
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                    ) : (
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <rect x="9" y="9" width="13" height="13" rx="2" />
-                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Script Outline Section - if available */}
-          {idea.scriptOutline && (
-            <section className={s.sheetSection}>
-              <h3 className={s.sectionTitle}>Script Outline</h3>
-              <p className={s.sectionIntro}>Structure for your video content</p>
-              <div className={s.scriptOutline}>
-                {idea.scriptOutline.hook && (
-                  <div className={s.scriptBlock}>
-                    <h4 className={s.scriptBlockTitle}>
-                      <span className={s.scriptIcon}>🎬</span> Hook (0-10 sec)
-                    </h4>
-                    <p className={s.scriptBlockText}>
-                      {idea.scriptOutline.hook}
-                    </p>
-                  </div>
-                )}
-                {idea.scriptOutline.setup && (
-                  <div className={s.scriptBlock}>
-                    <h4 className={s.scriptBlockTitle}>
-                      <span className={s.scriptIcon}>📋</span> Setup (10-40 sec)
-                    </h4>
-                    <p className={s.scriptBlockText}>
-                      {idea.scriptOutline.setup}
-                    </p>
-                  </div>
-                )}
-                {idea.scriptOutline.mainPoints &&
-                  idea.scriptOutline.mainPoints.length > 0 && (
-                    <div className={s.scriptBlock}>
-                      <h4 className={s.scriptBlockTitle}>
-                        <span className={s.scriptIcon}>📝</span> Main Points
-                      </h4>
-                      <ul className={s.scriptPoints}>
-                        {idea.scriptOutline.mainPoints.map((point, i) => (
-                          <li key={i}>{point}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                {idea.scriptOutline.payoff && (
-                  <div className={s.scriptBlock}>
-                    <h4 className={s.scriptBlockTitle}>
-                      <span className={s.scriptIcon}>🎯</span> Payoff
-                    </h4>
-                    <p className={s.scriptBlockText}>
-                      {idea.scriptOutline.payoff}
-                    </p>
-                  </div>
-                )}
-                {idea.scriptOutline.cta && (
-                  <div className={s.scriptBlock}>
-                    <h4 className={s.scriptBlockTitle}>
-                      <span className={s.scriptIcon}>👉</span> Call to Action
-                    </h4>
-                    <p className={s.scriptBlockText}>
-                      {idea.scriptOutline.cta}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Keywords Section */}
+          {/* Recommended tags */}
           <section className={s.sheetSection}>
             <div className={s.sectionHeader}>
-              <h3 className={s.sectionTitle}>Keywords</h3>
+              <h3 className={s.sectionTitle}>Recommended tags</h3>
               <button
                 className={s.copyAllBtn}
                 onClick={() => onCopy(allKeywords, "all-keywords")}
               >
-                {copiedId === "all-keywords" ? "Copied" : "Copy All"}
+                {copiedId === "all-keywords" ? "Copied" : "Copy all"}
               </button>
             </div>
-            <p className={s.sectionIntro}>Tags for discoverability</p>
+            <p className={s.sectionIntro}>
+              Add these as tags/keywords. Keep them aligned to the premise.
+            </p>
             <div className={s.keywordChips}>
-              {keywordObjs.map((kw, i) => (
-                <button
-                  key={i}
-                  className={s.keywordChip}
-                  onClick={() =>
-                    onCopy(String((kw as any)?.text ?? ""), `kw-${i}`)
-                  }
-                >
-                  {String((kw as any)?.text ?? "")}
-                  {copiedId === `kw-${i}` && (
-                    <span className={s.chipCheck}>✓</span>
-                  )}
-                </button>
-              ))}
-              {extraKeywords.map((kw, i) => (
-                <button
-                  key={`extra-${i}`}
-                  className={`${s.keywordChip} ${s.newChip}`}
-                  onClick={() => onCopy(kw, `extra-kw-${i}`)}
-                >
-                  {kw}
-                  {copiedId === `extra-kw-${i}` && (
-                    <span className={s.chipCheck}>✓</span>
-                  )}
-                </button>
-              ))}
+              {keywordObjs.map((kw, i) => {
+                const text = String((kw as any)?.text ?? "").trim();
+                if (!text) return null;
+                const id = `kw-${i}`;
+                const isCopied = copiedId === id;
+                return (
+                  <button
+                    key={id}
+                    className={`${s.keywordChip} ${
+                      isCopied ? s.keywordChipCopied : ""
+                    }`}
+                    onClick={() => onCopy(text, id)}
+                  >
+                    <span className={s.keywordChipText}>{text}</span>
+                    {isCopied && (
+                      <span className={s.keywordChipState}>Copied</span>
+                    )}
+                  </button>
+                );
+              })}
+              {extraKeywords.map((kw, i) => {
+                const text = String(kw ?? "").trim();
+                if (!text) return null;
+                const id = `extra-kw-${i}`;
+                const isCopied = copiedId === id;
+                return (
+                  <button
+                    key={id}
+                    className={`${s.keywordChip} ${s.newChip} ${
+                      isCopied ? s.keywordChipCopied : ""
+                    }`}
+                    onClick={() => onCopy(text, id)}
+                  >
+                    <span className={s.keywordChipText}>{text}</span>
+                    {isCopied && (
+                      <span className={s.keywordChipState}>Copied</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </section>
 
-          {/* Make It Yours - Remix Suggestions */}
+          {/* Creative directions (from Generate More) */}
+          {(creativeDirections || aiRemixes.length > 0) && (
+            <section className={s.sheetSection}>
+              <h3 className={s.sectionTitle}>Creative directions</h3>
+              <p className={s.sectionIntro}>
+                Practical ways to shape the video (generated from your idea).
+              </p>
+
+              {creativeDirections && (
+                <div className={s.directionsGrid}>
+                  {creativeDirections.titleAngles.length > 0 && (
+                    <div className={s.directionsCard}>
+                      <div className={s.directionsLabel}>Title angles</div>
+                      <ul className={s.directionsList}>
+                        {creativeDirections.titleAngles
+                          .slice(0, 6)
+                          .map((t, i) => (
+                            <li key={i}>{t}</li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+                  {creativeDirections.hookSetups.length > 0 && (
+                    <div className={s.directionsCard}>
+                      <div className={s.directionsLabel}>Openers</div>
+                      <ul className={s.directionsList}>
+                        {creativeDirections.hookSetups
+                          .slice(0, 6)
+                          .map((t, i) => (
+                            <li key={i}>{t}</li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+                  {creativeDirections.visualMoments.length > 0 && (
+                    <div className={s.directionsCard}>
+                      <div className={s.directionsLabel}>Visual moments</div>
+                      <ul className={s.directionsList}>
+                        {creativeDirections.visualMoments
+                          .slice(0, 6)
+                          .map((t, i) => (
+                            <li key={i}>{t}</li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {aiRemixes.length > 0 && (
+                <div className={s.remixList}>
+                  {aiRemixes.slice(0, 4).map((r, i) => (
+                    <div key={i} className={s.remixPrompt}>
+                      {r.title && (
+                        <div className={s.remixPromptTitle}>{r.title}</div>
+                      )}
+                      {r.angle && (
+                        <div className={s.remixPromptAngle}>{r.angle}</div>
+                      )}
+                      {r.hook && (
+                        <div className={s.remixPromptHook}>
+                          &ldquo;{r.hook}&rdquo;
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Script (optional, collapsed by default) */}
+          {idea.scriptOutline && (
+            <section className={s.sheetSection}>
+              <details className={s.scriptDetails}>
+                <summary className={s.scriptSummary}>
+                  <span className={s.scriptSummaryTitle}>Script outline</span>
+                  <span className={s.scriptSummaryHint}>
+                    Optional structure — keep it punchy
+                  </span>
+                </summary>
+                <div className={s.scriptGrid}>
+                  {idea.scriptOutline.hook && (
+                    <div className={s.scriptCard}>
+                      <div className={s.scriptCardTitle}>
+                        Hook <span className={s.scriptTiming}>0–10s</span>
+                      </div>
+                      <p className={s.scriptCardBody}>
+                        {idea.scriptOutline.hook}
+                      </p>
+                    </div>
+                  )}
+                  {idea.scriptOutline.setup && (
+                    <div className={s.scriptCard}>
+                      <div className={s.scriptCardTitle}>
+                        Setup <span className={s.scriptTiming}>10–40s</span>
+                      </div>
+                      <p className={s.scriptCardBody}>
+                        {idea.scriptOutline.setup}
+                      </p>
+                    </div>
+                  )}
+                  {idea.scriptOutline.mainPoints &&
+                    idea.scriptOutline.mainPoints.length > 0 && (
+                      <div className={s.scriptCard}>
+                        <div className={s.scriptCardTitle}>Main points</div>
+                        <ol className={s.scriptPoints}>
+                          {idea.scriptOutline.mainPoints
+                            .slice(0, 6)
+                            .map((point, i) => (
+                              <li key={i}>{point}</li>
+                            ))}
+                        </ol>
+                      </div>
+                    )}
+                  {idea.scriptOutline.payoff && (
+                    <div className={s.scriptCard}>
+                      <div className={s.scriptCardTitle}>Payoff</div>
+                      <p className={s.scriptCardBody}>
+                        {idea.scriptOutline.payoff}
+                      </p>
+                    </div>
+                  )}
+                  {idea.scriptOutline.cta && (
+                    <div className={s.scriptCard}>
+                      <div className={s.scriptCardTitle}>Call to action</div>
+                      <p className={s.scriptCardBody}>
+                        {idea.scriptOutline.cta}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </details>
+            </section>
+          )}
+
+          {/* Variations */}
           {idea.remixVariants && Object.keys(idea.remixVariants).length > 0 && (
             <section className={s.sheetSection}>
-              <h3 className={s.sectionTitle}>Make It Yours</h3>
+              <h3 className={s.sectionTitle}>Variations</h3>
               <p className={s.sectionIntro}>
-                Twist this idea to fit your style
+                Same premise, different angle. Use these if you want a sharper
+                take.
               </p>
               <div className={s.remixCards}>
                 {Object.entries(idea.remixVariants)
@@ -986,16 +1202,16 @@ function IdeaDetailSheet({
                   .map(([key, variant]) => (
                     <div key={key} className={s.remixCard}>
                       <h4 className={s.remixCardTitle}>
-                        {formatRemixLabel(key)} Version
+                        {formatRemixLabel(key)} version
                       </h4>
-                      {variant.hooks[0] && (
-                        <p className={s.remixCardHook}>
-                          &ldquo;{truncate(variant.hooks[0].text, 60)}&rdquo;
-                        </p>
-                      )}
-                      {variant.titles[0] && (
+                      {variant.titles?.[0]?.text && (
                         <p className={s.remixCardTitle2}>
                           {variant.titles[0].text}
+                        </p>
+                      )}
+                      {variant.hooks?.[0]?.text && (
+                        <p className={s.remixCardHook}>
+                          &ldquo;{truncate(variant.hooks[0].text, 78)}&rdquo;
                         </p>
                       )}
                     </div>
@@ -1062,7 +1278,7 @@ function NicheInsightsBar({
         <div className={s.insightsContent}>
           {insights.momentumNow.length > 0 && (
             <div className={s.insightBlock}>
-              <h4 className={s.insightTitle}>🔥 Momentum Now</h4>
+              <h4 className={s.insightTitle}>Momentum now</h4>
               <ul className={s.insightList}>
                 {insights.momentumNow.map((item, i) => (
                   <li key={i}>{item}</li>
@@ -1073,7 +1289,7 @@ function NicheInsightsBar({
 
           {patterns.length > 0 && (
             <div className={s.insightBlock}>
-              <h4 className={s.insightTitle}>✓ Winning Patterns</h4>
+              <h4 className={s.insightTitle}>Winning patterns</h4>
               <ul className={s.insightList}>
                 {patterns.map((item, i) => (
                   <li key={i}>{item}</li>
@@ -1084,7 +1300,7 @@ function NicheInsightsBar({
 
           {gaps.length > 0 && (
             <div className={s.insightBlock}>
-              <h4 className={s.insightTitle}>💡 Content Gaps</h4>
+              <h4 className={s.insightTitle}>Content gaps</h4>
               <ul className={s.insightList}>
                 {gaps.map((item, i) => (
                   <li key={i}>{item}</li>
@@ -1095,7 +1311,7 @@ function NicheInsightsBar({
 
           {avoid.length > 0 && (
             <div className={s.insightBlock}>
-              <h4 className={s.insightTitle}>⚠️ Avoid These</h4>
+              <h4 className={s.insightTitle}>Avoid these</h4>
               <ul className={s.insightList}>
                 {avoid.map((item, i) => (
                   <li key={i}>{item}</li>
