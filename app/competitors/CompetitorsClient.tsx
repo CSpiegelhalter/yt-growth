@@ -15,6 +15,11 @@ import type {
 
 type SortOption = "velocity" | "engagement" | "newest" | "outliers";
 
+type RateLimitError = {
+  resetAt: string;
+  message: string;
+};
+
 type Props = {
   initialMe: Me;
   initialChannels: Channel[];
@@ -40,8 +45,10 @@ export default function CompetitorsClient({
   const [feedData, setFeedData] = useState<CompetitorFeedResponse | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
   const [loadingMoreVideos, setLoadingMoreVideos] = useState(false);
+  const [rateLimitError, setRateLimitError] = useState<RateLimitError | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // How many videos to display (show 12 more each time)
+  // How many videos to display (start with 12, increment by 6 each time - divisible by 2 and 3)
   const [visibleCount, setVisibleCount] = useState(12);
 
   // Filters
@@ -58,6 +65,15 @@ export default function CompetitorsClient({
     [initialMe]
   );
 
+  // Filter out videos with less than 100 views per day
+  const MIN_VIEWS_PER_DAY = 100;
+  const filteredVideos = useMemo(() => {
+    if (!feedData?.videos) return [];
+    return feedData.videos.filter(
+      (v) => v.derived.viewsPerDay >= MIN_VIEWS_PER_DAY
+    );
+  }, [feedData?.videos]);
+
   useSyncActiveChannelIdToLocalStorage(activeChannelId);
 
   // Load competitor feed when channel, range, or sort changes
@@ -66,18 +82,40 @@ export default function CompetitorsClient({
 
     setDataLoading(true);
     setVisibleCount(12); // Reset visible count
+    setRateLimitError(null); // Clear previous rate limit errors
+    setFetchError(null); // Clear previous fetch errors
+    
     fetch(
       `/api/me/channels/${activeChannelId}/competitors?range=${range}&sort=${sort}`
     )
-      .then((r) => r.json())
-      .then((data) => {
+      .then(async (r) => {
+        const data = await r.json();
+        
+        if (r.status === 429) {
+          // Rate limited
+          setRateLimitError({
+            resetAt: data.resetAt,
+            message: "You've made too many requests. Please wait before trying again.",
+          });
+          return;
+        }
+        
+        if (!r.ok) {
+          // Other server error
+          setFetchError(data.error || "Failed to load competitor videos. Please try again.");
+          return;
+        }
+        
         if (data.videos) {
           setFeedData(data as CompetitorFeedResponse);
         } else {
           setFeedData(null);
         }
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error("Competitor feed fetch error:", err);
+        setFetchError("Failed to load competitor videos. Please check your connection and try again.");
+      })
       .finally(() => setDataLoading(false));
   }, [activeChannelId, range, sort]);
 
@@ -93,70 +131,165 @@ export default function CompetitorsClient({
     setVisibleCount(12);
   }, []);
 
-  // Handle "Load More" - show 12 more videos, fetch from YouTube if needed
+  // Always increment by 6 (divisible by both 2 and 3 for grid layouts)
+  const LOAD_INCREMENT = 6;
+
+  // Handle "Load More" - show exactly 6 more videos each click
+  // If we don't have enough qualifying videos, keep fetching until we do
   const handleLoadMore = useCallback(async () => {
-    if (!feedData) return;
+    if (!feedData || !activeChannelId || loadingMoreVideos) return;
 
-    const totalFetched = feedData.videos.length;
-    const currentlyVisible = visibleCount;
+    const currentVisible = visibleCount;
+    const targetVisible = currentVisible + LOAD_INCREMENT;
+    
+    console.log(`[LoadMore] Click! Current: ${currentVisible}, Target: ${targetVisible}, Filtered: ${filteredVideos.length}`);
 
-    // If we have more videos already fetched, just show more
-    if (currentlyVisible < totalFetched) {
-      setVisibleCount((prev) => Math.min(prev + 12, totalFetched));
+    // If we already have enough qualifying videos, just show 6 more
+    if (filteredVideos.length >= targetVisible) {
+      console.log(`[LoadMore] Have enough locally, showing: ${currentVisible} -> ${targetVisible}`);
+      setVisibleCount(targetVisible);
       return;
     }
 
-    // Need to fetch more from YouTube
-    if (!activeChannelId || loadingMoreVideos || !feedData.hasMorePages) return;
+    // If no more pages to fetch, show whatever remains
+    if (!feedData.hasMorePages) {
+      if (filteredVideos.length > currentVisible) {
+        console.log(`[LoadMore] No more pages, showing all remaining: ${currentVisible} -> ${filteredVideos.length}`);
+        setVisibleCount(filteredVideos.length);
+      } else {
+        console.log(`[LoadMore] No more pages and no more videos`);
+      }
+      return;
+    }
 
-    // Use pagination info from the last API response
-    const nextQueryIndex =
-      feedData.nextQueryIndex ?? feedData.currentQueryIndex ?? 0;
-    const nextPageToken = feedData.nextPageToken;
-
+    // Need to fetch more - keep fetching until we have 6 more qualifying videos
     setLoadingMoreVideos(true);
+    setFetchError(null); // Clear previous errors
 
     try {
-      // Build URL with pagination parameters
-      const params = new URLSearchParams({
-        range,
-        sort,
-        queryIndex: String(nextQueryIndex),
-      });
-      if (nextPageToken) {
-        params.set("pageToken", nextPageToken);
-      }
+      // Track accumulated videos and pagination state
+      let allVideos = [...(feedData.videos ?? [])];
+      let currentQueryIndex = feedData.nextQueryIndex ?? feedData.currentQueryIndex ?? 0;
+      let currentPageToken = feedData.nextPageToken;
+      let hasMore = feedData.hasMorePages ?? false;
+      let latestData = feedData;
 
-      const res = await fetch(
-        `/api/me/channels/${activeChannelId}/competitors?${params.toString()}`
-      );
-      const data = await res.json();
+      // Keep fetching until we have enough qualifying videos or run out of pages
+      while (hasMore) {
+        const qualifyingCount = allVideos.filter(
+          (v) => v.derived.viewsPerDay >= MIN_VIEWS_PER_DAY
+        ).length;
+        
+        console.log(`[LoadMore] Qualifying so far: ${qualifyingCount}, need: ${targetVisible}`);
+        
+        // Check if we have enough now
+        if (qualifyingCount >= targetVisible) {
+          console.log(`[LoadMore] Have enough qualifying videos now!`);
+          break;
+        }
 
-      if (data.videos && data.videos.length > 0) {
-        // Append new videos to existing ones (dedupe by videoId)
-        setFeedData((prev) => {
-          if (!prev) return data as CompetitorFeedResponse;
-          const existingIds = new Set(prev.videos.map((v) => v.videoId));
-          const newVideos = data.videos.filter(
-            (v: CompetitorVideo) => !existingIds.has(v.videoId)
-          );
-          return {
-            ...data,
-            videos: [...prev.videos, ...newVideos],
-          };
+        // Fetch more
+        const params = new URLSearchParams({
+          range,
+          sort,
+          queryIndex: String(currentQueryIndex),
         });
-        // Show 12 more of the new videos
-        setVisibleCount((prev) => prev + 12);
-      } else {
-        // No more videos, update state to reflect that
-        setFeedData((prev) => (prev ? { ...prev, hasMorePages: false } : null));
+        if (currentPageToken) {
+          params.set("pageToken", currentPageToken);
+        }
+
+        console.log(`[LoadMore] Fetching batch... queryIndex=${currentQueryIndex}`);
+        const res = await fetch(
+          `/api/me/channels/${activeChannelId}/competitors?${params.toString()}`
+        );
+        const data = await res.json();
+
+        // Handle rate limiting
+        if (res.status === 429) {
+          setRateLimitError({
+            resetAt: data.resetAt,
+            message: "You've made too many requests. Please wait before trying again.",
+          });
+          return;
+        }
+
+        // Handle other errors
+        if (!res.ok) {
+          setFetchError(data.error || "Failed to load more videos. Please try again.");
+          return;
+        }
+
+        console.log(`[LoadMore] Fetch returned ${data.videos?.length ?? 0} videos, hasMorePages=${data.hasMorePages}`);
+
+        if (!data.videos || data.videos.length === 0) {
+          hasMore = false;
+          latestData = { ...latestData, hasMorePages: false };
+          break;
+        }
+
+        // Dedupe and add new videos
+        const existingIds = new Set(allVideos.map((v) => v.videoId));
+        const newVideos = data.videos.filter(
+          (v: CompetitorVideo) => !existingIds.has(v.videoId)
+        );
+        
+        const newQualifying = newVideos.filter(
+          (v: CompetitorVideo) => v.derived.viewsPerDay >= MIN_VIEWS_PER_DAY
+        ).length;
+        
+        console.log(`[LoadMore] Got ${newVideos.length} new unique, ${newQualifying} qualify`);
+
+        allVideos = [...allVideos, ...newVideos];
+        
+        // Update pagination state for next iteration
+        hasMore = data.hasMorePages ?? false;
+        currentQueryIndex = data.nextQueryIndex ?? currentQueryIndex;
+        currentPageToken = data.nextPageToken;
+        latestData = data;
       }
+
+      // Update feedData with all accumulated videos
+      setFeedData((prev) => {
+        if (!prev) return latestData as CompetitorFeedResponse;
+        return {
+          ...latestData,
+          videos: allVideos,
+        };
+      });
+
+      // Calculate final qualifying count and set visible
+      const finalQualifying = allVideos.filter(
+        (v) => v.derived.viewsPerDay >= MIN_VIEWS_PER_DAY
+      ).length;
+
+      let newVisible: number;
+      if (!hasMore && finalQualifying < targetVisible) {
+        // Exhausted all videos, show everything
+        newVisible = finalQualifying;
+        console.log(`[LoadMore] Exhausted, showing all: ${currentVisible} -> ${newVisible}`);
+      } else {
+        // Show exactly 6 more
+        newVisible = targetVisible;
+        console.log(`[LoadMore] Showing 6 more: ${currentVisible} -> ${newVisible}`);
+      }
+
+      setVisibleCount(newVisible);
+
     } catch (err) {
       console.error("Failed to fetch more videos:", err);
+      setFetchError("Failed to load more videos. Please try again.");
     } finally {
       setLoadingMoreVideos(false);
     }
-  }, [activeChannelId, range, sort, loadingMoreVideos, feedData, visibleCount]);
+  }, [
+    activeChannelId,
+    range,
+    sort,
+    loadingMoreVideos,
+    feedData,
+    filteredVideos,
+    visibleCount,
+  ]);
 
   // No channels state
   if (!activeChannel) {
@@ -243,6 +376,61 @@ export default function CompetitorsClient({
         <div className={s.sortHint}>{getSortDescription(sort)}</div>
       </div>
 
+      {/* Rate Limit Warning */}
+      {rateLimitError && (
+        <div className={s.rateLimitBanner}>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
+          <div className={s.rateLimitContent}>
+            <p className={s.rateLimitMessage}>{rateLimitError.message}</p>
+            <p className={s.rateLimitReset}>
+              Try again {formatTimeUntil(rateLimitError.resetAt)}
+            </p>
+          </div>
+          <button
+            className={s.rateLimitDismiss}
+            onClick={() => setRateLimitError(null)}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Fetch Error Warning */}
+      {fetchError && (
+        <div className={s.errorBanner}>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+          <p className={s.errorMessage}>{fetchError}</p>
+          <button
+            className={s.errorDismiss}
+            onClick={() => setFetchError(null)}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {!isSubscribed && (
         <div className={s.upgradeBanner}>
           <p>Upgrade to Pro to unlock competitor analysis and deep insights.</p>
@@ -274,10 +462,10 @@ export default function CompetitorsClient({
             </div>
           ))}
         </div>
-      ) : feedData && feedData.videos.length > 0 ? (
+      ) : feedData && filteredVideos.length > 0 ? (
         <>
           <div className={s.videoGrid}>
-            {feedData.videos.slice(0, visibleCount).map((video) => (
+            {filteredVideos.slice(0, visibleCount).map((video) => (
               <CompetitorVideoCard
                 key={video.videoId}
                 video={video}
@@ -287,8 +475,13 @@ export default function CompetitorsClient({
           </div>
 
           {/* Load More Videos */}
-          {(visibleCount < feedData.videos.length || feedData.hasMorePages) && (
+          {(visibleCount < filteredVideos.length || feedData.hasMorePages || fetchError) && (
             <div className={s.fetchMoreWrap}>
+              {fetchError && (
+                <p className={s.fetchErrorHint}>
+                  Something went wrong. Click below to try again.
+                </p>
+              )}
               <button
                 className={s.fetchMoreBtn}
                 onClick={handleLoadMore}
@@ -299,6 +492,8 @@ export default function CompetitorsClient({
                     <span className={s.spinnerSmall} />
                     Loading more videos...
                   </>
+                ) : fetchError ? (
+                  "Retry Loading Videos"
                 ) : (
                   "Load More Videos"
                 )}
@@ -451,4 +646,21 @@ function formatRelativeTime(dateStr: string): string {
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffHours < 48) return "Yesterday";
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatTimeUntil(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  
+  if (diffMs <= 0) return "now";
+  
+  const diffMinutes = Math.ceil(diffMs / (1000 * 60));
+  
+  if (diffMinutes < 60) {
+    return `in ${diffMinutes} minute${diffMinutes !== 1 ? "s" : ""}`;
+  }
+  
+  const diffHours = Math.ceil(diffMinutes / 60);
+  return `in about ${diffHours} hour${diffHours !== 1 ? "s" : ""}`;
 }

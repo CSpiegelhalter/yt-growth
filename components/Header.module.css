@@ -265,6 +265,7 @@
   position: fixed;
   inset: 0;
   z-index: 99;
+  touch-action: none;
 }
 
 /* Placeholder (during SSR) */

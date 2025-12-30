@@ -321,17 +321,22 @@ export async function GET(
       currentQuery?.split(/\s+/).filter((w) => w.length > 2) ?? [];
 
     // Cache the discovery list for 12h (so repeated page views don't burn YouTube quota).
-    // Include page in the range key to store different batches separately
-    const cacheRange = page > 0 ? `${range}_page${page}` : range;
-    const cached = await prisma.competitorFeedCache.findUnique({
-      where: {
-        userId_channelId_range: {
-          userId: user.id,
-          channelId: channel.id,
-          range: cacheRange,
-        },
-      },
-    });
+    // Only cache the initial request (no pagination params). Paginated requests always fetch fresh.
+    const isPaginated = queryIndex > 0 || !!pageToken;
+    const cacheRange = range; // Keep it simple: "7d" or "28d"
+    
+    // Only check cache for initial requests, not paginated ones
+    const cached = isPaginated
+      ? null
+      : await prisma.competitorFeedCache.findUnique({
+          where: {
+            userId_channelId_range: {
+              userId: user.id,
+              channelId: channel.id,
+              range: cacheRange,
+            },
+          },
+        });
 
     // Simplified approach: Use videos directly from search results
     // No channel size filtering - if YouTube returns it for our niche query, it's relevant
@@ -417,27 +422,29 @@ export async function GET(
         );
       }
 
-      // Cache the results
-      await prisma.competitorFeedCache.upsert({
-        where: {
-          userId_channelId_range: {
+      // Only cache initial (non-paginated) requests
+      if (!isPaginated) {
+        await prisma.competitorFeedCache.upsert({
+          where: {
+            userId_channelId_range: {
+              userId: user.id,
+              channelId: channel.id,
+              range: cacheRange,
+            },
+          },
+          create: {
             userId: user.id,
             channelId: channel.id,
             range: cacheRange,
+            videosJson: rawVideos as unknown as object,
+            cachedUntil,
           },
-        },
-        create: {
-          userId: user.id,
-          channelId: channel.id,
-          range: cacheRange,
-          videosJson: rawVideos as unknown as object,
-          cachedUntil,
-        },
-        update: {
-          videosJson: rawVideos as unknown as object,
-          cachedUntil,
-        },
-      });
+          update: {
+            videosJson: rawVideos as unknown as object,
+            cachedUntil,
+          },
+        });
+      }
     }
 
     // Upsert videos to CompetitorVideo table and get/create snapshots

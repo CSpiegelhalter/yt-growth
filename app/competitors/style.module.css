@@ -178,6 +178,112 @@
   color: #64748b;
 }
 
+/* Rate Limit Banner */
+.rateLimitBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fca5a5;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.rateLimitBanner svg {
+  flex-shrink: 0;
+  color: #dc2626;
+  margin-top: 2px;
+}
+
+.rateLimitContent {
+  flex: 1;
+}
+
+.rateLimitMessage {
+  margin: 0 0 4px;
+  font-size: var(--control-font-size);
+  font-weight: 600;
+  color: #991b1b;
+  line-height: 1.4;
+}
+
+.rateLimitReset {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #b91c1c;
+}
+
+.rateLimitDismiss {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #dc2626;
+  font-size: 1.25rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.rateLimitDismiss:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+/* Generic Error Banner */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.errorBanner svg {
+  flex-shrink: 0;
+  color: #dc2626;
+}
+
+.errorMessage {
+  flex: 1;
+  margin: 0;
+  font-size: var(--control-font-size);
+  font-weight: 500;
+  color: #991b1b;
+  line-height: 1.4;
+}
+
+.errorDismiss {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #dc2626;
+  font-size: 1.25rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.errorDismiss:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
 /* Video Grid - 1 column mobile, 2-3 on larger */
 .videoGrid {
   display: grid;
@@ -446,6 +552,13 @@
 .queryProgress {
   color: #94a3b8;
   font-size: 0.75rem;
+}
+
+.fetchErrorHint {
+  font-size: 0.875rem;
+  color: #dc2626;
+  margin: 0 0 12px;
+  text-align: center;
 }
 
 .fetchMoreBtn {

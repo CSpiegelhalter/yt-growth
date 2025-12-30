@@ -36,7 +36,11 @@ import {
   getDemoData,
   isYouTubeMockMode,
 } from "@/lib/demo-fixtures";
-import { generateIdeaBoardPlan, generateMoreIdeas } from "@/lib/idea-board-llm";
+import {
+  generateIdeaBoardIdeasOnly,
+  generateIdeaBoardPlan,
+  generateMoreIdeas,
+} from "@/lib/idea-board-llm";
 import { normalizeIdeaBoardData } from "@/lib/idea-board-normalize";
 import type { IdeaBoardData, SimilarChannel } from "@/types/api";
 
@@ -164,7 +168,8 @@ export async function GET(
             ? JSON.parse(cached.outputJson)
             : cached.outputJson;
         const normalized =
-          normalizeIdeaBoardData(data) ?? (data as IdeaBoardData);
+          normalizeIdeaBoardData(data, { mode: "light" }) ??
+          (data as IdeaBoardData);
         return Response.json({ ...normalized, fromCache: true });
       } catch {
         // Fall through to return empty state
@@ -481,8 +486,10 @@ export async function POST(
       };
     } else {
       // Generate new IdeaBoard with rich context
-      console.log("[IdeaBoard POST] Generating NEW IdeaBoard via LLM...");
-      ideaBoardData = await generateIdeaBoardPlan({
+      console.log(
+        "[IdeaBoard POST] Generating NEW IdeaBoard (ideas only) via LLM..."
+      );
+      ideaBoardData = await generateIdeaBoardIdeasOnly({
         channelId,
         channelTitle: channel.title ?? "Your Channel",
         range,
@@ -506,8 +513,10 @@ export async function POST(
 
     // Normalize before saving/returning so the UI always has hooks/titles/keywords populated.
     ideaBoardData =
-      normalizeIdeaBoardData(ideaBoardData, { nicheKeywords: keywords }) ??
-      ideaBoardData;
+      normalizeIdeaBoardData(ideaBoardData, {
+        nicheKeywords: keywords,
+        mode: "light",
+      }) ?? ideaBoardData;
 
     // Save to database
     const cachedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours

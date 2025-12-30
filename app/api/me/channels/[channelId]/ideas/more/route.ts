@@ -189,13 +189,13 @@ async function generateMoreIdeaContent(
 
 OUTPUT FORMAT: Return ONLY valid JSON matching this structure:
 {
-  "hooks": ["3 more opening hooks (8-14 words each)"],
-  "titles": ["3 more title options"],
-  "keywords": ["5 more relevant keywords/tags"],
+  "hooks": ["8 opening hooks (8-14 words each)"],
+  "titles": ["8 title options (distinct angles/styles)"],
+  "keywords": ["12 relevant keywords/tags"],
   "packaging": {
-    "titleAngles": ["3 specific title angle approaches"],
-    "hookSetups": ["3 specific ways to open the video"],
-    "visualMoments": ["3 specific visual elements to show early"]
+    "titleAngles": ["6 specific title angle approaches"],
+    "hookSetups": ["6 specific ways to open the video"],
+    "visualMoments": ["6 specific visual elements to show early"]
   },
   "remixes": [
     {
@@ -244,17 +244,17 @@ Generate MORE content that complements (not duplicates) this idea.`;
 
     // Validate and ensure arrays
     return {
-      hooks: Array.isArray(parsed.hooks) ? parsed.hooks.slice(0, 5) : [],
-      titles: Array.isArray(parsed.titles) ? parsed.titles.slice(0, 5) : [],
+      hooks: Array.isArray(parsed.hooks) ? parsed.hooks.slice(0, 10) : [],
+      titles: Array.isArray(parsed.titles) ? parsed.titles.slice(0, 10) : [],
       keywords: Array.isArray(parsed.keywords)
-        ? parsed.keywords.slice(0, 8)
+        ? parsed.keywords.slice(0, 16)
         : [],
       packaging: {
-        titleAngles: parsed.packaging?.titleAngles?.slice(0, 3) ?? [],
-        hookSetups: parsed.packaging?.hookSetups?.slice(0, 3) ?? [],
-        visualMoments: parsed.packaging?.visualMoments?.slice(0, 3) ?? [],
+        titleAngles: parsed.packaging?.titleAngles?.slice(0, 8) ?? [],
+        hookSetups: parsed.packaging?.hookSetups?.slice(0, 8) ?? [],
+        visualMoments: parsed.packaging?.visualMoments?.slice(0, 8) ?? [],
       },
-      remixes: Array.isArray(parsed.remixes) ? parsed.remixes.slice(0, 3) : [],
+      remixes: Array.isArray(parsed.remixes) ? parsed.remixes.slice(0, 6) : [],
     };
   } catch (err: unknown) {
     console.error("LLM generation failed:", err);

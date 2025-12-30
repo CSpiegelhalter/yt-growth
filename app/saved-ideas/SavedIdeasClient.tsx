@@ -4,16 +4,17 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import s from "./style.module.css";
 import type { Idea } from "@/types/api";
+import { copyToClipboard } from "@/components/ui/Toast";
+import { IdeaDetailSheet } from "@/components/dashboard/IdeaBoard";
 
 type Status = "saved" | "in_progress" | "filmed" | "published";
 
 type SavedIdea = {
   id: string;
   ideaId: string;
+  youtubeChannelId: string | null;
   title: string;
   angle: string | null;
-  format: string;
-  difficulty: string;
   ideaJson: Idea;
   notes: string | null;
   status: string;
@@ -44,6 +45,7 @@ export default function SavedIdeasClient() {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesValue, setNotesValue] = useState("");
   const [selectedIdea, setSelectedIdea] = useState<SavedIdea | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Fetch saved ideas
   const fetchIdeas = useCallback(async () => {
@@ -68,6 +70,86 @@ export default function SavedIdeasClient() {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
   };
+
+  const handleCopy = useCallback(async (text: string, id: string) => {
+    const success = await copyToClipboard(text);
+    if (success) {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+    }
+  }, []);
+
+  const persistGeneratedDetails = useCallback(
+    async (
+      ideaId: string,
+      payload: {
+        titles: string[];
+        hooks: string[];
+        keywords: string[];
+        creativeDirections?: {
+          titleAngles: string[];
+          hookSetups: string[];
+          visualMoments: string[];
+        } | null;
+        remixes?: Array<{ title: string; hook: string; angle: string }>;
+      }
+    ) => {
+      // Only persist if we have something meaningful.
+      if (!payload.titles.length && !payload.hooks.length && !payload.keywords.length) {
+        return;
+      }
+
+      const current = ideas.find((i) => i.ideaId === ideaId);
+      if (!current) return;
+
+      const existing: any = current.ideaJson ?? {};
+      const alreadyHasDetails =
+        Boolean(existing.__detailsGeneratedAt) ||
+        (Array.isArray(existing.titles) && existing.titles.length > 0) ||
+        (Array.isArray(existing.hooks) && existing.hooks.length > 0) ||
+        (Array.isArray(existing.keywords) && existing.keywords.length > 0);
+
+      if (alreadyHasDetails) return;
+
+      const enriched: any = {
+        ...existing,
+        titles: payload.titles.map((t) => ({
+          text: t,
+          styleTags: ["specific"],
+        })),
+        hooks: payload.hooks.map((h) => ({
+          text: h,
+          typeTags: ["curiosity"],
+        })),
+        keywords: payload.keywords.map((k) => ({
+          text: k,
+          intent: "search",
+        })),
+        __detailsGeneratedAt: new Date().toISOString(),
+        __creativeDirections: payload.creativeDirections ?? null,
+        __remixes: payload.remixes ?? [],
+      };
+
+      try {
+        const res = await fetch(`/api/me/saved-ideas/${ideaId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ideaJson: enriched }),
+        });
+        if (!res.ok) return;
+
+        setIdeas((prev) =>
+          prev.map((i) => (i.ideaId === ideaId ? { ...i, ideaJson: enriched } : i))
+        );
+        setSelectedIdea((prev) =>
+          prev?.ideaId === ideaId ? { ...prev, ideaJson: enriched } : prev
+        );
+      } catch {
+        // Non-critical: modal still works even if persistence fails.
+      }
+    },
+    [ideas]
+  );
 
   // Update idea status
   const updateStatus = useCallback(async (ideaId: string, status: Status) => {
@@ -246,17 +328,17 @@ export default function SavedIdeasClient() {
           <div className={s.ideasGrid}>
             {filteredIdeas.map((idea) => (
               <article key={idea.id} className={s.ideaCard}>
-                <div className={s.ideaCardMain}>
+                <div
+                  className={s.ideaCardMain}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedIdea(idea)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") setSelectedIdea(idea);
+                  }}
+                >
                   <div className={s.ideaCardHeader}>
                     <h2 className={s.ideaTitle}>{idea.title}</h2>
-                    <div className={s.ideaBadges}>
-                      <span className={`${s.difficultyBadge} ${s[idea.difficulty]}`}>
-                        {idea.difficulty}
-                      </span>
-                      <span className={`${s.formatBadge} ${s[idea.format]}`}>
-                        {idea.format === "shorts" ? "Shorts" : "Long-form"}
-                      </span>
-                    </div>
                   </div>
 
                   {idea.angle && (
@@ -271,13 +353,14 @@ export default function SavedIdeasClient() {
                       </svg>
                       Saved {formatDate(idea.createdAt)}
                     </span>
-                    <span className={`${s.statusBadge} ${s[idea.status.replace("-", "_")]}`}>
-                      {STATUS_LABELS[idea.status as Status] || idea.status}
-                    </span>
                   </div>
 
                   {/* Notes Section */}
-                  <div className={s.notesSection}>
+                  <div
+                    className={s.notesSection}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
                     <div className={s.notesLabel}>Notes</div>
                     {editingNotes === idea.ideaId ? (
                       <div>
@@ -306,7 +389,8 @@ export default function SavedIdeasClient() {
                     ) : idea.notes ? (
                       <p
                         className={s.notesText}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingNotes(idea.ideaId);
                           setNotesValue(idea.notes || "");
                         }}
@@ -317,7 +401,8 @@ export default function SavedIdeasClient() {
                     ) : (
                       <button
                         className={s.actionBtn}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingNotes(idea.ideaId);
                           setNotesValue("");
                         }}
@@ -335,26 +420,34 @@ export default function SavedIdeasClient() {
                     value={idea.status}
                     onChange={(e) => updateStatus(idea.ideaId, e.target.value as Status)}
                   >
-                    <option value="saved">📌 Saved</option>
-                    <option value="in_progress">🎬 In Progress</option>
-                    <option value="filmed">🎥 Filmed</option>
-                    <option value="published">✅ Published</option>
+                    <option value="saved">Saved</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="filmed">Filmed</option>
+                    <option value="published">Published</option>
                   </select>
-
-                  <button
-                    className={s.actionBtn}
-                    onClick={() => setSelectedIdea(idea)}
-                  >
-                    View Details
-                  </button>
-
-                  <div className={s.spacer} />
 
                   <button
                     className={`${s.actionBtn} ${s.danger}`}
                     onClick={() => deleteIdea(idea.ideaId)}
+                    aria-label="Remove saved idea"
+                    title="Remove"
                   >
-                    Remove
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4h8v2" />
+                      <path d="M19 6l-1 14H6L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                    </svg>
                   </button>
                 </div>
               </article>
@@ -364,150 +457,16 @@ export default function SavedIdeasClient() {
 
         {/* Detail Sheet */}
         {selectedIdea && (
-          <div className={s.sheetOverlay} onClick={() => setSelectedIdea(null)}>
-            <div className={s.sheetPanel} onClick={(e) => e.stopPropagation()}>
-              <div className={s.sheetHandle} />
-              <div className={s.sheetHeader}>
-                <button
-                  className={s.sheetClose}
-                  onClick={() => setSelectedIdea(null)}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-                <h2 className={s.sheetTitle}>{selectedIdea.title}</h2>
-              </div>
-
-              <div className={s.sheetContent}>
-                {selectedIdea.angle && (
-                  <div className={s.sheetSection}>
-                    <h3 className={s.sectionTitle}>Angle</h3>
-                    <p style={{ color: "#64748b", lineHeight: 1.6, margin: 0 }}>
-                      {selectedIdea.angle}
-                    </p>
-                  </div>
-                )}
-
-                {selectedIdea.ideaJson.whyNow && (
-                  <div className={s.sheetSection}>
-                    <h3 className={s.sectionTitle}>Why Now</h3>
-                    <p style={{ color: "#059669", background: "#ecfdf5", padding: 12, borderRadius: 8, margin: 0, lineHeight: 1.5 }}>
-                      {selectedIdea.ideaJson.whyNow}
-                    </p>
-                  </div>
-                )}
-
-                {selectedIdea.ideaJson.hooks && selectedIdea.ideaJson.hooks.length > 0 && (
-                  <div className={s.sheetSection}>
-                    <h3 className={s.sectionTitle}>Hooks</h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      {selectedIdea.ideaJson.hooks.map((hook, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            background: "linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)",
-                            border: "1px solid #fde68a",
-                            borderRadius: 12,
-                            padding: 16,
-                          }}
-                        >
-                          <p style={{ color: "#854d0e", margin: 0, fontWeight: 500 }}>
-                            {hook.text}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedIdea.ideaJson.titles && selectedIdea.ideaJson.titles.length > 0 && (
-                  <div className={s.sheetSection}>
-                    <h3 className={s.sectionTitle}>Title Options</h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {selectedIdea.ideaJson.titles.map((title, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            background: "#f8fafc",
-                            border: "1px solid #e2e8f0",
-                            borderRadius: 8,
-                            padding: 12,
-                          }}
-                        >
-                          <p style={{ color: "#1e293b", margin: 0, fontWeight: 600 }}>
-                            {title.text}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedIdea.ideaJson.scriptOutline && (
-                  <div className={s.sheetSection}>
-                    <h3 className={s.sectionTitle}>Script Outline</h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      {selectedIdea.ideaJson.scriptOutline.hook && (
-                        <div style={{ background: "#f8fafc", padding: 12, borderRadius: 8 }}>
-                          <div style={{ fontSize: "0.8125rem", fontWeight: 700, marginBottom: 4 }}>
-                            🎣 Hook
-                          </div>
-                          <p style={{ color: "#475569", margin: 0, lineHeight: 1.5 }}>
-                            {selectedIdea.ideaJson.scriptOutline.hook}
-                          </p>
-                        </div>
-                      )}
-                      {selectedIdea.ideaJson.scriptOutline.setup && (
-                        <div style={{ background: "#f8fafc", padding: 12, borderRadius: 8 }}>
-                          <div style={{ fontSize: "0.8125rem", fontWeight: 700, marginBottom: 4 }}>
-                            📋 Setup
-                          </div>
-                          <p style={{ color: "#475569", margin: 0, lineHeight: 1.5 }}>
-                            {selectedIdea.ideaJson.scriptOutline.setup}
-                          </p>
-                        </div>
-                      )}
-                      {selectedIdea.ideaJson.scriptOutline.mainPoints && (
-                        <div style={{ background: "#f8fafc", padding: 12, borderRadius: 8 }}>
-                          <div style={{ fontSize: "0.8125rem", fontWeight: 700, marginBottom: 8 }}>
-                            📝 Main Points
-                          </div>
-                          <ul style={{ margin: 0, paddingLeft: 20 }}>
-                            {selectedIdea.ideaJson.scriptOutline.mainPoints.map((pt, i) => (
-                              <li key={i} style={{ color: "#475569", marginBottom: 6, lineHeight: 1.5 }}>
-                                {pt}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {selectedIdea.ideaJson.scriptOutline.payoff && (
-                        <div style={{ background: "#f8fafc", padding: 12, borderRadius: 8 }}>
-                          <div style={{ fontSize: "0.8125rem", fontWeight: 700, marginBottom: 4 }}>
-                            💡 Payoff
-                          </div>
-                          <p style={{ color: "#475569", margin: 0, lineHeight: 1.5 }}>
-                            {selectedIdea.ideaJson.scriptOutline.payoff}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className={s.sheetFooter}>
-                <button
-                  className={s.actionBtnPrimary}
-                  onClick={() => setSelectedIdea(null)}
-                  style={{ flex: 1 }}
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
+          <IdeaDetailSheet
+            idea={selectedIdea.ideaJson}
+            onCopy={handleCopy}
+            copiedId={copiedId}
+            onClose={() => setSelectedIdea(null)}
+            channelId={selectedIdea.youtubeChannelId ?? undefined}
+            onDetailsGenerated={(payload) =>
+              persistGeneratedDetails(selectedIdea.ideaId, payload)
+            }
+          />
         )}
 
         {/* Toast */}

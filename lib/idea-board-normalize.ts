@@ -2,6 +2,7 @@ import type { IdeaBoardData, Idea, IdeaHook, IdeaKeyword, IdeaTitle } from "@/ty
 
 type NormalizeOptions = {
   nicheKeywords?: string[];
+  mode?: "full" | "light";
 };
 
 function asNonEmptyString(v: unknown, fallback = ""): string {
@@ -135,14 +136,19 @@ export function normalizeIdeaBoardData(
 
   if (!Array.isArray(d.ideas)) return null;
 
+  const mode = opts?.mode ?? "full";
+
   const ideas: Idea[] = d.ideas.map((raw: any, i: number) => {
     const title = asNonEmptyString(raw?.title, `Idea ${i + 1}`);
     const angle = asNonEmptyString(raw?.angle, "");
     const topic = (opts?.nicheKeywords?.[0] ?? deriveKeywordsFromTitle(title)[0] ?? "this").trim();
 
-    const hooks = normalizeHooks(raw?.hooks, title, topic);
-    const titles = normalizeTitles(raw?.titles, title, topic);
-    const keywords = normalizeKeywords(raw?.keywords, title, opts);
+    const hooks =
+      mode === "light" ? [] : normalizeHooks(raw?.hooks, title, topic);
+    const titles =
+      mode === "light" ? [] : normalizeTitles(raw?.titles, title, topic);
+    const keywords =
+      mode === "light" ? [] : normalizeKeywords(raw?.keywords, title, opts);
 
     const proofBasedOn = Array.isArray(raw?.proof?.basedOn) ? raw.proof.basedOn : [];
 
@@ -150,8 +156,8 @@ export function normalizeIdeaBoardData(
       id: asNonEmptyString(raw?.id, `idea-${i + 1}`),
       title,
       angle,
-      whyNow: typeof raw?.whyNow === "string" ? raw.whyNow : undefined,
-      estimatedViews: typeof raw?.estimatedViews === "string" ? raw.estimatedViews : undefined,
+      whyNow: undefined,
+      estimatedViews: undefined,
       format: raw?.format === "shorts" ? "shorts" : "long",
       difficulty:
         raw?.difficulty === "easy" || raw?.difficulty === "medium" || raw?.difficulty === "stretch"
@@ -159,12 +165,8 @@ export function normalizeIdeaBoardData(
           : "medium",
       hooks,
       titles,
-      thumbnailConcept: raw?.thumbnailConcept ?? {
-        overlayText: topic.toUpperCase().slice(0, 18),
-        composition: "Close-up face + key object + big readable text",
-        avoid: ["Tiny text", "Busy background", "Low contrast"],
-      },
-      scriptOutline: raw?.scriptOutline,
+      thumbnailConcept: raw?.thumbnailConcept ?? { overlayText: "", composition: "", avoid: [] },
+      scriptOutline: mode === "light" ? undefined : raw?.scriptOutline,
       keywords,
       proof: { basedOn: proofBasedOn },
       remixVariants: raw?.remixVariants,

@@ -16,7 +16,9 @@ import type { Idea } from "@/types/api";
 
 const SaveIdeaSchema = z.object({
   ideaId: z.string().min(1),
-  channelId: z.number().nullable().optional(), // Can be number, null, or undefined
+  // Historically this was Channel.id (number). We now also accept a YouTube channel id (string)
+  // and resolve it server-side to the numeric Channel.id for storage.
+  channelId: z.union([z.number(), z.string()]).nullable().optional(),
   title: z.string().min(1).max(500),
   angle: z.string().nullable().optional(),
   format: z.string().min(1), // "long", "shorts", etc.
@@ -28,6 +30,7 @@ const SaveIdeaSchema = z.object({
 export type SavedIdeaResponse = {
   id: string;
   ideaId: string;
+  youtubeChannelId: string | null;
   title: string;
   angle: string | null;
   format: string;
@@ -60,9 +63,26 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    const channelIds = Array.from(
+      new Set(savedIdeas.map((i) => i.channelId).filter((id): id is number => typeof id === "number"))
+    );
+    const channels = channelIds.length
+      ? await prisma.channel.findMany({
+          where: { userId: user.id, id: { in: channelIds } },
+          select: { id: true, youtubeChannelId: true },
+        })
+      : [];
+    const channelMap = new Map<number, string>(
+      channels.map((c) => [c.id, c.youtubeChannelId])
+    );
+
     const response: SavedIdeaResponse[] = savedIdeas.map((idea) => ({
       id: idea.id,
       ideaId: idea.ideaId,
+      youtubeChannelId:
+        typeof idea.channelId === "number"
+          ? (channelMap.get(idea.channelId) ?? null)
+          : null,
       title: idea.title,
       angle: idea.angle,
       format: idea.format,
@@ -113,6 +133,18 @@ export async function POST(req: NextRequest) {
     const { ideaId, channelId, title, angle, format, difficulty, ideaJson, notes } =
       parsed.data;
 
+    let resolvedChannelId: number | null = null;
+    if (typeof channelId === "number") {
+      resolvedChannelId = channelId;
+    } else if (typeof channelId === "string" && channelId.trim()) {
+      // Treat as YouTube channel id
+      const ch = await prisma.channel.findFirst({
+        where: { userId: user.id, youtubeChannelId: channelId.trim() },
+        select: { id: true },
+      });
+      resolvedChannelId = ch?.id ?? null;
+    }
+
     // Check if already saved
     const existing = await prisma.savedIdea.findUnique({
       where: {
@@ -133,7 +165,7 @@ export async function POST(req: NextRequest) {
     const savedIdea = await prisma.savedIdea.create({
       data: {
         userId: user.id,
-        channelId: channelId ?? null,
+        channelId: resolvedChannelId,
         ideaId,
         title,
         angle: angle ?? null,

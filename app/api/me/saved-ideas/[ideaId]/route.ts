@@ -16,6 +16,7 @@ import { getCurrentUser } from "@/lib/user";
 const UpdateIdeaSchema = z.object({
   notes: z.string().optional(),
   status: z.enum(["saved", "in_progress", "filmed", "published"]).optional(),
+  ideaJson: z.record(z.unknown()).optional(),
 });
 
 type RouteContext = { params: Promise<{ ideaId: string }> };
@@ -82,7 +83,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
       );
     }
 
-    const { notes, status } = parsed.data;
+    const { notes, status, ideaJson } = parsed.data;
 
     // Find by original ideaId
     const existing = await prisma.savedIdea.findUnique({
@@ -103,6 +104,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
       data: {
         ...(notes !== undefined ? { notes } : {}),
         ...(status !== undefined ? { status } : {}),
+        ...(ideaJson !== undefined ? { ideaJson: ideaJson as object } : {}),
       },
     });
 

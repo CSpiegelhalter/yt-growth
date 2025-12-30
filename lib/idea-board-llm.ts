@@ -61,6 +61,92 @@ type GenerateIdeaBoardInput = {
 };
 
 /**
+ * Light idea generation: return only title + angle/description for each idea.
+ * The rest (titles/hooks/tags/etc) is generated lazily when the user opens an idea.
+ */
+export async function generateIdeaBoardIdeasOnly(
+  input: GenerateIdeaBoardInput
+): Promise<IdeaBoardData> {
+  const systemPrompt = `You are a YouTube creative strategist. Generate a list of strong, specific video ideas.
+
+OUTPUT FORMAT: Return ONLY valid JSON:
+{
+  "ideas": [
+    { "id": "idea-1", "title": "Specific concept (not clickbait)", "angle": "1-2 sentence premise/description" }
+  ]
+}
+
+RULES:
+- Generate EXACTLY 6 ideas.
+- No emojis.
+- Titles must be specific (topic + mechanism + outcome).
+- Angle must be concrete and filmable (what you would say/show).
+- Do NOT include hooks, title options, keywords, proof, difficulty, format, or estimated views.`;
+
+  const userVideosContext = input.topPerformingVideos
+    .slice(0, 6)
+    .map((v, i) => `${i + 1}. "${v.title}" (${formatViews(v.viewsPerDay)}/day)`)
+    .join("\n");
+
+  const proofContext = input.proofVideos
+    .sort((a, b) => b.viewsPerDay - a.viewsPerDay)
+    .slice(0, 10)
+    .map((v, i) => `${i + 1}. "${v.title}" by ${v.channelTitle} [${v.videoId}]`)
+    .join("\n");
+
+  const userPrompt = `Channel: ${input.channelTitle}
+Window: ${input.range}
+Niche keywords: ${input.nicheKeywords.join(", ")}
+
+Top performing videos:
+${userVideosContext || "N/A"}
+
+Competitor winners:
+${proofContext || "N/A"}
+
+Generate 6 ideas.`;
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      { maxTokens: 1400, temperature: 0.85 }
+    );
+
+    const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return createFallbackIdeaBoard(input);
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]) as { ideas: Array<Partial<Idea>> };
+    const rawBoard: IdeaBoardData = {
+      channelId: input.channelId,
+      channelTitle: input.channelTitle,
+      range: input.range,
+      generatedAt: new Date().toISOString(),
+      cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      ideas: (parsed.ideas ?? []).map((idea, idx) => ({
+        id: idea.id || `idea-${idx + 1}`,
+        title: idea.title ?? `Idea ${idx + 1}`,
+        angle: idea.angle ?? "",
+      })) as any,
+      nicheInsights: { momentumNow: [], patternsToCopy: [], gapsToExploit: [] },
+      similarChannels: input.similarChannels,
+    };
+
+    return (
+      normalizeIdeaBoardData(rawBoard, { nicheKeywords: input.nicheKeywords, mode: "light" }) ??
+      rawBoard
+    );
+  } catch (err) {
+    console.error("[IdeaBoard] Light generation failed:", err);
+    return createFallbackIdeaBoard(input);
+  }
+}
+
+/**
  * Generate a complete IdeaBoard with structured ideas backed by proof
  */
 export async function generateIdeaBoardPlan(
@@ -341,21 +427,14 @@ export async function generateMoreIdeas(input: {
 }): Promise<Idea[]> {
   const systemPrompt = `You are a YouTube creative director. Generate ${input.count} NEW video ideas that are different from existing ones.
 
-Return ONLY a JSON array of ideas matching this structure:
+Return ONLY a JSON array:
 [
-  {
-    "id": "new-idea-1",
-    "title": "Video concept",
-    "angle": "Unique angle",
-    "format": "long" or "shorts",
-    "difficulty": "easy" or "medium" or "stretch",
-    "hooks": [{ "text": "Hook text", "typeTags": ["curiosity"] }],
-    "titles": [{ "text": "Title option", "styleTags": ["outcome"] }],
-    "thumbnailConcept": { "overlayText": "3-4 WORDS", "composition": "...", "contrastNote": "...", "avoid": [] },
-    "keywords": [{ "text": "keyword", "intent": "search", "fit": "..." }],
-    "proof": { "basedOn": [] }
-  }
-]`;
+  { "id": "new-idea-1", "title": "Specific concept", "angle": "1-2 sentence premise/description" }
+]
+
+RULES:
+- No emojis.
+- Do NOT include hooks, title options, keywords, proof, difficulty, format, or estimated views.`;
 
   const userPrompt = `Channel: ${input.channelTitle}
 Niche: ${input.nicheKeywords.join(", ")}
@@ -379,12 +458,12 @@ Generate ${input.count} completely different ideas.`;
       return [];
     }
 
-    const ideas = JSON.parse(jsonMatch[0]) as Idea[];
+    const ideas = JSON.parse(jsonMatch[0]) as Array<Partial<Idea>>;
     const withIds = ideas.map((idea, index) => ({
-      ...idea,
       id: idea.id || `new-idea-${Date.now()}-${index}`,
-    }));
-    // Normalize into a board shape and extract normalized ideas (ensures hooks/titles/keywords exist).
+      title: idea.title ?? `Idea ${index + 1}`,
+      angle: idea.angle ?? "",
+    })) as any;
     const normalizedBoard = normalizeIdeaBoardData(
       {
         channelId: "TEMP",
@@ -396,9 +475,9 @@ Generate ${input.count} completely different ideas.`;
         nicheInsights: { momentumNow: [], patternsToCopy: [], gapsToExploit: [] },
         similarChannels: [],
       },
-      { nicheKeywords: input.nicheKeywords }
+      { nicheKeywords: input.nicheKeywords, mode: "light" }
     );
-    return normalizedBoard?.ideas ?? withIds;
+    return (normalizedBoard?.ideas ?? withIds) as any;
   } catch (err) {
     console.error("Generate more ideas failed:", err);
     return [];

@@ -260,6 +260,7 @@
   z-index: 1000;
   padding: 16px;
   animation: fadeIn 0.15s ease-out;
+  touch-action: none;
 }
 
 @keyframes fadeIn {

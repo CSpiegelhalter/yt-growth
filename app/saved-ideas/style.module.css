@@ -177,12 +177,18 @@
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .ideaCard:hover {
   border-color: #a5b4fc;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
   transform: translateY(-1px);
+}
+
+.ideaCard:focus-within {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
 }
 
 .ideaCardMain {
@@ -212,15 +218,6 @@
   flex: 1;
 }
 
-.ideaBadges {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-
-.difficultyBadge,
-.formatBadge,
 .statusBadge {
   font-size: 0.625rem;
   font-weight: 600;
@@ -228,31 +225,6 @@
   letter-spacing: 0.02em;
   padding: 3px 6px;
   border-radius: 4px;
-}
-
-.difficultyBadge.easy {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.difficultyBadge.medium {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.difficultyBadge.stretch {
-  background: #fce7f3;
-  color: #9d174d;
-}
-
-.formatBadge.long {
-  background: #e0e7ff;
-  color: #4338ca;
-}
-
-.formatBadge.shorts {
-  background: #fef2f2;
-  color: #dc2626;
 }
 
 .statusBadge.saved {
@@ -352,11 +324,11 @@
 .ideaActions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
   padding: 10px 14px;
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
-  flex-wrap: wrap;
 }
 
 @media (min-width: 768px) {
@@ -561,6 +533,7 @@
   align-items: flex-end;
   justify-content: center;
   animation: fadeIn 0.2s ease-out;
+  touch-action: none;
 }
 
 @keyframes fadeIn {
@@ -578,6 +551,7 @@
   flex-direction: column;
   animation: sheetSlideUp 0.3s ease-out;
   overflow: hidden;
+  touch-action: pan-y;
 }
 
 @keyframes sheetSlideUp {
@@ -656,6 +630,8 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 20px;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .sheetSection {

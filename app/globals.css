@@ -67,6 +67,10 @@
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  touch-action: pan-y;
 }
 
 body {
@@ -74,7 +78,12 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   line-height: 1.5;
-  min-height: 100vh;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
+  touch-action: pan-y;
 }
 
 /* Container */
@@ -83,6 +92,7 @@ body {
   max-width: 1040px;
   margin: 0 auto;
   padding: var(--space-md);
+  touch-action: pan-x pan-y;
 }
 
 @media (min-width: 768px) {

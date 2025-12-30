@@ -138,7 +138,7 @@ export default function IdeaBoard({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ideaId: idea.id,
-              channelId: channelId ? parseInt(channelId, 10) : undefined,
+              channelId: channelId ?? undefined,
               title: idea.title || "Untitled Idea",
               angle: idea.angle || null,
               format: idea.format || "long",
@@ -400,45 +400,14 @@ function IdeaCard({
   onCopyHook: (text: string) => void;
   copiedId: string | null;
 }) {
-  const hooksArr = Array.isArray((idea as any)?.hooks)
-    ? ((idea as any).hooks as any[])
-    : [];
-  const topHook = hooksArr[0] as any;
-
   return (
     <article className={s.ideaCard}>
       {/* Card content - clickable */}
       <div className={s.ideaCardMain} onClick={onSelect}>
         <div className={s.ideaCardHeader}>
           <h3 className={s.ideaTitle}>{idea.title}</h3>
-          <div className={s.ideaBadges}>
-            <span className={`${s.difficultyBadge} ${s[idea.difficulty]}`}>
-              {idea.difficulty}
-            </span>
-            <span className={`${s.formatBadge} ${s[idea.format]}`}>
-              {idea.format === "shorts" ? "Shorts" : "Long"}
-            </span>
-          </div>
         </div>
         <p className={s.ideaAngle}>{idea.angle}</p>
-
-        {/* Why Now - if available */}
-        {idea.whyNow && (
-          <p className={s.ideaWhyNow}>
-            <span className={s.whyNowLabel}>Why now:</span>
-            {truncate(idea.whyNow, 110)}
-          </p>
-        )}
-
-        {/* Standout hook */}
-        {topHook && (
-          <div className={s.ideaHookPreview}>
-            <span className={s.hookLabel}>Hook:</span>
-            <span className={s.hookText}>
-              &ldquo;{truncate(topHook.text, 80)}&rdquo;
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Action row */}
@@ -446,17 +415,6 @@ function IdeaCard({
         <button className={s.ideaActionPrimary} onClick={onSelect}>
           Open
         </button>
-        {topHook && (
-          <button
-            className={s.ideaActionSecondary}
-            onClick={(e) => {
-              e.stopPropagation();
-              onCopyHook(topHook.text);
-            }}
-          >
-            {copiedId === `hook-${idea.id}` ? "Copied" : "Copy Hook"}
-          </button>
-        )}
         <button
           className={`${s.ideaSaveBtn} ${isSaved ? s.saved : ""} ${
             isSaving ? s.saving : ""
@@ -495,18 +453,30 @@ function IdeaCard({
 /* ================================================
    DETAIL SHEET - Scrollable Bottom Sheet
    ================================================ */
-function IdeaDetailSheet({
+export function IdeaDetailSheet({
   idea,
   onCopy,
   copiedId,
   onClose,
   channelId,
+  onDetailsGenerated,
 }: {
   idea: Idea;
   onCopy: (text: string, id: string) => void;
   copiedId: string | null;
   onClose: () => void;
   channelId?: string;
+  onDetailsGenerated?: (payload: {
+    titles: string[];
+    hooks: string[];
+    keywords: string[];
+    creativeDirections?: {
+      titleAngles: string[];
+      hookSetups: string[];
+      visualMoments: string[];
+    } | null;
+    remixes?: Array<{ title: string; hook: string; angle: string }>;
+  }) => void;
 }) {
   type CreativeDirections = {
     titleAngles: string[];
@@ -515,7 +485,11 @@ function IdeaDetailSheet({
   };
 
   const panelRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const [generatingMore, setGeneratingMore] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
   const [extraHooks, setExtraHooks] = useState<string[]>([]);
   const [extraTitles, setExtraTitles] = useState<string[]>([]);
   const [extraKeywords, setExtraKeywords] = useState<string[]>([]);
@@ -524,6 +498,12 @@ function IdeaDetailSheet({
   const [aiRemixes, setAiRemixes] = useState<
     Array<{ title: string; hook: string; angle: string }>
   >([]);
+  const [detailTitles, setDetailTitles] = useState<string[]>([]);
+  const [detailHooks, setDetailHooks] = useState<string[]>([]);
+  const [detailKeywords, setDetailKeywords] = useState<string[]>([]);
+  const [showAllTitles, setShowAllTitles] = useState(false);
+  const [showAllHooks, setShowAllHooks] = useState(false);
+  const [showAllTags, setShowAllTags] = useState(false);
 
   const keywordObjs = Array.isArray((idea as any)?.keywords)
     ? ((idea as any).keywords as any[])
@@ -535,12 +515,24 @@ function IdeaDetailSheet({
     ? ((idea as any).titles as any[])
     : [];
 
+  const uniqStrings = (arr: string[]) => Array.from(new Set(arr));
+
   // Lock body scroll
   useEffect(() => {
     const originalStyle = window.getComputedStyle(document.body).overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
+  // Focus management (a11y): focus close button on open, restore focus on close.
+  useEffect(() => {
+    restoreFocusRef.current =
+      (document.activeElement as HTMLElement | null) ?? null;
+    closeBtnRef.current?.focus();
+    return () => {
+      restoreFocusRef.current?.focus?.();
     };
   }, []);
 
@@ -552,6 +544,152 @@ function IdeaDetailSheet({
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
   }, [onClose]);
+
+  // Reset details when switching ideas
+  useEffect(() => {
+    setDetailsError(null);
+    setDetailTitles(
+      Array.isArray((idea as any)?.titles)
+        ? ((idea as any).titles as any[])
+            .map((t) => String(t?.text ?? "").trim())
+            .filter(Boolean)
+        : []
+    );
+    setDetailHooks(
+      Array.isArray((idea as any)?.hooks)
+        ? ((idea as any).hooks as any[])
+            .map((h) => String(h?.text ?? "").trim())
+            .filter(Boolean)
+        : []
+    );
+    setDetailKeywords(
+      Array.isArray((idea as any)?.keywords)
+        ? ((idea as any).keywords as any[])
+            .map((k) => String(k?.text ?? "").trim())
+            .filter(Boolean)
+        : []
+    );
+    setCreativeDirections(null);
+    setAiRemixes([]);
+    setExtraHooks([]);
+    setExtraTitles([]);
+    setExtraKeywords([]);
+    setShowAllTitles(false);
+    setShowAllHooks(false);
+    setShowAllTags(false);
+  }, [idea.id]);
+
+  const fetchDetails = useCallback(async () => {
+    if (!channelId) return;
+    if (detailsLoading) return;
+    setDetailsError(null);
+
+    const controller = new AbortController();
+    setDetailsLoading(true);
+    try {
+      const res = await fetch(`/api/me/channels/${channelId}/ideas/more`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          seed: {
+            ideaId: idea.id,
+            title: idea.title,
+            summary: idea.angle,
+            keywords: [],
+            hooks: [],
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        setDetailsError(`Failed to generate suggestions (${res.status}).`);
+        return;
+      }
+
+      const data = await res.json();
+
+      const titles = Array.isArray(data.titles)
+        ? data.titles.map((t: any) => String(t ?? "").trim()).filter(Boolean)
+        : [];
+      const hooks = Array.isArray(data.hooks)
+        ? data.hooks.map((h: any) => String(h ?? "").trim()).filter(Boolean)
+        : [];
+      const keywords = Array.isArray(data.keywords)
+        ? data.keywords.map((k: any) => String(k ?? "").trim()).filter(Boolean)
+        : [];
+
+      setDetailTitles(titles);
+      setDetailHooks(hooks);
+      setDetailKeywords(keywords);
+
+      let directions: {
+        titleAngles: string[];
+        hookSetups: string[];
+        visualMoments: string[];
+      } | null = null;
+      if (data.packaging) {
+        const normalizeArr = (v: unknown) =>
+          Array.isArray(v)
+            ? (v.map((x) => String(x ?? "").trim()).filter(Boolean) as string[])
+            : [];
+        directions = {
+          titleAngles: normalizeArr(data.packaging.titleAngles),
+          hookSetups: normalizeArr(data.packaging.hookSetups),
+          visualMoments: normalizeArr(data.packaging.visualMoments),
+        };
+        setCreativeDirections(directions);
+      }
+      const remixes = Array.isArray(data.remixes)
+        ? data.remixes
+            .map((r: any) => ({
+              title: String(r?.title ?? "").trim(),
+              hook: String(r?.hook ?? "").trim(),
+              angle: String(r?.angle ?? "").trim(),
+            }))
+            .filter((r: any) => r.title || r.hook || r.angle)
+        : [];
+      if (remixes.length) setAiRemixes(remixes.slice(0, 6));
+
+      onDetailsGenerated?.({
+        titles,
+        hooks,
+        keywords,
+        creativeDirections: directions,
+        remixes,
+      });
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      setDetailsError("Failed to generate suggestions. Please try again.");
+    } finally {
+      setDetailsLoading(false);
+      controller.abort();
+    }
+  }, [
+    channelId,
+    detailsLoading,
+    idea.angle,
+    idea.id,
+    idea.title,
+    onDetailsGenerated,
+  ]);
+
+  // Auto-fetch details on open (separate LLM call from initial idea generation)
+  useEffect(() => {
+    if (!channelId) return;
+    if (detailsLoading) return;
+    // If we already have details, don't refetch.
+    if (detailTitles.length || detailHooks.length || detailKeywords.length)
+      return;
+    fetchDetails();
+  }, [
+    channelId,
+    detailHooks.length,
+    detailKeywords.length,
+    detailTitles.length,
+    detailsLoading,
+    fetchDetails,
+  ]);
 
   const handleGenerateMore = useCallback(async () => {
     if (!channelId || generatingMore) return;
@@ -579,12 +717,15 @@ function IdeaDetailSheet({
 
       if (res.ok) {
         const data = await res.json();
-        if (data.hooks?.length)
+        if (data.hooks?.length) {
           setExtraHooks((prev) => [...prev, ...data.hooks]);
-        if (data.titles?.length)
+        }
+        if (data.titles?.length) {
           setExtraTitles((prev) => [...prev, ...data.titles]);
-        if (data.keywords?.length)
+        }
+        if (data.keywords?.length) {
           setExtraKeywords((prev) => [...prev, ...data.keywords]);
+        }
 
         if (data.packaging) {
           const normalizeArr = (v: unknown) =>
@@ -648,20 +789,32 @@ function IdeaDetailSheet({
     }
   }, [channelId, generatingMore, idea]);
 
-  const allKeywords = [
-    ...keywordObjs.map((k) => String(k?.text ?? "")).filter(Boolean),
-    ...extraKeywords,
-  ].join(", ");
+  const allKeywords = [...detailKeywords, ...extraKeywords]
+    .map((k) => String(k ?? "").trim())
+    .filter(Boolean)
+    .join(", ");
+  const allHooks = uniqStrings([...detailHooks, ...extraHooks])
+    .map((h) => String(h ?? "").trim())
+    .filter(Boolean);
+  const allTitles = uniqStrings([...detailTitles, ...extraTitles])
+    .map((t) => String(t ?? "").trim())
+    .filter(Boolean);
 
-  // Combine original + extra content
-  const allHooks = [
-    ...hookObjs.map((h) => String(h?.text ?? "")).filter(Boolean),
-    ...extraHooks,
-  ];
-  const allTitles = [
-    ...titleObjs.map((t) => String(t?.text ?? "")).filter(Boolean),
-    ...extraTitles,
-  ];
+  const titleList = showAllTitles ? allTitles : allTitles.slice(0, 5);
+  const hookList = showAllHooks ? allHooks : allHooks.slice(0, 5);
+  const allTags = uniqStrings([...detailKeywords, ...extraKeywords])
+    .map((t) => String(t ?? "").trim())
+    .filter(Boolean);
+  const tagList = showAllTags ? allTags : allTags.slice(0, 10);
+
+  const titleId = `idea-modal-title-${idea.id}`;
+  const descId = `idea-modal-desc-${idea.id}`;
+  const isInitialDetailsLoading =
+    detailsLoading &&
+    !detailsError &&
+    allTitles.length === 0 &&
+    allHooks.length === 0 &&
+    allTags.length === 0;
 
   return (
     <div className={s.sheetOverlay} onClick={onClose}>
@@ -671,13 +824,20 @@ function IdeaDetailSheet({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descId}
       >
         {/* Drag handle */}
         <div className={s.sheetHandle} aria-hidden="true" />
 
         {/* Sticky header with Generate More CTA */}
         <div className={s.sheetHeader}>
-          <button className={s.sheetClose} onClick={onClose} aria-label="Close">
+          <button
+            ref={closeBtnRef}
+            className={s.sheetClose}
+            onClick={onClose}
+            aria-label="Close"
+          >
             <svg
               width="20"
               height="20"
@@ -690,46 +850,34 @@ function IdeaDetailSheet({
             </svg>
           </button>
           <div className={s.sheetKicker}>Idea</div>
-          <h2 className={s.sheetTitle}>{idea.title}</h2>
-          {idea.angle && <p className={s.sheetAngle}>{idea.angle}</p>}
+          <h2 id={titleId} className={s.sheetTitle}>
+            {idea.title}
+          </h2>
 
-          {/* Generate More Like This - Primary CTA */}
-          {channelId && (
-            <button
-              className={s.generateMoreBtn}
-              onClick={handleGenerateMore}
-              disabled={generatingMore}
-            >
-              {generatingMore ? (
-                <>
-                  <span className={s.spinnerSmall} />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  Generate more like this
-                </>
-              )}
-            </button>
+          {(detailsLoading || detailsError) && (
+            <div className={s.sheetStatus} aria-live="polite">
+              {detailsLoading ? "Generating suggestions…" : detailsError}
+            </div>
           )}
         </div>
 
         {/* Scrollable Content */}
         <div className={s.sheetContent}>
-          {/* Idea Brief */}
+          {isInitialDetailsLoading && (
+            <div
+              className={s.detailsLoadingBanner}
+              role="status"
+              aria-live="polite"
+            >
+              <span className={s.spinnerNeutral} aria-hidden="true" />
+              Generating title options, hooks, and tags…
+            </div>
+          )}
+
+          {/* Description */}
           <section className={s.sheetSection}>
             <div className={s.sectionHeader}>
-              <h3 className={s.sectionTitle}>Idea brief</h3>
+              <h3 className={s.sectionTitle}>Description</h3>
               <button
                 className={s.copyAllBtn}
                 onClick={() =>
@@ -739,16 +887,9 @@ function IdeaDetailSheet({
                 {copiedId === "premise" ? "Copied" : "Copy"}
               </button>
             </div>
-            <div className={s.briefGrid}>
-              <div className={s.briefCard}>
-                <div className={s.briefLabel}>Angle</div>
-                <p className={s.briefText}>{idea.angle}</p>
-              </div>
-              <div className={s.briefCard}>
-                <div className={s.briefLabel}>Why it should work now</div>
-                <p className={s.briefText}>{idea.whyNow ? idea.whyNow : "—"}</p>
-              </div>
-            </div>
+            <p id={descId} className={s.descriptionText}>
+              {idea.angle}
+            </p>
           </section>
 
           {/* Title Options */}
@@ -758,39 +899,55 @@ function IdeaDetailSheet({
               <button
                 className={s.copyAllBtn}
                 onClick={() => onCopy(allTitles.join("\n"), "all-titles")}
+                disabled={!allTitles.length}
               >
                 {copiedId === "all-titles" ? "Copied" : "Copy all"}
               </button>
             </div>
             <p className={s.sectionIntro}>
-              Choose one that matches your tone, then film the premise above.
+              Choose one that matches your tone, then film the description
+              above.
             </p>
+            {detailsLoading && !allTitles.length && (
+              <div className={s.skeletonList} aria-hidden="true">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className={s.skeletonRow}>
+                    <div className={s.skeletonIndex} />
+                    <div className={s.skeletonBody}>
+                      <div className={s.skeletonLine} />
+                      <div
+                        className={`${s.skeletonLine} ${s.skeletonLineShort}`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {detailsError && !allTitles.length && (
+              <div className={s.errorCallout} role="alert">
+                <div className={s.errorText}>
+                  Couldn’t generate title options.
+                </div>
+                <button className={s.retryBtn} onClick={fetchDetails}>
+                  Retry
+                </button>
+              </div>
+            )}
             <div className={s.optionList}>
-              {titleObjs.map((title, i) => {
-                const text = String((title as any)?.text ?? "").trim();
-                const styleTags = Array.isArray((title as any)?.styleTags)
-                  ? ((title as any).styleTags as any[])
-                  : [];
-                if (!text) return null;
+              {titleList.map((text, i) => {
+                const t = String(text ?? "").trim();
+                if (!t) return null;
                 return (
                   <div key={`orig-${i}`} className={s.optionRow}>
                     <div className={s.optionIndex}>{i + 1}</div>
                     <div className={s.optionBody}>
-                      <p className={s.optionText}>{text}</p>
-                      {styleTags.length > 0 && (
-                        <div className={s.optionMeta}>
-                          {styleTags.slice(0, 3).map((tag) => (
-                            <span key={String(tag)} className={s.optionTag}>
-                              {String(tag)}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      <p className={s.optionText}>{t}</p>
                     </div>
                     <button
                       className={s.copyIconBtn}
-                      onClick={() => onCopy(text, `title-${i}`)}
+                      onClick={() => onCopy(t, `title-${i}`)}
                       title="Copy"
+                      aria-label={`Copy title option ${i + 1}`}
                     >
                       {copiedId === `title-${i}` ? (
                         <svg
@@ -820,56 +977,20 @@ function IdeaDetailSheet({
                   </div>
                 );
               })}
-              {extraTitles.map((titleText, i) => {
-                const text = String(titleText ?? "").trim();
-                if (!text) return null;
-                const idx = titleObjs.length + i + 1;
-                return (
-                  <div
-                    key={`extra-${i}`}
-                    className={`${s.optionRow} ${s.newItem}`}
-                  >
-                    <div className={s.optionIndex}>{idx}</div>
-                    <div className={s.optionBody}>
-                      <p className={s.optionText}>{text}</p>
-                      <div className={s.optionMeta}>
-                        <span className={s.optionTagNew}>New</span>
-                      </div>
-                    </div>
-                    <button
-                      className={s.copyIconBtn}
-                      onClick={() => onCopy(text, `extra-title-${i}`)}
-                      title="Copy"
-                    >
-                      {copiedId === `extra-title-${i}` ? (
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                      ) : (
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <rect x="9" y="9" width="13" height="13" rx="2" />
-                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
             </div>
+            {allTitles.length > 5 && (
+              <div className={s.sectionFooter}>
+                <button
+                  className={s.showMoreBtn}
+                  onClick={() => setShowAllTitles((v) => !v)}
+                  aria-expanded={showAllTitles}
+                >
+                  {showAllTitles
+                    ? "Show less"
+                    : `Show all (${allTitles.length})`}
+                </button>
+              </div>
+            )}
           </section>
 
           {/* Hooks */}
@@ -879,6 +1000,7 @@ function IdeaDetailSheet({
               <button
                 className={s.copyAllBtn}
                 onClick={() => onCopy(allHooks.join("\n"), "all-hooks")}
+                disabled={!allHooks.length}
               >
                 {copiedId === "all-hooks" ? "Copied" : "Copy all"}
               </button>
@@ -887,32 +1009,44 @@ function IdeaDetailSheet({
               Use one as your first line and commit to it in the first 10
               seconds.
             </p>
+            {detailsLoading && !allHooks.length && (
+              <div className={s.skeletonList} aria-hidden="true">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className={s.skeletonRow}>
+                    <div className={s.skeletonIndex} />
+                    <div className={s.skeletonBody}>
+                      <div className={s.skeletonLine} />
+                      <div
+                        className={`${s.skeletonLine} ${s.skeletonLineShort}`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {detailsError && !allHooks.length && (
+              <div className={s.errorCallout} role="alert">
+                <div className={s.errorText}>Couldn’t generate hooks.</div>
+                <button className={s.retryBtn} onClick={fetchDetails}>
+                  Retry
+                </button>
+              </div>
+            )}
             <div className={s.optionList}>
-              {hookObjs.map((hook, i) => {
-                const text = String((hook as any)?.text ?? "").trim();
-                const typeTags = Array.isArray((hook as any)?.typeTags)
-                  ? ((hook as any).typeTags as any[])
-                  : [];
-                if (!text) return null;
+              {hookList.map((text, i) => {
+                const t = String(text ?? "").trim();
+                if (!t) return null;
                 return (
                   <div key={`hook-${i}`} className={s.optionRow}>
                     <div className={s.optionIndex}>{i + 1}</div>
                     <div className={s.optionBody}>
-                      <p className={s.optionText}>&ldquo;{text}&rdquo;</p>
-                      {typeTags.length > 0 && (
-                        <div className={s.optionMeta}>
-                          {typeTags.slice(0, 2).map((tag) => (
-                            <span key={String(tag)} className={s.optionTag}>
-                              {String(tag)}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      <p className={s.optionText}>&ldquo;{t}&rdquo;</p>
                     </div>
                     <button
                       className={s.copyIconBtn}
-                      onClick={() => onCopy(text, `hook-${i}`)}
+                      onClick={() => onCopy(t, `hook-${i}`)}
                       title="Copy"
+                      aria-label={`Copy hook ${i + 1}`}
                     >
                       {copiedId === `hook-${i}` ? (
                         <svg
@@ -942,56 +1076,18 @@ function IdeaDetailSheet({
                   </div>
                 );
               })}
-              {extraHooks.map((hookText, i) => {
-                const text = String(hookText ?? "").trim();
-                if (!text) return null;
-                const idx = hookObjs.length + i + 1;
-                return (
-                  <div
-                    key={`extra-hook-${i}`}
-                    className={`${s.optionRow} ${s.newItem}`}
-                  >
-                    <div className={s.optionIndex}>{idx}</div>
-                    <div className={s.optionBody}>
-                      <p className={s.optionText}>&ldquo;{text}&rdquo;</p>
-                      <div className={s.optionMeta}>
-                        <span className={s.optionTagNew}>New</span>
-                      </div>
-                    </div>
-                    <button
-                      className={s.copyIconBtn}
-                      onClick={() => onCopy(text, `extra-hook-${i}`)}
-                      title="Copy"
-                    >
-                      {copiedId === `extra-hook-${i}` ? (
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                      ) : (
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <rect x="9" y="9" width="13" height="13" rx="2" />
-                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
             </div>
+            {allHooks.length > 5 && (
+              <div className={s.sectionFooter}>
+                <button
+                  className={s.showMoreBtn}
+                  onClick={() => setShowAllHooks((v) => !v)}
+                  aria-expanded={showAllHooks}
+                >
+                  {showAllHooks ? "Show less" : `Show all (${allHooks.length})`}
+                </button>
+              </div>
+            )}
           </section>
 
           {/* Recommended tags */}
@@ -1001,16 +1097,32 @@ function IdeaDetailSheet({
               <button
                 className={s.copyAllBtn}
                 onClick={() => onCopy(allKeywords, "all-keywords")}
+                disabled={!allKeywords}
               >
                 {copiedId === "all-keywords" ? "Copied" : "Copy all"}
               </button>
             </div>
             <p className={s.sectionIntro}>
-              Add these as tags/keywords. Keep them aligned to the premise.
+              Add these as tags/keywords. Keep them aligned to the description.
             </p>
+            {detailsLoading && allTags.length === 0 && (
+              <div className={s.skeletonChips} aria-hidden="true">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className={s.skeletonChip} />
+                ))}
+              </div>
+            )}
+            {detailsError && !detailKeywords.length && (
+              <div className={s.errorCallout} role="alert">
+                <div className={s.errorText}>Couldn’t generate tags.</div>
+                <button className={s.retryBtn} onClick={fetchDetails}>
+                  Retry
+                </button>
+              </div>
+            )}
             <div className={s.keywordChips}>
-              {keywordObjs.map((kw, i) => {
-                const text = String((kw as any)?.text ?? "").trim();
+              {tagList.map((kw, i) => {
+                const text = String(kw ?? "").trim();
                 if (!text) return null;
                 const id = `kw-${i}`;
                 const isCopied = copiedId === id;
@@ -1021,26 +1133,7 @@ function IdeaDetailSheet({
                       isCopied ? s.keywordChipCopied : ""
                     }`}
                     onClick={() => onCopy(text, id)}
-                  >
-                    <span className={s.keywordChipText}>{text}</span>
-                    {isCopied && (
-                      <span className={s.keywordChipState}>Copied</span>
-                    )}
-                  </button>
-                );
-              })}
-              {extraKeywords.map((kw, i) => {
-                const text = String(kw ?? "").trim();
-                if (!text) return null;
-                const id = `extra-kw-${i}`;
-                const isCopied = copiedId === id;
-                return (
-                  <button
-                    key={id}
-                    className={`${s.keywordChip} ${s.newChip} ${
-                      isCopied ? s.keywordChipCopied : ""
-                    }`}
-                    onClick={() => onCopy(text, id)}
+                    aria-label={`Copy tag: ${text}`}
                   >
                     <span className={s.keywordChipText}>{text}</span>
                     {isCopied && (
@@ -1050,76 +1143,93 @@ function IdeaDetailSheet({
                 );
               })}
             </div>
+            {allTags.length > 10 && (
+              <div className={s.sectionFooter}>
+                <button
+                  className={s.showMoreBtn}
+                  onClick={() => setShowAllTags((v) => !v)}
+                  aria-expanded={showAllTags}
+                >
+                  {showAllTags ? "Show less" : `Show all (${allTags.length})`}
+                </button>
+              </div>
+            )}
           </section>
 
           {/* Creative directions (from Generate More) */}
           {(creativeDirections || aiRemixes.length > 0) && (
             <section className={s.sheetSection}>
-              <h3 className={s.sectionTitle}>Creative directions</h3>
-              <p className={s.sectionIntro}>
-                Practical ways to shape the video (generated from your idea).
-              </p>
+              <details className={s.sectionDetails}>
+                <summary className={s.sectionSummary}>
+                  <span className={s.sectionSummaryTitle}>
+                    Creative directions
+                  </span>
+                  <span className={s.sectionSummaryHint}>
+                    Title angles, openers, and visuals
+                  </span>
+                </summary>
 
-              {creativeDirections && (
-                <div className={s.directionsGrid}>
-                  {creativeDirections.titleAngles.length > 0 && (
-                    <div className={s.directionsCard}>
-                      <div className={s.directionsLabel}>Title angles</div>
-                      <ul className={s.directionsList}>
-                        {creativeDirections.titleAngles
-                          .slice(0, 6)
-                          .map((t, i) => (
-                            <li key={i}>{t}</li>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-                  {creativeDirections.hookSetups.length > 0 && (
-                    <div className={s.directionsCard}>
-                      <div className={s.directionsLabel}>Openers</div>
-                      <ul className={s.directionsList}>
-                        {creativeDirections.hookSetups
-                          .slice(0, 6)
-                          .map((t, i) => (
-                            <li key={i}>{t}</li>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-                  {creativeDirections.visualMoments.length > 0 && (
-                    <div className={s.directionsCard}>
-                      <div className={s.directionsLabel}>Visual moments</div>
-                      <ul className={s.directionsList}>
-                        {creativeDirections.visualMoments
-                          .slice(0, 6)
-                          .map((t, i) => (
-                            <li key={i}>{t}</li>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
+                {creativeDirections && (
+                  <div className={s.directionsGrid}>
+                    {creativeDirections.titleAngles.length > 0 && (
+                      <div className={s.directionsCard}>
+                        <div className={s.directionsLabel}>Title angles</div>
+                        <ul className={s.directionsList}>
+                          {creativeDirections.titleAngles
+                            .slice(0, 6)
+                            .map((t, i) => (
+                              <li key={i}>{t}</li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                    {creativeDirections.hookSetups.length > 0 && (
+                      <div className={s.directionsCard}>
+                        <div className={s.directionsLabel}>Openers</div>
+                        <ul className={s.directionsList}>
+                          {creativeDirections.hookSetups
+                            .slice(0, 6)
+                            .map((t, i) => (
+                              <li key={i}>{t}</li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                    {creativeDirections.visualMoments.length > 0 && (
+                      <div className={s.directionsCard}>
+                        <div className={s.directionsLabel}>Visual moments</div>
+                        <ul className={s.directionsList}>
+                          {creativeDirections.visualMoments
+                            .slice(0, 6)
+                            .map((t, i) => (
+                              <li key={i}>{t}</li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {aiRemixes.length > 0 && (
-                <div className={s.remixList}>
-                  {aiRemixes.slice(0, 4).map((r, i) => (
-                    <div key={i} className={s.remixPrompt}>
-                      {r.title && (
-                        <div className={s.remixPromptTitle}>{r.title}</div>
-                      )}
-                      {r.angle && (
-                        <div className={s.remixPromptAngle}>{r.angle}</div>
-                      )}
-                      {r.hook && (
-                        <div className={s.remixPromptHook}>
-                          &ldquo;{r.hook}&rdquo;
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                {aiRemixes.length > 0 && (
+                  <div className={s.remixList}>
+                    {aiRemixes.slice(0, 4).map((r, i) => (
+                      <div key={i} className={s.remixPrompt}>
+                        {r.title && (
+                          <div className={s.remixPromptTitle}>{r.title}</div>
+                        )}
+                        {r.angle && (
+                          <div className={s.remixPromptAngle}>{r.angle}</div>
+                        )}
+                        {r.hook && (
+                          <div className={s.remixPromptHook}>
+                            &ldquo;{r.hook}&rdquo;
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </details>
             </section>
           )}
 
