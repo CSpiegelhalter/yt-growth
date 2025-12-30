@@ -5,6 +5,7 @@
  * subscription.isActive is false (which is normal for FREE users)
  */
 import { describe, it, expect } from "vitest";
+import { LIMITS } from "@/lib/product";
 
 // Replicate the logic from DashboardClient.tsx
 function canAddAnotherChannel(
@@ -39,17 +40,27 @@ describe("canAddAnotherChannel", () => {
 
   describe("PRO plan (limit: 3)", () => {
     it("allows adding channels up to limit", () => {
-      expect(canAddAnotherChannel(0, 3)).toBe(true);
-      expect(canAddAnotherChannel(1, 3)).toBe(true);
-      expect(canAddAnotherChannel(2, 3)).toBe(true);
+      expect(canAddAnotherChannel(0, LIMITS.PRO_MAX_CONNECTED_CHANNELS)).toBe(true);
+      expect(canAddAnotherChannel(1, LIMITS.PRO_MAX_CONNECTED_CHANNELS)).toBe(true);
+      expect(canAddAnotherChannel(2, LIMITS.PRO_MAX_CONNECTED_CHANNELS)).toBe(true);
     });
 
     it("blocks adding when at limit", () => {
-      expect(canAddAnotherChannel(3, 3)).toBe(false);
+      expect(
+        canAddAnotherChannel(
+          LIMITS.PRO_MAX_CONNECTED_CHANNELS,
+          LIMITS.PRO_MAX_CONNECTED_CHANNELS
+        )
+      ).toBe(false);
     });
 
     it("blocks adding when over limit (edge case)", () => {
-      expect(canAddAnotherChannel(4, 3)).toBe(false);
+      expect(
+        canAddAnotherChannel(
+          LIMITS.PRO_MAX_CONNECTED_CHANNELS + 1,
+          LIMITS.PRO_MAX_CONNECTED_CHANNELS
+        )
+      ).toBe(false);
     });
   });
 

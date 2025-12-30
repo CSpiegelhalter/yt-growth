@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/prisma";
 import { ApiError } from "@/lib/http";
+import { LIMITS } from "@/lib/product";
 
 const ACTIVE_SUB_STATUSES = ["active", "trialing", "past_due"];
 
@@ -50,7 +51,9 @@ export function ensureSubscribed(isSubscribed: boolean) {
 }
 
 export function channelLimitForUser(isSubscribed: boolean) {
-  return isSubscribed ? 5 : 1;
+  return isSubscribed
+    ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
+    : LIMITS.FREE_MAX_CONNECTED_CHANNELS;
 }
 
 export function publicMePayload(

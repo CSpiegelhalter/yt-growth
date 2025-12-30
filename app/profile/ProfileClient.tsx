@@ -21,11 +21,7 @@ export default function ProfileClient({
   const [me] = useState<Me>(initialMe);
   const [channels, setChannels] = useState<Channel[]>(initialChannels);
   const [err, setErr] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [removingChannelId, setRemovingChannelId] = useState<string | null>(
-    null
-  );
-  const [refreshingChannelId, setRefreshingChannelId] = useState<string | null>(
     null
   );
 
@@ -40,7 +36,6 @@ export default function ProfileClient({
 
     setRemovingChannelId(channelId);
     setErr(null);
-    setSuccessMsg(null);
 
     try {
       const res = await fetch(`/api/me/channels/${channelId}`, {
@@ -71,30 +66,6 @@ export default function ProfileClient({
     }
   };
 
-  const refreshVideos = async (channelId: string) => {
-    setRefreshingChannelId(channelId);
-    setErr(null);
-    setSuccessMsg(null);
-
-    try {
-      const res = await fetch(`/api/me/channels/${channelId}/refresh-videos`, {
-        method: "POST",
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to refresh videos");
-      }
-
-      setSuccessMsg(data.message || "Videos refreshed successfully");
-    } catch (e: any) {
-      setErr(e.message || "Failed to refresh videos");
-    } finally {
-      setRefreshingChannelId(null);
-    }
-  };
-
   const isSubscribed = me.subscription?.isActive ?? false;
 
   return (
@@ -106,22 +77,6 @@ export default function ProfileClient({
       </div>
 
       {err && <ErrorAlert message={err} />}
-      {successMsg && (
-        <div className={styles.successAlert}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-          </svg>
-          {successMsg}
-        </div>
-      )}
 
       <div className={styles.grid}>
         {/* Account Info */}
@@ -186,37 +141,6 @@ export default function ProfileClient({
                     </div>
                   </div>
                   <div className={styles.channelActions}>
-                    <span
-                      className={`${styles.statusBadge} ${
-                        ch.syncStatus === "idle"
-                          ? styles.statusSuccess
-                          : styles.statusWarning
-                      }`}
-                    >
-                      {ch.syncStatus}
-                    </span>
-                    <button
-                      className={styles.refreshBtn}
-                      onClick={() => refreshVideos(ch.channel_id)}
-                      disabled={refreshingChannelId === ch.channel_id}
-                      title="Refresh video metadata (tags, descriptions)"
-                    >
-                      {refreshingChannelId === ch.channel_id ? (
-                        <span className={styles.spinner} />
-                      ) : (
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M23 4v6h-6M1 20v-6h6" />
-                          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-                        </svg>
-                      )}
-                    </button>
                     <button
                       className={styles.removeBtn}
                       onClick={() => removeChannel(ch.channel_id)}

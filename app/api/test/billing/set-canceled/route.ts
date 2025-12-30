@@ -25,6 +25,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/prisma";
 import { getCurrentUser } from "@/lib/user";
 import { requireTestMode, logTestAction } from "@/lib/test-mode";
+import { LIMITS } from "@/lib/product";
 
 export async function POST(req: NextRequest) {
   // Guard: only available in test mode
@@ -68,7 +69,9 @@ export async function POST(req: NextRequest) {
       update: {
         status: isStillActive ? "active" : "canceled",
         plan: isStillActive ? "pro" : "free",
-        channelLimit: isStillActive ? 3 : 1,
+        channelLimit: isStillActive
+          ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
+          : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
         currentPeriodEnd: periodEnd,
         cancelAtPeriodEnd: true,
         cancelAt: periodEnd,
@@ -78,7 +81,9 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         status: isStillActive ? "active" : "canceled",
         plan: isStillActive ? "pro" : "free",
-        channelLimit: isStillActive ? 3 : 1,
+        channelLimit: isStillActive
+          ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
+          : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
         currentPeriodEnd: periodEnd,
         cancelAtPeriodEnd: true,
         cancelAt: periodEnd,

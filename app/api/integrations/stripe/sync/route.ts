@@ -10,6 +10,7 @@ import { NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/user";
 import { prisma } from "@/prisma";
 import { stripeRequest, StripeSubscription } from "@/lib/stripe";
+import { LIMITS } from "@/lib/product";
 
 export async function POST(req: NextRequest) {
   try {
@@ -73,7 +74,9 @@ export async function POST(req: NextRequest) {
         stripeSubscriptionId: stripeSub.id,
         status: isActive ? "active" : "inactive",
         plan,
-        channelLimit: isActive ? 5 : 1,
+        channelLimit: isActive
+          ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
+          : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
         currentPeriodEnd: periodEnd,
         cancelAtPeriodEnd: stripeSub.cancel_at_period_end || false,
       },

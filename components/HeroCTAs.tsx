@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import s from "./HeroCTAs.module.css";
+import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 
 type AuthState = "loading" | "signed-out" | "signed-in-free" | "signed-in-subscribed";
 
@@ -65,7 +66,7 @@ export function HeroCTAs() {
           Go to Dashboard
         </Link>
         <Link href="/api/integrations/stripe/checkout" className={s.btnSecondary}>
-          Subscribe
+          Subscribe — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
         </Link>
       </div>
     );

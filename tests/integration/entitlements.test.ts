@@ -16,6 +16,7 @@ import {
   getMaxChannels,
   featureLocked,
 } from "@/lib/entitlements";
+import { LIMITS } from "@/lib/product";
 
 const TEST_EMAIL = "entitlements-test@example.com";
 
@@ -141,7 +142,7 @@ describe("Entitlements Integration", () => {
     it("returns correct PRO limits", () => {
       const limits = getLimits("PRO");
 
-      expect(limits.channels_connected).toBe(3);
+      expect(limits.channels_connected).toBe(LIMITS.PRO_MAX_CONNECTED_CHANNELS);
       expect(limits.owned_video_analysis).toBe(100);
       expect(limits.competitor_video_analysis).toBe(100);
       expect(limits.idea_generate).toBe(200);
@@ -156,7 +157,7 @@ describe("Entitlements Integration", () => {
     });
 
     it("returns 3 for PRO", () => {
-      expect(getMaxChannels("PRO")).toBe(3);
+      expect(getMaxChannels("PRO")).toBe(LIMITS.PRO_MAX_CONNECTED_CHANNELS);
     });
   });
 

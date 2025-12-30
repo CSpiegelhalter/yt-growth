@@ -2,6 +2,7 @@
 
 import s from "./style.module.css";
 import type { Me } from "@/types/api";
+import { LIMITS } from "@/lib/product";
 
 function Stat({
   label,
@@ -115,6 +116,10 @@ export default function AccountStats({
   channelCount: number;
 }>) {
   const usage = me?.usage;
+  const isPro = (me?.plan ?? "").toLowerCase() === "pro" && (me?.subscription?.isActive ?? false);
+  const maxChannels = isPro
+    ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
+    : LIMITS.FREE_MAX_CONNECTED_CHANNELS;
 
   return (
     <div className={s.grid}>
@@ -132,7 +137,7 @@ export default function AccountStats({
       />
       <Stat
         label="Channels Used"
-        value={`${channelCount}/${me?.channel_limit ?? 1}`}
+        value={`${channelCount}/${maxChannels}`}
       />
 
       {/* Daily Usage Section */}

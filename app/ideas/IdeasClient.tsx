@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import s from "./style.module.css";
 import { Me, Channel, IdeaBoardData } from "@/types/api";
 import IdeaBoard from "@/components/dashboard/IdeaBoard";
@@ -23,10 +24,24 @@ export default function IdeasClient({
   initialActiveChannelId,
 }: Props) {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const urlChannelId = searchParams.get("channelId");
 
   // State initialized from server props
-  const [channels] = useState<Channel[]>(initialChannels);
-  const [activeChannelId] = useState<string | null>(initialActiveChannelId);
+  const [channels, setChannels] = useState<Channel[]>(initialChannels);
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(
+    initialActiveChannelId
+  );
+
+  // Keep client state in sync when server props / URL params change.
+  useEffect(() => {
+    setChannels(initialChannels);
+  }, [initialChannels]);
+
+  useEffect(() => {
+    const next = urlChannelId ?? initialActiveChannelId ?? null;
+    setActiveChannelId(next);
+  }, [urlChannelId, initialActiveChannelId]);
 
   // Idea board state
   const [ideaBoard, setIdeaBoard] = useState<IdeaBoardData | null>(null);

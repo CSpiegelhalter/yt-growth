@@ -8,6 +8,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { LIMITS } from "@/lib/product";
 
 // Set test environment
 process.env.APP_TEST_MODE = "1";
@@ -55,7 +56,10 @@ export async function createTestSubscription(
     update: {
       status: plan === "pro" ? "active" : "inactive",
       plan,
-      channelLimit: plan === "pro" ? 3 : 1,
+      channelLimit:
+        plan === "pro"
+          ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
+          : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
       currentPeriodEnd:
         plan === "pro" ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null,
     },
@@ -63,7 +67,10 @@ export async function createTestSubscription(
       userId,
       status: plan === "pro" ? "active" : "inactive",
       plan,
-      channelLimit: plan === "pro" ? 3 : 1,
+      channelLimit:
+        plan === "pro"
+          ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
+          : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
       currentPeriodEnd:
         plan === "pro" ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null,
       stripeCustomerId: `cus_test_${userId}`,

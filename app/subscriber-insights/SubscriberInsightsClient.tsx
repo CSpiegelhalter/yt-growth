@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import s from "./style.module.css";
 import type {
   Me,
@@ -11,6 +12,7 @@ import type {
   SubscriberMagnetVideo,
 } from "@/types/api";
 import { copyToClipboard } from "@/components/ui/Toast";
+import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 
 type RangeOption = "28d" | "90d";
 type SortOption = "subs_per_1k" | "views" | "newest" | "engaged_rate";
@@ -69,6 +71,9 @@ export default function SubscriberInsightsClient({
   initialActiveChannelId,
   initialRange,
 }: Props) {
+  const searchParams = useSearchParams();
+  const urlChannelId = searchParams.get("channelId");
+
   const [channels] = useState<Channel[]>(initialChannels);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(
     initialActiveChannelId
@@ -92,6 +97,12 @@ export default function SubscriberInsightsClient({
     () => initialMe.subscription?.isActive ?? false,
     [initialMe]
   );
+
+  // Keep client state in sync when server props / URL params change.
+  useEffect(() => {
+    const next = urlChannelId ?? initialActiveChannelId ?? null;
+    setActiveChannelId(next);
+  }, [urlChannelId, initialActiveChannelId]);
 
   // Load subscriber insights data
   useEffect(() => {
@@ -238,9 +249,12 @@ export default function SubscriberInsightsClient({
       {/* Upgrade Banner */}
       {!isSubscribed && (
         <div className={s.upgradeBanner}>
-          <p>Upgrade to Pro to unlock full subscriber conversion insights.</p>
+          <p>
+            Upgrade to Pro to unlock full subscriber conversion insights —{" "}
+            {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}.
+          </p>
           <a href="/api/integrations/stripe/checkout" className={s.upgradeBtn}>
-            Upgrade
+            Upgrade — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
           </a>
         </div>
       )}
@@ -403,6 +417,7 @@ export default function SubscriberInsightsClient({
                 rank={idx + 1}
                 avgSubsPerThousand={viewRollups.avgSubsPer1k}
                 insufficientData={insufficientData}
+                channelId={activeChannelId}
               />
             ))}
           </div>
@@ -461,11 +476,13 @@ function VideoCard({
   rank,
   avgSubsPerThousand,
   insufficientData,
+  channelId,
 }: {
   video: SubscriberMagnetVideo;
   rank: number;
   avgSubsPerThousand: number;
   insufficientData: boolean;
+  channelId: string | null;
 }) {
   const tierLabel = insufficientData
     ? "Building"
@@ -488,7 +505,12 @@ function VideoCard({
       ? ((delta / avgSubsPerThousand) * 100).toFixed(0)
       : "0";
 
-  const videoUrl = `/video/${video.videoId}?from=subscriber-insights`;
+  const videoParams = new URLSearchParams();
+  videoParams.set("from", "subscriber-insights");
+  if (channelId) {
+    videoParams.set("channelId", channelId);
+  }
+  const videoUrl = `/video/${video.videoId}?${videoParams.toString()}`;
 
   return (
     <div className={s.videoCard}>

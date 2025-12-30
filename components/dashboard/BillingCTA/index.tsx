@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import s from "./style.module.css";
+import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/product";
 
 type Props = {
   isSubscribed: boolean;
@@ -96,6 +97,12 @@ export default function BillingCTA({
         )}
 
         <div className={s.details}>
+          <div className={s.pricing}>
+            <span className={s.price}>
+              {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}
+            </span>
+            <span className={s.period}>/{SUBSCRIPTION.PRO_INTERVAL}</span>
+          </div>
           {!isCanceling && formattedEndDate && (
             <p className={s.meta}>Next billing date: {formattedEndDate}</p>
           )}
@@ -103,7 +110,7 @@ export default function BillingCTA({
             <li>Unlimited idea generations</li>
             <li>Video analysis</li>
             <li>Subscriber driver insights</li>
-            <li>Up to 5 channels</li>
+            <li>Up to {LIMITS.PRO_MAX_CONNECTED_CHANNELS} channels</li>
           </ul>
         </div>
         <button
@@ -131,12 +138,12 @@ export default function BillingCTA({
         <li>Unlimited Idea Engine</li>
         <li>Video analysis with fixes</li>
         <li>Subscriber driver insights</li>
-        <li>Up to 5 connected channels</li>
+        <li>Up to {LIMITS.PRO_MAX_CONNECTED_CHANNELS} connected channels</li>
         <li>Priority support</li>
       </ul>
       <div className={s.pricing}>
-        <span className={s.price}>$19</span>
-        <span className={s.period}>/month</span>
+        <span className={s.price}>{formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}</span>
+        <span className={s.period}>/{SUBSCRIPTION.PRO_INTERVAL}</span>
       </div>
       <button
         onClick={handleSubscribe}

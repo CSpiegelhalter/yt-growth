@@ -6,6 +6,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import { LIMITS } from "@/lib/product";
 
 const prisma = new PrismaClient();
 
@@ -31,14 +32,14 @@ async function main() {
     update: {
       status: "active",
       plan: "pro",
-      channelLimit: 5,
+      channelLimit: LIMITS.PRO_MAX_CONNECTED_CHANNELS,
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     },
     create: {
       userId: demoUser.id,
       status: "active",
       plan: "pro",
-      channelLimit: 5,
+      channelLimit: LIMITS.PRO_MAX_CONNECTED_CHANNELS,
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       stripeCustomerId: "cus_demo_12345",
       stripeSubscriptionId: "sub_demo_12345",

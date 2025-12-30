@@ -7,6 +7,7 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import s from "./Header.module.css";
 import { BRAND } from "@/lib/brand";
+import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/product";
 
 type Channel = {
   id: number;
@@ -80,24 +81,44 @@ export function Header() {
           // Set active channel from URL or localStorage or first channel
           const urlChannelId = searchParams.get("channelId");
           const storedChannelId = localStorage.getItem("activeChannelId");
+          let nextActiveChannelId: string | null = null;
 
           if (
             urlChannelId &&
             channelList.some((c: Channel) => c.channel_id === urlChannelId)
           ) {
-            setActiveChannelId(urlChannelId);
-            localStorage.setItem("activeChannelId", urlChannelId);
+            nextActiveChannelId = urlChannelId;
           } else if (
             storedChannelId &&
             channelList.some((c: Channel) => c.channel_id === storedChannelId)
           ) {
-            setActiveChannelId(storedChannelId);
+            nextActiveChannelId = storedChannelId;
           } else if (channelList.length > 0) {
-            setActiveChannelId(channelList[0].channel_id);
-            localStorage.setItem("activeChannelId", channelList[0].channel_id);
+            nextActiveChannelId = channelList[0].channel_id;
           } else {
             // No channels - clear active channel
-            setActiveChannelId(null);
+            nextActiveChannelId = null;
+          }
+
+          setActiveChannelId(nextActiveChannelId);
+          if (nextActiveChannelId) {
+            localStorage.setItem("activeChannelId", nextActiveChannelId);
+          } else {
+            localStorage.removeItem("activeChannelId");
+          }
+
+          // Server bootstrap resolves active channel ONLY from the URL.
+          // If we're on a channel-scoped page and have a valid active channel,
+          // keep `?channelId=` in sync so page data matches the header selection.
+          if (
+            nextActiveChannelId &&
+            isChannelScopedPath(pathname) &&
+            urlChannelId !== nextActiveChannelId
+          ) {
+            const next = new URLSearchParams(searchParams.toString());
+            next.set("channelId", nextActiveChannelId);
+            router.replace(`${pathname}?${next.toString()}`);
+            router.refresh();
           }
         }
       } catch (error) {
@@ -106,7 +127,7 @@ export function Header() {
     }
 
     loadChannels();
-  }, [session?.user, searchParams]);
+  }, [session?.user, searchParams, pathname, router]);
 
   // Listen for channel-removed events (from Profile page)
   useEffect(() => {
@@ -187,7 +208,8 @@ export function Header() {
     if (isChannelScopedPath(pathname)) {
       const next = new URLSearchParams(searchParams.toString());
       next.set("channelId", channelId);
-      router.push(`${pathname}?${next.toString()}`);
+      router.replace(`${pathname}?${next.toString()}`);
+      router.refresh();
     }
   };
 
@@ -339,7 +361,11 @@ export function Header() {
                     </button>
                   ))}
                   {channels.length < channelLimit ? (
-                    <Link
+                    // IMPORTANT: Use a plain <a> (hard navigation) for API redirect endpoints.
+                    // Using next/link here triggers a client-side navigation/prefetch attempt that can
+                    // briefly throw a navigation/fetch error before the browser follows the redirect
+                    // to accounts.google.com.
+                    <a
                       href="/api/integrations/google/start"
                       className={s.addChannelLink}
                       onClick={() => setChannelDropdownOpen(false)}
@@ -355,7 +381,7 @@ export function Header() {
                         <path d="M12 5v14M5 12h14" />
                       </svg>
                       Add Channel
-                    </Link>
+                    </a>
                   ) : (
                     <button
                       className={s.addChannelLink}
@@ -417,7 +443,7 @@ export function Header() {
                       {navLinks.map((link) => (
                         <Link
                           key={link.href}
-                          href={link.href}
+                          href={withChannelId(link.href, activeChannelId)}
                           className={s.dropdownItem}
                           onClick={() => setMenuOpen(false)}
                         >
@@ -549,7 +575,13 @@ export function Header() {
             <h3 className={s.modalTitle}>Channel Limit Reached</h3>
             <p className={s.modalDesc}>
               {plan === "FREE"
-                ? "Free accounts can connect 1 YouTube channel. Upgrade to Pro to connect up to 3 channels."
+                ? `Free accounts can connect ${
+                    LIMITS.FREE_MAX_CONNECTED_CHANNELS
+                  } YouTube channel. Upgrade to Pro to connect up to ${
+                    LIMITS.PRO_MAX_CONNECTED_CHANNELS
+                  } channels for ${formatUsd(
+                    SUBSCRIPTION.PRO_MONTHLY_PRICE_USD
+                  )}/${SUBSCRIPTION.PRO_INTERVAL}.`
                 : `You've reached the maximum of ${channelLimit} channels for your plan.`}
             </p>
             {plan === "FREE" && (
@@ -558,7 +590,8 @@ export function Header() {
                 className={s.modalUpgradeBtn}
                 onClick={() => setShowUpgradePrompt(false)}
               >
-                Upgrade to Pro
+                Upgrade to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}
+                /{SUBSCRIPTION.PRO_INTERVAL}
               </Link>
             )}
             <button
@@ -709,4 +742,15 @@ function isChannelScopedPath(pathname: string): boolean {
   if (pathname.startsWith("/video/")) return true;
   if (pathname.startsWith("/competitors/video/")) return true;
   return false;
+}
+
+function withChannelId(href: string, channelId: string | null): string {
+  if (!channelId) return href;
+  // Only append channelId for channel-scoped pages.
+  if (!isChannelScopedPath(href)) return href;
+
+  const [path, query = ""] = href.split("?");
+  const params = new URLSearchParams(query);
+  params.set("channelId", channelId);
+  return `${path}?${params.toString()}`;
 }

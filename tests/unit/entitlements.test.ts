@@ -17,6 +17,7 @@ import {
   getFeatureDisplayName,
   getPlanDisplayName,
 } from "@/lib/entitlements";
+import { LIMITS } from "@/lib/product";
 import type { Me } from "@/types/api";
 
 describe("Entitlements Unit Tests", () => {
@@ -69,7 +70,7 @@ describe("Entitlements Unit Tests", () => {
         name: "Test",
         plan: "pro",
         status: "active",
-        channel_limit: 3,
+        channel_limit: LIMITS.PRO_MAX_CONNECTED_CHANNELS,
         subscription: {
           isActive: true,
           currentPeriodEnd: futureDate,
@@ -86,7 +87,7 @@ describe("Entitlements Unit Tests", () => {
         name: "Test",
         plan: "pro",
         status: "active",
-        channel_limit: 3,
+        channel_limit: LIMITS.PRO_MAX_CONNECTED_CHANNELS,
         subscription: {
           isActive: true,
           currentPeriodEnd: pastDate,
@@ -160,7 +161,7 @@ describe("Entitlements Unit Tests", () => {
     it("returns PRO limits", () => {
       const limits = getLimits("PRO");
       expect(limits).toEqual({
-        channels_connected: 3,
+        channels_connected: LIMITS.PRO_MAX_CONNECTED_CHANNELS,
         owned_video_analysis: 100,
         competitor_video_analysis: 100,
         idea_generate: 200,
@@ -175,7 +176,7 @@ describe("Entitlements Unit Tests", () => {
       expect(getLimit("FREE", "owned_video_analysis")).toBe(5);
       expect(getLimit("PRO", "owned_video_analysis")).toBe(100);
       expect(getLimit("FREE", "channels_connected")).toBe(1);
-      expect(getLimit("PRO", "channels_connected")).toBe(3);
+      expect(getLimit("PRO", "channels_connected")).toBe(LIMITS.PRO_MAX_CONNECTED_CHANNELS);
     });
   });
 
@@ -185,7 +186,7 @@ describe("Entitlements Unit Tests", () => {
     });
 
     it("returns 3 for PRO", () => {
-      expect(getMaxChannels("PRO")).toBe(3);
+      expect(getMaxChannels("PRO")).toBe(LIMITS.PRO_MAX_CONNECTED_CHANNELS);
     });
   });
 

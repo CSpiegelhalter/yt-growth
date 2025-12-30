@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { FeatureKey } from "@/lib/entitlements";
+import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 
 type UpgradeCalloutProps = {
   /** The feature that hit the limit */
@@ -140,7 +141,9 @@ export default function UpgradeCallout({
         disabled={loading}
         style={styles.upgradeBtn}
       >
-        {loading ? "Loading..." : "Upgrade to Pro"}
+        {loading
+          ? "Loading..."
+          : `Upgrade to Pro — ${formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/${SUBSCRIPTION.PRO_INTERVAL}`}
       </button>
       <p style={styles.hint}>
         Get 100+ daily analyses, 200+ idea generations, and more
@@ -263,7 +266,9 @@ export function FeatureLockedCallout({
         disabled={loading}
         style={styles.upgradeBtn}
       >
-        {loading ? "Loading..." : "Upgrade to Pro"}
+        {loading
+          ? "Loading..."
+          : `Upgrade to Pro — ${formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/${SUBSCRIPTION.PRO_INTERVAL}`}
       </button>
     </div>
   );

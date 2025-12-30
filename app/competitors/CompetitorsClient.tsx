@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import s from "./style.module.css";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 import { formatCompact, formatCompactFloored } from "@/lib/format";
@@ -12,6 +13,7 @@ import type {
   CompetitorFeedResponse,
   CompetitorVideo,
 } from "@/types/api";
+import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 
 type SortOption = "velocity" | "engagement" | "newest" | "outliers";
 
@@ -35,11 +37,20 @@ export default function CompetitorsClient({
   initialChannels,
   initialActiveChannelId,
 }: Props) {
+  const searchParams = useSearchParams();
+  const urlChannelId = searchParams.get("channelId");
+
   // State initialized from server props
   const [channels] = useState<Channel[]>(initialChannels);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(
     initialActiveChannelId
   );
+
+  // Keep client state in sync when server props / URL params change.
+  useEffect(() => {
+    const next = urlChannelId ?? initialActiveChannelId ?? null;
+    setActiveChannelId(next);
+  }, [urlChannelId, initialActiveChannelId]);
 
   // Feed data and loading states
   const [feedData, setFeedData] = useState<CompetitorFeedResponse | null>(null);
@@ -433,9 +444,12 @@ export default function CompetitorsClient({
 
       {!isSubscribed && (
         <div className={s.upgradeBanner}>
-          <p>Upgrade to Pro to unlock competitor analysis and deep insights.</p>
+          <p>
+            Upgrade to Pro to unlock competitor analysis and deep insights —{" "}
+            {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}.
+          </p>
           <a href="/api/integrations/stripe/checkout" className={s.upgradeBtn}>
-            Upgrade
+            Upgrade — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
           </a>
         </div>
       )}

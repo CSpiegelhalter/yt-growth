@@ -5,6 +5,7 @@ import s from "./style.module.css";
 import type { Plan, PlanTopic, PlanOutputJson } from "@/types/api";
 import { getCacheStatus } from "@/lib/plan-parser";
 import { copyToClipboard } from "@/components/ui/Toast";
+import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 
 type Props = {
   plan: Plan | null;
@@ -150,7 +151,7 @@ export default function PlanCard({
             tailored to your channel.
           </p>
           <a href="/api/integrations/stripe/checkout" className={s.btnPrimary}>
-            Subscribe to Pro
+            Subscribe to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
           </a>
         </div>
       </div>

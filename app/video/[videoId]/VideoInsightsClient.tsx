@@ -52,10 +52,15 @@ export default function VideoInsightsClient({
   from,
 }: Props) {
   // Determine back link based on where user came from
-  const backLink =
-    from === "subscriber-insights"
-      ? { href: "/subscriber-insights", label: "Back to Subscriber Insights" }
-      : { href: "/dashboard", label: "Back to Dashboard" };
+  const backLinkBase =
+    from === "subscriber-insights" ? "/subscriber-insights" : "/dashboard";
+  const backLink = {
+    href: channelId ? `${backLinkBase}?channelId=${encodeURIComponent(channelId)}` : backLinkBase,
+    label:
+      from === "subscriber-insights"
+        ? "Back to Subscriber Insights"
+        : "Back to Dashboard",
+  };
 
   const [range] = useState<"7d" | "28d" | "90d">(initialRange);
   const [insights, setInsights] = useState<VideoInsightsResponse | null>(

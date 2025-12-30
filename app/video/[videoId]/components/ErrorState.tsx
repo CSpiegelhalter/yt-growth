@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import s from "../style.module.css";
 import { formatResetAt } from "./helpers";
+import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 
 type InsightsError =
   | {
@@ -81,7 +82,7 @@ export function ErrorState({
           {(error?.kind === "limit_reached" ||
             error?.kind === "upgrade_required") && (
             <a className={s.backBtn} href="/api/integrations/stripe/checkout">
-              Upgrade to Pro
+              Upgrade to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
             </a>
           )}
 

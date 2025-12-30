@@ -4,6 +4,7 @@
  * In TEST_MODE, bypasses Stripe entirely for local testing.
  */
 import { prisma } from "@/prisma";
+import { LIMITS } from "@/lib/product";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
@@ -365,7 +366,9 @@ export async function handleStripeWebhook(
           stripeSubscriptionId: subscriptionId,
           status: dbStatus,
           plan: entitled ? "pro" : "free",
-          channelLimit: entitled ? 5 : 1,
+          channelLimit: entitled
+            ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
+            : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
           currentPeriodEnd: periodEndDate,
           cancelAtPeriodEnd,
           cancelAt,
@@ -377,7 +380,9 @@ export async function handleStripeWebhook(
           stripeSubscriptionId: subscriptionId,
           status: dbStatus,
           plan: entitled ? "pro" : "free",
-          channelLimit: entitled ? 5 : 1,
+          channelLimit: entitled
+            ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
+            : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
           currentPeriodEnd: periodEndDate,
           cancelAtPeriodEnd,
           cancelAt,
@@ -467,7 +472,9 @@ export async function handleStripeWebhook(
           data: {
             status: dbStatus,
             plan: entitled ? "pro" : "free",
-            channelLimit: entitled ? 5 : 1,
+            channelLimit: entitled
+              ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
+              : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
             currentPeriodEnd: periodEndDate ?? existing.currentPeriodEnd,
             cancelAtPeriodEnd,
             cancelAt,
@@ -521,7 +528,7 @@ export async function getSubscriptionStatus(userId: number): Promise<{
     return {
       status: "inactive",
       plan: "free",
-      channelLimit: 1,
+      channelLimit: LIMITS.FREE_MAX_CONNECTED_CHANNELS,
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
       cancelAt: null,
@@ -559,7 +566,9 @@ export async function getSubscriptionStatus(userId: number): Promise<{
     ? "canceled"
     : "inactive";
   const normalizedPlan = isActive ? subscription.plan : "free";
-  const normalizedChannelLimit = isActive ? subscription.channelLimit : 1;
+  const normalizedChannelLimit = isActive
+    ? subscription.channelLimit
+    : LIMITS.FREE_MAX_CONNECTED_CHANNELS;
 
   if (
     !isActive &&
@@ -575,7 +584,7 @@ export async function getSubscriptionStatus(userId: number): Promise<{
         data: {
           status: normalizedStatus,
           plan: "free",
-          channelLimit: 1,
+          channelLimit: LIMITS.FREE_MAX_CONNECTED_CHANNELS,
         },
       });
     } catch (err) {

@@ -6,6 +6,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma";
+import { LIMITS } from "@/lib/product";
 
 export async function GET(req: NextRequest) {
   // Only allow in TEST_MODE
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
     update: {
       status: "active",
       plan: "pro",
-      channelLimit: 5,
+      channelLimit: LIMITS.PRO_MAX_CONNECTED_CHANNELS,
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       stripeCustomerId: `test_customer_${userId}`,
       stripeSubscriptionId: `test_sub_${userId}`,
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
       userId,
       status: "active",
       plan: "pro",
-      channelLimit: 5,
+      channelLimit: LIMITS.PRO_MAX_CONNECTED_CHANNELS,
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       stripeCustomerId: `test_customer_${userId}`,
       stripeSubscriptionId: `test_sub_${userId}`,

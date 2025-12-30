@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import s from "./style.module.css";
+import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/product";
 import { Me, Channel } from "@/types/api";
 import ChannelsSection from "@/components/dashboard/ChannelSection";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
@@ -47,6 +48,7 @@ export default function DashboardClient({
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const urlChannelId = searchParams.get("channelId");
 
   // State initialized from server props
   const [me, setMe] = useState<Me>(initialMe);
@@ -54,6 +56,22 @@ export default function DashboardClient({
   const [activeChannelId, setActiveChannelId] = useState<string | null>(
     initialActiveChannelId
   );
+
+  // Keep client state in sync when server props / URL params change.
+  // (Next.js will re-render the page with new props, but `useState(initialX)` won't auto-update.)
+  useEffect(() => {
+    setMe(initialMe);
+  }, [initialMe]);
+
+  useEffect(() => {
+    setChannels(initialChannels);
+  }, [initialChannels]);
+
+  useEffect(() => {
+    // Prefer URL (source of truth for server bootstrap), fallback to server prop.
+    const next = urlChannelId ?? initialActiveChannelId ?? null;
+    setActiveChannelId(next);
+  }, [urlChannelId, initialActiveChannelId]);
 
   // Video loading state
   const [videos, setVideos] = useState<Video[]>([]);
@@ -347,7 +365,11 @@ export default function DashboardClient({
             ) : videos.length > 0 ? (
               <div className={s.videoList}>
                 {videos.map((video) => (
-                  <VideoCard key={getVideoId(video)} video={video} />
+                  <VideoCard
+                    key={getVideoId(video)}
+                    video={video}
+                    channelId={activeChannelId}
+                  />
                 ))}
               </div>
             ) : (
@@ -390,13 +412,15 @@ export default function DashboardClient({
                 <ul className={s.ctaFeatures}>
                   <li>Unlimited idea generation</li>
                   <li>Video analysis with fixes</li>
-                  <li>Up to 5 connected channels</li>
+                  <li>Up to {LIMITS.PRO_MAX_CONNECTED_CHANNELS} connected channels</li>
                 </ul>
               </div>
               <div className={s.ctaAction}>
                 <div className={s.ctaPrice}>
-                  <span className={s.ctaPriceAmount}>$19</span>
-                  <span className={s.ctaPricePeriod}>/month</span>
+                  <span className={s.ctaPriceAmount}>
+                    {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}
+                  </span>
+                  <span className={s.ctaPricePeriod}>/{SUBSCRIPTION.PRO_INTERVAL}</span>
                 </div>
                 <a
                   href="/api/integrations/stripe/checkout"
@@ -419,7 +443,7 @@ function getVideoId(video: Video): string {
 }
 
 /* ---------- Video Card Component ---------- */
-function VideoCard({ video }: { video: Video }) {
+function VideoCard({ video, channelId }: { video: Video; channelId: string | null }) {
   const videoId = getVideoId(video);
   const hasDropOff = video.retention?.hasData && video.retention.cliffTimestamp;
   const viewCount = video.views ?? video.viewCount;
@@ -428,11 +452,16 @@ function VideoCard({ video }: { video: Video }) {
     console.error("Video missing videoId:", video);
   }
 
+  const href =
+    videoId && !videoId.startsWith("video-")
+      ? channelId
+        ? `/video/${videoId}?channelId=${encodeURIComponent(channelId)}`
+        : `/video/${videoId}`
+      : "#";
+
   return (
     <Link
-      href={
-        videoId && !videoId.startsWith("video-") ? `/video/${videoId}` : "#"
-      }
+      href={href}
       className={s.videoCard}
       onClick={(e) => {
         if (!videoId || videoId.startsWith("video-")) {

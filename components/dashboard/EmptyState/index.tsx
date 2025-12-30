@@ -1,6 +1,7 @@
 "use client";
 
 import s from "./style.module.css";
+import { LIMITS } from "@/lib/product";
 
 type Props = {
   onConnect: () => void;
@@ -45,7 +46,7 @@ export default function EmptyState({ onConnect, canAdd }: Props) {
       </button>
       {!canAdd && (
         <p className={s.limitNote}>
-          Upgrade your plan to connect more channels
+          Upgrade your plan to connect up to {LIMITS.PRO_MAX_CONNECTED_CHANNELS} channels
         </p>
       )}
     </div>

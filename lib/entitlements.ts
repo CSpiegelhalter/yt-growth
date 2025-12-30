@@ -9,6 +9,7 @@
  */
 
 import type { Me } from "@/types/api";
+import { LIMITS } from "@/lib/product";
 
 // ============================================
 // TYPES
@@ -38,7 +39,7 @@ export type PlanLimits = {
 // ============================================
 
 const FREE_LIMITS: PlanLimits = {
-  channels_connected: 1,
+  channels_connected: LIMITS.FREE_MAX_CONNECTED_CHANNELS,
   owned_video_analysis: 5,
   competitor_video_analysis: 5,
   idea_generate: 10,
@@ -47,7 +48,7 @@ const FREE_LIMITS: PlanLimits = {
 };
 
 const PRO_LIMITS: PlanLimits = {
-  channels_connected: 3,
+  channels_connected: LIMITS.PRO_MAX_CONNECTED_CHANNELS,
   owned_video_analysis: 100,
   competitor_video_analysis: 100,
   idea_generate: 200,

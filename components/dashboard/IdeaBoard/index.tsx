@@ -9,6 +9,7 @@ import { IdeaCard } from "./IdeaCard";
 import { NicheInsightsBar } from "./NicheInsightsBar";
 import { IdeaDetailSheet } from "./IdeaDetailSheet";
 import { formatRelativeTime } from "./helpers";
+import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 
 type Props = {
   data: IdeaBoardData | null;
@@ -210,7 +211,7 @@ export default function IdeaBoard({
             thumbnails.
           </p>
           <a href="/api/integrations/stripe/checkout" className={s.btnPrimary}>
-            Subscribe to Pro
+            Subscribe to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
           </a>
         </div>
       </div>

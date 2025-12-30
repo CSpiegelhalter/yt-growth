@@ -5,6 +5,7 @@ import Image from "next/image";
 import s from "./style.module.css";
 import type { SubscriberMagnetVideo, PatternAnalysisJson } from "@/types/api";
 import { copyToClipboard } from "@/components/ui/Toast";
+import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 
 type SortOption = "subs_per_1k" | "views_per_day" | "apv" | "avd";
 type RangeOption = "7d" | "28d";
@@ -119,7 +120,7 @@ export default function SubscriberMagnetTable({
             patterns to replicate.
           </p>
           <a href="/api/integrations/stripe/checkout" className={s.btnPrimary}>
-            Upgrade to Pro
+            Upgrade to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
           </a>
         </div>
       </div>

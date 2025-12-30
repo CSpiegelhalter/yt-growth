@@ -15,6 +15,7 @@
 import { prisma } from "@/prisma";
 import { getCurrentUser } from "@/lib/user";
 import { requireTestMode, logTestAction } from "@/lib/test-mode";
+import { LIMITS } from "@/lib/product";
 
 export async function POST() {
   // Guard: only available in test mode
@@ -35,7 +36,7 @@ export async function POST() {
       update: {
         status: "inactive",
         plan: "free",
-        channelLimit: 1, // FREE limit
+        channelLimit: LIMITS.FREE_MAX_CONNECTED_CHANNELS, // FREE limit
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
         cancelAt: null,
@@ -45,7 +46,7 @@ export async function POST() {
         userId: user.id,
         status: "inactive",
         plan: "free",
-        channelLimit: 1,
+        channelLimit: LIMITS.FREE_MAX_CONNECTED_CHANNELS,
         stripeCustomerId: `cus_test_${user.id}`,
       },
     });

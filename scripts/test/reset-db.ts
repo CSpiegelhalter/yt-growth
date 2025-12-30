@@ -16,6 +16,7 @@
 import { PrismaClient } from "@prisma/client";
 import { execSync } from "child_process";
 import bcrypt from "bcryptjs";
+import { LIMITS } from "@/lib/product";
 
 const prisma = new PrismaClient();
 
@@ -91,7 +92,7 @@ async function seedTestFixtures() {
       userId: demoUser.id,
       status: "active",
       plan: "pro",
-      channelLimit: 5,
+      channelLimit: LIMITS.PRO_MAX_CONNECTED_CHANNELS,
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       stripeCustomerId: "cus_demo",
       stripeSubscriptionId: "sub_demo",
@@ -186,7 +187,7 @@ async function seedTestFixtures() {
       userId: freeUser.id,
       status: "inactive",
       plan: "free",
-      channelLimit: 1,
+      channelLimit: LIMITS.FREE_MAX_CONNECTED_CHANNELS,
       stripeCustomerId: "cus_free",
     },
   });
@@ -212,7 +213,7 @@ async function seedTestFixtures() {
       userId: e2eUser.id,
       status: "inactive",
       plan: "free",
-      channelLimit: 1,
+      channelLimit: LIMITS.FREE_MAX_CONNECTED_CHANNELS,
       stripeCustomerId: "cus_e2e",
     },
   });

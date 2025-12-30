@@ -267,7 +267,14 @@ export default function VideoDetailClient({
   return (
     <main className={s.page}>
       {/* Back Link */}
-      <Link href="/competitors" className={s.backLink}>
+      <Link
+        href={
+          activeChannelId
+            ? `/competitors?channelId=${encodeURIComponent(activeChannelId)}`
+            : "/competitors"
+        }
+        className={s.backLink}
+      >
         ← Back to Competitor Winners
       </Link>
 
