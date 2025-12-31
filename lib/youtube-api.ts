@@ -20,6 +20,7 @@ const USE_FIXTURES =
 type GoogleAccount = {
   id: number;
   refreshTokenEnc: string | null;
+  accessTokenEnc?: string | null;
   tokenExpiresAt: Date | null;
 };
 
@@ -69,7 +70,7 @@ export async function getGoogleAccount(
   // In YT_MOCK_MODE we don't need a real Google account/token because requests are mocked
   // at the transport layer. Return a dummy object so API routes can proceed.
   if (process.env.YT_MOCK_MODE === "1") {
-    return { id: 0, refreshTokenEnc: "mock", tokenExpiresAt: null };
+    return { id: 0, refreshTokenEnc: "mock", accessTokenEnc: null, tokenExpiresAt: null };
   }
 
   return null;

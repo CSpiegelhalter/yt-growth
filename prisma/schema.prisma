@@ -50,6 +50,7 @@ model GoogleAccount {
   provider          String    @default("google") @db.VarChar(50)
   providerAccountId String    @db.VarChar(255)
   refreshTokenEnc   String?
+  accessTokenEnc    String?   // Cached access token (stored to avoid race conditions across workers)
   scopes            String?
   tokenExpiresAt    DateTime? @db.Timestamptz(6)
   createdAt         DateTime  @default(now()) @db.Timestamptz(6)

@@ -198,6 +198,12 @@ export function Header() {
     localStorage.setItem("activeChannelId", channelId);
     setChannelDropdownOpen(false);
 
+    // If on a video page, redirect to dashboard (video is tied to old channel).
+    if (isVideoPath(pathname)) {
+      router.push(`/dashboard?channelId=${channelId}`);
+      return;
+    }
+
     // If on a channel-scoped page, update the URL (so server bootstrap + page state update).
     if (isChannelScopedPath(pathname)) {
       const next = new URLSearchParams(searchParams.toString());
@@ -748,6 +754,11 @@ function isChannelScopedPath(pathname: string): boolean {
   if (pathname.startsWith("/video/")) return true;
   if (pathname.startsWith("/competitors/video/")) return true;
   return false;
+}
+
+function isVideoPath(pathname: string): boolean {
+  // Video detail pages - should redirect to dashboard on channel switch.
+  return pathname.startsWith("/video/") || pathname.startsWith("/competitors/video/");
 }
 
 function withChannelId(href: string, channelId: string | null): string {

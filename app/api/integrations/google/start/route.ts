@@ -12,12 +12,20 @@ export const GET = createApiRoute(
     const user = (api as ApiAuthContext).user!;
     const baseUrl = process.env.NEXT_PUBLIC_WEB_URL || new URL(req.url).origin;
 
+    // Get optional channelId - if provided, we're reconnecting a specific channel
+    const url = new URL(req.url);
+    const reconnectChannelId = url.searchParams.get("channelId");
+
     try {
-      const state = crypto.randomBytes(24).toString("hex");
+      // Encode reconnect channel ID in state (format: randomHex:channelId or just randomHex)
+      const stateRandom = crypto.randomBytes(24).toString("hex");
+      const state = reconnectChannelId 
+        ? `${stateRandom}:${reconnectChannelId}` 
+        : stateRandom;
 
       await prisma.oAuthState.create({
         data: {
-          state,
+          state: stateRandom, // Store just the random part for lookup
           userId: user.id,
           expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
         },
@@ -30,7 +38,7 @@ export const GET = createApiRoute(
         redirect_uri: redirectUri,
         response_type: "code",
         access_type: "offline",
-        prompt: "consent",
+        prompt: "select_account consent",  // Force account selection AND fresh consent
         scope: [
           "openid",
           "email",

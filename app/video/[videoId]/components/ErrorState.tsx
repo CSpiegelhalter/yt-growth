@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import s from "../style.module.css";
@@ -29,6 +30,7 @@ type ErrorStateProps = {
 
 /**
  * ErrorState - Full-page error display with recovery options
+ * Auto-redirects to Google OAuth for permission errors
  */
 export function ErrorState({
   error,
@@ -37,6 +39,48 @@ export function ErrorState({
   onRetry,
 }: ErrorStateProps) {
   const router = useRouter();
+  const [redirectCountdown, setRedirectCountdown] = useState(3);
+
+  // Auto-redirect to Google OAuth for permission errors (but prevent infinite loop)
+  useEffect(() => {
+    if (error?.kind !== "youtube_permissions") return;
+
+    // Check if we just came from OAuth (prevent redirect loop)
+    const urlParams = new URLSearchParams(window.location.search);
+    const justReconnected = urlParams.get("reconnected") === "1";
+    const lastOAuthAttempt = sessionStorage.getItem("lastOAuthAttempt");
+    const recentOAuth =
+      lastOAuthAttempt && Date.now() - parseInt(lastOAuthAttempt) < 60000; // 1 minute
+
+    if (justReconnected || recentOAuth) {
+      // Don't auto-redirect - show the error message instead
+      setRedirectCountdown(-1); // -1 = disabled
+      return;
+    }
+
+    // Store OAuth attempt timestamp
+    sessionStorage.setItem("lastOAuthAttempt", Date.now().toString());
+
+    // Build reconnect URL with channelId so we update the RIGHT GoogleAccount
+    const reconnectUrl = channelId
+      ? `/api/integrations/google/start?channelId=${encodeURIComponent(
+          channelId
+        )}`
+      : "/api/integrations/google/start";
+
+    const timer = setInterval(() => {
+      setRedirectCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          window.location.href = reconnectUrl;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [error?.kind]);
 
   const getErrorTitle = () => {
     if (error?.kind === "limit_reached") return "Daily limit reached";
@@ -50,10 +94,18 @@ export function ErrorState({
       return "Please select a channel to view video insights.";
     }
     if (error?.kind === "limit_reached") {
-      return `You used ${error.used}/${error.limit} video analyses today. You can analyze more after ${formatResetAt(error.resetAt)}.`;
+      return `You used ${error.used}/${
+        error.limit
+      } video analyses today. You can analyze more after ${formatResetAt(
+        error.resetAt
+      )}.`;
     }
     if (error?.kind === "youtube_permissions") {
-      return "Your Google connection is missing YouTube Analytics permissions (often because permissions were denied). Reconnect Google and allow the requested access.";
+      if (redirectCountdown === -1) {
+        // Already tried reconnecting - show helpful message
+        return "The Google account you connected doesn't have access to this channel's analytics. Make sure you connect the Google account that OWNS this YouTube channel (the account you use to log into YouTube Studio for this channel).";
+      }
+      return `Your Google connection needs to be refreshed. Redirecting to Google in ${redirectCountdown}...`;
     }
     if (error?.kind === "upgrade_required") {
       return error.message;
@@ -79,33 +131,92 @@ export function ErrorState({
         )}
 
         <div className={s.errorActions}>
-          {error?.kind === "youtube_permissions" && (
-            <a className={s.backBtn} href="/api/integrations/google/start">
-              Reconnect Google
-            </a>
+          {error?.kind === "youtube_permissions" ? (
+            redirectCountdown === -1 ? (
+              // Already tried - show manual reconnect option
+              <>
+                <a
+                  className={s.backBtn}
+                  href={
+                    channelId
+                      ? `/api/integrations/google/start?channelId=${encodeURIComponent(
+                          channelId
+                        )}`
+                      : "/api/integrations/google/start"
+                  }
+                >
+                  Try a Different Google Account
+                </a>
+                <button
+                  onClick={onRetry}
+                  className={s.secondaryBtn}
+                  type="button"
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={() => router.back()}
+                  className={s.secondaryBtn}
+                  type="button"
+                >
+                  Go Back
+                </button>
+              </>
+            ) : (
+              // Auto-redirecting
+              <>
+                <div className={s.redirectingBox}>
+                  <span className={s.spinner} />
+                  Redirecting to Google...
+                </div>
+                <a
+                  href={
+                    channelId
+                      ? `/api/integrations/google/start?channelId=${encodeURIComponent(
+                          channelId
+                        )}`
+                      : "/api/integrations/google/start"
+                  }
+                  className={s.secondaryBtn}
+                  style={{ marginTop: "0.5rem" }}
+                >
+                  Click here if not redirected
+                </a>
+              </>
+            )
+          ) : (
+            <>
+              {(error?.kind === "limit_reached" ||
+                error?.kind === "upgrade_required") && (
+                <a
+                  className={s.backBtn}
+                  href="/api/integrations/stripe/checkout"
+                >
+                  Upgrade to Pro —{" "}
+                  {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/
+                  {SUBSCRIPTION.PRO_INTERVAL}
+                </a>
+              )}
+
+              <button
+                onClick={onRetry}
+                className={s.secondaryBtn}
+                type="button"
+              >
+                Try Again
+              </button>
+
+              <button
+                onClick={() => router.back()}
+                className={s.secondaryBtn}
+                type="button"
+              >
+                Go Back
+              </button>
+            </>
           )}
-
-          {(error?.kind === "limit_reached" ||
-            error?.kind === "upgrade_required") && (
-            <a className={s.backBtn} href="/api/integrations/stripe/checkout">
-              Upgrade to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
-            </a>
-          )}
-
-          <button onClick={onRetry} className={s.secondaryBtn} type="button">
-            Try Again
-          </button>
-
-          <button
-            onClick={() => router.back()}
-            className={s.secondaryBtn}
-            type="button"
-          >
-            Go Back
-          </button>
         </div>
       </div>
     </main>
   );
 }
-

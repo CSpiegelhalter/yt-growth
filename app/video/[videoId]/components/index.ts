@@ -14,4 +14,5 @@ export * from "./PriorityActions";
 export * from "./VisibilityPlan";
 export * from "./RemixIdeas";
 export * from "./AllMetrics";
+export * from "./RetentionCurve";
 

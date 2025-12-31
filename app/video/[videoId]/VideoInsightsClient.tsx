@@ -17,6 +17,7 @@ import {
   VisibilityPlan,
   RemixIdeas,
   AllMetrics,
+  RetentionCurve,
 } from "./components";
 
 type Props = {
@@ -41,7 +42,6 @@ type InsightsError =
   | { kind: "youtube_permissions"; message: string; requestId?: string }
   | { kind: "generic"; message: string; status: number; requestId?: string };
 
-
 /**
  * VideoInsightsClient - Clean, story-driven video analytics
  */
@@ -56,7 +56,9 @@ export default function VideoInsightsClient({
   const backLinkBase =
     from === "subscriber-insights" ? "/subscriber-insights" : "/dashboard";
   const backLink = {
-    href: channelId ? `${backLinkBase}?channelId=${encodeURIComponent(channelId)}` : backLinkBase,
+    href: channelId
+      ? `${backLinkBase}?channelId=${encodeURIComponent(channelId)}`
+      : backLinkBase,
     label:
       from === "subscriber-insights"
         ? "Back to Subscriber Insights"
@@ -144,23 +146,39 @@ export default function VideoInsightsClient({
           undefined;
 
         const errObj =
-          body && typeof body === "object" && body.error && typeof body.error === "object"
+          body &&
+          typeof body === "object" &&
+          body.error &&
+          typeof body.error === "object"
             ? body.error
             : null;
         const details =
-          body && typeof body === "object" && body.details && typeof body.details === "object"
+          body &&
+          typeof body === "object" &&
+          body.details &&
+          typeof body.details === "object"
             ? body.details
             : null;
         const legacyError =
-          (details && typeof (details as any).error === "string" && (details as any).error) ||
-          (body && typeof body === "object" && typeof body.error === "string" && body.error) ||
+          (details &&
+            typeof (details as any).error === "string" &&
+            (details as any).error) ||
+          (body &&
+            typeof body === "object" &&
+            typeof body.error === "string" &&
+            body.error) ||
           null;
 
-        if (body?.code === "youtube_permissions" || details?.code === "youtube_permissions") {
+        if (
+          body?.code === "youtube_permissions" ||
+          details?.code === "youtube_permissions"
+        ) {
           setError({
             kind: "youtube_permissions",
             message:
-              (typeof body?.error === "string" ? body?.error : errObj?.message) ??
+              (typeof body?.error === "string"
+                ? body?.error
+                : errObj?.message) ??
               "Google account is missing required YouTube permissions. Reconnect Google and try again.",
             requestId,
           });
@@ -169,7 +187,10 @@ export default function VideoInsightsClient({
           return;
         }
 
-        if (errObj?.code === "LIMIT_REACHED" && legacyError === "limit_reached") {
+        if (
+          errObj?.code === "LIMIT_REACHED" &&
+          legacyError === "limit_reached"
+        ) {
           setError({
             kind: "limit_reached",
             used: Number((details as any)?.used ?? 0),
@@ -184,7 +205,10 @@ export default function VideoInsightsClient({
           return;
         }
 
-        if (errObj?.code === "LIMIT_REACHED" && legacyError === "upgrade_required") {
+        if (
+          errObj?.code === "LIMIT_REACHED" &&
+          legacyError === "upgrade_required"
+        ) {
           setError({
             kind: "upgrade_required",
             message:
@@ -249,7 +273,7 @@ export default function VideoInsightsClient({
         setLlmProgress(100);
         setInsights(data);
       }
-      
+
       setLoading(false);
     } catch (err) {
       console.error("Failed to fetch insights:", err);
@@ -280,7 +304,9 @@ export default function VideoInsightsClient({
 
   // Initial loading state - only show when no data at all
   if (isInitialLoading) {
-    return <LoadingState loadingStage={loadingStage} llmProgress={llmProgress} />;
+    return (
+      <LoadingState loadingStage={loadingStage} llmProgress={llmProgress} />
+    );
   }
 
   // No data / error state
@@ -339,6 +365,15 @@ export default function VideoInsightsClient({
         netSubs={netSubs}
         subsPer1k={subsPer1k}
       />
+
+      {/* Retention Curve */}
+      {insights.retention?.points && insights.retention.points.length > 0 && (
+        <RetentionCurve
+          points={insights.retention.points}
+          durationSec={video.durationSec}
+          cliffTimeSec={insights.retention.cliffTimeSec}
+        />
+      )}
 
       {/* What's Working / Needs Work */}
       {llmInsights && derived.totalViews >= 100 && (

@@ -6,7 +6,10 @@
  *
  * NOTE: This module should only be used on the server side (API routes, server components).
  */
-import { googleFetchWithAutoRefresh } from "@/lib/google-tokens";
+import {
+  googleFetchWithAutoRefresh,
+  GoogleTokenRefreshError,
+} from "@/lib/google-tokens";
 
 const YOUTUBE_ANALYTICS_API = "https://youtubeanalytics.googleapis.com/v2";
 const YOUTUBE_DATA_API = "https://www.googleapis.com/youtube/v3";
@@ -14,6 +17,7 @@ const YOUTUBE_DATA_API = "https://www.googleapis.com/youtube/v3";
 type GoogleAccount = {
   id: number;
   refreshTokenEnc: string | null;
+  accessTokenEnc?: string | null;
   tokenExpiresAt: Date | null;
 };
 
@@ -52,15 +56,17 @@ const ENGAGEMENT_METRICS = [
   "annotationClickThroughRate",
 ];
 
-const MONETIZATION_METRICS = [
-  "estimatedRevenue",
-  "estimatedAdRevenue",
-  "grossRevenue",
-  "monetizedPlaybacks",
-  "playbackBasedCpm",
-  "adImpressions",
-  "cpm",
-];
+// Monetization metrics require yt-analytics-monetary.readonly scope
+// We don't use these currently, so they're commented out to avoid permission errors
+// const MONETIZATION_METRICS = [
+//   "estimatedRevenue",
+//   "estimatedAdRevenue",
+//   "grossRevenue",
+//   "monetizedPlaybacks",
+//   "playbackBasedCpm",
+//   "adImpressions",
+//   "cpm",
+// ];
 
 export type DailyAnalyticsRow = {
   date: string; // YYYY-MM-DD
@@ -132,19 +138,14 @@ export async function fetchVideoAnalyticsDailyWithStatus(
   videoId: string,
   startDate: string,
   endDate: string
-): Promise<{ rows: DailyAnalyticsRow[]; permission: AnalyticsPermissionStatus }> {
-  // First try with all metrics
-  const allMetrics = [
-    ...CORE_METRICS,
-    ...ENGAGEMENT_METRICS,
-    ...MONETIZATION_METRICS,
-  ];
+): Promise<{
+  rows: DailyAnalyticsRow[];
+  permission: AnalyticsPermissionStatus;
+}> {
+  // Try with all available metrics (no monetization - requires separate scope)
+  const allMetrics = [...CORE_METRICS, ...ENGAGEMENT_METRICS];
 
-  const attempts: Array<string[]> = [
-    allMetrics,
-    [...CORE_METRICS, ...ENGAGEMENT_METRICS],
-    CORE_METRICS,
-  ];
+  const attempts: Array<string[]> = [allMetrics, CORE_METRICS];
 
   let sawPermissionDenied = false;
   let permissionMessage: string | undefined;
@@ -199,7 +200,10 @@ export async function fetchVideoAnalyticsTotals(
   // Calculate days in range
   const start = new Date(startDate);
   const end = new Date(endDate);
-  const daysInRange = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+  const daysInRange = Math.max(
+    1,
+    Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  );
 
   return {
     ...totals,
@@ -219,18 +223,14 @@ export async function fetchVideoAnalyticsTotalsWithStatus(
   videoId: string,
   startDate: string,
   endDate: string
-): Promise<{ totals: AnalyticsTotals | null; permission: AnalyticsPermissionStatus }> {
-  const allMetrics = [
-    ...CORE_METRICS,
-    ...ENGAGEMENT_METRICS,
-    ...MONETIZATION_METRICS,
-  ];
+): Promise<{
+  totals: AnalyticsTotals | null;
+  permission: AnalyticsPermissionStatus;
+}> {
+  // No monetization metrics - requires separate scope we don't request
+  const allMetrics = [...CORE_METRICS, ...ENGAGEMENT_METRICS];
 
-  const attempts: Array<string[]> = [
-    allMetrics,
-    [...CORE_METRICS, ...ENGAGEMENT_METRICS],
-    CORE_METRICS,
-  ];
+  const attempts: Array<string[]> = [allMetrics, CORE_METRICS];
 
   let sawPermissionDenied = false;
   let permissionMessage: string | undefined;
@@ -320,53 +320,107 @@ async function tryFetchAnalyticsWithStatus(
     return {
       ok: true,
       rows: data.rows.map((row) => {
-      const obj: Record<string, string | number | null> = {};
-      headers.forEach((h, i) => {
-        obj[h] = row[i] ?? null;
-      });
+        const obj: Record<string, string | number | null> = {};
+        headers.forEach((h, i) => {
+          obj[h] = row[i] ?? null;
+        });
 
-      return {
-        date: String(obj.day ?? startDate),
-        views: Number(obj.views ?? 0),
-        engagedViews: obj.engagedViews != null ? Number(obj.engagedViews) : null,
-        likes: obj.likes != null ? Number(obj.likes) : null,
-        dislikes: obj.dislikes != null ? Number(obj.dislikes) : null,
-        comments: obj.comments != null ? Number(obj.comments) : null,
-        shares: obj.shares != null ? Number(obj.shares) : null,
-        estimatedMinutesWatched: obj.estimatedMinutesWatched != null ? Number(obj.estimatedMinutesWatched) : null,
-        averageViewDuration: obj.averageViewDuration != null ? Math.round(Number(obj.averageViewDuration)) : null,
-        averageViewPercentage: obj.averageViewPercentage != null ? Number(obj.averageViewPercentage) : null,
-        subscribersGained: obj.subscribersGained != null ? Number(obj.subscribersGained) : null,
-        subscribersLost: obj.subscribersLost != null ? Number(obj.subscribersLost) : null,
-        videosAddedToPlaylists: obj.videosAddedToPlaylists != null ? Number(obj.videosAddedToPlaylists) : null,
-        videosRemovedFromPlaylists: obj.videosRemovedFromPlaylists != null ? Number(obj.videosRemovedFromPlaylists) : null,
-        // YouTube Premium
-        redViews: obj.redViews != null ? Number(obj.redViews) : null,
-        // Card & End Screen
-        cardClicks: obj.cardClicks != null ? Number(obj.cardClicks) : null,
-        cardImpressions: obj.cardImpressions != null ? Number(obj.cardImpressions) : null,
-        cardClickRate: obj.cardClickRate != null ? Number(obj.cardClickRate) : null,
-        annotationClicks: obj.annotationClicks != null ? Number(obj.annotationClicks) : null,
-        annotationImpressions: obj.annotationImpressions != null ? Number(obj.annotationImpressions) : null,
-        annotationClickThroughRate: obj.annotationClickThroughRate != null ? Number(obj.annotationClickThroughRate) : null,
-        // Monetization
-        estimatedRevenue: obj.estimatedRevenue != null ? Number(obj.estimatedRevenue) : null,
-        estimatedAdRevenue: obj.estimatedAdRevenue != null ? Number(obj.estimatedAdRevenue) : null,
-        grossRevenue: obj.grossRevenue != null ? Number(obj.grossRevenue) : null,
-        monetizedPlaybacks: obj.monetizedPlaybacks != null ? Number(obj.monetizedPlaybacks) : null,
-        playbackBasedCpm: obj.playbackBasedCpm != null ? Number(obj.playbackBasedCpm) : null,
-        adImpressions: obj.adImpressions != null ? Number(obj.adImpressions) : null,
-        cpm: obj.cpm != null ? Number(obj.cpm) : null,
-      };
+        return {
+          date: String(obj.day ?? startDate),
+          views: Number(obj.views ?? 0),
+          engagedViews:
+            obj.engagedViews != null ? Number(obj.engagedViews) : null,
+          likes: obj.likes != null ? Number(obj.likes) : null,
+          dislikes: obj.dislikes != null ? Number(obj.dislikes) : null,
+          comments: obj.comments != null ? Number(obj.comments) : null,
+          shares: obj.shares != null ? Number(obj.shares) : null,
+          estimatedMinutesWatched:
+            obj.estimatedMinutesWatched != null
+              ? Number(obj.estimatedMinutesWatched)
+              : null,
+          averageViewDuration:
+            obj.averageViewDuration != null
+              ? Math.round(Number(obj.averageViewDuration))
+              : null,
+          averageViewPercentage:
+            obj.averageViewPercentage != null
+              ? Number(obj.averageViewPercentage)
+              : null,
+          subscribersGained:
+            obj.subscribersGained != null
+              ? Number(obj.subscribersGained)
+              : null,
+          subscribersLost:
+            obj.subscribersLost != null ? Number(obj.subscribersLost) : null,
+          videosAddedToPlaylists:
+            obj.videosAddedToPlaylists != null
+              ? Number(obj.videosAddedToPlaylists)
+              : null,
+          videosRemovedFromPlaylists:
+            obj.videosRemovedFromPlaylists != null
+              ? Number(obj.videosRemovedFromPlaylists)
+              : null,
+          // YouTube Premium
+          redViews: obj.redViews != null ? Number(obj.redViews) : null,
+          // Card & End Screen
+          cardClicks: obj.cardClicks != null ? Number(obj.cardClicks) : null,
+          cardImpressions:
+            obj.cardImpressions != null ? Number(obj.cardImpressions) : null,
+          cardClickRate:
+            obj.cardClickRate != null ? Number(obj.cardClickRate) : null,
+          annotationClicks:
+            obj.annotationClicks != null ? Number(obj.annotationClicks) : null,
+          annotationImpressions:
+            obj.annotationImpressions != null
+              ? Number(obj.annotationImpressions)
+              : null,
+          annotationClickThroughRate:
+            obj.annotationClickThroughRate != null
+              ? Number(obj.annotationClickThroughRate)
+              : null,
+          // Monetization
+          estimatedRevenue:
+            obj.estimatedRevenue != null ? Number(obj.estimatedRevenue) : null,
+          estimatedAdRevenue:
+            obj.estimatedAdRevenue != null
+              ? Number(obj.estimatedAdRevenue)
+              : null,
+          grossRevenue:
+            obj.grossRevenue != null ? Number(obj.grossRevenue) : null,
+          monetizedPlaybacks:
+            obj.monetizedPlaybacks != null
+              ? Number(obj.monetizedPlaybacks)
+              : null,
+          playbackBasedCpm:
+            obj.playbackBasedCpm != null ? Number(obj.playbackBasedCpm) : null,
+          adImpressions:
+            obj.adImpressions != null ? Number(obj.adImpressions) : null,
+          cpm: obj.cpm != null ? Number(obj.cpm) : null,
+        };
       }),
     };
   } catch (err: any) {
+    // Re-throw auth errors so they trigger the reconnect prompt
+    if (err instanceof GoogleTokenRefreshError) {
+      throw err;
+    }
+    // Analytics metric permission errors (e.g., requesting monetization metrics without scope)
+    // Return permission_denied so the fallback logic can try with fewer metrics
+    if (err?.isAnalyticsPermError) {
+      // Permission denied for these metrics - fallback logic will try with fewer metrics
+      return { ok: false, reason: "permission_denied", message: err?.message };
+    }
     // Clean error message for scope/permission issues
     if (err?.isScopeError || err?.message?.includes("SCOPE_ERROR")) {
-      console.warn(`[Analytics] Permission denied - user may have declined required scopes`);
+      console.warn(
+        `[Analytics] Permission denied - user may have declined required scopes`
+      );
       return { ok: false, reason: "permission_denied", message: err?.message };
     } else {
-      console.error(`[Analytics] Fetch failed for metrics ${metrics.join(",")}:`, err?.message || err);
+      console.error(
+        `[Analytics] Fetch failed for metrics ${metrics.join(",")}:`,
+        err?.message || err
+      );
       return { ok: false, reason: "other", message: err?.message };
     }
   }
@@ -396,7 +450,8 @@ async function tryFetchAnalyticsTotalsWithStatus(
     null
   );
   if (!result.ok) return result;
-  if (!result.rows || result.rows.length === 0) return { ok: true, totals: null };
+  if (!result.rows || result.rows.length === 0)
+    return { ok: true, totals: null };
   return { ok: true, totals: result.rows[0] as any };
 }
 
@@ -409,7 +464,10 @@ export async function fetchOwnedVideoMetadata(
 ): Promise<VideoMetadata | null> {
   try {
     const url = new URL(`${YOUTUBE_DATA_API}/videos`);
-    url.searchParams.set("part", "snippet,contentDetails,statistics,topicDetails");
+    url.searchParams.set(
+      "part",
+      "snippet,contentDetails,statistics,topicDetails"
+    );
     url.searchParams.set("id", videoId);
 
     const data = await googleFetchWithAutoRefresh<{
@@ -463,6 +521,10 @@ export async function fetchOwnedVideoMetadata(
       topicCategories: item.topicDetails?.topicCategories ?? [],
     };
   } catch (err) {
+    // Re-throw auth errors so they trigger the reconnect prompt
+    if (err instanceof GoogleTokenRefreshError) {
+      throw err;
+    }
     console.error("Failed to fetch video metadata:", err);
     return null;
   }
@@ -521,18 +583,27 @@ export async function fetchOwnedVideoComments(
       publishedAt: item.snippet.topLevelComment.snippet.publishedAt,
     }));
   } catch (err: any) {
+    // Re-throw auth errors so they trigger the reconnect prompt
+    if (err instanceof GoogleTokenRefreshError) {
+      throw err;
+    }
+
     const msg = String(err?.message ?? err ?? "");
 
     // Clean error message for scope/permission issues
     if (err?.isScopeError || err?.message?.includes("SCOPE_ERROR")) {
-      console.warn(`[Comments] Permission denied - user may have declined youtube.force-ssl scope`);
+      console.warn(
+        `[Comments] Permission denied - user may have declined youtube.force-ssl scope`
+      );
       return [];
     }
 
     // Explicit handling: comments disabled for this video (NOT a permission issue)
     // YouTube returns 403 with reason "commentsDisabled"
     if (msg.includes("commentsDisabled") || msg.includes("disabled comments")) {
-      console.info(`[Comments] Disabled for this video (${videoId}); skipping comments fetch`);
+      console.info(
+        `[Comments] Disabled for this video (${videoId}); skipping comments fetch`
+      );
       return [];
     }
 
@@ -542,10 +613,13 @@ export async function fetchOwnedVideoComments(
       try {
         const parsed = JSON.parse(jsonPart) as any;
         const reasons: string[] =
-          parsed?.error?.errors?.map((e: any) => String(e?.reason ?? "")).filter(Boolean) ??
-          [];
+          parsed?.error?.errors
+            ?.map((e: any) => String(e?.reason ?? ""))
+            .filter(Boolean) ?? [];
         if (reasons.includes("commentsDisabled")) {
-          console.info(`[Comments] Disabled for this video (${videoId}); skipping comments fetch`);
+          console.info(
+            `[Comments] Disabled for this video (${videoId}); skipping comments fetch`
+          );
           return [];
         }
       } catch {
@@ -581,7 +655,10 @@ function parseDuration(duration: string): number {
 /**
  * Get date range strings for a given range type
  */
-export function getDateRange(range: "7d" | "28d" | "90d"): { startDate: string; endDate: string } {
+export function getDateRange(range: "7d" | "28d" | "90d"): {
+  startDate: string;
+  endDate: string;
+} {
   const endDate = new Date();
   const startDate = new Date();
 
@@ -602,4 +679,3 @@ export function getDateRange(range: "7d" | "28d" | "90d"): { startDate: string; 
     endDate: endDate.toISOString().split("T")[0],
   };
 }
-

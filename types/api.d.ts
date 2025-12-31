@@ -854,6 +854,17 @@ export type VideoInsightsLLM = {
   };
 };
 
+export type RetentionPoint = {
+  elapsedRatio: number; // 0-1 (percentage through video)
+  audienceWatchRatio: number; // 0-1 (percentage still watching)
+};
+
+export type RetentionData = {
+  points: RetentionPoint[];
+  cliffTimeSec?: number | null;
+  cliffReason?: string | null;
+};
+
 export type VideoInsightsResponse = {
   video: OwnedVideoMetadata;
   analytics: {
@@ -878,6 +889,7 @@ export type VideoInsightsResponse = {
       action: string;
     };
   };
+  retention?: RetentionData;
   llmInsights: VideoInsightsLLM | null;
   cachedUntil: string;
   demo?: boolean;

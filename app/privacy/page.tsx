@@ -14,7 +14,7 @@ export default function PrivacyPage() {
     <main className={s.container}>
       <div className={s.content}>
         <h1 className={s.title}>Privacy Policy</h1>
-        <p className={s.updated}>Last updated: December 30, 2024</p>
+        <p className={s.updated}>Last updated: December 31, 2025</p>
 
         <section className={s.section}>
           <h2>1. Information We Collect</h2>
@@ -145,6 +145,12 @@ export default function PrivacyPage() {
               To protect the rights, property, or safety of {BRAND.name}, our
               users, or the public
             </li>
+            <li>
+              With trusted service providers who process data on our behalf to
+              operate and provide features in {BRAND.name} (for example,
+              generating AI-powered insights), under contractual confidentiality
+              and security obligations
+            </li>
           </ul>
 
           <h3>3.5 Google Limited Use Disclosure</h3>
@@ -161,6 +167,34 @@ export default function PrivacyPage() {
             </a>
             , including the Limited Use requirements.
           </p>
+
+          <h3>3.6 AI Processing</h3>
+          <p>
+            {BRAND.name} may use AI services to generate user-facing insights
+            such as summaries, comment sentiment/themes, and content
+            recommendations.
+          </p>
+          <ul>
+            <li>
+              <strong>What we send:</strong> Only the minimum information needed
+              to perform the requested feature (for example, video
+              titles/descriptions, selected analytics metrics, and/or comments
+              text for sentiment analysis).
+            </li>
+            <li>
+              <strong>Purpose limitation:</strong> This processing is used only
+              to provide the feature the user is using inside {BRAND.name}.
+            </li>
+            <li>
+              <strong>No ads / no selling:</strong> We do not sell
+              Google/YouTube user data or use it for advertising.
+            </li>
+            <li>
+              <strong>Service providers:</strong> Any third-party AI processing
+              is performed by trusted providers under confidentiality and
+              security obligations.
+            </li>
+          </ul>
         </section>
 
         <section className={s.section}>
@@ -263,7 +297,8 @@ export default function PrivacyPage() {
             your data, or wish to exercise any of your data rights, please{" "}
             <a href="/contact" className={s.link}>
               contact us
-            </a>.
+            </a>
+            .
           </p>
         </section>
       </div>

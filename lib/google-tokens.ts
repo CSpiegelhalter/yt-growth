@@ -2,11 +2,40 @@
 import { prisma } from "@/prisma";
 import { mockYouTubeApiResponse } from "@/lib/youtube-mock";
 
+/**
+ * Custom error for when Google token refresh fails (revoked access, invalid token, etc.)
+ * This error should trigger a "Reconnect Google" prompt in the frontend.
+ */
+export class GoogleTokenRefreshError extends Error {
+  code = "youtube_permissions" as const; // Reuse existing error code for reconnect prompt
+  constructor(message: string = "Google access has been revoked. Please reconnect your Google account.") {
+    super(message);
+    this.name = "GoogleTokenRefreshError";
+  }
+}
+
 type GA = {
   id: number;
   refreshTokenEnc: string | null;
+  accessTokenEnc?: string | null;  // Cached access token from DB
   tokenExpiresAt: Date | null;
 };
+
+// Mutex to prevent concurrent refreshes for the same account (still useful within a worker)
+const refreshInProgress = new Map<number, Promise<string>>();
+
+/**
+ * Clear the cached access token for a GoogleAccount.
+ * Call this after updating the refresh token (e.g., after OAuth callback).
+ */
+export async function clearAccessTokenCache(googleAccountId: number): Promise<void> {
+  refreshInProgress.delete(googleAccountId);
+  // Clear the DB-stored access token so it gets refreshed on next use
+  await prisma.googleAccount.update({
+    where: { id: googleAccountId },
+    data: { accessTokenEnc: null, tokenExpiresAt: null },
+  });
+}
 
 type GoogleApiStats = {
   startedAt: string;
@@ -160,18 +189,31 @@ console.log("[YouTube] Config:", {
   DEMO_MODE: process.env.DEMO_MODE ?? "not set",
 });
 
-export async function getAccessToken(ga: GA): Promise<string> {
+export async function getAccessToken(ga: GA, forceRefresh = false): Promise<string> {
   const now = Date.now();
   const exp = ga.tokenExpiresAt?.getTime() ?? 0;
 
-  // Refresh if expiring within 60s
-  if (exp - now <= 60_000) {
-    return await refreshAccessToken(ga);
+  // If not forcing refresh, check if we have a valid cached access token (not expiring within 60s)
+  if (!forceRefresh && ga.accessTokenEnc && exp - now > 60_000) {
+    return ga.accessTokenEnc;
   }
 
-  // If you also store the current access token, return it here.
-  // If you don't store it (totally fine), just refresh every time:
-  return await refreshAccessToken(ga);
+  // If a refresh is already in progress for this account (within this worker), wait for it
+  // This prevents concurrent requests from triggering multiple token refreshes
+  const inProgress = refreshInProgress.get(ga.id);
+  if (inProgress) {
+    return inProgress;
+  }
+
+  // Start a new refresh and track it to prevent concurrent refreshes within this worker
+  const refreshPromise = refreshAccessToken(ga);
+  refreshInProgress.set(ga.id, refreshPromise);
+  
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshInProgress.delete(ga.id);
+  }
 }
 
 export async function refreshAccessToken(ga: GA): Promise<string> {
@@ -192,7 +234,10 @@ export async function refreshAccessToken(ga: GA): Promise<string> {
 
   if (!res.ok) {
     // 400 invalid_grant -> refresh token revoked or user removed access
-    throw new Error(`refresh_failed_${res.status}`);
+    console.error(`[GoogleTokens] Token refresh failed with status ${res.status}`);
+    throw new GoogleTokenRefreshError(
+      "Your Google access has been revoked or expired. Please reconnect your Google account."
+    );
   }
 
   const tok = (await res.json()) as {
@@ -200,10 +245,15 @@ export async function refreshAccessToken(ga: GA): Promise<string> {
     expires_in: number;
     scope?: string;
   };
+  
+  const expiresAt = Date.now() + tok.expires_in * 1000;
+  
+  // Store the access token in the database (so it works across Next.js workers)
   await prisma.googleAccount.update({
     where: { id: ga.id },
     data: {
-      tokenExpiresAt: new Date(Date.now() + tok.expires_in * 1000),
+      accessTokenEnc: tok.access_token,
+      tokenExpiresAt: new Date(expiresAt),
       scopes: tok.scope ?? undefined,
     },
   });
@@ -235,8 +285,9 @@ export async function googleFetchWithAutoRefresh<T>(
   });
 
   if (r.status === 401) {
-    // try refresh once
-    accessToken = await refreshAccessToken(ga);
+    // Token rejected - try refresh once using mutex to prevent concurrent refreshes
+    const errorBody = await r.text();
+    accessToken = await getAccessToken(ga, true);
     r = await fetch(url, {
       ...(init ?? {}),
       headers: {
@@ -244,6 +295,11 @@ export async function googleFetchWithAutoRefresh<T>(
         Authorization: `Bearer ${accessToken}`,
       },
     });
+    if (r.status === 401) {
+      // Still failing after refresh - reconstruct response for error handling below
+      const retryErrorBody = await r.text();
+      r = new Response(retryErrorBody, { status: 401, statusText: "Unauthorized" });
+    }
   }
 
   if (!r.ok) {
@@ -269,17 +325,25 @@ export async function googleFetchWithAutoRefresh<T>(
       body.includes("insufficientPermissions") ||
       body.includes("Insufficient Permission");
 
-    const isAnalyticsPermError =
-      r.status === 401 &&
+    // Analytics permission errors for specific metrics (e.g., monetization metrics without monetary scope)
+    // This should NOT trigger reconnect - instead allow fallback to other metrics
+    const isAnalyticsMetricPermError =
+      (r.status === 401 || r.status === 403) &&
       body.includes("Insufficient permission to access this report");
 
-    if (isScopeError || isAnalyticsPermError) {
-      const err = new Error(
-        `SCOPE_ERROR: User denied required permissions for this feature`
+    if (isScopeError) {
+      // Scope errors should trigger reconnect prompt
+      throw new GoogleTokenRefreshError(
+        "Google permissions have been revoked. Please reconnect your Google account."
       );
-      (err as any).isScopeError = true;
-      (err as any).status = r.status;
-      throw err;
+    }
+
+    // For analytics metric permission errors, throw a regular error with a flag
+    // so the caller can catch it and try with fewer metrics
+    if (isAnalyticsMetricPermError) {
+      const error = new Error("Insufficient permission to access this report");
+      (error as any).isAnalyticsPermError = true;
+      throw error;
     }
 
     throw new Error(`google_api_error_${r.status}: ${body}`);
