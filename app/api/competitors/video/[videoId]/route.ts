@@ -31,9 +31,8 @@ import {
   fetchVideoComments,
 } from "@/lib/youtube-api";
 import {
-  generateCompetitorVideoAnalysis,
+  generateCompetitorVideoAnalysisParallel,
   analyzeVideoComments,
-  generateCompetitorBeatChecklist,
 } from "@/lib/llm";
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
@@ -54,7 +53,8 @@ const ParamsSchema = z.object({
 
 const QuerySchema = z.object({
   channelId: z.string().min(1),
-  includeMoreFromChannel: z.union([z.literal("0"), z.literal("1")])
+  includeMoreFromChannel: z
+    .union([z.literal("0"), z.literal("1")])
     .optional()
     .default("1"),
 });
@@ -523,10 +523,11 @@ async function GETHandler(
       beatThisVideoLLM = normalizeBeatChecklist(cached?.beatThisVideo);
     } else {
       console.log(
-        `[competitor.video] Generating new analysis (hash changed: ${dbVideo?.analysisContentHash} -> ${currentContentHash})`
+        `[competitor.video] Generating new analysis with parallel LLM (hash changed: ${dbVideo?.analysisContentHash} -> ${currentContentHash})`
       );
       try {
-        const llm = await generateCompetitorVideoAnalysis(
+        // Use parallelized LLM calls for ~4x faster response
+        const llm = await generateCompetitorVideoAnalysisParallel(
           {
             videoId: video.videoId,
             title: video.title,
@@ -543,10 +544,9 @@ async function GETHandler(
           channel.title ?? "Your Channel",
           commentsAnalysis
         );
-        beatThisVideoLLM = normalizeBeatChecklist((llm as any).beatThisVideo);
+        beatThisVideoLLM = normalizeBeatChecklist(llm.beatThisVideo);
         // Keep analysisJson compatible (beat checklist is stored separately)
-        const analysisOnly = { ...(llm as any) };
-        delete (analysisOnly as any).beatThisVideo;
+        const { beatThisVideo: _beat, ...analysisOnly } = llm;
         analysis = analysisOnly as CompetitorVideoAnalysis["analysis"];
       } catch (err) {
         console.warn(
@@ -584,31 +584,7 @@ async function GETHandler(
         : [],
     };
 
-    // Backfill beat checklist (LLM) if missing from cache.
-    // This keeps "Beat this video" from being generic across all videos.
-    if (!beatThisVideoLLM || beatThisVideoLLM.length === 0) {
-      try {
-        beatThisVideoLLM = await generateCompetitorBeatChecklist({
-          title: video.title,
-          channelTitle: video.channelTitle,
-          description: videoDetails.description,
-          tags: videoDetails.tags ?? [],
-          durationSec: video.durationSec,
-          viewCount: video.stats.viewCount,
-          viewsPerDay: video.derived.viewsPerDay,
-          likeCount: video.stats.likeCount,
-          commentCount: video.stats.commentCount,
-          engagementPerView,
-          userChannelTitle: channel.title ?? "Your Channel",
-          commentsAnalysis,
-        });
-      } catch (err) {
-        console.warn("Failed to generate beat checklist:", err);
-      }
-    }
-
-    // If analysis was served from cache but beat checklist was missing, persist just the beat list
-    // so subsequent loads are fast and consistent.
+    // If analysis was served from cache but beat checklist was missing, we need to backfill it
     if (
       isAnalysisCacheFresh &&
       dbVideo?.analysisJson &&
@@ -1210,7 +1186,9 @@ function pickTopicHint(input: {
     .find((t) => !/youtube|subscribe|video|views/i.test(t.toLowerCase()));
   if (tag) return tag;
 
-  const kws = deriveKeywordsFromText(`${input.title} ${input.description}`.slice(0, 800));
+  const kws = deriveKeywordsFromText(
+    `${input.title} ${input.description}`.slice(0, 800)
+  );
   if (kws.length >= 2) return `${kws[0]} ${kws[1]}`;
   if (kws.length === 1) return kws[0];
   return "this topic";
@@ -1237,7 +1215,7 @@ function generateFreshAngles(input: {
 
   const numberChoices = [3, 5, 7, 9];
   const dayChoices = [7, 14, 30];
-  const pick = <T,>(arr: T[]) => arr[Math.floor(rng() * arr.length)]!;
+  const pick = <T>(arr: T[]) => arr[Math.floor(rng() * arr.length)]!;
   const n = pick(numberChoices);
   const days = pick(dayChoices);
 
@@ -1280,7 +1258,9 @@ function generateFreshAngles(input: {
       candidates.push(
         `One-model explanation: “${topic} explained with 1 simple framework + real examples”`
       );
-      candidates.push(`Myth-busting: “${n} myths about ${topic} that waste your time”`);
+      candidates.push(
+        `Myth-busting: “${n} myths about ${topic} that waste your time”`
+      );
       break;
     case "Listicle":
       candidates.push(
@@ -1350,7 +1330,9 @@ function generateFreshAngles(input: {
   // Ensure we always return enough angles
   const out = uniq.slice(0, 6);
   while (out.length < 4) {
-    out.push(`Add specificity by focusing on one sub-problem of ${topic} (a single “before → after” transformation)`);
+    out.push(
+      `Add specificity by focusing on one sub-problem of ${topic} (a single “before → after” transformation)`
+    );
   }
   return out.slice(0, 6);
 }

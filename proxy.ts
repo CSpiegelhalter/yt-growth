@@ -26,7 +26,7 @@ function isProtectedPath(pathname: string) {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-// Static files that should never go through middleware
+// Static files that should never go through proxy
 const STATIC_FILES = [
   "/manifest.json",
   "/favicon.ico",
@@ -38,10 +38,10 @@ const STATIC_FILES = [
   "/sitemap.xml",
 ];
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Skip middleware for static files
+  // Skip proxy for static files
   if (STATIC_FILES.includes(pathname) || pathname.startsWith("/og/")) {
     return NextResponse.next();
   }

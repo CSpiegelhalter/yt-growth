@@ -1566,6 +1566,359 @@ Generate a beat checklist that helps me outperform this specific video with bett
   return cleaned;
 }
 
+// ============================================
+// PARALLELIZED COMPETITOR ANALYSIS
+// ============================================
+
+type CompetitorVideoInput = {
+  videoId: string;
+  title: string;
+  description?: string;
+  tags?: string[];
+  channelTitle: string;
+  durationSec?: number;
+  stats: { viewCount: number; likeCount?: number; commentCount?: number };
+  derived: {
+    viewsPerDay: number;
+    likeRate?: number;
+    commentRate?: number;
+    engagementPerView?: number;
+  };
+};
+
+type CommentsAnalysisInput = {
+  sentiment?: { positive: number; neutral: number; negative: number };
+  themes?: Array<{ theme: string; count: number; examples: string[] }>;
+  viewerLoved?: string[];
+  viewerAskedFor?: string[];
+};
+
+/**
+ * Build shared video context for competitor analysis prompts
+ */
+function buildCompetitorContext(
+  video: CompetitorVideoInput,
+  userChannelTitle: string,
+  commentsAnalysis?: CommentsAnalysisInput
+): string {
+  let commentsContext = "";
+  if (commentsAnalysis) {
+    if (commentsAnalysis.sentiment) {
+      commentsContext += `\nComment sentiment: ${commentsAnalysis.sentiment.positive}% positive, ${commentsAnalysis.sentiment.neutral}% neutral, ${commentsAnalysis.sentiment.negative}% negative`;
+    }
+    if (commentsAnalysis.themes && commentsAnalysis.themes.length > 0) {
+      commentsContext += `\nTop comment themes: ${commentsAnalysis.themes.map((t) => t.theme).join(", ")}`;
+    }
+    if (commentsAnalysis.viewerLoved && commentsAnalysis.viewerLoved.length > 0) {
+      commentsContext += `\nWhat viewers loved: ${commentsAnalysis.viewerLoved.slice(0, 3).join("; ")}`;
+    }
+    if (commentsAnalysis.viewerAskedFor && commentsAnalysis.viewerAskedFor.length > 0) {
+      commentsContext += `\nViewers asked for: ${commentsAnalysis.viewerAskedFor.slice(0, 3).join("; ")}`;
+    }
+  }
+
+  const cleanDesc = (video.description ?? "")
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "")
+    .replace(/#[\p{L}\p{N}_-]+/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 800);
+
+  return `Analyzing for channel: "${userChannelTitle}"
+
+COMPETITOR VIDEO:
+Title: "${video.title}"
+Channel: ${video.channelTitle}
+${video.durationSec ? `Duration: ${Math.max(1, Math.round(video.durationSec / 60))} minutes` : ""}
+Description: ${cleanDesc || "[minimal]"}
+Tags: ${(video.tags ?? []).slice(0, 20).join(", ") || "[none]"}
+Views: ${video.stats.viewCount.toLocaleString()}
+Views/day: ${video.derived.viewsPerDay.toLocaleString()}
+${video.stats.likeCount ? `Likes: ${video.stats.likeCount.toLocaleString()}` : ""}
+${video.stats.commentCount ? `Comments: ${video.stats.commentCount.toLocaleString()}` : ""}
+${video.derived.engagementPerView ? `Engagement rate: ${(video.derived.engagementPerView * 100).toFixed(2)}%` : ""}${commentsContext}`;
+}
+
+/**
+ * Chunk 1: What It's About + Why It's Working
+ */
+async function generateCompetitorBasicAnalysis(
+  video: CompetitorVideoInput,
+  userChannelTitle: string,
+  commentsAnalysis?: CommentsAnalysisInput
+): Promise<{
+  whatItsAbout: string;
+  whyItsWorking: string[];
+} | null> {
+  const systemPrompt = `You are an expert YouTube growth strategist analyzing competitor videos.
+
+Return ONLY valid JSON:
+{
+  "whatItsAbout": "2 sentences max describing the actual video content (NOT the description text)",
+  "whyItsWorking": ["Specific reason 1", "Specific reason 2", "Specific reason 3", "Specific reason 4"]
+}
+
+CRITICAL RULES for "whatItsAbout":
+- Describe what the VIDEO CONTENT actually is, NOT metadata
+- NEVER copy or echo the description - it's often just social links
+- NEVER output: social media handles, ▶TWITCH, ▶MERCH, stream dates
+- INFER the topic from title, channel name, and tags
+- Good: "A Minecraft stream featuring building challenges and viewer interactions."
+- Bad: "▶TWITCH: ▶MERCH: ▶Twitter..." (copying garbage)
+
+For "whyItsWorking":
+- Provide 4-6 specific, actionable reasons
+- Incorporate comment insights if available
+- No generic advice`;
+
+  const context = buildCompetitorContext(video, userChannelTitle, commentsAnalysis);
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: context },
+      ],
+      { temperature: 0.5, maxTokens: 500, responseFormat: "json_object" }
+    );
+    return JSON.parse(result.content);
+  } catch (err) {
+    console.error("Competitor basic analysis failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Chunk 2: Themes & Patterns
+ */
+async function generateCompetitorThemesPatterns(
+  video: CompetitorVideoInput,
+  userChannelTitle: string,
+  commentsAnalysis?: CommentsAnalysisInput
+): Promise<{
+  themesToRemix: Array<{ theme: string; why: string }>;
+  titlePatterns: string[];
+  packagingNotes: string[];
+} | null> {
+  const systemPrompt = `You are an expert YouTube growth strategist analyzing competitor videos for patterns to steal.
+
+Return ONLY valid JSON:
+{
+  "themesToRemix": [
+    { "theme": "Theme name", "why": "Why this theme resonates with viewers" }
+  ],
+  "titlePatterns": ["Pattern 1 observed in this title", "Pattern 2"],
+  "packagingNotes": ["Note about thumbnail/title combo", "Emotional trigger used"]
+}
+
+RULES:
+- 2-3 themes that could be remixed for the user's channel
+- 2-3 title patterns to learn from
+- 2-3 packaging notes (only if clearly implied by title/description/comments)
+- Keep insights specific and actionable
+- No markdown`;
+
+  const context = buildCompetitorContext(video, userChannelTitle, commentsAnalysis);
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: context },
+      ],
+      { temperature: 0.5, maxTokens: 500, responseFormat: "json_object" }
+    );
+    return JSON.parse(result.content);
+  } catch (err) {
+    console.error("Competitor themes/patterns failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Chunk 3: Remix Ideas for User's Channel
+ */
+async function generateCompetitorRemixIdeas(
+  video: CompetitorVideoInput,
+  userChannelTitle: string,
+  commentsAnalysis?: CommentsAnalysisInput
+): Promise<{
+  remixIdeasForYou: Array<{
+    title: string;
+    hook: string;
+    overlayText: string;
+    angle: string;
+  }>;
+} | null> {
+  const systemPrompt = `You are an expert YouTube creative strategist helping creators remix competitor content.
+
+Return ONLY valid JSON:
+{
+  "remixIdeasForYou": [
+    {
+      "title": "Specific title idea for the user's channel",
+      "hook": "Opening line for the video",
+      "overlayText": "3-4 word thumbnail text",
+      "angle": "Brief description of the unique angle"
+    }
+  ]
+}
+
+RULES:
+- Generate 3-4 remix ideas tailored for "${userChannelTitle}"
+- Each idea should put a unique spin on the competitor's topic
+- Titles should be complete, ready-to-use
+- Hooks should be compelling opening lines
+- Overlay text should be punchy thumbnail text
+- No markdown`;
+
+  const context = buildCompetitorContext(video, userChannelTitle, commentsAnalysis);
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: context },
+      ],
+      { temperature: 0.6, maxTokens: 600, responseFormat: "json_object" }
+    );
+    return JSON.parse(result.content);
+  } catch (err) {
+    console.error("Competitor remix ideas failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Chunk 4: Beat This Video Checklist (parallel version)
+ */
+async function generateCompetitorBeatChecklistParallel(
+  video: CompetitorVideoInput,
+  userChannelTitle: string,
+  commentsAnalysis?: CommentsAnalysisInput
+): Promise<
+  Array<{
+    action: string;
+    difficulty: "Easy" | "Medium" | "Hard";
+    impact: "Low" | "Medium" | "High";
+  }> | null
+> {
+  const systemPrompt = `You are an expert YouTube growth strategist creating a "Beat this video" checklist.
+
+Return ONLY valid JSON:
+{
+  "beatThisVideo": [
+    { "action": "Concrete step specific to THIS video", "difficulty": "Easy|Medium|Hard", "impact": "Low|Medium|High" }
+  ]
+}
+
+CRITICAL RULES:
+- Provide 6-8 items
+- Each item must reference something from the inputs (topic, format, length, comments, metrics)
+- Avoid generic items like "make a better thumbnail" unless you specify WHAT to change for THIS topic
+- Actions should be phrased as what to do (not observations)
+- No markdown`;
+
+  const context = buildCompetitorContext(video, userChannelTitle, commentsAnalysis);
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: context },
+      ],
+      { temperature: 0.5, maxTokens: 600, responseFormat: "json_object" }
+    );
+    const parsed = JSON.parse(result.content);
+    const list = Array.isArray(parsed.beatThisVideo) ? parsed.beatThisVideo : [];
+    return list
+      .map((x: any) => ({
+        action: typeof x?.action === "string" ? x.action.trim() : "",
+        difficulty:
+          x?.difficulty === "Easy" || x?.difficulty === "Medium" || x?.difficulty === "Hard"
+            ? x.difficulty
+            : "Medium",
+        impact:
+          x?.impact === "Low" || x?.impact === "Medium" || x?.impact === "High"
+            ? x.impact
+            : "High",
+      }))
+      .filter((x: any) => x.action.length >= 16)
+      .slice(0, 8);
+  } catch (err) {
+    console.error("Competitor beat checklist failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Generate competitor video analysis using 4 parallel LLM calls for faster response
+ */
+export async function generateCompetitorVideoAnalysisParallel(
+  video: CompetitorVideoInput,
+  userChannelTitle: string,
+  commentsAnalysis?: CommentsAnalysisInput
+): Promise<{
+  whatItsAbout: string;
+  whyItsWorking: string[];
+  themesToRemix: Array<{ theme: string; why: string }>;
+  titlePatterns: string[];
+  packagingNotes: string[];
+  beatThisVideo: Array<{
+    action: string;
+    difficulty: "Easy" | "Medium" | "Hard";
+    impact: "Low" | "Medium" | "High";
+  }>;
+  remixIdeasForYou: Array<{
+    title: string;
+    hook: string;
+    overlayText: string;
+    angle: string;
+  }>;
+}> {
+  console.log("[CompetitorAnalysis] Starting parallel LLM generation (4 chunks)");
+  const startTime = Date.now();
+
+  // Run all 4 LLM calls in parallel
+  const [basicResult, themesResult, remixResult, beatResult] = await Promise.all([
+    generateCompetitorBasicAnalysis(video, userChannelTitle, commentsAnalysis),
+    generateCompetitorThemesPatterns(video, userChannelTitle, commentsAnalysis),
+    generateCompetitorRemixIdeas(video, userChannelTitle, commentsAnalysis),
+    generateCompetitorBeatChecklistParallel(video, userChannelTitle, commentsAnalysis),
+  ]);
+
+  const elapsed = Date.now() - startTime;
+  console.log(`[CompetitorAnalysis] Parallel LLM completed in ${elapsed}ms`);
+
+  // Merge results with fallbacks
+  return {
+    whatItsAbout: basicResult?.whatItsAbout ?? `A video about "${video.title.slice(0, 50)}..."`,
+    whyItsWorking: basicResult?.whyItsWorking ?? [
+      "Strong initial hook captures attention",
+      "Title creates clear curiosity gap",
+      "High engagement indicates audience resonance",
+    ],
+    themesToRemix: themesResult?.themesToRemix ?? [
+      { theme: "Personal take", why: "Your unique experience adds authenticity" },
+    ],
+    titlePatterns: themesResult?.titlePatterns ?? ["Uses specific numbers", "Creates urgency"],
+    packagingNotes: themesResult?.packagingNotes ?? ["Clear value proposition"],
+    beatThisVideo: beatResult ?? [
+      { action: "Create a more comprehensive version with additional examples", difficulty: "Medium", impact: "High" },
+      { action: "Target a specific audience segment they missed", difficulty: "Easy", impact: "Medium" },
+    ],
+    remixIdeasForYou: remixResult?.remixIdeasForYou ?? [
+      {
+        title: `My Take on ${video.title.slice(0, 30)}`,
+        hook: "What if there's an even better approach?",
+        overlayText: "MY VERSION",
+        angle: "Your personal experience and unique results",
+      },
+    ],
+  };
+}
+
 /**
  * Test mode fixture responses
  */
