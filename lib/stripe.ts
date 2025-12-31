@@ -553,13 +553,32 @@ export async function handleStripeWebhook(
     }
 
     case "invoice.payment_failed": {
+      // Payment failed during renewal - immediately revoke pro access
+      // User must fix payment to regain pro features
       const invoice = event.data.object;
       const customerId = invoice.customer;
 
-      await prisma.subscription.updateMany({
-        where: { stripeCustomerId: customerId },
-        data: { status: "past_due" },
+      console.log(`[Stripe Webhook] invoice.payment_failed:`, {
+        invoiceId: invoice.id,
+        customerId,
+        subscriptionId: invoice.subscription,
+        attemptCount: invoice.attempt_count,
+        amountDue: invoice.amount_due,
       });
+
+      const result = await prisma.subscription.updateMany({
+        where: { stripeCustomerId: customerId },
+        data: {
+          status: "canceled",
+          plan: "free",
+          channelLimit: LIMITS.FREE_MAX_CONNECTED_CHANNELS,
+        },
+      });
+
+      console.log(
+        `[Stripe Webhook] Revoked pro access for customer ${customerId} due to payment failure:`,
+        { updatedCount: result.count }
+      );
       break;
     }
   }

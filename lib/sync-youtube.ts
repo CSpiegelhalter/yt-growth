@@ -69,12 +69,17 @@ type YouTubeVideoDetails = {
  * @param userId - The user's database ID
  * @param googleAccountId - Optional: specific GoogleAccount to sync. If not provided, syncs ALL GoogleAccounts for the user.
  */
-export async function syncUserChannels(userId: number, googleAccountId?: number): Promise<void> {
+export async function syncUserChannels(
+  userId: number,
+  googleAccountId?: number
+): Promise<void> {
   // Get either a specific GoogleAccount or all GoogleAccounts for the user
   const googleAccounts = googleAccountId
-    ? await prisma.googleAccount.findMany({ where: { id: googleAccountId, userId } })
+    ? await prisma.googleAccount.findMany({
+        where: { id: googleAccountId, userId },
+      })
     : await prisma.googleAccount.findMany({ where: { userId } });
-  
+
   if (googleAccounts.length === 0) return;
 
   // Mark channels as syncing
@@ -88,7 +93,9 @@ export async function syncUserChannels(userId: number, googleAccountId?: number)
     for (const ga of googleAccounts) {
       // Fetch user's owned channels (includes Brand Accounts when selected during OAuth)
       // Include statistics to get video count and subscriber count
-      const ownedChannelsUrl = new URL("https://www.googleapis.com/youtube/v3/channels");
+      const ownedChannelsUrl = new URL(
+        "https://www.googleapis.com/youtube/v3/channels"
+      );
       ownedChannelsUrl.search = new URLSearchParams({
         part: "id,snippet,statistics",
         mine: "true",
@@ -97,11 +104,17 @@ export async function syncUserChannels(userId: number, googleAccountId?: number)
       const ownedChannelsData = await googleFetchWithAutoRefresh<{
         items?: YouTubeChannelItem[];
       }>(ga, ownedChannelsUrl.toString());
-      
-      console.log(`[syncUserChannels] Found ${ownedChannelsData.items?.length ?? 0} channel(s) for GoogleAccount ${ga.id}`);
-      
+
+      console.log(
+        `[syncUserChannels] Found ${
+          ownedChannelsData.items?.length ?? 0
+        } channel(s) for GoogleAccount ${ga.id}`
+      );
+
       // Also fetch Brand Account / managed channels
-      const managedChannelsUrl = new URL("https://www.googleapis.com/youtube/v3/channels");
+      const managedChannelsUrl = new URL(
+        "https://www.googleapis.com/youtube/v3/channels"
+      );
       managedChannelsUrl.search = new URLSearchParams({
         part: "id,snippet",
         managedByMe: "true",
@@ -114,18 +127,22 @@ export async function syncUserChannels(userId: number, googleAccountId?: number)
           ch.snippet.thumbnails?.high?.url ??
           ch.snippet.thumbnails?.default?.url ??
           null;
-        
+
         // Parse statistics (YouTube returns these as strings)
-        const totalVideoCount = ch.statistics?.videoCount 
-          ? parseInt(ch.statistics.videoCount, 10) 
+        const totalVideoCount = ch.statistics?.videoCount
+          ? parseInt(ch.statistics.videoCount, 10)
           : null;
-        const subscriberCount = ch.statistics?.subscriberCount && !ch.statistics?.hiddenSubscriberCount
-          ? parseInt(ch.statistics.subscriberCount, 10)
-          : null;
+        const subscriberCount =
+          ch.statistics?.subscriberCount &&
+          !ch.statistics?.hiddenSubscriberCount
+            ? parseInt(ch.statistics.subscriberCount, 10)
+            : null;
 
         // Upsert channel (store which GoogleAccount it belongs to)
         const channel = await prisma.channel.upsert({
-          where: { userId_youtubeChannelId: { userId, youtubeChannelId: ch.id } },
+          where: {
+            userId_youtubeChannelId: { userId, youtubeChannelId: ch.id },
+          },
           update: {
             title: ch.snippet.title,
             thumbnailUrl: thumb,
@@ -149,10 +166,13 @@ export async function syncUserChannels(userId: number, googleAccountId?: number)
           },
         });
 
-        // Fetch recent videos for this channel (in the background, don't block)
-        fetchChannelVideos(ga, channel.id, ch.id).catch((err) => {
+        // Fetch recent videos for this channel (await so videos are ready when user sees dashboard)
+        try {
+          await fetchChannelVideos(ga, channel.id, ch.id);
+        } catch (err) {
           console.error(`Failed to fetch videos for channel ${ch.id}:`, err);
-        });
+          // Don't throw - channel is synced, videos are optional
+        }
       }
     }
   } catch (e: unknown) {
@@ -177,14 +197,18 @@ async function fetchChannelVideos(
 ): Promise<void> {
   try {
     // Avoid search.list (expensive quota). Use uploads playlist.
-    const channelUrl = new URL("https://www.googleapis.com/youtube/v3/channels");
+    const channelUrl = new URL(
+      "https://www.googleapis.com/youtube/v3/channels"
+    );
     channelUrl.search = new URLSearchParams({
       part: "contentDetails",
       id: youtubeChannelId,
     }).toString();
 
     const channelData = await googleFetchWithAutoRefresh<{
-      items: Array<{ contentDetails: { relatedPlaylists: { uploads: string } } }>;
+      items: Array<{
+        contentDetails: { relatedPlaylists: { uploads: string } };
+      }>;
     }>(ga, channelUrl.toString());
 
     const uploadsPlaylistId =
@@ -211,7 +235,9 @@ async function fetchChannelVideos(
       if (videoIds.length === 0) return;
 
       // Fetch video details (duration, tags, description)
-      const detailsUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
+      const detailsUrl = new URL(
+        "https://www.googleapis.com/youtube/v3/videos"
+      );
       detailsUrl.search = new URLSearchParams({
         part: "id,contentDetails,snippet",
         id: videoIds.join(","),
@@ -282,7 +308,9 @@ async function fetchChannelVideos(
       return;
     }
 
-    const playlistUrl = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+    const playlistUrl = new URL(
+      "https://www.googleapis.com/youtube/v3/playlistItems"
+    );
     playlistUrl.search = new URLSearchParams({
       part: "snippet,contentDetails",
       playlistId: uploadsPlaylistId,
@@ -312,9 +340,7 @@ async function fetchChannelVideos(
       items: YouTubeVideoDetails[];
     }>(ga, detailsUrl.toString());
 
-    const detailsMap = new Map(
-      (detailsData.items ?? []).map((v) => [v.id, v])
-    );
+    const detailsMap = new Map((detailsData.items ?? []).map((v) => [v.id, v]));
 
     for (const item of playlistData.items ?? []) {
       const videoId = item.contentDetails.videoId;
@@ -376,7 +402,10 @@ async function fetchChannelVideos(
 
     console.log(`Synced ${videoCount} videos for channel ${youtubeChannelId}`);
   } catch (err) {
-    console.error(`Error fetching videos for channel ${youtubeChannelId}:`, err);
+    console.error(
+      `Error fetching videos for channel ${youtubeChannelId}:`,
+      err
+    );
     // Don't throw - this is a background task
   }
 }

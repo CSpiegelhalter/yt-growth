@@ -49,6 +49,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-2);
+  margin-left: auto;
 }
 
 /* Logo */
@@ -95,23 +96,16 @@
 .authSection {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-1);
-  /* Reserve minimum width for auth buttons to prevent layout shift */
-  min-width: 120px;
   height: 36px;
+  margin-left: auto;
 }
 
 @media (min-width: 480px) {
   .authSection {
     gap: var(--space-2);
-    min-width: 160px;
     height: 44px;
-  }
-}
-
-@media (min-width: 640px) {
-  .authSection {
-    min-width: 260px;
   }
 }
 
@@ -360,8 +354,6 @@
 
 /* Placeholder (during SSR) - matches auth buttons dimensions */
 .placeholder {
-  /* Match the auth section dimensions for stable layout */
-  min-width: 120px;
   height: 36px;
   display: flex;
   align-items: center;
@@ -370,16 +362,8 @@
 
 @media (min-width: 480px) {
   .placeholder {
-    min-width: 160px;
     height: 44px;
     gap: var(--space-2);
-  }
-}
-
-@media (min-width: 640px) {
-  .placeholder {
-    /* On desktop, reserve space for: Contact + Login + Signup buttons */
-    min-width: 260px;
   }
 }
 

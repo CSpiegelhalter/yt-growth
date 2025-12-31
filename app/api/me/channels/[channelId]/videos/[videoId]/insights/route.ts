@@ -246,6 +246,7 @@ async function GETHandler(
           baseline: result.baseline,
           comparison: result.comparison,
           levers: result.levers,
+          comments: result.comments, // Cache comments for llmOnly reuse
         },
         llmJson: llmJsonValue,
         cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -259,13 +260,16 @@ async function GETHandler(
           baseline: result.baseline,
           comparison: result.comparison,
           levers: result.levers,
+          comments: result.comments, // Cache comments for llmOnly reuse
         },
         llmJson: llmJsonValue,
         cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
     });
 
-    return Response.json(result);
+    // Don't return comments in the API response (they're only for internal caching)
+    const { comments: _omitted, ...resultWithoutComments } = result;
+    return Response.json(resultWithoutComments);
   } catch (err: unknown) {
     if (err instanceof YouTubePermissionDeniedError) {
       return Response.json(
@@ -374,7 +378,11 @@ async function POSTHandler(
       const comparison = derivedData.comparison as BaselineComparison;
       const levers = derivedData.levers as VideoInsightsResponse["levers"];
 
-      const comments = await fetchOwnedVideoComments(ga, videoId, 30);
+      // Use cached comments if available, otherwise fetch (fallback for old cache entries)
+      const comments: VideoComment[] = derivedData.comments?.length
+        ? (derivedData.comments as VideoComment[])
+        : await fetchOwnedVideoComments(ga, videoId, 30);
+
       const llmInsights = await generateLLMInsights(
         video,
         derived,
@@ -491,6 +499,7 @@ async function POSTHandler(
           baseline: result.baseline,
           comparison: result.comparison,
           levers: result.levers,
+          comments: result.comments, // Cache comments for llmOnly reuse
         },
         llmJson: llmJsonValuePost,
         cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -504,13 +513,16 @@ async function POSTHandler(
           baseline: result.baseline,
           comparison: result.comparison,
           levers: result.levers,
+          comments: result.comments, // Cache comments for llmOnly reuse
         },
         llmJson: llmJsonValuePost,
         cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
     });
 
-    return Response.json(result);
+    // Don't return comments in the API response (they're only for internal caching)
+    const { comments: _omitted, ...resultWithoutComments } = result;
+    return Response.json(resultWithoutComments);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Video insights refresh error:", err);
@@ -525,6 +537,11 @@ export const POST = createApiRoute(
   { route: "/api/me/channels/[channelId]/videos/[videoId]/insights" },
   async (req, ctx) => POSTHandler(req, ctx as any)
 );
+
+// Internal type that includes comments (for caching), extends API response
+type InsightsResultInternal = VideoInsightsResponse & {
+  comments: VideoComment[];
+};
 
 /**
  * Generate insights for a video
@@ -544,29 +561,12 @@ async function generateInsights(
   userId: number,
   cachedContentHash: string | null = null,
   cachedLlmJson: unknown = null
-): Promise<VideoInsightsResponse> {
+): Promise<InsightsResultInternal> {
   const { startDate, endDate } = getDateRange(range);
 
-  // Fetch video metadata
-  const videoMeta = await fetchOwnedVideoMetadata(ga, videoId);
-  if (!videoMeta) {
-    throw new Error("Could not fetch video metadata");
-  }
-
-  // Check if content has changed - compute hash of current video content
-  const currentContentHash = hashVideoContent({
-    title: videoMeta.title,
-    description: videoMeta.description,
-    tags: videoMeta.tags,
-    durationSec: videoMeta.durationSec,
-    categoryId: videoMeta.categoryId,
-  });
-
-  const contentUnchanged =
-    cachedContentHash && cachedContentHash === currentContentHash;
-
-  // Fetch analytics
-  const [totalsResult, dailyResult, comments] = await Promise.all([
+  // Fetch video metadata AND analytics in parallel for faster response
+  const [videoMeta, totalsResult, dailyResult, comments] = await Promise.all([
+    fetchOwnedVideoMetadata(ga, videoId),
     fetchVideoAnalyticsTotalsWithStatus(
       ga,
       youtubeChannelId,
@@ -583,6 +583,22 @@ async function generateInsights(
     ),
     fetchOwnedVideoComments(ga, videoId, 30),
   ]);
+
+  if (!videoMeta) {
+    throw new Error("Could not fetch video metadata");
+  }
+
+  // Check if content has changed - compute hash of current video content
+  const currentContentHash = hashVideoContent({
+    title: videoMeta.title,
+    description: videoMeta.description,
+    tags: videoMeta.tags,
+    durationSec: videoMeta.durationSec,
+    categoryId: videoMeta.categoryId,
+  });
+
+  const contentUnchanged =
+    cachedContentHash && cachedContentHash === currentContentHash;
 
   if (
     !totalsResult.permission.ok &&
@@ -675,6 +691,7 @@ async function generateInsights(
     comparison,
     levers,
     llmInsights,
+    comments, // Include comments for caching
     cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   };
 }

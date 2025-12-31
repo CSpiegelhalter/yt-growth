@@ -47,22 +47,31 @@ export default function IdeasClient({
   // Idea board state
   const [ideaBoard, setIdeaBoard] = useState<IdeaBoardData | null>(null);
   const [ideaBoardLoading, setIdeaBoardLoading] = useState(false);
+  // Track if API told us subscription is required (overrides bootstrap data)
+  const [subscriptionRequired, setSubscriptionRequired] = useState(false);
 
   const activeChannel = useMemo(
     () => channels.find((c) => c.channel_id === activeChannelId) ?? null,
     [channels, activeChannelId]
   );
 
-  const isSubscribed = useMemo(
+  // Use bootstrap subscription status, but override if API tells us otherwise
+  const isSubscribedFromBootstrap = useMemo(
     () => initialMe.subscription?.isActive ?? false,
     [initialMe]
   );
+  const isSubscribed = isSubscribedFromBootstrap && !subscriptionRequired;
 
   useSyncActiveChannelIdToLocalStorage(activeChannelId);
 
-  // Load idea board when channel changes
+  // Load idea board when channel changes (only if subscribed)
   useEffect(() => {
     if (!activeChannelId) return;
+    // Skip API call if we already know subscription is not active
+    if (!isSubscribedFromBootstrap) {
+      setSubscriptionRequired(true);
+      return;
+    }
 
     let cancelled = false;
     (async () => {
@@ -73,17 +82,19 @@ export default function IdeasClient({
           { cache: "no-store" }
         );
         if (cancelled) return;
+        setSubscriptionRequired(false);
         setIdeaBoard(data?.ideas ? (data as IdeaBoardData) : null);
       } catch (err) {
         if (cancelled) return;
+        // Handle subscription required error gracefully
+        if (isApiClientError(err) && err.status === 403 && err.code === "SUBSCRIPTION_REQUIRED") {
+          setSubscriptionRequired(true);
+          setIdeaBoard(null);
+          // Don't show toast - the UI will show the locked state
+          return;
+        }
         console.error(err);
-        const rid = isApiClientError(err) ? err.requestId : undefined;
-        toast(
-          rid
-            ? `Failed to load idea board. (requestId: ${rid})`
-            : "Failed to load idea board.",
-          "error"
-        );
+        toast("Failed to load idea board.", "error");
         setIdeaBoard(null);
       } finally {
         if (!cancelled) setIdeaBoardLoading(false);
@@ -92,7 +103,7 @@ export default function IdeasClient({
     return () => {
       cancelled = true;
     };
-  }, [activeChannelId, toast]);
+  }, [activeChannelId, isSubscribedFromBootstrap, toast]);
 
   const handleGenerate = useCallback(
     async (options?: { mode?: "default" | "more"; range?: "7d" | "28d" }) => {
@@ -113,6 +124,7 @@ export default function IdeasClient({
             body: JSON.stringify({ mode, range }),
           }
         );
+        setSubscriptionRequired(false);
         if (data?.ideas) setIdeaBoard(data as IdeaBoardData);
         else toast("No ideas returned. Please try again.", "error");
       } catch (err) {
@@ -123,27 +135,16 @@ export default function IdeasClient({
             return;
           }
           if (err.status === 403 && err.code === "SUBSCRIPTION_REQUIRED") {
-            toast(
-              err.requestId
-                ? `Subscription required. (requestId: ${err.requestId})`
-                : "Subscription required.",
-              "error"
-            );
+            // Update state to show locked UI instead of just toasting
+            setSubscriptionRequired(true);
+            setIdeaBoard(null);
             return;
           }
           if (err.status === 429) {
-            toast(
-              err.requestId
-                ? `Rate limit hit. Try again later. (requestId: ${err.requestId})`
-                : "Rate limit hit. Try again later.",
-              "error"
-            );
+            toast("Rate limit hit. Try again later.", "error");
             return;
           }
-          toast(
-            err.requestId ? `${err.message} (requestId: ${err.requestId})` : err.message,
-            "error"
-          );
+          toast(err.message, "error");
           return;
         }
         toast("Failed to generate ideas. Please try again.", "error");
@@ -166,14 +167,17 @@ export default function IdeasClient({
             `/api/me/channels/${activeChannelId}/idea-board?range=${range}`,
             { cache: "no-store" }
           );
+          setSubscriptionRequired(false);
           if (data?.ideas) setIdeaBoard(data as IdeaBoardData);
         } catch (err) {
+          // Handle subscription required error gracefully
+          if (isApiClientError(err) && err.status === 403 && err.code === "SUBSCRIPTION_REQUIRED") {
+            setSubscriptionRequired(true);
+            setIdeaBoard(null);
+            return;
+          }
           console.error(err);
-          const rid = isApiClientError(err) ? err.requestId : undefined;
-          toast(
-            rid ? `Failed to refresh ideas. (requestId: ${rid})` : "Failed to refresh ideas.",
-            "error"
-          );
+          toast("Failed to refresh ideas.", "error");
         } finally {
           setIdeaBoardLoading(false);
         }

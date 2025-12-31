@@ -4,6 +4,7 @@
    ================================ */
 
 .page {
+  width: 100%;
   max-width: var(--page-max-width);
   margin: 0 auto;
   padding: var(--page-padding-mobile);
@@ -70,6 +71,7 @@
 
 /* Empty State */
 .emptyState {
+  width: 100%;
   text-align: center;
   padding: var(--space-xl) var(--space-lg);
   background: var(--surface);

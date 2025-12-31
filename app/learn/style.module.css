@@ -9,6 +9,7 @@
 
 .learnHub {
   min-height: 100vh;
+  padding-top: var(--space-8);
   /* No full-page dark background - hero handles its own */
 }
 
@@ -20,7 +21,13 @@
   margin: 0 auto var(--space-12);
   /* Expressive gradient background contained to hero */
   background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-  border-radius: var(--radius-xl);
+  border-radius: 0;
+}
+
+@media (min-width: 640px) {
+  .hubHero {
+    border-radius: var(--radius-xl);
+  }
 }
 
 .hubBadge {

@@ -669,7 +669,9 @@ function DropdownIcon({ type }: { type: IconType }) {
     case "lightbulb":
       return (
         <svg {...props}>
-          <path d="M9 18h6M10 22h4M12 2v1M4.22 4.22l.71.71M1 12h2M18.36 4.93l.71-.71M23 12h-2M15.5 15a3.5 3.5 0 10-7 0c0 1.57.75 2.97 1.91 3.85.34.26.59.63.59 1.06V21h4v-1.09c0-.43.25-.8.59-1.06A3.98 3.98 0 0015.5 15z" />
+          <path d="M12 2a7 7 0 0 0-4 12.88V17h8v-2.12A7 7 0 0 0 12 2z" />
+          <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
+          <path d="M9.5 21h5" />
         </svg>
       );
     case "trending":

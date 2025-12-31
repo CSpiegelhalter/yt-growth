@@ -17,7 +17,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <main style={{ padding: "48px 16px" }}>
+    <main style={{ width: "100%", maxWidth: "1200px", margin: "0 auto", padding: "48px 16px" }}>
       <EmptyState
         title="Something went wrong"
         description="Please try again. If this keeps happening, contact support."

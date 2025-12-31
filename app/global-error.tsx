@@ -19,7 +19,7 @@ export default function GlobalError({
   return (
     <html lang="en">
       <body>
-        <main style={{ padding: "48px 16px" }}>
+        <main style={{ width: "100%", maxWidth: "1200px", margin: "0 auto", padding: "48px 16px" }}>
           <EmptyState
             title="We hit an unexpected error"
             description="Please retry. If it continues, contact support and include the Error ID below."

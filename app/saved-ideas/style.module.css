@@ -585,7 +585,7 @@
   flex-direction: column;
   animation: sheetSlideUp 0.3s ease-out;
   overflow: hidden;
-  touch-action: pan-y;
+  touch-action: manipulation;
 }
 
 @keyframes sheetSlideUp {
@@ -670,7 +670,7 @@
   -webkit-overflow-scrolling: touch;
   padding: var(--space-md);
   overscroll-behavior: contain;
-  touch-action: pan-y;
+  touch-action: manipulation;
 }
 
 .sheetSection {

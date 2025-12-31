@@ -1,6 +1,7 @@
 /* EmptyState - Unified empty state pattern */
 
 .empty {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;

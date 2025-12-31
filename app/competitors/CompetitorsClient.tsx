@@ -59,6 +59,8 @@ export default function CompetitorsClient({
   const [loadingMoreVideos, setLoadingMoreVideos] = useState(false);
   const [rateLimitError, setRateLimitError] = useState<RateLimitError | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  // Track if API told us subscription is required (overrides bootstrap data)
+  const [subscriptionRequired, setSubscriptionRequired] = useState(false);
 
   // How many videos to display (start with 12, increment by 6 each time - divisible by 2 and 3)
   const [visibleCount, setVisibleCount] = useState(12);
@@ -72,10 +74,12 @@ export default function CompetitorsClient({
     [channels, activeChannelId]
   );
 
-  const isSubscribed = useMemo(
+  // Use bootstrap subscription status, but override if API tells us otherwise
+  const isSubscribedFromBootstrap = useMemo(
     () => initialMe.subscription?.isActive ?? false,
     [initialMe]
   );
+  const isSubscribed = isSubscribedFromBootstrap && !subscriptionRequired;
 
   // Filter out videos with less than 100 views per day
   const MIN_VIEWS_PER_DAY = 100;
@@ -91,6 +95,11 @@ export default function CompetitorsClient({
   // Load competitor feed when channel, range, or sort changes
   useEffect(() => {
     if (!activeChannelId) return;
+    // Skip API call if we already know subscription is not active
+    if (!isSubscribedFromBootstrap) {
+      setSubscriptionRequired(true);
+      return;
+    }
 
     setDataLoading(true);
     setVisibleCount(12); // Reset visible count
@@ -103,20 +112,24 @@ export default function CompetitorsClient({
           `/api/me/channels/${activeChannelId}/competitors?range=${range}&sort=${sort}`,
           { cache: "no-store" }
         );
+        setSubscriptionRequired(false);
         setFeedData(data?.videos ? (data as CompetitorFeedResponse) : null);
       } catch (err) {
+        // Handle subscription required error gracefully
+        if (isApiClientError(err) && err.status === 403 && err.code === "SUBSCRIPTION_REQUIRED") {
+          setSubscriptionRequired(true);
+          setFeedData(null);
+          // Don't log or set fetchError - the UI will show the locked state
+          return;
+        }
         console.error("Competitor feed fetch error:", err);
         if (isApiClientError(err) && err.status === 429) {
           setRateLimitError({
             resetAt: String((err.details as any)?.resetAt ?? ""),
-            message: err.requestId
-              ? `Too many requests. Try again soon. (requestId: ${err.requestId})`
-              : "Too many requests. Try again soon.",
+            message: "Too many requests. Try again soon.",
           });
         } else if (isApiClientError(err)) {
-          setFetchError(
-            err.requestId ? `${err.message} (requestId: ${err.requestId})` : err.message
-          );
+          setFetchError(err.message);
         } else {
           setFetchError(
             "Failed to load competitor videos. Please check your connection and try again."
@@ -126,7 +139,7 @@ export default function CompetitorsClient({
         setDataLoading(false);
       }
     })();
-  }, [activeChannelId, range, sort]);
+  }, [activeChannelId, range, sort, isSubscribedFromBootstrap]);
 
   const handleRangeChange = useCallback((newRange: "7d" | "28d") => {
     setRange(newRange);
@@ -218,23 +231,20 @@ export default function CompetitorsClient({
           data = null;
         }
         if (!res.ok) {
-          const rid =
-            (data?.error?.requestId as string | undefined) ??
-            res.headers.get("x-request-id") ??
-            undefined;
           if (res.status === 429) {
             setRateLimitError({
               resetAt: data?.details?.resetAt ?? data?.resetAt ?? "",
-              message: rid
-                ? `Too many requests. Try again soon. (requestId: ${rid})`
-                : "Too many requests. Try again soon.",
+              message: "Too many requests. Try again soon.",
             });
             return;
           }
+          if (res.status === 403 && (data?.code === "SUBSCRIPTION_REQUIRED" || data?.error?.code === "SUBSCRIPTION_REQUIRED")) {
+            setSubscriptionRequired(true);
+            setFeedData(null);
+            return;
+          }
           setFetchError(
-            rid
-              ? `${data?.error?.message ?? data?.error ?? "Failed to load more videos."} (requestId: ${rid})`
-              : data?.error?.message ?? data?.error ?? "Failed to load more videos."
+            data?.error?.message ?? data?.error ?? "Failed to load more videos."
           );
           return;
         }
@@ -345,6 +355,45 @@ export default function CompetitorsClient({
     );
   }
 
+  // Show locked state if subscription is required
+  if (!isSubscribed) {
+    return (
+      <main className={s.page}>
+        <div className={s.header}>
+          <div>
+            <h1 className={s.title}>Competitor Winners</h1>
+            <p className={s.subtitle}>
+              See what's working for channels in your niche
+            </p>
+          </div>
+        </div>
+        <div className={s.lockedState}>
+          <div className={s.lockedIcon}>
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h2 className={s.lockedTitle}>Unlock Competitor Winners</h2>
+          <p className={s.lockedDesc}>
+            See what's working for channels in your niche. Discover winning
+            video ideas, analyze thumbnails, and learn from competitors'
+            success.
+          </p>
+          <a href="/api/integrations/stripe/checkout" className={s.lockedBtn}>
+            Subscribe to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
+          </a>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className={s.page}>
       <div className={s.header}>
@@ -446,18 +495,6 @@ export default function CompetitorsClient({
           >
             ×
           </button>
-        </div>
-      )}
-
-      {!isSubscribed && (
-        <div className={s.upgradeBanner}>
-          <p>
-            Upgrade to Pro to unlock competitor analysis and deep insights —{" "}
-            {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}.
-          </p>
-          <a href="/api/integrations/stripe/checkout" className={s.upgradeBtn}>
-            Upgrade — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
-          </a>
         </div>
       )}
 
