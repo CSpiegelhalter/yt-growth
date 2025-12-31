@@ -8,18 +8,41 @@ const nextConfig = {
       { protocol: "https", hostname: "**.ggpht.com", pathname: "/**" },
     ],
   },
-  experimental: { serverActions: { allowedOrigins: ["*"] } },
+  experimental: {
+    serverActions: { allowedOrigins: ["*"] },
+    // Enable CSS optimization
+    optimizeCss: true,
+  },
   async headers() {
     return [
+      // Allow indexing on all public pages - split into separate rules for reliable matching
       {
-        // Apply to all public/marketing pages to ensure indexing
-        source: "/(|learn|learn/:path*|contact|terms|privacy|auth/:path*)",
-        headers: [
-          {
-            key: "X-Robots-Tag",
-            value: "index, follow",
-          },
-        ],
+        source: "/",
+        headers: [{ key: "X-Robots-Tag", value: "index, follow" }],
+      },
+      {
+        source: "/learn",
+        headers: [{ key: "X-Robots-Tag", value: "index, follow" }],
+      },
+      {
+        source: "/learn/:slug",
+        headers: [{ key: "X-Robots-Tag", value: "index, follow" }],
+      },
+      {
+        source: "/contact",
+        headers: [{ key: "X-Robots-Tag", value: "index, follow" }],
+      },
+      {
+        source: "/terms",
+        headers: [{ key: "X-Robots-Tag", value: "index, follow" }],
+      },
+      {
+        source: "/privacy",
+        headers: [{ key: "X-Robots-Tag", value: "index, follow" }],
+      },
+      {
+        source: "/auth/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "index, follow" }],
       },
     ];
   },

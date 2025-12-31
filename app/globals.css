@@ -908,3 +908,343 @@ label {
   }
 }
 
+/* =====================================
+   LANDING PAGE STYLES
+   Inlined in globals to reduce CSS chunking
+   ===================================== */
+
+.landingPage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hero - Fixed dimensions to prevent CLS */
+.landingHero {
+  text-align: center;
+  padding: var(--space-12) var(--space-4);
+  max-width: 800px;
+  margin: 0 auto;
+  min-height: 420px;
+}
+
+@media (min-width: 480px) {
+  .landingHero {
+    min-height: 380px;
+  }
+}
+
+@media (min-width: 768px) {
+  .landingHero {
+    min-height: 400px;
+  }
+}
+
+.landingBadge {
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  background: var(--primary-light);
+  color: #3730a3;
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-6);
+}
+
+.landingTitle {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-4);
+  color: var(--text);
+}
+
+@media (min-width: 768px) {
+  .landingTitle {
+    font-size: var(--text-4xl);
+  }
+}
+
+.landingHighlight {
+  background: linear-gradient(135deg, var(--secondary) 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.landingSubtitle {
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto var(--space-6);
+  line-height: var(--leading-relaxed);
+}
+
+/* Social Proof */
+.landingSocialProof {
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+
+.landingProofText {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.landingProofText strong {
+  color: var(--text);
+}
+
+/* Feature Pillars */
+.landingPillars {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: var(--space-12) var(--space-4);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.landingPillars > * {
+  flex: 1 1 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .landingPillars > * {
+    flex: 1 1 calc(50% - 12px);
+    max-width: calc(50% - 12px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .landingPillars > * {
+    flex: 0 1 calc(33.333% - 16px);
+    max-width: calc(33.333% - 16px);
+  }
+}
+
+.landingPillar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.landingPillar:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.landingPillarIcon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-light);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  color: var(--primary);
+}
+
+.landingPillarTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-2);
+  color: var(--text);
+}
+
+.landingPillarDesc {
+  font-size: var(--page-subtitle-size);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-4);
+}
+
+.landingPillarBenefits {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-4);
+  flex: 1;
+}
+
+.landingPillarBenefits li {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  padding-left: 1.5rem;
+  position: relative;
+  margin-bottom: var(--space-1);
+  line-height: var(--leading-normal);
+}
+
+.landingPillarBenefits li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--success);
+  font-weight: var(--font-semibold);
+}
+
+.landingPillarLink {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--primary);
+  text-decoration: none;
+  margin-top: auto;
+}
+
+.landingPillarLink:hover {
+  text-decoration: underline;
+}
+
+.landingPillarLink:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* How It Works */
+.landingHowItWorks {
+  padding: var(--space-12) var(--space-4);
+  background: var(--surface-alt);
+}
+
+.landingSectionTitle {
+  text-align: center;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-2);
+  color: var(--text);
+}
+
+.landingSectionSubtitle {
+  text-align: center;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-8);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landingSteps {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .landingSteps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.landingStep {
+  text-align: center;
+  padding: var(--space-4);
+}
+
+.landingStepNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--secondary) 0%, #7c3aed 100%);
+  color: var(--text-inverse);
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  border-radius: 50%;
+  margin-bottom: var(--space-4);
+}
+
+.landingStepTitle {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--space-1);
+  color: var(--text);
+}
+
+.landingStepDesc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+/* FAQ Section */
+.landingFaqSection {
+  padding: var(--space-12) var(--space-4);
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.landingFaqGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .landingFaqGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.landingFaqItem {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-6);
+}
+
+.landingFaqQuestion {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--space-2);
+  color: var(--text);
+}
+
+.landingFaqAnswer {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
+/* CTA Section */
+.landingCtaSection {
+  text-align: center;
+  padding: var(--space-12) var(--space-6);
+  background: linear-gradient(135deg, #1e3a5f 0%, var(--secondary) 100%);
+  border-radius: var(--radius-lg);
+  color: var(--text-inverse);
+  margin: var(--space-8) var(--space-4);
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landingCtaTitle {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-2);
+}
+
+.landingCtaSubtitle {
+  font-size: var(--text-base);
+  opacity: 0.9;
+  margin-bottom: var(--space-6);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}

@@ -95,10 +95,18 @@
 .authSection {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   /* Reserve minimum width for auth buttons to prevent layout shift */
-  min-width: 100px;
-  height: 44px;
+  min-width: 120px;
+  height: 36px;
+}
+
+@media (min-width: 480px) {
+  .authSection {
+    gap: var(--space-2);
+    min-width: 160px;
+    height: 44px;
+  }
 }
 
 @media (min-width: 640px) {
@@ -109,6 +117,8 @@
 
 /* Auth Buttons (logged out) */
 .contactBtn {
+  /* Hidden on mobile - not critical for conversion */
+  display: none;
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
@@ -116,9 +126,14 @@
   text-decoration: none;
   border-radius: var(--radius-sm);
   min-height: 44px;
-  display: flex;
   align-items: center;
   transition: all var(--transition-base);
+}
+
+@media (min-width: 640px) {
+  .contactBtn {
+    display: flex;
+  }
 }
 
 .contactBtn:hover {
@@ -132,16 +147,24 @@
 }
 
 .loginBtn {
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
   font-weight: var(--font-medium);
   color: var(--text-secondary);
   text-decoration: none;
   border-radius: var(--radius-sm);
-  min-height: 44px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   transition: all var(--transition-base);
+}
+
+@media (min-width: 480px) {
+  .loginBtn {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    min-height: 44px;
+  }
 }
 
 .loginBtn:hover {
@@ -155,17 +178,26 @@
 }
 
 .signupBtn {
-  padding: var(--space-3) var(--space-5);
-  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
   font-weight: var(--font-semibold);
   background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
   color: var(--text-inverse);
   text-decoration: none;
-  border-radius: var(--radius-md);
-  min-height: 44px;
+  border-radius: var(--radius-sm);
+  min-height: 36px;
   display: flex;
   align-items: center;
   transition: all var(--transition-base);
+}
+
+@media (min-width: 480px) {
+  .signupBtn {
+    padding: var(--space-3) var(--space-5);
+    font-size: var(--text-sm);
+    border-radius: var(--radius-md);
+    min-height: 44px;
+  }
 }
 
 .signupBtn:hover {
@@ -328,12 +360,20 @@
 
 /* Placeholder (during SSR) - matches auth buttons dimensions */
 .placeholder {
-  /* Match the signup button dimensions for stable layout */
-  min-width: 100px;
-  height: 44px;
+  /* Match the auth section dimensions for stable layout */
+  min-width: 120px;
+  height: 36px;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
+}
+
+@media (min-width: 480px) {
+  .placeholder {
+    min-width: 160px;
+    height: 44px;
+    gap: var(--space-2);
+  }
 }
 
 @media (min-width: 640px) {
