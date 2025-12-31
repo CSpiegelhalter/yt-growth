@@ -134,8 +134,8 @@ async function GETHandler(
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    // Get Google account for API calls
-    const ga = await getGoogleAccount(user.id);
+    // Get Google account for API calls (use channelId to get the correct account)
+    const ga = await getGoogleAccount(user.id, channelId);
     if (!ga) {
       return Response.json(
         { error: "Google account not connected" },

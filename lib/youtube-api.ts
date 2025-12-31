@@ -24,6 +24,21 @@ type GoogleAccount = {
 };
 
 /**
+ * Decode HTML entities in strings from YouTube API responses.
+ * YouTube returns titles/descriptions with encoded entities like &#39; &amp; etc.
+ */
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'");
+}
+
+/**
  * Get Google account for a user.
  * If youtubeChannelId is provided, returns the specific GoogleAccount that owns that channel.
  * Otherwise returns the first GoogleAccount for the user (fallback behavior).
@@ -140,8 +155,8 @@ export async function fetchChannelVideos(
 
   return (videosData.items ?? []).map((v) => ({
     videoId: v.id,
-    title: v.snippet.title,
-    description: v.snippet.description,
+    title: decodeHtmlEntities(v.snippet.title),
+    description: decodeHtmlEntities(v.snippet.description),
     publishedAt: v.snippet.publishedAt,
     durationSec: parseDuration(v.contentDetails.duration),
     tags: v.snippet.tags?.join(",") ?? null,
@@ -304,8 +319,8 @@ export async function searchCompetitorVideos(
 
   const mapped = (data.items ?? []).map((i) => ({
     videoId: i.id.videoId,
-    title: i.snippet.title,
-    channelTitle: i.snippet.channelTitle,
+    title: decodeHtmlEntities(i.snippet.title),
+    channelTitle: decodeHtmlEntities(i.snippet.channelTitle),
     publishedAt: i.snippet.publishedAt,
   }));
 
@@ -391,8 +406,8 @@ export async function searchSimilarChannels(
 
   const mapped = (data.items ?? []).map((i) => ({
     channelId: i.id.channelId,
-    channelTitle: i.snippet.title,
-    description: i.snippet.description,
+    channelTitle: decodeHtmlEntities(i.snippet.title),
+    description: decodeHtmlEntities(i.snippet.description),
     thumbnailUrl:
       i.snippet.thumbnails?.medium?.url ??
       i.snippet.thumbnails?.default?.url ??
@@ -508,8 +523,8 @@ export async function searchNicheVideos(
   const videos = (data.items ?? []).map((i) => ({
     videoId: i.id.videoId,
     channelId: i.snippet.channelId,
-    channelTitle: i.snippet.channelTitle,
-    title: i.snippet.title,
+    channelTitle: decodeHtmlEntities(i.snippet.channelTitle),
+    title: decodeHtmlEntities(i.snippet.title),
     thumbnailUrl:
       i.snippet.thumbnails?.medium?.url ??
       i.snippet.thumbnails?.default?.url ??
@@ -786,7 +801,7 @@ export async function fetchRecentChannelVideos(
 
       return {
         videoId: i.id.videoId,
-        title: i.snippet.title,
+        title: decodeHtmlEntities(i.snippet.title),
         publishedAt,
         thumbnailUrl:
           i.snippet.thumbnails?.medium?.url ??
@@ -867,7 +882,7 @@ export async function fetchRecentChannelVideos(
       }
       candidates.push({
         videoId: i.contentDetails.videoId,
-        title: i.snippet.title,
+        title: decodeHtmlEntities(i.snippet.title),
         publishedAt,
         thumbnailUrl:
           i.snippet.thumbnails?.medium?.url ??
@@ -1011,11 +1026,11 @@ export async function fetchVideoDetails(
 
   return {
     videoId: item.id,
-    title: item.snippet.title,
-    description: item.snippet.description,
+    title: decodeHtmlEntities(item.snippet.title),
+    description: decodeHtmlEntities(item.snippet.description),
     publishedAt: item.snippet.publishedAt,
     channelId: item.snippet.channelId,
-    channelTitle: item.snippet.channelTitle,
+    channelTitle: decodeHtmlEntities(item.snippet.channelTitle),
     tags: item.snippet.tags ?? [],
     category: item.snippet.categoryId,
     thumbnailUrl:

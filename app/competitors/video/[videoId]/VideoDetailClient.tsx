@@ -111,7 +111,14 @@ export default function VideoDetailClient({
 
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error || "Failed to load analysis");
+          // Handle both unified format { error: { message } } and legacy { error: "string" }
+          const errorMsg =
+            typeof data.error === "object" && data.error?.message
+              ? data.error.message
+              : typeof data.error === "string"
+              ? data.error
+              : "Failed to load analysis";
+          throw new Error(errorMsg);
         }
 
         const data = await res.json();

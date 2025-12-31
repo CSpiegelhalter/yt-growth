@@ -325,7 +325,7 @@ async function GETHandler(
     // Only cache the initial request (no pagination params). Paginated requests always fetch fresh.
     const isPaginated = queryIndex > 0 || !!pageToken;
     const cacheRange = range; // Keep it simple: "7d" or "28d"
-    
+
     // Only check cache for initial requests, not paginated ones
     const cached = isPaginated
       ? null
@@ -489,57 +489,13 @@ async function GETHandler(
       );
     }
 
-    // Separate new videos from existing ones for parallel processing
+    // Separate new videos from existing ones
     const newVideos = rawVideos.filter((v) => !existingVideoMap.has(v.videoId));
     const existingToUpdate = rawVideos.filter((v) =>
       existingVideoMap.has(v.videoId)
     );
 
-    // Parallel upsert: create new videos and update existing ones concurrently
-    const [, , reloadedVideos] = await Promise.all([
-      // 1. Batch create new videos (skipDuplicates handles race conditions)
-      newVideos.length > 0
-        ? prisma.competitorVideo.createMany({
-            data: newVideos.map((v) => ({
-              videoId: v.videoId,
-              channelId: v.channelId,
-              channelTitle: v.channelTitle,
-              title: v.title,
-              publishedAt: new Date(v.publishedAt),
-              thumbnailUrl: v.thumbnailUrl,
-              lastFetchedAt: now,
-            })),
-            skipDuplicates: true,
-          })
-        : Promise.resolve(),
-
-      // 2. Parallel update existing videos
-      Promise.all(
-        existingToUpdate.map((v) =>
-          prisma.competitorVideo.update({
-            where: { videoId: v.videoId },
-            data: {
-              title: v.title,
-              lastFetchedAt: now,
-            },
-          })
-        )
-      ),
-
-      // 3. Pre-fetch videos with snapshots (we'll need this for response)
-      // This runs in parallel with creates/updates since it reads existing data
-      prisma.competitorVideo.findMany({
-        where: { videoId: { in: videoIds } },
-        include: {
-          Snapshots: {
-            orderBy: { capturedAt: "desc" },
-            take: 10,
-          },
-        },
-      }),
-    ]);
-
-    // Batch create snapshots for videos that need them
+    // Prepare snapshots to create
     const snapshotsToCreate = videosNeedingSnapshot
       .filter((v) => freshStats.has(v.videoId))
       .map((v) => {
@@ -553,39 +509,85 @@ async function GETHandler(
         };
       });
 
-    if (snapshotsToCreate.length > 0) {
-      await prisma.competitorVideoSnapshot.createMany({
-        data: snapshotsToCreate,
-        skipDuplicates: true,
-      });
+    // Use a transaction to share a single connection (required for connection_limit=1)
+    // Write-only operations - no need to re-query data we already have
+    await prisma.$transaction(async (tx) => {
+      // 1. Batch create new videos
+      if (newVideos.length > 0) {
+        await tx.competitorVideo.createMany({
+          data: newVideos.map((v) => ({
+            videoId: v.videoId,
+            channelId: v.channelId,
+            channelTitle: v.channelTitle,
+            title: v.title,
+            publishedAt: new Date(v.publishedAt),
+            thumbnailUrl: v.thumbnailUrl,
+            lastFetchedAt: now,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      // 2. Batch update existing videos (single query for timestamp)
+      if (existingToUpdate.length > 0) {
+        const videoIdsToUpdate = existingToUpdate.map((v) => v.videoId);
+        await tx.competitorVideo.updateMany({
+          where: { videoId: { in: videoIdsToUpdate } },
+          data: { lastFetchedAt: now },
+        });
+      }
+
+      // 3. Batch create snapshots
+      if (snapshotsToCreate.length > 0) {
+        await tx.competitorVideoSnapshot.createMany({
+          data: snapshotsToCreate,
+          skipDuplicates: true,
+        });
+      }
+    });
+
+    // Build snapshot map directly from data we already have (no extra query!)
+    // We only need Snapshots for calculating derived metrics
+    type SnapshotData = {
+      capturedAt: Date;
+      viewCount: number;
+      likeCount: number | null;
+      commentCount: number | null;
+    };
+    const videoSnapshotsMap = new Map<string, SnapshotData[]>();
+
+    // Add existing videos' snapshots
+    for (const v of existingVideos) {
+      videoSnapshotsMap.set(v.videoId, [...v.Snapshots]);
     }
 
-    // Build video data map from reloaded data + any new snapshots we just created
-    const videoDataMap = new Map(
-      reloadedVideos.map((v) => [v.videoId, v])
-    );
+    // New videos start with empty snapshots
+    for (const v of newVideos) {
+      if (!videoSnapshotsMap.has(v.videoId)) {
+        videoSnapshotsMap.set(v.videoId, []);
+      }
+    }
 
-    // Merge in the new snapshots we just created (they weren't in the parallel query)
+    // Merge in the new snapshots we just created
     for (const snapshot of snapshotsToCreate) {
-      const video = videoDataMap.get(snapshot.videoId);
-      if (video) {
-        // Prepend the new snapshot to the existing snapshots array
-        video.Snapshots = [
+      const snapshots = videoSnapshotsMap.get(snapshot.videoId) ?? [];
+      videoSnapshotsMap.set(
+        snapshot.videoId,
+        [
           {
             capturedAt: snapshot.capturedAt,
             viewCount: snapshot.viewCount,
             likeCount: snapshot.likeCount ?? null,
             commentCount: snapshot.commentCount ?? null,
-          } as (typeof video.Snapshots)[0],
-          ...video.Snapshots,
-        ].slice(0, 10); // Keep only 10 most recent
-      }
+          },
+          ...snapshots,
+        ].slice(0, 10)
+      );
     }
 
     // Build response with derived metrics
     const allVideos: CompetitorVideo[] = rawVideos.map((v) => {
-      const dbVideo = videoDataMap.get(v.videoId);
-      const snapshots = dbVideo?.Snapshots ?? [];
+      const snapshots = videoSnapshotsMap.get(v.videoId) ?? [];
 
       // Calculate derived metrics from snapshots
       const derived = calculateDerivedMetrics(snapshots, v.viewsPerDay);
