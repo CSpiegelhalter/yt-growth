@@ -15,7 +15,7 @@ import { withValidation } from "@/lib/api/withValidation";
 import { withRateLimit } from "@/lib/api/withRateLimit";
 import { ApiError } from "@/lib/api/errors";
 import { jsonOk } from "@/lib/api/response";
-import { log } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -209,7 +209,7 @@ IP: ${api.ip ?? "unknown"}
         });
 
         if (error) {
-          log.error("Resend email failed", {
+          logger.error("Resend email failed", {
             route: "/api/contact",
             resendError: error.name,
             resendMessage: error.message,
