@@ -15,6 +15,7 @@ import { withValidation } from "@/lib/api/withValidation";
 import { withRateLimit } from "@/lib/api/withRateLimit";
 import { ApiError } from "@/lib/api/errors";
 import { jsonOk } from "@/lib/api/response";
+import { log } from "@/lib/logger";
 
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -99,35 +100,38 @@ export const POST = createApiRoute(
   { route: "/api/contact" },
   withRateLimit(
     { operation: "contactForm", identifier: (api) => api.ip },
-    withValidation({ body: ContactSchema }, async (_req: NextRequest, _ctx, api, validated) => {
-      // Check for required config
-      if (!CONTACT_EMAIL) {
-        throw new ApiError({
-          code: "INTERNAL",
-          status: 500,
-          message: "Contact form is not configured",
-        });
-      }
+    withValidation(
+      { body: ContactSchema },
+      async (_req: NextRequest, _ctx, api, validated) => {
+        // Check for required config
+        if (!CONTACT_EMAIL) {
+          throw new ApiError({
+            code: "INTERNAL",
+            status: 500,
+            message: "Contact form is not configured",
+          });
+        }
 
-      if (!process.env.RESEND_API_KEY) {
-        throw new ApiError({
-          code: "INTERNAL",
-          status: 500,
-          message: "Email service is not configured",
-        });
-      }
+        if (!process.env.RESEND_API_KEY) {
+          throw new ApiError({
+            code: "INTERNAL",
+            status: 500,
+            message: "Email service is not configured",
+          });
+        }
 
-      const { email, subject, message } = validated.body!;
+        const { email, subject, message } = validated.body!;
 
-      // Sanitize inputs
-      const sanitizedEmail = sanitize(email);
-      const sanitizedMessage = sanitizeMessage(message);
-      const subjectKey = ((subject ?? "general") as keyof typeof SUBJECT_MAP) || "general";
-      const subjectLine = SUBJECT_MAP[subjectKey] || "General Question";
+        // Sanitize inputs
+        const sanitizedEmail = sanitize(email);
+        const sanitizedMessage = sanitizeMessage(message);
+        const subjectKey =
+          ((subject ?? "general") as keyof typeof SUBJECT_MAP) || "general";
+        const subjectLine = SUBJECT_MAP[subjectKey] || "General Question";
 
-      // Build email content
-      const timestamp = new Date().toISOString();
-      const textContent = `
+        // Build email content
+        const timestamp = new Date().toISOString();
+        const textContent = `
 New contact form submission from ${BRAND.name}
 
 From: ${sanitizedEmail}
@@ -142,7 +146,7 @@ This message was sent via the ${BRAND.name} contact form.
 IP: ${api.ip ?? "unknown"}
     `.trim();
 
-      const htmlContent = `
+        const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -192,29 +196,43 @@ IP: ${api.ip ?? "unknown"}
 </html>
     `.trim();
 
-      // Send email via Resend
-      const { data, error } = await resend.emails.send({
-        from: `${BRAND.name} <noreply@${process.env.RESEND_DOMAIN || "resend.dev"}>`,
-        to: CONTACT_EMAIL,
-        replyTo: sanitizedEmail,
-        subject: `[${BRAND.name}] ${subjectLine} - from ${sanitizedEmail}`,
-        text: textContent,
-        html: htmlContent,
-      });
-
-      if (error) {
-        throw new ApiError({
-          code: "INTEGRATION_ERROR",
-          status: 502,
-          message: "Failed to send message. Please try again.",
-          details: { provider: "resend" },
+        // Send email via Resend
+        const { data, error } = await resend.emails.send({
+          from: `${BRAND.name} <noreply@${
+            process.env.RESEND_DOMAIN || "resend.dev"
+          }>`,
+          to: CONTACT_EMAIL,
+          replyTo: sanitizedEmail,
+          subject: `[${BRAND.name}] ${subjectLine} - from ${sanitizedEmail}`,
+          text: textContent,
+          html: htmlContent,
         });
-      }
 
-      return jsonOk(
-        { success: true, message: "Your message has been sent!", id: data?.id ?? null },
-        { requestId: api.requestId }
-      );
-    })
+        if (error) {
+          log.error("Resend email failed", {
+            route: "/api/contact",
+            resendError: error.name,
+            resendMessage: error.message,
+            from: `noreply@${process.env.RESEND_DOMAIN || "resend.dev"}`,
+            to: CONTACT_EMAIL,
+          });
+          throw new ApiError({
+            code: "INTEGRATION_ERROR",
+            status: 502,
+            message: "Failed to send message. Please try again.",
+            details: { provider: "resend", error: error.message },
+          });
+        }
+
+        return jsonOk(
+          {
+            success: true,
+            message: "Your message has been sent!",
+            id: data?.id ?? null,
+          },
+          { requestId: api.requestId }
+        );
+      }
+    )
   )
 );
