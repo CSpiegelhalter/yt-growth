@@ -489,16 +489,18 @@ async function GETHandler(
       );
     }
 
-    // Upsert videos and create snapshots
-    for (const v of rawVideos) {
-      const existing = existingVideoMap.get(v.videoId);
-      const stats = freshStats.get(v.videoId);
+    // Separate new videos from existing ones for parallel processing
+    const newVideos = rawVideos.filter((v) => !existingVideoMap.has(v.videoId));
+    const existingToUpdate = rawVideos.filter((v) =>
+      existingVideoMap.has(v.videoId)
+    );
 
-      if (!existing) {
-        // Create new video record
-        try {
-          await prisma.competitorVideo.create({
-            data: {
+    // Parallel upsert: create new videos and update existing ones concurrently
+    const [, , reloadedVideos] = await Promise.all([
+      // 1. Batch create new videos (skipDuplicates handles race conditions)
+      newVideos.length > 0
+        ? prisma.competitorVideo.createMany({
+            data: newVideos.map((v) => ({
               videoId: v.videoId,
               channelId: v.channelId,
               channelTitle: v.channelTitle,
@@ -506,57 +508,79 @@ async function GETHandler(
               publishedAt: new Date(v.publishedAt),
               thumbnailUrl: v.thumbnailUrl,
               lastFetchedAt: now,
-            },
-          });
-        } catch {
-          // Ignore duplicate key errors (race condition)
-        }
-      } else {
-        // Update existing video metadata
-        await prisma.competitorVideo.update({
-          where: { videoId: v.videoId },
-          data: {
-            title: v.title,
-            lastFetchedAt: now,
-          },
-        });
-      }
+            })),
+            skipDuplicates: true,
+          })
+        : Promise.resolve(),
 
-      // Create snapshot if we have fresh stats
-      if (
-        stats &&
-        videosNeedingSnapshot.some((vn) => vn.videoId === v.videoId)
-      ) {
-        try {
-          await prisma.competitorVideoSnapshot.create({
+      // 2. Parallel update existing videos
+      Promise.all(
+        existingToUpdate.map((v) =>
+          prisma.competitorVideo.update({
+            where: { videoId: v.videoId },
             data: {
-              videoId: v.videoId,
-              viewCount: stats.viewCount,
-              likeCount: stats.likeCount,
-              commentCount: stats.commentCount,
-              capturedAt: now,
+              title: v.title,
+              lastFetchedAt: now,
             },
-          });
-        } catch {
-          // Ignore errors
-        }
-      }
+          })
+        )
+      ),
+
+      // 3. Pre-fetch videos with snapshots (we'll need this for response)
+      // This runs in parallel with creates/updates since it reads existing data
+      prisma.competitorVideo.findMany({
+        where: { videoId: { in: videoIds } },
+        include: {
+          Snapshots: {
+            orderBy: { capturedAt: "desc" },
+            take: 10,
+          },
+        },
+      }),
+    ]);
+
+    // Batch create snapshots for videos that need them
+    const snapshotsToCreate = videosNeedingSnapshot
+      .filter((v) => freshStats.has(v.videoId))
+      .map((v) => {
+        const stats = freshStats.get(v.videoId)!;
+        return {
+          videoId: v.videoId,
+          viewCount: stats.viewCount,
+          likeCount: stats.likeCount,
+          commentCount: stats.commentCount,
+          capturedAt: now,
+        };
+      });
+
+    if (snapshotsToCreate.length > 0) {
+      await prisma.competitorVideoSnapshot.createMany({
+        data: snapshotsToCreate,
+        skipDuplicates: true,
+      });
     }
 
-    // Reload videos with snapshots for derived metrics
-    const videosWithSnapshots = await prisma.competitorVideo.findMany({
-      where: { videoId: { in: videoIds } },
-      include: {
-        Snapshots: {
-          orderBy: { capturedAt: "desc" },
-          take: 10,
-        },
-      },
-    });
-
+    // Build video data map from reloaded data + any new snapshots we just created
     const videoDataMap = new Map(
-      videosWithSnapshots.map((v) => [v.videoId, v])
+      reloadedVideos.map((v) => [v.videoId, v])
     );
+
+    // Merge in the new snapshots we just created (they weren't in the parallel query)
+    for (const snapshot of snapshotsToCreate) {
+      const video = videoDataMap.get(snapshot.videoId);
+      if (video) {
+        // Prepend the new snapshot to the existing snapshots array
+        video.Snapshots = [
+          {
+            capturedAt: snapshot.capturedAt,
+            viewCount: snapshot.viewCount,
+            likeCount: snapshot.likeCount ?? null,
+            commentCount: snapshot.commentCount ?? null,
+          } as (typeof video.Snapshots)[0],
+          ...video.Snapshots,
+        ].slice(0, 10); // Keep only 10 most recent
+      }
+    }
 
     // Build response with derived metrics
     const allVideos: CompetitorVideo[] = rawVideos.map((v) => {
