@@ -1607,13 +1607,25 @@ function buildCompetitorContext(
       commentsContext += `\nComment sentiment: ${commentsAnalysis.sentiment.positive}% positive, ${commentsAnalysis.sentiment.neutral}% neutral, ${commentsAnalysis.sentiment.negative}% negative`;
     }
     if (commentsAnalysis.themes && commentsAnalysis.themes.length > 0) {
-      commentsContext += `\nTop comment themes: ${commentsAnalysis.themes.map((t) => t.theme).join(", ")}`;
+      commentsContext += `\nTop comment themes: ${commentsAnalysis.themes
+        .map((t) => t.theme)
+        .join(", ")}`;
     }
-    if (commentsAnalysis.viewerLoved && commentsAnalysis.viewerLoved.length > 0) {
-      commentsContext += `\nWhat viewers loved: ${commentsAnalysis.viewerLoved.slice(0, 3).join("; ")}`;
+    if (
+      commentsAnalysis.viewerLoved &&
+      commentsAnalysis.viewerLoved.length > 0
+    ) {
+      commentsContext += `\nWhat viewers loved: ${commentsAnalysis.viewerLoved
+        .slice(0, 3)
+        .join("; ")}`;
     }
-    if (commentsAnalysis.viewerAskedFor && commentsAnalysis.viewerAskedFor.length > 0) {
-      commentsContext += `\nViewers asked for: ${commentsAnalysis.viewerAskedFor.slice(0, 3).join("; ")}`;
+    if (
+      commentsAnalysis.viewerAskedFor &&
+      commentsAnalysis.viewerAskedFor.length > 0
+    ) {
+      commentsContext += `\nViewers asked for: ${commentsAnalysis.viewerAskedFor
+        .slice(0, 3)
+        .join("; ")}`;
     }
   }
 
@@ -1630,14 +1642,30 @@ function buildCompetitorContext(
 COMPETITOR VIDEO:
 Title: "${video.title}"
 Channel: ${video.channelTitle}
-${video.durationSec ? `Duration: ${Math.max(1, Math.round(video.durationSec / 60))} minutes` : ""}
+${
+  video.durationSec
+    ? `Duration: ${Math.max(1, Math.round(video.durationSec / 60))} minutes`
+    : ""
+}
 Description: ${cleanDesc || "[minimal]"}
 Tags: ${(video.tags ?? []).slice(0, 20).join(", ") || "[none]"}
 Views: ${video.stats.viewCount.toLocaleString()}
 Views/day: ${video.derived.viewsPerDay.toLocaleString()}
-${video.stats.likeCount ? `Likes: ${video.stats.likeCount.toLocaleString()}` : ""}
-${video.stats.commentCount ? `Comments: ${video.stats.commentCount.toLocaleString()}` : ""}
-${video.derived.engagementPerView ? `Engagement rate: ${(video.derived.engagementPerView * 100).toFixed(2)}%` : ""}${commentsContext}`;
+${
+  video.stats.likeCount
+    ? `Likes: ${video.stats.likeCount.toLocaleString()}`
+    : ""
+}
+${
+  video.stats.commentCount
+    ? `Comments: ${video.stats.commentCount.toLocaleString()}`
+    : ""
+}
+${
+  video.derived.engagementPerView
+    ? `Engagement rate: ${(video.derived.engagementPerView * 100).toFixed(2)}%`
+    : ""
+}${commentsContext}`;
 }
 
 /**
@@ -1672,7 +1700,11 @@ For "whyItsWorking":
 - Incorporate comment insights if available
 - No generic advice`;
 
-  const context = buildCompetitorContext(video, userChannelTitle, commentsAnalysis);
+  const context = buildCompetitorContext(
+    video,
+    userChannelTitle,
+    commentsAnalysis
+  );
 
   try {
     const result = await callLLM(
@@ -1719,7 +1751,11 @@ RULES:
 - Keep insights specific and actionable
 - No markdown`;
 
-  const context = buildCompetitorContext(video, userChannelTitle, commentsAnalysis);
+  const context = buildCompetitorContext(
+    video,
+    userChannelTitle,
+    commentsAnalysis
+  );
 
   try {
     const result = await callLLM(
@@ -1773,7 +1809,11 @@ RULES:
 - Overlay text should be punchy thumbnail text
 - No markdown`;
 
-  const context = buildCompetitorContext(video, userChannelTitle, commentsAnalysis);
+  const context = buildCompetitorContext(
+    video,
+    userChannelTitle,
+    commentsAnalysis
+  );
 
   try {
     const result = await callLLM(
@@ -1797,13 +1837,11 @@ async function generateCompetitorBeatChecklistParallel(
   video: CompetitorVideoInput,
   userChannelTitle: string,
   commentsAnalysis?: CommentsAnalysisInput
-): Promise<
-  Array<{
-    action: string;
-    difficulty: "Easy" | "Medium" | "Hard";
-    impact: "Low" | "Medium" | "High";
-  }> | null
-> {
+): Promise<Array<{
+  action: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+  impact: "Low" | "Medium" | "High";
+}> | null> {
   const systemPrompt = `You are an expert YouTube growth strategist creating a "Beat this video" checklist.
 
 Return ONLY valid JSON:
@@ -1820,7 +1858,11 @@ CRITICAL RULES:
 - Actions should be phrased as what to do (not observations)
 - No markdown`;
 
-  const context = buildCompetitorContext(video, userChannelTitle, commentsAnalysis);
+  const context = buildCompetitorContext(
+    video,
+    userChannelTitle,
+    commentsAnalysis
+  );
 
   try {
     const result = await callLLM(
@@ -1831,12 +1873,16 @@ CRITICAL RULES:
       { temperature: 0.5, maxTokens: 600, responseFormat: "json_object" }
     );
     const parsed = JSON.parse(result.content);
-    const list = Array.isArray(parsed.beatThisVideo) ? parsed.beatThisVideo : [];
+    const list = Array.isArray(parsed.beatThisVideo)
+      ? parsed.beatThisVideo
+      : [];
     return list
       .map((x: any) => ({
         action: typeof x?.action === "string" ? x.action.trim() : "",
         difficulty:
-          x?.difficulty === "Easy" || x?.difficulty === "Medium" || x?.difficulty === "Hard"
+          x?.difficulty === "Easy" ||
+          x?.difficulty === "Medium" ||
+          x?.difficulty === "Hard"
             ? x.difficulty
             : "Medium",
         impact:
@@ -1877,36 +1923,67 @@ export async function generateCompetitorVideoAnalysisParallel(
     angle: string;
   }>;
 }> {
-  console.log("[CompetitorAnalysis] Starting parallel LLM generation (4 chunks)");
+  console.log(
+    "[CompetitorAnalysis] Starting parallel LLM generation (4 chunks)"
+  );
   const startTime = Date.now();
 
   // Run all 4 LLM calls in parallel
-  const [basicResult, themesResult, remixResult, beatResult] = await Promise.all([
-    generateCompetitorBasicAnalysis(video, userChannelTitle, commentsAnalysis),
-    generateCompetitorThemesPatterns(video, userChannelTitle, commentsAnalysis),
-    generateCompetitorRemixIdeas(video, userChannelTitle, commentsAnalysis),
-    generateCompetitorBeatChecklistParallel(video, userChannelTitle, commentsAnalysis),
-  ]);
+  const [basicResult, themesResult, remixResult, beatResult] =
+    await Promise.all([
+      generateCompetitorBasicAnalysis(
+        video,
+        userChannelTitle,
+        commentsAnalysis
+      ),
+      generateCompetitorThemesPatterns(
+        video,
+        userChannelTitle,
+        commentsAnalysis
+      ),
+      generateCompetitorRemixIdeas(video, userChannelTitle, commentsAnalysis),
+      generateCompetitorBeatChecklistParallel(
+        video,
+        userChannelTitle,
+        commentsAnalysis
+      ),
+    ]);
 
   const elapsed = Date.now() - startTime;
   console.log(`[CompetitorAnalysis] Parallel LLM completed in ${elapsed}ms`);
 
   // Merge results with fallbacks
   return {
-    whatItsAbout: basicResult?.whatItsAbout ?? `A video about "${video.title.slice(0, 50)}..."`,
+    whatItsAbout:
+      basicResult?.whatItsAbout ??
+      `A video about "${video.title.slice(0, 50)}..."`,
     whyItsWorking: basicResult?.whyItsWorking ?? [
       "Strong initial hook captures attention",
       "Title creates clear curiosity gap",
       "High engagement indicates audience resonance",
     ],
     themesToRemix: themesResult?.themesToRemix ?? [
-      { theme: "Personal take", why: "Your unique experience adds authenticity" },
+      {
+        theme: "Personal take",
+        why: "Your unique experience adds authenticity",
+      },
     ],
-    titlePatterns: themesResult?.titlePatterns ?? ["Uses specific numbers", "Creates urgency"],
+    titlePatterns: themesResult?.titlePatterns ?? [
+      "Uses specific numbers",
+      "Creates urgency",
+    ],
     packagingNotes: themesResult?.packagingNotes ?? ["Clear value proposition"],
     beatThisVideo: beatResult ?? [
-      { action: "Create a more comprehensive version with additional examples", difficulty: "Medium", impact: "High" },
-      { action: "Target a specific audience segment they missed", difficulty: "Easy", impact: "Medium" },
+      {
+        action: "Create a more comprehensive version with additional examples",
+        difficulty: "Medium",
+        impact: "High",
+      },
+      {
+        action: "Target a specific audience segment they missed",
+        difficulty: "Easy",
+        impact: "Medium",
+      },
     ],
     remixIdeasForYou: remixResult?.remixIdeasForYou ?? [
       {
