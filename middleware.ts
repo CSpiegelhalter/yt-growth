@@ -4,7 +4,8 @@ import { getToken } from "next-auth/jwt";
 
 function getOrCreateRequestId(req: NextRequest) {
   const incoming = req.headers.get("x-request-id");
-  if (incoming && incoming.length >= 8 && incoming.length <= 128) return incoming;
+  if (incoming && incoming.length >= 8 && incoming.length <= 128)
+    return incoming;
   return crypto.randomUUID();
 }
 
@@ -25,7 +26,7 @@ function isProtectedPath(pathname: string) {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-export default async function proxy(req: NextRequest) {
+export default async function middleware(req: NextRequest) {
   const requestId = getOrCreateRequestId(req);
 
   const requestHeaders = new Headers(req.headers);
@@ -53,7 +54,13 @@ export default async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - Static files in public folder
+     */
+    "/((?!_next/static|_next/image|favicon\\.ico|favicon\\.svg|icon\\.svg|logo\\.svg|apple-touch-icon\\.svg|robots\\.txt|sitemap\\.xml|manifest\\.json|og/).*)",
     "/api/:path*",
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.json|icon.svg|logo.svg|apple-touch-icon.svg|og/).*)",
   ],
 };
