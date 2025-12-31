@@ -137,7 +137,7 @@ async function GETHandler(
     if (cached?.derivedJson && cached.cachedUntil > new Date()) {
       const derivedData = cached.derivedJson as any;
       const llmData = (cached.llmJson as any) ?? null;
-      
+
       // Fetch retention data if not in cache (backwards compat for old cache entries)
       let retention = derivedData.retention;
       if (!retention) {
@@ -152,20 +152,25 @@ async function GETHandler(
           });
           if (retentionBlob?.dataJson) {
             try {
-              const points = (typeof retentionBlob.dataJson === 'string'
-                ? JSON.parse(retentionBlob.dataJson)
-                : retentionBlob.dataJson) as RetentionPoint[];
+              const points = (
+                typeof retentionBlob.dataJson === "string"
+                  ? JSON.parse(retentionBlob.dataJson)
+                  : retentionBlob.dataJson
+              ) as RetentionPoint[];
               retention = {
                 points,
                 cliffTimeSec: retentionBlob.cliffTimeSec,
                 cliffReason: retentionBlob.cliffReason,
               };
             } catch (e) {
-              console.warn('[VideoInsights] Failed to parse retention data:', e);
+              console.warn(
+                "[VideoInsights] Failed to parse retention data:",
+                e
+              );
             }
           }
         }
-        
+
         // If still no retention, fetch directly from YouTube
         if (!retention) {
           try {
@@ -181,7 +186,7 @@ async function GETHandler(
               }
             }
           } catch (e) {
-            console.warn('[VideoInsights] Failed to fetch retention:', e);
+            console.warn("[VideoInsights] Failed to fetch retention:", e);
           }
         }
       }
@@ -314,28 +319,35 @@ async function GETHandler(
     return Response.json(resultWithoutComments);
   } catch (err: unknown) {
     // Handle permission/reconnect errors - show "Reconnect Google" prompt
-    if (err instanceof YouTubePermissionDeniedError || err instanceof GoogleTokenRefreshError) {
+    if (
+      err instanceof YouTubePermissionDeniedError ||
+      err instanceof GoogleTokenRefreshError
+    ) {
       return Response.json(
-        { 
-          error: err.message, 
+        {
+          error: err.message,
           code: "youtube_permissions", // Triggers reconnect prompt in frontend
         },
         { status: 403 }
       );
     }
-    
+
     // Also catch generic refresh errors (in case thrown before custom error class)
     const message = err instanceof Error ? err.message : "Unknown error";
-    if (message.includes("refresh_failed") || message.includes("invalid_grant")) {
+    if (
+      message.includes("refresh_failed") ||
+      message.includes("invalid_grant")
+    ) {
       return Response.json(
-        { 
-          error: "Your Google access has been revoked or expired. Please reconnect your Google account.",
+        {
+          error:
+            "Your Google access has been revoked or expired. Please reconnect your Google account.",
           code: "youtube_permissions",
         },
         { status: 403 }
       );
     }
-    
+
     console.error("Video insights error:", err);
     return Response.json(
       { error: "Failed to fetch video insights", detail: message },
@@ -478,20 +490,25 @@ async function POSTHandler(
           });
           if (retentionBlob?.dataJson) {
             try {
-              const points = (typeof retentionBlob.dataJson === 'string'
-                ? JSON.parse(retentionBlob.dataJson)
-                : retentionBlob.dataJson) as RetentionPoint[];
+              const points = (
+                typeof retentionBlob.dataJson === "string"
+                  ? JSON.parse(retentionBlob.dataJson)
+                  : retentionBlob.dataJson
+              ) as RetentionPoint[];
               retention = {
                 points,
                 cliffTimeSec: retentionBlob.cliffTimeSec,
                 cliffReason: retentionBlob.cliffReason,
               };
             } catch (e) {
-              console.warn('[VideoInsights] Failed to parse cached retention data (llmOnly):', e);
+              console.warn(
+                "[VideoInsights] Failed to parse cached retention data (llmOnly):",
+                e
+              );
             }
           }
         }
-        
+
         // If still no retention, fetch directly from YouTube
         if (!retention) {
           try {
@@ -504,7 +521,10 @@ async function POSTHandler(
               };
             }
           } catch (e) {
-            console.warn('[VideoInsights] Failed to fetch retention from YouTube (llmOnly):', e);
+            console.warn(
+              "[VideoInsights] Failed to fetch retention from YouTube (llmOnly):",
+              e
+            );
           }
         }
       }
@@ -631,28 +651,35 @@ async function POSTHandler(
     return Response.json(resultWithoutComments);
   } catch (err: unknown) {
     // Handle permission/reconnect errors - show "Reconnect Google" prompt
-    if (err instanceof YouTubePermissionDeniedError || err instanceof GoogleTokenRefreshError) {
+    if (
+      err instanceof YouTubePermissionDeniedError ||
+      err instanceof GoogleTokenRefreshError
+    ) {
       return Response.json(
-        { 
-          error: err.message, 
+        {
+          error: err.message,
           code: "youtube_permissions", // Triggers reconnect prompt in frontend
         },
         { status: 403 }
       );
     }
-    
+
     // Also catch generic refresh errors (in case thrown before custom error class)
     const message = err instanceof Error ? err.message : "Unknown error";
-    if (message.includes("refresh_failed") || message.includes("invalid_grant")) {
+    if (
+      message.includes("refresh_failed") ||
+      message.includes("invalid_grant")
+    ) {
       return Response.json(
-        { 
-          error: "Your Google access has been revoked or expired. Please reconnect your Google account.",
+        {
+          error:
+            "Your Google access has been revoked or expired. Please reconnect your Google account.",
           code: "youtube_permissions",
         },
         { status: 403 }
       );
     }
-    
+
     console.error("Video insights refresh error:", err);
     return Response.json(
       { error: "Failed to refresh video insights", detail: message },
@@ -698,8 +725,15 @@ async function generateInsights(
 ): Promise<InsightsResultInternal> {
   const { startDate, endDate } = getDateRange(range);
 
-  // Fetch video metadata AND analytics in parallel for faster response
-  const [videoMeta, totalsResult, dailyResult, comments, retentionBlob] = await Promise.all([
+  // Fetch video metadata, analytics, comments, retention cache, AND baseline all in parallel
+  const [
+    videoMeta,
+    totalsResult,
+    dailyResult,
+    comments,
+    retentionBlob,
+    baseline,
+  ] = await Promise.all([
     fetchOwnedVideoMetadata(ga, videoId),
     fetchVideoAnalyticsTotalsWithStatus(
       ga,
@@ -718,20 +752,24 @@ async function generateInsights(
     fetchOwnedVideoComments(ga, videoId, 30),
     // Fetch retention curve from cache (already fetched via video-analytics endpoint)
     // First get the internal video ID from the Video table
-    prisma.video.findFirst({
-      where: { youtubeVideoId: videoId, channelId: dbChannelId },
-      select: { id: true },
-    }).then(async (v) => {
-      if (!v) return null;
-      return prisma.retentionBlob.findUnique({
-        where: { videoId: v.id },
-        select: {
-          dataJson: true,
-          cliffTimeSec: true,
-          cliffReason: true,
-        },
-      });
-    }),
+    prisma.video
+      .findFirst({
+        where: { youtubeVideoId: videoId, channelId: dbChannelId },
+        select: { id: true },
+      })
+      .then(async (v) => {
+        if (!v) return null;
+        return prisma.retentionBlob.findUnique({
+          where: { videoId: v.id },
+          select: {
+            dataJson: true,
+            cliffTimeSec: true,
+            cliffReason: true,
+          },
+        });
+      }),
+    // Get channel baseline from other videos (only needs function params, no dependencies)
+    getChannelBaselineFromDB(userId, dbChannelId, videoId, range),
   ]);
 
   if (!videoMeta) {
@@ -777,14 +815,6 @@ async function generateInsights(
   // This ensures the UI shows the same view count that appears on YouTube
   derived.totalViews = videoMeta.viewCount;
 
-  // Get channel baseline from other videos
-  const baseline = await getChannelBaselineFromDB(
-    userId,
-    dbChannelId,
-    videoId,
-    range
-  );
-
   // Compare to baseline
   const comparison = compareToBaseline(
     derived,
@@ -818,54 +848,78 @@ async function generateInsights(
     },
   };
 
-  // Reuse cached LLM insights if content hasn't changed
-  let llmInsights: VideoInsightsLLM | null = null;
-  if (contentUnchanged && cachedLlmJson) {
-    console.log(
-      `[VideoInsights] Reusing cached LLM insights (content hash: ${currentContentHash})`
-    );
-    llmInsights = cachedLlmJson as VideoInsightsLLM;
-  } else {
-    // Performance: do NOT block the main insights response on LLM generation.
-    // The client will call POST { llmOnly: true } to populate llmInsights asynchronously.
-    console.log(
-      `[VideoInsights] Skipping LLM generation for fast response (hash changed: ${cachedContentHash} -> ${currentContentHash})`
-    );
-    llmInsights = null;
-  }
+  // Parse retention from cache (sync) or prepare to fetch from YouTube
+  let retention:
+    | {
+        points: RetentionPoint[];
+        cliffTimeSec?: number | null;
+        cliffReason?: string | null;
+      }
+    | undefined;
+  let needsRetentionFetch = false;
 
-  // Store daily data in analytics table for future baseline calculations
-  await storeDailyAnalytics(userId, dbChannelId, videoId, dailySeries);
-
-  // Parse retention curve data if available, or fetch from YouTube if not cached
-  let retention: { points: RetentionPoint[]; cliffTimeSec?: number | null; cliffReason?: string | null } | undefined;
   if (retentionBlob?.dataJson) {
     try {
-      const points = (typeof retentionBlob.dataJson === 'string' 
-        ? JSON.parse(retentionBlob.dataJson) 
-        : retentionBlob.dataJson) as RetentionPoint[];
+      const points = (
+        typeof retentionBlob.dataJson === "string"
+          ? JSON.parse(retentionBlob.dataJson)
+          : retentionBlob.dataJson
+      ) as RetentionPoint[];
       retention = {
         points,
         cliffTimeSec: retentionBlob.cliffTimeSec,
         cliffReason: retentionBlob.cliffReason,
       };
     } catch (e) {
-      console.warn('[VideoInsights] Failed to parse retention data:', e);
+      console.warn("[VideoInsights] Failed to parse retention data:", e);
+      needsRetentionFetch = true;
     }
   } else {
-    // Retention not in cache - fetch directly from YouTube Analytics API
-    try {
-      const points = await fetchRetentionCurve(ga, youtubeChannelId, videoId);
-      if (points.length > 0) {
-        retention = {
-          points,
-          cliffTimeSec: null,
-          cliffReason: null,
-        };
-      }
-    } catch (e) {
-      console.warn('[VideoInsights] Failed to fetch retention:', e);
-    }
+    needsRetentionFetch = true;
+  }
+
+  // Determine if we need to generate LLM insights
+  const needsLlmGeneration = !(contentUnchanged && cachedLlmJson);
+  if (contentUnchanged && cachedLlmJson) {
+    console.log(
+      `[VideoInsights] Reusing cached LLM insights (content hash: ${currentContentHash})`
+    );
+  } else {
+    console.log(
+      `[VideoInsights] Generating LLM insights (hash changed: ${cachedContentHash} -> ${currentContentHash})`
+    );
+  }
+
+  // Run LLM generation, retention fetch, and daily analytics storage in parallel
+  // These operations are independent and don't depend on each other's results
+  const [llmResult, retentionResult] = await Promise.all([
+    // 1. LLM insights (if needed)
+    needsLlmGeneration
+      ? generateLLMInsights(videoMeta, derived, comparison, levers, comments)
+      : Promise.resolve(cachedLlmJson as VideoInsightsLLM),
+
+    // 2. Retention curve from YouTube (if not cached)
+    needsRetentionFetch
+      ? fetchRetentionCurve(ga, youtubeChannelId, videoId)
+          .then((points) =>
+            points.length > 0
+              ? { points, cliffTimeSec: null, cliffReason: null }
+              : undefined
+          )
+          .catch((e) => {
+            console.warn("[VideoInsights] Failed to fetch retention:", e);
+            return undefined;
+          })
+      : Promise.resolve(retention),
+
+    // 3. Store daily analytics (fire-and-forget, we don't need the result)
+    storeDailyAnalytics(userId, dbChannelId, videoId, dailySeries),
+  ]);
+
+  // Use results from parallel execution
+  const llmInsights = llmResult;
+  if (retentionResult) {
+    retention = retentionResult;
   }
 
   return {
@@ -2086,14 +2140,14 @@ function getDemoInsights(opts?: {
  */
 function generateDemoRetentionCurve(): RetentionPoint[] {
   const points: RetentionPoint[] = [];
-  
+
   // YouTube returns ~100 data points typically
   for (let i = 0; i <= 100; i++) {
     const ratio = i / 100;
-    
+
     // Base retention curve (exponential decay with some complexity)
     let retention: number;
-    
+
     if (ratio <= 0.02) {
       // First 2%: slight spike above 100% (re-watches of intro)
       retention = 1.0 + (1 - ratio / 0.02) * 0.15;
@@ -2113,18 +2167,18 @@ function generateDemoRetentionCurve(): RetentionPoint[] {
       // 75-100%: minimal decline (dedicated viewers)
       retention = 0.36 - (ratio - 0.75) * 0.24;
     }
-    
+
     // Add small random variation for realism (±3%)
     retention += (Math.random() - 0.5) * 0.06;
-    
+
     // Clamp to valid range
     retention = Math.max(0.05, Math.min(1.15, retention));
-    
+
     points.push({
       elapsedRatio: ratio,
       audienceWatchRatio: retention,
     });
   }
-  
+
   return points;
 }

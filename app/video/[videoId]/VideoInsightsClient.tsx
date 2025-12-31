@@ -242,37 +242,10 @@ export default function VideoInsightsClient({
 
       const data = (await res.json()) as VideoInsightsResponse;
 
-      // If AI insights are missing, fetch them and WAIT for them before showing page
-      if (data && !data.demo && data.llmInsights == null && channelId) {
-        try {
-          // POST to generate LLM insights (this triggers the parallel LLM calls)
-          const llmRes = await fetch(
-            `/api/me/channels/${channelId}/videos/${videoId}/insights`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ range, llmOnly: true }),
-            }
-          );
-          if (llmRes.ok) {
-            const fullData = (await llmRes.json()) as VideoInsightsResponse;
-            setLlmProgress(100);
-            setInsights(fullData);
-          } else {
-            // LLM failed, show analytics without AI insights
-            console.error("LLM request failed, showing analytics only");
-            setInsights(data);
-          }
-        } catch (llmErr) {
-          // LLM failed, show analytics without AI insights
-          console.error("Failed to generate AI insights:", llmErr);
-          setInsights(data);
-        }
-      } else {
-        // Already has LLM insights (cached) or demo mode
-        setLlmProgress(100);
-        setInsights(data);
-      }
+      // LLM insights are now generated in the single GET request
+      // No need for a second POST call
+      setLlmProgress(100);
+      setInsights(data);
 
       setLoading(false);
     } catch (err) {
