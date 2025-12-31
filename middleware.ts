@@ -26,21 +26,37 @@ function isProtectedPath(pathname: string) {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+// Static files that should never go through middleware
+const STATIC_FILES = [
+  "/manifest.json",
+  "/favicon.ico",
+  "/favicon.svg",
+  "/icon.svg",
+  "/logo.svg",
+  "/apple-touch-icon.svg",
+  "/robots.txt",
+  "/sitemap.xml",
+];
+
 export default async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // Skip middleware for static files
+  if (STATIC_FILES.includes(pathname) || pathname.startsWith("/og/")) {
+    return NextResponse.next();
+  }
+
   const requestId = getOrCreateRequestId(req);
 
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-request-id", requestId);
 
-  if (isProtectedPath(req.nextUrl.pathname)) {
+  if (isProtectedPath(pathname)) {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     if (!token) {
       const loginUrl = new URL("/auth/login", req.nextUrl.origin);
       // Preserve original path for post-login navigation
-      loginUrl.searchParams.set(
-        "redirect",
-        `${req.nextUrl.pathname}${req.nextUrl.search}`
-      );
+      loginUrl.searchParams.set("redirect", `${pathname}${req.nextUrl.search}`);
       const res = NextResponse.redirect(loginUrl);
       res.headers.set("x-request-id", requestId);
       return res;
