@@ -124,21 +124,12 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          // Request offline access for refresh_token
-          access_type: "offline",
           // Don't force consent every time - Google will only prompt if needed
-          // (first sign-in, revoked permissions, or new scopes)
           prompt: "select_account",
-          // YouTube scopes (add monetary if you need revenue metrics)
-          scope: [
-            "openid",
-            "email",
-            "profile",
-            "https://www.googleapis.com/auth/youtube.readonly",
-            "https://www.googleapis.com/auth/youtube.force-ssl", // Required for comments API
-            "https://www.googleapis.com/auth/yt-analytics.readonly",
-            // "https://www.googleapis.com/auth/yt-analytics-monetary.readonly", // optional: for revenue data
-          ].join(" "),
+          // Only request basic profile info for signup/login
+          // YouTube API scopes are requested separately via /api/integrations/google/start
+          // when the user clicks to connect their YouTube channel
+          scope: ["openid", "email", "profile"].join(" "),
         },
       },
     }),
