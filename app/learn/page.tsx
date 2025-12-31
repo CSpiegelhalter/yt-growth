@@ -1,66 +1,71 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
+import { learnArticles } from "./articles";
 import s from "./style.module.css";
 
 export const metadata: Metadata = {
-  title: `YouTube Growth Guide: Learn to Grow Your Channel | ${BRAND.name}`,
+  title: `YouTube Growth Guides: Free Tutorials for Creators (2025) | ${BRAND.name}`,
   description:
-    "Free YouTube growth guides and tutorials. Learn channel auditing, retention analysis, competitor research, and proven strategies to get more subscribers.",
+    "Free YouTube growth guides and tutorials. Learn channel auditing, retention analysis, competitor research, video ideas, and proven strategies to get more subscribers.",
+  keywords: [
+    "youtube growth",
+    "youtube tutorials",
+    "youtube guides",
+    "channel audit",
+    "retention analysis",
+    "get more subscribers",
+  ],
   alternates: {
     canonical: `${BRAND.url}/learn`,
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   openGraph: {
-    title: `YouTube Growth Guide | ${BRAND.name}`,
+    title: `YouTube Growth Guides | ${BRAND.name}`,
     description:
       "Free guides to help you grow your YouTube channel with data-driven strategies.",
     url: `${BRAND.url}/learn`,
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: `YouTube Growth Guides | ${BRAND.name}`,
+    description:
+      "Free guides to help you grow your YouTube channel with data-driven strategies.",
+  },
 };
 
-const articles = [
-  {
-    slug: "youtube-channel-audit",
-    title: "YouTube Channel Audit",
-    description:
-      "Learn how to analyze your channel's performance and identify growth opportunities with data-driven insights.",
-    icon: "audit",
-    readTime: "8 min read",
+// ItemList schema for the article collection
+const itemListSchema = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  name: "YouTube Growth Guides",
+  description:
+    "Free YouTube growth guides and tutorials covering channel audits, retention analysis, competitor research, and subscriber growth strategies.",
+  url: `${BRAND.url}/learn`,
+  publisher: {
+    "@type": "Organization",
+    name: BRAND.name,
+    url: BRAND.url,
   },
-  {
-    slug: "youtube-retention-analysis",
-    title: "Retention Analysis",
-    description:
-      "Understand where viewers drop off and how to keep them watching longer to boost your video performance.",
-    icon: "retention",
-    readTime: "7 min read",
+  mainEntity: {
+    "@type": "ItemList",
+    itemListElement: learnArticles.map((article, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: `${BRAND.url}/learn/${article.slug}`,
+      name: article.title,
+      description: article.description,
+    })),
   },
-  {
-    slug: "how-to-get-more-subscribers",
-    title: "Get More Subscribers",
-    description:
-      "Proven strategies to turn viewers into loyal subscribers and grow your channel faster.",
-    icon: "subscribers",
-    readTime: "9 min read",
-  },
-  {
-    slug: "youtube-competitor-analysis",
-    title: "Competitor Analysis",
-    description:
-      "Learn how to analyze successful channels in your niche and find content opportunities they're missing.",
-    icon: "competitors",
-    readTime: "6 min read",
-  },
-  {
-    slug: "youtube-video-ideas",
-    title: "Video Ideas Generator",
-    description:
-      "Data-driven methods to generate video ideas that your audience actually wants to watch.",
-    icon: "ideas",
-    readTime: "7 min read",
-  },
-];
+};
 
 function ArticleIcon({ type }: { type: string }) {
   const props = {
@@ -72,10 +77,11 @@ function ArticleIcon({ type }: { type: string }) {
     strokeWidth: 1.75,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
+    "aria-hidden": true as const,
   };
 
   switch (type) {
-    case "audit":
+    case "youtube-channel-audit":
       return (
         <svg {...props}>
           <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
@@ -83,14 +89,14 @@ function ArticleIcon({ type }: { type: string }) {
           <path d="M9 12h6M9 16h6" />
         </svg>
       );
-    case "retention":
+    case "youtube-retention-analysis":
       return (
         <svg {...props}>
           <path d="M3 3v18h18" />
           <path d="M18 9l-5 5-4-4-3 3" />
         </svg>
       );
-    case "subscribers":
+    case "how-to-get-more-subscribers":
       return (
         <svg {...props}>
           <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
@@ -98,7 +104,7 @@ function ArticleIcon({ type }: { type: string }) {
           <path d="M19 8v6M22 11h-6" />
         </svg>
       );
-    case "competitors":
+    case "youtube-competitor-analysis":
       return (
         <svg {...props}>
           <path d="M6 9H4.5a2.5 2.5 0 010-5H6" />
@@ -109,7 +115,7 @@ function ArticleIcon({ type }: { type: string }) {
           <path d="M18 2H6v7a6 6 0 1012 0V2z" />
         </svg>
       );
-    case "ideas":
+    case "youtube-video-ideas":
       return (
         <svg {...props}>
           <path d="M12 2v1M4.22 4.22l.71.71M1 12h2M18.36 4.93l.71-.71M23 12h-2" />
@@ -125,6 +131,12 @@ function ArticleIcon({ type }: { type: string }) {
 export default function LearnPage() {
   return (
     <main className={s.learnHub}>
+      {/* Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+      />
+
       {/* Hero */}
       <header className={s.hubHero}>
         <div className={s.hubBadge}>
@@ -135,6 +147,7 @@ export default function LearnPage() {
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
+            aria-hidden="true"
           >
             <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
@@ -154,22 +167,23 @@ export default function LearnPage() {
       </header>
 
       {/* Articles Grid */}
-      <section className={s.articlesSection}>
+      <section className={s.articlesSection} aria-label="YouTube growth guides">
         <div className={s.articlesGrid}>
-          {articles.map((article) => (
+          {learnArticles.map((article) => (
             <Link
               key={article.slug}
               href={`/learn/${article.slug}`}
               className={s.articleCard}
             >
               <div className={s.articleIcon}>
-                <ArticleIcon type={article.icon} />
+                <ArticleIcon type={article.slug} />
               </div>
               <div className={s.articleContent}>
+                <span className={s.articleCategory}>{article.category}</span>
                 <h2 className={s.articleTitle}>{article.title}</h2>
                 <p className={s.articleDescription}>{article.description}</p>
                 <div className={s.articleMeta}>
-                  <span className={s.readTime}>{article.readTime}</span>
+                  <span className={s.readTime}>{article.readingTime}</span>
                   <span className={s.readMore}>
                     Read guide
                     <svg
@@ -179,6 +193,7 @@ export default function LearnPage() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
+                      aria-hidden="true"
                     >
                       <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
@@ -187,6 +202,34 @@ export default function LearnPage() {
               </div>
             </Link>
           ))}
+        </div>
+      </section>
+
+      {/* What You'll Learn */}
+      <section className={s.valueSection}>
+        <h2 className={s.valueSectionTitle}>What You'll Learn</h2>
+        <div className={s.valueGrid}>
+          <div className={s.valueItem}>
+            <h3>Understand Your Analytics</h3>
+            <p>
+              Learn to read retention curves, identify drop-off patterns, and
+              understand which metrics actually matter for growth.
+            </p>
+          </div>
+          <div className={s.valueItem}>
+            <h3>Find Content That Works</h3>
+            <p>
+              Discover data-driven methods to generate video ideas your audience
+              wants and learn from competitor successes.
+            </p>
+          </div>
+          <div className={s.valueItem}>
+            <h3>Grow Your Audience</h3>
+            <p>
+              Apply proven strategies to turn viewers into subscribers and build
+              a loyal audience that watches your content.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -201,36 +244,11 @@ export default function LearnPage() {
           <Link href="/auth/signup" className={s.hubCtaPrimary}>
             Get Started Free
           </Link>
-          <Link href="/dashboard" className={s.hubCtaSecondary}>
-            Go to Dashboard
+          <Link href="/" className={s.hubCtaSecondary}>
+            Learn More
           </Link>
         </div>
       </section>
-
-      {/* Schema.org for SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "CollectionPage",
-            name: "YouTube Growth Guide",
-            description:
-              "Free YouTube growth guides and tutorials covering channel audits, retention analysis, and subscriber growth strategies.",
-            url: `${BRAND.url}/learn`,
-            mainEntity: {
-              "@type": "ItemList",
-              itemListElement: articles.map((article, index) => ({
-                "@type": "ListItem",
-                position: index + 1,
-                url: `${BRAND.url}/learn/${article.slug}`,
-                name: article.title,
-              })),
-            },
-          }),
-        }}
-      />
     </main>
   );
 }
-

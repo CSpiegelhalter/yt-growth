@@ -1,62 +1,90 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
-import { LearnCTA } from "@/components/LearnCTA";
-import { learnArticles } from "../articles";
-import { generateArticleSchema, generateBreadcrumbSchema } from "@/lib/seo";
+import {
+  LearnStaticCTA,
+  TableOfContents,
+  ArticleMeta,
+} from "@/components/learn";
+import {
+  LEARN_ARTICLES,
+  learnArticles,
+  generateLearnArticleSchema,
+  generateFaqSchema,
+  getRelatedArticles,
+} from "../articles";
+import { generateBreadcrumbSchema } from "@/lib/seo";
 import s from "../style.module.css";
 
-const ARTICLE = {
-  slug: "youtube-competitor-analysis",
-  title: "YouTube Competitor Analysis: Find What Works in Your Niche",
-  description:
-    "Learn how to analyze YouTube competitors effectively. Find trending topics, discover outlier videos, and understand what content strategies drive growth in your niche.",
-};
+const ARTICLE = LEARN_ARTICLES["youtube-competitor-analysis"];
 
 export const metadata: Metadata = {
   title: ARTICLE.title,
-  description: ARTICLE.description,
+  description: ARTICLE.metaDescription,
+  keywords: [...ARTICLE.keywords],
   alternates: {
     canonical: `${BRAND.url}/learn/${ARTICLE.slug}`,
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   openGraph: {
-    title: "YouTube Competitor Analysis: Complete Guide",
-    description:
-      "Discover what's working for similar channels and apply those insights to grow your own YouTube channel.",
+    title: ARTICLE.title,
+    description: ARTICLE.metaDescription,
     url: `${BRAND.url}/learn/${ARTICLE.slug}`,
     type: "article",
+    publishedTime: ARTICLE.datePublished,
+    modifiedTime: ARTICLE.dateModified,
+    authors: [`${BRAND.name} Team`],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: ARTICLE.shortTitle,
+    description: ARTICLE.metaDescription,
   },
 };
 
-const articleSchema = generateArticleSchema(ARTICLE);
+const articleSchema = generateLearnArticleSchema(ARTICLE);
+const faqSchema = generateFaqSchema(ARTICLE.faqs);
 const breadcrumbSchema = generateBreadcrumbSchema([
   { name: "Home", url: BRAND.url },
   { name: "Learn", url: `${BRAND.url}/learn` },
-  { name: "Competitor Analysis", url: `${BRAND.url}/learn/${ARTICLE.slug}` },
+  { name: ARTICLE.shortTitle, url: `${BRAND.url}/learn/${ARTICLE.slug}` },
 ]);
 
 export default function YouTubeCompetitorAnalysisPage() {
-  const currentSlug = ARTICLE.slug;
+  const relatedArticles = getRelatedArticles(ARTICLE.slug);
 
   return (
     <main className={s.page}>
+      {/* Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
       <script
         type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
+
       {/* Article Navigation */}
-      <nav className={s.articleNav}>
+      <nav className={s.articleNav} aria-label="Learn topics">
         <span className={s.articleNavLabel}>Topics:</span>
         {learnArticles.map((article) => (
           <Link
             key={article.slug}
             href={`/learn/${article.slug}`}
             className={`${s.articleNavLink} ${
-              article.slug === currentSlug ? s.articleNavLinkActive : ""
+              article.slug === ARTICLE.slug ? s.articleNavLinkActive : ""
             }`}
           >
             {article.label}
@@ -66,21 +94,30 @@ export default function YouTubeCompetitorAnalysisPage() {
 
       {/* Hero */}
       <header className={s.hero}>
-        <nav className={s.breadcrumb}>
-          <Link href="/">Home</Link> / <Link href="/learn">Learn</Link> /
-          Competitor Analysis
+        <nav className={s.breadcrumb} aria-label="Breadcrumb">
+          <Link href="/">Home</Link> / <Link href="/learn">Learn</Link> /{" "}
+          {ARTICLE.shortTitle}
         </nav>
-        <h1 className={s.title}>YouTube Competitor Analysis</h1>
+        <h1 className={s.title}>
+          YouTube Competitor Analysis: Find What Works
+        </h1>
         <p className={s.subtitle}>
           Learn what's working for similar channels in your niche and apply
           those insights to accelerate your own growth.
         </p>
+        <ArticleMeta
+          dateModified={ARTICLE.dateModified}
+          readingTime={ARTICLE.readingTime}
+        />
       </header>
 
+      {/* Table of Contents */}
+      <TableOfContents items={ARTICLE.toc} />
+
       {/* Content */}
-      <div className={s.content}>
+      <article className={s.content}>
         {/* Why Competitor Analysis */}
-        <section className={s.section}>
+        <section id="why-competitor-analysis" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -111,7 +148,7 @@ export default function YouTubeCompetitorAnalysisPage() {
         </section>
 
         {/* What to Analyze */}
-        <section className={s.section}>
+        <section id="what-to-analyze" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -156,7 +193,7 @@ export default function YouTubeCompetitorAnalysisPage() {
         </section>
 
         {/* Finding Outliers */}
-        <section className={s.section}>
+        <section id="finding-outliers" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -202,8 +239,8 @@ export default function YouTubeCompetitorAnalysisPage() {
           </ol>
         </section>
 
-        {/* What NOT to Do */}
-        <section className={s.section}>
+        {/* Common Mistakes */}
+        <section id="mistakes" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -255,70 +292,40 @@ export default function YouTubeCompetitorAnalysisPage() {
         </div>
 
         {/* FAQ */}
-        <section className={s.faqSection}>
+        <section id="faq" className={s.faqSection}>
           <h2 className={s.faqTitle}>Frequently Asked Questions</h2>
           <div className={s.faqList}>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                How do I find competitor channels to analyze?
-              </h3>
-              <p className={s.faqAnswer}>
-                Search for your main topics on YouTube and note which channels
-                appear consistently. Look at your &quot;suggested videos&quot;
-                sidebar—these are channels YouTube considers similar. Also check
-                channels your audience follows.
-              </p>
-            </div>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                What are outlier videos and why do they matter?
-              </h3>
-              <p className={s.faqAnswer}>
-                Outlier videos are videos that perform significantly better than
-                a channel's average (usually 2x+). They indicate topics or
-                formats that resonate strongly with audiences. Studying outliers
-                helps you identify proven opportunities.
-              </p>
-            </div>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                How many competitors should I track?
-              </h3>
-              <p className={s.faqAnswer}>
-                Start with 5-10 channels of varying sizes in your niche. Include
-                some at your level and some aspirational channels. Quality of
-                analysis matters more than quantity.
-              </p>
-            </div>
+            {ARTICLE.faqs.map((faq, index) => (
+              <div key={index} className={s.faqItem}>
+                <h3 className={s.faqQuestion}>{faq.question}</h3>
+                <p className={s.faqAnswer}>{faq.answer}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* Related Links */}
-        <nav className={s.related}>
-          <h3 className={s.relatedTitle}>Related Topics</h3>
+        {/* Related Articles - Full Cross-Linking */}
+        <nav className={s.related} aria-label="Related articles">
+          <h3 className={s.relatedTitle}>Continue Learning</h3>
           <div className={s.relatedLinks}>
-            <Link href="/learn/youtube-video-ideas" className={s.relatedLink}>
-              Video Ideas
-            </Link>
-            <Link href="/learn/youtube-channel-audit" className={s.relatedLink}>
-              Channel Audit
-            </Link>
-            <Link
-              href="/learn/how-to-get-more-subscribers"
-              className={s.relatedLink}
-            >
-              Get More Subscribers
-            </Link>
+            {relatedArticles.map((article) => (
+              <Link
+                key={article.slug}
+                href={`/learn/${article.slug}`}
+                className={s.relatedLink}
+              >
+                {article.title}
+              </Link>
+            ))}
           </div>
         </nav>
 
         {/* CTA */}
-        <LearnCTA
+        <LearnStaticCTA
           title="Track Your Competitors Automatically"
           description={`Get real-time insights on what's working in your niche with ${BRAND.name}.`}
-          className={s.cta}
         />
-      </div>
+      </article>
     </main>
   );
 }

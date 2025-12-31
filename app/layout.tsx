@@ -1,10 +1,32 @@
 import { Suspense } from "react";
+import { Inter } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Providers } from "@/components/Providers";
 import { BRAND, STRUCTURED_DATA } from "@/lib/brand";
 import "@/app/globals.css";
 import type { Metadata, Viewport } from "next";
+
+/**
+ * next/font ensures fonts are self-hosted and preloaded,
+ * eliminating font swap CLS. Using `display: swap` with
+ * size-adjust for minimal layout shift.
+ */
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+  // Fallback metrics help reduce CLS during font load
+  fallback: [
+    "-apple-system",
+    "BlinkMacSystemFont",
+    "Segoe UI",
+    "Roboto",
+    "Helvetica Neue",
+    "Arial",
+    "sans-serif",
+  ],
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -89,7 +111,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />

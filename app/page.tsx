@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND, FEATURES } from "@/lib/brand";
-import { HeroCTAs } from "@/components/HeroCTAs";
+import { HeroStaticCTAs } from "@/components/HeroStaticCTAs";
 import s from "./home.module.css";
 
 export const metadata: Metadata = {
@@ -36,7 +36,7 @@ export default function HomePage() {
           competitor insights, and AI-powered video ideas to grow your YouTube
           channel faster.
         </p>
-        <HeroCTAs />
+        <HeroStaticCTAs />
       </section>
 
       {/* Social Proof */}
@@ -336,7 +336,7 @@ export default function HomePage() {
           Join thousands of creators using data-driven content strategy to get
           more subscribers and views.
         </p>
-        <HeroCTAs />
+        <HeroStaticCTAs />
       </section>
     </main>
   );

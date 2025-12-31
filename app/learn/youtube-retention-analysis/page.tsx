@@ -1,62 +1,86 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
-import { LearnCTA } from "@/components/LearnCTA";
-import { learnArticles } from "../articles";
-import { generateArticleSchema, generateBreadcrumbSchema } from "@/lib/seo";
+import { LearnStaticCTA, TableOfContents, ArticleMeta } from "@/components/learn";
+import {
+  LEARN_ARTICLES,
+  learnArticles,
+  generateLearnArticleSchema,
+  generateFaqSchema,
+  getRelatedArticles,
+} from "../articles";
+import { generateBreadcrumbSchema } from "@/lib/seo";
 import s from "../style.module.css";
 
-const ARTICLE = {
-  slug: "youtube-retention-analysis",
-  title: "YouTube Retention Analysis: How to Keep Viewers Watching",
-  description:
-    "Master YouTube audience retention analysis. Learn to identify drop-off points, understand viewer behavior, and improve watch time with proven strategies.",
-};
+const ARTICLE = LEARN_ARTICLES["youtube-retention-analysis"];
 
 export const metadata: Metadata = {
   title: ARTICLE.title,
-  description: ARTICLE.description,
+  description: ARTICLE.metaDescription,
+  keywords: [...ARTICLE.keywords],
   alternates: {
     canonical: `${BRAND.url}/learn/${ARTICLE.slug}`,
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   openGraph: {
-    title: "YouTube Retention Analysis: Complete Guide",
-    description:
-      "Learn how to analyze and improve your YouTube audience retention to keep viewers watching longer.",
+    title: ARTICLE.title,
+    description: ARTICLE.metaDescription,
     url: `${BRAND.url}/learn/${ARTICLE.slug}`,
     type: "article",
+    publishedTime: ARTICLE.datePublished,
+    modifiedTime: ARTICLE.dateModified,
+    authors: [`${BRAND.name} Team`],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: ARTICLE.shortTitle,
+    description: ARTICLE.metaDescription,
   },
 };
 
-const articleSchema = generateArticleSchema(ARTICLE);
+const articleSchema = generateLearnArticleSchema(ARTICLE);
+const faqSchema = generateFaqSchema(ARTICLE.faqs);
 const breadcrumbSchema = generateBreadcrumbSchema([
   { name: "Home", url: BRAND.url },
   { name: "Learn", url: `${BRAND.url}/learn` },
-  { name: "Retention Analysis", url: `${BRAND.url}/learn/${ARTICLE.slug}` },
+  { name: ARTICLE.shortTitle, url: `${BRAND.url}/learn/${ARTICLE.slug}` },
 ]);
 
 export default function YouTubeRetentionAnalysisPage() {
-  const currentSlug = ARTICLE.slug;
+  const relatedArticles = getRelatedArticles(ARTICLE.slug);
 
   return (
     <main className={s.page}>
+      {/* Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
       <script
         type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
+
       {/* Article Navigation */}
-      <nav className={s.articleNav}>
+      <nav className={s.articleNav} aria-label="Learn topics">
         <span className={s.articleNavLabel}>Topics:</span>
         {learnArticles.map((article) => (
           <Link
             key={article.slug}
             href={`/learn/${article.slug}`}
             className={`${s.articleNavLink} ${
-              article.slug === currentSlug ? s.articleNavLinkActive : ""
+              article.slug === ARTICLE.slug ? s.articleNavLinkActive : ""
             }`}
           >
             {article.label}
@@ -66,21 +90,28 @@ export default function YouTubeRetentionAnalysisPage() {
 
       {/* Hero */}
       <header className={s.hero}>
-        <nav className={s.breadcrumb}>
-          <Link href="/">Home</Link> / <Link href="/learn">Learn</Link> /
-          Retention Analysis
+        <nav className={s.breadcrumb} aria-label="Breadcrumb">
+          <Link href="/">Home</Link> / <Link href="/learn">Learn</Link> /{" "}
+          {ARTICLE.shortTitle}
         </nav>
-        <h1 className={s.title}>YouTube Retention Analysis</h1>
+        <h1 className={s.title}>YouTube Retention Analysis: Keep Viewers Watching</h1>
         <p className={s.subtitle}>
           Understand where viewers drop off and learn proven strategies to keep
           them watching until the end.
         </p>
+        <ArticleMeta
+          dateModified={ARTICLE.dateModified}
+          readingTime={ARTICLE.readingTime}
+        />
       </header>
 
+      {/* Table of Contents */}
+      <TableOfContents items={ARTICLE.toc} />
+
       {/* Content */}
-      <div className={s.content}>
+      <article className={s.content}>
         {/* Why Retention Matters */}
-        <section className={s.section}>
+        <section id="why-retention-matters" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -114,15 +145,13 @@ export default function YouTubeRetentionAnalysisPage() {
             </div>
             <div className={s.stat}>
               <div className={s.statValue}>2-3x</div>
-              <div className={s.statLabel}>
-                Views Increase w/ Better Retention
-              </div>
+              <div className={s.statLabel}>Views Boost w/ Better Retention</div>
             </div>
           </div>
         </section>
 
         {/* Reading Retention Curves */}
-        <section className={s.section}>
+        <section id="reading-curves" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -167,8 +196,8 @@ export default function YouTubeRetentionAnalysisPage() {
           </ul>
         </section>
 
-        {/* Common Drop-Off Patterns */}
-        <section className={s.section}>
+        {/* Drop-Off Patterns */}
+        <section id="drop-off-patterns" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -207,14 +236,14 @@ export default function YouTubeRetentionAnalysisPage() {
             </li>
             <li>
               <strong>The Premature End:</strong> Big drop before your video
-              ends. Fix: Deliver your main value earlier. Save the
-              &quot;extra&quot; content for the end.
+              ends. Fix: Deliver your main value earlier. Save the "extra"
+              content for the end.
             </li>
           </ol>
         </section>
 
         {/* Strategies to Improve */}
-        <section className={s.section}>
+        <section id="improvement-strategies" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -268,70 +297,40 @@ export default function YouTubeRetentionAnalysisPage() {
         </div>
 
         {/* FAQ */}
-        <section className={s.faqSection}>
+        <section id="faq" className={s.faqSection}>
           <h2 className={s.faqTitle}>Frequently Asked Questions</h2>
           <div className={s.faqList}>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                What's a good audience retention rate on YouTube?
-              </h3>
-              <p className={s.faqAnswer}>
-                It varies by video length and niche, but 50%+ average view
-                duration is generally good. For longer videos (15+ min), 40%+ is
-                solid. Focus on improving your own baseline rather than
-                comparing to others.
-              </p>
-            </div>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                How do I find where viewers drop off?
-              </h3>
-              <p className={s.faqAnswer}>
-                In YouTube Studio, go to Analytics → Engagement → Audience
-                Retention. The graph shows exactly where viewers leave. Look for
-                steep drops and investigate what's happening at those
-                timestamps.
-              </p>
-            </div>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                Does video length affect retention?
-              </h3>
-              <p className={s.faqAnswer}>
-                Yes. Longer videos typically have lower percentage retention but
-                can still have high absolute watch time. Make your video as long
-                as it needs to be—no longer. Cut filler content ruthlessly.
-              </p>
-            </div>
+            {ARTICLE.faqs.map((faq, index) => (
+              <div key={index} className={s.faqItem}>
+                <h3 className={s.faqQuestion}>{faq.question}</h3>
+                <p className={s.faqAnswer}>{faq.answer}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* Related Links */}
-        <nav className={s.related}>
-          <h3 className={s.relatedTitle}>Related Topics</h3>
+        {/* Related Articles - Full Cross-Linking */}
+        <nav className={s.related} aria-label="Related articles">
+          <h3 className={s.relatedTitle}>Continue Learning</h3>
           <div className={s.relatedLinks}>
-            <Link href="/learn/youtube-channel-audit" className={s.relatedLink}>
-              Channel Audit
-            </Link>
-            <Link href="/learn/youtube-video-ideas" className={s.relatedLink}>
-              Video Ideas
-            </Link>
-            <Link
-              href="/learn/how-to-get-more-subscribers"
-              className={s.relatedLink}
-            >
-              Get More Subscribers
-            </Link>
+            {relatedArticles.map((article) => (
+              <Link
+                key={article.slug}
+                href={`/learn/${article.slug}`}
+                className={s.relatedLink}
+              >
+                {article.title}
+              </Link>
+            ))}
           </div>
         </nav>
 
         {/* CTA */}
-        <LearnCTA
+        <LearnStaticCTA
           title="Improve Your Retention Today"
           description={`Get AI-powered analysis of your retention curves with ${BRAND.name}.`}
-          className={s.cta}
         />
-      </div>
+      </article>
     </main>
   );
 }

@@ -2,6 +2,14 @@
   "name": "yt-growth-frontend",
   "private": true,
   "version": "0.1.0",
+  "browserslist": [
+    "Chrome >= 90",
+    "Firefox >= 90", 
+    "Safari >= 15",
+    "Edge >= 90",
+    "iOS >= 15",
+    "not dead"
+  ],
   "scripts": {
     "dev": "next dev -p 3000",
     "dev:test": "APP_TEST_MODE=1 FAKE_YOUTUBE=1 next dev -p 3000",

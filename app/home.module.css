@@ -1,13 +1,29 @@
 .page {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Hero */
+/* Hero - Fixed dimensions to prevent CLS */
 .hero {
   text-align: center;
   padding: var(--space-12) var(--space-4);
   max-width: 800px;
   margin: 0 auto;
+  /* Reserve minimum height for above-fold content stability */
+  min-height: 420px;
+}
+
+@media (min-width: 480px) {
+  .hero {
+    min-height: 380px;
+  }
+}
+
+@media (min-width: 768px) {
+  .hero {
+    min-height: 400px;
+  }
 }
 
 .badge {
@@ -319,23 +335,4 @@
   margin-right: auto;
 }
 
-.ctaSection :global(.btnPrimary) {
-  background: var(--text-inverse);
-  color: #1e3a5f;
-}
-
-.ctaSection :global(.btnPrimary):hover {
-  background: var(--surface-alt);
-  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
-}
-
-.ctaSection :global(.btnSecondary) {
-  background: transparent;
-  color: var(--text-inverse);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
-.ctaSection :global(.btnSecondary):hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--text-inverse);
-}
+/* CTA button overrides for dark gradient background are in globals.css */

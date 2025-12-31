@@ -1,62 +1,90 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
-import { LearnCTA } from "@/components/LearnCTA";
-import { learnArticles } from "../articles";
-import { generateArticleSchema, generateBreadcrumbSchema } from "@/lib/seo";
+import {
+  LearnStaticCTA,
+  TableOfContents,
+  ArticleMeta,
+} from "@/components/learn";
+import {
+  LEARN_ARTICLES,
+  learnArticles,
+  generateLearnArticleSchema,
+  generateFaqSchema,
+  getRelatedArticles,
+} from "../articles";
+import { generateBreadcrumbSchema } from "@/lib/seo";
 import s from "../style.module.css";
 
-const ARTICLE = {
-  slug: "youtube-video-ideas",
-  title: "YouTube Video Ideas Generator: How to Never Run Out of Content",
-  description:
-    "Learn proven methods to generate YouTube video ideas that get views. Discover data-driven approaches to find topics your audience actually wants to watch.",
-};
+const ARTICLE = LEARN_ARTICLES["youtube-video-ideas"];
 
 export const metadata: Metadata = {
   title: ARTICLE.title,
-  description: ARTICLE.description,
+  description: ARTICLE.metaDescription,
+  keywords: [...ARTICLE.keywords],
   alternates: {
     canonical: `${BRAND.url}/learn/${ARTICLE.slug}`,
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   openGraph: {
-    title: "YouTube Video Ideas: Complete Guide to Content Planning",
-    description:
-      "Never run out of video ideas. Learn data-driven methods to find topics that resonate with your audience.",
+    title: ARTICLE.title,
+    description: ARTICLE.metaDescription,
     url: `${BRAND.url}/learn/${ARTICLE.slug}`,
     type: "article",
+    publishedTime: ARTICLE.datePublished,
+    modifiedTime: ARTICLE.dateModified,
+    authors: [`${BRAND.name} Team`],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: ARTICLE.shortTitle,
+    description: ARTICLE.metaDescription,
   },
 };
 
-const articleSchema = generateArticleSchema(ARTICLE);
+const articleSchema = generateLearnArticleSchema(ARTICLE);
+const faqSchema = generateFaqSchema(ARTICLE.faqs);
 const breadcrumbSchema = generateBreadcrumbSchema([
   { name: "Home", url: BRAND.url },
   { name: "Learn", url: `${BRAND.url}/learn` },
-  { name: "Video Ideas", url: `${BRAND.url}/learn/${ARTICLE.slug}` },
+  { name: ARTICLE.shortTitle, url: `${BRAND.url}/learn/${ARTICLE.slug}` },
 ]);
 
 export default function YouTubeVideoIdeasPage() {
-  const currentSlug = ARTICLE.slug;
+  const relatedArticles = getRelatedArticles(ARTICLE.slug);
 
   return (
     <main className={s.page}>
+      {/* Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
       <script
         type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
+
       {/* Article Navigation */}
-      <nav className={s.articleNav}>
+      <nav className={s.articleNav} aria-label="Learn topics">
         <span className={s.articleNavLabel}>Topics:</span>
         {learnArticles.map((article) => (
           <Link
             key={article.slug}
             href={`/learn/${article.slug}`}
             className={`${s.articleNavLink} ${
-              article.slug === currentSlug ? s.articleNavLinkActive : ""
+              article.slug === ARTICLE.slug ? s.articleNavLinkActive : ""
             }`}
           >
             {article.label}
@@ -66,21 +94,30 @@ export default function YouTubeVideoIdeasPage() {
 
       {/* Hero */}
       <header className={s.hero}>
-        <nav className={s.breadcrumb}>
-          <Link href="/">Home</Link> / <Link href="/learn">Learn</Link> / Video
-          Ideas
+        <nav className={s.breadcrumb} aria-label="Breadcrumb">
+          <Link href="/">Home</Link> / <Link href="/learn">Learn</Link> /{" "}
+          {ARTICLE.shortTitle}
         </nav>
-        <h1 className={s.title}>YouTube Video Ideas Generator</h1>
+        <h1 className={s.title}>
+          YouTube Video Ideas: Data-Driven Content Planning
+        </h1>
         <p className={s.subtitle}>
           Learn data-driven methods to generate video ideas that your audience
           actually wants to watch—and never run out of content again.
         </p>
+        <ArticleMeta
+          dateModified={ARTICLE.dateModified}
+          readingTime={ARTICLE.readingTime}
+        />
       </header>
 
+      {/* Table of Contents */}
+      <TableOfContents items={ARTICLE.toc} />
+
       {/* Content */}
-      <div className={s.content}>
-        {/* The Problem with Random Ideas */}
-        <section className={s.section}>
+      <article className={s.content}>
+        {/* Why Ideas Fail */}
+        <section id="why-ideas-fail" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -110,8 +147,8 @@ export default function YouTubeVideoIdeasPage() {
           </p>
         </section>
 
-        {/* Sources for Ideas */}
-        <section className={s.section}>
+        {/* 5 Data-Driven Sources */}
+        <section id="idea-sources" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -156,8 +193,8 @@ export default function YouTubeVideoIdeasPage() {
           </ol>
         </section>
 
-        {/* Idea Validation */}
-        <section className={s.section}>
+        {/* Validating Ideas */}
+        <section id="validation" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -202,8 +239,8 @@ export default function YouTubeVideoIdeasPage() {
           </ul>
         </section>
 
-        {/* Turning Ideas into Videos */}
-        <section className={s.section}>
+        {/* From Idea to Video */}
+        <section id="idea-to-video" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -258,76 +295,40 @@ export default function YouTubeVideoIdeasPage() {
         </div>
 
         {/* FAQ */}
-        <section className={s.faqSection}>
+        <section id="faq" className={s.faqSection}>
           <h2 className={s.faqTitle}>Frequently Asked Questions</h2>
           <div className={s.faqList}>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                How often should I generate new video ideas?
-              </h3>
-              <p className={s.faqAnswer}>
-                Build a backlog of 10-20 validated ideas so you always have
-                options. Spend 1-2 hours weekly on idea research and validation.
-                This prevents creative blocks and rushed content decisions.
-              </p>
-            </div>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                Should I follow trends or create evergreen content?
-              </h3>
-              <p className={s.faqAnswer}>
-                Both have value. Trends can spike your channel visibility
-                quickly, while evergreen content provides steady long-term
-                views. A healthy mix of 30% trendy and 70% evergreen often works
-                well.
-              </p>
-            </div>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                How do I know if an idea is too competitive?
-              </h3>
-              <p className={s.faqAnswer}>
-                Search for the topic and check the view counts on recent videos
-                from channels your size. If similar-sized channels are getting
-                views, you can compete. If only mega-channels rank, find a more
-                specific angle.
-              </p>
-            </div>
+            {ARTICLE.faqs.map((faq, index) => (
+              <div key={index} className={s.faqItem}>
+                <h3 className={s.faqQuestion}>{faq.question}</h3>
+                <p className={s.faqAnswer}>{faq.answer}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* Related Links */}
-        <nav className={s.related}>
-          <h3 className={s.relatedTitle}>Related Topics</h3>
+        {/* Related Articles - Full Cross-Linking */}
+        <nav className={s.related} aria-label="Related articles">
+          <h3 className={s.relatedTitle}>Continue Learning</h3>
           <div className={s.relatedLinks}>
-            <Link
-              href="/learn/youtube-competitor-analysis"
-              className={s.relatedLink}
-            >
-              Competitor Analysis
-            </Link>
-            <Link
-              href="/learn/youtube-retention-analysis"
-              className={s.relatedLink}
-            >
-              Retention Analysis
-            </Link>
-            <Link
-              href="/learn/how-to-get-more-subscribers"
-              className={s.relatedLink}
-            >
-              Get More Subscribers
-            </Link>
+            {relatedArticles.map((article) => (
+              <Link
+                key={article.slug}
+                href={`/learn/${article.slug}`}
+                className={s.relatedLink}
+              >
+                {article.title}
+              </Link>
+            ))}
           </div>
         </nav>
 
         {/* CTA */}
-        <LearnCTA
+        <LearnStaticCTA
           title="Never Run Out of Video Ideas"
           description="Get AI-powered video ideas based on what's working in your niche."
-          className={s.cta}
         />
-      </div>
+      </article>
     </main>
   );
 }

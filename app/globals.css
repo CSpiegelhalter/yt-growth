@@ -5,6 +5,257 @@
    Design Tokens - Single Source of Truth
    ===================================== */
 
+/* =====================================
+   CRITICAL ABOVE-FOLD STYLES
+   These styles are inlined to prevent CLS
+   and ensure fast FCP/LCP
+   ===================================== */
+
+/* Hero CTAs - Static server-rendered buttons */
+.heroCtas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  min-height: 116px; /* Reserve space: 2 buttons × 52px + 12px gap on mobile */
+}
+
+@media (min-width: 480px) {
+  .heroCtas {
+    flex-direction: row;
+    justify-content: center;
+    gap: 16px;
+    min-height: 52px; /* Single row on desktop */
+  }
+}
+
+.heroCtas__primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+  background: #6366f1;
+  color: white;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  min-width: 160px;
+  height: 52px;
+  box-sizing: border-box;
+}
+
+.heroCtas__primary:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5);
+  text-decoration: none;
+}
+
+.heroCtas__secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  min-width: 140px;
+  height: 52px;
+  box-sizing: border-box;
+}
+
+.heroCtas__secondary:hover {
+  border-color: #6366f1;
+  color: #6366f1;
+  text-decoration: none;
+}
+
+/* CTA Section overrides for dark background */
+.ctaSection .heroCtas__primary {
+  background: #ffffff;
+  color: #1e3a5f;
+}
+
+.ctaSection .heroCtas__primary:hover {
+  background: #f8fafc;
+  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
+}
+
+.ctaSection .heroCtas__secondary {
+  background: transparent;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.ctaSection .heroCtas__secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #ffffff;
+}
+
+/* =====================================
+   LEARN ARTICLE COMPONENTS
+   Critical styles for server-rendered Learn pages
+   ===================================== */
+
+/* Table of Contents */
+.toc {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.toc__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 12px;
+}
+
+.toc__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: toc-counter;
+}
+
+.toc__item {
+  counter-increment: toc-counter;
+}
+
+.toc__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 0.9375rem;
+  color: #334155;
+  text-decoration: none;
+  border-bottom: 1px solid #f1f5f9;
+  transition: color 0.15s ease;
+}
+
+.toc__link::before {
+  content: counter(toc-counter);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.toc__link:hover {
+  color: #6366f1;
+  text-decoration: none;
+}
+
+.toc__link:hover::before {
+  background: #eef2ff;
+  color: #6366f1;
+}
+
+.toc__link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-radius: 4px;
+}
+
+.toc__item:last-child .toc__link {
+  border-bottom: none;
+}
+
+/* Article Meta (date, reading time) */
+.articleMeta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.articleMeta__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.articleMeta__item svg {
+  opacity: 0.7;
+}
+
+.articleMeta__divider {
+  color: #cbd5e1;
+}
+
+/* Learn Static CTA */
+.learnCta {
+  text-align: center;
+  padding: 32px 24px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  border-radius: 16px;
+  color: #ffffff;
+  margin-top: 48px;
+}
+
+.learnCta__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.learnCta__text {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin: 0 0 24px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.learnCta__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  background: #ffffff;
+  color: #1e3a5f;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.learnCta__btn:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
+  text-decoration: none;
+}
+
+.learnCta__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
 :root {
   /* ===========================================
      SEMANTIC COLOR TOKENS
@@ -107,7 +358,8 @@
   /* ===========================================
      TYPOGRAPHY
      =========================================== */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Use next/font Inter variable with system fallbacks for zero-CLS font loading */
+  --font-sans: var(--font-inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
   --font-mono: "SF Mono", Monaco, Consolas, "Liberation Mono", monospace;
   
   /* Font sizes */
@@ -239,7 +491,9 @@ body {
 }
 
 .appMain {
-  flex: 1;
+  flex: 1 0 auto; /* Prevent shrinking, allow growth */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Container (legacy) */

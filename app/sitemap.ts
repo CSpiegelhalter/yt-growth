@@ -1,76 +1,72 @@
 import { MetadataRoute } from "next";
 import { BRAND } from "@/lib/brand";
+import { LEARN_ARTICLES } from "./learn/articles";
 
 /**
  * Generate sitemap.xml for SEO
  * Only include public, indexable pages
+ * 
+ * Note: lastModified uses stable dates for learn articles
+ * to avoid constant sitemap churn
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${BRAND.domain}`;
-  const now = new Date();
+
+  // Learn article entries with stable dates from articles.ts
+  const learnArticleEntries = Object.values(LEARN_ARTICLES).map((article) => ({
+    url: `${baseUrl}/learn/${article.slug}`,
+    lastModified: new Date(article.dateModified),
+    changeFrequency: "monthly" as const,
+    priority: 0.9,
+  }));
 
   return [
     // Landing page - highest priority
     {
       url: baseUrl,
-      lastModified: now,
+      lastModified: new Date("2025-01-15"),
       changeFrequency: "weekly",
       priority: 1.0,
     },
-    // Learn pages - high priority for SEO
+    // Learn hub - high priority for SEO
     {
       url: `${baseUrl}/learn`,
-      lastModified: now,
+      lastModified: new Date("2025-01-15"),
       changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/learn/youtube-channel-audit`,
-      lastModified: now,
-      changeFrequency: "monthly",
       priority: 0.9,
     },
+    // Learn articles
+    ...learnArticleEntries,
+    // Auth pages (public, but lower priority)
     {
-      url: `${baseUrl}/learn/youtube-retention-analysis`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.9,
+      url: `${baseUrl}/auth/login`,
+      lastModified: new Date("2025-01-01"),
+      changeFrequency: "yearly",
+      priority: 0.4,
     },
     {
-      url: `${baseUrl}/learn/youtube-competitor-analysis`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/learn/youtube-video-ideas`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/learn/how-to-get-more-subscribers`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.9,
+      url: `${baseUrl}/auth/signup`,
+      lastModified: new Date("2025-01-01"),
+      changeFrequency: "yearly",
+      priority: 0.5,
     },
     // Contact page
     {
       url: `${baseUrl}/contact`,
-      lastModified: now,
+      lastModified: new Date("2025-01-01"),
       changeFrequency: "monthly",
       priority: 0.5,
     },
     // Legal pages - low priority but accessible
     {
       url: `${baseUrl}/terms`,
-      lastModified: now,
+      lastModified: new Date("2025-01-01"),
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${baseUrl}/privacy`,
-      lastModified: now,
+      lastModified: new Date("2025-01-01"),
       changeFrequency: "yearly",
       priority: 0.3,
     },

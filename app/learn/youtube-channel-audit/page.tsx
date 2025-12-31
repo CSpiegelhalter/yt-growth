@@ -1,62 +1,86 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
-import { LearnCTA } from "@/components/LearnCTA";
-import { learnArticles } from "../articles";
-import { generateArticleSchema, generateBreadcrumbSchema } from "@/lib/seo";
+import { LearnStaticCTA, TableOfContents, ArticleMeta } from "@/components/learn";
+import {
+  LEARN_ARTICLES,
+  learnArticles,
+  generateLearnArticleSchema,
+  generateFaqSchema,
+  getRelatedArticles,
+} from "../articles";
+import { generateBreadcrumbSchema } from "@/lib/seo";
 import s from "../style.module.css";
 
-const ARTICLE = {
-  slug: "youtube-channel-audit",
-  title: "YouTube Channel Audit: How to Analyze Your Channel Performance",
-  description:
-    "Learn how to perform a comprehensive YouTube channel audit. Identify underperforming content, analyze growth patterns, and get actionable insights to improve your channel.",
-};
+const ARTICLE = LEARN_ARTICLES["youtube-channel-audit"];
 
 export const metadata: Metadata = {
   title: ARTICLE.title,
-  description: ARTICLE.description,
+  description: ARTICLE.metaDescription,
+  keywords: [...ARTICLE.keywords],
   alternates: {
     canonical: `${BRAND.url}/learn/${ARTICLE.slug}`,
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   openGraph: {
-    title: "YouTube Channel Audit: Complete Guide for Creators",
-    description:
-      "Learn how to audit your YouTube channel performance and identify growth opportunities.",
+    title: ARTICLE.title,
+    description: ARTICLE.metaDescription,
     url: `${BRAND.url}/learn/${ARTICLE.slug}`,
     type: "article",
+    publishedTime: ARTICLE.datePublished,
+    modifiedTime: ARTICLE.dateModified,
+    authors: [`${BRAND.name} Team`],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: ARTICLE.shortTitle,
+    description: ARTICLE.metaDescription,
   },
 };
 
-const articleSchema = generateArticleSchema(ARTICLE);
+const articleSchema = generateLearnArticleSchema(ARTICLE);
+const faqSchema = generateFaqSchema(ARTICLE.faqs);
 const breadcrumbSchema = generateBreadcrumbSchema([
   { name: "Home", url: BRAND.url },
   { name: "Learn", url: `${BRAND.url}/learn` },
-  { name: "Channel Audit", url: `${BRAND.url}/learn/${ARTICLE.slug}` },
+  { name: ARTICLE.shortTitle, url: `${BRAND.url}/learn/${ARTICLE.slug}` },
 ]);
 
 export default function YouTubeChannelAuditPage() {
-  const currentSlug = ARTICLE.slug;
+  const relatedArticles = getRelatedArticles(ARTICLE.slug);
 
   return (
     <main className={s.page}>
+      {/* Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
       <script
         type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
+
       {/* Article Navigation */}
-      <nav className={s.articleNav}>
+      <nav className={s.articleNav} aria-label="Learn topics">
         <span className={s.articleNavLabel}>Topics:</span>
         {learnArticles.map((article) => (
           <Link
             key={article.slug}
             href={`/learn/${article.slug}`}
             className={`${s.articleNavLink} ${
-              article.slug === currentSlug ? s.articleNavLinkActive : ""
+              article.slug === ARTICLE.slug ? s.articleNavLinkActive : ""
             }`}
           >
             {article.label}
@@ -66,21 +90,28 @@ export default function YouTubeChannelAuditPage() {
 
       {/* Hero */}
       <header className={s.hero}>
-        <nav className={s.breadcrumb}>
-          <Link href="/">Home</Link> / <Link href="/learn">Learn</Link> /
-          Channel Audit
+        <nav className={s.breadcrumb} aria-label="Breadcrumb">
+          <Link href="/">Home</Link> / <Link href="/learn">Learn</Link> /{" "}
+          {ARTICLE.shortTitle}
         </nav>
-        <h1 className={s.title}>YouTube Channel Audit</h1>
+        <h1 className={s.title}>YouTube Channel Audit: How to Analyze Your Channel</h1>
         <p className={s.subtitle}>
           How to analyze your channel's performance and identify growth
           opportunities with data-driven insights.
         </p>
+        <ArticleMeta
+          dateModified={ARTICLE.dateModified}
+          readingTime={ARTICLE.readingTime}
+        />
       </header>
 
+      {/* Table of Contents */}
+      <TableOfContents items={ARTICLE.toc} />
+
       {/* Content */}
-      <div className={s.content}>
+      <article className={s.content}>
         {/* What is a Channel Audit */}
-        <section className={s.section}>
+        <section id="what-is-audit" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -110,8 +141,8 @@ export default function YouTubeChannelAuditPage() {
           </p>
         </section>
 
-        {/* What to Analyze */}
-        <section className={s.section}>
+        {/* Key Areas to Analyze */}
+        <section id="key-areas" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -156,7 +187,7 @@ export default function YouTubeChannelAuditPage() {
         </section>
 
         {/* How to Perform an Audit */}
-        <section className={s.section}>
+        <section id="how-to-perform" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -202,7 +233,7 @@ export default function YouTubeChannelAuditPage() {
         </section>
 
         {/* Common Issues */}
-        <section className={s.section}>
+        <section id="common-issues" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -253,103 +284,40 @@ export default function YouTubeChannelAuditPage() {
         </div>
 
         {/* FAQ */}
-        <section className={s.faqSection}>
+        <section id="faq" className={s.faqSection}>
           <h2 className={s.faqTitle}>Frequently Asked Questions</h2>
           <div className={s.faqList}>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                How often should I audit my channel?
-              </h3>
-              <p className={s.faqAnswer}>
-                A comprehensive audit every 3-6 months is ideal. For active
-                channels, monthly check-ins on key metrics help catch issues
-                early. Tools like {BRAND.name} provide ongoing analysis so you
-                always know where you stand.
-              </p>
-            </div>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                What metrics matter most in a channel audit?
-              </h3>
-              <p className={s.faqAnswer}>
-                Focus on audience retention (especially the first 30 seconds),
-                subscriber conversion rate per video, and click-through rate.
-                These directly impact how YouTube promotes your content.
-              </p>
-            </div>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                Can I audit my channel without special tools?
-              </h3>
-              <p className={s.faqAnswer}>
-                Yes, YouTube Studio provides the raw data. However, identifying
-                patterns across many videos and getting actionable insights is
-                much faster with dedicated tools that automate the analysis.
-              </p>
-            </div>
+            {ARTICLE.faqs.map((faq, index) => (
+              <div key={index} className={s.faqItem}>
+                <h3 className={s.faqQuestion}>{faq.question}</h3>
+                <p className={s.faqAnswer}>{faq.answer}</p>
+              </div>
+            ))}
           </div>
-          {/* FAQ Schema */}
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "FAQPage",
-                mainEntity: [
-                  {
-                    "@type": "Question",
-                    name: "How often should I audit my channel?",
-                    acceptedAnswer: {
-                      "@type": "Answer",
-                      text: "A comprehensive audit every 3-6 months is ideal. For active channels, monthly check-ins on key metrics help catch issues early.",
-                    },
-                  },
-                  {
-                    "@type": "Question",
-                    name: "What metrics matter most in a channel audit?",
-                    acceptedAnswer: {
-                      "@type": "Answer",
-                      text: "Focus on audience retention, subscriber conversion rate per video, and click-through rate.",
-                    },
-                  },
-                ],
-              }),
-            }}
-          />
         </section>
 
-        {/* Related Links */}
-        <nav className={s.related}>
-          <h3 className={s.relatedTitle}>Related Topics</h3>
+        {/* Related Articles - Full Cross-Linking */}
+        <nav className={s.related} aria-label="Related articles">
+          <h3 className={s.relatedTitle}>Continue Learning</h3>
           <div className={s.relatedLinks}>
-            <Link
-              href="/learn/youtube-retention-analysis"
-              className={s.relatedLink}
-            >
-              Retention Analysis
-            </Link>
-            <Link
-              href="/learn/how-to-get-more-subscribers"
-              className={s.relatedLink}
-            >
-              Get More Subscribers
-            </Link>
-            <Link
-              href="/learn/youtube-competitor-analysis"
-              className={s.relatedLink}
-            >
-              Competitor Analysis
-            </Link>
+            {relatedArticles.map((article) => (
+              <Link
+                key={article.slug}
+                href={`/learn/${article.slug}`}
+                className={s.relatedLink}
+              >
+                {article.title}
+              </Link>
+            ))}
           </div>
         </nav>
 
         {/* CTA */}
-        <LearnCTA
+        <LearnStaticCTA
           title="Ready to Audit Your Channel?"
           description={`Get automated insights and personalized recommendations with ${BRAND.name}.`}
-          className={s.cta}
         />
-      </div>
+      </article>
     </main>
   );
 }

@@ -1,62 +1,86 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
-import { LearnCTA } from "@/components/LearnCTA";
-import { learnArticles } from "../articles";
-import { generateArticleSchema, generateBreadcrumbSchema } from "@/lib/seo";
+import { LearnStaticCTA, TableOfContents, ArticleMeta } from "@/components/learn";
+import {
+  LEARN_ARTICLES,
+  learnArticles,
+  generateLearnArticleSchema,
+  generateFaqSchema,
+  getRelatedArticles,
+} from "../articles";
+import { generateBreadcrumbSchema } from "@/lib/seo";
 import s from "../style.module.css";
 
-const ARTICLE = {
-  slug: "how-to-get-more-subscribers",
-  title: "How to Get More Subscribers on YouTube: Proven Strategies",
-  description:
-    "Learn proven strategies to get more YouTube subscribers. Discover which content converts viewers into subscribers and how to optimize your channel for growth.",
-};
+const ARTICLE = LEARN_ARTICLES["how-to-get-more-subscribers"];
 
 export const metadata: Metadata = {
   title: ARTICLE.title,
-  description: ARTICLE.description,
+  description: ARTICLE.metaDescription,
+  keywords: [...ARTICLE.keywords],
   alternates: {
     canonical: `${BRAND.url}/learn/${ARTICLE.slug}`,
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   openGraph: {
-    title: "How to Get More Subscribers on YouTube",
-    description:
-      "Proven strategies to grow your YouTube subscriber count based on data and real channel analysis.",
+    title: ARTICLE.title,
+    description: ARTICLE.metaDescription,
     url: `${BRAND.url}/learn/${ARTICLE.slug}`,
     type: "article",
+    publishedTime: ARTICLE.datePublished,
+    modifiedTime: ARTICLE.dateModified,
+    authors: [`${BRAND.name} Team`],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: ARTICLE.shortTitle,
+    description: ARTICLE.metaDescription,
   },
 };
 
-const articleSchema = generateArticleSchema(ARTICLE);
+const articleSchema = generateLearnArticleSchema(ARTICLE);
+const faqSchema = generateFaqSchema(ARTICLE.faqs);
 const breadcrumbSchema = generateBreadcrumbSchema([
   { name: "Home", url: BRAND.url },
   { name: "Learn", url: `${BRAND.url}/learn` },
-  { name: "Get More Subscribers", url: `${BRAND.url}/learn/${ARTICLE.slug}` },
+  { name: ARTICLE.shortTitle, url: `${BRAND.url}/learn/${ARTICLE.slug}` },
 ]);
 
 export default function HowToGetMoreSubscribersPage() {
-  const currentSlug = ARTICLE.slug;
+  const relatedArticles = getRelatedArticles(ARTICLE.slug);
 
   return (
     <main className={s.page}>
+      {/* Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
       <script
         type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
+
       {/* Article Navigation */}
-      <nav className={s.articleNav}>
+      <nav className={s.articleNav} aria-label="Learn topics">
         <span className={s.articleNavLabel}>Topics:</span>
         {learnArticles.map((article) => (
           <Link
             key={article.slug}
             href={`/learn/${article.slug}`}
             className={`${s.articleNavLink} ${
-              article.slug === currentSlug ? s.articleNavLinkActive : ""
+              article.slug === ARTICLE.slug ? s.articleNavLinkActive : ""
             }`}
           >
             {article.label}
@@ -66,21 +90,28 @@ export default function HowToGetMoreSubscribersPage() {
 
       {/* Hero */}
       <header className={s.hero}>
-        <nav className={s.breadcrumb}>
-          <Link href="/">Home</Link> / <Link href="/learn">Learn</Link> / Get
-          More Subscribers
+        <nav className={s.breadcrumb} aria-label="Breadcrumb">
+          <Link href="/">Home</Link> / <Link href="/learn">Learn</Link> /{" "}
+          {ARTICLE.shortTitle}
         </nav>
-        <h1 className={s.title}>How to Get More Subscribers on YouTube</h1>
+        <h1 className={s.title}>How to Get More YouTube Subscribers</h1>
         <p className={s.subtitle}>
           Proven, data-driven strategies to turn viewers into loyal subscribers
           and grow your channel faster.
         </p>
+        <ArticleMeta
+          dateModified={ARTICLE.dateModified}
+          readingTime={ARTICLE.readingTime}
+        />
       </header>
 
+      {/* Table of Contents */}
+      <TableOfContents items={ARTICLE.toc} />
+
       {/* Content */}
-      <div className={s.content}>
+      <article className={s.content}>
         {/* Why Subscribers Matter */}
-        <section className={s.section}>
+        <section id="why-subscribers-matter" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -120,7 +151,7 @@ export default function HowToGetMoreSubscribersPage() {
         </section>
 
         {/* What Converts Viewers */}
-        <section className={s.section}>
+        <section id="what-converts" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -165,8 +196,8 @@ export default function HowToGetMoreSubscribersPage() {
           </ul>
         </section>
 
-        {/* Optimization Strategies */}
-        <section className={s.section}>
+        {/* Growth Strategies */}
+        <section id="growth-strategies" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -185,8 +216,8 @@ export default function HowToGetMoreSubscribersPage() {
           <ol className={s.numberedList}>
             <li>
               <strong>Ask for the subscription (strategically):</strong> Don't
-              ask in the intro—ask after you've delivered value. &quot;If this
-              tip helped you, consider subscribing for more.&quot;
+              ask in the intro—ask after you've delivered value. "If this
+              tip helped you, consider subscribing for more."
             </li>
             <li>
               <strong>Create series content:</strong> Multi-part series give
@@ -213,7 +244,7 @@ export default function HowToGetMoreSubscribersPage() {
         </section>
 
         {/* Subscriber Drivers */}
-        <section className={s.section}>
+        <section id="subscriber-drivers" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -231,13 +262,13 @@ export default function HowToGetMoreSubscribersPage() {
           </h2>
           <p className={s.sectionText}>
             Some videos convert viewers to subscribers at 2-3x your channel
-            average. These &quot;subscriber driver&quot; videos are gold—they're
+            average. These "subscriber driver" videos are gold—they're
             the content your audience values most.
           </p>
           <ul className={s.list}>
-            <li>Check YouTube Studio → Analytics → Subscribers → See more</li>
+            <li>Check YouTube Studio: Analytics → Subscribers → See more</li>
             <li>
-              Sort by &quot;Subscribers gained&quot; to find your top converting
+              Sort by "Subscribers gained" to find your top converting
               videos
             </li>
             <li>
@@ -252,8 +283,8 @@ export default function HowToGetMoreSubscribersPage() {
           </ul>
         </section>
 
-        {/* What NOT to Do */}
-        <section className={s.section}>
+        {/* Mistakes to Avoid */}
+        <section id="mistakes" className={s.section}>
           <h2 className={s.sectionTitle}>
             <span className={s.sectionIcon}>
               <svg
@@ -305,68 +336,40 @@ export default function HowToGetMoreSubscribersPage() {
         </div>
 
         {/* FAQ */}
-        <section className={s.faqSection}>
+        <section id="faq" className={s.faqSection}>
           <h2 className={s.faqTitle}>Frequently Asked Questions</h2>
           <div className={s.faqList}>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                What's a good subscriber-to-view ratio?
-              </h3>
-              <p className={s.faqAnswer}>
-                On average, 1-3% of views convert to subscribers. Higher rates
-                indicate content that resonates strongly. If you're below 1%,
-                focus on creating content that demonstrates ongoing value.
-              </p>
-            </div>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>
-                How long does it take to get 1,000 subscribers?
-              </h3>
-              <p className={s.faqAnswer}>
-                It varies widely based on niche, content quality, and
-                consistency. Some channels reach 1K in months, others take
-                years. Focus on creating valuable content
-                consistently—subscriber growth follows.
-              </p>
-            </div>
-            <div className={s.faqItem}>
-              <h3 className={s.faqQuestion}>Should I buy subscribers?</h3>
-              <p className={s.faqAnswer}>
-                Never. Bought subscribers don't watch your content, which tanks
-                your engagement metrics. YouTube may also penalize or ban
-                channels for artificial inflation. Build real subscribers with
-                real content.
-              </p>
-            </div>
+            {ARTICLE.faqs.map((faq, index) => (
+              <div key={index} className={s.faqItem}>
+                <h3 className={s.faqQuestion}>{faq.question}</h3>
+                <p className={s.faqAnswer}>{faq.answer}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* Related Links */}
-        <nav className={s.related}>
-          <h3 className={s.relatedTitle}>Related Topics</h3>
+        {/* Related Articles - Full Cross-Linking */}
+        <nav className={s.related} aria-label="Related articles">
+          <h3 className={s.relatedTitle}>Continue Learning</h3>
           <div className={s.relatedLinks}>
-            <Link href="/learn/youtube-channel-audit" className={s.relatedLink}>
-              Channel Audit
-            </Link>
-            <Link
-              href="/learn/youtube-retention-analysis"
-              className={s.relatedLink}
-            >
-              Retention Analysis
-            </Link>
-            <Link href="/learn/youtube-video-ideas" className={s.relatedLink}>
-              Video Ideas
-            </Link>
+            {relatedArticles.map((article) => (
+              <Link
+                key={article.slug}
+                href={`/learn/${article.slug}`}
+                className={s.relatedLink}
+              >
+                {article.title}
+              </Link>
+            ))}
           </div>
         </nav>
 
         {/* CTA */}
-        <LearnCTA
+        <LearnStaticCTA
           title="Find Your Subscriber Drivers"
           description={`Discover which videos convert viewers to subscribers with ${BRAND.name}.`}
-          className={s.cta}
         />
-      </div>
+      </article>
     </main>
   );
 }

@@ -10,6 +10,9 @@
   background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
+  /* Fixed height prevents CLS during hydration */
+  height: var(--header-height);
+  min-height: var(--header-height);
 }
 
 .inner {
@@ -88,11 +91,20 @@
 
 /* Desktop and mobile nav links moved into user dropdown to reduce header clutter. */
 
-/* Auth Section */
+/* Auth Section - Fixed dimensions to prevent CLS */
 .authSection {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  /* Reserve minimum width for auth buttons to prevent layout shift */
+  min-width: 100px;
+  height: 44px;
+}
+
+@media (min-width: 640px) {
+  .authSection {
+    min-width: 260px;
+  }
 }
 
 /* Auth Buttons (logged out) */
@@ -314,15 +326,20 @@
   touch-action: none;
 }
 
-/* Placeholder (during SSR) */
+/* Placeholder (during SSR) - matches auth buttons dimensions */
 .placeholder {
-  width: 100px;
+  /* Match the signup button dimensions for stable layout */
+  min-width: 100px;
   height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 @media (min-width: 640px) {
   .placeholder {
-    width: 140px;
+    /* On desktop, reserve space for: Contact + Login + Signup buttons */
+    min-width: 260px;
   }
 }
 
