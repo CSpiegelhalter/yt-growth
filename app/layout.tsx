@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Inter } from "next/font/google";
-import { Header } from "@/components/Header";
+import { HeaderWrapper } from "@/components/HeaderWrapper";
+import { HeaderStatic } from "@/components/HeaderStatic";
 import { Footer } from "@/components/Footer";
 import { Providers } from "@/components/Providers";
 import { BRAND, STRUCTURED_DATA } from "@/lib/brand";
@@ -139,8 +140,8 @@ export default async function RootLayout({
       <body>
         <Providers>
           <div className="appShell">
-            <Suspense fallback={null}>
-              <Header />
+            <Suspense fallback={<HeaderStatic />}>
+              <HeaderWrapper />
             </Suspense>
             <div className="appMain">{children}</div>
             <Footer />
