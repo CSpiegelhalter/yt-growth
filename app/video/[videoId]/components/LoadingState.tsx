@@ -8,7 +8,7 @@ type LoadingStateProps = {
 };
 
 /**
- * LoadingState - Full-page blocking loader with progress bar
+ * LoadingState - Full-page blocking loader with spinner, stage text, and progress bar
  */
 export function LoadingState({ loadingStage, llmProgress }: LoadingStateProps) {
   const progressValue = Math.max(8, llmProgress || 12);

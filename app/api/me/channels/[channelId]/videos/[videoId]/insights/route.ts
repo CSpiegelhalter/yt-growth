@@ -884,142 +884,18 @@ async function storeDailyAnalytics(
 }
 
 /**
- * Generate LLM insights
+ * Build shared video context for LLM prompts
  */
-async function generateLLMInsights(
+function buildVideoContext(
   video: VideoMetadata,
   derived: DerivedMetrics,
-  comparison: BaselineComparison,
-  _levers: VideoInsightsResponse["levers"],
-  comments: VideoComment[]
-): Promise<VideoInsightsLLM | null> {
-  const systemPrompt = `You are an elite YouTube growth strategist AND SEO specialist with expertise in:
-- Video packaging (titles, thumbnails, hooks)
-- YouTube SEO and discoverability
-- Writing descriptions that rank AND convert (search intent, keyword placement, scannability)
-- Audience retention psychology
-- Converting viewers to subscribers
-- Data interpretation for YouTube creators
-
-Your job is to analyze THIS SPECIFIC VIDEO's data and provide targeted, actionable insights.
-
-OUTPUT FORMAT: Return ONLY valid JSON (no markdown, no code blocks, no extra text):
-{
-  "summary": {
-    "headline": "One punchy headline about THIS video's performance",
-    "oneLiner": "Data-driven summary of what's happening with this video"
-  },
-  "titleAnalysis": {
-    "score": 7,
-    "strengths": ["What makes this title work"],
-    "weaknesses": ["What could be improved"],
-    "suggestions": ["Better title option 1", "Better title option 2", "Better title option 3"]
-  },
-  "descriptionAnalysis": {
-    "score": 7,
-    "strengths": ["What is good for SEO + viewers"],
-    "weaknesses": ["What is missing / hurting SEO or CTR"],
-    "rewrittenOpening": "Rewrite the first ~200 characters to be stronger for search + humans",
-    "addTheseLines": ["Copy/paste line 1", "Copy/paste line 2"],
-    "targetKeywords": ["keyword phrase 1", "keyword phrase 2"]
-  },
-  "tagAnalysis": {
-    "score": 6,
-    "coverage": "good",
-    "missing": ["copy-paste tag 1", "copy-paste tag 2"],
-    "feedback": "Specific feedback about the tags"
-  },
-  "visibilityPlan": {
-    "bottleneck": "Packaging (CTR)",
-    "confidence": "medium",
-    "why": "Explain why, using actual metrics/baseline comparisons we provided",
-    "doNext": [
-      { "action": "Specific next step", "reason": "Metric-backed why", "expectedImpact": "Likely impact", "priority": "high" }
-    ],
-    "experiments": [
-      { "name": "Title test", "variants": ["A", "B"], "successMetric": "CTR", "window": "24-48h" }
-    ],
-    "promotionChecklist": ["Concrete step 1", "Concrete step 2"],
-    "whatToMeasureNext": ["Impressions", "CTR", "Traffic sources", "Search terms"]
-  },
-  "thumbnailHints": ["What the thumbnail should communicate based on title/data"],
-  "keyFindings": [
-    {
-      "finding": "Specific data-driven finding",
-      "dataPoint": "The exact metric that shows this",
-      "significance": "positive|negative|neutral",
-      "recommendation": "What to do about it"
-    }
-  ],
-  "wins": [{ "label": "Short label", "why": "Data-backed explanation", "metricKey": "metric" }],
-  "leaks": [{ "label": "Problem area", "why": "Data-backed explanation", "metricKey": "metric" }],
-  "actions": [
-    {
-      "lever": "Retention|Conversion|Engagement|Discovery",
-      "action": "SPECIFIC action for THIS video",
-      "reason": "Why based on the data",
-      "expectedImpact": "Realistic expected outcome",
-      "priority": "high|medium|low"
-    }
-  ],
-  "experiments": [{ "type": "Title|Hook|Structure", "test": ["Option A", "Option B"], "successMetric": "What to measure" }],
-  "packaging": {
-    "titleAngles": ["Alternative title approach 1", "Alternative title approach 2"],
-    "hookSetups": ["Opening hook idea 1", "Opening hook idea 2"],
-    "visualMoments": ["Key visual moment to highlight"]
-  },
-  "commentInsights": {
-    "sentiment": { "positive": 0, "neutral": 0, "negative": 0 },
-    "themes": [{ "theme": "Theme name", "count": 0, "examples": ["short quote"] }],
-    "viewerLoved": ["What viewers explicitly praised"],
-    "viewerAskedFor": ["What viewers asked about or requested next"],
-    "hookInspiration": ["Short hook-worthy quote under 25 words"]
-  },
-  "competitorTakeaways": [],
-  "remixIdeas": [{ "title": "Spinoff idea", "hook": "Opening line", "keywords": ["kw1"], "inspiredByVideoIds": [] }]
-}
-
-CRITICAL RULES:
-1. NEVER give generic advice - everything must reference THIS video's actual data
-2. Title suggestions MUST be complete, grammatically correct titles that make sense for THIS video's topic and content. Each suggestion should be a full, usable title (not a fragment or template).
-   Think like an SEO-minded YouTube growth expert: optimize for real search intent + high CTR (clarity + curiosity), but DO NOT clickbait.
-   Understand what the video is ABOUT from the title, description, and tags before suggesting alternatives.
-3. Tag suggestions in "missing" must be SPECIFIC tags ready to copy-paste (e.g., "Blue Prince gameplay 2024", not "Add year-specific variations")
-3a. Provide 15-25 tags in "missing" when possible. These should be SEO-first, highly relevant to THIS video, and easy to paste into YouTube.
-    - Include a mix of: 2-5 broad tags + the rest long-tail phrases
-    - Include key variants: synonyms, audience intent ("tutorial", "guide", "how to"), and year/version when relevant
-    - Avoid generic filler ("youtube", "viral", "trending") unless the video is literally about that topic
-    - No hashtags, no commas inside tag strings, no duplicates
-    - Keep tags reasonably short (aim <= 30 characters each)
-3b. Description analysis MUST focus on SEO + viewer conversion:
-    - The first 2 lines (first ~200 chars) should clearly state the main topic + promise and include the primary keyword naturally.
-    - Improve scannability: short paragraphs, bullets, timestamps (if relevant), and a clear CTA.
-    - Provide specific copy/paste lines in "addTheseLines" (e.g., keyword-rich summary, resources, related videos, CTAs).
-    - Never recommend keyword stuffing.
-3c. visibilityPlan MUST be a diagnosis + playbook:
-    - Choose ONE bottleneck (Packaging/Retention/Distribution/Topic/Too early to tell)
-    - Justify it with the metrics we provided (views/day vs baseline, avg % viewed, engagement %, subs per 1K)
-    - If key metrics like impressions/CTR/search terms are missing, say so in whatToMeasureNext and reduce confidence.
-4. Key findings must cite ACTUAL metrics from the data
-5. Actions must be specific enough that the creator knows exactly what to do. Avoid jargon - say "subscribe reminder" instead of "CTA", "call out viewers to comment" instead of "engagement prompt"
-6. Compare to the channel baseline when relevant - if above average, celebrate; if below, diagnose why
-7. Be honest - if metrics are poor, say so constructively
-8. No emojis, no hashtags, no markdown
-9. Use TOP VIEWER COMMENTS to fill commentInsights. If comments are missing/unavailable, set sentiment to {positive:0,neutral:100,negative:0} and use empty arrays.
-10. For videos with very few views (<100), focus on title/thumbnail/discoverability improvements rather than engagement metrics which aren't meaningful yet`;
-
-  const topComments = [...comments]
-    .sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0))
-    .slice(0, 20)
-    .map((c) => `[${c.likes ?? 0} likes] "${c.text.slice(0, 200)}"`)
-    .join("\n");
-
+  comparison: BaselineComparison
+): string {
   const durationMin = Math.round(video.durationSec / 60);
   const descriptionSnippet =
     video.description?.slice(0, 300) || "No description";
 
-  const userPrompt = `ANALYZE THIS VIDEO:
-
+  return `VIDEO INFO:
 TITLE: "${video.title}"
 DESCRIPTION (first 300 chars): "${descriptionSnippet}"
 TAGS: [${video.tags
@@ -1029,20 +905,13 @@ TAGS: [${video.tags
 DURATION: ${durationMin} minutes
 CATEGORY: ${video.categoryId || "Unknown"}
 
-═══════════════════════════════════════════════════════════════
 PERFORMANCE DATA (${derived.daysInRange} day period):
-═══════════════════════════════════════════════════════════════
-
-VIEWS & REACH:
 • Total Views: ${derived.totalViews.toLocaleString()}
 • Views/Day: ${derived.viewsPerDay.toFixed(0)} ${
     comparison.viewsPerDay.vsBaseline !== "unknown"
       ? `(${comparison.viewsPerDay.delta?.toFixed(0)}% vs your channel avg)`
       : ""
   }
-• 24h Velocity: ${derived.velocity24h ?? "N/A"} views/day change
-
-RETENTION:
 • Avg % Viewed: ${
     derived.avdRatio != null ? (derived.avdRatio * 100).toFixed(1) : "N/A"
   }% ${
@@ -1050,12 +919,6 @@ RETENTION:
       ? `(${comparison.avgViewPercentage.delta?.toFixed(0)}% vs avg)`
       : ""
   }
-• Avg Watch Time: ${derived.avgWatchTimeMin?.toFixed(1) ?? "N/A"} min per view
-• Watch Time Total: ${Math.round(
-    derived.totalViews * (derived.avgWatchTimeMin ?? 0)
-  )} minutes
-
-ENGAGEMENT:
 • Engagement Rate: ${
     derived.engagementPerView != null
       ? (derived.engagementPerView * 100).toFixed(2)
@@ -1065,64 +928,419 @@ ENGAGEMENT:
       ? `(${comparison.engagementPerView.delta?.toFixed(0)}% vs avg)`
       : ""
   }
-• Like Ratio: ${derived.likeRatio?.toFixed(1) ?? "N/A"}%
-• Comments/1K: ${derived.commentsPer1k?.toFixed(1) ?? "N/A"}
-• Shares/1K: ${derived.sharesPer1k?.toFixed(1) ?? "N/A"}
-
-SUBSCRIBER CONVERSION:
-• Net Subs Gained: ${
-    derived.netSubsPer1k != null
-      ? `${derived.netSubsPer1k.toFixed(2)}/1K views`
-      : "N/A"
-  } ${
+• Subs/1K: ${derived.subsPer1k?.toFixed(2) ?? "N/A"} ${
     comparison.subsPer1k.vsBaseline !== "unknown"
       ? `(${comparison.subsPer1k.delta?.toFixed(0)}% vs avg)`
       : ""
   }
-• Playlist Saves: ${derived.netSavesPer1k?.toFixed(2) ?? "N/A"}/1K views
-
-${
-  derived.cardClickRate != null || derived.endScreenClickRate != null
-    ? `CARDS & END SCREENS:
-• Card CTR: ${derived.cardClickRate?.toFixed(2) ?? "N/A"}%
-• End Screen CTR: ${derived.endScreenClickRate?.toFixed(2) ?? "N/A"}%
-`
-    : ""
-}
-OVERALL HEALTH: ${comparison.healthScore.toFixed(0)}/100 (${
+• Health Score: ${comparison.healthScore.toFixed(0)}/100 (${
     comparison.healthLabel
-  })
+  })`;
+}
 
-═══════════════════════════════════════════════════════════════
-TOP VIEWER COMMENTS:
-═══════════════════════════════════════════════════════════════
-${topComments || "No comments available"}
+/**
+ * Chunk 1: Quick Analysis - summary, wins, leaks, keyFindings
+ */
+async function generateQuickAnalysis(
+  video: VideoMetadata,
+  derived: DerivedMetrics,
+  comparison: BaselineComparison
+): Promise<{
+  summary: VideoInsightsLLM["summary"];
+  wins: VideoInsightsLLM["wins"];
+  leaks: VideoInsightsLLM["leaks"];
+  keyFindings: VideoInsightsLLM["keyFindings"];
+} | null> {
+  const systemPrompt = `You are an elite YouTube growth strategist with expertise in:
+- Data interpretation for YouTube creators
+- Audience retention psychology
+- Converting viewers to subscribers
+- Identifying performance patterns
 
-═══════════════════════════════════════════════════════════════
-TASK: Provide strategic analysis for this creator to improve this video and learn from it for future content.
-═══════════════════════════════════════════════════════════════`;
+Your job is to analyze THIS SPECIFIC VIDEO's data and identify what's working and what needs improvement.
+
+Return ONLY valid JSON:
+{
+  "summary": { "headline": "One punchy headline about THIS video's performance", "oneLiner": "Data-driven summary of what's happening" },
+  "wins": [{ "label": "Short label", "why": "Data-backed explanation citing actual metrics", "metricKey": "metric" }],
+  "leaks": [{ "label": "Problem area", "why": "Data-backed explanation citing actual metrics", "metricKey": "metric" }],
+  "keyFindings": [{ "finding": "Specific data-driven finding", "dataPoint": "The EXACT metric that shows this", "significance": "positive|negative|neutral", "recommendation": "What to do about it" }]
+}
+
+CRITICAL RULES:
+1. NEVER give generic advice - everything must reference THIS video's actual data
+2. Key findings must cite ACTUAL metrics from the data (e.g., "39% avg viewed" not "good retention")
+3. Compare to the channel baseline when relevant - if above average, celebrate; if below, diagnose why
+4. Be honest - if metrics are poor, say so constructively
+5. For videos with very few views (<100), note that engagement metrics aren't meaningful yet
+6. No emojis, no hashtags, no markdown`;
+
+  const videoContext = buildVideoContext(video, derived, comparison);
 
   try {
     const result = await callLLM(
       [
         { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
+        { role: "user", content: videoContext },
       ],
-      { maxTokens: 3000, temperature: 0.3, responseFormat: "json_object" }
+      { maxTokens: 900, temperature: 0.3, responseFormat: "json_object" }
     );
-
-    const raw = (result.content ?? "").trim();
-    // In json_object mode, we should get a JSON object as the entire response.
-    try {
-      return JSON.parse(raw) as VideoInsightsLLM;
-    } catch {
-      // Fallback: if the model ever returns extra text, extract the first {...} block.
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) return null;
-      return JSON.parse(jsonMatch[0]) as VideoInsightsLLM;
-    }
+    return JSON.parse(result.content);
   } catch (err) {
-    console.error("LLM insights generation failed:", err);
+    console.error("Quick analysis LLM failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Chunk 2: SEO Analysis - titleAnalysis, tagAnalysis, descriptionAnalysis
+ */
+async function generateSEOAnalysis(
+  video: VideoMetadata,
+  derived: DerivedMetrics,
+  comparison: BaselineComparison
+): Promise<{
+  titleAnalysis: VideoInsightsLLM["titleAnalysis"];
+  tagAnalysis: VideoInsightsLLM["tagAnalysis"];
+  descriptionAnalysis: VideoInsightsLLM["descriptionAnalysis"];
+} | null> {
+  const systemPrompt = `You are an elite YouTube SEO specialist with expertise in:
+- Video packaging (titles, thumbnails, hooks)
+- YouTube SEO and discoverability
+- Writing descriptions that rank AND convert (search intent, keyword placement, scannability)
+
+Your job is to analyze THIS SPECIFIC VIDEO's title, tags, and description for search optimization.
+
+Return ONLY valid JSON:
+{
+  "titleAnalysis": {
+    "score": 7,
+    "strengths": ["What makes this title work"],
+    "weaknesses": ["What could be improved"],
+    "suggestions": ["Full alternative title 1", "Full alternative title 2", "Full alternative title 3"]
+  },
+  "tagAnalysis": {
+    "score": 6,
+    "coverage": "excellent|good|fair|poor",
+    "missing": ["specific tag 1", "specific tag 2", "...15-25 tags total"],
+    "feedback": "Specific feedback about the tags"
+  },
+  "descriptionAnalysis": {
+    "score": 7,
+    "strengths": ["What is good for SEO + viewers"],
+    "weaknesses": ["What is missing / hurting SEO or CTR"],
+    "rewrittenOpening": "Rewrite the first ~200 characters to be stronger for search + humans",
+    "addTheseLines": ["Copy/paste line 1", "Copy/paste line 2"],
+    "targetKeywords": ["keyword phrase 1", "keyword phrase 2"]
+  }
+}
+
+CRITICAL RULES:
+1. Title suggestions MUST be complete, grammatically correct titles that make sense for THIS video's topic and content. Each suggestion should be a full, usable title (not a fragment or template).
+   - Think like an SEO-minded YouTube growth expert: optimize for real search intent + high CTR (clarity + curiosity), but DO NOT clickbait.
+   - Understand what the video is ABOUT from the title, description, and tags before suggesting alternatives.
+
+2. Tag suggestions in "missing" must be SPECIFIC tags ready to copy-paste (e.g., "Blue Prince gameplay 2024", not "Add year-specific variations")
+   - Provide 15-25 tags in "missing". These should be SEO-first, highly relevant to THIS video, and easy to paste into YouTube.
+   - Include a mix of: 2-5 broad tags + the rest long-tail phrases
+   - Include key variants: synonyms, audience intent ("tutorial", "guide", "how to"), and year/version when relevant
+   - Avoid generic filler ("youtube", "viral", "trending") unless the video is literally about that topic
+   - No hashtags, no commas inside tag strings, no duplicates
+   - Keep tags reasonably short (aim <= 30 characters each)
+
+3. Description analysis MUST focus on SEO + viewer conversion:
+   - The first 2 lines (first ~200 chars) should clearly state the main topic + promise and include the primary keyword naturally.
+   - Improve scannability: short paragraphs, bullets, timestamps (if relevant), and a clear CTA.
+   - Provide specific copy/paste lines in "addTheseLines" (e.g., keyword-rich summary, resources, related videos, CTAs).
+   - Never recommend keyword stuffing.
+
+4. No emojis, no hashtags, no markdown`;
+
+  const videoContext = buildVideoContext(video, derived, comparison);
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: videoContext },
+      ],
+      { maxTokens: 1200, temperature: 0.3, responseFormat: "json_object" }
+    );
+    return JSON.parse(result.content);
+  } catch (err) {
+    console.error("SEO analysis LLM failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Chunk 3: Strategy - visibilityPlan, actions, experiments
+ */
+async function generateStrategyAnalysis(
+  video: VideoMetadata,
+  derived: DerivedMetrics,
+  comparison: BaselineComparison
+): Promise<{
+  visibilityPlan: VideoInsightsLLM["visibilityPlan"];
+  actions: VideoInsightsLLM["actions"];
+  experiments: VideoInsightsLLM["experiments"];
+} | null> {
+  const systemPrompt = `You are an elite YouTube growth strategist with expertise in:
+- Audience retention psychology
+- Converting viewers to subscribers
+- Data interpretation for YouTube creators
+- Channel growth strategies
+
+Your job is to create a visibility improvement plan for THIS SPECIFIC VIDEO based on its actual data.
+
+Return ONLY valid JSON:
+{
+  "visibilityPlan": {
+    "bottleneck": "Packaging (CTR)" | "Retention" | "Distribution" | "Topic/Intent" | "Too early to tell",
+    "confidence": "high" | "medium" | "low",
+    "why": "Explain why, using actual metrics/baseline comparisons we provided",
+    "doNext": [{ "action": "Specific next step", "reason": "Metric-backed why", "expectedImpact": "Likely impact", "priority": "high" | "medium" | "low" }],
+    "experiments": [{ "name": "Test name", "variants": ["A", "B"], "successMetric": "CTR", "window": "24-48h" }],
+    "promotionChecklist": ["Concrete step 1", "Concrete step 2"],
+    "whatToMeasureNext": ["Impressions", "CTR", "Traffic sources", "Search terms"]
+  },
+  "actions": [{ "lever": "Retention" | "Conversion" | "Engagement" | "Discovery", "action": "SPECIFIC action for THIS video", "reason": "Why based on the data", "expectedImpact": "Realistic expected outcome", "priority": "high" | "medium" | "low" }],
+  "experiments": [{ "type": "Title" | "Hook" | "Structure", "test": ["Option A", "Option B"], "successMetric": "What to measure" }]
+}
+
+CRITICAL RULES:
+1. visibilityPlan MUST be a diagnosis + playbook:
+   - Choose ONE bottleneck (Packaging/Retention/Distribution/Topic/Too early to tell)
+   - Justify it with the metrics we provided (views/day vs baseline, avg % viewed, engagement %, subs per 1K)
+   - If key metrics like impressions/CTR/search terms are missing, say so in whatToMeasureNext and reduce confidence.
+
+2. Actions must be specific enough that the creator knows exactly what to do:
+   - Avoid jargon - say "subscribe reminder" instead of "CTA"
+   - Say "call out viewers to comment" instead of "engagement prompt"
+   - Say "add a pattern interrupt at the 2-minute mark" not "improve retention"
+
+3. NEVER give generic advice - everything must reference THIS video's actual data
+4. Compare to the channel baseline when relevant - if above average, celebrate; if below, diagnose why
+5. Be honest - if metrics are poor, say so constructively
+6. For videos with very few views (<100), focus on discoverability improvements rather than engagement metrics
+7. No emojis, no hashtags, no markdown`;
+
+  const videoContext = buildVideoContext(video, derived, comparison);
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: videoContext },
+      ],
+      { maxTokens: 1100, temperature: 0.3, responseFormat: "json_object" }
+    );
+    return JSON.parse(result.content);
+  } catch (err) {
+    console.error("Strategy analysis LLM failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Chunk 4: Creative - thumbnailHints, packaging, remixIdeas
+ */
+async function generateCreativeAnalysis(
+  video: VideoMetadata,
+  derived: DerivedMetrics,
+  comparison: BaselineComparison
+): Promise<{
+  thumbnailHints: VideoInsightsLLM["thumbnailHints"];
+  packaging: VideoInsightsLLM["packaging"];
+  remixIdeas: VideoInsightsLLM["remixIdeas"];
+  competitorTakeaways: VideoInsightsLLM["competitorTakeaways"];
+} | null> {
+  const systemPrompt = `You are an elite YouTube creative strategist with expertise in:
+- Video packaging (titles, thumbnails, hooks)
+- Audience retention psychology
+- Content repurposing and spinoff ideas
+
+Your job is to generate creative packaging and remix ideas for THIS SPECIFIC VIDEO based on its topic and performance.
+
+Return ONLY valid JSON:
+{
+  "thumbnailHints": ["What the thumbnail should communicate based on title/data", "Specific visual suggestion 2", "Visual suggestion 3"],
+  "packaging": {
+    "titleAngles": ["Alternative title approach 1", "Alternative title approach 2"],
+    "hookSetups": ["Opening hook idea 1", "Opening hook idea 2"],
+    "visualMoments": ["Key visual moment to highlight"]
+  },
+  "remixIdeas": [{ "title": "Spinoff idea title", "hook": "Opening line for the spinoff", "keywords": ["keyword1", "keyword2"], "inspiredByVideoIds": [] }],
+  "competitorTakeaways": []
+}
+
+CRITICAL RULES:
+1. NEVER give generic advice - everything must be specific to THIS video's topic
+   - Understand what the video is ABOUT from the title, description, and tags
+   - Thumbnail hints should relate to the actual content
+   - Remix ideas should be realistic spinoffs from this specific topic
+
+2. Hooks and title angles should be ready-to-use, not templates
+   - "If you've ever struggled with [this specific topic]..." not "If you've ever struggled with [topic]..."
+   - Make them specific to what the video is actually about
+
+3. Provide 3 remix ideas that are genuine spinoff opportunities from this content
+4. No emojis, no hashtags, no markdown`;
+
+  const videoContext = buildVideoContext(video, derived, comparison);
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: videoContext },
+      ],
+      { maxTokens: 900, temperature: 0.4, responseFormat: "json_object" }
+    );
+    return JSON.parse(result.content);
+  } catch (err) {
+    console.error("Creative analysis LLM failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Chunk 5: Comment Insights
+ */
+async function generateCommentInsights(
+  video: VideoMetadata,
+  comments: VideoComment[]
+): Promise<VideoInsightsLLM["commentInsights"] | null> {
+  const topComments = [...comments]
+    .sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0))
+    .slice(0, 20)
+    .map((c) => `[${c.likes ?? 0} likes] "${c.text.slice(0, 200)}"`)
+    .join("\n");
+
+  if (!topComments) {
+    return {
+      sentiment: { positive: 0, neutral: 100, negative: 0 },
+      themes: [],
+      viewerLoved: [],
+      viewerAskedFor: [],
+      hookInspiration: [],
+    };
+  }
+
+  const systemPrompt = `You are a YouTube comment analyst. Your job is to extract viewer voice insights from the TOP COMMENTS on this video.
+
+Return ONLY valid JSON:
+{
+  "sentiment": { "positive": 60, "neutral": 30, "negative": 10 },
+  "themes": [{ "theme": "Theme name", "count": 5, "examples": ["short quote from actual comment"] }],
+  "viewerLoved": ["What viewers explicitly praised - quote or paraphrase actual comments"],
+  "viewerAskedFor": ["What viewers asked about or requested for future content - from actual comments"],
+  "hookInspiration": ["Short hook-worthy quote under 25 words - directly from comments"]
+}
+
+CRITICAL RULES:
+1. Use TOP VIEWER COMMENTS to fill all fields - base everything on the actual comments provided
+2. Sentiment percentages must add up to 100
+3. Themes should be patterns you see across multiple comments
+4. viewerLoved and viewerAskedFor should quote or closely paraphrase actual comments
+5. hookInspiration should be memorable short quotes that could inspire future video hooks
+6. If comments are sparse or generic, reflect that honestly
+7. No emojis, no markdown`;
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `VIDEO: "${video.title}"\n\nTOP COMMENTS (sorted by likes):\n${topComments}`,
+        },
+      ],
+      { maxTokens: 600, temperature: 0.3, responseFormat: "json_object" }
+    );
+    return JSON.parse(result.content);
+  } catch (err) {
+    console.error("Comment insights LLM failed:", err);
+    return {
+      sentiment: { positive: 0, neutral: 100, negative: 0 },
+      themes: [],
+      viewerLoved: [],
+      viewerAskedFor: [],
+      hookInspiration: [],
+    };
+  }
+}
+
+/**
+ * Generate LLM insights using 5 parallel requests for faster response
+ */
+async function generateLLMInsights(
+  video: VideoMetadata,
+  derived: DerivedMetrics,
+  comparison: BaselineComparison,
+  _levers: VideoInsightsResponse["levers"],
+  comments: VideoComment[]
+): Promise<VideoInsightsLLM | null> {
+  console.log("[VideoInsights] Starting parallel LLM generation (5 chunks)");
+  const startTime = Date.now();
+
+  try {
+    // Run all 5 LLM calls in parallel for ~5x faster response
+    const [
+      quickResult,
+      seoResult,
+      strategyResult,
+      creativeResult,
+      commentResult,
+    ] = await Promise.all([
+      generateQuickAnalysis(video, derived, comparison),
+      generateSEOAnalysis(video, derived, comparison),
+      generateStrategyAnalysis(video, derived, comparison),
+      generateCreativeAnalysis(video, derived, comparison),
+      generateCommentInsights(video, comments),
+    ]);
+
+    const elapsed = Date.now() - startTime;
+    console.log(`[VideoInsights] Parallel LLM completed in ${elapsed}ms`);
+
+    // If critical chunks failed, return null
+    if (!quickResult || !seoResult || !strategyResult) {
+      console.error("[VideoInsights] Critical LLM chunks failed");
+      return null;
+    }
+
+    // Merge all results into single VideoInsightsLLM object
+    const merged: VideoInsightsLLM = {
+      summary: quickResult.summary,
+      wins: quickResult.wins,
+      leaks: quickResult.leaks,
+      keyFindings: quickResult.keyFindings,
+      titleAnalysis: seoResult.titleAnalysis,
+      tagAnalysis: seoResult.tagAnalysis,
+      descriptionAnalysis: seoResult.descriptionAnalysis,
+      visibilityPlan: strategyResult.visibilityPlan,
+      actions: strategyResult.actions,
+      experiments: strategyResult.experiments,
+      thumbnailHints: creativeResult?.thumbnailHints ?? [],
+      packaging: creativeResult?.packaging ?? {
+        titleAngles: [],
+        hookSetups: [],
+        visualMoments: [],
+      },
+      remixIdeas: creativeResult?.remixIdeas ?? [],
+      competitorTakeaways: creativeResult?.competitorTakeaways ?? [],
+      commentInsights: commentResult ?? {
+        sentiment: { positive: 0, neutral: 100, negative: 0 },
+        themes: [],
+        viewerLoved: [],
+        viewerAskedFor: [],
+        hookInspiration: [],
+      },
+    };
+
+    return merged;
+  } catch (err) {
+    console.error("Parallel LLM insights generation failed:", err);
     return null;
   }
 }

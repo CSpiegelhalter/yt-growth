@@ -14,7 +14,6 @@ type VideoHeroProps = {
     durationSec: number;
   };
   totalViews: number;
-  performance: { level: string; label: string };
   isDemo?: boolean;
 };
 
@@ -25,7 +24,6 @@ export function VideoHero({
   videoId,
   video,
   totalViews,
-  performance,
   isDemo,
 }: VideoHeroProps) {
   return (
@@ -91,9 +89,6 @@ export function VideoHero({
             <span>{formatDuration(video.durationSec)}</span>
             <span>•</span>
             <span>{formatCompact(totalViews)} views</span>
-          </div>
-          <div className={`${s.performanceBadge} ${s[performance.level]}`}>
-            {performance.label}
           </div>
         </div>
       </header>

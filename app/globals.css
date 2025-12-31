@@ -58,6 +58,7 @@
 
 .heroCtas__primary:hover {
   background: #4f46e5;
+  color: white;
   transform: translateY(-1px);
   box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5);
   text-decoration: none;
@@ -105,6 +106,7 @@
 
 .ctaSection .heroCtas__primary:hover {
   background: #f8fafc;
+  color: #1e3a5f;
   box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
 }
 
