@@ -9,6 +9,20 @@ const nextConfig = {
     ],
   },
   experimental: { serverActions: { allowedOrigins: ["*"] } },
+  async headers() {
+    return [
+      {
+        // Apply to all public/marketing pages to ensure indexing
+        source: "/(|learn|learn/:path*|contact|terms|privacy|auth/:path*)",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "index, follow",
+          },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       // Legacy route -> Subscriber Insights

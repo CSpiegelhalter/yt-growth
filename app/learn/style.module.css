@@ -275,14 +275,22 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-3) var(--space-8);
-  font-size: var(--text-base);
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   color: var(--text-inverse);
   background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   text-decoration: none;
   transition: all var(--transition-base);
+}
+
+@media (min-width: 480px) {
+  .hubCtaPrimary {
+    padding: var(--space-3) var(--space-8);
+    font-size: var(--text-base);
+    border-radius: var(--radius-md);
+  }
 }
 
 .hubCtaPrimary:hover {
@@ -299,15 +307,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-3) var(--space-8);
-  font-size: var(--text-base);
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   color: var(--text);
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   text-decoration: none;
   transition: all var(--transition-base);
+}
+
+@media (min-width: 480px) {
+  .hubCtaSecondary {
+    padding: var(--space-3) var(--space-8);
+    font-size: var(--text-base);
+    border-radius: var(--radius-md);
+  }
 }
 
 .hubCtaSecondary:hover {

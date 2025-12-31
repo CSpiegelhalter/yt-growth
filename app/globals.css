@@ -17,14 +17,14 @@
   flex-direction: column;
   gap: 8px;
   align-items: center;
-  min-height: 116px; /* Reserve space: 2 buttons × 52px + 12px gap on mobile */
+  min-height: 96px; /* Reserve space: 2 buttons × 44px + 8px gap on mobile */
 }
 
 @media (min-width: 480px) {
   .heroCtas {
     flex-direction: row;
     justify-content: center;
-    gap: 16px;
+    gap: 12px;
     min-height: 52px; /* Single row on desktop */
   }
 }
@@ -33,17 +33,27 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 28px;
-  font-size: 1rem;
+  padding: 10px 20px;
+  font-size: 0.9375rem;
   font-weight: 600;
   background: #6366f1;
   color: white;
-  border-radius: 10px;
+  border-radius: 8px;
   transition: all 0.15s ease;
   text-decoration: none;
-  min-width: 160px;
-  height: 52px;
+  min-width: 130px;
+  height: 44px;
   box-sizing: border-box;
+}
+
+@media (min-width: 480px) {
+  .heroCtas__primary {
+    padding: 14px 28px;
+    font-size: 1rem;
+    border-radius: 10px;
+    min-width: 160px;
+    height: 52px;
+  }
 }
 
 .heroCtas__primary:hover {
@@ -57,18 +67,28 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 28px;
-  font-size: 1rem;
+  padding: 10px 20px;
+  font-size: 0.9375rem;
   font-weight: 600;
   background: #ffffff;
   color: #0f172a;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 8px;
   transition: all 0.15s ease;
   text-decoration: none;
-  min-width: 140px;
-  height: 52px;
+  min-width: 110px;
+  height: 44px;
   box-sizing: border-box;
+}
+
+@media (min-width: 480px) {
+  .heroCtas__secondary {
+    padding: 14px 28px;
+    font-size: 1rem;
+    border-radius: 10px;
+    min-width: 140px;
+    height: 52px;
+  }
 }
 
 .heroCtas__secondary:hover {
@@ -208,40 +228,68 @@
 /* Learn Static CTA */
 .learnCta {
   text-align: center;
-  padding: 32px 24px;
+  padding: 24px 16px;
   background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
-  border-radius: 16px;
+  border-radius: 12px;
   color: #ffffff;
   margin-top: 48px;
 }
 
+@media (min-width: 480px) {
+  .learnCta {
+    padding: 32px 24px;
+    border-radius: 16px;
+  }
+}
+
 .learnCta__title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 8px;
 }
 
+@media (min-width: 480px) {
+  .learnCta__title {
+    font-size: 1.5rem;
+  }
+}
+
 .learnCta__text {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   opacity: 0.9;
-  margin: 0 0 24px;
+  margin: 0 0 20px;
   max-width: 400px;
   margin-left: auto;
   margin-right: auto;
+}
+
+@media (min-width: 480px) {
+  .learnCta__text {
+    font-size: 1rem;
+    margin-bottom: 24px;
+  }
 }
 
 .learnCta__btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 32px;
-  font-size: 1rem;
+  padding: 10px 24px;
+  font-size: 0.9375rem;
   font-weight: 600;
   background: #ffffff;
   color: #1e3a5f;
-  border-radius: 10px;
+  border-radius: 8px;
   text-decoration: none;
   transition: all 0.15s ease;
+}
+
+@media (min-width: 480px) {
+  .learnCta__btn {
+    padding: 12px 32px;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
 }
 
 .learnCta__btn:hover {
