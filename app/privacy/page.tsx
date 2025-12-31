@@ -263,12 +263,7 @@ export default function PrivacyPage() {
             your data, or wish to exercise any of your data rights, please{" "}
             <a href="/contact" className={s.link}>
               contact us
-            </a>{" "}
-            or email us at{" "}
-            <a href={`mailto:${BRAND.email}`} className={s.link}>
-              {BRAND.email}
-            </a>
-            .
+            </a>.
           </p>
         </section>
       </div>
