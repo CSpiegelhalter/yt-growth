@@ -20,16 +20,25 @@ const ParamsSchema = z.object({
   channelId: z.string().min(1),
 });
 
+// Page size divisible by 6 for even grid layouts (1, 2, or 3 columns)
+const DEFAULT_PAGE_SIZE = 24;
+
 async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
+  // Parse pagination params from URL
+  const url = new URL(req.url);
+  const offset = Math.max(0, parseInt(url.searchParams.get("offset") ?? "0", 10) || 0);
+  const limit = Math.min(48, Math.max(6, parseInt(url.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE));
+
   // Return demo data if demo mode is enabled
   if (isDemoMode() && !isYouTubeMockMode()) {
     const demoData = getDemoData("retention"); // Reuse retention fixture for video list
-    const videos = (demoData as any)?.videos ?? [];
+    const allVideos = (demoData as any)?.videos ?? [];
+    const paginatedVideos = allVideos.slice(offset, offset + limit);
     return Response.json({
-      videos: videos.map((v: any) => ({
+      videos: paginatedVideos.map((v: any) => ({
         videoId: v.videoId,
         title: v.title,
         thumbnailUrl: v.thumbnailUrl,
@@ -39,6 +48,12 @@ async function GETHandler(
         likes: v.likes ?? 0,
         comments: v.comments ?? 0,
       })),
+      pagination: {
+        offset,
+        limit,
+        total: allVideos.length,
+        hasMore: offset + limit < allVideos.length,
+      },
       demo: true,
     });
   }
@@ -68,7 +83,8 @@ async function GETHandler(
       include: {
         Video: {
           orderBy: { publishedAt: "desc" },
-          take: 50,
+          skip: offset,
+          take: limit,
           select: {
             id: true,
             youtubeVideoId: true,
@@ -77,6 +93,9 @@ async function GETHandler(
             durationSec: true,
             publishedAt: true,
           },
+        },
+        _count: {
+          select: { Video: true },
         },
       },
     });
@@ -101,7 +120,8 @@ async function GETHandler(
         include: {
           Video: {
             orderBy: { publishedAt: "desc" },
-            take: 50,
+            skip: offset,
+            take: limit,
             select: {
               id: true,
               youtubeVideoId: true,
@@ -111,6 +131,9 @@ async function GETHandler(
               publishedAt: true,
             },
           },
+          _count: {
+            select: { Video: true },
+          },
         },
       });
     }
@@ -118,6 +141,9 @@ async function GETHandler(
     if (!channel) {
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
+
+    // Get total count for pagination
+    const totalSynced = channel._count?.Video ?? channel.Video.length;
 
     // Get video metrics from VideoMetrics table for additional data
     const videoIds = channel.Video.map((v) => v.id);
@@ -146,7 +172,12 @@ async function GETHandler(
     return Response.json({
       channelId,
       videos,
-      total: videos.length,
+      pagination: {
+        offset,
+        limit,
+        total: totalSynced,
+        hasMore: offset + limit < totalSynced,
+      },
     });
   } catch (err: any) {
     console.error("Videos list error:", err);

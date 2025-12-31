@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "browserslist": [
     "Chrome >= 90",
-    "Firefox >= 90", 
+    "Firefox >= 90",
     "Safari >= 15",
     "Edge >= 90",
     "iOS >= 15",
@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@vercel/analytics": "^1.6.1",
     "bcryptjs": "^3.0.2",
     "jsonwebtoken": "^9.0.2",
     "next": "^16.0.0",

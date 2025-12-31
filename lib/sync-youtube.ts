@@ -186,9 +186,12 @@ export async function syncUserChannels(
   }
 }
 
+// Number of videos to sync (divisible by 6 for grid layout)
+const SYNC_VIDEO_COUNT = 96;
+
 /**
  * Fetch recent videos for a channel
- * Stores the last 20 videos in the database
+ * Stores recent videos (up to SYNC_VIDEO_COUNT) in the database
  */
 async function fetchChannelVideos(
   ga: GoogleAccount,
@@ -215,14 +218,14 @@ async function fetchChannelVideos(
       channelData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
     if (!uploadsPlaylistId) {
       // Fallback for rare channels where uploads playlist isn't returned.
-      // Costs more quota.
+      // Costs more quota. Limited to 50 for search endpoint.
       const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
       searchUrl.search = new URLSearchParams({
         part: "id,snippet",
         channelId: youtubeChannelId,
         order: "date",
         type: "video",
-        maxResults: "25",
+        maxResults: "50",
       }).toString();
 
       const searchData = await googleFetchWithAutoRefresh<{
@@ -234,12 +237,12 @@ async function fetchChannelVideos(
         .filter(Boolean);
       if (videoIds.length === 0) return;
 
-      // Fetch video details (duration, tags, description)
+      // Fetch video details (duration, tags, description, statistics)
       const detailsUrl = new URL(
         "https://www.googleapis.com/youtube/v3/videos"
       );
       detailsUrl.search = new URLSearchParams({
-        part: "id,contentDetails,snippet",
+        part: "id,contentDetails,snippet,statistics",
         id: videoIds.join(","),
       }).toString();
 
@@ -250,6 +253,9 @@ async function fetchChannelVideos(
       const detailsMap = new Map(
         (detailsData.items ?? []).map((v) => [v.id, v])
       );
+
+      // Cache expiration for metrics (12 hours)
+      const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
 
       for (const item of searchData.items ?? []) {
         const videoId = item.id.videoId;
@@ -269,7 +275,15 @@ async function fetchChannelVideos(
         const description = details?.snippet?.description ?? "";
         const categoryId = details?.snippet?.categoryId ?? null;
 
-        await prisma.video.upsert({
+        // Parse statistics from Data API (total lifetime counts)
+        const views = details?.statistics?.viewCount
+          ? parseInt(details.statistics.viewCount, 10)
+          : 0;
+        const likes = details?.statistics?.likeCount
+          ? parseInt(details.statistics.likeCount, 10)
+          : 0;
+
+        const video = await prisma.video.upsert({
           where: {
             channelId_youtubeVideoId: {
               channelId: channelDbId,
@@ -297,6 +311,24 @@ async function fetchChannelVideos(
             categoryId,
           },
         });
+
+        // Upsert VideoMetrics with Data API statistics (total views, not Analytics API)
+        await prisma.videoMetrics.upsert({
+          where: { videoId: video.id },
+          update: {
+            views,
+            likes,
+            fetchedAt: new Date(),
+            cachedUntil,
+          },
+          create: {
+            videoId: video.id,
+            channelId: channelDbId,
+            views,
+            likes,
+            cachedUntil,
+          },
+        });
       }
 
       // Update channel lastSyncedAt and return
@@ -308,41 +340,78 @@ async function fetchChannelVideos(
       return;
     }
 
-    const playlistUrl = new URL(
-      "https://www.googleapis.com/youtube/v3/playlistItems"
-    );
-    playlistUrl.search = new URLSearchParams({
-      part: "snippet,contentDetails",
-      playlistId: uploadsPlaylistId,
-      maxResults: "25",
-    }).toString();
+    // Fetch videos with pagination (YouTube API max 50 per page)
+    let allPlaylistItems: Array<{
+      contentDetails: { videoId: string };
+      snippet: { title: string; publishedAt: string; thumbnails: any };
+    }> = [];
+    let nextPageToken: string | undefined;
 
-    const playlistData = await googleFetchWithAutoRefresh<{
-      items: Array<{
-        contentDetails: { videoId: string };
-        snippet: { title: string; publishedAt: string; thumbnails: any };
-      }>;
-    }>(ga, playlistUrl.toString());
+    while (allPlaylistItems.length < SYNC_VIDEO_COUNT) {
+      const playlistUrl = new URL(
+        "https://www.googleapis.com/youtube/v3/playlistItems"
+      );
+      const params: Record<string, string> = {
+        part: "snippet,contentDetails",
+        playlistId: uploadsPlaylistId,
+        maxResults: "50",
+      };
+      if (nextPageToken) {
+        params.pageToken = nextPageToken;
+      }
+      playlistUrl.search = new URLSearchParams(params).toString();
 
-    const videoIds = (playlistData.items ?? [])
+      const playlistData = await googleFetchWithAutoRefresh<{
+        nextPageToken?: string;
+        items: Array<{
+          contentDetails: { videoId: string };
+          snippet: { title: string; publishedAt: string; thumbnails: any };
+        }>;
+      }>(ga, playlistUrl.toString());
+
+      allPlaylistItems.push(...(playlistData.items ?? []));
+      nextPageToken = playlistData.nextPageToken;
+
+      // No more pages
+      if (!nextPageToken || (playlistData.items ?? []).length === 0) break;
+    }
+
+    // Trim to SYNC_VIDEO_COUNT
+    allPlaylistItems = allPlaylistItems.slice(0, SYNC_VIDEO_COUNT);
+
+    const videoIds = allPlaylistItems
       .map((v) => v.contentDetails.videoId)
       .filter(Boolean);
     if (videoIds.length === 0) return;
 
-    // Fetch video details (duration, tags, description)
-    const detailsUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
-    detailsUrl.search = new URLSearchParams({
-      part: "id,contentDetails,snippet",
-      id: videoIds.join(","),
-    }).toString();
+    // Fetch video details (duration, tags, description, statistics)
+    // YouTube API allows max 50 IDs per request, so batch if needed
+    const VIDEO_BATCH_SIZE = 50;
+    const allDetails: YouTubeVideoDetails[] = [];
 
-    const detailsData = await googleFetchWithAutoRefresh<{
-      items: YouTubeVideoDetails[];
-    }>(ga, detailsUrl.toString());
+    for (let i = 0; i < videoIds.length; i += VIDEO_BATCH_SIZE) {
+      const batchIds = videoIds.slice(i, i + VIDEO_BATCH_SIZE);
+      const detailsUrl = new URL(
+        "https://www.googleapis.com/youtube/v3/videos"
+      );
+      detailsUrl.search = new URLSearchParams({
+        part: "id,contentDetails,snippet,statistics",
+        id: batchIds.join(","),
+      }).toString();
 
-    const detailsMap = new Map((detailsData.items ?? []).map((v) => [v.id, v]));
+      const detailsData = await googleFetchWithAutoRefresh<{
+        items: YouTubeVideoDetails[];
+      }>(ga, detailsUrl.toString());
 
-    for (const item of playlistData.items ?? []) {
+      allDetails.push(...(detailsData.items ?? []));
+    }
+
+    const detailsMap = new Map(allDetails.map((v) => [v.id, v]));
+
+    // Cache expiration for metrics (12 hours)
+    const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
+
+    for (const item of allPlaylistItems) {
       const videoId = item.contentDetails.videoId;
       const details = detailsMap.get(videoId);
       const thumb =
@@ -360,7 +429,15 @@ async function fetchChannelVideos(
       const description = details?.snippet?.description ?? "";
       const categoryId = details?.snippet?.categoryId ?? null;
 
-      await prisma.video.upsert({
+      // Parse statistics from Data API (total lifetime counts)
+      const views = details?.statistics?.viewCount
+        ? parseInt(details.statistics.viewCount, 10)
+        : 0;
+      const likes = details?.statistics?.likeCount
+        ? parseInt(details.statistics.likeCount, 10)
+        : 0;
+
+      const video = await prisma.video.upsert({
         where: {
           channelId_youtubeVideoId: {
             channelId: channelDbId,
@@ -386,6 +463,24 @@ async function fetchChannelVideos(
           durationSec,
           tags,
           categoryId,
+        },
+      });
+
+      // Upsert VideoMetrics with Data API statistics (total views, not Analytics API)
+      await prisma.videoMetrics.upsert({
+        where: { videoId: video.id },
+        update: {
+          views,
+          likes,
+          fetchedAt: new Date(),
+          cachedUntil,
+        },
+        create: {
+          videoId: video.id,
+          channelId: channelDbId,
+          views,
+          likes,
+          cachedUntil,
         },
       });
     }

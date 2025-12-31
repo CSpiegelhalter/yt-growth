@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -11,17 +11,12 @@ import type {
   SubscriberAuditResponse,
   SubscriberMagnetVideo,
 } from "@/types/api";
-import { copyToClipboard } from "@/components/ui/Toast";
 import { SUBSCRIPTION, formatUsd } from "@/lib/product";
-
-type RangeOption = "28d" | "90d";
-type SortOption = "subs_per_1k" | "views" | "newest" | "engaged_rate";
 
 type Props = {
   initialMe: Me;
   initialChannels: Channel[];
   initialActiveChannelId: string | null;
-  initialRange: RangeOption;
 };
 
 const INITIAL_DISPLAY = 12;
@@ -32,36 +27,27 @@ function computeRollups(videos: SubscriberMagnetVideo[]) {
   if (videos.length === 0) {
     return {
       countVideos: 0,
-      avgSubsPer1k: 0,
-      medianSubsPer1k: 0,
+      avgSubsGained: 0,
       avgEngagedRate: 0,
       strongCount: 0,
       averageCount: 0,
       weakCount: 0,
       totalSubsGained: 0,
+      totalViews: 0,
     };
   }
 
-  const sorted = [...videos].sort(
-    (a, b) => a.subsPerThousand - b.subsPerThousand
-  );
-  const mid = Math.floor(sorted.length / 2);
-  const median =
-    sorted.length % 2 === 0
-      ? (sorted[mid - 1].subsPerThousand + sorted[mid].subsPerThousand) / 2
-      : sorted[mid].subsPerThousand;
-
   return {
     countVideos: videos.length,
-    avgSubsPer1k:
-      videos.reduce((sum, v) => sum + v.subsPerThousand, 0) / videos.length,
-    medianSubsPer1k: median,
+    avgSubsGained:
+      videos.reduce((sum, v) => sum + v.subscribersGained, 0) / videos.length,
     avgEngagedRate:
       videos.reduce((sum, v) => sum + (v.engagedRate ?? 0), 0) / videos.length,
     strongCount: videos.filter((v) => v.conversionTier === "strong").length,
     averageCount: videos.filter((v) => v.conversionTier === "average").length,
     weakCount: videos.filter((v) => v.conversionTier === "weak").length,
     totalSubsGained: videos.reduce((sum, v) => sum + v.subscribersGained, 0),
+    totalViews: videos.reduce((sum, v) => sum + v.views, 0),
   };
 }
 
@@ -69,7 +55,6 @@ export default function SubscriberInsightsClient({
   initialMe,
   initialChannels,
   initialActiveChannelId,
-  initialRange,
 }: Props) {
   const searchParams = useSearchParams();
   const urlChannelId = searchParams.get("channelId");
@@ -82,11 +67,8 @@ export default function SubscriberInsightsClient({
     null
   );
   const [loading, setLoading] = useState(true);
-  const [range, setRange] = useState<RangeOption>(initialRange);
-  const [sort, setSort] = useState<SortOption>("subs_per_1k");
   const [searchQuery, setSearchQuery] = useState("");
   const [displayCount, setDisplayCount] = useState(INITIAL_DISPLAY);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const activeChannel = useMemo(
     () => channels.find((c) => c.channel_id === activeChannelId) ?? null,
@@ -104,7 +86,7 @@ export default function SubscriberInsightsClient({
     setActiveChannelId(next);
   }, [urlChannelId, initialActiveChannelId]);
 
-  // Load subscriber insights data
+  // Load subscriber insights data (all-time, no date filter)
   useEffect(() => {
     if (!activeChannelId) {
       setLoading(false);
@@ -112,7 +94,7 @@ export default function SubscriberInsightsClient({
     }
 
     setLoading(true);
-    fetch(`/api/me/channels/${activeChannelId}/subscriber-audit?range=${range}`)
+    fetch(`/api/me/channels/${activeChannelId}/subscriber-audit`)
       .then((r) => r.json())
       .then((data) => {
         if (data.videos) {
@@ -123,9 +105,9 @@ export default function SubscriberInsightsClient({
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [activeChannelId, range]);
+  }, [activeChannelId]);
 
-  // Filter and sort videos
+  // Filter and sort videos (always by subscribers gained)
   const filteredVideos = useMemo(() => {
     if (!auditData?.videos) return [];
     let videos = [...auditData.videos];
@@ -136,26 +118,11 @@ export default function SubscriberInsightsClient({
       videos = videos.filter((v) => v.title.toLowerCase().includes(q));
     }
 
-    // Sort
-    videos.sort((a, b) => {
-      switch (sort) {
-        case "views":
-          return b.views - a.views;
-        case "newest":
-          return (
-            new Date(b.publishedAt ?? 0).getTime() -
-            new Date(a.publishedAt ?? 0).getTime()
-          );
-        case "engaged_rate":
-          return (b.engagedRate ?? 0) - (a.engagedRate ?? 0);
-        case "subs_per_1k":
-        default:
-          return b.subsPerThousand - a.subsPerThousand;
-      }
-    });
+    // Sort by subscribers gained (descending)
+    videos.sort((a, b) => b.subscribersGained - a.subscribersGained);
 
     return videos;
-  }, [auditData?.videos, searchQuery, sort]);
+  }, [auditData?.videos, searchQuery]);
 
   // Compute view-specific rollups (from filtered list)
   const viewRollups = useMemo(
@@ -169,26 +136,8 @@ export default function SubscriberInsightsClient({
     [auditData?.videos]
   );
 
-  // Calculate the threshold for "Strong" tier
-  const strongThreshold = useMemo(() => {
-    if (!auditData?.videos || auditData.videos.length < 4) return null;
-    const sorted = [...auditData.videos].sort(
-      (a, b) => b.subsPerThousand - a.subsPerThousand
-    );
-    const p75Index = Math.floor(sorted.length * 0.25); // Top 25%
-    return sorted[p75Index]?.subsPerThousand ?? null;
-  }, [auditData?.videos]);
-
   const displayedVideos = filteredVideos.slice(0, displayCount);
   const hasMore = displayCount < filteredVideos.length;
-
-  const handleCopy = useCallback(async (text: string, id: string) => {
-    const success = await copyToClipboard(text);
-    if (success) {
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    }
-  }, []);
 
   const loadMore = () => {
     setDisplayCount((prev) =>
@@ -259,7 +208,7 @@ export default function SubscriberInsightsClient({
         </div>
       )}
 
-      {/* Toolbar - Mobile First */}
+      {/* Toolbar - Search */}
       <div className={s.toolbar}>
         <div className={s.toolbarRow}>
           <div className={s.searchWrap}>
@@ -284,44 +233,18 @@ export default function SubscriberInsightsClient({
             />
           </div>
         </div>
-        <div className={s.toolbarControls}>
-          <select
-            className={s.select}
-            value={range}
-            onChange={(e) => setRange(e.target.value as RangeOption)}
-          >
-            <option value="28d">28 days</option>
-            <option value="90d">90 days</option>
-          </select>
-          <select
-            className={s.select}
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortOption)}
-          >
-            <option value="subs_per_1k">Subs/1K</option>
-            <option value="views">Views</option>
-            <option value="engaged_rate">Engaged Rate</option>
-            <option value="newest">Newest</option>
-          </select>
-        </div>
       </div>
 
       {/* View Summary (rollups from current view) */}
       {!loading && filteredVideos.length > 0 && (
         <div className={s.summarySection}>
           <div className={s.summaryHeader}>
-            <h2 className={s.summaryTitle}>This view summary</h2>
+            <h2 className={s.summaryTitle}>All-time summary</h2>
             <span className={s.summaryCount}>
               {viewRollups.countVideos} videos
             </span>
           </div>
           <div className={s.summaryGrid}>
-            <div className={s.summaryCard}>
-              <span className={s.summaryValue}>
-                {viewRollups.avgSubsPer1k.toFixed(1)}
-              </span>
-              <span className={s.summaryLabel}>Avg Subs/1K</span>
-            </div>
             <div className={s.summaryCard}>
               <span className={s.summaryValue}>
                 {formatNumber(viewRollups.totalSubsGained)}
@@ -330,9 +253,15 @@ export default function SubscriberInsightsClient({
             </div>
             <div className={s.summaryCard}>
               <span className={s.summaryValue}>
-                {(viewRollups.avgEngagedRate * 100).toFixed(1)}%
+                {formatNumber(viewRollups.totalViews)}
               </span>
-              <span className={s.summaryLabel}>Avg Engaged Rate</span>
+              <span className={s.summaryLabel}>Total Views</span>
+            </div>
+            <div className={s.summaryCard}>
+              <span className={s.summaryValue}>
+                {viewRollups.avgSubsGained.toFixed(1)}
+              </span>
+              <span className={s.summaryLabel}>Avg Subs/Video</span>
             </div>
             <div className={`${s.summaryCard} ${s.tiersCard}`}>
               {insufficientData ? (
@@ -374,20 +303,6 @@ export default function SubscriberInsightsClient({
               )}
             </div>
           </div>
-          {/* Channel baseline comparison */}
-          {channelBaseline &&
-            filteredVideos.length !== auditData?.videos?.length && (
-              <div className={s.baselineNote}>
-                <span className={s.baselineLabel}>
-                  Channel baseline ({range}):
-                </span>
-                <span>
-                  {channelBaseline.avgSubsPer1k.toFixed(1)} avg subs/1k
-                </span>
-                <span>•</span>
-                <span>{channelBaseline.countVideos} videos total</span>
-              </div>
-            )}
         </div>
       )}
 
@@ -415,7 +330,6 @@ export default function SubscriberInsightsClient({
                 key={video.videoId}
                 video={video}
                 rank={idx + 1}
-                avgSubsPerThousand={viewRollups.avgSubsPer1k}
                 insufficientData={insufficientData}
                 channelId={activeChannelId}
               />
@@ -453,15 +367,6 @@ export default function SubscriberInsightsClient({
         </div>
       )}
 
-      {/* Insights Section - Only patterns and recipe, NO ideas */}
-      {!loading && auditData && displayedVideos.length > 0 && (
-        <InsightsSection
-          analysis={auditData.patternAnalysis}
-          onCopy={handleCopy}
-          copiedId={copiedId}
-        />
-      )}
-
       {/* Demo Badge */}
       {auditData?.demo && (
         <p className={s.demoNote}>Showing demo data for preview purposes.</p>
@@ -474,13 +379,11 @@ export default function SubscriberInsightsClient({
 function VideoCard({
   video,
   rank,
-  avgSubsPerThousand,
   insufficientData,
   channelId,
 }: {
   video: SubscriberMagnetVideo;
   rank: number;
-  avgSubsPerThousand: number;
   insufficientData: boolean;
   channelId: string | null;
 }) {
@@ -498,12 +401,6 @@ function VideoCard({
     : video.conversionTier === "weak"
     ? s.tierWeak
     : s.tierAverage;
-
-  const delta = video.subsPerThousand - avgSubsPerThousand;
-  const deltaPercent =
-    avgSubsPerThousand > 0
-      ? ((delta / avgSubsPerThousand) * 100).toFixed(0)
-      : "0";
 
   const videoParams = new URLSearchParams();
   videoParams.set("from", "subscriber-insights");
@@ -560,19 +457,9 @@ function VideoCard({
           <div className={s.heroRow}>
             <div className={s.heroMetric}>
               <span className={s.heroValue}>
-                {video.subsPerThousand.toFixed(1)}
+                +{formatNumber(video.subscribersGained)}
               </span>
-              <span className={s.heroLabel}>subs/1K</span>
-              {delta !== 0 && !insufficientData && (
-                <span
-                  className={`${s.deltaBadge} ${
-                    delta > 0 ? s.deltaUp : s.deltaDown
-                  }`}
-                >
-                  {delta > 0 ? "+" : ""}
-                  {deltaPercent}%
-                </span>
-              )}
+              <span className={s.heroLabel}>subs</span>
             </div>
             <span className={`${s.tierBadge} ${tierClass}`}>{tierLabel}</span>
           </div>
@@ -580,7 +467,7 @@ function VideoCard({
           {/* Compact Metrics */}
           <div className={s.metricsRow}>
             <span className={s.metricPill}>
-              +{formatNumber(video.subscribersGained)} subs
+              {formatNumber(video.views)} views
             </span>
             {video.engagedRate !== null && video.engagedRate !== undefined && (
               <span className={s.metricPill}>
@@ -596,129 +483,6 @@ function VideoCard({
         </Link>
       </div>
     </div>
-  );
-}
-
-/* ---------- Insights Section (patterns + recipe only) ---------- */
-type InsightsSectionProps = {
-  analysis: SubscriberAuditResponse["patternAnalysis"];
-  onCopy: (text: string, id: string) => void;
-  copiedId: string | null;
-};
-
-function InsightsSection({ analysis, onCopy, copiedId }: InsightsSectionProps) {
-  const insights = analysis?.analysisJson?.structuredInsights;
-  const commonPatterns = insights?.commonPatterns ?? [];
-  const recipe = insights?.conversionRecipe ?? {
-    titleFormulas: [],
-    ctaTiming: "",
-    structure: "",
-  };
-
-  const hasStructuredData =
-    commonPatterns.length > 0 || recipe.titleFormulas.length > 0;
-
-  if (
-    !hasStructuredData &&
-    !analysis?.analysisJson &&
-    !analysis?.analysisMarkdownFallback
-  ) {
-    return null;
-  }
-
-  return (
-    <section className={s.insightsSection}>
-      <h2 className={s.insightsSectionTitle}>Conversion Insights</h2>
-
-      <div className={s.insightsGrid}>
-        {/* Card A: Common Patterns */}
-        <div className={s.insightCard}>
-          <h3 className={s.insightCardTitle}>
-            What your top subscriber drivers have in common
-          </h3>
-          {commonPatterns.length > 0 ? (
-            <div className={s.patternList}>
-              {commonPatterns.map((p, i) => (
-                <div key={i} className={s.patternItem}>
-                  <div className={s.patternHeader}>
-                    <span className={s.patternTitle}>{p.pattern}</span>
-                  </div>
-                  <p className={s.patternEvidence}>{p.evidence}</p>
-                  <p className={s.patternHow}>
-                    <strong>How to use:</strong> {p.howToUse}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : analysis?.analysisJson?.commonPatterns?.length ? (
-            <ul className={s.legacyList}>
-              {analysis.analysisJson.commonPatterns
-                .slice(0, 5)
-                .map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-            </ul>
-          ) : (
-            <p className={s.noData}>Generate more data to see patterns.</p>
-          )}
-        </div>
-
-        {/* Card B: Conversion Recipe */}
-        <div className={s.insightCard}>
-          <h3 className={s.insightCardTitle}>
-            Conversion recipe you can reuse
-          </h3>
-          {recipe.titleFormulas.length > 0 ||
-          recipe.ctaTiming ||
-          recipe.structure ? (
-            <div className={s.recipeContent}>
-              {recipe.titleFormulas.length > 0 && (
-                <div className={s.recipeRow}>
-                  <span className={s.recipeLabel}>Title formulas</span>
-                  <div className={s.recipeValue}>
-                    {recipe.titleFormulas.map((f, i) => (
-                      <button
-                        key={i}
-                        className={s.formulaChip}
-                        onClick={() => onCopy(f, `formula-${i}`)}
-                        type="button"
-                      >
-                        {f}
-                        {copiedId === `formula-${i}` && (
-                          <span className={s.copiedBadge}>✓</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {recipe.ctaTiming && (
-                <div className={s.recipeRow}>
-                  <span className={s.recipeLabel}>CTA timing</span>
-                  <span className={s.recipeText}>{recipe.ctaTiming}</span>
-                </div>
-              )}
-              {recipe.structure && (
-                <div className={s.recipeRow}>
-                  <span className={s.recipeLabel}>Structure</span>
-                  <span className={s.recipeText}>{recipe.structure}</span>
-                </div>
-              )}
-            </div>
-          ) : analysis?.analysisJson?.ctaPatterns?.length ? (
-            <ul className={s.legacyList}>
-              {analysis.analysisJson.ctaPatterns.slice(0, 4).map((item, i) => (
-                <li key={i}>{item}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className={s.noData}>
-              Analyze more videos to build your conversion recipe.
-            </p>
-          )}
-        </div>
-      </div>
-    </section>
   );
 }
 

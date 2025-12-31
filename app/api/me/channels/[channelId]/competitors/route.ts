@@ -31,6 +31,7 @@ import {
   getGoogleAccount,
   searchNicheVideos,
   fetchVideosStatsBatch,
+  type VideoDurationFilter,
 } from "@/lib/youtube-api";
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { ensureMockChannelSeeded } from "@/lib/mock-seed";
@@ -59,6 +60,295 @@ const YOUTUBE_CATEGORIES: Record<string, string> = {
   "28": "Science & Technology",
   "29": "Nonprofits & Activism",
 };
+
+// Generic tags that don't indicate actual niche - often added for SEO gaming
+// These are too broad to be useful for competitor discovery
+const GENERIC_TAG_BLOCKLIST = new Set([
+  // Generic gaming terms that don't identify niche
+  "gaming",
+  "game",
+  "games",
+  "video game",
+  "video games",
+  "gameplay",
+  "playthrough",
+  "lets play",
+  "let's play",
+  "walkthrough",
+  "funny moments",
+  "best moments",
+  "highlights",
+  "gamer",
+  "pc gaming",
+  "console gaming",
+  "xbox",
+  "playstation",
+  "ps4",
+  "ps5",
+  "nintendo",
+  // Popular games that get spammed as tags but don't indicate actual content
+  "minecraft",
+  "fortnite",
+  "roblox",
+  "garrys mod",
+  "gmod",
+  "garry's mod",
+  "gta",
+  "gta 5",
+  "gta v",
+  "call of duty",
+  "cod",
+  "among us",
+  "valorant",
+  "apex legends",
+  "league of legends",
+  "lol",
+  "dota",
+  "overwatch",
+  "csgo",
+  "counter strike",
+  // Generic YouTube terms
+  "youtube",
+  "youtuber",
+  "vlog",
+  "vlogs",
+  "daily vlog",
+  "video",
+  "videos",
+  "subscribe",
+  "like",
+  "comment",
+  "viral",
+  "trending",
+  "new",
+  "2024",
+  "2025",
+  "funny",
+  "comedy",
+  "entertainment",
+  "fun",
+  "cool",
+  "awesome",
+  "amazing",
+  "best",
+  // Generic content terms
+  "how to",
+  "tutorial",
+  "tips",
+  "tricks",
+  "guide",
+  "review",
+  "reaction",
+  "reacts",
+  "challenge",
+  "challenges",
+  "prank",
+  "pranks",
+  "meme",
+  "memes",
+]);
+
+// Stop words to filter out from title keyword extraction
+const STOP_WORDS = new Set([
+  "the",
+  "a",
+  "an",
+  "and",
+  "or",
+  "but",
+  "in",
+  "on",
+  "at",
+  "to",
+  "for",
+  "of",
+  "with",
+  "by",
+  "from",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "have",
+  "has",
+  "had",
+  "do",
+  "does",
+  "did",
+  "will",
+  "would",
+  "could",
+  "should",
+  "may",
+  "might",
+  "must",
+  "shall",
+  "can",
+  "this",
+  "that",
+  "these",
+  "those",
+  "i",
+  "you",
+  "he",
+  "she",
+  "it",
+  "we",
+  "they",
+  "my",
+  "your",
+  "his",
+  "her",
+  "its",
+  "our",
+  "their",
+  "what",
+  "which",
+  "who",
+  "whom",
+  "when",
+  "where",
+  "why",
+  "how",
+  "all",
+  "each",
+  "every",
+  "both",
+  "few",
+  "more",
+  "most",
+  "other",
+  "some",
+  "such",
+  "no",
+  "nor",
+  "not",
+  "only",
+  "own",
+  "same",
+  "so",
+  "than",
+  "too",
+  "very",
+  "just",
+  "also",
+  "now",
+  "here",
+  "there",
+  "about",
+  "into",
+  "over",
+  "after",
+  "before",
+  "between",
+  "under",
+  "again",
+  "out",
+  // YouTube-specific stop words
+  "new",
+  "first",
+  "part",
+  "episode",
+  "ep",
+  "official",
+  "full",
+  "hd",
+  "4k",
+]);
+
+/**
+ * Determine the typical video duration format for a channel
+ * Returns a filter that matches similar-length competitor videos:
+ * - "short" = Shorts and very short videos (< 4 min) - targets Shorts creators
+ * - "medium" = Standard YouTube videos (4-20 min)
+ * - "long" = Long-form content (> 20 min)
+ * - "any" = Mixed content, no filter
+ */
+function determineContentFormat(
+  durations: (number | null)[]
+): VideoDurationFilter {
+  const validDurations = durations.filter(
+    (d): d is number => d !== null && d > 0
+  );
+
+  if (validDurations.length < 3) {
+    return "any"; // Not enough data to determine format
+  }
+
+  // Calculate median duration (more robust than average for outliers)
+  const sorted = [...validDurations].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+
+  // Count videos in each category
+  const shorts = validDurations.filter((d) => d < 60).length; // < 1 min (Shorts)
+  const short = validDurations.filter((d) => d >= 60 && d < 240).length; // 1-4 min
+  const medium = validDurations.filter((d) => d >= 240 && d < 1200).length; // 4-20 min
+  const long = validDurations.filter((d) => d >= 1200).length; // > 20 min
+
+  const total = validDurations.length;
+
+  // If 60%+ of videos are Shorts (< 1 min), this is a Shorts channel
+  if (shorts / total >= 0.6) {
+    return "short";
+  }
+
+  // If 60%+ of videos are short format (< 4 min including Shorts)
+  if ((shorts + short) / total >= 0.6) {
+    return "short";
+  }
+
+  // If 60%+ of videos are long (> 20 min), filter for long content
+  if (long / total >= 0.6) {
+    return "long";
+  }
+
+  // If 60%+ are medium length, use medium filter
+  if (medium / total >= 0.6) {
+    return "medium";
+  }
+
+  // Mixed content - use median to decide, but lean towards "any" for variety
+  if (median < 240) return "short";
+  if (median >= 1200) return "long";
+
+  // Default to "any" for mixed channels to get variety
+  return "any";
+}
+
+/**
+ * Extract meaningful keywords from video titles
+ * These are more reliable than tags for determining actual content
+ */
+function extractTitleKeywords(titles: string[]): string[] {
+  const wordCounts = new Map<string, number>();
+
+  for (const title of titles) {
+    // Extract words, convert to lowercase, filter out numbers and short words
+    const words = title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, " ") // Remove special chars except hyphens
+      .split(/\s+/)
+      .filter((w) => w.length > 3 && !STOP_WORDS.has(w) && !/^\d+$/.test(w));
+
+    // Count unique words per title (avoid boosting repeated words in same title)
+    const uniqueWords = [...new Set(words)];
+    for (const word of uniqueWords) {
+      wordCounts.set(word, (wordCounts.get(word) ?? 0) + 1);
+    }
+  }
+
+  // Only include words that appear in at least 20% of titles (recurring themes)
+  const minCount = Math.max(2, Math.ceil(titles.length * 0.2));
+
+  return [...wordCounts.entries()]
+    .filter(([, count]) => count >= minCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([word]) => word);
+}
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -176,6 +466,7 @@ async function GETHandler(
             title: true,
             tags: true,
             categoryId: true,
+            durationSec: true,
           },
           orderBy: { publishedAt: "desc" },
           take: 10,
@@ -202,7 +493,12 @@ async function GETHandler(
         where: { youtubeChannelId: channelId, userId: user.id },
         include: {
           Video: {
-            select: { title: true, tags: true, categoryId: true },
+            select: {
+              title: true,
+              tags: true,
+              categoryId: true,
+              durationSec: true,
+            },
             orderBy: { publishedAt: "desc" },
             take: 10,
           },
@@ -225,23 +521,45 @@ async function GETHandler(
 
     // Extract video data for niche analysis
     const videoTitles = channel.Video.map((v) => v.title ?? "").filter(Boolean);
-    const allTags: string[] = [];
+
+    // Extract meaningful keywords from titles (more reliable than tags)
+    const titleKeywords = extractTitleKeywords(videoTitles);
+
+    // Count tag frequency
+    const tagCounts = new Map<string, number>();
     channel.Video.forEach((v) => {
       if (v.tags) {
         v.tags.split(",").forEach((t) => {
           const cleaned = t.trim().toLowerCase();
-          if (cleaned.length > 2) allTags.push(cleaned);
+          if (cleaned.length > 2 && !GENERIC_TAG_BLOCKLIST.has(cleaned)) {
+            tagCounts.set(cleaned, (tagCounts.get(cleaned) ?? 0) + 1);
+          }
         });
       }
     });
 
-    // Count tag frequency and get top tags
-    const tagCounts = new Map<string, number>();
-    allTags.forEach((tag) => tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1));
-    const topTags = [...tagCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 15)
-      .map(([tag]) => tag);
+    // Only include tags that appear on at least 30% of videos (to filter outliers)
+    const videoCount = channel.Video.length;
+    const minTagFrequency = Math.max(2, Math.ceil(videoCount * 0.3));
+
+    // Prioritize tags that also appear in title keywords (cross-validation)
+    const validatedTags = [...tagCounts.entries()]
+      .filter(([, count]) => count >= minTagFrequency)
+      .map(([tag, count]) => {
+        // Boost score if tag matches title keywords
+        const titleMatch = titleKeywords.some(
+          (kw) => tag.includes(kw) || kw.includes(tag)
+        );
+        return { tag, score: count + (titleMatch ? 10 : 0) };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10)
+      .map(({ tag }) => tag);
+
+    // Combine validated tags with title keywords for better niche detection
+    const topTags = [
+      ...new Set([...validatedTags, ...titleKeywords.slice(0, 5)]),
+    ].slice(0, 15);
 
     // Get primary category
     const categoryCounts = new Map<string, number>();
@@ -259,10 +577,14 @@ async function GETHandler(
       ? YOUTUBE_CATEGORIES[primaryCategoryId]
       : null;
 
+    // Determine content format (Shorts vs long-form) based on typical video duration
+    const videoDurations = channel.Video.map((v) => v.durationSec);
+    const contentFormat = determineContentFormat(videoDurations);
+
     console.log(
-      `[Competitors] Category: ${categoryName}, Tags: ${topTags
+      `[Competitors] Category: ${categoryName}, Format: ${contentFormat}, Title keywords: ${titleKeywords
         .slice(0, 5)
-        .join(", ")}`
+        .join(", ")}, Validated tags: ${validatedTags.slice(0, 5).join(", ")}`
     );
 
     // Use LLM to generate niche queries (cached per channel for 24h)
@@ -366,11 +688,13 @@ async function GETHandler(
       // Client should move to next query if they want more results
     } else {
       // Search for videos in the niche directly - returns up to 50 videos per call
+      // Filter by content format to match user's typical video length (Shorts vs long-form)
       const searchResult = await searchNicheVideos(
         ga,
         currentQuery,
         50,
-        pageToken
+        pageToken,
+        contentFormat
       );
       nextPageToken = searchResult.nextPageToken;
 
@@ -667,6 +991,8 @@ async function GETHandler(
       nextQueryIndex: hasMorePages ? nextQueryIndex : undefined,
       nextPageToken: nextYouTubePageToken,
       currentQuery,
+      // Content format filter applied (short/medium/long/any)
+      contentFormat,
     } as CompetitorFeedResponse);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";

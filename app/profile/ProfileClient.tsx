@@ -137,7 +137,7 @@ export default function ProfileClient({
                       {ch.title ?? "Untitled Channel"}
                     </div>
                     <div className={styles.channelStats}>
-                      {ch.videoCount ?? 0} videos • {ch.planCount ?? 0} plans
+                      {ch.totalVideoCount ?? ch.videoCount ?? 0} videos • {ch.planCount ?? 0} plans
                     </div>
                   </div>
                   <div className={styles.channelActions}>

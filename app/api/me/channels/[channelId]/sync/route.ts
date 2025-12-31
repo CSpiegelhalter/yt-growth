@@ -1,7 +1,7 @@
 /**
  * POST /api/me/channels/[channelId]/sync
  *
- * Sync last ~25 videos for a channel from YouTube Data API.
+ * Sync last ~100 videos for a channel from YouTube Data API.
  * Also fetches metrics from YouTube Analytics API.
  *
  * Auth: Required
@@ -9,6 +9,9 @@
  * Rate limit: 10 per hour per channel
  * Caching: Updates lastSyncedAt, short-circuits if synced within 5 minutes
  */
+
+// Number of videos to sync (divisible by 6 for grid layout)
+const SYNC_VIDEO_COUNT = 96;
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
@@ -128,8 +131,8 @@ async function POSTHandler(
     });
 
     try {
-      // Fetch videos from YouTube (we only need ~25 recent videos)
-      const videos = await fetchChannelVideos(ga, channelId, 25);
+      // Fetch videos from YouTube
+      const videos = await fetchChannelVideos(ga, channelId, SYNC_VIDEO_COUNT);
 
       // Upsert videos
       for (const v of videos) {
@@ -161,12 +164,16 @@ async function POSTHandler(
         });
       }
 
-      // Fetch metrics for videos
+      // Fetch analytics metrics for videos (for engagement metrics like watch time)
       const videoIds = videos.map((v) => v.videoId);
       const endDate = new Date().toISOString().split("T")[0];
       const startDate = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-      const metrics = await fetchVideoMetrics(ga, channelId, videoIds, startDate, endDate);
+      const analyticsMetrics = await fetchVideoMetrics(ga, channelId, videoIds, startDate, endDate);
+      const analyticsMap = new Map(analyticsMetrics.map((m) => [m.videoId, m]));
+
+      // Create a map of Data API statistics (total lifetime views, likes, comments)
+      const dataApiStatsMap = new Map(videos.map((v) => [v.videoId, { views: v.views, likes: v.likes, comments: v.comments }]));
 
       // Get video DB IDs
       const dbVideos = await prisma.video.findMany({
@@ -179,39 +186,44 @@ async function POSTHandler(
 
       const videoIdMap = new Map(dbVideos.map((v) => [v.youtubeVideoId, v.id]));
 
-      // Upsert metrics
+      // Upsert metrics - use Data API for views/likes/comments (total), Analytics API for engagement metrics
       const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours
-      for (const m of metrics) {
-        const videoDbId = videoIdMap.get(m.videoId);
+      for (const videoId of videoIds) {
+        const videoDbId = videoIdMap.get(videoId);
         if (!videoDbId) continue;
+
+        const dataStats = dataApiStatsMap.get(videoId) ?? { views: 0, likes: 0, comments: 0 };
+        const analytics = analyticsMap.get(videoId);
 
         await prisma.videoMetrics.upsert({
           where: { videoId: videoDbId },
           update: {
-            views: m.views,
-            likes: m.likes,
-            comments: m.comments,
-            shares: m.shares,
-            subscribersGained: m.subscribersGained,
-            subscribersLost: m.subscribersLost,
-            estimatedMinutesWatched: m.estimatedMinutesWatched,
-            averageViewDuration: m.averageViewDuration,
-            averageViewPercentage: m.averageViewPercentage,
+            // Use Data API statistics for total counts (what users see on YouTube)
+            views: dataStats.views,
+            likes: dataStats.likes,
+            comments: dataStats.comments,
+            // Use Analytics API for engagement metrics
+            shares: analytics?.shares ?? 0,
+            subscribersGained: analytics?.subscribersGained ?? 0,
+            subscribersLost: analytics?.subscribersLost ?? 0,
+            estimatedMinutesWatched: analytics?.estimatedMinutesWatched ?? 0,
+            averageViewDuration: analytics?.averageViewDuration ?? 0,
+            averageViewPercentage: analytics?.averageViewPercentage ?? 0,
             fetchedAt: new Date(),
             cachedUntil,
           },
           create: {
             videoId: videoDbId,
             channelId: channel.id,
-            views: m.views,
-            likes: m.likes,
-            comments: m.comments,
-            shares: m.shares,
-            subscribersGained: m.subscribersGained,
-            subscribersLost: m.subscribersLost,
-            estimatedMinutesWatched: m.estimatedMinutesWatched,
-            averageViewDuration: m.averageViewDuration,
-            averageViewPercentage: m.averageViewPercentage,
+            views: dataStats.views,
+            likes: dataStats.likes,
+            comments: dataStats.comments,
+            shares: analytics?.shares ?? 0,
+            subscribersGained: analytics?.subscribersGained ?? 0,
+            subscribersLost: analytics?.subscribersLost ?? 0,
+            estimatedMinutesWatched: analytics?.estimatedMinutesWatched ?? 0,
+            averageViewDuration: analytics?.averageViewDuration ?? 0,
+            averageViewPercentage: analytics?.averageViewPercentage ?? 0,
             cachedUntil,
           },
         });
@@ -230,7 +242,7 @@ async function POSTHandler(
       return Response.json({
         success: true,
         videosCount: videos.length,
-        metricsCount: metrics.length,
+        metricsCount: videoIds.length,
         lastSyncedAt: new Date(),
       });
     } catch (err: any) {

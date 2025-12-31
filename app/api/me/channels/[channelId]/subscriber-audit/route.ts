@@ -40,11 +40,10 @@ const ParamsSchema = z.object({
 });
 
 const QuerySchema = z.object({
-  range: z.enum(["28d", "90d"]).default("28d"),
   limit: z.coerce.number().min(1).max(100).default(30),
   sort: z
-    .enum(["subs_per_1k", "views", "playlist_adds", "engaged_rate"])
-    .default("subs_per_1k"),
+    .enum(["subs_gained", "views", "newest", "engaged_rate"])
+    .default("subs_gained"),
 });
 
 async function GETHandler(
@@ -88,9 +87,8 @@ async function GETHandler(
     // Parse query params
     const url = new URL(req.url);
     const queryResult = QuerySchema.safeParse({
-      range: url.searchParams.get("range") ?? "28d",
       limit: url.searchParams.get("limit") ?? "30",
-      sort: url.searchParams.get("sort") ?? "subs_per_1k",
+      sort: url.searchParams.get("sort") ?? "subs_gained",
     });
 
     if (!queryResult.success) {
@@ -100,7 +98,7 @@ async function GETHandler(
       );
     }
 
-    const { range, limit } = queryResult.data;
+    const { limit } = queryResult.data;
 
     // Get channel and verify ownership
     const channel = await prisma.channel.findFirst({
@@ -114,29 +112,23 @@ async function GETHandler(
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    // Calculate date range
-    const rangeDays = range === "90d" ? 90 : 28;
-    const rangeStart = new Date();
-    rangeStart.setDate(rangeStart.getDate() - rangeDays);
-
-    // Get videos with metrics
+    // Get all videos with metrics (no date range filter - show all-time)
     const videos = await prisma.video.findMany({
       where: {
         channelId: channel.id,
         VideoMetrics: { isNot: null },
-        publishedAt: { gte: rangeStart },
       },
       include: {
         VideoMetrics: true,
       },
       orderBy: { publishedAt: "desc" },
-      take: 100,
+      take: 200, // Increased limit for all-time view
     });
 
     if (videos.length === 0) {
       return Response.json({
         channelId,
-        range,
+        range: "all", // All-time data
         generatedAt: new Date().toISOString(),
         cachedUntil: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
         videos: [],
@@ -213,19 +205,23 @@ async function GETHandler(
     const totalViews = videosWithMetrics.reduce((sum, v) => sum + v.views, 0);
     const avgSubsPerThousand = calcSubsPerThousandViews(totalSubs, totalViews);
 
-    // Sort by subs/1k to calculate percentile ranks
+    // Sort by total subscribers gained to calculate percentile ranks
     const sortedByConversion = [...videosWithMetrics].sort(
-      (a, b) => b.subsPerThousand - a.subsPerThousand
+      (a, b) => b.subscribersGained - a.subscribersGained
     );
 
-    // Assign conversion tier based on percentile
+    // Assign conversion tier based on absolute subscriber gains
+    // Using thresholds that make sense for smaller channels
     sortedByConversion.forEach((v, idx) => {
       const percentile =
         ((sortedByConversion.length - idx) / sortedByConversion.length) * 100;
       v.percentileRank = percentile;
-      if (percentile >= 75) {
+      
+      // Use absolute thresholds rather than just percentiles
+      // A video needs to actually gain subscribers to be "strong"
+      if (v.subscribersGained >= 10 && percentile >= 75) {
         v.conversionTier = "strong";
-      } else if (percentile >= 25) {
+      } else if (v.subscribersGained >= 3 && percentile >= 25) {
         v.conversionTier = "average";
       } else {
         v.conversionTier = "weak";
@@ -258,12 +254,12 @@ async function GETHandler(
         }))
       );
 
-      // Check for cached analysis
+      // Check for cached analysis (using 'all' as the range key for all-time data)
       const cachedAnalysis = await prisma.subscriberAuditCache.findFirst({
         where: {
           userId: user.id,
           channelId: channel.id,
-          range,
+          range: "all",
         },
       });
 
@@ -295,19 +291,19 @@ async function GETHandler(
 
           analysisJson = result;
 
-          // Cache the analysis
+          // Cache the analysis (using 'all' as the range key for all-time data)
           await prisma.subscriberAuditCache.upsert({
             where: {
               userId_channelId_range: {
                 userId: user.id,
                 channelId: channel.id,
-                range,
+                range: "all",
               },
             },
             create: {
               userId: user.id,
               channelId: channel.id,
-              range,
+              range: "all",
               contentHash,
               analysisJson: result as object,
               cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
@@ -333,7 +329,7 @@ async function GETHandler(
 
     return Response.json({
       channelId,
-      range,
+      range: "all" as const, // All-time data
       generatedAt: new Date().toISOString(),
       cachedUntil: cachedUntil.toISOString(),
       videos: topVideos,
@@ -349,7 +345,7 @@ async function GETHandler(
         strongSubscriberDriverCount,
         avgEngagedRate: avgEngagedRate > 0 ? avgEngagedRate : undefined,
       },
-    } satisfies SubscriberAuditResponse);
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Subscriber audit error:", err);

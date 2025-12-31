@@ -623,6 +623,10 @@ async function generateInsights(
     videoMeta.durationSec
   );
 
+  // Override totalViews with Data API viewCount (total lifetime views, not Analytics API period views)
+  // This ensures the UI shows the same view count that appears on YouTube
+  derived.totalViews = videoMeta.viewCount;
+
   // Get channel baseline from other videos
   const baseline = await getChannelBaselineFromDB(
     userId,

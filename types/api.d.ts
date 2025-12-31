@@ -487,6 +487,8 @@ export type CompetitorFeedResponse = {
   nextPageToken?: string;
   /** Current query being used */
   currentQuery?: string;
+  /** Content format filter applied based on user's typical video duration (short/medium/long/any) */
+  contentFormat?: "short" | "medium" | "long" | "any";
 };
 
 export type CompetitorCommentsAnalysis = {

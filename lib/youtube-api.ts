@@ -107,67 +107,98 @@ export async function fetchChannelVideos(
     throw new Error("Could not find uploads playlist for channel");
   }
 
-  // Fetch videos from uploads playlist
-  const playlistUrl = new URL(`${YOUTUBE_DATA_API}/playlistItems`);
-  playlistUrl.searchParams.set("part", "snippet,contentDetails");
-  playlistUrl.searchParams.set("playlistId", uploadsPlaylistId);
-  playlistUrl.searchParams.set("maxResults", String(Math.min(50, maxResults)));
+  // Fetch videos from uploads playlist with pagination
+  // YouTube API returns max 50 per page, so we may need multiple requests
+  const allVideoIds: string[] = [];
+  let nextPageToken: string | undefined;
+  const perPage = Math.min(50, maxResults);
+  
+  while (allVideoIds.length < maxResults) {
+    const playlistUrl = new URL(`${YOUTUBE_DATA_API}/playlistItems`);
+    playlistUrl.searchParams.set("part", "snippet,contentDetails");
+    playlistUrl.searchParams.set("playlistId", uploadsPlaylistId);
+    playlistUrl.searchParams.set("maxResults", String(perPage));
+    if (nextPageToken) {
+      playlistUrl.searchParams.set("pageToken", nextPageToken);
+    }
 
-  const playlistData = await googleFetchWithAutoRefresh<{
-    items: Array<{
-      snippet: {
-        title: string;
-        description: string;
-        publishedAt: string;
-        thumbnails: { high?: { url: string }; default?: { url: string } };
-      };
-      contentDetails: { videoId: string };
-    }>;
-  }>(ga, playlistUrl.toString());
+    const playlistData = await googleFetchWithAutoRefresh<{
+      nextPageToken?: string;
+      items: Array<{
+        snippet: {
+          title: string;
+          description: string;
+          publishedAt: string;
+          thumbnails: { high?: { url: string }; default?: { url: string } };
+        };
+        contentDetails: { videoId: string };
+      }>;
+    }>(ga, playlistUrl.toString());
 
-  const videoIds =
-    playlistData.items?.map((i) => i.contentDetails.videoId) ?? [];
+    const pageVideoIds = playlistData.items?.map((i) => i.contentDetails.videoId) ?? [];
+    allVideoIds.push(...pageVideoIds);
+    
+    // Check if there are more pages
+    nextPageToken = playlistData.nextPageToken;
+    if (!nextPageToken || pageVideoIds.length === 0) {
+      break;
+    }
+  }
+
+  // Trim to maxResults
+  const videoIds = allVideoIds.slice(0, maxResults);
   if (videoIds.length === 0) return [];
 
-  // Fetch video details (duration, tags)
-  const videosUrl = new URL(`${YOUTUBE_DATA_API}/videos`);
-  videosUrl.searchParams.set("part", "contentDetails,snippet,statistics");
-  videosUrl.searchParams.set("id", videoIds.join(","));
+  // Fetch video details (duration, tags) - YouTube API allows max 50 IDs per request
+  const allVideos: YouTubeVideo[] = [];
+  const VIDEO_BATCH_SIZE = 50;
+  
+  for (let i = 0; i < videoIds.length; i += VIDEO_BATCH_SIZE) {
+    const batchIds = videoIds.slice(i, i + VIDEO_BATCH_SIZE);
+    
+    const videosUrl = new URL(`${YOUTUBE_DATA_API}/videos`);
+    videosUrl.searchParams.set("part", "contentDetails,snippet,statistics");
+    videosUrl.searchParams.set("id", batchIds.join(","));
 
-  const videosData = await googleFetchWithAutoRefresh<{
-    items: Array<{
-      id: string;
-      snippet: {
-        title: string;
-        description: string;
-        publishedAt: string;
-        tags?: string[];
-        thumbnails: { high?: { url: string }; default?: { url: string } };
-      };
-      contentDetails: { duration: string };
-      statistics: {
-        viewCount: string;
-        likeCount: string;
-        commentCount: string;
-      };
-    }>;
-  }>(ga, videosUrl.toString());
+    const videosData = await googleFetchWithAutoRefresh<{
+      items: Array<{
+        id: string;
+        snippet: {
+          title: string;
+          description: string;
+          publishedAt: string;
+          tags?: string[];
+          thumbnails: { high?: { url: string }; default?: { url: string } };
+        };
+        contentDetails: { duration: string };
+        statistics: {
+          viewCount: string;
+          likeCount: string;
+          commentCount: string;
+        };
+      }>;
+    }>(ga, videosUrl.toString());
 
-  return (videosData.items ?? []).map((v) => ({
-    videoId: v.id,
-    title: decodeHtmlEntities(v.snippet.title),
-    description: decodeHtmlEntities(v.snippet.description),
-    publishedAt: v.snippet.publishedAt,
-    durationSec: parseDuration(v.contentDetails.duration),
-    tags: v.snippet.tags?.join(",") ?? null,
-    thumbnailUrl:
-      v.snippet.thumbnails?.high?.url ??
-      v.snippet.thumbnails?.default?.url ??
-      null,
-    views: parseInt(v.statistics.viewCount ?? "0", 10),
-    likes: parseInt(v.statistics.likeCount ?? "0", 10),
-    comments: parseInt(v.statistics.commentCount ?? "0", 10),
-  }));
+    const batchVideos = (videosData.items ?? []).map((v) => ({
+      videoId: v.id,
+      title: decodeHtmlEntities(v.snippet.title),
+      description: decodeHtmlEntities(v.snippet.description),
+      publishedAt: v.snippet.publishedAt,
+      durationSec: parseDuration(v.contentDetails.duration),
+      tags: v.snippet.tags?.join(",") ?? null,
+      thumbnailUrl:
+        v.snippet.thumbnails?.high?.url ??
+        v.snippet.thumbnails?.default?.url ??
+        null,
+      views: parseInt(v.statistics.viewCount ?? "0", 10),
+      likes: parseInt(v.statistics.likeCount ?? "0", 10),
+      comments: parseInt(v.statistics.commentCount ?? "0", 10),
+    }));
+    
+    allVideos.push(...batchVideos);
+  }
+
+  return allVideos;
 }
 
 /**
@@ -442,11 +473,15 @@ export async function searchSimilarChannels(
  * Search for videos matching a niche query and extract unique channels.
  * This is more accurate for niche matching than channel search.
  */
+// Duration filter types for YouTube search
+export type VideoDurationFilter = "short" | "medium" | "long" | "any";
+
 export async function searchNicheVideos(
   ga: GoogleAccount,
   query: string,
   maxVideos: number = 25,
-  pageToken?: string
+  pageToken?: string,
+  videoDuration: VideoDurationFilter = "any"
 ): Promise<{
   videos: Array<{
     videoId: string;
@@ -492,6 +527,11 @@ export async function searchNicheVideos(
   // Only get videos from the last 6 months
   const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
   params.set("publishedAfter", sixMonthsAgo.toISOString());
+
+  // Filter by video duration if specified (short < 4min, medium 4-20min, long > 20min)
+  if (videoDuration !== "any") {
+    params.set("videoDuration", videoDuration);
+  }
 
   // Add pageToken for pagination if provided
   if (pageToken) {

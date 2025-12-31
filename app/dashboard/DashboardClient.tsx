@@ -76,6 +76,15 @@ export default function DashboardClient({
   // Video loading state
   const [videos, setVideos] = useState<Video[]>([]);
   const [videosLoading, setVideosLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pagination, setPagination] = useState<{
+    offset: number;
+    total: number;
+    hasMore: boolean;
+  } | null>(null);
+
+  // Page size divisible by 6 for even grid layouts
+  const PAGE_SIZE = 24;
 
   // UI state
   const [err, setErr] = useState<string | null>(null);
@@ -190,33 +199,69 @@ export default function DashboardClient({
     }
   }, [activeChannelId, channels]);
 
+  // Load videos for a channel (initial load)
+  const loadVideos = useCallback(async (channelId: string) => {
+    setVideosLoading(true);
+    setPagination(null);
+    try {
+      const res = await fetch(
+        `/api/me/channels/${channelId}/videos?limit=${PAGE_SIZE}&offset=0`,
+        { cache: "no-store" }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setVideos(data.videos || []);
+        if (data.pagination) {
+          setPagination({
+            offset: data.pagination.offset + (data.videos?.length ?? 0),
+            total: data.pagination.total,
+            hasMore: data.pagination.hasMore,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load videos:", error);
+    } finally {
+      setVideosLoading(false);
+    }
+  }, []);
+
+  // Load more videos (pagination)
+  const loadMoreVideos = useCallback(async () => {
+    if (!activeChannelId || !pagination?.hasMore || loadingMore) return;
+    
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/me/channels/${activeChannelId}/videos?limit=${PAGE_SIZE}&offset=${pagination.offset}`,
+        { cache: "no-store" }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setVideos((prev) => [...prev, ...(data.videos || [])]);
+        if (data.pagination) {
+          setPagination({
+            offset: data.pagination.offset + (data.videos?.length ?? 0),
+            total: data.pagination.total,
+            hasMore: data.pagination.hasMore,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load more videos:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [activeChannelId, pagination, loadingMore]);
+
   // Load videos when active channel changes (FREE endpoint - no subscription required)
   useEffect(() => {
     if (!activeChannelId) {
       setVideos([]);
       return;
     }
-
-    async function loadVideos() {
-      setVideosLoading(true);
-      try {
-        const res = await fetch(
-          `/api/me/channels/${activeChannelId}/videos`,
-          { cache: "no-store" }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setVideos(data.videos || []);
-        }
-      } catch (error) {
-        console.error("Failed to load videos:", error);
-      } finally {
-        setVideosLoading(false);
-      }
-    }
-
-    loadVideos();
-  }, [activeChannelId]);
+    loadVideos(activeChannelId);
+  }, [activeChannelId, loadVideos]);
 
   // Refresh data (re-fetch channels)
   const refreshData = useCallback(async () => {
@@ -274,6 +319,10 @@ export default function DashboardClient({
       }
       setSuccess("Channel data refreshed!");
       await refreshData();
+      // Also reload videos to reflect updated metrics (views, likes, etc.)
+      if (activeChannelId === channelId) {
+        await loadVideos(channelId);
+      }
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Failed to refresh channel");
     } finally {
@@ -301,6 +350,36 @@ export default function DashboardClient({
             )}
           </p>
         </div>
+        {activeChannel && (
+          <button
+            className={s.refreshBtn}
+            onClick={() => refreshChannel(activeChannel.channel_id)}
+            disabled={busy === activeChannel.channel_id}
+            title="Refresh channel data from YouTube"
+          >
+            {busy === activeChannel.channel_id ? (
+              <>
+                <span className={s.spinner} />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M23 4v6h-6M1 20v-6h6" />
+                  <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+                </svg>
+                Sync
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Alerts */}
@@ -344,6 +423,7 @@ export default function DashboardClient({
           <ChannelGoals
             videos={videos}
             channelTitle={activeChannel.title ?? undefined}
+            totalVideoCount={activeChannel.totalVideoCount}
           />
         )}
 
@@ -363,15 +443,41 @@ export default function DashboardClient({
                 ))}
               </div>
             ) : videos.length > 0 ? (
-              <div className={s.videoList}>
-                {videos.map((video) => (
-                  <VideoCard
-                    key={getVideoId(video)}
-                    video={video}
-                    channelId={activeChannelId}
-                  />
-                ))}
-              </div>
+              <>
+                <div className={s.videoList}>
+                  {videos.map((video) => (
+                    <VideoCard
+                      key={getVideoId(video)}
+                      video={video}
+                      channelId={activeChannelId}
+                    />
+                  ))}
+                </div>
+                {/* Load More Button */}
+                {pagination?.hasMore && (
+                  <div className={s.loadMoreWrap}>
+                    <button
+                      className={s.loadMoreBtn}
+                      onClick={loadMoreVideos}
+                      disabled={loadingMore}
+                    >
+                      {loadingMore ? (
+                        <>
+                          <span className={s.spinner} />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          Load More Videos
+                          <span className={s.loadMoreCount}>
+                            {pagination.total - videos.length} remaining
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className={s.emptyVideos}>
                 <svg

@@ -10,6 +10,8 @@ type Video = {
 type Props = {
   videos: Video[];
   channelTitle?: string;
+  /** Total video count on YouTube (from channel stats) */
+  totalVideoCount?: number | null;
 };
 
 type Milestone = {
@@ -27,9 +29,10 @@ type Milestone = {
  * ChannelGoals - Gamified progress milestones for channel growth
  * Shows ONE milestone at a time per category - once reached, shows the next
  */
-export default function ChannelGoals({ videos, channelTitle }: Props) {
+export default function ChannelGoals({ videos, channelTitle, totalVideoCount }: Props) {
   const { currentMilestone, nextMilestone, totalUnlocked, totalMilestones } = useMemo(() => {
-    const videoCount = videos.length;
+    // Use totalVideoCount from YouTube if available, otherwise fall back to loaded videos count
+    const videoCount = totalVideoCount ?? videos.length;
     const { weeklyStreak } = analyzePostingSchedule(videos);
 
     // Video count milestones (progressive)
@@ -122,7 +125,7 @@ export default function ChannelGoals({ videos, channelTitle }: Props) {
       totalUnlocked: unlocked,
       totalMilestones: allMilestones.length,
     };
-  }, [videos]);
+  }, [videos, totalVideoCount]);
 
   if (videos.length === 0) return null;
 

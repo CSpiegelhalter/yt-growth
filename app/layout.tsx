@@ -5,6 +5,7 @@ import { HeaderStatic } from "@/components/HeaderStatic";
 import { Footer } from "@/components/Footer";
 import { Providers } from "@/components/Providers";
 import { BRAND, STRUCTURED_DATA } from "@/lib/brand";
+import { Analytics } from "@vercel/analytics/next";
 import "@/app/globals.css";
 import type { Metadata, Viewport } from "next";
 
@@ -147,6 +148,7 @@ export default async function RootLayout({
             <Footer />
           </div>
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
