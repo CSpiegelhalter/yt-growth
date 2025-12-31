@@ -574,13 +574,25 @@ h3 { font-size: 1.125rem; }
   h3 { font-size: 1.25rem; }
 }
 
-/* Links */
+/* Links - Must be distinguishable without relying on color alone */
 a {
   color: var(--color-primary);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
 }
 
 a:hover {
+  color: var(--color-primary-hover);
+  text-decoration-thickness: 2px;
+}
+
+/* Navigation links (header, footer, sidebar) can use different styles */
+nav a {
+  text-decoration: none;
+}
+
+nav a:hover {
   text-decoration: underline;
 }
 

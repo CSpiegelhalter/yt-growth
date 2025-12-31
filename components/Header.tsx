@@ -246,8 +246,12 @@ export function Header() {
         <div className={s.inner}>
           <div className={s.leftSection}>
             {/* Logo */}
-            <Link href="/" className={s.logo}>
-              <span className={s.logoIcon}>
+            <Link
+              href="/"
+              className={s.logo}
+              aria-label={`${BRAND.name} - Go to homepage`}
+            >
+              <span className={s.logoIcon} aria-hidden="true">
                 <svg
                   width="20"
                   height="20"

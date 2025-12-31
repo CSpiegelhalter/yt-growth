@@ -54,6 +54,6 @@ export default async function proxy(req: NextRequest) {
 export const config = {
   matcher: [
     "/api/:path*",
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.json|icon.svg|logo.svg|apple-touch-icon.svg|og/).*)",
   ],
 };
