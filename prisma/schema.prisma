@@ -97,6 +97,7 @@ model Video {
   tags           String?
   categoryId     String?         @db.VarChar(32) // YouTube video category ID (e.g., "20" for Gaming)
   thumbnailUrl   String?
+  privacyStatus  String?         @db.VarChar(16) // "public", "unlisted", or "private"
   createdAt      DateTime        @default(now()) @db.Timestamptz(6)
   updatedAt      DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
   Channel        Channel         @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_video_channel")

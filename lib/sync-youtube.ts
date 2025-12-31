@@ -61,6 +61,9 @@ type YouTubeVideoDetails = {
     viewCount?: string;
     likeCount?: string;
   };
+  status?: {
+    privacyStatus?: string; // "public", "unlisted", or "private"
+  };
 };
 
 /**
@@ -237,12 +240,12 @@ async function fetchChannelVideos(
         .filter(Boolean);
       if (videoIds.length === 0) return;
 
-      // Fetch video details (duration, tags, description, statistics)
+      // Fetch video details (duration, tags, description, statistics, status)
       const detailsUrl = new URL(
         "https://www.googleapis.com/youtube/v3/videos"
       );
       detailsUrl.search = new URLSearchParams({
-        part: "id,contentDetails,snippet,statistics",
+        part: "id,contentDetails,snippet,statistics,status",
         id: videoIds.join(","),
       }).toString();
 
@@ -270,10 +273,11 @@ async function fetchChannelVideos(
           ? parseDuration(details.contentDetails.duration)
           : null;
 
-        // Get tags, description, and categoryId from video details
+        // Get tags, description, categoryId, and privacy status from video details
         const tags = details?.snippet?.tags?.join(",") ?? "";
         const description = details?.snippet?.description ?? "";
         const categoryId = details?.snippet?.categoryId ?? null;
+        const privacyStatus = details?.status?.privacyStatus ?? null;
 
         // Parse statistics from Data API (total lifetime counts)
         const views = details?.statistics?.viewCount
@@ -298,6 +302,7 @@ async function fetchChannelVideos(
             durationSec,
             tags,
             categoryId,
+            privacyStatus,
           },
           create: {
             channelId: channelDbId,
@@ -309,6 +314,7 @@ async function fetchChannelVideos(
             durationSec,
             tags,
             categoryId,
+            privacyStatus,
           },
         });
 
@@ -395,7 +401,7 @@ async function fetchChannelVideos(
         "https://www.googleapis.com/youtube/v3/videos"
       );
       detailsUrl.search = new URLSearchParams({
-        part: "id,contentDetails,snippet,statistics",
+        part: "id,contentDetails,snippet,statistics,status",
         id: batchIds.join(","),
       }).toString();
 
@@ -424,10 +430,11 @@ async function fetchChannelVideos(
         ? parseDuration(details.contentDetails.duration)
         : null;
 
-      // Get tags, description, and categoryId from video details
+      // Get tags, description, categoryId, and privacy status from video details
       const tags = details?.snippet?.tags?.join(",") ?? "";
       const description = details?.snippet?.description ?? "";
       const categoryId = details?.snippet?.categoryId ?? null;
+      const privacyStatus = details?.status?.privacyStatus ?? null;
 
       // Parse statistics from Data API (total lifetime counts)
       const views = details?.statistics?.viewCount
@@ -452,6 +459,7 @@ async function fetchChannelVideos(
           durationSec,
           tags,
           categoryId,
+          privacyStatus,
         },
         create: {
           channelId: channelDbId,
@@ -463,6 +471,7 @@ async function fetchChannelVideos(
           durationSec,
           tags,
           categoryId,
+          privacyStatus,
         },
       });
 

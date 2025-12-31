@@ -75,6 +75,7 @@ async function GETHandler(
     const { channelId } = parsed.data;
 
     // Get channel and verify ownership
+    // Filter out unlisted videos (only show public videos on the dashboard)
     let channel = await prisma.channel.findFirst({
       where: {
         youtubeChannelId: channelId,
@@ -82,6 +83,12 @@ async function GETHandler(
       },
       include: {
         Video: {
+          where: {
+            OR: [
+              { privacyStatus: "public" },
+              { privacyStatus: null }, // Include videos synced before we tracked privacy status
+            ],
+          },
           orderBy: { publishedAt: "desc" },
           skip: offset,
           take: limit,
@@ -95,7 +102,16 @@ async function GETHandler(
           },
         },
         _count: {
-          select: { Video: true },
+          select: {
+            Video: {
+              where: {
+                OR: [
+                  { privacyStatus: "public" },
+                  { privacyStatus: null },
+                ],
+              },
+            },
+          },
         },
       },
     });
@@ -119,6 +135,12 @@ async function GETHandler(
         where: { youtubeChannelId: channelId, userId: user.id },
         include: {
           Video: {
+            where: {
+              OR: [
+                { privacyStatus: "public" },
+                { privacyStatus: null },
+              ],
+            },
             orderBy: { publishedAt: "desc" },
             skip: offset,
             take: limit,
@@ -132,7 +154,16 @@ async function GETHandler(
             },
           },
           _count: {
-            select: { Video: true },
+            select: {
+              Video: {
+                where: {
+                  OR: [
+                    { privacyStatus: "public" },
+                    { privacyStatus: null },
+                  ],
+                },
+              },
+            },
           },
         },
       });

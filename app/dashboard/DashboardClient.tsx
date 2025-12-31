@@ -350,7 +350,7 @@ export default function DashboardClient({
             )}
           </p>
         </div>
-        {activeChannel && (
+        {process.env.NODE_ENV === 'development' && activeChannel && (
           <button
             className={s.refreshBtn}
             onClick={() => refreshChannel(activeChannel.channel_id)}

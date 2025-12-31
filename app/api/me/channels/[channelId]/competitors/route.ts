@@ -496,7 +496,7 @@ async function GETHandler(
             durationSec: true,
           },
           orderBy: { publishedAt: "desc" },
-          take: 10,
+          take: 15,
         },
       },
     });
@@ -527,7 +527,7 @@ async function GETHandler(
               durationSec: true,
             },
             orderBy: { publishedAt: "desc" },
-            take: 10,
+            take: 15,
           },
         },
       });

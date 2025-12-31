@@ -1,9 +1,8 @@
-import NextAuth, { type NextAuthOptions } from "next-auth";
+import { type NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { cookies, headers } from "next/headers";
 import { prisma } from "@/prisma";
 import { compare } from "@/lib/crypto";
-import { issueEmailToken, verifyEmailToken } from "@/lib/jwt";
+import { verifyEmailToken } from "@/lib/jwt";
 import { logger } from "@/lib/logger";
 import Google from "next-auth/providers/google";
 
