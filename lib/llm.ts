@@ -3842,8 +3842,11 @@ Rules:
 - Be SPECIFIC about the niche (not just "gaming" but "indie roguelike gameplay")
 - Generate 8-10 search queries that would find SUCCESSFUL channels making similar content
 - Queries should find channels with good production quality and established audiences
-- Include specific game/topic names, creator niches, or format types
-- AVOID generic queries like "vlogs" or "daily videos" - be specific
+- IMPORTANT: Generate TWO types of queries:
+  1. FORMAT-BASED queries (the type of content): "funny gaming moments", "gaming commentary", "game reviews"
+  2. TOPIC-BASED queries (if a specific game/topic is dominant): "Blue Prince gameplay", "Minecraft builds"
+- DO NOT combine format + specific topic in the same query (e.g., DON'T do "funny gaming commentary Blue Prince")
+- Keep queries SHORT (2-4 words max) - YouTube search works better with concise queries
 - Think about what POPULAR creators in this niche would title their videos
 - Output valid JSON only`;
 
@@ -3861,15 +3864,18 @@ ${topTags.slice(0, 15).join(", ") || "None available"}
 YOUTUBE CATEGORY:
 ${categoryName || "Unknown"}
 
-Generate queries that will find SUCCESSFUL creators in this niche. Think about:
-- What specific topics/games/subjects does this creator cover?
-- What format do they use (let's plays, tutorials, reviews, commentary)?
-- What would a popular video in this niche be titled?
+Generate queries that will find SUCCESSFUL creators in this niche.
+
+IMPORTANT RULES FOR QUERIES:
+- Keep queries SHORT (2-4 words)
+- DON'T combine format + topic (bad: "funny gaming commentary Blue Prince")  
+- DO separate them (good: "funny gaming moments" AND "Blue Prince gameplay")
+- Focus on the CONTENT FORMAT (commentary, montage, review) OR specific TOPIC, not both
 
 Respond with JSON:
 {
   "niche": "Specific description of the channel's niche",
-  "queries": ["specific search query 1", "specific search query 2", ...] // 8-10 queries targeting POPULAR content in this niche
+  "queries": ["short query 1", "short query 2", ...] // 8-10 SHORT queries (2-4 words each)
 }`;
 
   try {

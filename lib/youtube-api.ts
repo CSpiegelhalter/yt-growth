@@ -481,7 +481,8 @@ export async function searchNicheVideos(
   query: string,
   maxVideos: number = 25,
   pageToken?: string,
-  videoDuration: VideoDurationFilter = "any"
+  videoDuration: VideoDurationFilter = "any",
+  videoCategoryId?: string // YouTube category ID (e.g., "20" for Gaming)
 ): Promise<{
   videos: Array<{
     videoId: string;
@@ -531,6 +532,11 @@ export async function searchNicheVideos(
   // Filter by video duration if specified (short < 4min, medium 4-20min, long > 20min)
   if (videoDuration !== "any") {
     params.set("videoDuration", videoDuration);
+  }
+
+  // Filter by video category (e.g., Gaming = "20") to ensure relevant results
+  if (videoCategoryId) {
+    params.set("videoCategoryId", videoCategoryId);
   }
 
   // Add pageToken for pagination if provided

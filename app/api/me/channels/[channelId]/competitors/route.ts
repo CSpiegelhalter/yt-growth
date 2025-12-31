@@ -319,35 +319,62 @@ function determineContentFormat(
 }
 
 /**
- * Extract meaningful keywords from video titles
- * These are more reliable than tags for determining actual content
+ * Extract meaningful keywords AND phrases from video titles
+ * Keeps multi-word terms together (e.g., "Blue Prince" stays as one phrase)
+ * This prevents game names from being split into confusing individual words
  */
 function extractTitleKeywords(titles: string[]): string[] {
+  const phraseCounts = new Map<string, number>();
   const wordCounts = new Map<string, number>();
 
   for (const title of titles) {
-    // Extract words, convert to lowercase, filter out numbers and short words
+    // First, extract capitalized phrases (likely game/topic names)
+    // Match 2-3 consecutive capitalized words like "Blue Prince" or "League of Legends"
+    const capitalizedPhrases =
+      title.match(/\b[A-Z][a-z]+(?:\s+(?:of|the|and|&)?\s*[A-Z][a-z]+)+\b/g) ||
+      [];
+    for (const phrase of capitalizedPhrases) {
+      const cleaned = phrase.toLowerCase();
+      if (cleaned.length > 4 && !STOP_WORDS.has(cleaned)) {
+        phraseCounts.set(cleaned, (phraseCounts.get(cleaned) ?? 0) + 1);
+      }
+    }
+
+    // Also extract individual words as fallback
     const words = title
       .toLowerCase()
-      .replace(/[^\w\s-]/g, " ") // Remove special chars except hyphens
+      .replace(/[^\w\s-]/g, " ")
       .split(/\s+/)
       .filter((w) => w.length > 3 && !STOP_WORDS.has(w) && !/^\d+$/.test(w));
 
-    // Count unique words per title (avoid boosting repeated words in same title)
     const uniqueWords = [...new Set(words)];
     for (const word of uniqueWords) {
       wordCounts.set(word, (wordCounts.get(word) ?? 0) + 1);
     }
   }
 
-  // Only include words that appear in at least 20% of titles (recurring themes)
+  // Only include items that appear in at least 20% of titles
   const minCount = Math.max(2, Math.ceil(titles.length * 0.2));
 
-  return [...wordCounts.entries()]
+  // Prioritize multi-word phrases over single words
+  const validPhrases = [...phraseCounts.entries()]
     .filter(([, count]) => count >= minCount)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
+    .slice(0, 5)
+    .map(([phrase]) => phrase);
+
+  // Get words that aren't part of any extracted phrase
+  const validWords = [...wordCounts.entries()]
+    .filter(([word, count]) => {
+      if (count < minCount) return false;
+      // Skip if this word is part of an extracted phrase
+      return !validPhrases.some((phrase) => phrase.includes(word));
+    })
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
     .map(([word]) => word);
+
+  return [...validPhrases, ...validWords].slice(0, 8);
 }
 
 const ParamsSchema = z.object({
@@ -689,12 +716,14 @@ async function GETHandler(
     } else {
       // Search for videos in the niche directly - returns up to 50 videos per call
       // Filter by content format to match user's typical video length (Shorts vs long-form)
+      // Filter by category to ensure relevant results (e.g., Gaming videos for Gaming channels)
       const searchResult = await searchNicheVideos(
         ga,
         currentQuery,
         50,
         pageToken,
-        contentFormat
+        contentFormat,
+        primaryCategoryId ?? undefined // Pass category ID to filter results (e.g., "20" for Gaming)
       );
       nextPageToken = searchResult.nextPageToken;
 
