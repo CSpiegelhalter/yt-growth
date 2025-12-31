@@ -15,6 +15,10 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClientSingleton | undefined;
 };
 
-export const prisma: PrismaClient = globalForPrisma.prisma ?? prismaClientSingleton();
+// Cache in both development AND production to prevent connection pool exhaustion
+// in serverless environments. The check for NODE_ENV !== "production" was causing
+// multiple PrismaClient instances to be created in Vercel functions.
+export const prisma: PrismaClient =
+  globalForPrisma.prisma ?? prismaClientSingleton();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+globalForPrisma.prisma = prisma;
