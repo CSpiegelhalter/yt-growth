@@ -113,6 +113,24 @@
   color: var(--text);
 }
 
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.forgotLink {
+  font-size: var(--text-sm);
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.forgotLink:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
 .input {
   width: 100%;
   height: var(--space-12);

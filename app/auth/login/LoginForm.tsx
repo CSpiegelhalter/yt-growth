@@ -108,9 +108,14 @@ export default function LoginForm() {
           </div>
 
           <div className={s.field}>
-            <label htmlFor="password" className={s.label}>
-              Password
-            </label>
+            <div className={s.labelRow}>
+              <label htmlFor="password" className={s.label}>
+                Password
+              </label>
+              <Link href="/auth/forgot-password" className={s.forgotLink}>
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="password"
               name="password"

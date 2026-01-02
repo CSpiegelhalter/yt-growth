@@ -58,16 +58,36 @@ export default function SignupForm() {
       });
 
       if (res.ok) {
-        router.push("/auth/login?signup=1");
+        // Auto sign-in with the credentials we just used
+        const signInRes = await signIn("credentials", {
+          email,
+          password,
+          redirect: false,
+        });
+
+        if (signInRes?.ok) {
+          // Full page navigation to ensure server session is recognized
+          window.location.href = "/dashboard";
+        } else {
+          // Fallback to login page if auto sign-in fails
+          router.push("/auth/login?signup=1");
+        }
       } else {
         const j = await res.json().catch(() => ({}));
-        setErr(j.error || "Something went wrong. Please try again.");
+        const message = j.error?.message || j.error || "Something went wrong. Please try again.";
+        
+        // Provide a more helpful message for duplicate email
+        if (res.status === 409 || message === "Email already registered") {
+          setErr("This email is already registered. Please sign in instead.");
+        } else {
+          setErr(message);
+        }
+        setLoading(false);
       }
     } catch {
       setErr("Network error. Please check your connection and try again.");
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   async function handleGoogleSignUp() {
