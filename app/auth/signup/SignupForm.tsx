@@ -44,8 +44,8 @@ export default function SignupForm() {
       return;
     }
 
-    if (password.length < 8) {
-      setErr("Password must be at least 8 characters");
+    if (password.length < 12) {
+      setErr("Password must be at least 12 characters");
       setLoading(false);
       return;
     }
@@ -158,10 +158,11 @@ export default function SignupForm() {
               name="password"
               type="password"
               autoComplete="new-password"
-              placeholder="Minimum 8 characters"
+              placeholder="Minimum 12 characters"
+              minLength={12}
               className={s.input}
             />
-            <span className={s.hint}>Must be at least 8 characters</span>
+            <span className={s.hint}>Must be at least 12 characters</span>
           </div>
 
           <button type="submit" disabled={loading} className={s.submitBtn}>

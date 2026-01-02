@@ -41,8 +41,8 @@ export default function ResetPasswordForm() {
       return;
     }
 
-    if (password.length < 8) {
-      setErr("Password must be at least 8 characters");
+    if (password.length < 12) {
+      setErr("Password must be at least 12 characters");
       setLoading(false);
       return;
     }
@@ -189,9 +189,9 @@ export default function ResetPasswordForm() {
               name="password"
               type="password"
               autoComplete="new-password"
-              placeholder="Enter new password"
+              placeholder="Enter new password (min 12 characters)"
               className={s.input}
-              minLength={8}
+              minLength={12}
             />
           </div>
 

@@ -10,7 +10,7 @@ import { logger } from "@/lib/logger";
 
 const BodySchema = z.object({
   token: z.string().min(1),
-  password: z.string().min(8).max(200),
+  password: z.string().min(12).max(200), // CASA 2.1.1: minimum 12 characters
 });
 
 export const POST = createApiRoute(

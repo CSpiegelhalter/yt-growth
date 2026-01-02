@@ -10,7 +10,7 @@ import { jsonOk } from "@/lib/api/response";
 const BodySchema = z.object({
   name: z.string().trim().min(1).max(80).optional(),
   email: z.string().trim().toLowerCase().email().max(255),
-  password: z.string().min(8).max(200),
+  password: z.string().min(12).max(200), // CASA 2.1.1: minimum 12 characters
 });
 
 export const POST = createApiRoute(
