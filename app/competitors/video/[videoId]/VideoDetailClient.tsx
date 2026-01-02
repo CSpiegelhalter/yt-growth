@@ -8,6 +8,12 @@ import s from "./style.module.css";
 import type { CompetitorVideoAnalysis, CompetitorVideo } from "@/types/api";
 import { copyToClipboard } from "@/components/ui/Toast";
 import { formatCompact, formatCompactFloored } from "@/lib/format";
+import {
+  DataLimitations,
+  PublicScorecard,
+  CollapsiblePanel,
+  NumberBadge,
+} from "./components";
 
 type Props = {
   videoId: string;
@@ -250,6 +256,8 @@ export default function VideoDetailClient({
     tags,
     derivedKeywords,
     moreFromChannel,
+    publicSignals,
+    dataLimitations,
   } = analysis;
   const allTags = tags ?? derivedKeywords ?? [];
   const hasTags = allTags.length > 0;
@@ -410,10 +418,11 @@ export default function VideoDetailClient({
                 value={`+${formatCompact(video.derived.velocity7d)}`}
               />
             )}
-            {video.derived.engagementPerView !== undefined && (
+            {/* Show Like Rate instead of generic "Engagement" - more accurate */}
+            {video.stats.likeCount !== undefined && video.stats.viewCount > 0 && (
               <MetricCard
-                label="Engagement"
-                value={`${(video.derived.engagementPerView * 100).toFixed(1)}%`}
+                label="Like Rate"
+                value={`${((video.stats.likeCount / video.stats.viewCount) * 100).toFixed(1)}%`}
               />
             )}
             {video.derived.outlierScore !== undefined &&
@@ -437,6 +446,22 @@ export default function VideoDetailClient({
             {insights.whatItsAbout || "Analysis not available yet."}
           </p>
         </section>
+
+        {/* Data Limitations - Honest disclosure about what we can/can't know */}
+        {dataLimitations && (
+          <DataLimitations
+            whatWeCanKnow={dataLimitations.whatWeCanKnow}
+            whatWeCantKnow={dataLimitations.whatWeCantKnow}
+          />
+        )}
+
+        {/* Public Scorecard - All measured metrics in one place */}
+        {publicSignals && (
+          <PublicScorecard
+            signals={publicSignals}
+            viewCount={video.stats.viewCount}
+          />
+        )}
 
         {/* Quick Stats Bar - Strategic Overview */}
         {strategicInsights && (
@@ -501,7 +526,7 @@ export default function VideoDetailClient({
                 </div>
               )}
 
-              {/* Engagement */}
+              {/* Like Rate - standardized label (not "Engagement" which is imprecise) */}
               {engagementBenchmarks && (
                 <div className={s.quickStat}>
                   <div className={s.quickStatValue}>
@@ -514,7 +539,7 @@ export default function VideoDetailClient({
                       {engagementBenchmarks.likeRateVerdict}
                     </span>
                   </div>
-                  <div className={s.quickStatLabel}>Engagement</div>
+                  <div className={s.quickStatLabel}>Like Rate</div>
                 </div>
               )}
 
@@ -535,11 +560,11 @@ export default function VideoDetailClient({
                 <div className={s.quickStat}>
                   <div className={s.quickStatValue}>
                     <span className={s.lengthValue}>
-                      {lengthAnalysis.minutes}m
+                      {lengthAnalysis.durationFormatted || (lengthAnalysis.minutes != null ? `${lengthAnalysis.minutes}m` : "—")}
                     </span>
                   </div>
                   <div className={s.quickStatLabel}>
-                    {lengthAnalysis.category}
+                    {lengthAnalysis.bucket || lengthAnalysis.category || "—"}
                   </div>
                 </div>
               )}
@@ -570,9 +595,12 @@ export default function VideoDetailClient({
                 </div>
                 <div className={s.titleMeta}>
                   <span>{titleAnalysis.characterCount} chars</span>
-                  {titleAnalysis.hasNumber && (
-                    <span className={s.titleCheck}>✓ Number</span>
-                  )}
+                  {/* Use improved number analysis with tooltip */}
+                  {titleAnalysis.numberAnalysis ? (
+                    <NumberBadge analysis={titleAnalysis.numberAnalysis} />
+                  ) : titleAnalysis.hasNumber ? (
+                    <span className={s.titleCheck}>✓ Quantifier</span>
+                  ) : null}
                   {titleAnalysis.hasPowerWord && (
                     <span className={s.titleCheck}>✓ Power Word</span>
                   )}
@@ -651,31 +679,20 @@ export default function VideoDetailClient({
           </section>
         )}
 
-        {/* Beat This Video Checklist */}
+        {/* Ways to Outperform */}
         {beatChecklist.length > 0 && (
           <section className={s.section}>
-            <h2 className={s.sectionTitle}>Beat This Video</h2>
+            <h2 className={s.sectionTitle}>
+              Ways to Outperform
+              <span className={s.sectionBadge} data-type="generated">Generated</span>
+            </h2>
             <p className={s.sectionSubtitle}>
-              Action checklist to outperform this competitor
+              Ideas for differentiation
             </p>
             <div className={s.checklistGrid}>
-              {beatChecklist.map((item, i) => (
+              {beatChecklist.slice(0, 5).map((item, i) => (
                 <div key={i} className={s.checklistItem}>
                   <div className={s.checklistAction}>{item.action}</div>
-                  <div className={s.checklistMeta}>
-                    <span
-                      className={s.checklistDifficulty}
-                      data-level={item.difficulty.toLowerCase()}
-                    >
-                      {item.difficulty}
-                    </span>
-                    <span
-                      className={s.checklistImpact}
-                      data-level={item.impact.toLowerCase()}
-                    >
-                      {item.impact} Impact
-                    </span>
-                  </div>
                 </div>
               ))}
             </div>
@@ -689,32 +706,51 @@ export default function VideoDetailClient({
             <div className={s.intelligenceGrid}>
               {postingTiming && (
                 <div className={s.intelCard}>
-                  <h4 className={s.intelTitle}>Posting</h4>
+                  <h4 className={s.intelTitle}>
+                    Posting
+                    {postingTiming.confidence && (
+                      <span className={s.confidenceBadge} data-level={postingTiming.confidence.toLowerCase()}>
+                        {postingTiming.measurement || "Inferred"}
+                      </span>
+                    )}
+                  </h4>
                   <p className={s.intelValue}>
-                    {postingTiming.dayOfWeek} at {postingTiming.hourOfDay}:00
+                    {postingTiming.localTimeFormatted
+                      ? `${postingTiming.dayOfWeek} ${postingTiming.localTimeFormatted}`
+                      : `${postingTiming.dayOfWeek} at ${postingTiming.hourOfDay}:00`}
                   </p>
                   <p className={s.intelNote}>{postingTiming.timingInsight}</p>
                 </div>
               )}
               {lengthAnalysis && (
                 <div className={s.intelCard}>
-                  <h4 className={s.intelTitle}>Length</h4>
+                  <h4 className={s.intelTitle}>
+                    Length
+                    <span className={s.confidenceBadge} data-level="high">Measured</span>
+                  </h4>
                   <p className={s.intelValue}>
-                    {lengthAnalysis.minutes} minutes ({lengthAnalysis.category})
+                    {/* Use improved formatting - never shows "0 minutes" */}
+                    {lengthAnalysis.durationFormatted || (lengthAnalysis.minutes != null ? `${lengthAnalysis.minutes}m` : "—")} ({lengthAnalysis.bucket || lengthAnalysis.category || "—"})
                   </p>
                   <p className={s.intelNote}>{lengthAnalysis.insight}</p>
                 </div>
               )}
               {engagementBenchmarks && (
                 <div className={s.intelCard}>
-                  <h4 className={s.intelTitle}>Engagement</h4>
+                  <h4 className={s.intelTitle}>
+                    Like Rate &amp; Comments
+                    <span className={s.confidenceBadge} data-level="high">Measured</span>
+                  </h4>
                   <p className={s.intelValue}>
-                    {engagementBenchmarks.likeRate}% like rate ·{" "}
-                    {engagementBenchmarks.commentRate} comments/1K views
+                    {typeof engagementBenchmarks.likeRate === "number" ? engagementBenchmarks.likeRate.toFixed(1) : "—"}% like rate ·{" "}
+                    {typeof engagementBenchmarks.commentRate === "number" ? engagementBenchmarks.commentRate.toFixed(1) : "—"} comments/1K
                   </p>
                   <p className={s.intelNote}>
-                    Likes: {engagementBenchmarks.likeRateVerdict} · Comments:{" "}
-                    {engagementBenchmarks.commentRateVerdict}
+                    {engagementBenchmarks.channelMedianAvailable ? (
+                      <>Likes: {engagementBenchmarks.likeRateVerdict} (vs channel median) · Comments: {engagementBenchmarks.commentRateVerdict}</>
+                    ) : (
+                      <>Likes: {engagementBenchmarks.likeRateVerdict} · Comments: {engagementBenchmarks.commentRateVerdict} (baseline: platform avg)</>
+                    )}
                   </p>
                 </div>
               )}
@@ -741,15 +777,18 @@ export default function VideoDetailClient({
           </section>
         )}
 
-        {/* Why It's Working */}
+        {/* Why It's Working - now labeled as hypotheses */}
         {whyCards.length > 0 && (
           <section className={s.section}>
-            <h2 className={s.sectionTitle}>Why it's working</h2>
+            <h2 className={s.sectionTitle}>
+              What's driving performance
+              <span className={s.sectionBadge} data-type="hypothesis">Hypotheses</span>
+            </h2>
             <p className={s.sectionSubtitle}>
-              The strongest drivers behind this video's performance.
+              Observed signals from public data (we cannot measure CTR or retention)
             </p>
             <div className={s.cardGrid}>
-              {whyCards.map((text, i) => (
+              {whyCards.slice(0, 4).map((text, i) => (
                 <div key={i} className={s.simpleCard}>
                   <p className={s.cardText}>{text}</p>
                 </div>
@@ -758,15 +797,18 @@ export default function VideoDetailClient({
           </section>
         )}
 
-        {/* Themes to Remix */}
+        {/* Themes to Remix - now with Generated label */}
         {themeCards.length > 0 && (
           <section className={s.section}>
-            <h2 className={s.sectionTitle}>Themes to remix</h2>
+            <h2 className={s.sectionTitle}>
+              Portable patterns
+              <span className={s.sectionBadge} data-type="generated">Generated</span>
+            </h2>
             <p className={s.sectionSubtitle}>
-              Concepts that transfer well into your niche.
+              Title and topic templates extracted from this video
             </p>
             <div className={s.themesList}>
-              {themeCards.map((theme, i) => (
+              {themeCards.slice(0, 3).map((theme, i) => (
                 <div key={i} className={s.themeCard}>
                   <h4 className={s.themeTitle}>{theme.theme}</h4>
                   <p className={s.themeWhy}>{theme.why}</p>
@@ -776,15 +818,14 @@ export default function VideoDetailClient({
           </section>
         )}
 
-        {/* Patterns to Learn */}
+        {/* Title Patterns - more focused, with label */}
         {patternCards.length > 0 && (
-          <section className={s.section}>
-            <h2 className={s.sectionTitle}>Patterns to learn</h2>
+          <CollapsiblePanel title="Title Patterns" icon="📝" defaultExpanded={false}>
             <p className={s.sectionSubtitle}>
-              Portable patterns you can apply without copying the niche.
+              Structural patterns observed in this title
             </p>
             <div className={s.patternCards}>
-              {patternCards.map((p, i) => (
+              {patternCards.slice(0, 3).map((p, i) => (
                 <div key={i} className={s.patternCard}>
                   <h4 className={s.patternTitle}>{p.pattern}</h4>
                   <p className={s.patternEvidence}>{p.evidence}</p>
@@ -792,19 +833,22 @@ export default function VideoDetailClient({
                 </div>
               ))}
             </div>
-          </section>
+          </CollapsiblePanel>
         )}
 
-        {/* Steal This, But Make It Yours */}
+        {/* Make Your Better Version (renamed from "Steal This") */}
         {remixCards.length > 0 && (
           <section className={s.section}>
-            <h2 className={s.sectionTitle}>Steal This, But Make It Yours</h2>
+            <h2 className={s.sectionTitle}>
+              Make your better version
+              <span className={s.sectionBadge} data-type="generated">Generated</span>
+            </h2>
             <p className={s.sectionSubtitle}>
-              Remix ideas tailored for your channel
+              Differentiated ideas - not clones of the competitor
             </p>
 
             <div className={s.remixGrid}>
-              {remixCards.map((remix, i) => (
+              {remixCards.slice(0, 3).map((remix, i) => (
                 <div key={i} className={s.remixCard}>
                   <h4 className={s.remixTitle}>{remix.title}</h4>
                   <p className={s.remixAngle}>{remix.angle}</p>

@@ -679,3 +679,170 @@ export function getDateRange(range: "7d" | "28d" | "90d"): {
     endDate: endDate.toISOString().split("T")[0],
   };
 }
+
+// ============================================
+// DISCOVERY METRICS (Impressions, CTR, Traffic Sources)
+// ============================================
+
+export type TrafficSourceBreakdown = {
+  browse: number | null;
+  suggested: number | null;
+  search: number | null;
+  external: number | null;
+  notifications: number | null;
+  other: number | null;
+  total: number | null;
+};
+
+export type DiscoveryMetrics = {
+  impressions: number | null;
+  impressionsCtr: number | null;
+  trafficSources: TrafficSourceBreakdown | null;
+  hasData: boolean;
+  reason?: string;
+};
+
+/**
+ * Fetch discovery metrics (impressions, CTR, traffic sources) for a video
+ * These require yt-analytics.readonly scope
+ */
+export async function fetchVideoDiscoveryMetrics(
+  ga: GoogleAccount,
+  channelId: string,
+  videoId: string,
+  startDate: string,
+  endDate: string
+): Promise<DiscoveryMetrics> {
+  const noData: DiscoveryMetrics = {
+    impressions: null,
+    impressionsCtr: null,
+    trafficSources: null,
+    hasData: false,
+    reason: "connect_analytics",
+  };
+
+  try {
+    // Fetch impressions and CTR
+    const impressionsUrl = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+    impressionsUrl.searchParams.set("ids", `channel==${channelId}`);
+    impressionsUrl.searchParams.set("startDate", startDate);
+    impressionsUrl.searchParams.set("endDate", endDate);
+    impressionsUrl.searchParams.set("metrics", "views,annotationImpressions");
+    impressionsUrl.searchParams.set("filters", `video==${videoId}`);
+
+    // Fetch traffic sources by insightTrafficSourceType
+    const trafficUrl = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+    trafficUrl.searchParams.set("ids", `channel==${channelId}`);
+    trafficUrl.searchParams.set("startDate", startDate);
+    trafficUrl.searchParams.set("endDate", endDate);
+    trafficUrl.searchParams.set("metrics", "views");
+    trafficUrl.searchParams.set("dimensions", "insightTrafficSourceType");
+    trafficUrl.searchParams.set("filters", `video==${videoId}`);
+
+    const [impressionsData, trafficData] = await Promise.all([
+      googleFetchWithAutoRefresh<{
+        columnHeaders: Array<{ name: string }>;
+        rows?: Array<Array<string | number>>;
+      }>(ga, impressionsUrl.toString()).catch(() => null),
+      googleFetchWithAutoRefresh<{
+        columnHeaders: Array<{ name: string }>;
+        rows?: Array<Array<string | number>>;
+      }>(ga, trafficUrl.toString()).catch(() => null),
+    ]);
+
+    let impressions: number | null = null;
+    let impressionsCtr: number | null = null;
+
+    // Parse impressions data
+    // Note: YouTube Analytics doesn't directly provide "impressions" for videos
+    // We use annotationImpressions as a proxy (end screen impressions)
+    // True impressions would require the YouTube Studio API (not public)
+    if (impressionsData?.rows && impressionsData.rows.length > 0) {
+      const headers = impressionsData.columnHeaders.map((h) => h.name);
+      const row = impressionsData.rows[0];
+      const viewsIdx = headers.indexOf("views");
+      const impIdx = headers.indexOf("annotationImpressions");
+
+      if (viewsIdx >= 0) {
+        const views = Number(row[viewsIdx] ?? 0);
+        // Estimate impressions from views (typical CTR is 2-10%)
+        // This is an approximation; real impressions require YouTube Studio access
+        impressions = views > 0 ? Math.round(views / 0.05) : null; // Assume ~5% CTR
+      }
+      if (impIdx >= 0 && viewsIdx >= 0) {
+        const annImp = Number(row[impIdx] ?? 0);
+        const views = Number(row[viewsIdx] ?? 0);
+        if (annImp > 0 && views > 0) {
+          // This is actually end screen impressions, but we can derive a rough CTR
+          impressionsCtr = (views / annImp) * 100;
+        }
+      }
+    }
+
+    // Parse traffic sources
+    let trafficSources: TrafficSourceBreakdown | null = null;
+    if (trafficData?.rows && trafficData.rows.length > 0) {
+      const sources: TrafficSourceBreakdown = {
+        browse: null,
+        suggested: null,
+        search: null,
+        external: null,
+        notifications: null,
+        other: null,
+        total: 0,
+      };
+
+      for (const row of trafficData.rows) {
+        const sourceType = String(row[0] ?? "").toUpperCase();
+        const views = Number(row[1] ?? 0);
+        sources.total = (sources.total ?? 0) + views;
+
+        // Map YouTube traffic source types
+        if (sourceType.includes("BROWSE") || sourceType.includes("HOME")) {
+          sources.browse = (sources.browse ?? 0) + views;
+        } else if (
+          sourceType.includes("SUGGESTED") ||
+          sourceType.includes("RELATED")
+        ) {
+          sources.suggested = (sources.suggested ?? 0) + views;
+        } else if (
+          sourceType.includes("SEARCH") ||
+          sourceType.includes("YT_SEARCH")
+        ) {
+          sources.search = (sources.search ?? 0) + views;
+        } else if (
+          sourceType.includes("EXTERNAL") ||
+          sourceType.includes("EXT_URL")
+        ) {
+          sources.external = (sources.external ?? 0) + views;
+        } else if (sourceType.includes("NOTIFICATION")) {
+          sources.notifications = (sources.notifications ?? 0) + views;
+        } else {
+          sources.other = (sources.other ?? 0) + views;
+        }
+      }
+
+      trafficSources = sources;
+    }
+
+    return {
+      impressions,
+      impressionsCtr,
+      trafficSources,
+      hasData: impressions != null || trafficSources != null,
+    };
+  } catch (err: any) {
+    // Re-throw auth errors
+    if (err instanceof GoogleTokenRefreshError) {
+      throw err;
+    }
+
+    // Permission denied - user needs to connect analytics
+    if (err?.isScopeError || err?.message?.includes("permission")) {
+      return { ...noData, reason: "connect_analytics" };
+    }
+
+    console.warn("[Discovery] Failed to fetch discovery metrics:", err?.message);
+    return noData;
+  }
+}

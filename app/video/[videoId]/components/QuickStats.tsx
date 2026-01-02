@@ -16,6 +16,7 @@ type QuickStatsProps = {
 
 /**
  * QuickStats - Key performance metrics in a row
+ * Shows "—" with tooltip for metrics that require views when views = 0
  */
 export function QuickStats({
   totalViews,
@@ -27,6 +28,9 @@ export function QuickStats({
   netSubs,
   subsPer1k,
 }: QuickStatsProps) {
+  // When there are no views, percentage-based metrics are not meaningful
+  const hasViews = totalViews > 0;
+
   return (
     <section className={s.quickStats}>
       <div className={s.statGroup}>
@@ -35,7 +39,7 @@ export function QuickStats({
           <span className={s.statLabel}>Total Views</span>
         </div>
         <div className={s.statSecondary}>
-          <span>{formatCompact(viewsPerDay)}/day</span>
+          <span>{hasViews ? `${formatCompact(viewsPerDay)}/day` : "—"}</span>
         </div>
       </div>
 
@@ -43,11 +47,17 @@ export function QuickStats({
 
       <div className={s.statGroup}>
         <div className={s.statMain}>
-          <span className={s.statValue}>{avgViewed.toFixed(0)}%</span>
+          <span className={s.statValue} title={!hasViews ? "No views yet" : undefined}>
+            {hasViews ? `${avgViewed.toFixed(0)}%` : "—"}
+          </span>
           <span className={s.statLabel}>Avg Watched</span>
         </div>
         <div className={s.statSecondary}>
-          <span>{avgWatchTimeMin?.toFixed(1) ?? "-"} min/view</span>
+          <span title={!hasViews ? "No views yet" : undefined}>
+            {hasViews && avgWatchTimeMin != null 
+              ? `${avgWatchTimeMin.toFixed(1)} min/view` 
+              : "—"}
+          </span>
         </div>
       </div>
 
@@ -55,11 +65,13 @@ export function QuickStats({
 
       <div className={s.statGroup}>
         <div className={s.statMain}>
-          <span className={s.statValue}>{engagementRate.toFixed(1)}%</span>
+          <span className={s.statValue} title={!hasViews ? "No views yet" : undefined}>
+            {hasViews ? `${engagementRate.toFixed(1)}%` : "—"}
+          </span>
           <span className={s.statLabel}>Engagement</span>
         </div>
         <div className={s.statSecondary}>
-          <span>{likes} likes</span>
+          <span>{likes > 0 ? `${likes} likes` : "—"}</span>
         </div>
       </div>
 
@@ -67,14 +79,17 @@ export function QuickStats({
 
       <div className={s.statGroup}>
         <div className={s.statMain}>
-          <span className={s.statValue}>+{netSubs}</span>
+          <span className={s.statValue}>
+            {netSubs !== 0 ? `${netSubs > 0 ? "+" : ""}${netSubs}` : "—"}
+          </span>
           <span className={s.statLabel}>Net Subs</span>
         </div>
         <div className={s.statSecondary}>
-          <span>{subsPer1k.toFixed(1)}/1K views</span>
+          <span title={!hasViews ? "No views yet" : undefined}>
+            {hasViews && subsPer1k > 0 ? `${subsPer1k.toFixed(1)}/1K views` : "—"}
+          </span>
         </div>
       </div>
     </section>
   );
 }
-

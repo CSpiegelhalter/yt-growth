@@ -515,6 +515,145 @@ export type CompetitorCommentsAnalysis = {
   error?: string;
 };
 
+// Confidence and measurement types for competitor insights
+export type CompetitorConfidenceLevel = "High" | "Medium" | "Low";
+export type CompetitorMeasurementType = "Measured" | "Inferred";
+
+// Number analysis for titles
+export type CompetitorNumberType =
+  | "ranking"
+  | "list_count"
+  | "episode"
+  | "time_constraint"
+  | "quantity"
+  | "version"
+  | "proper_noun"
+  | "year"
+  | "none";
+
+export type CompetitorNumberAnalysis = {
+  hasNumber: boolean;
+  type: CompetitorNumberType;
+  value: string | null;
+  isPerformanceDriver: boolean;
+  explanation: string;
+};
+
+// Title truncation analysis
+export type CompetitorTruncationAnalysis = {
+  totalChars: number;
+  mobileLimit: number;
+  desktopLimit: number;
+  truncatesOnMobile: boolean;
+  truncatesOnDesktop: boolean;
+  mobileVisibleText: string;
+  confidence: "Measured";
+};
+
+// Public signals (all measured from public data)
+export type CompetitorPublicSignals = {
+  videoAgeDays: number;
+  viewsPerDay: number;
+  likeRate: number | null;
+  commentsPer1k: number | null;
+  engagementRate: number | null;
+  descriptionWordCount: number;
+  hashtagCount: number;
+  titleCharCount: number;
+  truncationAnalysis: CompetitorTruncationAnalysis;
+  numberAnalysis: CompetitorNumberAnalysis;
+  externalLinks: {
+    hasLinks: boolean;
+    linkCount: number;
+    domains: string[];
+    hasSocialLinks: boolean;
+    hasAffiliateLinks: boolean;
+    confidence: "Measured";
+  };
+  chapterDetection: {
+    hasChapters: boolean;
+    chapterCount: number;
+    firstChapterTime: string | null;
+    confidence: "Measured";
+  };
+  durationFormatted: string;
+  durationBucket: "Shorts" | "Short" | "Medium" | "Long" | "Very Long";
+  dataSource: "public_api";
+};
+
+// Three Moves (action-focused output)
+export type CompetitorMove = {
+  goal: string;
+  evidence: string;
+  exampleOutput: string;
+  confidence: CompetitorConfidenceLevel;
+  measurement: CompetitorMeasurementType;
+};
+
+// Positioning & Packaging panel
+export type CompetitorPackagingPanel = {
+  numberAnalysis: CompetitorNumberAnalysis;
+  truncationWarning: string | null;
+  hashtagSummary: string;
+  patternBreakdown: Array<{
+    pattern: string;
+    evidence: string;
+    measurement: CompetitorMeasurementType;
+  }>;
+};
+
+// Audience Demand panel (from comments)
+export type CompetitorAudiencePanel = {
+  viewerLoved: string[];
+  viewerAskedFor: string[];
+  topThemes: Array<{ theme: string; count: number }>;
+  hasCommentData: boolean;
+};
+
+// Portable Structure panel
+export type CompetitorStructurePanel = {
+  patterns: Array<{
+    pattern: string;
+    measurement: CompetitorMeasurementType;
+  }>;
+};
+
+// Video brief (for Comment-to-Content feature)
+export type CompetitorVideoBrief = {
+  titleVariant1: string;
+  titleVariant2: string;
+  hook: string;
+  beats: string[];
+  pinnedCommentPrompt: string;
+};
+
+// Differentiation angle
+export type CompetitorDifferentiationAngle = {
+  angleName: string;
+  angleType: "same_desire_different_vehicle" | "myth_busting" | "roadmap" | "challenge" | "tooling";
+  whyItWorks: string;
+  howItDiffers: string;
+};
+
+// Share kit / promo pack for competitor response video
+export type CompetitorShareKit = {
+  xPost: string;
+  redditTitle: string;
+  redditBody: string;
+  linkedinPost: string | null;
+  linkedinOmitReason?: string;
+  discordMessage: string;
+  communityPost: string;
+};
+
+// Swipe file item
+export type CompetitorSwipeItem = {
+  type: "title_template" | "hook_line" | "thumbnail_concept";
+  content: string;
+  sourceVideoId: string;
+  savedAt?: string;
+};
+
 export type CompetitorVideoAnalysis = {
   video: CompetitorVideo;
   analysis: {
@@ -530,63 +669,119 @@ export type CompetitorVideoAnalysis = {
       angle: string;
     }>;
   };
-  // New strategic insights
+
+  // NEW: Public signals (all measured, deterministic)
+  publicSignals?: CompetitorPublicSignals;
+
+  // NEW: Three Moves (replaces action checklist)
+  threeMoves?: CompetitorMove[];
+
+  // NEW: Collapsible panels
+  packagingPanel?: CompetitorPackagingPanel;
+  audiencePanel?: CompetitorAudiencePanel;
+  structurePanel?: CompetitorStructurePanel;
+
+  // NEW: Premium features
+  differentiationAngles?: CompetitorDifferentiationAngle[];
+  videoBriefs?: CompetitorVideoBrief[];
+  shareKit?: CompetitorShareKit;
+
+  // Strategic insights (updated with confidence labels)
   strategicInsights?: {
-    // Title breakdown
+    // Title breakdown (with improved number analysis)
     titleAnalysis: {
-      score: number; // 1-10
+      score: number;
       characterCount: number;
       hasNumber: boolean;
+      numberAnalysis?: CompetitorNumberAnalysis;
       hasPowerWord: boolean;
       hasCuriosityGap: boolean;
       hasTimeframe: boolean;
       strengths: string[];
       weaknesses: string[];
+      confidence?: CompetitorConfidenceLevel;
     };
-    // How hard is it to compete?
+    // How hard is it to compete? (with transparent basis)
     competitionDifficulty: {
       score: "Easy" | "Medium" | "Hard" | "Very Hard";
       reasons: string[];
-      channelSizeRatio?: number; // Their subs vs avg in niche
+      // New: transparent scoring basis
+      whyThisScore?: string[];
+      basisMetrics?: {
+        viewCount: number;
+        viewsPerDay: number;
+        likeRate: number | null;
+      };
+      channelSizeRatio?: number;
+      confidence?: CompetitorConfidenceLevel;
     };
-    // Timing analysis
+    // Timing analysis (with honesty about peak times)
     postingTiming: {
       dayOfWeek: string;
       hourOfDay: number;
+      localTimeFormatted?: string;
       daysAgo: number;
       isWeekend: boolean;
       timingInsight: string;
+      hasChannelHistory?: boolean;
+      confidence?: CompetitorConfidenceLevel;
+      measurement?: CompetitorMeasurementType;
     };
-    // Video length analysis
+    // Video length analysis (improved formatting)
+    // Supports both old format (minutes/category) and new format (durationSec/bucket)
     lengthAnalysis: {
-      minutes: number;
-      category: "Short" | "Medium" | "Long" | "Very Long";
+      // New format
+      durationSec?: number;
+      durationFormatted?: string;
+      bucket?: "Shorts" | "Short" | "Medium" | "Long" | "Very Long";
+      // Legacy format (backward compat)
+      minutes?: number;
+      category?: "Short" | "Medium" | "Long" | "Very Long";
+      optimalForTopic?: boolean;
+      // Common
       insight: string;
-      optimalForTopic: boolean;
+      confidence?: CompetitorConfidenceLevel;
     };
-    // Engagement benchmarks
+    // Engagement benchmarks (with clear labeling)
     engagementBenchmarks: {
-      likeRate: number; // likes per 100 views
-      commentRate: number; // comments per 1000 views
+      likeRate: number | null;
+      commentRate: number | null;
       likeRateVerdict:
         | "Below Average"
         | "Average"
         | "Above Average"
-        | "Exceptional";
+        | "Exceptional"
+        | "Unknown";
       commentRateVerdict:
         | "Below Average"
         | "Average"
         | "Above Average"
-        | "Exceptional";
+        | "Exceptional"
+        | "Unknown";
+      // Channel baseline support
+      channelMedianAvailable?: boolean;
+      channelMedianLikeRate?: number | null;
+      channelMedianCommentRate?: number | null;
+      confidence?: CompetitorConfidenceLevel;
+      measurement?: CompetitorMeasurementType;
     };
-    // Opportunity assessment
+    // Opportunity assessment (with transparent scoring basis)
     opportunityScore: {
-      score: number; // 1-10 (10 = huge opportunity)
+      score: number;
       verdict: string;
-      gaps: string[]; // What's missing that you could do
-      angles: string[]; // Fresh angles not covered
+      gaps: string[];
+      angles: string[];
+      // New: transparent scoring explanation
+      whyThisScore?: string[];
+      scoreBreakdown?: {
+        descriptionGap: number;
+        hashtagGap: number;
+        commentOpportunity: number;
+        formatMismatch: number;
+      };
+      confidence?: CompetitorConfidenceLevel;
     };
-    // Beat this video checklist
+    // Beat this video (renamed to threeMoves in new structure)
     beatThisVideo: Array<{
       action: string;
       difficulty: "Easy" | "Medium" | "Hard";
@@ -599,20 +794,28 @@ export type CompetitorVideoAnalysis = {
       hasCTA: boolean;
       estimatedWordCount: number;
       keyElements: string[];
+      confidence?: CompetitorConfidenceLevel;
     };
     // Content format signals
     formatSignals: {
-      likelyFormat: string; // "Tutorial", "Vlog", "Review", "Commentary", etc.
+      likelyFormat: string;
       productionLevel: "Low" | "Medium" | "High";
       paceEstimate: "Slow" | "Medium" | "Fast";
+      confidence?: CompetitorConfidenceLevel;
     };
   };
   comments?: CompetitorCommentsAnalysis;
   tags: string[];
-  derivedKeywords?: string[]; // If tags absent, derived from title/description
+  derivedKeywords?: string[];
   category?: string;
   moreFromChannel: CompetitorVideo[];
   demo?: boolean;
+
+  // NEW: Data limitations notice
+  dataLimitations?: {
+    whatWeCanKnow: string[];
+    whatWeCantKnow: string[];
+  };
 };
 
 // ============================================
@@ -693,6 +896,8 @@ export type DerivedMetrics = {
   watchTimePerViewSec: number | null;
   avdRatio: number | null;
   avgWatchTimeMin: number | null;
+  avgViewDuration: number | null;
+  avgViewPercentage: number | null;
   // Engagement
   engagementPerView: number | null;
   engagedViewRate: number | null;
@@ -711,16 +916,80 @@ export type DerivedMetrics = {
   velocity24h: number | null;
   velocity7d: number | null;
   acceleration24h: number | null;
+  // NEW: Discovery metrics (may be null if not available)
+  impressions: number | null;
+  impressionsCtr: number | null;
+  first24hViews: number | null;
+  first48hViews: number | null;
+  // Traffic sources (from YouTube Analytics)
+  trafficSources: TrafficSourceBreakdown | null;
+};
+
+export type TrafficSourceBreakdown = {
+  browse: number | null;
+  suggested: number | null;
+  search: number | null;
+  external: number | null;
+  notifications: number | null;
+  other: number | null;
+  total: number | null;
 };
 
 export type ChannelBaseline = {
   sampleSize: number;
-  viewsPerDay: { mean: number; std: number };
-  avgViewPercentage: { mean: number; std: number };
-  watchTimePerViewSec: { mean: number; std: number };
-  subsPer1k: { mean: number; std: number };
-  engagementPerView: { mean: number; std: number };
-  sharesPer1k: { mean: number; std: number };
+  viewsPerDay: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  avgViewPercentage: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  watchTimePerViewSec: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  subsPer1k: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  engagementPerView: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  sharesPer1k: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  // NEW: Additional baseline metrics
+  impressionsCtr?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  avgViewDuration?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  first24hViews?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  endScreenCtr?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  // Length-bucketed baselines (optional)
+  byLength?: {
+    short?: ChannelBaselineMetrics;      // < 2min
+    medium?: ChannelBaselineMetrics;     // 2-8min
+    long?: ChannelBaselineMetrics;       // 8-20min
+    veryLong?: ChannelBaselineMetrics;   // 20-60min
+    extraLong?: ChannelBaselineMetrics;  // 60min+
+  };
+};
+
+export type ChannelBaselineMetrics = {
+  sampleSize: number;
+  avgViewPercentage?: { median: number; p25?: number; p75?: number };
+  avgViewDuration?: { median: number; p25?: number; p75?: number };
+  impressionsCtr?: { median: number; p25?: number; p75?: number };
+  first24hViews?: { median: number; p25?: number; p75?: number };
+  subsPer1k?: { median: number; p25?: number; p75?: number };
+};
+
+// Bottleneck detection
+export type BottleneckType =
+  | "NOT_ENOUGH_DATA"
+  | "DISCOVERY_IMPRESSIONS"
+  | "DISCOVERY_CTR"
+  | "RETENTION"
+  | "CONVERSION";
+
+export type BottleneckResult = {
+  bottleneck: BottleneckType;
+  evidence: string;
+  metrics: Array<{ label: string; value: string; comparison?: string }>;
+};
+
+// Confidence levels
+export type ConfidenceLevel = "High" | "Medium" | "Low";
+
+export type SectionConfidence = {
+  discovery: ConfidenceLevel;
+  retention: ConfidenceLevel;
+  conversion: ConfidenceLevel;
+  packaging: ConfidenceLevel;
+  promotion: ConfidenceLevel;
 };
 
 export type ZScoreResult = {
@@ -747,6 +1016,44 @@ export type BaselineComparison = {
     | "Needs Work";
 };
 
+// Title variant with rationale and source type
+export type TitleVariant = {
+  text: string;
+  type: "search" | "suggested" | "curiosity";
+  rationale: string;
+  confidence: ConfidenceLevel;
+};
+
+// Tag with source traceability
+export type TraceableTag = {
+  tag: string;
+  source: "title" | "description" | "transcript" | "comments" | "existing_tag";
+};
+
+// Hook fix / first 15s + first minute
+export type HookFix = {
+  first15SecondsScripts: string[];
+  firstMinuteOutline: string[];
+};
+
+// Promotion pack (copy-paste ready)
+export type PromoPack = {
+  xPost: string;
+  redditPostTitle: string;
+  redditPostBody: string;
+  linkedinPost?: string;
+  discordMessage: string;
+  youtubeCommunityPost: string;
+};
+
+// CTA lines
+export type CTALines = {
+  subscribe: string[];
+  nextVideo: string[];
+  playlist: string[];
+  commentPrompt: string[];
+};
+
 export type VideoInsightsLLM = {
   summary: { headline: string; oneLiner: string };
   // Title & Packaging Analysis
@@ -756,6 +1063,8 @@ export type VideoInsightsLLM = {
     weaknesses: string[];
     suggestions: string[];
   };
+  // NEW: Structured title variants
+  titleVariants?: TitleVariant[];
   descriptionAnalysis?: {
     score: number; // 1-10
     strengths: string[];
@@ -767,12 +1076,18 @@ export type VideoInsightsLLM = {
     // Optional keyword list to include naturally (no stuffing)
     targetKeywords?: string[];
   };
+  // NEW: Description openers (copy-paste ready)
+  descriptionOpeners?: string[];
   tagAnalysis: {
     score: number; // 1-10
     coverage: "excellent" | "good" | "fair" | "poor";
     missing: string[]; // Suggested tags to add
     feedback: string;
+    // NEW: Tag impact level
+    impactLevel?: "high" | "medium" | "low";
   };
+  // NEW: Traceable tags with source
+  traceableTags?: TraceableTag[];
   /**
    * A practical, prioritized playbook to increase reach for THIS video.
    * Should be tied to the available metrics (views/day vs baseline, retention, engagement, subs).
@@ -852,6 +1167,22 @@ export type VideoInsightsLLM = {
     viewerAskedFor: string[];
     hookInspiration: string[];
   };
+  // NEW: Hook fix suggestions
+  hookFix?: HookFix;
+  // NEW: Retention notes (timestamp-agnostic)
+  retentionNotes?: string[];
+  // NEW: CTA lines (copy-paste ready)
+  ctaLines?: CTALines;
+  // NEW: Promo pack (copy-paste for social)
+  promoPack?: PromoPack;
+  // NEW: Confidence per section
+  sectionConfidence?: SectionConfidence;
+  // NEW: Distribution fit hint
+  distributionFit?: {
+    topSources: string[];
+    suggestedNextSources: string[];
+    insight: string;
+  };
 };
 
 export type RetentionPoint = {
@@ -893,4 +1224,19 @@ export type VideoInsightsResponse = {
   llmInsights: VideoInsightsLLM | null;
   cachedUntil: string;
   demo?: boolean;
+  // NEW: Bottleneck detection
+  bottleneck?: BottleneckResult;
+  // NEW: Section confidence levels
+  confidence?: SectionConfidence;
+  // NEW: Low-data mode flag
+  isLowDataMode?: boolean;
+  // NEW: Analytics availability flags
+  analyticsAvailability?: {
+    hasImpressions: boolean;
+    hasCtr: boolean;
+    hasTrafficSources: boolean;
+    hasEndScreenCtr: boolean;
+    hasCardCtr: boolean;
+    reason?: string; // "connect_analytics" if missing scopes
+  };
 };

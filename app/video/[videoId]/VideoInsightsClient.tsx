@@ -18,6 +18,13 @@ import {
   RemixIdeas,
   AllMetrics,
   RetentionCurve,
+  // Premium components
+  Scorecard,
+  BottleneckBanner,
+  ShareKit,
+  LowDataModePanel,
+  ImpactSimulator,
+  Benchmarks,
 } from "./components";
 
 type Props = {
@@ -294,7 +301,7 @@ export default function VideoInsightsClient({
     );
   }
 
-  const { video, derived, llmInsights } = insights;
+  const { video, derived, llmInsights, baseline, comparison, bottleneck, confidence, isLowDataMode: lowDataMode, analyticsAvailability } = insights;
   const remixItems = (llmInsights?.remixIdeas ?? []).map((r) => ({
     id: `base:${r.title}:${r.hook}`,
     title: r.title,
@@ -312,6 +319,10 @@ export default function VideoInsightsClient({
     (insights.analytics.totals.subscribersGained ?? 0) -
     (insights.analytics.totals.subscribersLost ?? 0);
 
+  // Check if tags should be shown prominently (only if search-driven)
+  const isSearchDriven = derived.trafficSources?.search != null && 
+    derived.trafficSources.search > (derived.trafficSources.total ?? 1) * 0.3;
+
   return (
     <main className={s.page}>
       {/* Back Link */}
@@ -327,7 +338,33 @@ export default function VideoInsightsClient({
         isDemo={insights.demo}
       />
 
-      {/* Quick Stats */}
+      {/* Scorecard with grouped metrics */}
+      <Scorecard
+        derived={derived}
+        comparison={comparison}
+        confidence={confidence}
+        analyticsAvailability={analyticsAvailability}
+      />
+
+      {/* Bottleneck Banner - prominent diagnosis */}
+      {bottleneck && (
+        <BottleneckBanner
+          bottleneck={bottleneck}
+          confidence={
+            confidence
+              ? bottleneck.bottleneck === "RETENTION"
+                ? confidence.retention
+                : bottleneck.bottleneck.startsWith("DISCOVERY")
+                ? confidence.discovery
+                : bottleneck.bottleneck === "CONVERSION"
+                ? confidence.conversion
+                : "Low"
+              : "Low"
+          }
+        />
+      )}
+
+      {/* Quick Stats - additional context */}
       <QuickStats
         totalViews={derived.totalViews}
         viewsPerDay={derived.viewsPerDay}
@@ -348,33 +385,36 @@ export default function VideoInsightsClient({
         />
       )}
 
-      {/* What's Working / Needs Work */}
-      {llmInsights && derived.totalViews >= 100 && (
+      {/* Low Data Mode Panel - when data is insufficient */}
+      {lowDataMode && (
+        <LowDataModePanel
+          views={derived.totalViews}
+          impressions={derived.impressions}
+          analyticsConnected={analyticsAvailability?.hasImpressions ?? false}
+          llmInsights={llmInsights}
+        />
+      )}
+
+      {/* What's Working / Needs Work - only show with enough data */}
+      {llmInsights && derived.totalViews >= 100 && !lowDataMode && (
         <WinsLeaks
           wins={llmInsights.wins ?? []}
           leaks={llmInsights.leaks ?? []}
         />
       )}
 
-      {/* Low views notice */}
-      {derived.totalViews < 100 && (
-        <section className={s.lowViewsNotice}>
-          <div className={s.noticeIcon}>📊</div>
-          <div className={s.noticeText}>
-            <strong>Not enough data yet</strong>
-            <p>
-              This video has {derived.totalViews} view
-              {derived.totalViews !== 1 ? "s" : ""}. Performance insights like
-              engagement rate and subscriber conversion become meaningful after
-              ~100 views.
-            </p>
-          </div>
-        </section>
+      {/* Key Findings */}
+      {llmInsights?.keyFindings && !lowDataMode && (
+        <KeyFindings findings={llmInsights.keyFindings} />
       )}
 
-      {/* Key Findings */}
-      {llmInsights?.keyFindings && (
-        <KeyFindings findings={llmInsights.keyFindings} />
+      {/* Benchmarks - Your typical range vs this video */}
+      {baseline && baseline.sampleSize > 0 && (
+        <Benchmarks
+          derived={derived}
+          baseline={baseline}
+          comparison={comparison}
+        />
       )}
 
       {/* Viewer Voice (Comments) */}
@@ -382,25 +422,59 @@ export default function VideoInsightsClient({
         <ViewerVoice commentInsights={llmInsights.commentInsights} />
       )}
 
-      {/* Title & Tags Analysis */}
-      {llmInsights &&
-        (llmInsights.titleAnalysis || llmInsights.tagAnalysis) && (
-          <TitleTagsOptimization
-            videoTitle={video.title ?? ""}
-            titleAnalysis={llmInsights.titleAnalysis}
-            descriptionAnalysis={llmInsights.descriptionAnalysis}
-            tagAnalysis={llmInsights.tagAnalysis}
-          />
-        )}
+      {/* 
+        CONSOLIDATED SEO SECTION
+        Title, Description, and Tags in one section (no duplicates)
+        Tags are de-emphasized unless search-driven
+      */}
+      {llmInsights && (llmInsights.titleAnalysis || llmInsights.descriptionAnalysis || llmInsights.tagAnalysis) && (
+        <section className={s.packaging}>
+          <h2 className={s.sectionTitle}>SEO & Packaging</h2>
+          <p className={s.sectionDesc}>
+            Title, description, and tags analysis
+            {!isSearchDriven && llmInsights.tagAnalysis && (
+              <span className={s.tagsNote}> · Tags are low-impact for non-search content</span>
+            )}
+          </p>
+
+          <div className={s.packagingGrid}>
+            {/* Title Panel */}
+            {llmInsights.titleAnalysis && (
+              <TitlePanel 
+                videoTitle={video.title ?? ""} 
+                analysis={llmInsights.titleAnalysis} 
+              />
+            )}
+
+            {/* Description Panel */}
+            {llmInsights.descriptionAnalysis && (
+              <DescriptionPanel analysis={llmInsights.descriptionAnalysis} />
+            )}
+
+            {/* Tags Panel - with warning if not search-driven */}
+            {llmInsights.tagAnalysis && (
+              <TagsPanel 
+                analysis={llmInsights.tagAnalysis}
+                isSearchDriven={isSearchDriven}
+              />
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Priority Actions */}
-      {llmInsights?.actions && (
+      {llmInsights?.actions && !lowDataMode && (
         <PriorityActions actions={llmInsights.actions} />
       )}
 
       {/* Visibility Plan */}
-      {llmInsights?.visibilityPlan && (
+      {llmInsights?.visibilityPlan && !lowDataMode && (
         <VisibilityPlan plan={llmInsights.visibilityPlan} />
+      )}
+
+      {/* Impact Simulator - what-if projections */}
+      {baseline && baseline.sampleSize > 0 && !lowDataMode && (
+        <ImpactSimulator derived={derived} baseline={baseline} />
       )}
 
       {/* Thumbnail Tips */}
@@ -420,8 +494,207 @@ export default function VideoInsightsClient({
       {/* Remix Ideas */}
       {llmInsights && <RemixIdeas remixes={remixItems} />}
 
+      {/* Share Kit - Promotion copy and share links */}
+      <ShareKit
+        videoId={videoId}
+        videoTitle={video.title ?? ""}
+        promoPack={llmInsights?.promoPack}
+      />
+
       {/* Additional Metrics */}
       <AllMetrics totals={insights.analytics.totals} derived={derived} />
     </main>
+  );
+}
+
+// ============================================
+// SUB-COMPONENTS FOR CONSOLIDATED SEO SECTION
+// ============================================
+
+import { CopyButton, TagChip } from "./components";
+
+type TitleAnalysis = {
+  score: number;
+  strengths?: string[];
+  weaknesses?: string[];
+  suggestions?: string[];
+};
+
+function TitlePanel({ videoTitle, analysis }: { videoTitle: string; analysis: TitleAnalysis }) {
+  const getScoreClass = (score: number) => {
+    if (score >= 8) return s.scoreGreen;
+    if (score >= 5) return s.scoreYellow;
+    return s.scoreRed;
+  };
+
+  return (
+    <div className={s.packagingCard}>
+      <div className={s.packagingHeader}>
+        <span className={s.packagingLabel}>Title</span>
+        <span className={`${s.packagingScore} ${getScoreClass(analysis.score)}`}>
+          {analysis.score}/10
+        </span>
+      </div>
+      <p className={s.currentValue}>&quot;{videoTitle}&quot;</p>
+
+      {(analysis.strengths?.length ?? 0) > 0 && (
+        <div className={s.feedbackGroup}>
+          <span className={s.feedbackLabel}>✓ Strengths</span>
+          <ul>
+            {analysis.strengths?.map((str, i) => (
+              <li key={i}>{str}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {(analysis.weaknesses?.length ?? 0) > 0 && (
+        <div className={s.feedbackGroup}>
+          <span className={s.feedbackLabelWarn}>✗ Could Improve</span>
+          <ul>
+            {analysis.weaknesses?.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {(analysis.suggestions?.length ?? 0) > 0 && (
+        <div className={s.suggestions}>
+          <span className={s.feedbackLabelAlt}>💡 Try Instead</span>
+          {analysis.suggestions?.map((sug, i) => (
+            <div key={i} className={s.suggestionRow}>
+              <span>{sug}</span>
+              <CopyButton text={sug} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type DescriptionAnalysis = {
+  score: number;
+  weaknesses?: string[];
+  rewrittenOpening?: string;
+  addTheseLines?: string[];
+};
+
+function DescriptionPanel({ analysis }: { analysis: DescriptionAnalysis }) {
+  const getScoreClass = (score: number) => {
+    if (score >= 8) return s.scoreGreen;
+    if (score >= 5) return s.scoreYellow;
+    return s.scoreRed;
+  };
+
+  return (
+    <div className={s.packagingCard}>
+      <div className={s.packagingHeader}>
+        <span className={s.packagingLabel}>Description</span>
+        <span className={`${s.packagingScore} ${getScoreClass(analysis.score)}`}>
+          {analysis.score}/10
+        </span>
+      </div>
+
+      <p className={s.tagFeedback}>
+        {analysis.weaknesses?.length
+          ? analysis.weaknesses[0]
+          : "Description SEO review."}
+      </p>
+
+      {analysis.rewrittenOpening && (
+        <div className={s.suggestions}>
+          <span className={s.feedbackLabelAlt}>
+            Stronger opening (copy/paste)
+          </span>
+          <div className={s.suggestionRow}>
+            <span>{analysis.rewrittenOpening}</span>
+            <CopyButton text={analysis.rewrittenOpening} />
+          </div>
+        </div>
+      )}
+
+      {(analysis.addTheseLines?.length ?? 0) > 0 && (
+        <div className={s.suggestions} style={{ marginTop: 12 }}>
+          <span className={s.feedbackLabelAlt}>
+            Add these lines (copy/paste)
+          </span>
+          {analysis.addTheseLines
+            ?.filter(Boolean)
+            .slice(0, 6)
+            .map((line, i) => (
+              <div key={i} className={s.suggestionRow}>
+                <span>{line}</span>
+                <CopyButton text={line} />
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type TagAnalysis = {
+  score: number;
+  feedback: string;
+  missing?: string[];
+};
+
+function TagsPanel({ analysis, isSearchDriven }: { analysis: TagAnalysis; isSearchDriven: boolean }) {
+  const getScoreClass = (score: number) => {
+    if (score >= 8) return s.scoreGreen;
+    if (score >= 5) return s.scoreYellow;
+    return s.scoreRed;
+  };
+
+  const seoTags = (analysis.missing ?? [])
+    .map((t) => String(t ?? "").trim())
+    .filter(Boolean)
+    .filter((t, i, arr) => arr.indexOf(t) === i)
+    .slice(0, 25);
+
+  return (
+    <div className={s.packagingCard}>
+      <div className={s.packagingHeader}>
+        <span className={s.packagingLabel}>
+          Tags
+          {!isSearchDriven && (
+            <span className={s.lowImpactBadge}>Optional</span>
+          )}
+        </span>
+        {/* Only show score if search-driven, otherwise it's misleading */}
+        {isSearchDriven && (
+          <span className={`${s.packagingScore} ${getScoreClass(analysis.score)}`}>
+            {analysis.score}/10
+          </span>
+        )}
+      </div>
+      
+      <p className={s.tagFeedback}>{analysis.feedback}</p>
+      
+      {!isSearchDriven && (
+        <p className={s.tagNote}>
+          Tags are most useful for search-driven videos. We only suggest tags we can justify from your content.
+        </p>
+      )}
+
+      {seoTags.length > 0 && (
+        <div className={s.missingTagsSection}>
+          <div className={s.missingTagsHeader}>
+            <span className={s.feedbackLabelAlt}>
+              Copy-paste SEO tags
+            </span>
+            <CopyButton text={seoTags.join(", ")} label="Copy all" />
+          </div>
+
+          <div className={s.tagChips}>
+            {seoTags.map((tag) => (
+              <TagChip key={tag} tag={tag} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

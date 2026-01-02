@@ -1,11 +1,11 @@
 /**
  * Create Google Reviewer Test Account
- * 
+ *
  * Creates a test user with Pro access for Google's OAuth verification team.
  * Run against PRODUCTION database with:
- * 
+ *
  *   DATABASE_URL="your-prod-url" npx tsx scripts/create-google-reviewer.ts
- * 
+ *
  * Or if using Prisma with directUrl:
  *   DATABASE_URL="your-prod-url" DIRECT_DATABASE_URL="your-prod-direct-url" npx tsx scripts/create-google-reviewer.ts
  */
@@ -72,7 +72,9 @@ async function main() {
       stripeSubscriptionId: "manual_google_reviewer",
     },
   });
-  console.log(`✅ Pro subscription created: expires ${subscription.currentPeriodEnd?.toISOString()}`);
+  console.log(
+    `✅ Pro subscription created: expires ${subscription.currentPeriodEnd?.toISOString()}`
+  );
 
   console.log("\n" + "=".repeat(50));
   console.log("📋 GOOGLE REVIEWER TEST CREDENTIALS");
@@ -82,7 +84,9 @@ async function main() {
   console.log(`Plan:     Pro (active)`);
   console.log(`Expires:  ${SUBSCRIPTION_EXPIRES.toLocaleDateString()}`);
   console.log("=".repeat(50));
-  console.log("\n✨ Done! Google's team can now log in with these credentials.\n");
+  console.log(
+    "\n✨ Done! Google's team can now log in with these credentials.\n"
+  );
 }
 
 main()

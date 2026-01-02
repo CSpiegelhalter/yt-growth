@@ -15,4 +15,10 @@ export * from "./VisibilityPlan";
 export * from "./RemixIdeas";
 export * from "./AllMetrics";
 export * from "./RetentionCurve";
-
+// NEW: Premium analysis components
+export * from "./Scorecard";
+export * from "./BottleneckBanner";
+export * from "./ShareKit";
+export * from "./LowDataModePanel";
+export * from "./ImpactSimulator";
+export * from "./Benchmarks";

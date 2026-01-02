@@ -38,6 +38,16 @@ import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { hashVideoContent, hashCommentsContent } from "@/lib/content-hash";
 import {
+  analyzeNumberInTitle,
+  analyzeTitleTruncation,
+  formatDuration,
+  getDurationBucket,
+  detectChapters,
+  analyzeExternalLinks,
+  analyzeHashtags,
+  computePublicSignals,
+} from "@/lib/competitor-utils";
+import {
   checkEntitlement,
   entitlementErrorResponse,
 } from "@/lib/with-entitlements";
@@ -685,7 +695,18 @@ async function GETHandler(
       beatThisVideo: beatThisVideoLLM,
     });
 
-    // Build response
+    // Compute public signals (all measured, deterministic)
+    const publicSignals = computePublicSignals({
+      title: video.title,
+      description: videoDetails.description ?? "",
+      publishedAt: videoDetails.publishedAt,
+      durationSec: videoDetails.durationSec ?? 0,
+      viewCount: videoDetails.viewCount,
+      likeCount: videoDetails.likeCount,
+      commentCount: videoDetails.commentCount,
+    });
+
+    // Build response with new fields
     const response: CompetitorVideoAnalysis = {
       video,
       analysis,
@@ -695,6 +716,25 @@ async function GETHandler(
       derivedKeywords,
       category: videoDetails.category,
       moreFromChannel,
+      // NEW: Public signals (all measured)
+      publicSignals,
+      // NEW: Data limitations notice
+      dataLimitations: {
+        whatWeCanKnow: [
+          "Public metrics (views, likes, comments)",
+          "Title/description patterns and structure",
+          "Upload timing and video duration",
+          "Comment themes and sentiment",
+          "Competitor channel recent uploads",
+        ],
+        whatWeCantKnow: [
+          "Impressions and click-through rate (CTR)",
+          "Retention curve and average view duration",
+          "Subscriber conversion rate",
+          "Traffic sources breakdown",
+          "Revenue and monetization data",
+        ],
+      },
     };
 
     return Response.json(response);
@@ -739,7 +779,6 @@ function computeStrategicInsights(input: {
 
   // ===== TITLE ANALYSIS =====
   const titleLength = title.length;
-  const hasNumber = /\d/.test(title);
   const powerWords = [
     "secret",
     "shocking",
@@ -785,11 +824,28 @@ function computeStrategicInsights(input: {
     titleWeaknesses.push("Title may get truncated on mobile");
   }
 
-  if (hasNumber) {
-    titleScore += 1;
-    titleStrengths.push("Uses specific number (increases CTR)");
+  // FIXED: Use accurate number analysis instead of simple regex
+  // Don't claim "increases CTR" - we don't have CTR data for competitors
+  const numberAnalysis = analyzeNumberInTitle(title);
+  if (numberAnalysis.hasNumber) {
+    if (numberAnalysis.isPerformanceDriver) {
+      titleScore += 1;
+      // Neutral, evidence-based explanation without CTR claims
+      const typeLabels: Record<string, string> = {
+        ranking: "Uses ranking (#1) → increases perceived credibility",
+        list_count: "Uses list count → sets clear viewer expectations",
+        episode: "Uses episode/part number → builds series continuity",
+        time_constraint: "Uses time constraint → creates urgency",
+        quantity: "Uses specific quantity → adds concrete stakes",
+        year: "Uses year reference → signals timeliness",
+      };
+      titleStrengths.push(
+        typeLabels[numberAnalysis.type] ?? "Uses quantifier → increases specificity"
+      );
+    }
+    // Note: proper_noun numbers (like "iPhone 15") don't get added as strengths
   } else {
-    titleWeaknesses.push("No specific number to create curiosity");
+    titleWeaknesses.push("No quantifier to create specificity");
   }
 
   if (hasPowerWord) {
@@ -823,41 +879,39 @@ function computeStrategicInsights(input: {
     (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60 * 24)
   );
 
-  let timingInsight = "";
-  if (hourOfDay >= 14 && hourOfDay <= 17) {
-    timingInsight = "Posted during peak viewing hours (2-5pm)";
-  } else if (hourOfDay >= 9 && hourOfDay <= 11) {
-    timingInsight = "Posted mid-morning for afternoon pickup";
-  } else if (hourOfDay >= 18 && hourOfDay <= 21) {
-    timingInsight = "Posted for evening viewers";
-  } else {
-    timingInsight =
-      "Off-peak posting time - may rely more on suggested traffic";
-  }
+  // FIXED: Don't claim "off-peak" without channel upload history
+  // We don't have the competitor channel's upload pattern data
+  const localTimeFormatted = publishedDate.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  const timingInsight = `Posted ${dayOfWeek} ${localTimeFormatted}. Posting-time pattern unavailable for this channel.`;
 
-  // ===== VIDEO LENGTH =====
+  // ===== VIDEO LENGTH (with consistent formatting) =====
   const durationSec = videoDetails.durationSec ?? 0;
   const durationMin = Math.round(durationSec / 60);
-  let lengthCategory: "Short" | "Medium" | "Long" | "Very Long" = "Medium";
-  let lengthInsight = "";
+  const durationFormatted = formatDuration(durationSec);
+  const durationBucket = getDurationBucket(durationSec);
 
-  if (durationMin < 3) {
-    lengthCategory = "Short";
-    lengthInsight =
-      "Short format - optimized for quick consumption and high retention %";
-  } else if (durationMin < 10) {
-    lengthCategory = "Medium";
-    lengthInsight =
-      "Sweet spot length - long enough for depth, short enough for retention";
-  } else if (durationMin < 20) {
-    lengthCategory = "Long";
-    lengthInsight =
-      "Long-form content - needs strong hooks throughout to maintain attention";
-  } else {
-    lengthCategory = "Very Long";
-    lengthInsight =
-      "Deep-dive format - appeals to highly engaged viewers, lower broad appeal";
-  }
+  // Map bucket to legacy category for backward compatibility
+  const bucketToCategory: Record<string, "Short" | "Medium" | "Long" | "Very Long"> = {
+    "Shorts": "Short",
+    "Short": "Short",
+    "Medium": "Medium",
+    "Long": "Long",
+    "Very Long": "Very Long",
+  };
+  const lengthCategory = bucketToCategory[durationBucket] ?? "Medium";
+
+  const lengthInsights: Record<string, string> = {
+    "Shorts": "YouTube Short format - vertical, quick consumption",
+    "Short": "Short-form content - quick delivery, higher completion typical",
+    "Medium": "Standard length - balances depth with watchability",
+    "Long": "Long-form content - requires strong pacing throughout",
+    "Very Long": "Extended content - appeals to highly engaged viewers",
+  };
+  const lengthInsight = lengthInsights[durationBucket] ?? "Standard length";
 
   // ===== ENGAGEMENT BENCHMARKS =====
   const views = videoDetails.viewCount || 1;
@@ -888,63 +942,96 @@ function computeStrategicInsights(input: {
     commentRateVerdict = "Above Average";
   else commentRateVerdict = "Exceptional";
 
-  // ===== COMPETITION DIFFICULTY =====
+  // ===== COMPETITION DIFFICULTY (with transparent basis) =====
   let difficultyScore: "Easy" | "Medium" | "Hard" | "Very Hard" = "Medium";
   const difficultyReasons: string[] = [];
+  const difficultyWhyThisScore: string[] = [];
 
   if (views > 1_000_000) {
     difficultyScore = "Very Hard";
     difficultyReasons.push("Viral video (1M+ views) - hard to match reach");
+    difficultyWhyThisScore.push(`View count: ${views.toLocaleString()} (Very Hard threshold: 1M+)`);
   } else if (views > 100_000) {
     difficultyScore = "Hard";
     difficultyReasons.push("High-performing video (100K+ views)");
+    difficultyWhyThisScore.push(`View count: ${views.toLocaleString()} (Hard threshold: 100K-1M)`);
   } else if (views > 10_000) {
     difficultyScore = "Medium";
     difficultyReasons.push("Solid performer - achievable with good execution");
+    difficultyWhyThisScore.push(`View count: ${views.toLocaleString()} (Medium threshold: 10K-100K)`);
   } else {
     difficultyScore = "Easy";
     difficultyReasons.push("Lower view count - opportunity to do better");
+    difficultyWhyThisScore.push(`View count: ${views.toLocaleString()} (Easy threshold: <10K)`);
   }
 
   if (likeRateVerdict === "Exceptional") {
     difficultyReasons.push(
-      "Very high engagement - content is resonating strongly"
+      "Very high like rate - content is resonating strongly"
     );
+    difficultyWhyThisScore.push(`Like rate: ${likeRate.toFixed(1)}% (Exceptional: >6%)`);
+  } else {
+    difficultyWhyThisScore.push(`Like rate: ${likeRate.toFixed(1)}% (${likeRateVerdict})`);
   }
 
   if (durationMin > 15) {
     difficultyReasons.push("Long-form requires significant production time");
+    difficultyWhyThisScore.push(`Duration: ${durationFormatted} (long-form production overhead)`);
   }
 
   // ===== FORMAT SIGNALS (used for both angles + display) =====
   const likelyFormat = guessLikelyFormat(title, description);
   const productionLevel = guessProductionLevel(durationMin, views);
 
-  // ===== OPPORTUNITY SCORE =====
+  // ===== OPPORTUNITY SCORE (with transparent breakdown) =====
   let opportunityScore = 5;
   const gaps: string[] = [];
   const angles: string[] = [];
+  const opportunityWhyThisScore: string[] = [];
+  
+  // Track score breakdown for transparency
+  let descriptionGapScore = 0;
+  let hashtagGapScore = 0;
+  let commentOpportunityScore = 0;
+  let formatMismatchScore = 0;
 
-  // Check tags for gaps
-  const tags = videoDetails.tags ?? [];
-  if (tags.length < 10) {
+  // Analyze hashtags early for use in opportunity scoring
+  const hashtagAnalysisEarly = analyzeHashtags(title, description);
+
+  // Check hashtags/keywords (NOT "tags" - those aren't reliably visible for competitors)
+  // Only count hashtags we can actually see in title/description
+  const hashtagCount = hashtagAnalysisEarly.count;
+  const descWordCount = description.split(/\s+/).filter(Boolean).length;
+
+  // If description is empty (0 words), recommend adding description + hashtags
+  if (descWordCount === 0) {
     gaps.push(
-      "Competitor has weak tag coverage - you can rank better with more tags"
+      "Empty description (0 words) - packaging improvement: add a description with 1-3 relevant hashtags"
     );
+    opportunityScore += 1.5;
+    descriptionGapScore = 1.5;
+    opportunityWhyThisScore.push(`Description: empty (0 words) → +1.5 opportunity`);
+  } else if (descWordCount < 50) {
+    gaps.push("Minimal description - opportunity to add more context and hashtags");
     opportunityScore += 1;
-  }
-
-  // Check description
-  if (description.length < 200) {
-    gaps.push("Thin description - opportunity to be more comprehensive");
-    opportunityScore += 1;
-  }
-
-  // Check for timestamps
-  const hasTimestamps = /\d{1,2}:\d{2}/.test(description);
-  if (!hasTimestamps && durationMin > 5) {
-    gaps.push("No timestamps - add chapters for better UX");
+    descriptionGapScore = 1;
+    opportunityWhyThisScore.push(`Description: minimal (${descWordCount} words) → +1 opportunity`);
+  } else if (hashtagCount === 0) {
+    gaps.push("No visible hashtags in title/description - could add 1-3 topic-relevant hashtags");
     opportunityScore += 0.5;
+    hashtagGapScore = 0.5;
+    opportunityWhyThisScore.push(`Hashtags: none visible → +0.5 opportunity`);
+  } else {
+    opportunityWhyThisScore.push(`Description: ${descWordCount} words, ${hashtagCount} hashtags (adequate)`);
+  }
+
+  // Check for timestamps using improved chapter detection
+  const chapterDetection = detectChapters(description);
+  if (!chapterDetection.hasChapters && durationMin > 5) {
+    gaps.push("No chapter timestamps - add chapters for better UX");
+    opportunityScore += 0.5;
+    formatMismatchScore += 0.5;
+    opportunityWhyThisScore.push(`Chapters: none (${durationFormatted} video) → +0.5 opportunity`);
   }
 
   // Fresh angles (dynamic + video-specific)
@@ -958,7 +1045,7 @@ function computeStrategicInsights(input: {
       durationMin,
       productionLevel,
       hasCuriosityGap,
-      hasNumber,
+      hasNumber: numberAnalysis.isPerformanceDriver,
       commentsAnalysis,
     })
   );
@@ -972,9 +1059,14 @@ function computeStrategicInsights(input: {
       `Viewers asking for: ${commentsAnalysis.viewerAskedFor[0]} - make that video!`
     );
     opportunityScore += 1;
+    commentOpportunityScore = 1;
+    opportunityWhyThisScore.push(`Comment requests: found (${commentsAnalysis.viewerAskedFor.length} themes) → +1 opportunity`);
+  } else {
+    opportunityWhyThisScore.push(`Comment requests: none detected`);
   }
 
   opportunityScore = Math.min(10, Math.max(1, Math.round(opportunityScore)));
+  opportunityWhyThisScore.unshift(`Base score: 5, Final: ${opportunityScore}/10`);
 
   let opportunityVerdict = "";
   if (opportunityScore >= 8) {
@@ -1011,7 +1103,7 @@ function computeStrategicInsights(input: {
     });
   }
 
-  if (!hasNumber && /how|why|what|best|stop|fix|make/i.test(title)) {
+  if (!numberAnalysis.isPerformanceDriver && /how|why|what|best|stop|fix|make/i.test(title)) {
     fallbackBeatChecklist.push({
       action:
         "Make the title more specific with a number or constraint (time, steps, or result)",
@@ -1020,7 +1112,7 @@ function computeStrategicInsights(input: {
     });
   }
 
-  if (!hasTimestamps && durationMin >= 8) {
+  if (!chapterDetection.hasChapters && durationMin >= 8) {
     fallbackBeatChecklist.push({
       action:
         "Add clear chapters and reference them on-screen to reduce drop-off in the middle",
@@ -1058,8 +1150,10 @@ function computeStrategicInsights(input: {
       ? input.beatThisVideo
       : fallbackBeatChecklist;
 
-  // ===== DESCRIPTION ANALYSIS =====
-  const hasLinks = /https?:\/\/\S+/i.test(description);
+  // ===== DESCRIPTION ANALYSIS (using improved utilities) =====
+  const linkAnalysis = analyzeExternalLinks(description);
+  // Reuse the early hashtag analysis
+  const hashtagAnalysis = hashtagAnalysisEarly;
   const hasCTA =
     /subscribe|like|comment|share|follow|check out|click|link|download/i.test(
       description
@@ -1067,12 +1161,11 @@ function computeStrategicInsights(input: {
   const estimatedWordCount = description.split(/\s+/).filter(Boolean).length;
 
   const keyElements: string[] = [];
-  if (hasTimestamps) keyElements.push("Chapter timestamps");
-  if (hasLinks) keyElements.push("External links");
+  if (chapterDetection.hasChapters) keyElements.push(`Chapter timestamps (${chapterDetection.chapterCount})`);
+  if (linkAnalysis.hasLinks) keyElements.push(`External links (${linkAnalysis.linkCount})`);
   if (hasCTA) keyElements.push("Call-to-action");
-  if (description.includes("#")) keyElements.push("Hashtags");
-  if (/social|instagram|twitter|tiktok|discord/i.test(description))
-    keyElements.push("Social media links");
+  if (hashtagAnalysis.count > 0) keyElements.push(`Hashtags (${hashtagAnalysis.count})`);
+  if (linkAnalysis.hasSocialLinks) keyElements.push("Social media links");
 
   // ===== FORMAT SIGNALS =====
   let paceEstimate: "Slow" | "Medium" | "Fast" = "Medium";
@@ -1086,54 +1179,80 @@ function computeStrategicInsights(input: {
     titleAnalysis: {
       score: titleScore,
       characterCount: titleLength,
-      hasNumber,
+      hasNumber: numberAnalysis.hasNumber,
+      numberAnalysis, // Include detailed analysis for UI tooltip
       hasPowerWord,
       hasCuriosityGap,
       hasTimeframe,
       strengths: titleStrengths.slice(0, 4),
       weaknesses: titleWeaknesses.slice(0, 3),
+      confidence: "Medium" as const, // Title patterns are computed, not direct metrics
     },
     competitionDifficulty: {
       score: difficultyScore,
       reasons: difficultyReasons.slice(0, 3),
+      whyThisScore: difficultyWhyThisScore,
+      basisMetrics: {
+        viewCount: views,
+        viewsPerDay: video.derived.viewsPerDay,
+        likeRate: Math.round(likeRate * 100) / 100,
+      },
+      confidence: "Medium" as const,
     },
     postingTiming: {
       dayOfWeek,
       hourOfDay,
+      localTimeFormatted,
       daysAgo,
       isWeekend,
       timingInsight,
+      hasChannelHistory: false, // We don't have competitor channel upload history
+      confidence: "Low" as const,
+      measurement: "Inferred" as const,
     },
     lengthAnalysis: {
-      minutes: durationMin,
-      category: lengthCategory,
+      durationSec,
+      durationFormatted,
+      bucket: durationBucket,
       insight: lengthInsight,
-      optimalForTopic: durationMin >= 5 && durationMin <= 12,
+      confidence: "High" as const, // Duration is directly measured
     },
     engagementBenchmarks: {
       likeRate: Math.round(likeRate * 100) / 100,
       commentRate: Math.round(commentRate * 100) / 100,
       likeRateVerdict,
       commentRateVerdict,
+      confidence: "High" as const,
+      measurement: "Measured" as const,
     },
     opportunityScore: {
       score: opportunityScore,
       verdict: opportunityVerdict,
       gaps: gaps.slice(0, 4),
       angles: angles.slice(0, 4),
+      whyThisScore: opportunityWhyThisScore,
+      scoreBreakdown: {
+        descriptionGap: descriptionGapScore,
+        hashtagGap: hashtagGapScore,
+        commentOpportunity: commentOpportunityScore,
+        formatMismatch: formatMismatchScore,
+      },
+      confidence: "Medium" as const,
     },
     beatThisVideo: beatChecklist.slice(0, 6),
     descriptionAnalysis: {
-      hasTimestamps,
-      hasLinks,
+      hasTimestamps: chapterDetection.hasChapters,
+      hasLinks: linkAnalysis.hasLinks,
       hasCTA,
       estimatedWordCount,
       keyElements,
+      confidence: "High" as const,
     },
     formatSignals: {
       likelyFormat,
       productionLevel,
       paceEstimate,
+      confidence: "Low" as const, // Format is guessed
     },
   };
 }
@@ -1610,8 +1729,8 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
         score: 8,
         characterCount: 44,
         hasNumber: false,
-        hasPowerWord: true, // "DOUBLED"
-        hasCuriosityGap: true, // "This One Change"
+        hasPowerWord: true,
+        hasCuriosityGap: true,
         hasTimeframe: false,
         strengths: [
           "Creates curiosity gap with 'This One Change'",
@@ -1620,6 +1739,7 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
           "Optimal length (40-60 chars)",
         ],
         weaknesses: ["Could add a number for specificity (e.g., '30 Days')"],
+        confidence: "Medium" as const,
       },
       competitionDifficulty: {
         score: "Hard",
@@ -1628,26 +1748,33 @@ function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
           "Very high engagement - content is resonating strongly",
           "Established channel with loyal audience",
         ],
+        confidence: "Medium" as const,
       },
       postingTiming: {
         dayOfWeek: "Tuesday",
         hourOfDay: 14,
+        localTimeFormatted: "2:00 PM",
         daysAgo: 3,
         isWeekend: false,
-        timingInsight: "Posted during peak viewing hours (2-5pm)",
+        timingInsight: "Posted Tuesday 2:00 PM. Posting-time pattern unavailable for this channel.",
+        hasChannelHistory: false,
+        confidence: "Low" as const,
+        measurement: "Inferred" as const,
       },
       lengthAnalysis: {
-        minutes: 14,
-        category: "Long",
-        insight:
-          "Long-form content - needs strong hooks throughout to maintain attention",
-        optimalForTopic: true,
+        durationSec: 847,
+        durationFormatted: "14m 7s",
+        bucket: "Long" as const,
+        insight: "Long-form content - requires strong pacing throughout",
+        confidence: "High" as const,
       },
       engagementBenchmarks: {
         likeRate: 4.8,
         commentRate: 3.0,
         likeRateVerdict: "Above Average",
         commentRateVerdict: "Average",
+        confidence: "High" as const,
+        measurement: "Measured" as const,
       },
       opportunityScore: {
         score: 7,

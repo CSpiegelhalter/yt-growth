@@ -483,7 +483,8 @@ export async function searchNicheVideos(
   maxVideos: number = 25,
   pageToken?: string,
   videoDuration: VideoDurationFilter = "any",
-  videoCategoryId?: string // YouTube category ID (e.g., "20" for Gaming)
+  videoCategoryId?: string, // YouTube category ID (e.g., "20" for Gaming)
+  publishedAfterDays?: number // Restrict to videos published within this many days (default: 180)
 ): Promise<{
   videos: Array<{
     videoId: string;
@@ -526,9 +527,10 @@ export async function searchNicheVideos(
   params.set("relevanceLanguage", "en");
   // HD videos only for better quality
   params.set("videoDefinition", "high");
-  // Only get videos from the last 6 months
-  const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
-  params.set("publishedAfter", sixMonthsAgo.toISOString());
+  // Restrict to videos published within the specified window (default: 180 days / 6 months)
+  const daysAgo = publishedAfterDays ?? 180;
+  const publishedAfterDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+  params.set("publishedAfter", publishedAfterDate.toISOString());
 
   // Filter by video duration if specified (short < 4min, medium 4-20min, long > 20min)
   if (videoDuration !== "any") {

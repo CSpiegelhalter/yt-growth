@@ -44,10 +44,14 @@ import {
   getRetentionGrade,
   getConversionGrade,
   getEngagementGrade,
+  detectBottleneck,
+  computeSectionConfidence,
+  isLowDataMode,
   type DerivedMetrics,
   type ChannelBaseline,
   type BaselineComparison,
 } from "@/lib/owned-video-math";
+import { fetchVideoDiscoveryMetrics } from "@/lib/youtube-analytics";
 import { callLLM } from "@/lib/llm";
 import { hashVideoContent } from "@/lib/content-hash";
 
@@ -61,7 +65,12 @@ const QuerySchema = z.object({
 });
 
 // Import types from shared types file
-import type { VideoInsightsResponse, VideoInsightsLLM } from "@/types/api";
+import type {
+  VideoInsightsResponse,
+  VideoInsightsLLM,
+  BottleneckResult,
+  SectionConfidence,
+} from "@/types/api";
 
 class YouTubePermissionDeniedError extends Error {
   code = "youtube_permissions" as const;
@@ -696,6 +705,17 @@ export const POST = createApiRoute(
 // Internal type that includes comments (for caching), extends API response
 type InsightsResultInternal = VideoInsightsResponse & {
   comments: VideoComment[];
+  bottleneck?: BottleneckResult;
+  confidence?: SectionConfidence;
+  isLowDataMode?: boolean;
+  analyticsAvailability?: {
+    hasImpressions: boolean;
+    hasCtr: boolean;
+    hasTrafficSources: boolean;
+    hasEndScreenCtr: boolean;
+    hasCardCtr: boolean;
+    reason?: string;
+  };
 };
 
 // Retention point type
@@ -804,11 +824,33 @@ async function generateInsights(
     throw new Error("Could not fetch analytics totals");
   }
 
-  // Compute derived metrics
+  // Fetch discovery metrics (impressions, CTR, traffic sources) in parallel
+  // This is a separate API call that may fail if user doesn't have analytics scope
+  const discoveryMetrics = await fetchVideoDiscoveryMetrics(
+    ga,
+    youtubeChannelId,
+    videoId,
+    startDate,
+    endDate
+  ).catch(() => ({
+    impressions: null,
+    impressionsCtr: null,
+    trafficSources: null,
+    hasData: false,
+    reason: "connect_analytics" as const,
+  }));
+
+  // Compute derived metrics (including discovery metrics if available)
   const derived = computeDerivedMetrics(
-    totals,
+    {
+      ...totals,
+      impressions: discoveryMetrics.impressions,
+      impressionsCtr: discoveryMetrics.impressionsCtr,
+      trafficSources: discoveryMetrics.trafficSources,
+    },
     dailySeries,
-    videoMeta.durationSec
+    videoMeta.durationSec,
+    videoMeta.publishedAt
   );
 
   // Override totalViews with Data API viewCount (total lifetime views, not Analytics API period views)
@@ -821,6 +863,25 @@ async function generateInsights(
     totals.averageViewPercentage,
     baseline
   );
+
+  // Detect bottleneck and compute confidence
+  const bottleneck = detectBottleneck(derived, comparison, baseline);
+  const confidence = computeSectionConfidence(
+    derived,
+    discoveryMetrics.hasData,
+    discoveryMetrics.trafficSources != null
+  );
+  const lowDataMode = isLowDataMode(derived);
+
+  // Analytics availability flags
+  const analyticsAvailability = {
+    hasImpressions: discoveryMetrics.impressions != null,
+    hasCtr: discoveryMetrics.impressionsCtr != null,
+    hasTrafficSources: discoveryMetrics.trafficSources != null,
+    hasEndScreenCtr: derived.endScreenClickRate != null,
+    hasCardCtr: derived.cardClickRate != null,
+    reason: discoveryMetrics.hasData ? undefined : discoveryMetrics.reason,
+  };
 
   // Compute lever grades
   const retentionGrade = getRetentionGrade(derived.avdRatio);
@@ -933,6 +994,11 @@ async function generateInsights(
     llmInsights,
     comments, // Include comments for caching
     cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    // NEW: Bottleneck and confidence
+    bottleneck,
+    confidence,
+    isLowDataMode: lowDataMode,
+    analyticsAvailability,
   };
 }
 
@@ -1019,6 +1085,8 @@ async function getChannelBaselineFromDB(
         v.watchMin != null ? (Number(v.watchMin) * 60) / views : null,
       avdRatio: v.avgViewPct != null ? Number(v.avgViewPct) / 100 : null,
       avgWatchTimeMin: null,
+      avgViewDuration: null,
+      avgViewPercentage: v.avgViewPct != null ? Number(v.avgViewPct) : null,
       engagementPerView:
         (Number(v.likes ?? 0) +
           Number(v.comments ?? 0) +
@@ -1036,6 +1104,12 @@ async function getChannelBaselineFromDB(
       monetizedPlaybackRate: null,
       adImpressionsPerView: null,
       cpm: null,
+      // Discovery metrics (not available for baseline)
+      impressions: null,
+      impressionsCtr: null,
+      first24hViews: null,
+      first48hViews: null,
+      trafficSources: null,
       // Trend metrics
       velocity24h: null,
       velocity7d: null,
@@ -1243,7 +1317,17 @@ async function generateSEOAnalysis(
   titleAnalysis: VideoInsightsLLM["titleAnalysis"];
   tagAnalysis: VideoInsightsLLM["tagAnalysis"];
   descriptionAnalysis: VideoInsightsLLM["descriptionAnalysis"];
+  traceableTags?: VideoInsightsLLM["traceableTags"];
+  descriptionOpeners?: VideoInsightsLLM["descriptionOpeners"];
 } | null> {
+  // Detect if search-driven based on traffic sources
+  const searchTraffic = derived.trafficSources?.search ?? 0;
+  const totalTraffic = derived.trafficSources?.total ?? 1;
+  const isSearchDriven = searchTraffic > totalTraffic * 0.3;
+  const tagImpactNote = isSearchDriven
+    ? "Tags are HIGH IMPACT for this video since it gets significant search traffic."
+    : "Tags are LOW IMPACT for most YouTube videos. Focus on title/thumbnail instead.";
+
   const systemPrompt = `You are an elite YouTube SEO specialist with expertise in:
 - Video packaging (titles, thumbnails, hooks)
 - YouTube SEO and discoverability
@@ -1263,8 +1347,12 @@ Return ONLY valid JSON:
     "score": 6,
     "coverage": "excellent|good|fair|poor",
     "missing": ["specific tag 1", "specific tag 2", "...15-25 tags total"],
-    "feedback": "Specific feedback about the tags"
+    "feedback": "Specific feedback about the tags",
+    "impactLevel": "high|medium|low"
   },
+  "traceableTags": [
+    { "tag": "example tag", "source": "title|description|transcript|existing_tag" }
+  ],
   "descriptionAnalysis": {
     "score": 7,
     "strengths": ["What is good for SEO + viewers"],
@@ -1272,13 +1360,15 @@ Return ONLY valid JSON:
     "rewrittenOpening": "Rewrite the first ~200 characters to be stronger for search + humans",
     "addTheseLines": ["Copy/paste line 1", "Copy/paste line 2"],
     "targetKeywords": ["keyword phrase 1", "keyword phrase 2"]
-  }
+  },
+  "descriptionOpeners": ["Option 1 (2-3 sentences)", "Option 2", "Option 3"]
 }
 
 CRITICAL RULES:
 1. Title suggestions MUST be complete, grammatically correct titles that make sense for THIS video's topic and content. Each suggestion should be a full, usable title (not a fragment or template).
    - Think like an SEO-minded YouTube growth expert: optimize for real search intent + high CTR (clarity + curiosity), but DO NOT clickbait.
    - Understand what the video is ABOUT from the title, description, and tags before suggesting alternatives.
+   - DO NOT assume a niche (gaming, beauty, etc.) - derive the topic ONLY from title/description/tags.
 
 2. Tag suggestions in "missing" must be SPECIFIC tags ready to copy-paste (e.g., "Blue Prince gameplay 2024", not "Add year-specific variations")
    - Provide 15-25 tags in "missing". These should be SEO-first, highly relevant to THIS video, and easy to paste into YouTube.
@@ -1287,14 +1377,24 @@ CRITICAL RULES:
    - Avoid generic filler ("youtube", "viral", "trending") unless the video is literally about that topic
    - No hashtags, no commas inside tag strings, no duplicates
    - Keep tags reasonably short (aim <= 30 characters each)
+   - ${tagImpactNote}
 
-3. Description analysis MUST focus on SEO + viewer conversion:
+3. TRACEABLE TAGS: Each tag in "traceableTags" MUST include a "source" field:
+   - "title" if the keyword/topic appears in the title
+   - "description" if it appears in the description
+   - "existing_tag" if it's already a tag on the video
+   - DO NOT include tags that can't be traced to one of these sources
+   - This prevents off-topic/hallucinated tags
+
+4. Description analysis MUST focus on SEO + viewer conversion:
    - The first 2 lines (first ~200 chars) should clearly state the main topic + promise and include the primary keyword naturally.
    - Improve scannability: short paragraphs, bullets, timestamps (if relevant), and a clear CTA.
    - Provide specific copy/paste lines in "addTheseLines" (e.g., keyword-rich summary, resources, related videos, CTAs).
    - Never recommend keyword stuffing.
 
-4. No emojis, no hashtags, no markdown`;
+5. Description openers: provide 3 ready-to-use opening paragraphs (2-3 sentences each) that include relevant keywords naturally.
+
+6. No emojis, no hashtags, no markdown`;
 
   const videoContext = buildVideoContext(video, derived, comparison);
 
@@ -1512,7 +1612,85 @@ CRITICAL RULES:
 }
 
 /**
- * Generate LLM insights using 5 parallel requests for faster response
+ * Chunk 6: Promo Pack, Hook Fix, CTAs (for ShareKit and LowDataMode)
+ */
+async function generatePromoAndHooks(
+  video: VideoMetadata,
+  derived: DerivedMetrics
+): Promise<{
+  promoPack: VideoInsightsLLM["promoPack"];
+  hookFix: VideoInsightsLLM["hookFix"];
+  ctaLines: VideoInsightsLLM["ctaLines"];
+  retentionNotes: VideoInsightsLLM["retentionNotes"];
+} | null> {
+  const descSnippet = video.description?.slice(0, 500) || "";
+  const topicHint = video.topicCategories?.slice(0, 3).join(", ") || "general";
+
+  const systemPrompt = `You are an expert social media copywriter and YouTube growth strategist.
+
+Your job is to create READY-TO-USE promotional content for this specific video.
+
+Return ONLY valid JSON:
+{
+  "promoPack": {
+    "xPost": "280-char max X/Twitter post that teases the video",
+    "redditPostTitle": "Engaging Reddit title (no clickbait)",
+    "redditPostBody": "2-3 sentence Reddit body that provides value and links naturally",
+    "linkedinPost": "Professional LinkedIn post if topic suits, null otherwise",
+    "discordMessage": "Casual Discord community message",
+    "youtubeCommunityPost": "YouTube community tab post with poll/question option"
+  },
+  "hookFix": {
+    "first15SecondsScripts": ["Script option 1 for first 15 seconds", "Script option 2"],
+    "firstMinuteOutline": ["Beat 1: Hook", "Beat 2: Proof", "Beat 3: Preview", "Beat 4: Stakes", "Beat 5: Transition"]
+  },
+  "ctaLines": {
+    "subscribe": ["Subscribe CTA option 1", "Subscribe CTA option 2"],
+    "nextVideo": ["Watch next CTA"],
+    "playlist": ["Playlist CTA"],
+    "commentPrompt": ["Comment prompt option 1", "Comment prompt option 2"]
+  },
+  "retentionNotes": ["Timestamp-agnostic retention issue 1", "Issue 2", "Issue 3"]
+}
+
+CRITICAL RULES:
+1. All promo copy must be SPECIFIC to THIS video's topic from the title/description
+2. DO NOT make niche assumptions - work only from the content provided
+3. X post MUST be under 280 characters
+4. Reddit body should provide genuine value, not just "check out my video"
+5. Hook scripts should be 2-3 sentences each, ready to read aloud
+6. First minute outline should be 5-7 short beats (not a checklist)
+7. CTAs should feel natural, not salesy
+8. Retention notes should be generic issues to look for (e.g., "slow setup", "unclear promise")
+9. No emojis in promo copy (except YouTube community post)
+10. No hashtags unless platform-appropriate`;
+
+  const userPrompt = `VIDEO INFO:
+TITLE: "${video.title}"
+DESCRIPTION (first 500 chars): "${descSnippet}"
+DURATION: ${Math.round(video.durationSec / 60)} minutes
+VIEWS: ${derived.totalViews.toLocaleString()}
+TOPIC HINTS: ${topicHint}
+
+Generate promotional content and hook suggestions for THIS video.`;
+
+  try {
+    const result = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      { maxTokens: 1000, temperature: 0.4, responseFormat: "json_object" }
+    );
+    return JSON.parse(result.content);
+  } catch (err) {
+    console.error("Promo and hooks LLM failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Generate LLM insights using 6 parallel requests for faster response
  */
 async function generateLLMInsights(
   video: VideoMetadata,
@@ -1521,23 +1699,25 @@ async function generateLLMInsights(
   _levers: VideoInsightsResponse["levers"],
   comments: VideoComment[]
 ): Promise<VideoInsightsLLM | null> {
-  console.log("[VideoInsights] Starting parallel LLM generation (5 chunks)");
+  console.log("[VideoInsights] Starting parallel LLM generation (6 chunks)");
   const startTime = Date.now();
 
   try {
-    // Run all 5 LLM calls in parallel for ~5x faster response
+    // Run all 6 LLM calls in parallel for faster response
     const [
       quickResult,
       seoResult,
       strategyResult,
       creativeResult,
       commentResult,
+      promoResult,
     ] = await Promise.all([
       generateQuickAnalysis(video, derived, comparison),
       generateSEOAnalysis(video, derived, comparison),
       generateStrategyAnalysis(video, derived, comparison),
       generateCreativeAnalysis(video, derived, comparison),
       generateCommentInsights(video, comments),
+      generatePromoAndHooks(video, derived),
     ]);
 
     const elapsed = Date.now() - startTime;
@@ -1576,6 +1756,11 @@ async function generateLLMInsights(
         viewerAskedFor: [],
         hookInspiration: [],
       },
+      // NEW: Promo and hook content
+      promoPack: promoResult?.promoPack ?? undefined,
+      hookFix: promoResult?.hookFix ?? undefined,
+      ctaLines: promoResult?.ctaLines ?? undefined,
+      retentionNotes: promoResult?.retentionNotes ?? undefined,
     };
 
     return merged;
@@ -1804,6 +1989,8 @@ function getDemoInsights(opts?: {
       watchTimePerViewSec: 72,
       avdRatio: 0.39,
       avgWatchTimeMin: 1.2,
+      avgViewDuration: 280,
+      avgViewPercentage: 39,
       engagementPerView: 0.064,
       engagedViewRate: 0.08,
       // Card & End Screen
@@ -1820,6 +2007,20 @@ function getDemoInsights(opts?: {
       velocity24h: 200,
       velocity7d: 1500,
       acceleration24h: 50,
+      // Discovery metrics (demo data)
+      impressions: 3000000, // Estimated based on CTR
+      impressionsCtr: 5.0,
+      first24hViews: 45000,
+      first48hViews: 75000,
+      trafficSources: {
+        browse: 60000,
+        suggested: 45000,
+        search: 30000,
+        external: 10000,
+        notifications: 5000,
+        other: 0,
+        total: 150000,
+      },
     },
     // Realistic baseline from "other channel videos"
     baseline: {

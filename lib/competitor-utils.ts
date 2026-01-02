@@ -1,0 +1,913 @@
+/**
+ * Competitor Analysis Utilities
+ *
+ * Shared utilities for competitor video analysis that ensure:
+ * - Consistent duration formatting
+ * - Accurate number/quantifier detection
+ * - Evidence-based title analysis (no overclaims)
+ * - Honest confidence labels
+ */
+
+// ============================================
+// DURATION FORMATTING
+// ============================================
+
+export type DurationBucket = "Shorts" | "Short" | "Medium" | "Long" | "Very Long";
+
+/**
+ * Format duration consistently across the app.
+ * Never shows "0 minutes" - always uses seconds for short content.
+ *
+ * @example
+ * formatDuration(10) => "10s"
+ * formatDuration(65) => "1m 5s"
+ * formatDuration(3661) => "1h 1m"
+ */
+export function formatDuration(seconds: number): string {
+  if (seconds < 0 || !Number.isFinite(seconds)) return "—";
+
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+
+  if (h > 0) {
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  }
+  if (m > 0) {
+    return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  }
+  return `${s}s`;
+}
+
+/**
+ * Format duration as a compact badge label (e.g., "10:05")
+ */
+export function formatDurationBadge(seconds: number): string {
+  if (seconds < 0 || !Number.isFinite(seconds)) return "—";
+
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Categorize duration into buckets for analysis
+ */
+export function getDurationBucket(seconds: number): DurationBucket {
+  if (seconds < 60) return "Shorts";
+  if (seconds < 240) return "Short"; // < 4 min
+  if (seconds < 1200) return "Medium"; // 4-20 min
+  if (seconds < 3600) return "Long"; // 20-60 min
+  return "Very Long"; // 60+ min
+}
+
+/**
+ * Get a human-readable duration with bucket label
+ */
+export function formatDurationWithBucket(seconds: number): {
+  formatted: string;
+  bucket: DurationBucket;
+  bucketLabel: string;
+} {
+  const formatted = formatDuration(seconds);
+  const bucket = getDurationBucket(seconds);
+
+  const bucketLabels: Record<DurationBucket, string> = {
+    Shorts: "YouTube Short",
+    Short: "Short-form",
+    Medium: "Standard length",
+    Long: "Long-form",
+    "Very Long": "Extended content",
+  };
+
+  return {
+    formatted,
+    bucket,
+    bucketLabel: bucketLabels[bucket],
+  };
+}
+
+// ============================================
+// NUMBER/QUANTIFIER DETECTION
+// ============================================
+
+export type NumberType =
+  | "ranking" // #1, Ranked #5, Top 10
+  | "list_count" // 5 tips, 10 ways, 7 mistakes
+  | "episode" // Part 2, Episode 51, Day 30
+  | "time_constraint" // 24 hours, 30 days, 1 hour
+  | "quantity" // 1000 subscribers, $50,000
+  | "version" // 2.0, v3
+  | "proper_noun" // Black Ops 7, iPhone 15, GTA 6
+  | "year" // 2024, 2025
+  | "none";
+
+export type NumberAnalysis = {
+  hasNumber: boolean;
+  type: NumberType;
+  value: string | null;
+  isPerformanceDriver: boolean;
+  explanation: string;
+};
+
+/**
+ * Detect and classify numbers in titles.
+ *
+ * Key distinction: Numbers that are part of proper nouns (Black Ops 7, iPhone 15)
+ * are NOT performance drivers - they're just product names.
+ *
+ * Performance drivers are:
+ * - Rankings (#1, Top 10)
+ * - List counts (5 tips, 10 ways)
+ * - Time constraints (24 hours, 30 days)
+ * - Episode/part numbers (for series)
+ */
+export function analyzeNumberInTitle(title: string): NumberAnalysis {
+  const titleLower = title.toLowerCase();
+
+  // Common proper nouns with numbers that should NOT count as performance drivers
+  const properNounPatterns = [
+    // Video games
+    /\b(gta|grand theft auto)\s*[456]\b/i,
+    /\b(call of duty|cod|black ops|modern warfare|warzone)\s*\d+\b/i,
+    /\b(battlefield|bf)\s*\d+\b/i,
+    /\b(fifa|nba|madden|nfl|nhl|mlb|wwe)\s*2k?\d+\b/i,
+    /\b(final fantasy|ff)\s*(x+v?i*|[0-9]+)\b/i,
+    /\b(resident evil|re)\s*\d+\b/i,
+    /\b(fallout|diablo|doom|quake|halo|forza|gran turismo|gt)\s*\d+\b/i,
+    /\b(assassin'?s? creed|ac)\s*\d*\b/i,
+    /\b(destiny|division|borderlands|far cry|watch dogs)\s*\d+\b/i,
+    /\b(civilization|civ|sims|simcity)\s*\d+\b/i,
+    // Tech products
+    /\biphone\s*\d+\s*(pro|max|plus|mini)?\b/i,
+    /\bipad\s*(pro|air|mini)?\s*\d*\b/i,
+    /\bgalaxy\s*s?\d+\s*(ultra|plus|fe)?\b/i,
+    /\bpixel\s*\d+\s*(pro|a)?\b/i,
+    /\bplaystation\s*\d+\b/i,
+    /\bps\s*[345]\b/i,
+    /\bxbox\s*(series\s*[xs]|one|360)?\b/i,
+    /\bnintendo\s*(switch|64|ds|3ds|wii)\b/i,
+    /\bwindows\s*\d+\b/i,
+    /\bandroid\s*\d+\b/i,
+    /\bios\s*\d+\b/i,
+    /\bmac\s*(os|book)?\s*(pro|air)?\s*\d*\b/i,
+    /\bgpu|rtx|gtx|rx\s*\d+/i,
+    /\bintel\s*(core\s*)?i[3579]\s*\d+/i,
+    /\bryzen\s*\d+/i,
+    // Software versions
+    /\bv\d+(\.\d+)*\b/i,
+    /\b\d+\.\d+(\.\d+)*\s*(update|patch|release)\b/i,
+    // Car models
+    /\b(model\s*[3sxy]|cybertruck)\b/i,
+    /\b(bmw|audi|mercedes|porsche|ferrari|lamborghini)\s*[a-z]*\d+/i,
+  ];
+
+  // Check for proper noun numbers first
+  for (const pattern of properNounPatterns) {
+    const match = title.match(pattern);
+    if (match) {
+      return {
+        hasNumber: true,
+        type: "proper_noun",
+        value: match[0],
+        isPerformanceDriver: false,
+        explanation: "Number is part of a product/game name, not a performance signal",
+      };
+    }
+  }
+
+  // Check for years (2020-2030)
+  const yearMatch = title.match(/\b(202[0-9]|2030)\b/);
+  if (yearMatch) {
+    return {
+      hasNumber: true,
+      type: "year",
+      value: yearMatch[1],
+      isPerformanceDriver: true,
+      explanation: "Year reference signals timeliness and relevance",
+    };
+  }
+
+  // Ranking patterns (#1, Ranked #5, Top 10, Best 5)
+  const rankingMatch = title.match(
+    /(?:#\s*(\d+)|ranked?\s*#?\s*(\d+)|top\s*(\d+)|best\s*(\d+)|worst\s*(\d+)|number\s*(\d+))/i
+  );
+  if (rankingMatch) {
+    const value = rankingMatch.slice(1).find((v) => v) ?? null;
+    return {
+      hasNumber: true,
+      type: "ranking",
+      value,
+      isPerformanceDriver: true,
+      explanation: "Ranking creates credibility and specificity",
+    };
+  }
+
+  // List/count patterns (5 tips, 10 ways, 7 mistakes, 3 reasons)
+  const listMatch = title.match(
+    /\b(\d+)\s*(tips?|ways?|mistakes?|reasons?|things?|steps?|secrets?|rules?|ideas?|hacks?|tricks?|methods?|strategies?|lessons?|examples?|signs?)\b/i
+  );
+  if (listMatch) {
+    return {
+      hasNumber: true,
+      type: "list_count",
+      value: listMatch[1],
+      isPerformanceDriver: true,
+      explanation: "List count creates clear expectations and encourages full watch",
+    };
+  }
+
+  // Episode/part patterns (Part 2, Episode 51, Day 30, Week 4)
+  const episodeMatch = title.match(
+    /\b(part|episode|ep|day|week|month|chapter|season|vol|volume)\s*#?\s*(\d+)/i
+  );
+  if (episodeMatch) {
+    return {
+      hasNumber: true,
+      type: "episode",
+      value: episodeMatch[2],
+      isPerformanceDriver: true,
+      explanation: "Episode/part number builds series continuity",
+    };
+  }
+
+  // Time constraint patterns (24 hours, 30 days, under 5 minutes)
+  const timeMatch = title.match(
+    /\b(\d+)\s*(hours?|days?|weeks?|months?|years?|minutes?|mins?|seconds?|secs?)\b/i
+  );
+  if (timeMatch) {
+    return {
+      hasNumber: true,
+      type: "time_constraint",
+      value: `${timeMatch[1]} ${timeMatch[2]}`,
+      isPerformanceDriver: true,
+      explanation: "Time constraint creates urgency and clear scope",
+    };
+  }
+
+  // Quantity patterns ($1000, 10K, 1M views)
+  const quantityMatch = title.match(
+    /\b(\$?\d+[kmb]?|\d{1,3}(?:,\d{3})+)\s*(subscribers?|subs?|views?|dollars?|followers?|downloads?)?\b/i
+  );
+  if (quantityMatch) {
+    return {
+      hasNumber: true,
+      type: "quantity",
+      value: quantityMatch[0],
+      isPerformanceDriver: true,
+      explanation: "Specific quantity adds credibility and concrete stakes",
+    };
+  }
+
+  // Generic number that doesn't fit other patterns
+  const genericMatch = title.match(/\b\d+\b/);
+  if (genericMatch) {
+    return {
+      hasNumber: true,
+      type: "none",
+      value: genericMatch[0],
+      isPerformanceDriver: false,
+      explanation: "Number present but not in a pattern that typically drives performance",
+    };
+  }
+
+  return {
+    hasNumber: false,
+    type: "none",
+    value: null,
+    isPerformanceDriver: false,
+    explanation: "No numbers detected in title",
+  };
+}
+
+// ============================================
+// TITLE TRUNCATION ANALYSIS
+// ============================================
+
+export type TruncationAnalysis = {
+  totalChars: number;
+  mobileLimit: number;
+  desktopLimit: number;
+  truncatesOnMobile: boolean;
+  truncatesOnDesktop: boolean;
+  mobileVisibleText: string;
+  confidence: "Measured";
+};
+
+/**
+ * Analyze title truncation across devices.
+ * YouTube truncates titles at approximately:
+ * - Mobile (feed): ~50-60 chars
+ * - Desktop (feed): ~60-70 chars
+ * - Search results: ~70-80 chars
+ */
+export function analyzeTitleTruncation(title: string): TruncationAnalysis {
+  const totalChars = title.length;
+  const mobileLimit = 55;
+  const desktopLimit = 65;
+
+  return {
+    totalChars,
+    mobileLimit,
+    desktopLimit,
+    truncatesOnMobile: totalChars > mobileLimit,
+    truncatesOnDesktop: totalChars > desktopLimit,
+    mobileVisibleText: title.slice(0, mobileLimit) + (totalChars > mobileLimit ? "..." : ""),
+    confidence: "Measured",
+  };
+}
+
+// ============================================
+// CHAPTER DETECTION
+// ============================================
+
+/**
+ * Detect if description contains chapter timestamps.
+ * YouTube auto-generates chapters from timestamps in the format:
+ * - 0:00 Intro
+ * - 1:30 Topic 1
+ * - 10:45 Topic 2
+ */
+export function detectChapters(description: string): {
+  hasChapters: boolean;
+  chapterCount: number;
+  firstChapterTime: string | null;
+  confidence: "Measured";
+} {
+  if (!description) {
+    return { hasChapters: false, chapterCount: 0, firstChapterTime: null, confidence: "Measured" };
+  }
+
+  // Match timestamp patterns: 0:00, 1:30, 10:45, 1:00:00
+  const timestampPattern = /^[\s\u00A0]*(\d{1,2}:\d{2}(?::\d{2})?)\s+.+$/gm;
+  const matches = description.match(timestampPattern) || [];
+
+  // Filter to only include timestamps that start at 0:00 or early (valid chapters)
+  // and have at least 3 timestamps (meaningful chapter structure)
+  const hasZeroStart = /^\s*0:00\s/.test(description);
+  const isValidChapterList = matches.length >= 3 && hasZeroStart;
+
+  const firstMatch = description.match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
+
+  return {
+    hasChapters: isValidChapterList,
+    chapterCount: isValidChapterList ? matches.length : 0,
+    firstChapterTime: firstMatch ? firstMatch[1] : null,
+    confidence: "Measured",
+  };
+}
+
+// ============================================
+// EXTERNAL LINKS DETECTION
+// ============================================
+
+export type ExternalLinkAnalysis = {
+  hasLinks: boolean;
+  linkCount: number;
+  domains: string[];
+  hasSocialLinks: boolean;
+  hasAffiliateLinks: boolean;
+  confidence: "Measured";
+};
+
+/**
+ * Detect and categorize external links in description.
+ */
+export function analyzeExternalLinks(description: string): ExternalLinkAnalysis {
+  if (!description) {
+    return {
+      hasLinks: false,
+      linkCount: 0,
+      domains: [],
+      hasSocialLinks: false,
+      hasAffiliateLinks: false,
+      confidence: "Measured",
+    };
+  }
+
+  // Match URLs
+  const urlPattern = /https?:\/\/([^\s\/?#]+)[^\s]*/gi;
+  const matches = [...description.matchAll(urlPattern)];
+
+  const domains = [...new Set(matches.map((m) => m[1].toLowerCase().replace(/^www\./, "")))];
+
+  const socialDomains = [
+    "twitter.com",
+    "x.com",
+    "instagram.com",
+    "facebook.com",
+    "tiktok.com",
+    "discord.gg",
+    "discord.com",
+    "twitch.tv",
+    "linkedin.com",
+    "threads.net",
+    "bsky.app",
+  ];
+
+  const affiliateDomains = [
+    "amzn.to",
+    "amazon.com",
+    "bit.ly",
+    "geni.us",
+    "kit.co",
+    "linktr.ee",
+    "shopmy.us",
+    "rstyle.me",
+  ];
+
+  const hasSocialLinks = domains.some((d) =>
+    socialDomains.some((sd) => d.includes(sd.replace("www.", "")))
+  );
+
+  const hasAffiliateLinks = domains.some((d) =>
+    affiliateDomains.some((ad) => d.includes(ad.replace("www.", "")))
+  );
+
+  return {
+    hasLinks: domains.length > 0,
+    linkCount: matches.length,
+    domains: domains.slice(0, 10),
+    hasSocialLinks,
+    hasAffiliateLinks,
+    confidence: "Measured",
+  };
+}
+
+// ============================================
+// HASHTAG ANALYSIS
+// ============================================
+
+export type HashtagAnalysis = {
+  count: number;
+  hashtags: string[];
+  inTitle: string[];
+  inDescription: string[];
+  confidence: "Measured";
+};
+
+/**
+ * Extract and analyze hashtags from title and description.
+ */
+export function analyzeHashtags(title: string, description: string): HashtagAnalysis {
+  const hashtagPattern = /#[\p{L}\p{N}_-]+/gu;
+
+  const titleHashtags = title.match(hashtagPattern) || [];
+  const descHashtags = description?.match(hashtagPattern) || [];
+
+  const allHashtags = [...new Set([...titleHashtags, ...descHashtags])];
+
+  return {
+    count: allHashtags.length,
+    hashtags: allHashtags.slice(0, 30),
+    inTitle: titleHashtags,
+    inDescription: descHashtags,
+    confidence: "Measured",
+  };
+}
+
+// ============================================
+// POSTING TIME ANALYSIS
+// ============================================
+
+export type PostingTimeAnalysis = {
+  dayOfWeek: string;
+  hourOfDay: number;
+  localTimeFormatted: string;
+  daysAgo: number;
+  isWeekend: boolean;
+  // We can only say "off-peak" if we have channel history
+  peakLabel: string | null;
+  hasChannelHistory: boolean;
+  confidence: "Measured" | "Inferred";
+};
+
+/**
+ * Analyze posting time.
+ *
+ * IMPORTANT: We cannot label times as "off-peak" without channel upload history.
+ * This function only provides the measured data; peak labeling requires
+ * the competitor channel's upload pattern data.
+ */
+export function analyzePostingTime(
+  publishedAt: string,
+  channelUploadHistory?: Array<{ publishedAt: string }>
+): PostingTimeAnalysis {
+  const date = new Date(publishedAt);
+  const now = new Date();
+
+  const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
+  const hourOfDay = date.getHours();
+  const daysAgo = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+
+  const localTimeFormatted = date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  // Only compute peak label if we have channel history
+  let peakLabel: string | null = null;
+  let hasChannelHistory = false;
+
+  if (channelUploadHistory && channelUploadHistory.length >= 10) {
+    hasChannelHistory = true;
+
+    // Compute typical upload hours for this channel
+    const uploadHours = channelUploadHistory.map((v) => new Date(v.publishedAt).getHours());
+    const hourCounts = new Map<number, number>();
+    uploadHours.forEach((h) => hourCounts.set(h, (hourCounts.get(h) || 0) + 1));
+
+    // Find peak hours (hours with above-average uploads)
+    const avgUploads = uploadHours.length / 24;
+    const peakHours = [...hourCounts.entries()]
+      .filter(([, count]) => count > avgUploads * 1.5)
+      .map(([hour]) => hour);
+
+    if (peakHours.length > 0) {
+      const isPeakHour = peakHours.includes(hourOfDay);
+      peakLabel = isPeakHour
+        ? "Posted during this channel's typical upload window"
+        : "Posted outside this channel's typical upload window";
+    }
+  }
+
+  return {
+    dayOfWeek,
+    hourOfDay,
+    localTimeFormatted,
+    daysAgo,
+    isWeekend,
+    peakLabel,
+    hasChannelHistory,
+    confidence: hasChannelHistory ? "Measured" : "Inferred",
+  };
+}
+
+// ============================================
+// CONFIDENCE LABELS
+// ============================================
+
+export type ConfidenceLevel = "High" | "Medium" | "Low";
+export type MeasurementType = "Measured" | "Inferred";
+
+/**
+ * Get confidence level for competitor insights.
+ *
+ * For competitor videos, we have limited data:
+ * - HIGH: Direct public metrics (views, likes, comments, description content)
+ * - MEDIUM: Computed from public data (like rate, views/day, patterns)
+ * - LOW: Inferred/guessed (posting time effectiveness, "optimized for retention")
+ */
+export function getInsightConfidence(insightType: string): {
+  level: ConfidenceLevel;
+  measurement: MeasurementType;
+  tooltip: string;
+} {
+  const highConfidenceInsights = [
+    "views",
+    "likes",
+    "comments",
+    "description_length",
+    "title_length",
+    "hashtag_count",
+    "chapter_count",
+    "link_count",
+    "video_age",
+    "duration",
+  ];
+
+  const mediumConfidenceInsights = [
+    "views_per_day",
+    "like_rate",
+    "comment_rate",
+    "engagement_per_view",
+    "title_patterns",
+    "number_analysis",
+    "truncation",
+  ];
+
+  if (highConfidenceInsights.includes(insightType)) {
+    return {
+      level: "High",
+      measurement: "Measured",
+      tooltip: "Directly measured from public YouTube data",
+    };
+  }
+
+  if (mediumConfidenceInsights.includes(insightType)) {
+    return {
+      level: "Medium",
+      measurement: "Measured",
+      tooltip: "Computed from public metrics (views, likes, comments)",
+    };
+  }
+
+  return {
+    level: "Low",
+    measurement: "Inferred",
+    tooltip: "Inferred pattern - CTR and retention not available for competitor videos",
+  };
+}
+
+// ============================================
+// PUBLIC SIGNALS COMPUTATION
+// ============================================
+
+export type CompetitorPublicSignals = {
+  // Core metrics
+  videoAgeDays: number;
+  viewsPerDay: number;
+  likeRate: number | null; // likes per 100 views
+  commentsPer1k: number | null; // comments per 1000 views
+  engagementRate: number | null;
+
+  // Description analysis
+  descriptionWordCount: number;
+  hashtagCount: number;
+
+  // Title analysis
+  titleCharCount: number;
+  truncationAnalysis: TruncationAnalysis;
+  numberAnalysis: NumberAnalysis;
+
+  // Content analysis
+  externalLinks: ExternalLinkAnalysis;
+  chapterDetection: ReturnType<typeof detectChapters>;
+
+  // Duration
+  durationFormatted: string;
+  durationBucket: DurationBucket;
+
+  // All signals are measured
+  dataSource: "public_api";
+};
+
+/**
+ * Compute all public signals for a competitor video.
+ * These are deterministic computations from public data only.
+ */
+export function computePublicSignals(input: {
+  title: string;
+  description: string;
+  publishedAt: string;
+  durationSec: number;
+  viewCount: number;
+  likeCount?: number | null;
+  commentCount?: number | null;
+}): CompetitorPublicSignals {
+  const now = new Date();
+  const publishedDate = new Date(input.publishedAt);
+  const videoAgeDays = Math.max(
+    1,
+    Math.floor((now.getTime() - publishedDate.getTime()) / (1000 * 60 * 60 * 24))
+  );
+
+  const viewsPerDay = Math.round(input.viewCount / videoAgeDays);
+
+  // Like rate: likes per 100 views
+  const likeRate =
+    input.likeCount != null && input.viewCount > 0
+      ? Math.round((input.likeCount / input.viewCount) * 10000) / 100
+      : null;
+
+  // Comments per 1000 views
+  const commentsPer1k =
+    input.commentCount != null && input.viewCount > 0
+      ? Math.round((input.commentCount / input.viewCount) * 10000) / 10
+      : null;
+
+  // Engagement rate: (likes + comments) / views
+  const engagementRate =
+    input.likeCount != null && input.commentCount != null && input.viewCount > 0
+      ? Math.round(((input.likeCount + input.commentCount) / input.viewCount) * 10000) / 100
+      : null;
+
+  // Description word count
+  const descriptionWordCount = input.description
+    ? input.description
+        .replace(/https?:\/\/\S+/gi, "")
+        .split(/\s+/)
+        .filter(Boolean).length
+    : 0;
+
+  // Hashtags
+  const hashtagAnalysis = analyzeHashtags(input.title, input.description);
+
+  // Title analysis
+  const titleCharCount = input.title.length;
+  const truncationAnalysis = analyzeTitleTruncation(input.title);
+  const numberAnalysis = analyzeNumberInTitle(input.title);
+
+  // External links
+  const externalLinks = analyzeExternalLinks(input.description);
+
+  // Chapters
+  const chapterDetection = detectChapters(input.description);
+
+  // Duration
+  const { formatted: durationFormatted, bucket: durationBucket } = formatDurationWithBucket(
+    input.durationSec
+  );
+
+  return {
+    videoAgeDays,
+    viewsPerDay,
+    likeRate,
+    commentsPer1k,
+    engagementRate,
+    descriptionWordCount,
+    hashtagCount: hashtagAnalysis.count,
+    titleCharCount,
+    truncationAnalysis,
+    numberAnalysis,
+    externalLinks,
+    chapterDetection,
+    durationFormatted,
+    durationBucket,
+    dataSource: "public_api",
+  };
+}
+
+// ============================================
+// SAFE NUMERIC FORMATTING
+// ============================================
+
+/**
+ * Safely format a numeric value, handling undefined/null/NaN
+ */
+export function safeNumber(value: number | null | undefined, fallback = 0): number {
+  if (value == null || !Number.isFinite(value)) return fallback;
+  return value;
+}
+
+/**
+ * Format a rate as percentage string
+ */
+export function formatRate(value: number | null | undefined, decimals = 1): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return `${value.toFixed(decimals)}%`;
+}
+
+/**
+ * Format a per-1K metric
+ */
+export function formatPer1k(value: number | null | undefined, decimals = 1): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return value.toFixed(decimals);
+}
+
+// ============================================
+// CHANNEL BASELINES (from last N uploads)
+// ============================================
+
+export type ChannelBaselines = {
+  available: boolean;
+  videoCount: number;
+  medianLikeRate: number | null;
+  medianCommentsPer1k: number | null;
+  medianViewsPerDay: number | null;
+  medianDurationSec: number | null;
+  // Length distribution
+  lengthDistribution: {
+    shorts: number;
+    short: number;
+    medium: number;
+    long: number;
+    veryLong: number;
+  };
+  // Computed at
+  computedAt: string;
+};
+
+/**
+ * Compute channel baselines from a list of recent videos.
+ * 
+ * This enables "Below Average" labels to be relative to the competitor's
+ * channel performance, not just platform averages.
+ * 
+ * @param videos Array of video stats from the competitor channel
+ * @returns Channel baselines with medians
+ */
+export function computeChannelBaselines(
+  videos: Array<{
+    viewCount: number;
+    likeCount?: number | null;
+    commentCount?: number | null;
+    durationSec?: number | null;
+    publishedAt: string;
+  }>
+): ChannelBaselines {
+  if (!videos || videos.length < 3) {
+    return {
+      available: false,
+      videoCount: videos?.length ?? 0,
+      medianLikeRate: null,
+      medianCommentsPer1k: null,
+      medianViewsPerDay: null,
+      medianDurationSec: null,
+      lengthDistribution: { shorts: 0, short: 0, medium: 0, long: 0, veryLong: 0 },
+      computedAt: new Date().toISOString(),
+    };
+  }
+
+  const now = Date.now();
+
+  // Compute metrics for each video
+  const metrics = videos.map((v) => {
+    const publishedMs = new Date(v.publishedAt).getTime();
+    const ageDays = Math.max(1, (now - publishedMs) / (1000 * 60 * 60 * 24));
+    const viewsPerDay = v.viewCount / ageDays;
+
+    const likeRate = v.viewCount > 0 && v.likeCount
+      ? (v.likeCount / v.viewCount) * 100
+      : null;
+
+    const commentsPer1k = v.viewCount > 0 && v.commentCount
+      ? (v.commentCount / v.viewCount) * 1000
+      : null;
+
+    const durationSec = v.durationSec ?? null;
+    const bucket = durationSec ? getDurationBucket(durationSec) : null;
+
+    return { viewsPerDay, likeRate, commentsPer1k, durationSec, bucket };
+  });
+
+  // Helper to compute median
+  function median(values: number[]): number | null {
+    const filtered = values.filter((v) => v != null && Number.isFinite(v));
+    if (filtered.length === 0) return null;
+    filtered.sort((a, b) => a - b);
+    const mid = Math.floor(filtered.length / 2);
+    return filtered.length % 2 !== 0
+      ? filtered[mid]
+      : (filtered[mid - 1] + filtered[mid]) / 2;
+  }
+
+  // Compute length distribution
+  const lengthDistribution = {
+    shorts: metrics.filter((m) => m.bucket === "Shorts").length,
+    short: metrics.filter((m) => m.bucket === "Short").length,
+    medium: metrics.filter((m) => m.bucket === "Medium").length,
+    long: metrics.filter((m) => m.bucket === "Long").length,
+    veryLong: metrics.filter((m) => m.bucket === "Very Long").length,
+  };
+
+  return {
+    available: true,
+    videoCount: videos.length,
+    medianLikeRate: median(metrics.map((m) => m.likeRate).filter((v): v is number => v !== null)),
+    medianCommentsPer1k: median(metrics.map((m) => m.commentsPer1k).filter((v): v is number => v !== null)),
+    medianViewsPerDay: median(metrics.map((m) => m.viewsPerDay)),
+    medianDurationSec: median(metrics.map((m) => m.durationSec).filter((v): v is number => v !== null)),
+    lengthDistribution,
+    computedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Compare a video's metrics to channel baselines and return verdict
+ */
+export function compareToBaseline(
+  value: number | null,
+  baseline: number | null,
+  metric: "likeRate" | "commentsPer1k" | "viewsPerDay"
+): {
+  verdict: "Below Average" | "Average" | "Above Average" | "Exceptional" | "Unknown";
+  delta: number | null;
+  baselineAvailable: boolean;
+} {
+  if (value == null || !Number.isFinite(value)) {
+    return { verdict: "Unknown", delta: null, baselineAvailable: false };
+  }
+
+  if (baseline == null || !Number.isFinite(baseline)) {
+    // Fall back to platform averages
+    const platformAvg: Record<string, number> = {
+      likeRate: 3.0, // ~3% is typical
+      commentsPer1k: 2.0, // ~2 comments per 1K views
+      viewsPerDay: 1000, // varies widely
+    };
+    const avg = platformAvg[metric] ?? 0;
+    const ratio = value / avg;
+
+    if (ratio < 0.5) return { verdict: "Below Average", delta: null, baselineAvailable: false };
+    if (ratio < 1.5) return { verdict: "Average", delta: null, baselineAvailable: false };
+    if (ratio < 3) return { verdict: "Above Average", delta: null, baselineAvailable: false };
+    return { verdict: "Exceptional", delta: null, baselineAvailable: false };
+  }
+
+  const ratio = value / baseline;
+  const delta = value - baseline;
+
+  if (ratio < 0.5) return { verdict: "Below Average", delta, baselineAvailable: true };
+  if (ratio < 1.5) return { verdict: "Average", delta, baselineAvailable: true };
+  if (ratio < 2.5) return { verdict: "Above Average", delta, baselineAvailable: true };
+  return { verdict: "Exceptional", delta, baselineAvailable: true };
+}

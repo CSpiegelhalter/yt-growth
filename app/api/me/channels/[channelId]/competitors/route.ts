@@ -525,6 +525,18 @@ async function GETHandler(
           },
         });
 
+    // Cache staleness check: invalidate if cache is older than 24h (using updatedAt as backup)
+    const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+    const isCacheStale = cached
+      ? cached.updatedAt.getTime() < nowMs - CACHE_MAX_AGE_MS
+      : false;
+
+    if (isCacheStale && cached) {
+      console.log(
+        `[Competitors] Cache stale for channel ${channelId} (last updated: ${cached.updatedAt.toISOString()}), fetching fresh data`
+      );
+    }
+
     // Simplified approach: Use videos directly from search results
     // No channel size filtering - if YouTube returns it for our niche query, it's relevant
     const rawVideos: Array<{
@@ -545,7 +557,8 @@ async function GETHandler(
     // Track YouTube pagination token (set when fetching fresh data)
     let nextPageToken: string | undefined;
 
-    if (cached && cached.cachedUntil > now) {
+    // Use cache only if: exists, not expired by cachedUntil, AND not older than 24h
+    if (cached && cached.cachedUntil > now && !isCacheStale) {
       const cachedRaw = cached.videosJson as unknown as typeof rawVideos;
       rawVideos.push(...cachedRaw);
       // When serving from cache, we don't have a pageToken
@@ -554,13 +567,16 @@ async function GETHandler(
       // Search for videos in the niche directly - returns up to 50 videos per call
       // Filter by content format to match user's typical video length (Shorts vs long-form)
       // Filter by category to ensure relevant results (e.g., Gaming videos for Gaming channels)
+      // Restrict to videos published within the selected range (7d or 28d)
+      const rangeDays = range === "7d" ? 7 : 28;
       const searchResult = await searchNicheVideos(
         ga,
         currentQuery,
         50,
         pageToken,
         contentFormat,
-        primaryCategoryId ?? undefined // Pass category ID to filter results (e.g., "20" for Gaming)
+        primaryCategoryId ?? undefined, // Pass category ID to filter results (e.g., "20" for Gaming)
+        rangeDays // Restrict YouTube search to videos published within the range
       );
       nextPageToken = searchResult.nextPageToken;
 

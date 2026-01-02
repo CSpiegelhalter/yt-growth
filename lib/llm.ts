@@ -1668,18 +1668,48 @@ function buildCompetitorContext(
     .trim()
     .slice(0, 800);
 
+  // Compute precise duration string (never "0 minutes", always exact seconds for Shorts)
+  let durationStr = "";
+  if (video.durationSec) {
+    const sec = video.durationSec;
+    if (sec < 60) {
+      durationStr = `Duration: ${sec}s (YouTube Shorts format)`;
+    } else if (sec < 3600) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      durationStr = `Duration: ${m}m ${s}s`;
+    } else {
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      durationStr = `Duration: ${h}h ${m}m`;
+    }
+  }
+
+  // Count description words for context
+  const descWordCount = cleanDesc.split(/\s+/).filter(Boolean).length;
+
+  // Extract hashtags from title/description (publicly visible, unlike tags)
+  const hashtagMatches =
+    `${video.title} ${video.description ?? ""}`.match(/#[\p{L}\p{N}_-]+/gu) ||
+    [];
+  const hashtags = [...new Set(hashtagMatches.map((h) => h.toLowerCase()))];
+
+  // Compute like rate for context
+  const likeRate =
+    video.stats.viewCount > 0 && video.stats.likeCount
+      ? ((video.stats.likeCount / video.stats.viewCount) * 100).toFixed(2)
+      : null;
+
   return `Analyzing for channel: "${userChannelTitle}"
 
-COMPETITOR VIDEO:
+COMPETITOR VIDEO (PUBLIC DATA ONLY):
 Title: "${video.title}"
 Channel: ${video.channelTitle}
-${
-  video.durationSec
-    ? `Duration: ${Math.max(1, Math.round(video.durationSec / 60))} minutes`
-    : ""
-}
-Description: ${cleanDesc || "[minimal]"}
-Tags: ${(video.tags ?? []).slice(0, 20).join(", ") || "[none]"}
+${durationStr}
+Description: ${cleanDesc || "[empty - 0 words]"} (${descWordCount} words)
+Hashtags (visible): ${
+    hashtags.length > 0 ? hashtags.join(", ") : "[none visible]"
+  }
 Views: ${video.stats.viewCount.toLocaleString()}
 Views/day: ${video.derived.viewsPerDay.toLocaleString()}
 ${
@@ -1687,16 +1717,20 @@ ${
     ? `Likes: ${video.stats.likeCount.toLocaleString()}`
     : ""
 }
+${likeRate ? `Like rate: ${likeRate}%` : ""}
 ${
   video.stats.commentCount
     ? `Comments: ${video.stats.commentCount.toLocaleString()}`
     : ""
-}
-${
-  video.derived.engagementPerView
-    ? `Engagement rate: ${(video.derived.engagementPerView * 100).toFixed(2)}%`
-    : ""
-}${commentsContext}`;
+}${commentsContext}
+
+IMPORTANT - DATA LIMITATIONS:
+- We CANNOT know: CTR, impressions, retention, watch time, traffic sources, subscriber conversion
+- Do NOT claim anything about CTR, retention, or "ranking better"
+- Only reference the public signals above
+- Use "${
+    durationStr || "video length"
+  }" exactly as stated (never round to different units)`;
 }
 
 /**
@@ -1715,21 +1749,28 @@ async function generateCompetitorBasicAnalysis(
 Return ONLY valid JSON:
 {
   "whatItsAbout": "2 sentences max describing the actual video content (NOT the description text)",
-  "whyItsWorking": ["Specific reason 1", "Specific reason 2", "Specific reason 3", "Specific reason 4"]
+  "whyItsWorking": ["Observed signal 1", "Observed signal 2", "Observed signal 3", "Observed signal 4"]
 }
 
 CRITICAL RULES for "whatItsAbout":
 - Describe what the VIDEO CONTENT actually is, NOT metadata
 - NEVER copy or echo the description - it's often just social links
 - NEVER output: social media handles, ▶TWITCH, ▶MERCH, stream dates
-- INFER the topic from title, channel name, and tags
+- INFER the topic from title, channel name
 - Good: "A Minecraft stream featuring building challenges and viewer interactions."
 - Bad: "▶TWITCH: ▶MERCH: ▶Twitter..." (copying garbage)
+- Always use EXACT duration from input (e.g., "36s" not "1 minute")
 
-For "whyItsWorking":
-- Provide 4-6 specific, actionable reasons
-- Incorporate comment insights if available
-- No generic advice`;
+For "whyItsWorking" (HYPOTHESES based on public signals):
+- Provide 4-6 observations based ONLY on measured public data
+- Each must cite a specific signal: title pattern, duration, views/day, like rate, comment themes
+- NEVER claim: "high CTR", "good retention", "increases CTR", "ranks well", "compelling title alone is enough"
+- NEVER claim effects we cannot measure
+- Good: "Year in title (2025) signals timeliness - views/day is strong at ${">"}10K"
+- Good: "Short duration (36s) matches Shorts format - comment themes show high curiosity"
+- Bad: "High engagement through likes suggests..." (when like rate is below average)
+- Bad: "Title alone is compelling enough..." (we don't know CTR)
+- Bad: "Lack of tags allows for organic reach..." (unmeasurable)`;
 
   const context = buildCompetitorContext(
     video,
@@ -1769,7 +1810,7 @@ async function generateCompetitorThemesPatterns(
 Return ONLY valid JSON:
 {
   "themesToRemix": [
-    { "theme": "Theme name", "why": "Why this theme resonates with viewers" }
+    { "theme": "Theme name", "why": "Why this theme resonates (cite evidence from comments or public signals)" }
   ],
   "titlePatterns": ["Pattern 1 observed in this title", "Pattern 2"],
   "packagingNotes": ["Note about thumbnail/title combo", "Emotional trigger used"]
@@ -1780,7 +1821,14 @@ RULES:
 - 2-3 title patterns to learn from
 - 2-3 packaging notes (only if clearly implied by title/description/comments)
 - Keep insights specific and actionable
-- No markdown`;
+- Use EXACT duration from input (never round)
+- No markdown
+
+FORBIDDEN phrases (we cannot measure these):
+- "increases CTR", "high CTR", "good retention"
+- "ranks well", "rank better with tags"
+- "title alone is compelling enough"
+- Do NOT recommend "adding tags" - use "adding hashtags in description" instead`;
 
   const context = buildCompetitorContext(
     video,
@@ -1873,20 +1921,31 @@ async function generateCompetitorBeatChecklistParallel(
   difficulty: "Easy" | "Medium" | "Hard";
   impact: "Low" | "Medium" | "High";
 }> | null> {
-  const systemPrompt = `You are an expert YouTube growth strategist creating a "Beat this video" checklist.
+  const systemPrompt = `You are an expert YouTube growth strategist creating ideas to outperform a competitor video.
 
 Return ONLY valid JSON:
 {
   "beatThisVideo": [
-    { "action": "Concrete step specific to THIS video", "difficulty": "Easy|Medium|Hard", "impact": "Low|Medium|High" }
+    { "action": "Concrete differentiation idea specific to THIS video", "difficulty": "Easy|Medium|Hard", "impact": "Low|Medium|High" }
   ]
 }
 
 CRITICAL RULES:
-- Provide 6-8 items
-- Each item must reference something from the inputs (topic, format, length, comments, metrics)
-- Avoid generic items like "make a better thumbnail" unless you specify WHAT to change for THIS topic
-- Actions should be phrased as what to do (not observations)
+- Provide 5-6 differentiated ideas (not a checklist)
+- Each item must reference something from the inputs (topic, format, duration, comments, metrics)
+- Focus on how to be DIFFERENT, not just "better"
+- Use EXACT duration from input (e.g., "36s" not "1 minute")
+
+FORBIDDEN (we cannot measure these):
+- "rank better with tags" - instead say "add relevant hashtags in description"
+- "improve retention" - we don't have retention data
+- "increase CTR" - we don't have CTR data
+- Generic items like "make a better thumbnail" without specifics
+
+Good examples:
+- "Address the #1 viewer request from comments: [specific request]"
+- "Create a longer deep-dive version (theirs is only 36s)"
+- "Take a contrarian angle: why [topic] might NOT be the answer"
 - No markdown`;
 
   const context = buildCompetitorContext(

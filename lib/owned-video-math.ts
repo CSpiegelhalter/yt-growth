@@ -3,8 +3,17 @@
  *
  * Computes normalized metrics, z-scores, percentiles, and a "Video Health Score"
  * by comparing a video's performance against the channel's baseline.
+ *
+ * Also includes bottleneck detection and confidence scoring.
  */
 import type { AnalyticsTotals, DailyAnalyticsRow } from "./youtube-analytics";
+import type {
+  BottleneckType,
+  BottleneckResult,
+  ConfidenceLevel,
+  SectionConfidence,
+  TrafficSourceBreakdown,
+} from "@/types/api";
 
 /**
  * Derived metrics for a single video
@@ -31,6 +40,8 @@ export type DerivedMetrics = {
   watchTimePerViewSec: number | null;
   avdRatio: number | null; // averageViewDuration / videoDuration
   avgWatchTimeMin: number | null; // Average watch time in minutes per view
+  avgViewDuration: number | null; // Average view duration in seconds
+  avgViewPercentage: number | null; // Average percentage of video watched
 
   // Engagement
   engagementPerView: number | null;
@@ -54,6 +65,15 @@ export type DerivedMetrics = {
   velocity24h: number | null;
   velocity7d: number | null;
   acceleration24h: number | null;
+
+  // NEW: Discovery metrics (from YouTube Analytics - may be null if not available)
+  impressions: number | null;
+  impressionsCtr: number | null;
+  first24hViews: number | null;
+  first48hViews: number | null;
+
+  // Traffic sources breakdown
+  trafficSources: TrafficSourceBreakdown | null;
 };
 
 /**
@@ -61,12 +81,17 @@ export type DerivedMetrics = {
  */
 export type ChannelBaseline = {
   sampleSize: number;
-  viewsPerDay: { mean: number; std: number };
-  avgViewPercentage: { mean: number; std: number };
-  watchTimePerViewSec: { mean: number; std: number };
-  subsPer1k: { mean: number; std: number };
-  engagementPerView: { mean: number; std: number };
-  sharesPer1k: { mean: number; std: number };
+  viewsPerDay: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  avgViewPercentage: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  watchTimePerViewSec: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  subsPer1k: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  engagementPerView: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  sharesPer1k: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  // Optional extended metrics
+  impressionsCtr?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  avgViewDuration?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  first24hViews?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  endScreenCtr?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
 };
 
 /**
@@ -97,12 +122,22 @@ export type ZScoreResult = {
 };
 
 /**
+ * Extended totals that may include impression/CTR data
+ */
+export type ExtendedAnalyticsTotals = AnalyticsTotals & {
+  impressions?: number | null;
+  impressionsCtr?: number | null;
+  trafficSources?: TrafficSourceBreakdown | null;
+};
+
+/**
  * Compute derived metrics from analytics totals and daily series
  */
 export function computeDerivedMetrics(
-  totals: AnalyticsTotals,
+  totals: AnalyticsTotals | ExtendedAnalyticsTotals,
   dailySeries: DailyAnalyticsRow[],
-  videoDurationSec: number
+  videoDurationSec: number,
+  publishedAt?: string | null
 ): DerivedMetrics {
   const views = totals.views || 1; // Avoid division by zero
   const viewsPer1k = views / 1000;
@@ -159,6 +194,8 @@ export function computeDerivedMetrics(
     totals.estimatedMinutesWatched != null
       ? totals.estimatedMinutesWatched / views
       : null;
+  const avgViewDuration = totals.averageViewDuration ?? null;
+  const avgViewPercentage = totals.averageViewPercentage ?? null;
 
   // Engagement
   const engagementSum =
@@ -222,6 +259,18 @@ export function computeDerivedMetrics(
   const { velocity24h, velocity7d, acceleration24h } =
     computeTrendMetrics(dailySeries);
 
+  // NEW: Discovery metrics (may not be available)
+  const extTotals = totals as ExtendedAnalyticsTotals;
+  const impressions = extTotals.impressions ?? null;
+  const impressionsCtr = extTotals.impressionsCtr ?? null;
+  const trafficSources = extTotals.trafficSources ?? null;
+
+  // Compute first 24h/48h views from daily series if available
+  const { first24hViews, first48hViews } = computeEarlyViews(
+    dailySeries,
+    publishedAt
+  );
+
   return {
     viewsPerDay,
     totalViews: views,
@@ -237,6 +286,8 @@ export function computeDerivedMetrics(
     watchTimePerViewSec,
     avdRatio,
     avgWatchTimeMin,
+    avgViewDuration,
+    avgViewPercentage,
     engagementPerView,
     engagedViewRate,
     cardClickRate,
@@ -250,7 +301,57 @@ export function computeDerivedMetrics(
     velocity24h,
     velocity7d,
     acceleration24h,
+    // New discovery metrics
+    impressions,
+    impressionsCtr,
+    first24hViews,
+    first48hViews,
+    trafficSources,
   };
+}
+
+/**
+ * Compute first 24h and 48h views from daily series
+ */
+function computeEarlyViews(
+  dailySeries: DailyAnalyticsRow[],
+  publishedAt?: string | null
+): { first24hViews: number | null; first48hViews: number | null } {
+  if (!publishedAt || dailySeries.length === 0) {
+    return { first24hViews: null, first48hViews: null };
+  }
+
+  try {
+    const pubDate = new Date(publishedAt);
+    const pubDateStr = pubDate.toISOString().split("T")[0];
+
+    // Sort by date ascending
+    const sorted = [...dailySeries].sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
+
+    let first24hViews: number | null = null;
+    let first48hViews: number | null = null;
+
+    for (const row of sorted) {
+      const rowDate = new Date(row.date);
+      const dayDiff = Math.floor(
+        (rowDate.getTime() - pubDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (dayDiff === 0) {
+        first24hViews = row.views;
+        first48hViews = row.views;
+      } else if (dayDiff === 1 && first48hViews != null) {
+        first48hViews += row.views;
+        break; // We have both values
+      }
+    }
+
+    return { first24hViews, first48hViews };
+  } catch {
+    return { first24hViews: null, first48hViews: null };
+  }
 }
 
 /**
@@ -567,4 +668,285 @@ export function formatPercent(
 ): string {
   if (value == null) return "-";
   return `${(value * 100).toFixed(decimals)}%`;
+}
+
+// ============================================
+// BOTTLENECK DETECTION
+// ============================================
+
+/**
+ * Detect the primary bottleneck limiting video performance
+ * Uses evidence-based rules comparing video metrics to baseline
+ */
+export function detectBottleneck(
+  derived: DerivedMetrics,
+  comparison: BaselineComparison,
+  baseline: ChannelBaseline
+): BottleneckResult {
+  const metrics: Array<{ label: string; value: string; comparison?: string }> =
+    [];
+
+  // Check if we have enough data
+  const hasEnoughViews = derived.totalViews >= 100;
+  const hasEnoughImpressions = (derived.impressions ?? 0) >= 500;
+
+  if (!hasEnoughViews && !hasEnoughImpressions) {
+    return {
+      bottleneck: "NOT_ENOUGH_DATA",
+      evidence: `Only ${derived.totalViews} views and ${derived.impressions ?? 0} impressions. Need ~100 views or ~500 impressions for reliable analysis.`,
+      metrics: [
+        { label: "Views", value: derived.totalViews.toLocaleString() },
+        {
+          label: "Impressions",
+          value: derived.impressions?.toLocaleString() ?? "N/A",
+        },
+      ],
+    };
+  }
+
+  // 1. DISCOVERY_IMPRESSIONS: Low impressions relative to baseline
+  if (derived.impressions != null && baseline.sampleSize > 0) {
+    // If impressions are significantly below what we'd expect for this channel
+    const expectedDailyImpressions =
+      (baseline.viewsPerDay.mean / (baseline.viewsPerDay.mean * 0.05 || 1)) *
+      100;
+    if (
+      derived.impressions < expectedDailyImpressions * 0.5 &&
+      derived.daysInRange > 3
+    ) {
+      metrics.push({
+        label: "Impressions",
+        value: derived.impressions.toLocaleString(),
+        comparison: "Below expected for your channel",
+      });
+      return {
+        bottleneck: "DISCOVERY_IMPRESSIONS",
+        evidence: `Impressions (${derived.impressions.toLocaleString()}) are low. YouTube isn't showing this video to many people. Focus on discoverability: title, thumbnail, and initial engagement.`,
+        metrics,
+      };
+    }
+  }
+
+  // 2. DISCOVERY_CTR: Impressions exist but CTR is low vs baseline
+  if (
+    derived.impressionsCtr != null &&
+    baseline.impressionsCtr?.mean != null &&
+    baseline.impressionsCtr.mean > 0
+  ) {
+    const ctrRatio = derived.impressionsCtr / baseline.impressionsCtr.mean;
+    if (ctrRatio < 0.7) {
+      // CTR is 30%+ below baseline
+      metrics.push({
+        label: "CTR",
+        value: `${derived.impressionsCtr.toFixed(1)}%`,
+        comparison: `${((1 - ctrRatio) * 100).toFixed(0)}% below your median`,
+      });
+      return {
+        bottleneck: "DISCOVERY_CTR",
+        evidence: `CTR (${derived.impressionsCtr.toFixed(1)}%) is ${((1 - ctrRatio) * 100).toFixed(0)}% below your channel median. People see the video but don't click. Improve title/thumbnail packaging.`,
+        metrics,
+      };
+    }
+  }
+
+  // 3. RETENTION: CTR is okay but avg view duration/percentage is low
+  const avdPct = derived.avgViewPercentage ?? (derived.avdRatio ?? 0) * 100;
+  if (
+    avdPct > 0 &&
+    baseline.avgViewPercentage.mean > 0 &&
+    comparison.avgViewPercentage.vsBaseline === "below"
+  ) {
+    const retentionDelta = comparison.avgViewPercentage.delta ?? 0;
+    if (retentionDelta < -15) {
+      // More than 15% below baseline
+      metrics.push({
+        label: "Avg % Viewed",
+        value: `${avdPct.toFixed(1)}%`,
+        comparison: `${Math.abs(retentionDelta).toFixed(0)}% below your median`,
+      });
+      return {
+        bottleneck: "RETENTION",
+        evidence: `Retention (${avdPct.toFixed(1)}% avg viewed) is ${Math.abs(retentionDelta).toFixed(0)}% below your channel median. Viewers click but don't stay. Check hook, pacing, and content delivery.`,
+        metrics,
+      };
+    }
+  }
+
+  // 4. CONVERSION: Views/watch are decent but subs per 1K and end screen CTR are weak
+  if (
+    derived.subsPer1k != null &&
+    baseline.subsPer1k.mean > 0 &&
+    comparison.subsPer1k.vsBaseline === "below"
+  ) {
+    const subsDelta = comparison.subsPer1k.delta ?? 0;
+    const endScreenWeak =
+      derived.endScreenClickRate != null &&
+      baseline.endScreenCtr?.mean != null &&
+      derived.endScreenClickRate < baseline.endScreenCtr.mean * 0.7;
+
+    if (subsDelta < -20 || endScreenWeak) {
+      metrics.push({
+        label: "Subs/1K Views",
+        value: derived.subsPer1k.toFixed(2),
+        comparison:
+          subsDelta < 0
+            ? `${Math.abs(subsDelta).toFixed(0)}% below your median`
+            : undefined,
+      });
+      if (derived.endScreenClickRate != null) {
+        metrics.push({
+          label: "End Screen CTR",
+          value: `${derived.endScreenClickRate.toFixed(1)}%`,
+          comparison: endScreenWeak ? "Below baseline" : undefined,
+        });
+      }
+      return {
+        bottleneck: "CONVERSION",
+        evidence: `Subscriber conversion (${derived.subsPer1k.toFixed(2)}/1K) is below your channel average. Viewers watch but don't subscribe. Add/improve CTAs and end screens.`,
+        metrics,
+      };
+    }
+  }
+
+  // Default: Not enough data to determine bottleneck with confidence
+  return {
+    bottleneck: "NOT_ENOUGH_DATA",
+    evidence:
+      "Metrics are within normal range or insufficient data for clear diagnosis.",
+    metrics: [
+      { label: "Views", value: derived.totalViews.toLocaleString() },
+      {
+        label: "Avg % Viewed",
+        value: avdPct > 0 ? `${avdPct.toFixed(1)}%` : "N/A",
+      },
+      {
+        label: "Subs/1K",
+        value: derived.subsPer1k?.toFixed(2) ?? "N/A",
+      },
+    ],
+  };
+}
+
+// ============================================
+// CONFIDENCE SCORING
+// ============================================
+
+/**
+ * Compute confidence levels for each insight section
+ * Based on sample size, availability of metrics, and data quality
+ * 
+ * DETERMINISTIC RULES:
+ * - views < 10 OR impressions unavailable -> Low confidence
+ * - Only allow Medium when impressions exist and exceed minimum threshold (200-500)
+ */
+export function computeSectionConfidence(
+  derived: DerivedMetrics,
+  hasImpressions: boolean,
+  hasTrafficSources: boolean
+): SectionConfidence {
+  const views = derived.totalViews;
+  const impressions = derived.impressions ?? 0;
+  const hasRetention = derived.avgViewPercentage != null || derived.avdRatio != null;
+  const hasConversion = derived.subsPer1k != null;
+  const hasEndScreen = derived.endScreenClickRate != null;
+
+  return {
+    discovery: getDiscoveryConfidence(views, impressions, hasImpressions, hasTrafficSources),
+    retention: getRetentionConfidenceLevel(views, hasRetention),
+    conversion: getConversionConfidenceLevel(views, hasConversion, hasEndScreen),
+    packaging: getPackagingConfidence(views, impressions, hasImpressions),
+    promotion: views < 10 ? "Low" : "Medium" as ConfidenceLevel,
+  };
+}
+
+function getDiscoveryConfidence(
+  views: number,
+  impressions: number,
+  hasImpressions: boolean,
+  hasTrafficSources: boolean
+): ConfidenceLevel {
+  // No impressions data at all -> always Low
+  if (!hasImpressions) return "Low";
+  // Very low views -> Low regardless of impressions
+  if (views < 10) return "Low";
+  // High confidence requires significant sample
+  if (impressions >= 10000 && hasTrafficSources) return "High";
+  // Medium requires meaningful impressions (200+)
+  if (impressions >= 200) return "Medium";
+  return "Low";
+}
+
+function getRetentionConfidenceLevel(
+  views: number,
+  hasRetention: boolean
+): ConfidenceLevel {
+  // No retention data -> Low
+  if (!hasRetention) return "Low";
+  // Very low views -> Low (retention % is not meaningful)
+  if (views < 10) return "Low";
+  // High confidence requires significant sample
+  if (views >= 1000) return "High";
+  // Medium requires some meaningful data
+  if (views >= 100) return "Medium";
+  return "Low";
+}
+
+function getConversionConfidenceLevel(
+  views: number,
+  hasConversion: boolean,
+  hasEndScreen: boolean
+): ConfidenceLevel {
+  // No conversion data -> Low
+  if (!hasConversion) return "Low";
+  // Very low views -> Low (conversion % is not meaningful)
+  if (views < 10) return "Low";
+  // High confidence requires significant sample
+  if (views >= 1000 && hasEndScreen) return "High";
+  // Medium requires meaningful data
+  if (views >= 500) return "Medium";
+  return "Low";
+}
+
+function getPackagingConfidence(
+  views: number, 
+  impressions: number,
+  hasImpressions: boolean
+): ConfidenceLevel {
+  // CTR-based confidence requires impressions
+  // Without impressions, packaging analysis is based on content only -> Low
+  if (!hasImpressions) return "Low";
+  // Very low views -> Low
+  if (views < 10) return "Low";
+  // High confidence requires significant CTR data
+  if (impressions >= 5000) return "High";
+  // Medium requires some impressions (200+)
+  if (impressions >= 200) return "Medium";
+  return "Low";
+}
+
+/**
+ * Determine if we're in low-data mode
+ * Low-data mode means we can't provide high-confidence insights but can still help
+ */
+export function isLowDataMode(derived: DerivedMetrics): boolean {
+  return derived.totalViews < 100 && (derived.impressions ?? 0) < 500;
+}
+
+/**
+ * Get the threshold description for unlocking higher confidence
+ */
+export function getConfidenceUnlockHint(derived: DerivedMetrics): string {
+  const views = derived.totalViews;
+  const impressions = derived.impressions ?? 0;
+
+  if (views < 100) {
+    return `After ~${100 - views} more views, engagement metrics become meaningful.`;
+  }
+  if (impressions < 500) {
+    return `After ~${500 - impressions} more impressions, CTR analysis becomes reliable.`;
+  }
+  if (impressions < 1000) {
+    return `After ~${1000 - impressions} more impressions, discovery insights gain confidence.`;
+  }
+  return "Good data volume for reliable analysis.";
 }
