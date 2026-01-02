@@ -14,7 +14,11 @@ import { z } from "zod";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/user";
-import { isDemoMode, getDemoData, isYouTubeMockMode } from "@/lib/demo-fixtures";
+import {
+  isDemoMode,
+  getDemoData,
+  isYouTubeMockMode,
+} from "@/lib/demo-fixtures";
 import { getGoogleAccount, fetchChannelVideos } from "@/lib/youtube-api";
 import { ensureMockChannelSeeded } from "@/lib/mock-seed";
 
@@ -42,7 +46,9 @@ async function triggerBackgroundSync(
 ): Promise<void> {
   const ga = await getGoogleAccount(userId, youtubeChannelId);
   if (!ga) {
-    console.warn(`[videos] No Google account for background sync: ${youtubeChannelId}`);
+    console.warn(
+      `[videos] No Google account for background sync: ${youtubeChannelId}`
+    );
     return;
   }
 
@@ -54,7 +60,11 @@ async function triggerBackgroundSync(
 
   try {
     // Fetch videos from YouTube
-    const videos = await fetchChannelVideos(ga, youtubeChannelId, SYNC_VIDEO_COUNT);
+    const videos = await fetchChannelVideos(
+      ga,
+      youtubeChannelId,
+      SYNC_VIDEO_COUNT
+    );
 
     // Cache expiration for metrics (12 hours)
     const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
@@ -119,9 +129,14 @@ async function triggerBackgroundSync(
       },
     });
 
-    console.log(`[videos] Background sync completed for ${youtubeChannelId}: ${videos.length} videos`);
+    console.log(
+      `[videos] Background sync completed for ${youtubeChannelId}: ${videos.length} videos`
+    );
   } catch (err: any) {
-    console.error(`[videos] Background sync error for ${youtubeChannelId}:`, err);
+    console.error(
+      `[videos] Background sync error for ${youtubeChannelId}:`,
+      err
+    );
     await prisma.channel.update({
       where: { id: channelDbId },
       data: {
@@ -138,8 +153,20 @@ async function GETHandler(
 ) {
   // Parse pagination params from URL
   const url = new URL(req.url);
-  const offset = Math.max(0, parseInt(url.searchParams.get("offset") ?? "0", 10) || 0);
-  const limit = Math.min(48, Math.max(6, parseInt(url.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE));
+  const offset = Math.max(
+    0,
+    parseInt(url.searchParams.get("offset") ?? "0", 10) || 0
+  );
+  const limit = Math.min(
+    48,
+    Math.max(
+      6,
+      parseInt(
+        url.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE),
+        10
+      ) || DEFAULT_PAGE_SIZE
+    )
+  );
 
   // Return demo data if demo mode is enabled
   if (isDemoMode() && !isYouTubeMockMode()) {
@@ -214,10 +241,7 @@ async function GETHandler(
           select: {
             Video: {
               where: {
-                OR: [
-                  { privacyStatus: "public" },
-                  { privacyStatus: null },
-                ],
+                OR: [{ privacyStatus: "public" }, { privacyStatus: null }],
               },
             },
           },
@@ -245,10 +269,7 @@ async function GETHandler(
         include: {
           Video: {
             where: {
-              OR: [
-                { privacyStatus: "public" },
-                { privacyStatus: null },
-              ],
+              OR: [{ privacyStatus: "public" }, { privacyStatus: null }],
             },
             orderBy: { publishedAt: "desc" },
             skip: offset,
@@ -266,10 +287,7 @@ async function GETHandler(
             select: {
               Video: {
                 where: {
-                  OR: [
-                    { privacyStatus: "public" },
-                    { privacyStatus: null },
-                  ],
+                  OR: [{ privacyStatus: "public" }, { privacyStatus: null }],
                 },
               },
             },
@@ -353,4 +371,3 @@ export const GET = createApiRoute(
   { route: "/api/me/channels/[channelId]/videos" },
   async (req, ctx) => GETHandler(req, ctx as any)
 );
-

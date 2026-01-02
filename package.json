@@ -33,7 +33,8 @@
     "test:e2e:headed": "APP_TEST_MODE=1 FAKE_YOUTUBE=1 playwright test --headed",
     "test:all": "bun run test:unit && bun run test:integration && bun run test:e2e",
     "test:db:reset": "bun scripts/test/reset-db.ts",
-    "typecheck": "rm -rf .next/types && tsc --noEmit"
+    "typecheck": "rm -rf .next/types && tsc --noEmit",
+    "create:google-reviewer": "bun scripts/create-google-reviewer.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

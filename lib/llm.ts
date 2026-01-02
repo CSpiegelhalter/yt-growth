@@ -2796,7 +2796,9 @@ function getTestModeVideoInsightsResponse(prompt: string) {
     `"I Tried ${mainTopic} for 30 Days - Here's What Happened"`
   );
   if (!hasQuestion)
-    titleSuggestions.push(`"Why ${mainTopic} Will Change Everything in ${CURRENT_YEAR}"`);
+    titleSuggestions.push(
+      `"Why ${mainTopic} Will Change Everything in ${CURRENT_YEAR}"`
+    );
 
   // Analyze tags
   const tagCount = tags.length;
@@ -2804,7 +2806,9 @@ function getTestModeVideoInsightsResponse(prompt: string) {
   const missingTags: string[] = [];
 
   if (!tags.some((t) => /202\d/.test(t)))
-    missingTags.push(`Add "${mainTopic} ${CURRENT_YEAR}" for time-sensitive searches`);
+    missingTags.push(
+      `Add "${mainTopic} ${CURRENT_YEAR}" for time-sensitive searches`
+    );
   if (!tags.some((t) => /tutorial|guide|how/i.test(t)))
     missingTags.push(`Add "tutorial" or "guide" variations`);
   if (!tags.some((t) => /beginner|advanced|pro/i.test(t)))

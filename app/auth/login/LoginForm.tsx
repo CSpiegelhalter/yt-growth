@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import s from "./style.module.css";
@@ -14,7 +14,6 @@ export default function LoginForm() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const sp = useSearchParams();
-  const router = useRouter();
 
   const showSignupSuccess = sp.get("signup") === "1";
 
@@ -39,18 +38,20 @@ export default function LoginForm() {
       return;
     }
 
+    const callbackUrl = sp.get("callbackUrl") || "/dashboard";
     const res = await signIn("credentials", {
       email,
       password,
       redirect: false,
-      callbackUrl: sp.get("callbackUrl") || "/dashboard",
+      callbackUrl,
     });
 
-    setLoading(false);
-
     if (res?.ok) {
-      router.push(res.url ?? "/dashboard");
+      // Use full page navigation to ensure server session is recognized
+      // router.push() uses client-side navigation which doesn't re-validate the session
+      window.location.href = callbackUrl;
     } else {
+      setLoading(false);
       setErr("Invalid email or password. Please try again.");
     }
   }
