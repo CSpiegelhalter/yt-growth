@@ -116,15 +116,66 @@ function ArticleIcon({ type }: { type: string }) {
         </svg>
       );
     case "youtube-video-ideas":
+      // Lightbulb icon
       return (
         <svg {...props}>
-          <path d="M12 2v1M4.22 4.22l.71.71M1 12h2M18.36 4.93l.71-.71M23 12h-2" />
-          <path d="M15.5 15a3.5 3.5 0 10-7 0c0 1.57.75 2.97 1.91 3.85.34.26.59.63.59 1.06V21h4v-1.09c0-.43.25-.8.59-1.06A3.98 3.98 0 0015.5 15z" />
-          <path d="M9 18h6M10 22h4" />
+          <path d="M9 18h6" />
+          <path d="M10 22h4" />
+          <path d="M12 2a7 7 0 00-4 12.9V16a1 1 0 001 1h6a1 1 0 001-1v-1.1A7 7 0 0012 2z" />
+        </svg>
+      );
+    case "how-to-make-a-youtube-channel":
+      // Play button with plus
+      return (
+        <svg {...props}>
+          <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+          <path d="M10 8l6 4-6 4V8z" />
+        </svg>
+      );
+    case "youtube-monetization-requirements":
+      // Checkmark badge
+      return (
+        <svg {...props}>
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      );
+    case "how-much-does-youtube-pay":
+      // Dollar sign
+      return (
+        <svg {...props}>
+          <path d="M12 2v20" />
+          <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+        </svg>
+      );
+    case "youtube-seo":
+      // Search/magnifying glass
+      return (
+        <svg {...props}>
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
+          <path d="M11 8v6M8 11h6" />
+        </svg>
+      );
+    case "free-youtube-subscribers":
+      // Users with heart
+      return (
+        <svg {...props}>
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 00-3-3.87" />
+          <path d="M16 3.13a4 4 0 010 7.75" />
         </svg>
       );
     default:
-      return null;
+      // Default document icon
+      return (
+        <svg {...props}>
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <path d="M14 2v6h6" />
+          <path d="M16 13H8M16 17H8M10 9H8" />
+        </svg>
+      );
   }
 }
 
@@ -241,7 +292,7 @@ export default function LearnPage() {
           insights for your channel.
         </p>
         <div className={s.hubCtaButtons}>
-          <Link href="/auth/signup" className={s.hubCtaPrimary}>
+          <Link href="/dashboard" className={s.hubCtaPrimary}>
             Get Started Free
           </Link>
           <Link href="/" className={s.hubCtaSecondary}>

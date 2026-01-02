@@ -11,13 +11,13 @@ type Props = {
  * LearnStaticCTA - Server-rendered CTA for Learn pages
  * 
  * Eliminates CLS by rendering immediately without auth checks.
- * Always shows "Get Started" linking to signup (most visitors are not signed in).
+ * Links to dashboard which handles auth redirect if needed.
  */
 export function LearnStaticCTA({
   title,
   description,
   buttonText = "Get Started Free",
-  buttonHref = "/auth/signup",
+  buttonHref = "/dashboard",
 }: Props) {
   return (
     <section className="learnCta">

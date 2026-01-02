@@ -5,14 +5,16 @@ import { LEARN_ARTICLES } from "./learn/articles";
 /**
  * Generate sitemap.xml for SEO
  * Only include public, indexable pages
- * 
+ *
  * Note: lastModified uses stable dates for learn articles
- * to avoid constant sitemap churn
+ * to avoid constant sitemap churn. Learn articles are automatically
+ * included from LEARN_ARTICLES source of truth.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${BRAND.domain}`;
 
   // Learn article entries with stable dates from articles.ts
+  // All Learn pages are automatically included via LEARN_ARTICLES
   const learnArticleEntries = Object.values(LEARN_ARTICLES).map((article) => ({
     url: `${baseUrl}/learn/${article.slug}`,
     lastModified: new Date(article.dateModified),
@@ -24,16 +26,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Landing page - highest priority
     {
       url: baseUrl,
-      lastModified: new Date("2025-01-15"),
+      lastModified: new Date("2026-01-02"),
       changeFrequency: "weekly",
       priority: 1.0,
     },
     // Learn hub - high priority for SEO
     {
       url: `${baseUrl}/learn`,
-      lastModified: new Date("2025-01-15"),
+      lastModified: new Date("2026-01-02"),
       changeFrequency: "weekly",
-      priority: 0.9,
+      priority: 0.95,
     },
     // Learn articles
     ...learnArticleEntries,

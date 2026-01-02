@@ -155,6 +155,7 @@ describe("Entitlements Unit Tests", () => {
         idea_generate: 10,
         channel_sync: 3,
         keyword_research: 0,
+        tag_generate: 5,
       });
     });
 
@@ -167,6 +168,7 @@ describe("Entitlements Unit Tests", () => {
         idea_generate: 200,
         channel_sync: 50,
         keyword_research: 0,
+        tag_generate: 200,
       });
     });
   });
@@ -203,6 +205,7 @@ describe("Entitlements Unit Tests", () => {
         "competitor_video_analysis",
         "idea_generate",
         "channel_sync",
+        "tag_generate",
       ] as const;
 
       features.forEach((feature) => {
@@ -218,6 +221,7 @@ describe("Entitlements Unit Tests", () => {
       expect(isUsageLimited("competitor_video_analysis")).toBe(true);
       expect(isUsageLimited("idea_generate")).toBe(true);
       expect(isUsageLimited("channel_sync")).toBe(true);
+      expect(isUsageLimited("tag_generate")).toBe(true);
     });
 
     it("returns false for non-usage-limited features", () => {
@@ -260,6 +264,7 @@ describe("Entitlements Unit Tests", () => {
       expect(getFeatureDisplayName("idea_generate")).toBe("Idea Generation");
       expect(getFeatureDisplayName("channel_sync")).toBe("Channel Sync");
       expect(getFeatureDisplayName("keyword_research")).toBe("Keyword Research");
+      expect(getFeatureDisplayName("tag_generate")).toBe("Tag Generation");
     });
   });
 

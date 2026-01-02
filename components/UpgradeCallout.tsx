@@ -68,6 +68,7 @@ export default function UpgradeCallout({
     idea_generate: "idea generations",
     channel_sync: "channel syncs",
     keyword_research: "keyword research",
+    tag_generate: "tag generations",
   };
 
   const featureName = featureNames[featureKey] || featureKey;
@@ -119,9 +120,7 @@ export default function UpgradeCallout({
         </svg>
       </div>
       <h3 style={styles.title}>Daily Limit Reached</h3>
-      <p style={styles.message}>
-        {message || defaultMessage}
-      </p>
+      <p style={styles.message}>{message || defaultMessage}</p>
       <div style={styles.stats}>
         <div style={styles.stat}>
           <span style={styles.statValue}>{used}</span>
@@ -133,9 +132,7 @@ export default function UpgradeCallout({
           <span style={styles.statLabel}>Limit</span>
         </div>
       </div>
-      <p style={styles.reset}>
-        Resets at {resetTimeStr}
-      </p>
+      <p style={styles.reset}>Resets at {resetTimeStr}</p>
       <button
         onClick={handleUpgrade}
         disabled={loading}
@@ -143,7 +140,9 @@ export default function UpgradeCallout({
       >
         {loading
           ? "Loading..."
-          : `Upgrade to Pro — ${formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/${SUBSCRIPTION.PRO_INTERVAL}`}
+          : `Upgrade to Pro — ${formatUsd(
+              SUBSCRIPTION.PRO_MONTHLY_PRICE_USD
+            )}/${SUBSCRIPTION.PRO_INTERVAL}`}
       </button>
       <p style={styles.hint}>
         Get 100+ daily analyses, 200+ idea generations, and more
@@ -182,6 +181,7 @@ export function UsageIndicator({
     idea_generate: "generations",
     channel_sync: "syncs",
     keyword_research: "searches",
+    tag_generate: "tag generations",
   };
 
   return (
@@ -238,6 +238,7 @@ export function FeatureLockedCallout({
     idea_generate: "Idea Generation",
     channel_sync: "Channel Sync",
     keyword_research: "Keyword Research",
+    tag_generate: "Tag Generation",
   };
 
   return (
@@ -268,7 +269,9 @@ export function FeatureLockedCallout({
       >
         {loading
           ? "Loading..."
-          : `Upgrade to Pro — ${formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/${SUBSCRIPTION.PRO_INTERVAL}`}
+          : `Upgrade to Pro — ${formatUsd(
+              SUBSCRIPTION.PRO_MONTHLY_PRICE_USD
+            )}/${SUBSCRIPTION.PRO_INTERVAL}`}
       </button>
     </div>
   );
@@ -440,4 +443,3 @@ const styles: Record<string, React.CSSProperties> = {
     margin: "0 0 16px",
   },
 };
-

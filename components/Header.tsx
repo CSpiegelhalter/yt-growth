@@ -236,6 +236,7 @@ export function Header() {
         icon: "trending" as const,
       },
       { href: "/competitors", label: "Competitors", icon: "trophy" as const },
+      { href: "/tag-generator", label: "Tag Generator", icon: "tag" as const },
     ],
     []
   );
@@ -591,24 +592,17 @@ export function Header() {
             </div>
             <h3 className={s.modalTitle}>Channel Limit Reached</h3>
             <p className={s.modalDesc}>
-              {plan === "FREE"
-                ? `Free accounts can connect ${
-                    LIMITS.FREE_MAX_CONNECTED_CHANNELS
-                  } YouTube channel. Upgrade to Pro to connect up to ${
-                    LIMITS.PRO_MAX_CONNECTED_CHANNELS
-                  } channels for ${formatUsd(
-                    SUBSCRIPTION.PRO_MONTHLY_PRICE_USD
-                  )}/${SUBSCRIPTION.PRO_INTERVAL}.`
+              {channelLimit < LIMITS.PRO_MAX_CONNECTED_CHANNELS
+                ? `Your current plan allows ${channelLimit} channel${channelLimit === 1 ? "" : "s"}. Upgrade to Pro to connect up to ${LIMITS.PRO_MAX_CONNECTED_CHANNELS} channels.`
                 : `You've reached the maximum of ${channelLimit} channels for your plan.`}
             </p>
-            {plan === "FREE" && (
+            {channelLimit < LIMITS.PRO_MAX_CONNECTED_CHANNELS && (
               <Link
                 href="/api/integrations/stripe/checkout"
                 className={s.modalUpgradeBtn}
                 onClick={() => setShowUpgradePrompt(false)}
               >
-                Upgrade to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}
-                /{SUBSCRIPTION.PRO_INTERVAL}
+                Upgrade to Pro
               </Link>
             )}
             <button
@@ -616,7 +610,7 @@ export function Header() {
               onClick={() => setShowUpgradePrompt(false)}
               type="button"
             >
-              {plan === "FREE" ? "Maybe later" : "Got it"}
+              {channelLimit < LIMITS.PRO_MAX_CONNECTED_CHANNELS ? "Maybe Later" : "Got it"}
             </button>
           </div>
         </div>
@@ -657,7 +651,8 @@ type IconType =
   | "mail"
   | "settings"
   | "logout"
-  | "book";
+  | "book"
+  | "tag";
 
 function DropdownIcon({ type }: { type: IconType }) {
   const props = {
@@ -745,6 +740,13 @@ function DropdownIcon({ type }: { type: IconType }) {
         <svg {...props}>
           <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+        </svg>
+      );
+    case "tag":
+      return (
+        <svg {...props}>
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+          <line x1="7" y1="7" x2="7.01" y2="7" />
         </svg>
       );
     default:

@@ -23,7 +23,8 @@ export type FeatureKey =
   | "competitor_video_analysis"
   | "idea_generate"
   | "channel_sync"
-  | "keyword_research";
+  | "keyword_research"
+  | "tag_generate";
 
 export type PlanLimits = {
   channels_connected: number;
@@ -32,6 +33,7 @@ export type PlanLimits = {
   idea_generate: number;
   channel_sync: number;
   keyword_research: number; // 0 = locked
+  tag_generate: number;
 };
 
 // ============================================
@@ -45,6 +47,7 @@ const FREE_LIMITS: PlanLimits = {
   idea_generate: 10,
   channel_sync: 3,
   keyword_research: 0, // Locked
+  tag_generate: 5,
 };
 
 const PRO_LIMITS: PlanLimits = {
@@ -54,6 +57,7 @@ const PRO_LIMITS: PlanLimits = {
   idea_generate: 200,
   channel_sync: 50,
   keyword_research: 0, // Still locked until implemented
+  tag_generate: 200,
 };
 
 // Features that are completely locked (not just usage-limited)
@@ -159,6 +163,7 @@ export function isUsageLimited(feature: FeatureKey): boolean {
     "competitor_video_analysis",
     "idea_generate",
     "channel_sync",
+    "tag_generate",
   ].includes(feature);
 }
 
@@ -231,6 +236,7 @@ export function getFeatureDisplayName(feature: FeatureKey): string {
     idea_generate: "Idea Generation",
     channel_sync: "Channel Sync",
     keyword_research: "Keyword Research",
+    tag_generate: "Tag Generation",
   };
   return names[feature];
 }

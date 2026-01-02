@@ -32,8 +32,8 @@ export default function HomePage() {
         </h1>
         <p className="landingSubtitle">
           Stop guessing what to post. Get channel audits, retention analysis,
-          competitor insights, and AI-powered video ideas to grow your YouTube
-          channel faster.
+          competitor insights, and video ideas to grow your YouTube channel
+          faster.
         </p>
         <HeroStaticCTAs />
       </section>
@@ -63,17 +63,22 @@ export default function HomePage() {
             </svg>
           </div>
           <h2 className="landingPillarTitle">{FEATURES.channelAudit.title}</h2>
-          <p className="landingPillarDesc">{FEATURES.channelAudit.description}</p>
+          <p className="landingPillarDesc">
+            {FEATURES.channelAudit.description}
+          </p>
           <ul className="landingPillarBenefits">
             <li>
               Identify underperforming videos and why they're not getting views
             </li>
-            <li>Get a content quality score with specific improvement areas</li>
+            <li>Get recommendations for specific improvement areas</li>
             <li>
               See how your channel compares to similar creators in your niche
             </li>
           </ul>
-          <Link href="/learn/youtube-channel-audit" className="landingPillarLink">
+          <Link
+            href="/learn/youtube-channel-audit"
+            className="landingPillarLink"
+          >
             Learn about channel audits →
           </Link>
         </div>
@@ -92,13 +97,15 @@ export default function HomePage() {
               <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-          <h2 className="landingPillarTitle">{FEATURES.retentionAnalysis.title}</h2>
+          <h2 className="landingPillarTitle">
+            {FEATURES.retentionAnalysis.title}
+          </h2>
           <p className="landingPillarDesc">
             {FEATURES.retentionAnalysis.description}
           </p>
           <ul className="landingPillarBenefits">
             <li>See exactly where viewers stop watching your videos</li>
-            <li>Get AI-powered hypotheses for why drop-offs happen</li>
+            <li>Compare your retention curves to top-performing videos</li>
             <li>Improve watch time with specific, actionable fixes</li>
           </ul>
           <Link
@@ -123,7 +130,9 @@ export default function HomePage() {
               <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <h2 className="landingPillarTitle">{FEATURES.subscriberDrivers.title}</h2>
+          <h2 className="landingPillarTitle">
+            {FEATURES.subscriberDrivers.title}
+          </h2>
           <p className="landingPillarDesc">
             {FEATURES.subscriberDrivers.description}
           </p>
@@ -157,7 +166,9 @@ export default function HomePage() {
               <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <h2 className="landingPillarTitle">{FEATURES.competitorAnalysis.title}</h2>
+          <h2 className="landingPillarTitle">
+            {FEATURES.competitorAnalysis.title}
+          </h2>
           <p className="landingPillarDesc">
             {FEATURES.competitorAnalysis.description}
           </p>
@@ -251,7 +262,7 @@ export default function HomePage() {
           />
           <FAQItem
             question="How do I improve audience retention on YouTube?"
-            answer="Improving retention starts with understanding where viewers drop off. ChannelBoost shows you exact timestamps where viewers leave and provides AI-powered hypotheses for why. Common fixes include stronger hooks in the first 30 seconds, better pacing, pattern interrupts, and delivering on your title promise faster."
+            answer="Improving retention starts with understanding where viewers drop off. ChannelBoost shows you exact timestamps where viewers leave and lets you compare against top-performing videos. Common fixes include stronger hooks in the first 30 seconds, better pacing, pattern interrupts, and delivering on your title promise faster."
           />
           <FAQItem
             question="How do I find competitor videos that are working?"
@@ -264,10 +275,6 @@ export default function HomePage() {
           <FAQItem
             question="How does ChannelBoost generate video ideas?"
             answer="Our video ideas engine analyzes what's working in your niche by looking at trending topics, competitor successes, and your own best performers. We then generate personalized ideas with title options, hook suggestions, and thumbnail concepts based on proven patterns."
-          />
-          <FAQItem
-            question="Is my YouTube data secure?"
-            answer="Yes. We use Google OAuth for authentication and only request read-only access to your analytics. We never post to your channel or modify anything. Your data is encrypted in transit and at rest, and you can revoke access anytime from your Google security settings."
           />
           <FAQItem
             question="Do I need a minimum number of videos or subscribers?"
