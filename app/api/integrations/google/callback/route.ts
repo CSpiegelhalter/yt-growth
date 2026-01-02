@@ -194,9 +194,10 @@ export const GET = createApiRoute(
       await syncUserChannels(row.userId, googleAccount.id);
 
       // Redirect back to the channel they were reconnecting, or dashboard
+      // For NEW channels (not reconnect), add newChannel=1 so the header auto-selects the new channel
       const redirectPath = reconnectChannelId
         ? `/dashboard?reconnected=1&channelId=${reconnectChannelId}&rid=${api.requestId}`
-        : `/dashboard?reconnected=1&rid=${api.requestId}`;
+        : `/dashboard?newChannel=1&rid=${api.requestId}`;
       return redirect(redirectPath);
     } catch (err) {
       console.error("[OAuth Callback] Error:", err);

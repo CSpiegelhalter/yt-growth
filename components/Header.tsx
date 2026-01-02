@@ -68,9 +68,14 @@ export function Header() {
 
         const urlChannelId = searchParams.get("channelId");
         const storedChannelId = localStorage.getItem("activeChannelId");
+        const isNewChannel = searchParams.get("newChannel") === "1";
         let nextActiveChannelId: string | null = null;
 
-        if (
+        // When a new channel was just added (newChannel=1), always select the newest channel (first in list)
+        // This overrides localStorage so the newly added channel is immediately visible
+        if (isNewChannel && channelList.length > 0) {
+          nextActiveChannelId = channelList[0].channel_id;
+        } else if (
           urlChannelId &&
           channelList.some((c: Channel) => c.channel_id === urlChannelId)
         ) {
@@ -97,13 +102,15 @@ export function Header() {
         // Server bootstrap resolves active channel ONLY from the URL.
         // If we're on a channel-scoped page and have a valid active channel,
         // keep `?channelId=` in sync so page data matches the header selection.
+        // Also clear the newChannel param after processing to keep URLs clean.
         if (
           nextActiveChannelId &&
           isChannelScopedPath(pathname) &&
-          urlChannelId !== nextActiveChannelId
+          (urlChannelId !== nextActiveChannelId || isNewChannel)
         ) {
           const next = new URLSearchParams(searchParams.toString());
           next.set("channelId", nextActiveChannelId);
+          next.delete("newChannel"); // Clean up the newChannel param
           router.replace(`${pathname}?${next.toString()}`, { scroll: false });
           router.refresh();
         }
