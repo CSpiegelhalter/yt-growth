@@ -43,6 +43,7 @@ import {
   generateMoreIdeas,
 } from "@/lib/idea-board-llm";
 import { normalizeIdeaBoardData } from "@/lib/idea-board-normalize";
+import { getOrGenerateNiche } from "@/lib/channel-niche";
 import type { IdeaBoardData, SimilarChannel } from "@/types/api";
 
 const ParamsSchema = z.object({
@@ -57,34 +58,6 @@ const BodySchema = z.object({
   mode: z.enum(["default", "more"]).default("default"),
   range: z.enum(["7d", "28d"]).optional(),
 });
-
-// Common words to filter out
-const commonWords = new Set([
-  "the",
-  "and",
-  "for",
-  "with",
-  "this",
-  "that",
-  "from",
-  "have",
-  "you",
-  "what",
-  "when",
-  "where",
-  "how",
-  "why",
-  "who",
-  "which",
-  "your",
-  "will",
-  "video",
-  "videos",
-  "watch",
-  "watching",
-  "today",
-  "new",
-]);
 
 /**
  * GET - Return cached IdeaBoard or demo data
@@ -319,24 +292,17 @@ async function POSTHandler(
     // Get Google account for this channel
     const ga = await getGoogleAccount(user.id, channelId);
 
-    // Extract keywords from channel content
-    const titleWords = channel.Video.flatMap((v) =>
-      (v.title ?? "").toLowerCase().split(/\s+/)
-    ).filter((w) => w.length > 3 && !commonWords.has(w));
+    // Get niche from cache or generate from last 15 videos
+    // This uses the ChannelNiche table and regenerates if video titles change
+    const nicheData = await getOrGenerateNiche(channel.id);
 
-    const tagWords = channel.Video.flatMap((v) =>
-      (v.tags ?? "").split(",").map((t) => t.trim().toLowerCase())
-    ).filter(Boolean);
+    // Use niche queries as keywords for idea generation
+    // These are more relevant than raw title/tag extraction
+    const keywords = nicheData?.queries?.slice(0, 8) ?? [];
 
-    const wordCounts = new Map<string, number>();
-    [...titleWords, ...tagWords].forEach((word) => {
-      wordCounts.set(word, (wordCounts.get(word) ?? 0) + 1);
-    });
-
-    const keywords = [...wordCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([word]) => word);
+    console.log(
+      `[IdeaBoard] Using cached niche: "${nicheData?.niche ?? "unknown"}", keywords: ${keywords.join(", ")}`
+    );
 
     // Fetch similar channels and their winners
     let similarChannels: SimilarChannel[] = [];

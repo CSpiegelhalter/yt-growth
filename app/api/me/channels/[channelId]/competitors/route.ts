@@ -36,11 +36,8 @@ import {
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { ensureMockChannelSeeded } from "@/lib/mock-seed";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { generateNicheQueries } from "@/lib/llm";
+import { getOrGenerateNiche } from "@/lib/channel-niche";
 import type { CompetitorFeedResponse, CompetitorVideo } from "@/types/api";
-
-// In-memory cache for niche queries (per channel, cleared on server restart)
-const nicheCache = new Map<string, { niche: string; queries: string[] }>();
 
 // YouTube Video Category ID to Name mapping
 const YOUTUBE_CATEGORIES: Record<string, string> = {
@@ -60,204 +57,6 @@ const YOUTUBE_CATEGORIES: Record<string, string> = {
   "28": "Science & Technology",
   "29": "Nonprofits & Activism",
 };
-
-// Generic tags that don't indicate actual niche - often added for SEO gaming
-// These are too broad to be useful for competitor discovery
-const GENERIC_TAG_BLOCKLIST = new Set([
-  // Generic gaming terms that don't identify niche
-  "gaming",
-  "game",
-  "games",
-  "video game",
-  "video games",
-  "gameplay",
-  "playthrough",
-  "lets play",
-  "let's play",
-  "walkthrough",
-  "funny moments",
-  "best moments",
-  "highlights",
-  "gamer",
-  "pc gaming",
-  "console gaming",
-  "xbox",
-  "playstation",
-  "ps4",
-  "ps5",
-  "nintendo",
-  // Popular games that get spammed as tags but don't indicate actual content
-  "minecraft",
-  "fortnite",
-  "roblox",
-  "garrys mod",
-  "gmod",
-  "garry's mod",
-  "gta",
-  "gta 5",
-  "gta v",
-  "call of duty",
-  "cod",
-  "among us",
-  "valorant",
-  "apex legends",
-  "league of legends",
-  "lol",
-  "dota",
-  "overwatch",
-  "csgo",
-  "counter strike",
-  // Generic YouTube terms
-  "youtube",
-  "youtuber",
-  "vlog",
-  "vlogs",
-  "daily vlog",
-  "video",
-  "videos",
-  "subscribe",
-  "like",
-  "comment",
-  "viral",
-  "trending",
-  "new",
-  "2024",
-  "2025",
-  "funny",
-  "comedy",
-  "entertainment",
-  "fun",
-  "cool",
-  "awesome",
-  "amazing",
-  "best",
-  // Generic content terms
-  "how to",
-  "tutorial",
-  "tips",
-  "tricks",
-  "guide",
-  "review",
-  "reaction",
-  "reacts",
-  "challenge",
-  "challenges",
-  "prank",
-  "pranks",
-  "meme",
-  "memes",
-]);
-
-// Stop words to filter out from title keyword extraction
-const STOP_WORDS = new Set([
-  "the",
-  "a",
-  "an",
-  "and",
-  "or",
-  "but",
-  "in",
-  "on",
-  "at",
-  "to",
-  "for",
-  "of",
-  "with",
-  "by",
-  "from",
-  "is",
-  "are",
-  "was",
-  "were",
-  "be",
-  "been",
-  "being",
-  "have",
-  "has",
-  "had",
-  "do",
-  "does",
-  "did",
-  "will",
-  "would",
-  "could",
-  "should",
-  "may",
-  "might",
-  "must",
-  "shall",
-  "can",
-  "this",
-  "that",
-  "these",
-  "those",
-  "i",
-  "you",
-  "he",
-  "she",
-  "it",
-  "we",
-  "they",
-  "my",
-  "your",
-  "his",
-  "her",
-  "its",
-  "our",
-  "their",
-  "what",
-  "which",
-  "who",
-  "whom",
-  "when",
-  "where",
-  "why",
-  "how",
-  "all",
-  "each",
-  "every",
-  "both",
-  "few",
-  "more",
-  "most",
-  "other",
-  "some",
-  "such",
-  "no",
-  "nor",
-  "not",
-  "only",
-  "own",
-  "same",
-  "so",
-  "than",
-  "too",
-  "very",
-  "just",
-  "also",
-  "now",
-  "here",
-  "there",
-  "about",
-  "into",
-  "over",
-  "after",
-  "before",
-  "between",
-  "under",
-  "again",
-  "out",
-  // YouTube-specific stop words
-  "new",
-  "first",
-  "part",
-  "episode",
-  "ep",
-  "official",
-  "full",
-  "hd",
-  "4k",
-]);
 
 /**
  * Determine the typical video duration format for a channel
@@ -316,65 +115,6 @@ function determineContentFormat(
 
   // Default to "any" for mixed channels to get variety
   return "any";
-}
-
-/**
- * Extract meaningful keywords AND phrases from video titles
- * Keeps multi-word terms together (e.g., "Blue Prince" stays as one phrase)
- * This prevents game names from being split into confusing individual words
- */
-function extractTitleKeywords(titles: string[]): string[] {
-  const phraseCounts = new Map<string, number>();
-  const wordCounts = new Map<string, number>();
-
-  for (const title of titles) {
-    // First, extract capitalized phrases (likely game/topic names)
-    // Match 2-3 consecutive capitalized words like "Blue Prince" or "League of Legends"
-    const capitalizedPhrases =
-      title.match(/\b[A-Z][a-z]+(?:\s+(?:of|the|and|&)?\s*[A-Z][a-z]+)+\b/g) ||
-      [];
-    for (const phrase of capitalizedPhrases) {
-      const cleaned = phrase.toLowerCase();
-      if (cleaned.length > 4 && !STOP_WORDS.has(cleaned)) {
-        phraseCounts.set(cleaned, (phraseCounts.get(cleaned) ?? 0) + 1);
-      }
-    }
-
-    // Also extract individual words as fallback
-    const words = title
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, " ")
-      .split(/\s+/)
-      .filter((w) => w.length > 3 && !STOP_WORDS.has(w) && !/^\d+$/.test(w));
-
-    const uniqueWords = [...new Set(words)];
-    for (const word of uniqueWords) {
-      wordCounts.set(word, (wordCounts.get(word) ?? 0) + 1);
-    }
-  }
-
-  // Only include items that appear in at least 20% of titles
-  const minCount = Math.max(2, Math.ceil(titles.length * 0.2));
-
-  // Prioritize multi-word phrases over single words
-  const validPhrases = [...phraseCounts.entries()]
-    .filter(([, count]) => count >= minCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([phrase]) => phrase);
-
-  // Get words that aren't part of any extracted phrase
-  const validWords = [...wordCounts.entries()]
-    .filter(([word, count]) => {
-      if (count < minCount) return false;
-      // Skip if this word is part of an extracted phrase
-      return !validPhrases.some((phrase) => phrase.includes(word));
-    })
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([word]) => word);
-
-  return [...validPhrases, ...validWords].slice(0, 8);
 }
 
 const ParamsSchema = z.object({
@@ -546,49 +286,7 @@ async function GETHandler(
       );
     }
 
-    // Extract video data for niche analysis
-    const videoTitles = channel.Video.map((v) => v.title ?? "").filter(Boolean);
-
-    // Extract meaningful keywords from titles (more reliable than tags)
-    const titleKeywords = extractTitleKeywords(videoTitles);
-
-    // Count tag frequency
-    const tagCounts = new Map<string, number>();
-    channel.Video.forEach((v) => {
-      if (v.tags) {
-        v.tags.split(",").forEach((t) => {
-          const cleaned = t.trim().toLowerCase();
-          if (cleaned.length > 2 && !GENERIC_TAG_BLOCKLIST.has(cleaned)) {
-            tagCounts.set(cleaned, (tagCounts.get(cleaned) ?? 0) + 1);
-          }
-        });
-      }
-    });
-
-    // Only include tags that appear on at least 30% of videos (to filter outliers)
-    const videoCount = channel.Video.length;
-    const minTagFrequency = Math.max(2, Math.ceil(videoCount * 0.3));
-
-    // Prioritize tags that also appear in title keywords (cross-validation)
-    const validatedTags = [...tagCounts.entries()]
-      .filter(([, count]) => count >= minTagFrequency)
-      .map(([tag, count]) => {
-        // Boost score if tag matches title keywords
-        const titleMatch = titleKeywords.some(
-          (kw) => tag.includes(kw) || kw.includes(tag)
-        );
-        return { tag, score: count + (titleMatch ? 10 : 0) };
-      })
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10)
-      .map(({ tag }) => tag);
-
-    // Combine validated tags with title keywords for better niche detection
-    const topTags = [
-      ...new Set([...validatedTags, ...titleKeywords.slice(0, 5)]),
-    ].slice(0, 15);
-
-    // Get primary category
+    // Get primary category for filtering
     const categoryCounts = new Map<string, number>();
     channel.Video.forEach((v) => {
       if (v.categoryId) {
@@ -608,28 +306,17 @@ async function GETHandler(
     const videoDurations = channel.Video.map((v) => v.durationSec);
     const contentFormat = determineContentFormat(videoDurations);
 
+    // Get niche from cache or generate from last 15 videos
+    // This uses the ChannelNiche table and regenerates if video titles change
+    const nicheData = await getOrGenerateNiche(channel.id);
+
     console.log(
-      `[Competitors] Category: ${categoryName}, Format: ${contentFormat}, Title keywords: ${titleKeywords
-        .slice(0, 5)
-        .join(", ")}, Validated tags: ${validatedTags.slice(0, 5).join(", ")}`
+      `[Competitors] Category: ${categoryName}, Format: ${contentFormat}, Niche: ${
+        nicheData?.niche ?? "unknown"
+      }`
     );
 
-    // Use LLM to generate niche queries (cached per channel for 24h)
-    const nicheCacheKey = `niche:${channel.id}`;
-    let nicheData = nicheCache.get(nicheCacheKey);
-
-    if (!nicheData) {
-      console.log(`[Competitors] Generating niche queries via LLM...`);
-      nicheData = await generateNicheQueries({
-        videoTitles,
-        topTags,
-        categoryName,
-      });
-      nicheCache.set(nicheCacheKey, nicheData);
-      console.log(`[Competitors] LLM identified niche: "${nicheData.niche}"`);
-    }
-
-    const nicheQueries = nicheData.queries;
+    const nicheQueries = nicheData?.queries ?? [];
 
     if (nicheQueries.length === 0) {
       return Response.json({
@@ -664,7 +351,7 @@ async function GETHandler(
         pageToken ? ` (pageToken: ${pageToken.substring(0, 20)}...)` : ""
       }`
     );
-    console.log(`[Competitors] Niche: "${nicheData.niche}"`);
+    console.log(`[Competitors] Niche: "${nicheData?.niche ?? "unknown"}"`);
 
     // For backward compatibility with searchSimilarChannels
     const userKeywords =

@@ -22,8 +22,32 @@ const DEFAULT_MODEL = "gpt-4o-mini";
 const MAX_TOKENS = 2000;
 
 /**
+ * Get the current year for use in LLM prompts and fixtures
+ */
+const CURRENT_YEAR = new Date().getFullYear();
+
+/**
+ * Get the current date context string to inject into LLM system prompts.
+ * This ensures the LLM knows the correct current date/year.
+ */
+function getCurrentDateContext(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.toLocaleString("en-US", { month: "long" });
+  return `Today's date is ${month} ${now.getDate()}, ${year}. The current year is ${year}. IMPORTANT: If you reference any year in your response, use ${year} (not 2024 or any other year).`;
+}
+
+/**
+ * Wrap a system prompt with current date context
+ */
+function withDateContext(systemPrompt: string): string {
+  return `${getCurrentDateContext()}\n\n${systemPrompt}`;
+}
+
+/**
  * Call the OpenAI API with messages.
  * In TEST_MODE, returns fixture data instead of making real API calls.
+ * Automatically injects current date context into system messages.
  */
 export async function callLLM(
   messages: LLMMessage[],
@@ -34,9 +58,16 @@ export async function callLLM(
     responseFormat?: "json_object";
   }
 ): Promise<LLMResponse> {
+  // Inject date context into system messages so LLM knows current year
+  const messagesWithDate = messages.map((msg) =>
+    msg.role === "system"
+      ? { ...msg, content: withDateContext(msg.content) }
+      : msg
+  );
+
   // TEST_MODE: Return fixture response
   if (process.env.TEST_MODE === "1") {
-    return getTestModeResponse(messages);
+    return getTestModeResponse(messagesWithDate);
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -57,7 +88,7 @@ export async function callLLM(
     },
     body: JSON.stringify({
       model,
-      messages,
+      messages: messagesWithDate,
       max_tokens: maxTokens,
       temperature,
       ...(responseFormat ? { response_format: { type: responseFormat } } : {}),
@@ -2107,7 +2138,7 @@ function getTestModeResponse(messages: LLMMessage[]): LLMResponse {
                 tags: ["Personal", "Curiosity"],
               },
               {
-                text: "Best AI Coding Assistant in 2024 (Tested 10+)",
+                text: `Best AI Coding Assistant in ${CURRENT_YEAR} (Tested 10+)`,
                 tags: ["Specific", "Timely"],
               },
               {
@@ -2300,7 +2331,7 @@ function getTestModeResponse(messages: LLMMessage[]): LLMResponse {
       content: JSON.stringify([
         {
           id: "topic-new-1",
-          title: "How I'd Learn to Code in 2024 (If I Could Start Over)",
+          title: `How I'd Learn to Code in ${CURRENT_YEAR} (If I Could Start Over)`,
           why: "Retrospective content with clear value proposition for beginners.",
           confidence: "high",
           angles: [
@@ -2314,18 +2345,18 @@ function getTestModeResponse(messages: LLMMessage[]): LLMResponse {
           ],
           titles: [
             {
-              text: "How I'd Learn to Code in 2024 (If I Could Start Over)",
+              text: `How I'd Learn to Code in ${CURRENT_YEAR} (If I Could Start Over)`,
               tags: ["Personal", "Timely"],
             },
             {
-              text: "The FASTEST Way to Learn Coding in 2024",
+              text: `The FASTEST Way to Learn Coding in ${CURRENT_YEAR}`,
               tags: ["Specific", "Outcome"],
             },
           ],
           keywords: [
             "learn to code",
             "coding for beginners",
-            "programming 2024",
+            `programming ${CURRENT_YEAR}`,
             "coding roadmap",
           ],
           thumbnail: {
@@ -2574,7 +2605,7 @@ Place your subscribe CTA immediately after delivering the first major value mome
               "Personal experiment documenting your shift to quality over quantity",
           },
           {
-            title: "The Upload Schedule That Actually Works in 2024",
+            title: `The Upload Schedule That Actually Works in ${CURRENT_YEAR}`,
             hook: "Forget everything you've heard about consistency. Here's what the data shows...",
             overlayText: "NEW STRATEGY",
             angle: "Data-backed breakdown of optimal posting frequency",
@@ -2765,7 +2796,7 @@ function getTestModeVideoInsightsResponse(prompt: string) {
     `"I Tried ${mainTopic} for 30 Days - Here's What Happened"`
   );
   if (!hasQuestion)
-    titleSuggestions.push(`"Why ${mainTopic} Will Change Everything in 2024"`);
+    titleSuggestions.push(`"Why ${mainTopic} Will Change Everything in ${CURRENT_YEAR}"`);
 
   // Analyze tags
   const tagCount = tags.length;
@@ -2773,7 +2804,7 @@ function getTestModeVideoInsightsResponse(prompt: string) {
   const missingTags: string[] = [];
 
   if (!tags.some((t) => /202\d/.test(t)))
-    missingTags.push(`Add "${mainTopic} 2024" for time-sensitive searches`);
+    missingTags.push(`Add "${mainTopic} ${CURRENT_YEAR}" for time-sensitive searches`);
   if (!tags.some((t) => /tutorial|guide|how/i.test(t)))
     missingTags.push(`Add "tutorial" or "guide" variations`);
   if (!tags.some((t) => /beginner|advanced|pro/i.test(t)))
@@ -3267,7 +3298,7 @@ function getTestModeIdeaBoardResponse() {
           competition: "high",
         },
         {
-          text: "youtube algorithm 2024",
+          text: `youtube algorithm ${CURRENT_YEAR}`,
           intent: "search",
           monthlySearches: "20K",
           competition: "medium",
@@ -3564,7 +3595,7 @@ function getTestModeIdeaBoardResponse() {
       ],
       titles: [
         {
-          text: "My Favorite Tools and Resources (2024 Edition)",
+          text: `My Favorite Tools and Resources (${CURRENT_YEAR} Edition)`,
           styleTags: ["personal", "timebound"],
         },
         {

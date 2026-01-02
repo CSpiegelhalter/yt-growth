@@ -261,6 +261,14 @@ export default function DashboardClient({
       return;
     }
     loadVideos(activeChannelId);
+
+    // Pre-warm the niche cache in background (non-blocking)
+    // This ensures niche is ready when user navigates to competitors or ideas page
+    fetch(`/api/me/channels/${activeChannelId}/niche`, {
+      method: "POST",
+    }).catch(() => {
+      // Silently ignore errors - this is just a pre-warm optimization
+    });
   }, [activeChannelId, loadVideos]);
 
   // Refresh data (re-fetch channels)

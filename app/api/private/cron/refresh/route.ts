@@ -5,10 +5,12 @@
  * Secured by X-CRON-SECRET header.
  *
  * This should be called periodically (e.g., every 6 hours) to keep caches fresh.
+ * Also checks if channel niches need regeneration (video titles changed).
  */
 import { NextRequest } from "next/server";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
+import { refreshStaleNiches } from "@/lib/channel-niche";
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -24,8 +26,19 @@ async function POSTHandler(req: NextRequest) {
       channelsProcessed: 0,
       videosRefreshed: 0,
       metricsRefreshed: 0,
+      nichesChecked: 0,
+      nichesRegenerated: 0,
       errors: [] as string[],
     };
+
+    // Refresh stale niches (when video titles have changed)
+    try {
+      const nicheResults = await refreshStaleNiches();
+      results.nichesChecked = nicheResults.checked;
+      results.nichesRegenerated = nicheResults.regenerated;
+    } catch (err: any) {
+      results.errors.push(`Niche refresh: ${err.message}`);
+    }
 
     // Find active subscribed users with channels
     const activeSubscriptions = await prisma.subscription.findMany({

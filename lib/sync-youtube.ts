@@ -1,6 +1,7 @@
 // lib/sync-youtube.ts
 import { prisma } from "@/prisma";
 import { googleFetchWithAutoRefresh } from "@/lib/google-tokens";
+import { generateAndStoreNiche } from "@/lib/channel-niche";
 
 type GoogleAccount = {
   id: number;
@@ -172,6 +173,18 @@ export async function syncUserChannels(
         // Fetch recent videos for this channel (await so videos are ready when user sees dashboard)
         try {
           await fetchChannelVideos(ga, channel.id, ch.id);
+
+          // Generate and store the channel's niche based on video titles
+          // This is used by competitors page and idea generation
+          try {
+            await generateAndStoreNiche(channel.id);
+          } catch (nicheErr) {
+            console.error(
+              `Failed to generate niche for channel ${ch.id}:`,
+              nicheErr
+            );
+            // Don't throw - niche is not critical for initial sync
+          }
         } catch (err) {
           console.error(`Failed to fetch videos for channel ${ch.id}:`, err);
           // Don't throw - channel is synced, videos are optional

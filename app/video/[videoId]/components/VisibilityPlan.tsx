@@ -14,7 +14,6 @@ type VisibilityPlanData = {
   confidence: string;
   doNext?: Step[];
   promotionChecklist?: string[];
-  whatToMeasureNext?: string[];
 };
 
 type VisibilityPlanProps = {
@@ -77,21 +76,6 @@ export function VisibilityPlan({ plan }: VisibilityPlanProps) {
               </li>
             ))}
           </ul>
-        </div>
-      )}
-
-      {(plan.whatToMeasureNext?.length ?? 0) > 0 && (
-        <div style={{ marginTop: 14 }}>
-          <p className={s.sectionDesc} style={{ marginBottom: 8 }}>
-            What to measure next
-          </p>
-          <div className={s.tagChips}>
-            {plan.whatToMeasureNext?.slice(0, 10).map((m) => (
-              <span key={m} className={s.missingTagChip}>
-                {m}
-              </span>
-            ))}
-          </div>
         </div>
       )}
     </section>

@@ -80,6 +80,7 @@ model Channel {
   Plan             Plan[]
   RetentionBlob    RetentionBlob[]
   VideoMetrics     VideoMetrics[]
+  ChannelNiche     ChannelNiche?
 
   @@unique([userId, youtubeChannelId], map: "uq_channel_owner_youtube")
   @@index([userId], map: "idx_channel_user")
@@ -432,4 +433,23 @@ model UsageCounter {
 
   @@unique([userId, date, featureKey], map: "uq_usage_counter")
   @@index([userId, date], map: "idx_usage_counter_user_date")
+}
+
+// ============================================
+// CHANNEL NICHE CACHE (derived from last 15 videos)
+// ============================================
+
+model ChannelNiche {
+  id              String   @id @default(uuid()) @db.Uuid
+  channelId       Int      @unique
+  niche           String   @db.VarChar(255) // The identified niche description
+  queriesJson     Json // Array of search queries for finding competitors
+  videoTitlesHash String   @db.VarChar(64) // MD5 hash of video titles for change detection
+  generatedAt     DateTime @default(now()) @db.Timestamptz(6)
+  cachedUntil     DateTime @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  Channel         Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([cachedUntil], map: "idx_channel_niche_cached")
 }

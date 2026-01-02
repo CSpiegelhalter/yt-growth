@@ -8,6 +8,8 @@ import { callLLM } from "./llm";
 import type { IdeaBoardData, Idea, ProofVideo } from "@/types/api";
 import { normalizeIdeaBoardData } from "@/lib/idea-board-normalize";
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 function extractYouTubeVideoId(candidate: string | null | undefined): string | null {
   const s = String(candidate ?? "").trim();
   if (!s) return null;
@@ -594,7 +596,7 @@ function createFallbackIdeaBoard(input: GenerateIdeaBoardInput): IdeaBoardData {
           styleTags: ["personal", "authority"],
         },
         {
-          text: `${topKeyword} in 2024: The Only Guide You Need`,
+          text: `${topKeyword} in ${CURRENT_YEAR}: The Only Guide You Need`,
           styleTags: ["timebound", "specific"],
         },
       ],
