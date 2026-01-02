@@ -64,6 +64,27 @@
   cursor: pointer;
 }
 
+/* Syncing Banner - shows when background sync is in progress */
+.syncingBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--accent-light, #eff6ff);
+  border: 1px solid var(--accent, #3b82f6);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--accent-dark, #1e40af);
+  margin-bottom: var(--page-header-margin);
+  animation: syncingPulse 2s ease-in-out infinite;
+}
+
+@keyframes syncingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
 /* Content */
 .content {
   display: flex;

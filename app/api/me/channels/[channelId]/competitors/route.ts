@@ -8,6 +8,7 @@
  * - Fetches videos from similar channels via YouTube Data API
  * - Stores snapshots to track velocity over time
  * - Computes derived metrics: velocity24h, velocity7d, acceleration, outlierScore
+ * - Auto-refreshes channel data if stale (>24h) before serving competitor feed
  *
  * Auth: Required
  * Subscription: Required
@@ -31,6 +32,7 @@ import {
   getGoogleAccount,
   searchNicheVideos,
   fetchVideosStatsBatch,
+  fetchChannelVideos,
   type VideoDurationFilter,
 } from "@/lib/youtube-api";
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
@@ -38,6 +40,9 @@ import { ensureMockChannelSeeded } from "@/lib/mock-seed";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { getOrGenerateNiche } from "@/lib/channel-niche";
 import type { CompetitorFeedResponse, CompetitorVideo } from "@/types/api";
+
+// 24 hours in milliseconds - data older than this triggers a cache invalidation + background sync
+const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 
 // YouTube Video Category ID to Name mapping
 const YOUTUBE_CATEGORIES: Record<string, string> = {
@@ -141,6 +146,119 @@ const QuerySchema = z.object({
 
 // Minimum hours between snapshots for a video
 const SNAPSHOT_INTERVAL_HOURS = 6;
+
+// Number of videos to sync (divisible by 6 for grid layout)
+const SYNC_VIDEO_COUNT = 96;
+
+/**
+ * Trigger a background sync for a channel.
+ * Fire-and-forget - doesn't block the response.
+ */
+async function triggerBackgroundChannelSync(
+  userId: number,
+  youtubeChannelId: string,
+  channelDbId: number,
+  ga: {
+    id: number;
+    refreshTokenEnc: string | null;
+    accessTokenEnc?: string | null;
+    tokenExpiresAt: Date | null;
+  }
+): Promise<void> {
+  // Mark channel as syncing
+  await prisma.channel.update({
+    where: { id: channelDbId },
+    data: { syncStatus: "running" },
+  });
+
+  try {
+    // Fetch videos from YouTube
+    const videos = await fetchChannelVideos(
+      ga,
+      youtubeChannelId,
+      SYNC_VIDEO_COUNT
+    );
+
+    // Cache expiration for metrics (12 hours)
+    const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
+
+    // Upsert videos and metrics
+    for (const v of videos) {
+      const video = await prisma.video.upsert({
+        where: {
+          channelId_youtubeVideoId: {
+            channelId: channelDbId,
+            youtubeVideoId: v.videoId,
+          },
+        },
+        update: {
+          title: v.title,
+          description: v.description,
+          publishedAt: new Date(v.publishedAt),
+          durationSec: v.durationSec,
+          tags: v.tags,
+          thumbnailUrl: v.thumbnailUrl,
+        },
+        create: {
+          channelId: channelDbId,
+          youtubeVideoId: v.videoId,
+          title: v.title,
+          description: v.description,
+          publishedAt: new Date(v.publishedAt),
+          durationSec: v.durationSec,
+          tags: v.tags,
+          thumbnailUrl: v.thumbnailUrl,
+        },
+      });
+
+      // Upsert VideoMetrics with Data API statistics
+      await prisma.videoMetrics.upsert({
+        where: { videoId: video.id },
+        update: {
+          views: v.views,
+          likes: v.likes,
+          comments: v.comments,
+          fetchedAt: new Date(),
+          cachedUntil,
+        },
+        create: {
+          videoId: video.id,
+          channelId: channelDbId,
+          views: v.views,
+          likes: v.likes,
+          comments: v.comments,
+          cachedUntil,
+        },
+      });
+    }
+
+    // Update channel sync status
+    await prisma.channel.update({
+      where: { id: channelDbId },
+      data: {
+        lastSyncedAt: new Date(),
+        syncStatus: "idle",
+        syncError: null,
+      },
+    });
+
+    console.log(
+      `[Competitors] Background sync completed for ${youtubeChannelId}: ${videos.length} videos`
+    );
+  } catch (err: any) {
+    console.error(
+      `[Competitors] Background sync error for ${youtubeChannelId}:`,
+      err
+    );
+    await prisma.channel.update({
+      where: { id: channelDbId },
+      data: {
+        syncStatus: "error",
+        syncError: err.message,
+      },
+    });
+  }
+}
 
 async function GETHandler(
   req: NextRequest,
@@ -283,6 +401,38 @@ async function GETHandler(
       return Response.json(
         { error: "Google account not connected" },
         { status: 400 }
+      );
+    }
+
+    // Check if channel data is stale (>24h) and trigger background sync if needed
+    // Also invalidate competitor cache if channel data is stale (niche may have changed)
+    const nowMs = Date.now();
+    const lastSyncTime = channel.lastSyncedAt?.getTime() ?? 0;
+    const isChannelStale = nowMs - lastSyncTime > STALE_THRESHOLD_MS;
+    const isSyncRunning = channel.syncStatus === "running";
+
+    if (isChannelStale && !isSyncRunning) {
+      console.log(
+        `[Competitors] Channel ${channelId} is stale (last sync: ${
+          channel.lastSyncedAt?.toISOString() ?? "never"
+        }), triggering background sync`
+      );
+
+      // Invalidate competitor feed cache since niche may be outdated
+      await prisma.competitorFeedCache
+        .deleteMany({
+          where: { channelId: channel.id },
+        })
+        .catch(() => {}); // Ignore errors - cache invalidation is best-effort
+
+      // Trigger background sync (fire-and-forget)
+      triggerBackgroundChannelSync(user.id, channelId, channel.id, ga).catch(
+        (err) => {
+          console.error(
+            `[Competitors] Background sync failed for ${channelId}:`,
+            err
+          );
+        }
       );
     }
 

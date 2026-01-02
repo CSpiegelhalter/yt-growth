@@ -82,6 +82,9 @@ export default function DashboardClient({
     total: number;
     hasMore: boolean;
   } | null>(null);
+  // Background sync state - when channel data is stale (>24h), a sync runs in background
+  const [syncing, setSyncing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
   // Page size divisible by 6 for even grid layouts
   const PAGE_SIZE = 24;
@@ -218,6 +221,9 @@ export default function DashboardClient({
             hasMore: data.pagination.hasMore,
           });
         }
+        // Track background sync state
+        setSyncing(data.syncing ?? false);
+        setLastSyncedAt(data.lastSyncedAt ?? null);
       }
     } catch (error) {
       console.error("Failed to load videos:", error);
@@ -270,6 +276,41 @@ export default function DashboardClient({
       // Silently ignore errors - this is just a pre-warm optimization
     });
   }, [activeChannelId, loadVideos]);
+
+  // Auto-reload videos when background sync completes
+  // Poll every 10 seconds while syncing, then stop once sync is done
+  useEffect(() => {
+    if (!syncing || !activeChannelId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/me/channels/${activeChannelId}/videos?limit=${PAGE_SIZE}&offset=0`,
+          { cache: "no-store" }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.syncing) {
+            // Sync completed - update videos and stop polling
+            setVideos(data.videos || []);
+            setSyncing(false);
+            setLastSyncedAt(data.lastSyncedAt ?? null);
+            if (data.pagination) {
+              setPagination({
+                offset: data.pagination.offset + (data.videos?.length ?? 0),
+                total: data.pagination.total,
+                hasMore: data.pagination.hasMore,
+              });
+            }
+          }
+        }
+      } catch {
+        // Ignore errors during polling
+      }
+    }, 10000); // Poll every 10 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [syncing, activeChannelId]);
 
   // Refresh data (re-fetch channels)
   const refreshData = useCallback(async () => {
@@ -389,6 +430,14 @@ export default function DashboardClient({
           </button>
         )}
       </div>
+
+      {/* Syncing indicator - shows when background sync is running */}
+      {syncing && (
+        <div className={s.syncingBanner}>
+          <span className={s.spinner} />
+          <span>Refreshing your channel data...</span>
+        </div>
+      )}
 
       {/* Alerts */}
       {success && (

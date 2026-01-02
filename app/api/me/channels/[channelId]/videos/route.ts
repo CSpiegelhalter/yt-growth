@@ -4,6 +4,8 @@
  * Returns the list of videos for a channel.
  * This is FREE for all users - no subscription required.
  *
+ * Auto-syncs channel data if stale (>24h since last sync) - runs in background.
+ *
  * Auth: Required
  * Subscription: NOT required
  */
@@ -13,8 +15,11 @@ import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/user";
 import { isDemoMode, getDemoData, isYouTubeMockMode } from "@/lib/demo-fixtures";
-import { getGoogleAccount } from "@/lib/youtube-api";
+import { getGoogleAccount, fetchChannelVideos } from "@/lib/youtube-api";
 import { ensureMockChannelSeeded } from "@/lib/mock-seed";
+
+// 24 hours in milliseconds - data older than this triggers a background sync
+const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -22,6 +27,110 @@ const ParamsSchema = z.object({
 
 // Page size divisible by 6 for even grid layouts (1, 2, or 3 columns)
 const DEFAULT_PAGE_SIZE = 24;
+
+// Number of videos to sync (divisible by 6 for grid layout)
+const SYNC_VIDEO_COUNT = 96;
+
+/**
+ * Trigger a background sync for a channel.
+ * Fire-and-forget - doesn't block the response.
+ */
+async function triggerBackgroundSync(
+  userId: number,
+  youtubeChannelId: string,
+  channelDbId: number
+): Promise<void> {
+  const ga = await getGoogleAccount(userId, youtubeChannelId);
+  if (!ga) {
+    console.warn(`[videos] No Google account for background sync: ${youtubeChannelId}`);
+    return;
+  }
+
+  // Mark channel as syncing
+  await prisma.channel.update({
+    where: { id: channelDbId },
+    data: { syncStatus: "running" },
+  });
+
+  try {
+    // Fetch videos from YouTube
+    const videos = await fetchChannelVideos(ga, youtubeChannelId, SYNC_VIDEO_COUNT);
+
+    // Cache expiration for metrics (12 hours)
+    const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
+
+    // Upsert videos and metrics
+    for (const v of videos) {
+      const video = await prisma.video.upsert({
+        where: {
+          channelId_youtubeVideoId: {
+            channelId: channelDbId,
+            youtubeVideoId: v.videoId,
+          },
+        },
+        update: {
+          title: v.title,
+          description: v.description,
+          publishedAt: new Date(v.publishedAt),
+          durationSec: v.durationSec,
+          tags: v.tags,
+          thumbnailUrl: v.thumbnailUrl,
+        },
+        create: {
+          channelId: channelDbId,
+          youtubeVideoId: v.videoId,
+          title: v.title,
+          description: v.description,
+          publishedAt: new Date(v.publishedAt),
+          durationSec: v.durationSec,
+          tags: v.tags,
+          thumbnailUrl: v.thumbnailUrl,
+        },
+      });
+
+      // Upsert VideoMetrics with Data API statistics
+      await prisma.videoMetrics.upsert({
+        where: { videoId: video.id },
+        update: {
+          views: v.views,
+          likes: v.likes,
+          comments: v.comments,
+          fetchedAt: new Date(),
+          cachedUntil,
+        },
+        create: {
+          videoId: video.id,
+          channelId: channelDbId,
+          views: v.views,
+          likes: v.likes,
+          comments: v.comments,
+          cachedUntil,
+        },
+      });
+    }
+
+    // Update channel sync status
+    await prisma.channel.update({
+      where: { id: channelDbId },
+      data: {
+        lastSyncedAt: new Date(),
+        syncStatus: "idle",
+        syncError: null,
+      },
+    });
+
+    console.log(`[videos] Background sync completed for ${youtubeChannelId}: ${videos.length} videos`);
+  } catch (err: any) {
+    console.error(`[videos] Background sync error for ${youtubeChannelId}:`, err);
+    await prisma.channel.update({
+      where: { id: channelDbId },
+      data: {
+        syncStatus: "error",
+        syncError: err.message,
+      },
+    });
+  }
+}
 
 async function GETHandler(
   req: NextRequest,
@@ -173,6 +282,24 @@ async function GETHandler(
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
+    // Check if data is stale (>24h) and trigger background sync if needed
+    // This is fire-and-forget - we return cached data immediately
+    let syncing = false;
+    const now = Date.now();
+    const lastSyncTime = channel.lastSyncedAt?.getTime() ?? 0;
+    const isStale = now - lastSyncTime > STALE_THRESHOLD_MS;
+    const isSyncRunning = channel.syncStatus === "running";
+
+    if (isStale && !isSyncRunning) {
+      syncing = true;
+      // Trigger background sync - don't await, fire-and-forget
+      triggerBackgroundSync(user.id, channelId, channel.id).catch((err) => {
+        console.error(`[videos] Background sync failed for ${channelId}:`, err);
+      });
+    } else if (isSyncRunning) {
+      syncing = true;
+    }
+
     // Get total count for pagination
     const totalSynced = channel._count?.Video ?? channel.Video.length;
 
@@ -209,6 +336,9 @@ async function GETHandler(
         total: totalSynced,
         hasMore: offset + limit < totalSynced,
       },
+      // Indicate if a background sync is in progress
+      syncing,
+      lastSyncedAt: channel.lastSyncedAt?.toISOString() ?? null,
     });
   } catch (err: any) {
     console.error("Videos list error:", err);
