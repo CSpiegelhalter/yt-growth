@@ -230,6 +230,7 @@ export function Header() {
     () => [
       { href: "/dashboard", label: "Videos", icon: "video" as const },
       { href: "/ideas", label: "Ideas", icon: "lightbulb" as const },
+      { href: "/goals", label: "Goals", icon: "target" as const },
       {
         href: "/subscriber-insights",
         label: "Subscriber Insights",
@@ -652,7 +653,8 @@ type IconType =
   | "settings"
   | "logout"
   | "book"
-  | "tag";
+  | "tag"
+  | "target";
 
 function DropdownIcon({ type }: { type: IconType }) {
   const props = {
@@ -749,6 +751,14 @@ function DropdownIcon({ type }: { type: IconType }) {
           <line x1="7" y1="7" x2="7.01" y2="7" />
         </svg>
       );
+    case "target":
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -758,6 +768,7 @@ function isChannelScopedPath(pathname: string): boolean {
   // Pages where data is scoped to the "active channel" and should respond to channel changes.
   if (pathname === "/dashboard") return true;
   if (pathname === "/ideas") return true;
+  if (pathname === "/goals") return true;
   if (pathname === "/subscriber-insights") return true;
   if (pathname === "/competitors") return true;
   if (pathname.startsWith("/video/")) return true;

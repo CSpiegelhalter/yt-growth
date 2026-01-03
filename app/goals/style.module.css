@@ -1,0 +1,674 @@
+/* ================================
+   Badge Collection Page Styles
+   ================================ */
+
+/* Error Banner */
+.errorBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #dc2626;
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+/* No Channel State */
+.noChannel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.noChannelIcon {
+  color: #94a3b8;
+  margin-bottom: 16px;
+}
+
+.noChannelTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px;
+}
+
+.noChannelDesc {
+  font-size: 0.9375rem;
+  color: #64748b;
+  margin: 0 0 24px;
+  max-width: 320px;
+}
+
+.connectBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  background: #6366f1;
+  color: white;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.connectBtn:hover {
+  background: #4f46e5;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+/* ================================
+   SUMMARY SECTION
+   ================================ */
+
+.summarySection {
+  margin-bottom: 32px;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.summaryCard {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.summaryIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.streakIcon {
+  background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+}
+
+.summaryValue {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.summaryTotal {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-left: 4px;
+}
+
+.summaryLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Next Badge Card */
+.nextBadgeCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+  cursor: pointer;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-color: #fbbf24;
+}
+
+.nextBadgeCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(251, 191, 36, 0.2);
+}
+
+.nextBadgePreview {
+  flex-shrink: 0;
+}
+
+.nextBadgeInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.nextBadgeLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #92400e;
+}
+
+.nextBadgeName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #78350f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nextBadgeProgress {
+  font-size: 0.75rem;
+  color: #a16207;
+}
+
+/* ================================
+   BADGE GALLERY
+   ================================ */
+
+.gallerySection {
+  margin-bottom: 40px;
+}
+
+.galleryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.newCount {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+/* Filters */
+.filtersRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filterLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+}
+
+.filterSelect {
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #1e293b;
+  cursor: pointer;
+  min-width: 140px;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.searchGroup {
+  flex: 1;
+  min-width: 180px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #1e293b;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Badge Grid */
+.badgeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.badgeCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.badgeCard:hover {
+  transform: translateY(-4px);
+  border-color: #c7d2fe;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15);
+}
+
+.badgeCard:focus-visible {
+  outline: 3px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.badgeCard.unlocked {
+  background: linear-gradient(180deg, #fefce8 0%, #fef9c3 100%);
+  border-color: #fde047;
+}
+
+.badgeCard.locked {
+  opacity: 0.6;
+}
+
+.badgeArtWrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.newPill {
+  position: absolute;
+  top: -6px;
+  right: -12px;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  background: #ec4899;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.badgeName {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.badgeRarity {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.badgeRarity[data-rarity="common"] {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badgeRarity[data-rarity="rare"] {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.badgeRarity[data-rarity="epic"] {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.badgeRarity[data-rarity="legendary"] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badgeProgressBar {
+  width: 100%;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.badgeProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.noResults {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+.resetBtn {
+  margin-top: 12px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.resetBtn:hover {
+  background: #4f46e5;
+}
+
+/* ================================
+   GOALS SECTION
+   ================================ */
+
+.goalsSection {
+  margin-bottom: 40px;
+}
+
+.goalCategory {
+  margin-bottom: 24px;
+}
+
+.goalCategoryTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  margin: 0 0 12px;
+}
+
+.goalsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.goalCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.goalCard:hover {
+  border-color: #c7d2fe;
+}
+
+.goalCard.completed {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.goalCard.goalLocked {
+  opacity: 0.6;
+  background: #f8fafc;
+}
+
+.goalInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.goalTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 4px;
+}
+
+.goalDesc {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.goalBadges {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.goalBadgeChip {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.goalBadgeChip[data-rarity="common"] {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.goalBadgeChip[data-rarity="rare"] {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.goalBadgeChip[data-rarity="epic"] {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.goalBadgeChip[data-rarity="legendary"] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.goalProgress {
+  flex-shrink: 0;
+}
+
+.completedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #10b981;
+  background: #d1fae5;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.lockedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.goalProgressWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 100px;
+}
+
+.goalProgressBar {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.goalProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.goalProgressText {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* ================================
+   RECENT SECTION
+   ================================ */
+
+.recentSection {
+  margin-bottom: 40px;
+}
+
+.recentList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recentItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.recentItem:hover {
+  border-color: #fde047;
+  background: #fffbeb;
+}
+
+.recentInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.recentName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.recentDate {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* ================================
+   RESPONSIVE
+   ================================ */
+
+@media (max-width: 640px) {
+  .summaryGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .nextBadgeCard {
+    grid-column: span 2;
+  }
+
+  .filtersRow {
+    flex-direction: column;
+  }
+
+  .filterGroup {
+    width: 100%;
+  }
+
+  .filterSelect,
+  .searchInput {
+    width: 100%;
+  }
+
+  .badgeGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .badgeCard {
+    padding: 12px 8px;
+  }
+
+  .badgeName {
+    font-size: 0.75rem;
+  }
+
+  .goalCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .goalProgress {
+    width: 100%;
+  }
+
+  .goalProgressWrap {
+    width: 100%;
+    align-items: stretch;
+  }
+}

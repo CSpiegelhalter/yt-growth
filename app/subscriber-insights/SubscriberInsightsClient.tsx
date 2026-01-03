@@ -190,8 +190,29 @@ export default function SubscriberInsightsClient({
       <div className={s.header}>
         <h1 className={s.title}>Subscriber Drivers</h1>
         <p className={s.subtitle}>
-          See which videos turn viewers into subscribers — and what to
-          replicate.
+          See which videos turn viewers into subscribers and what to replicate.
+        </p>
+        <p className={s.attributionNote}>
+          <svg
+            className={s.infoIcon}
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <circle cx="12" cy="8" r="0.5" fill="currentColor" />
+          </svg>
+          <span>
+            These numbers only count subscribers YouTube can directly attribute
+            to a specific video. Many subscribers come from your channel page or
+            other sources. Use these to compare which videos convert best.
+          </span>
         </p>
       </div>
 
@@ -249,7 +270,7 @@ export default function SubscriberInsightsClient({
               <span className={s.summaryValue}>
                 {formatNumber(viewRollups.totalSubsGained)}
               </span>
-              <span className={s.summaryLabel}>Total Subs Gained</span>
+              <span className={s.summaryLabel}>Attributed Subs</span>
             </div>
             <div className={s.summaryCard}>
               <span className={s.summaryValue}>

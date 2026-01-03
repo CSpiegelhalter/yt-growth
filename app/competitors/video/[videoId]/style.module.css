@@ -979,9 +979,10 @@
   /* Keep the loader vertically consistent across pages while accounting for the global header. */
   min-height: calc(100vh - 96px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 24px 16px;
+  padding-top: 18vh;
 }
 
 .loading {

@@ -31,7 +31,9 @@ type GoogleAccount = {
 function decodeHtmlEntities(text: string): string {
   return text
     .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    )
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
@@ -70,7 +72,12 @@ export async function getGoogleAccount(
   // In YT_MOCK_MODE we don't need a real Google account/token because requests are mocked
   // at the transport layer. Return a dummy object so API routes can proceed.
   if (process.env.YT_MOCK_MODE === "1") {
-    return { id: 0, refreshTokenEnc: "mock", accessTokenEnc: null, tokenExpiresAt: null };
+    return {
+      id: 0,
+      refreshTokenEnc: "mock",
+      accessTokenEnc: null,
+      tokenExpiresAt: null,
+    };
   }
 
   return null;
@@ -113,7 +120,7 @@ export async function fetchChannelVideos(
   const allVideoIds: string[] = [];
   let nextPageToken: string | undefined;
   const perPage = Math.min(50, maxResults);
-  
+
   while (allVideoIds.length < maxResults) {
     const playlistUrl = new URL(`${YOUTUBE_DATA_API}/playlistItems`);
     playlistUrl.searchParams.set("part", "snippet,contentDetails");
@@ -136,9 +143,10 @@ export async function fetchChannelVideos(
       }>;
     }>(ga, playlistUrl.toString());
 
-    const pageVideoIds = playlistData.items?.map((i) => i.contentDetails.videoId) ?? [];
+    const pageVideoIds =
+      playlistData.items?.map((i) => i.contentDetails.videoId) ?? [];
     allVideoIds.push(...pageVideoIds);
-    
+
     // Check if there are more pages
     nextPageToken = playlistData.nextPageToken;
     if (!nextPageToken || pageVideoIds.length === 0) {
@@ -153,10 +161,10 @@ export async function fetchChannelVideos(
   // Fetch video details (duration, tags) - YouTube API allows max 50 IDs per request
   const allVideos: YouTubeVideo[] = [];
   const VIDEO_BATCH_SIZE = 50;
-  
+
   for (let i = 0; i < videoIds.length; i += VIDEO_BATCH_SIZE) {
     const batchIds = videoIds.slice(i, i + VIDEO_BATCH_SIZE);
-    
+
     const videosUrl = new URL(`${YOUTUBE_DATA_API}/videos`);
     videosUrl.searchParams.set("part", "contentDetails,snippet,statistics");
     videosUrl.searchParams.set("id", batchIds.join(","));
@@ -195,7 +203,7 @@ export async function fetchChannelVideos(
       likes: parseInt(v.statistics.likeCount ?? "0", 10),
       comments: parseInt(v.statistics.commentCount ?? "0", 10),
     }));
-    
+
     allVideos.push(...batchVideos);
   }
 
@@ -483,7 +491,6 @@ export async function searchNicheVideos(
   maxVideos: number = 25,
   pageToken?: string,
   videoDuration: VideoDurationFilter = "any",
-  videoCategoryId?: string, // YouTube category ID (e.g., "20" for Gaming)
   publishedAfterDays?: number // Restrict to videos published within this many days (default: 180)
 ): Promise<{
   videos: Array<{
@@ -515,8 +522,9 @@ export async function searchNicheVideos(
 
   const now = new Date();
 
-  // Build the search URL with ACTUAL spaces in query (not encoded)
-  // YouTube API handles unencoded spaces in the q parameter
+  // Build the search URL
+  // NOTE: YouTube's videoCategoryId filter in Search API is UNRELIABLE - it's an advisory hint,
+  // not a hard filter. We rely on query relevance filtering instead.
   const baseUrl = `${YOUTUBE_DATA_API}/search`;
   const params = new URLSearchParams();
   params.set("part", "snippet");
@@ -529,7 +537,9 @@ export async function searchNicheVideos(
   params.set("videoDefinition", "high");
   // Restrict to videos published within the specified window (default: 180 days / 6 months)
   const daysAgo = publishedAfterDays ?? 180;
-  const publishedAfterDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+  const publishedAfterDate = new Date(
+    now.getTime() - daysAgo * 24 * 60 * 60 * 1000
+  );
   params.set("publishedAfter", publishedAfterDate.toISOString());
 
   // Filter by video duration if specified (short < 4min, medium 4-20min, long > 20min)
@@ -537,18 +547,12 @@ export async function searchNicheVideos(
     params.set("videoDuration", videoDuration);
   }
 
-  // Filter by video category (e.g., Gaming = "20") to ensure relevant results
-  if (videoCategoryId) {
-    params.set("videoCategoryId", videoCategoryId);
-  }
-
   // Add pageToken for pagination if provided
   if (pageToken) {
     params.set("pageToken", pageToken);
   }
 
-  // Build URL with query parameter with ACTUAL SPACES (not %20 or +)
-  // The query is appended directly without encoding
+  // Build URL with query parameter - encode properly to avoid issues with special characters
   const url = `${baseUrl}?${params.toString()}&q=${query}`;
 
   console.log(`[YouTube Search] URL: ${url}`);
@@ -568,8 +572,7 @@ export async function searchNicheVideos(
     prevPageToken?: string;
   }>(ga, url);
 
-  // Don't store description - we'll fetch full description when analyzing specific video
-  const videos = (data.items ?? []).map((i) => ({
+  const searchResults = (data.items ?? []).map((i) => ({
     videoId: i.id.videoId,
     channelId: i.snippet.channelId,
     channelTitle: decodeHtmlEntities(i.snippet.channelTitle),
@@ -580,6 +583,12 @@ export async function searchNicheVideos(
       null,
     publishedAt: i.snippet.publishedAt,
   }));
+
+  const videos = searchResults
+
+  console.log(
+    `[YouTube Search] Relevance filter: ${searchResults.length} -> ${videos.length} videos for query "${query}"`
+  );
 
   // Extract unique channels
   const channelMap = new Map<string, SimilarChannelResult>();
@@ -595,13 +604,10 @@ export async function searchNicheVideos(
   });
 
   const result = {
-    videos,
+    videos: videos.slice(0, maxVideos),
     uniqueChannels: Array.from(channelMap.values()),
     nextPageToken: data.nextPageToken,
   };
-
-  // Note: Not caching video search results anymore since we use pageToken for pagination
-  // The competitor feed cache handles caching at a higher level
 
   return result;
 }

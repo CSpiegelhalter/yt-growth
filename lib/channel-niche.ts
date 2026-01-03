@@ -4,6 +4,10 @@
  * Generates and caches a channel's niche based on their last 15 videos.
  * Uses a hash of video titles to detect when niche needs regeneration.
  *
+ * PRIORITY ORDER FOR NICHE DETECTION:
+ * 1. User's Channel Profile (what they WANT to create) - highest priority
+ * 2. Video-based inference (what they HAVE created) - fallback
+ *
  * The niche is used by:
  * - Competitor discovery page (to find similar channels)
  * - Idea generation (to understand content context)
@@ -11,7 +15,11 @@
 
 import crypto from "crypto";
 import { prisma } from "@/prisma";
-import { generateNicheQueries } from "@/lib/llm";
+import { generateNicheQueries, ChannelProfileContext } from "@/lib/llm";
+import {
+  ChannelProfileAI,
+  ChannelProfileInput,
+} from "@/lib/channel-profile/types";
 
 // Number of recent videos to analyze for niche detection
 const NICHE_VIDEO_COUNT = 15;
@@ -45,165 +53,9 @@ const YOUTUBE_CATEGORIES: Record<string, string> = {
   "29": "Nonprofits & Activism",
 };
 
-// Generic tags that don't indicate actual niche
-const GENERIC_TAG_BLOCKLIST = new Set([
-  "gaming",
-  "game",
-  "games",
-  "video game",
-  "video games",
-  "gameplay",
-  "playthrough",
-  "lets play",
-  "let's play",
-  "walkthrough",
-  "funny moments",
-  "best moments",
-  "highlights",
-  "gamer",
-  "pc gaming",
-  "console gaming",
-  "xbox",
-  "playstation",
-  "ps4",
-  "ps5",
-  "nintendo",
-  "minecraft",
-  "fortnite",
-  "roblox",
-  "gta",
-  "gta 5",
-  "youtube",
-  "youtuber",
-  "vlog",
-  "vlogs",
-  "video",
-  "videos",
-  "subscribe",
-  "viral",
-  "trending",
-  "new",
-  "funny",
-  "comedy",
-  "entertainment",
-  "how to",
-  "tutorial",
-  "tips",
-  "tricks",
-  "guide",
-  "review",
-  "reaction",
-]);
-
-// Stop words for title keyword extraction
-const STOP_WORDS = new Set([
-  "the",
-  "a",
-  "an",
-  "and",
-  "or",
-  "but",
-  "in",
-  "on",
-  "at",
-  "to",
-  "for",
-  "of",
-  "with",
-  "by",
-  "from",
-  "is",
-  "are",
-  "was",
-  "were",
-  "be",
-  "been",
-  "being",
-  "have",
-  "has",
-  "had",
-  "do",
-  "does",
-  "did",
-  "will",
-  "would",
-  "could",
-  "should",
-  "may",
-  "might",
-  "must",
-  "shall",
-  "can",
-  "this",
-  "that",
-  "these",
-  "those",
-  "i",
-  "you",
-  "he",
-  "she",
-  "it",
-  "we",
-  "they",
-  "my",
-  "your",
-  "his",
-  "her",
-  "its",
-  "our",
-  "their",
-  "what",
-  "which",
-  "who",
-  "whom",
-  "when",
-  "where",
-  "why",
-  "how",
-  "all",
-  "each",
-  "every",
-  "both",
-  "few",
-  "more",
-  "most",
-  "other",
-  "some",
-  "such",
-  "no",
-  "nor",
-  "not",
-  "only",
-  "own",
-  "same",
-  "so",
-  "than",
-  "too",
-  "very",
-  "just",
-  "also",
-  "now",
-  "here",
-  "there",
-  "about",
-  "into",
-  "over",
-  "after",
-  "before",
-  "between",
-  "under",
-  "again",
-  "out",
-  "new",
-  "first",
-  "part",
-  "episode",
-  "ep",
-  "official",
-  "full",
-  "hd",
-  "4k",
-]);
+// NOTE: We no longer filter tags or title keywords.
+// The LLM should receive ALL raw titles and tags because even "small" tokens
+// (AI, Go, F1, S3, HR, 2.0, etc.) provide critical niche context.
 
 export type ChannelNicheData = {
   niche: string;
@@ -226,58 +78,7 @@ export function computeVideoTitlesHash(titles: string[]): string {
   return crypto.createHash("md5").update(normalized).digest("hex");
 }
 
-/**
- * Extract meaningful keywords from video titles
- */
-function extractTitleKeywords(titles: string[]): string[] {
-  const phraseCounts = new Map<string, number>();
-  const wordCounts = new Map<string, number>();
-
-  for (const title of titles) {
-    // Extract capitalized phrases (likely game/topic names)
-    const capitalizedPhrases =
-      title.match(/\b[A-Z][a-z]+(?:\s+(?:of|the|and|&)?\s*[A-Z][a-z]+)+\b/g) ||
-      [];
-    for (const phrase of capitalizedPhrases) {
-      const cleaned = phrase.toLowerCase();
-      if (cleaned.length > 4 && !STOP_WORDS.has(cleaned)) {
-        phraseCounts.set(cleaned, (phraseCounts.get(cleaned) ?? 0) + 1);
-      }
-    }
-
-    // Extract individual words
-    const words = title
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, " ")
-      .split(/\s+/)
-      .filter((w) => w.length > 3 && !STOP_WORDS.has(w) && !/^\d+$/.test(w));
-
-    const uniqueWords = [...new Set(words)];
-    for (const word of uniqueWords) {
-      wordCounts.set(word, (wordCounts.get(word) ?? 0) + 1);
-    }
-  }
-
-  // Only include items that appear in at least 20% of titles
-  const minCount = Math.max(2, Math.ceil(titles.length * 0.2));
-
-  const validPhrases = [...phraseCounts.entries()]
-    .filter(([, count]) => count >= minCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([phrase]) => phrase);
-
-  const validWords = [...wordCounts.entries()]
-    .filter(([word, count]) => {
-      if (count < minCount) return false;
-      return !validPhrases.some((phrase) => phrase.includes(word));
-    })
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([word]) => word);
-
-  return [...validPhrases, ...validWords].slice(0, 8);
-}
+// extractTitleKeywords has been removed - the LLM receives raw titles now.
 
 /**
  * Get the cached niche for a channel, or null if not cached/expired
@@ -346,6 +147,7 @@ export async function shouldRegenerateNiche(
 
 /**
  * Generate and store the niche for a channel based on their last 15 videos
+ * When a channel profile exists, it's used as additional context for niche generation
  */
 export async function generateAndStoreNiche(
   channelId: number
@@ -385,42 +187,21 @@ export async function generateAndStoreNiche(
   // Compute hash of current video titles
   const videoTitlesHash = computeVideoTitlesHash(videoTitles);
 
-  // Extract keywords from titles
-  const titleKeywords = extractTitleKeywords(videoTitles);
-
-  // Count tag frequency
-  const tagCounts = new Map<string, number>();
+  // Collect ALL tags from videos (no filtering - let the LLM see everything)
+  const allTags: string[] = [];
   channel.Video.forEach((v) => {
     if (v.tags) {
       v.tags.split(",").forEach((t) => {
-        const cleaned = t.trim().toLowerCase();
-        if (cleaned.length > 2 && !GENERIC_TAG_BLOCKLIST.has(cleaned)) {
-          tagCounts.set(cleaned, (tagCounts.get(cleaned) ?? 0) + 1);
+        const cleaned = t.trim();
+        if (cleaned.length > 0) {
+          allTags.push(cleaned);
         }
       });
     }
   });
 
-  // Only include tags that appear on at least 30% of videos
-  const videoCount = channel.Video.length;
-  const minTagFrequency = Math.max(2, Math.ceil(videoCount * 0.3));
-
-  const validatedTags = [...tagCounts.entries()]
-    .filter(([, count]) => count >= minTagFrequency)
-    .map(([tag, count]) => {
-      const titleMatch = titleKeywords.some(
-        (kw) => tag.includes(kw) || kw.includes(tag)
-      );
-      return { tag, score: count + (titleMatch ? 10 : 0) };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10)
-    .map(({ tag }) => tag);
-
-  // Combine validated tags with title keywords
-  const topTags = [
-    ...new Set([...validatedTags, ...titleKeywords.slice(0, 5)]),
-  ].slice(0, 15);
+  // Dedupe tags but preserve all of them (no blocklist filtering)
+  const topTags = [...new Set(allTags)];
 
   // Get primary category
   const categoryCounts = new Map<string, number>();
@@ -438,17 +219,48 @@ export async function generateAndStoreNiche(
     ? YOUTUBE_CATEGORIES[primaryCategoryId]
     : null;
 
+  // Extract channel profile context if available
+  // Note: ChannelProfile may not exist if migration hasn't been run
+  // We use raw query to handle the case where the model doesn't exist in Prisma yet
+  let channelProfile: ChannelProfileContext | undefined;
+  try {
+    const profiles = await prisma.$queryRaw<{ aiProfileJson: string | null }[]>`
+      SELECT "aiProfileJson" FROM "ChannelProfile" WHERE "channelId" = ${channelId} LIMIT 1
+    `;
+    const profile = profiles[0];
+    if (profile?.aiProfileJson) {
+      const aiProfile = JSON.parse(profile.aiProfileJson) as ChannelProfileAI;
+      channelProfile = {
+        nicheLabel: aiProfile.nicheLabel,
+        nicheDescription: aiProfile.nicheDescription,
+        primaryCategories: aiProfile.primaryCategories,
+        keywords: aiProfile.keywords,
+        competitorSearchHints: aiProfile.competitorSearchHints,
+        targetAudience: aiProfile.targetAudience,
+      };
+      console.log(
+        `[ChannelNiche] Using channel profile as context for channel ${channelId}: "${aiProfile.nicheLabel}"`
+      );
+    }
+  } catch {
+    // ChannelProfile table may not exist if migration hasn't been run
+    // This is expected and fine - we just won't use profile context
+  }
+
   console.log(
-    `[ChannelNiche] Generating niche for channel ${channelId} - Category: ${categoryName}, Keywords: ${titleKeywords
-      .slice(0, 5)
-      .join(", ")}`
+    `[ChannelNiche] Generating niche for channel ${channelId} - Category: ${categoryName}, Videos: ${
+      videoTitles.length
+    }, Tags: ${topTags.length}, HasProfile: ${!!channelProfile}`
   );
 
-  // Generate niche via LLM
+  // Generate niche via LLM (2-step flow: persona generation → query generation)
+  // When channelProfile exists, it's used as the anchor/ground truth
   const nicheData = await generateNicheQueries({
+    channelId,
     videoTitles,
     topTags,
     categoryName,
+    channelProfile,
   });
 
   const cachedUntil = new Date(
@@ -489,17 +301,142 @@ export async function generateAndStoreNiche(
 }
 
 /**
+ * Get niche data directly from channel profile if available.
+ * This is the HIGHEST PRIORITY source - represents what the user WANTS to create.
+ *
+ * Returns null if no profile exists or no AI profile has been generated.
+ */
+async function getNicheFromProfile(
+  channelId: number
+): Promise<ChannelNicheData | null> {
+  try {
+    // Get profile with both raw input and AI-generated data
+    const profiles = await prisma.$queryRaw<
+      {
+        inputJson: string;
+        aiProfileJson: string | null;
+        updatedAt: Date;
+      }[]
+    >`
+      SELECT "inputJson", "aiProfileJson", "updatedAt" 
+      FROM "ChannelProfile" 
+      WHERE "channelId" = ${channelId} 
+      LIMIT 1
+    `;
+
+    const profile = profiles[0];
+    if (!profile) return null;
+
+    // If we have an AI profile, use its competitorSearchHints directly
+    if (profile.aiProfileJson) {
+      try {
+        const aiProfile = JSON.parse(profile.aiProfileJson) as ChannelProfileAI;
+
+        // AI profile should have competitorSearchHints (8-15 hints)
+        if (
+          aiProfile.competitorSearchHints &&
+          aiProfile.competitorSearchHints.length > 0
+        ) {
+          console.log(
+            `[ChannelNiche] Using AI profile hints for channel ${channelId}: "${aiProfile.nicheLabel}" (${aiProfile.competitorSearchHints.length} queries)`
+          );
+
+          return {
+            niche: aiProfile.nicheLabel,
+            queries: aiProfile.competitorSearchHints,
+            videoTitlesHash: "profile-based", // Not hash-based for profile data
+            generatedAt: profile.updatedAt,
+            cachedUntil: new Date(
+              Date.now() + NICHE_CACHE_DAYS * 24 * 60 * 60 * 1000
+            ),
+          };
+        }
+      } catch {
+        console.warn(
+          `[ChannelNiche] Failed to parse AI profile for channel ${channelId}`
+        );
+      }
+    }
+
+    // Fallback: Generate queries from raw user input if no AI profile yet
+    // This ensures we still use profile data even before AI generation
+    try {
+      const rawInput = JSON.parse(profile.inputJson) as ChannelProfileInput;
+
+      // Build queries from user's categories and custom category
+      const queries: string[] = [];
+
+      // Add categories as search terms
+      rawInput.categories.forEach((cat) => {
+        if (cat !== "Other") {
+          queries.push(cat.toLowerCase());
+        }
+      });
+
+      // Add custom category if specified
+      if (rawInput.customCategory) {
+        queries.push(rawInput.customCategory.toLowerCase());
+      }
+
+      // If we have at least some queries from user input, use them
+      if (queries.length > 0) {
+        const niche =
+          rawInput.customCategory ||
+          rawInput.categories.filter((c) => c !== "Other").join(" & ") ||
+          "Content Creator";
+
+        console.log(
+          `[ChannelNiche] Using raw profile categories for channel ${channelId}: "${niche}" (${queries.length} queries)`
+        );
+
+        return {
+          niche,
+          queries,
+          videoTitlesHash: "profile-raw",
+          generatedAt: profile.updatedAt,
+          cachedUntil: new Date(
+            Date.now() + NICHE_CACHE_DAYS * 24 * 60 * 60 * 1000
+          ),
+        };
+      }
+    } catch {
+      console.warn(
+        `[ChannelNiche] Failed to parse raw profile input for channel ${channelId}`
+      );
+    }
+
+    return null;
+  } catch {
+    // Table doesn't exist or query failed - no profile available
+    return null;
+  }
+}
+
+/**
  * Get or generate the niche for a channel
- * Uses cached niche if available and hash matches, otherwise regenerates
+ *
+ * PRIORITY ORDER:
+ * 1. Channel Profile (AI-generated hints) - HIGHEST PRIORITY
+ * 2. Channel Profile (raw user categories) - if no AI profile yet
+ * 3. Video-based inference (cached) - traditional fallback
+ * 4. Video-based inference (regenerate) - if cache stale
  *
  * DEDUPLICATION: If generation is already in progress for this channel,
  * returns the existing promise instead of starting a new LLM call.
- * This prevents duplicate calls when dashboard and competitors page both request niche.
  */
 export async function getOrGenerateNiche(
   channelId: number
 ): Promise<ChannelNicheData | null> {
-  // Check if we have a valid cached niche
+  // PRIORITY 1 & 2: Check channel profile first (user's stated intent)
+  const profileNiche = await getNicheFromProfile(channelId);
+  if (profileNiche) {
+    console.log(
+      `[ChannelNiche] Using profile-based niche for channel ${channelId} (${profileNiche.queries.length} queries)`
+    );
+    return profileNiche;
+  }
+
+  // PRIORITY 3: Check if we have a valid cached video-based niche
   const cached = await getChannelNiche(channelId);
 
   if (cached) {
@@ -507,7 +444,9 @@ export async function getOrGenerateNiche(
     const needsRegeneration = await shouldRegenerateNiche(channelId);
 
     if (!needsRegeneration) {
-      console.log(`[ChannelNiche] Using cached niche for channel ${channelId}`);
+      console.log(
+        `[ChannelNiche] Using cached video-based niche for channel ${channelId}`
+      );
       return cached;
     }
 
@@ -516,6 +455,7 @@ export async function getOrGenerateNiche(
     );
   }
 
+  // PRIORITY 4: Generate from videos (fallback when no profile)
   // Check if generation is already in progress (deduplication)
   const inFlight = inFlightGenerations.get(channelId);
   if (inFlight) {

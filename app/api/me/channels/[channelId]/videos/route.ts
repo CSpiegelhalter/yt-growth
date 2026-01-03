@@ -183,6 +183,13 @@ async function GETHandler(
         views: v.views ?? 0,
         likes: v.likes ?? 0,
         comments: v.comments ?? 0,
+        // Extended metrics for Video Tools
+        shares: v.shares ?? null,
+        subscribersGained: v.subscribersGained ?? null,
+        subscribersLost: v.subscribersLost ?? null,
+        estimatedMinutesWatched: v.estimatedMinutesWatched ?? null,
+        avgViewDuration: v.avgViewDuration ?? null,
+        avgViewPercentage: v.avgViewPercentage ?? null,
       })),
       pagination: {
         offset,
@@ -342,6 +349,13 @@ async function GETHandler(
         views: m?.views ?? 0,
         likes: m?.likes ?? 0,
         comments: m?.comments ?? 0,
+        // Extended metrics for Video Tools
+        shares: m?.shares ?? null,
+        subscribersGained: m?.subscribersGained ?? null,
+        subscribersLost: m?.subscribersLost ?? null,
+        estimatedMinutesWatched: m?.estimatedMinutesWatched ?? null,
+        avgViewDuration: m?.averageViewDuration ?? null,
+        avgViewPercentage: m?.averageViewPercentage ?? null,
       };
     });
 

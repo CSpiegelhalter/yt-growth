@@ -83,8 +83,6 @@ export const RATE_LIMITS = {
   planGeneration: { limit: 5, windowSec: 3600 },
   // Video sync: 10 per hour per channel
   videoSync: { limit: 10, windowSec: 3600 },
-  // Retention fetch: 20 per hour per channel
-  retentionFetch: { limit: 20, windowSec: 3600 },
   // Checkout: 3 per minute per user
   checkout: { limit: 3, windowSec: 60 },
   // Competitor feed: 30 per hour per user

@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import s from "./ChannelGoals.module.css";
 
 type Video = {
@@ -12,6 +14,8 @@ type Props = {
   channelTitle?: string;
   /** Total video count on YouTube (from channel stats) */
   totalVideoCount?: number | null;
+  /** Subscriber count from YouTube */
+  subscriberCount?: number | null;
 };
 
 type Milestone = {
@@ -20,23 +24,41 @@ type Milestone = {
   description: string;
   current: number;
   target: number;
-  icon: "video" | "calendar" | "streak" | "trophy";
+  icon: "video" | "calendar" | "streak" | "trophy" | "users" | "fire";
   unlocked: boolean;
-  category: "videos" | "streak";
+  category: "videos" | "streak" | "subscribers";
+  /** 0-100 percentage complete */
+  percentage: number;
 };
 
 /**
  * ChannelGoals - Gamified progress milestones for channel growth
- * Shows ONE milestone at a time per category - once reached, shows the next
+ * Prioritizes showing goals closest to completion
+ * Eye-catching "focus goal" with supporting milestones
  */
-export default function ChannelGoals({ videos, channelTitle, totalVideoCount }: Props) {
-  const { currentMilestone, nextMilestone, totalUnlocked, totalMilestones } = useMemo(() => {
-    // Use totalVideoCount from YouTube if available, otherwise fall back to loaded videos count
+export default function ChannelGoals({ videos, channelTitle, totalVideoCount, subscriberCount }: Props) {
+  const searchParams = useSearchParams();
+  const channelId = searchParams.get("channelId");
+
+  const { focusGoal, nearbyGoals, totalUnlocked, totalMilestones, weeklyStreak } = useMemo(() => {
     const videoCount = totalVideoCount ?? videos.length;
     const { weeklyStreak } = analyzePostingSchedule(videos);
+    const subs = subscriberCount ?? 0;
 
-    // Video count milestones (progressive)
-    const videoMilestones: Milestone[] = [
+    // All available milestones
+    const allMilestones: Milestone[] = [
+      // Video milestones
+      {
+        id: "videos-10",
+        label: "First 10",
+        description: "Upload 10 videos",
+        current: Math.min(videoCount, 10),
+        target: 10,
+        icon: "video",
+        unlocked: videoCount >= 10,
+        category: "videos",
+        percentage: Math.min(100, Math.round((videoCount / 10) * 100)),
+      },
       {
         id: "videos-25",
         label: "Getting Started",
@@ -46,6 +68,7 @@ export default function ChannelGoals({ videos, channelTitle, totalVideoCount }: 
         icon: "video",
         unlocked: videoCount >= 25,
         category: "videos",
+        percentage: Math.min(100, Math.round((videoCount / 25) * 100)),
       },
       {
         id: "videos-50",
@@ -56,6 +79,7 @@ export default function ChannelGoals({ videos, channelTitle, totalVideoCount }: 
         icon: "video",
         unlocked: videoCount >= 50,
         category: "videos",
+        percentage: Math.min(100, Math.round((videoCount / 50) * 100)),
       },
       {
         id: "videos-100",
@@ -66,135 +90,231 @@ export default function ChannelGoals({ videos, channelTitle, totalVideoCount }: 
         icon: "trophy",
         unlocked: videoCount >= 100,
         category: "videos",
+        percentage: Math.min(100, Math.round((videoCount / 100) * 100)),
       },
-    ];
 
-    // Streak milestones (progressive)
-    const streakMilestones: Milestone[] = [
+      // Streak milestones
       {
-        id: "consistency",
+        id: "streak-2",
+        label: "Getting Consistent",
+        description: "2 week posting streak",
+        current: Math.min(weeklyStreak, 2),
+        target: 2,
+        icon: "fire",
+        unlocked: weeklyStreak >= 2,
+        category: "streak",
+        percentage: Math.min(100, Math.round((weeklyStreak / 2) * 100)),
+      },
+      {
+        id: "streak-4",
         label: "Consistent Creator",
-        description: "Post weekly for 4+ weeks",
+        description: "4 week posting streak",
         current: Math.min(weeklyStreak, 4),
         target: 4,
         icon: "calendar",
         unlocked: weeklyStreak >= 4,
         category: "streak",
+        percentage: Math.min(100, Math.round((weeklyStreak / 4) * 100)),
       },
       {
         id: "streak-8",
-        label: "On a Roll",
+        label: "On Fire",
         description: "8 week posting streak",
         current: Math.min(weeklyStreak, 8),
         target: 8,
         icon: "streak",
         unlocked: weeklyStreak >= 8,
         category: "streak",
+        percentage: Math.min(100, Math.round((weeklyStreak / 8) * 100)),
       },
+      {
+        id: "streak-12",
+        label: "Unstoppable",
+        description: "12 week posting streak",
+        current: Math.min(weeklyStreak, 12),
+        target: 12,
+        icon: "trophy",
+        unlocked: weeklyStreak >= 12,
+        category: "streak",
+        percentage: Math.min(100, Math.round((weeklyStreak / 12) * 100)),
+      },
+
+      // Subscriber milestones (only if we have sub count)
+      ...(subs > 0
+        ? [
+            {
+              id: "subs-100",
+              label: "First 100",
+              description: "Reach 100 subscribers",
+              current: Math.min(subs, 100),
+              target: 100,
+              icon: "users" as const,
+              unlocked: subs >= 100,
+              category: "subscribers" as const,
+              percentage: Math.min(100, Math.round((subs / 100) * 100)),
+            },
+            {
+              id: "subs-500",
+              label: "Growing Fast",
+              description: "Reach 500 subscribers",
+              current: Math.min(subs, 500),
+              target: 500,
+              icon: "users" as const,
+              unlocked: subs >= 500,
+              category: "subscribers" as const,
+              percentage: Math.min(100, Math.round((subs / 500) * 100)),
+            },
+            {
+              id: "subs-1000",
+              label: "1K Club",
+              description: "Reach 1,000 subscribers",
+              current: Math.min(subs, 1000),
+              target: 1000,
+              icon: "trophy" as const,
+              unlocked: subs >= 1000,
+              category: "subscribers" as const,
+              percentage: Math.min(100, Math.round((subs / 1000) * 100)),
+            },
+          ]
+        : []),
     ];
 
-    // Find the NEXT milestone to show for each category (first unlocked one, or first unachieved)
-    const getActiveMilestone = (milestones: Milestone[]): Milestone | null => {
-      // Find first unachieved milestone
-      const nextUnachieved = milestones.find((m) => !m.unlocked);
-      if (nextUnachieved) return nextUnachieved;
-      // All achieved - show the last one as "complete"
-      return milestones[milestones.length - 1] ?? null;
-    };
+    // Filter to show only relevant milestones (not yet unlocked OR recently unlocked)
+    const inProgressMilestones = allMilestones.filter((m) => !m.unlocked);
 
-    const activeVideoMilestone = getActiveMilestone(videoMilestones);
-    const activeStreakMilestone = getActiveMilestone(streakMilestones);
+    // Sort by percentage (closest to completion first)
+    const sortedByProgress = [...inProgressMilestones].sort(
+      (a, b) => b.percentage - a.percentage
+    );
 
-    // Count total unlocked
-    const allMilestones = [...videoMilestones, ...streakMilestones];
+    // Find the best focus goal (highest progress, not yet complete)
+    const focus = sortedByProgress[0] ?? null;
+
+    // Get 2-3 other goals close to completion (different categories if possible)
+    const nearby: Milestone[] = [];
+    const usedCategories = new Set<string>();
+    if (focus) usedCategories.add(focus.category);
+
+    for (const m of sortedByProgress.slice(1)) {
+      // Prefer different categories for variety
+      if (!usedCategories.has(m.category) && nearby.length < 2) {
+        nearby.push(m);
+        usedCategories.add(m.category);
+      } else if (nearby.length < 2 && m.percentage >= 20) {
+        nearby.push(m);
+      }
+      if (nearby.length >= 2) break;
+    }
+
     const unlocked = allMilestones.filter((m) => m.unlocked).length;
 
-    // Determine which to show as "current" (closest to completion)
-    const currentActive = [activeVideoMilestone, activeStreakMilestone]
-      .filter(Boolean)
-      .filter((m) => !m!.unlocked)
-      .sort((a, b) => {
-        const aProgress = a!.current / a!.target;
-        const bProgress = b!.current / b!.target;
-        return bProgress - aProgress; // Higher progress first
-      })[0];
-
     return {
-      currentMilestone: activeVideoMilestone, // Always show video milestone
-      nextMilestone: activeStreakMilestone, // And streak milestone if available
+      focusGoal: focus,
+      nearbyGoals: nearby,
       totalUnlocked: unlocked,
       totalMilestones: allMilestones.length,
+      weeklyStreak,
     };
-  }, [videos, totalVideoCount]);
+  }, [videos, totalVideoCount, subscriberCount]);
 
   if (videos.length === 0) return null;
+  if (!focusGoal && nearbyGoals.length === 0) return null;
 
-  // Determine what to show based on progress
-  const milestonesToShow: Milestone[] = [];
-  if (currentMilestone) milestonesToShow.push(currentMilestone);
-  if (nextMilestone && nextMilestone.id !== currentMilestone?.id) {
-    milestonesToShow.push(nextMilestone);
-  }
-
-  if (milestonesToShow.length === 0) return null;
+  const goalsHref = channelId ? `/goals?channelId=${channelId}` : "/goals";
 
   return (
-    <div className={s.container}>
+    <Link
+      href={goalsHref}
+      className={s.container}
+      aria-label="View all goals and achievements"
+    >
+      {/* Header */}
       <div className={s.header}>
         <div className={s.headerLeft}>
-          <h2 className={s.title}>Your Progress</h2>
-          <span className={s.progress}>
-            {totalUnlocked}/{totalMilestones} milestones
+          <div className={s.titleWrap}>
+            <h2 className={s.title}>Your Progress</h2>
+            {weeklyStreak > 0 && (
+              <span className={s.streakBadge}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+                {weeklyStreak} week streak
+              </span>
+            )}
+          </div>
+        </div>
+        <div className={s.headerRight}>
+          <span className={s.progressBadge}>
+            {totalUnlocked}/{totalMilestones}
+          </span>
+          <span className={s.viewAll}>
+            View all
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
           </span>
         </div>
       </div>
 
-      <div className={s.milestones}>
-        {milestonesToShow.map((milestone) => (
-          <MilestoneCard key={milestone.id} milestone={milestone} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MilestoneCard({ milestone }: { milestone: Milestone }) {
-  const percentage = Math.round((milestone.current / milestone.target) * 100);
-
-  return (
-    <div className={`${s.card} ${milestone.unlocked ? s.unlocked : ""}`}>
-      <div className={s.cardIcon}>
-        <MilestoneIcon type={milestone.icon} unlocked={milestone.unlocked} />
-      </div>
-      <div className={s.cardContent}>
-        <div className={s.cardHeader}>
-          <h3 className={s.cardTitle}>{milestone.label}</h3>
-          {milestone.unlocked && (
-            <span className={s.checkmark}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-            </span>
-          )}
-        </div>
-        <p className={s.cardDesc}>{milestone.description}</p>
-        <div className={s.progressWrap}>
-          <div className={s.progressBar}>
+      {/* Focus Goal - The closest to completion */}
+      {focusGoal && (
+        <div className={s.focusCard}>
+          <div className={s.focusLabel}>
+            <span className={s.focusLabelText}>Next milestone</span>
+            <span className={s.focusPercentage}>{focusGoal.percentage}%</span>
+          </div>
+          <div className={s.focusContent}>
+            <div className={s.focusIcon}>
+              <MilestoneIcon type={focusGoal.icon} />
+            </div>
+            <div className={s.focusInfo}>
+              <h3 className={s.focusTitle}>{focusGoal.label}</h3>
+              <p className={s.focusDesc}>{focusGoal.description}</p>
+            </div>
+            <div className={s.focusProgress}>
+              <span className={s.focusCount}>
+                {formatNumber(focusGoal.current)}/{formatNumber(focusGoal.target)}
+              </span>
+            </div>
+          </div>
+          <div className={s.focusBar}>
             <div
-              className={s.progressFill}
-              style={{ width: `${percentage}%` }}
+              className={s.focusBarFill}
+              style={{ width: `${focusGoal.percentage}%` }}
             />
           </div>
-          <span className={s.progressText}>
-            {milestone.current}/{milestone.target}
-          </span>
         </div>
-      </div>
-    </div>
+      )}
+
+      {/* Nearby Goals - Others close to completion */}
+      {nearbyGoals.length > 0 && (
+        <div className={s.nearbyGoals}>
+          {nearbyGoals.map((milestone) => (
+            <div key={milestone.id} className={s.miniCard}>
+              <div className={s.miniIcon}>
+                <MilestoneIcon type={milestone.icon} />
+              </div>
+              <div className={s.miniInfo}>
+                <span className={s.miniTitle}>{milestone.label}</span>
+                <span className={s.miniProgress}>
+                  {formatNumber(milestone.current)}/{formatNumber(milestone.target)}
+                </span>
+              </div>
+              <div className={s.miniBar}>
+                <div
+                  className={s.miniBarFill}
+                  style={{ width: `${milestone.percentage}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Link>
   );
 }
 
-function MilestoneIcon({ type, unlocked }: { type: string; unlocked: boolean }) {
+function MilestoneIcon({ type }: { type: string }) {
   const props = {
     width: 20,
     height: 20,
@@ -224,9 +344,10 @@ function MilestoneIcon({ type, unlocked }: { type: string; unlocked: boolean }) 
         </svg>
       );
     case "streak":
+    case "fire":
       return (
         <svg {...props}>
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z" />
         </svg>
       );
     case "trophy":
@@ -240,9 +361,24 @@ function MilestoneIcon({ type, unlocked }: { type: string; unlocked: boolean }) 
           <path d="M18 2H6v7a6 6 0 1012 0V2z" />
         </svg>
       );
+    case "users":
+      return (
+        <svg {...props}>
+          <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="8.5" cy="7" r="4" />
+          <path d="M20 8v6M23 11h-6" />
+        </svg>
+      );
     default:
       return null;
   }
+}
+
+function formatNumber(num: number): string {
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(num >= 10000 ? 0 : 1)}K`;
+  }
+  return num.toString();
 }
 
 /**
@@ -257,7 +393,6 @@ function analyzePostingSchedule(videos: Video[]): {
     return { weeklyStreak: 0, postsPerMonth: 0, isConsistent: false };
   }
 
-  // Sort videos by date (newest first)
   const sorted = [...videos]
     .filter((v) => v.publishedAt)
     .map((v) => new Date(v.publishedAt!))
@@ -267,7 +402,6 @@ function analyzePostingSchedule(videos: Video[]): {
     return { weeklyStreak: 0, postsPerMonth: 0, isConsistent: false };
   }
 
-  // Calculate weekly streak (how many consecutive weeks have at least 1 video)
   const now = new Date();
   let weeklyStreak = 0;
   let currentWeekStart = getWeekStart(now);
@@ -289,12 +423,9 @@ function analyzePostingSchedule(videos: Video[]): {
     }
   }
 
-  // Calculate posts per month (last 30 days)
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const postsPerMonth = sorted.filter((d) => d >= thirtyDaysAgo).length;
-
-  // Consider consistent if posting at least weekly
   const isConsistent = weeklyStreak >= 4;
 
   return { weeklyStreak, postsPerMonth, isConsistent };
@@ -308,4 +439,3 @@ function getWeekStart(date: Date): Date {
   d.setHours(0, 0, 0, 0);
   return d;
 }
-

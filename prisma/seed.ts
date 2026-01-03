@@ -133,26 +133,6 @@ async function main() {
         cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
     });
-
-    // Create retention blob for video
-    const retentionPoints = Array.from({ length: 50 }, (_, i) => ({
-      elapsedRatio: i / 49,
-      audienceWatchRatio: Math.max(0.1, 1 - i * 0.015 - Math.random() * 0.05),
-    }));
-
-    await prisma.retentionBlob.upsert({
-      where: { videoId: video.id },
-      update: {},
-      create: {
-        videoId: video.id,
-        channelId: demoChannel.id,
-        dataJson: JSON.stringify(retentionPoints),
-        cliffTimeSec: Math.floor(data.durationSec * 0.3),
-        cliffReason: "crossed_50",
-        cliffSlope: -0.02,
-        cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-    });
   }
 
   // Create demo plan

@@ -301,7 +301,9 @@ async function POSTHandler(
     const keywords = nicheData?.queries?.slice(0, 8) ?? [];
 
     console.log(
-      `[IdeaBoard] Using cached niche: "${nicheData?.niche ?? "unknown"}", keywords: ${keywords.join(", ")}`
+      `[IdeaBoard] Using cached niche: "${
+        nicheData?.niche ?? "unknown"
+      }", keywords: ${keywords.join(", ")}`
     );
 
     // Fetch similar channels and their winners
@@ -329,13 +331,11 @@ async function POSTHandler(
                 publishedAfter,
                 2
               );
-              const similarityScore = Math.max(0.3, 1 - index * 0.1);
 
               return {
                 channelId: sc.channelId,
                 channelTitle: sc.channelTitle,
                 channelThumbnailUrl: sc.thumbnailUrl,
-                similarityScore,
                 // Cap winners per channel for diversity + quota efficiency
                 recentWinners: recentVideos.slice(0, 3).map((v) => ({
                   videoId: v.videoId,
@@ -358,7 +358,6 @@ async function POSTHandler(
                 channelId: sc.channelId,
                 channelTitle: sc.channelTitle,
                 channelThumbnailUrl: sc.thumbnailUrl,
-                similarityScore: 0.5,
                 recentWinners: [],
               };
             }
@@ -473,7 +472,6 @@ async function POSTHandler(
           channelId: sc.channelId,
           channelTitle: sc.channelTitle,
           channelThumbnailUrl: sc.channelThumbnailUrl,
-          similarityScore: sc.similarityScore,
         })),
       });
       console.log(

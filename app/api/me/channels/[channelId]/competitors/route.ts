@@ -1,25 +1,3 @@
-/**
- * GET /api/me/channels/[channelId]/competitors
- *
- * Get competitor videos "working right now" in the user's niche.
- * VIDEO-FIRST feed with pagination, sorting, and derived velocity metrics.
- *
- * Features:
- * - Fetches videos from similar channels via YouTube Data API
- * - Stores snapshots to track velocity over time
- * - Computes derived metrics: velocity24h, velocity7d, acceleration, outlierScore
- * - Auto-refreshes channel data if stale (>24h) before serving competitor feed
- *
- * Auth: Required
- * Subscription: Required
- * Caching: 12h for discovery, snapshots captured every 6h minimum
- *
- * Query params:
- * - range: "7d" | "28d" (default: "7d")
- * - sort: "velocity" | "engagement" | "newest" | "outliers" (default: "velocity")
- * - cursor: string (for pagination)
- * - limit: number (default: 12, max: 50)
- */
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
@@ -32,7 +10,6 @@ import {
   getGoogleAccount,
   searchNicheVideos,
   fetchVideosStatsBatch,
-  fetchChannelVideos,
   type VideoDurationFilter,
 } from "@/lib/youtube-api";
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
@@ -40,87 +17,6 @@ import { ensureMockChannelSeeded } from "@/lib/mock-seed";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { getOrGenerateNiche } from "@/lib/channel-niche";
 import type { CompetitorFeedResponse, CompetitorVideo } from "@/types/api";
-
-// 24 hours in milliseconds - data older than this triggers a cache invalidation + background sync
-const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
-
-// YouTube Video Category ID to Name mapping
-const YOUTUBE_CATEGORIES: Record<string, string> = {
-  "1": "Film & Animation",
-  "2": "Autos & Vehicles",
-  "10": "Music",
-  "15": "Pets & Animals",
-  "17": "Sports",
-  "19": "Travel & Events",
-  "20": "Gaming",
-  "22": "People & Blogs",
-  "23": "Comedy",
-  "24": "Entertainment",
-  "25": "News & Politics",
-  "26": "Howto & Style",
-  "27": "Education",
-  "28": "Science & Technology",
-  "29": "Nonprofits & Activism",
-};
-
-/**
- * Determine the typical video duration format for a channel
- * Returns a filter that matches similar-length competitor videos:
- * - "short" = Shorts and very short videos (< 4 min) - targets Shorts creators
- * - "medium" = Standard YouTube videos (4-20 min)
- * - "long" = Long-form content (> 20 min)
- * - "any" = Mixed content, no filter
- */
-function determineContentFormat(
-  durations: (number | null)[]
-): VideoDurationFilter {
-  const validDurations = durations.filter(
-    (d): d is number => d !== null && d > 0
-  );
-
-  if (validDurations.length < 3) {
-    return "any"; // Not enough data to determine format
-  }
-
-  // Calculate median duration (more robust than average for outliers)
-  const sorted = [...validDurations].sort((a, b) => a - b);
-  const median = sorted[Math.floor(sorted.length / 2)];
-
-  // Count videos in each category
-  const shorts = validDurations.filter((d) => d < 60).length; // < 1 min (Shorts)
-  const short = validDurations.filter((d) => d >= 60 && d < 240).length; // 1-4 min
-  const medium = validDurations.filter((d) => d >= 240 && d < 1200).length; // 4-20 min
-  const long = validDurations.filter((d) => d >= 1200).length; // > 20 min
-
-  const total = validDurations.length;
-
-  // If 60%+ of videos are Shorts (< 1 min), this is a Shorts channel
-  if (shorts / total >= 0.6) {
-    return "short";
-  }
-
-  // If 60%+ of videos are short format (< 4 min including Shorts)
-  if ((shorts + short) / total >= 0.6) {
-    return "short";
-  }
-
-  // If 60%+ of videos are long (> 20 min), filter for long content
-  if (long / total >= 0.6) {
-    return "long";
-  }
-
-  // If 60%+ are medium length, use medium filter
-  if (medium / total >= 0.6) {
-    return "medium";
-  }
-
-  // Mixed content - use median to decide, but lean towards "any" for variety
-  if (median < 240) return "short";
-  if (median >= 1200) return "long";
-
-  // Default to "any" for mixed channels to get variety
-  return "any";
-}
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -134,8 +30,6 @@ const QuerySchema = z.object({
   cursor: z.string().optional(),
   // Return 12 videos at a time to fill the page on mobile and desktop
   limit: z.coerce.number().min(1).max(12).default(12),
-  // Scale factor to find larger channels (1 = normal, 2 = 2x bigger, etc.)
-  scale: z.coerce.number().min(1).max(5).default(1),
   // Page number for fetching additional batches of competitor videos (0 = first batch)
   page: z.coerce.number().min(0).max(30).default(0),
   // YouTube pageToken for pagination within a query
@@ -146,119 +40,6 @@ const QuerySchema = z.object({
 
 // Minimum hours between snapshots for a video
 const SNAPSHOT_INTERVAL_HOURS = 6;
-
-// Number of videos to sync (divisible by 6 for grid layout)
-const SYNC_VIDEO_COUNT = 96;
-
-/**
- * Trigger a background sync for a channel.
- * Fire-and-forget - doesn't block the response.
- */
-async function triggerBackgroundChannelSync(
-  userId: number,
-  youtubeChannelId: string,
-  channelDbId: number,
-  ga: {
-    id: number;
-    refreshTokenEnc: string | null;
-    accessTokenEnc?: string | null;
-    tokenExpiresAt: Date | null;
-  }
-): Promise<void> {
-  // Mark channel as syncing
-  await prisma.channel.update({
-    where: { id: channelDbId },
-    data: { syncStatus: "running" },
-  });
-
-  try {
-    // Fetch videos from YouTube
-    const videos = await fetchChannelVideos(
-      ga,
-      youtubeChannelId,
-      SYNC_VIDEO_COUNT
-    );
-
-    // Cache expiration for metrics (12 hours)
-    const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
-
-    // Upsert videos and metrics
-    for (const v of videos) {
-      const video = await prisma.video.upsert({
-        where: {
-          channelId_youtubeVideoId: {
-            channelId: channelDbId,
-            youtubeVideoId: v.videoId,
-          },
-        },
-        update: {
-          title: v.title,
-          description: v.description,
-          publishedAt: new Date(v.publishedAt),
-          durationSec: v.durationSec,
-          tags: v.tags,
-          thumbnailUrl: v.thumbnailUrl,
-        },
-        create: {
-          channelId: channelDbId,
-          youtubeVideoId: v.videoId,
-          title: v.title,
-          description: v.description,
-          publishedAt: new Date(v.publishedAt),
-          durationSec: v.durationSec,
-          tags: v.tags,
-          thumbnailUrl: v.thumbnailUrl,
-        },
-      });
-
-      // Upsert VideoMetrics with Data API statistics
-      await prisma.videoMetrics.upsert({
-        where: { videoId: video.id },
-        update: {
-          views: v.views,
-          likes: v.likes,
-          comments: v.comments,
-          fetchedAt: new Date(),
-          cachedUntil,
-        },
-        create: {
-          videoId: video.id,
-          channelId: channelDbId,
-          views: v.views,
-          likes: v.likes,
-          comments: v.comments,
-          cachedUntil,
-        },
-      });
-    }
-
-    // Update channel sync status
-    await prisma.channel.update({
-      where: { id: channelDbId },
-      data: {
-        lastSyncedAt: new Date(),
-        syncStatus: "idle",
-        syncError: null,
-      },
-    });
-
-    console.log(
-      `[Competitors] Background sync completed for ${youtubeChannelId}: ${videos.length} videos`
-    );
-  } catch (err: any) {
-    console.error(
-      `[Competitors] Background sync error for ${youtubeChannelId}:`,
-      err
-    );
-    await prisma.channel.update({
-      where: { id: channelDbId },
-      data: {
-        syncStatus: "error",
-        syncError: err.message,
-      },
-    });
-  }
-}
 
 async function GETHandler(
   req: NextRequest,
@@ -319,11 +100,9 @@ async function GETHandler(
     // Parse query params
     const url = new URL(req.url);
     const queryResult = QuerySchema.safeParse({
-      range: url.searchParams.get("range") ?? "7d",
       sort: url.searchParams.get("sort") ?? "velocity",
       cursor: url.searchParams.get("cursor") ?? undefined,
       limit: url.searchParams.get("limit") ?? "12",
-      scale: url.searchParams.get("scale") ?? "1",
       page: url.searchParams.get("page") ?? "0",
       pageToken: url.searchParams.get("pageToken") ?? undefined,
       queryIndex: url.searchParams.get("queryIndex") ?? "0",
@@ -335,27 +114,15 @@ async function GETHandler(
         { status: 400 }
       );
     }
+    const range = "90d";
 
-    const { range, sort, cursor, limit, scale, page, pageToken, queryIndex } =
-      queryResult.data;
+    const { sort, page, pageToken, queryIndex } = queryResult.data;
 
     // Get channel and verify ownership
     let channel = await prisma.channel.findFirst({
       where: {
         youtubeChannelId: channelId,
         userId: user.id,
-      },
-      include: {
-        Video: {
-          select: {
-            title: true,
-            tags: true,
-            categoryId: true,
-            durationSec: true,
-          },
-          orderBy: { publishedAt: "desc" },
-          take: 15,
-        },
       },
     });
 
@@ -376,18 +143,6 @@ async function GETHandler(
       });
       channel = await prisma.channel.findFirst({
         where: { youtubeChannelId: channelId, userId: user.id },
-        include: {
-          Video: {
-            select: {
-              title: true,
-              tags: true,
-              categoryId: true,
-              durationSec: true,
-            },
-            orderBy: { publishedAt: "desc" },
-            take: 15,
-          },
-        },
       });
     }
 
@@ -404,64 +159,15 @@ async function GETHandler(
       );
     }
 
-    // Check if channel data is stale (>24h) and trigger background sync if needed
-    // Also invalidate competitor cache if channel data is stale (niche may have changed)
-    const nowMs = Date.now();
-    const lastSyncTime = channel.lastSyncedAt?.getTime() ?? 0;
-    const isChannelStale = nowMs - lastSyncTime > STALE_THRESHOLD_MS;
-    const isSyncRunning = channel.syncStatus === "running";
-
-    if (isChannelStale && !isSyncRunning) {
-      console.log(
-        `[Competitors] Channel ${channelId} is stale (last sync: ${
-          channel.lastSyncedAt?.toISOString() ?? "never"
-        }), triggering background sync`
-      );
-
-      // Invalidate competitor feed cache since niche may be outdated
-      await prisma.competitorFeedCache
-        .deleteMany({
-          where: { channelId: channel.id },
-        })
-        .catch(() => {}); // Ignore errors - cache invalidation is best-effort
-
-      // Trigger background sync (fire-and-forget)
-      triggerBackgroundChannelSync(user.id, channelId, channel.id, ga).catch(
-        (err) => {
-          console.error(
-            `[Competitors] Background sync failed for ${channelId}:`,
-            err
-          );
-        }
-      );
-    }
-
-    // Get primary category for filtering
-    const categoryCounts = new Map<string, number>();
-    channel.Video.forEach((v) => {
-      if (v.categoryId) {
-        categoryCounts.set(
-          v.categoryId,
-          (categoryCounts.get(v.categoryId) ?? 0) + 1
-        );
-      }
-    });
-    const primaryCategoryId =
-      [...categoryCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-    const categoryName = primaryCategoryId
-      ? YOUTUBE_CATEGORIES[primaryCategoryId]
-      : null;
-
-    // Determine content format (Shorts vs long-form) based on typical video duration
-    const videoDurations = channel.Video.map((v) => v.durationSec);
-    const contentFormat = determineContentFormat(videoDurations);
+    // Don't filter by content format - return all relevant videos regardless of duration
+    const contentFormat: VideoDurationFilter = "any";
 
     // Get niche from cache or generate from last 15 videos
     // This uses the ChannelNiche table and regenerates if video titles change
     const nicheData = await getOrGenerateNiche(channel.id);
 
     console.log(
-      `[Competitors] Category: ${categoryName}, Format: ${contentFormat}, Niche: ${
+      `[Competitors] Format: ${contentFormat}, Niche: ${
         nicheData?.niche ?? "unknown"
       }`
     );
@@ -471,7 +177,6 @@ async function GETHandler(
     if (nicheQueries.length === 0) {
       return Response.json({
         channelId,
-        range,
         sort,
         generatedAt: new Date().toISOString(),
         cachedUntil: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
@@ -480,32 +185,18 @@ async function GETHandler(
       } as CompetitorFeedResponse);
     }
 
-    // Use one query at a time, ranked by relevance
-    // Shorter, more specific queries first (they tend to be more relevant)
-    const rankedQueries = [...nicheQueries].sort((a, b) => {
-      // Prefer shorter queries (more specific)
-      const lenDiff = a.length - b.length;
-      if (Math.abs(lenDiff) > 10) return lenDiff;
-      // Otherwise keep original order (LLM ranked them)
-      return 0;
-    });
-
     // Select which query to use based on queryIndex
-    const currentQueryIndex = Math.min(queryIndex, rankedQueries.length - 1);
-    const currentQuery = rankedQueries[currentQueryIndex] ?? rankedQueries[0];
+    const currentQueryIndex = Math.min(queryIndex, nicheQueries.length - 1);
+    const currentQuery = nicheQueries[currentQueryIndex] ?? nicheQueries[0];
 
     console.log(
       `[Competitors] Page ${page}, Query ${currentQueryIndex + 1}/${
-        rankedQueries.length
+        nicheQueries.length
       }: "${currentQuery}"${
         pageToken ? ` (pageToken: ${pageToken.substring(0, 20)}...)` : ""
       }`
     );
     console.log(`[Competitors] Niche: "${nicheData?.niche ?? "unknown"}"`);
-
-    // For backward compatibility with searchSimilarChannels
-    const userKeywords =
-      currentQuery?.split(/\s+/).filter((w) => w.length > 2) ?? [];
 
     // Cache the discovery list for 12h (so repeated page views don't burn YouTube quota).
     // Only cache the initial request (no pagination params). Paginated requests always fetch fresh.
@@ -528,7 +219,7 @@ async function GETHandler(
     // Cache staleness check: invalidate if cache is older than 24h (using updatedAt as backup)
     const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
     const isCacheStale = cached
-      ? cached.updatedAt.getTime() < nowMs - CACHE_MAX_AGE_MS
+      ? cached.updatedAt.getTime() < Date.now() - CACHE_MAX_AGE_MS
       : false;
 
     if (isCacheStale && cached) {
@@ -568,14 +259,13 @@ async function GETHandler(
       // Filter by content format to match user's typical video length (Shorts vs long-form)
       // Filter by category to ensure relevant results (e.g., Gaming videos for Gaming channels)
       // Restrict to videos published within the selected range (7d or 28d)
-      const rangeDays = range === "7d" ? 7 : 28;
+      const rangeDays = 90;
       const searchResult = await searchNicheVideos(
         ga,
         currentQuery,
         50,
         pageToken,
         contentFormat,
-        primaryCategoryId ?? undefined, // Pass category ID to filter results (e.g., "20" for Gaming)
         rangeDays // Restrict YouTube search to videos published within the range
       );
       nextPageToken = searchResult.nextPageToken;
@@ -798,19 +488,6 @@ async function GETHandler(
       // Calculate derived metrics from snapshots
       const derived = calculateDerivedMetrics(snapshots, v.viewsPerDay);
 
-      // Calculate similarity score
-      const titleWords = v.title
-        .toLowerCase()
-        .split(/\s+/)
-        .filter((w) => w.length > 3);
-      const matchCount = titleWords.filter((w) =>
-        userKeywords.includes(w)
-      ).length;
-      const similarityScore = Math.min(
-        1,
-        matchCount / Math.max(userKeywords.length, 1)
-      );
-
       // Get latest stats
       const latestSnapshot = snapshots[0];
 
@@ -830,7 +507,6 @@ async function GETHandler(
           commentCount: latestSnapshot?.commentCount ?? undefined,
         },
         derived,
-        similarityScore,
       };
     });
 
@@ -845,7 +521,7 @@ async function GETHandler(
     // - If we have a nextPageToken, we can get more results from the same query
     // - If not, we can try the next query (if available)
     const hasMoreYouTubePages = !!nextPageToken;
-    const hasMoreQueries = currentQueryIndex + 1 < rankedQueries.length;
+    const hasMoreQueries = currentQueryIndex + 1 < nicheQueries.length;
     const hasMorePages = hasMoreYouTubePages || hasMoreQueries;
 
     // Determine what the next request should use
@@ -867,7 +543,7 @@ async function GETHandler(
       videos: allVideos,
       currentPage: page,
       hasMorePages,
-      totalQueries: rankedQueries.length,
+      totalQueries: nicheQueries.length,
       // Pagination fields
       currentQueryIndex,
       nextQueryIndex: hasMorePages ? nextQueryIndex : undefined,
@@ -1077,7 +753,6 @@ function generateDemoCompetitorFeed(input: {
           outlierScore: (idx % 9) / 2,
           dataStatus: "ready",
         },
-        similarityScore: 0.55 + (idx % 40) / 100,
       });
     }
   }
@@ -1120,7 +795,6 @@ function generateDemoCompetitorFeed(input: {
 
   return {
     channelId: "demo-channel",
-    range: input.range,
     sort: input.sort,
     generatedAt: now.toISOString(),
     cachedUntil: new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString(),

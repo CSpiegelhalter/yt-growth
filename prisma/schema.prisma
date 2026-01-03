@@ -50,7 +50,7 @@ model GoogleAccount {
   provider          String    @default("google") @db.VarChar(50)
   providerAccountId String    @db.VarChar(255)
   refreshTokenEnc   String?
-  accessTokenEnc    String?   // Cached access token (stored to avoid race conditions across workers)
+  accessTokenEnc    String? // Cached access token (stored to avoid race conditions across workers)
   scopes            String?
   tokenExpiresAt    DateTime? @db.Timestamptz(6)
   createdAt         DateTime  @default(now()) @db.Timestamptz(6)
@@ -78,9 +78,9 @@ model Channel {
   GoogleAccount    GoogleAccount?  @relation(fields: [googleAccountId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   Video            Video[]
   Plan             Plan[]
-  RetentionBlob    RetentionBlob[]
   VideoMetrics     VideoMetrics[]
   ChannelNiche     ChannelNiche?
+  ChannelProfile   ChannelProfile?
 
   @@unique([userId, youtubeChannelId], map: "uq_channel_owner_youtube")
   @@index([userId], map: "idx_channel_user")
@@ -88,21 +88,20 @@ model Channel {
 }
 
 model Video {
-  id             Int             @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
   channelId      Int
-  youtubeVideoId String          @db.VarChar(128)
-  title          String?         @db.VarChar(512)
+  youtubeVideoId String        @db.VarChar(128)
+  title          String?       @db.VarChar(512)
   description    String?
-  publishedAt    DateTime?       @db.Timestamptz(6)
+  publishedAt    DateTime?     @db.Timestamptz(6)
   durationSec    Int?
   tags           String?
-  categoryId     String?         @db.VarChar(32) // YouTube video category ID (e.g., "20" for Gaming)
+  categoryId     String?       @db.VarChar(32) // YouTube video category ID (e.g., "20" for Gaming)
   thumbnailUrl   String?
-  privacyStatus  String?         @db.VarChar(16) // "public", "unlisted", or "private"
-  createdAt      DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
-  Channel        Channel         @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_video_channel")
-  RetentionBlob  RetentionBlob[]
+  privacyStatus  String?       @db.VarChar(16) // "public", "unlisted", or "private"
+  createdAt      DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+  Channel        Channel       @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_video_channel")
   VideoMetrics   VideoMetrics?
 
   @@unique([channelId, youtubeVideoId], map: "uq_video_channel_youtube")
@@ -130,26 +129,6 @@ model VideoMetrics {
 
   @@index([channelId], map: "idx_video_metrics_channel")
   @@index([cachedUntil], map: "idx_video_metrics_cached")
-}
-
-model RetentionBlob {
-  id           Int      @id @default(autoincrement())
-  videoId      Int
-  channelId    Int
-  // JSON array of {elapsedRatio, audienceWatchRatio}
-  dataJson     String   @db.Text
-  // Computed cliff analysis result
-  cliffTimeSec Int?
-  cliffReason  String?  @db.VarChar(32) // crossed_50, steepest_drop
-  cliffSlope   Float?
-  fetchedAt    DateTime @default(now()) @db.Timestamptz(6)
-  cachedUntil  DateTime @db.Timestamptz(6)
-  Video        Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  Channel      Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
-
-  @@unique([videoId], map: "uq_retention_video")
-  @@index([channelId], map: "idx_retention_channel")
-  @@index([cachedUntil], map: "idx_retention_cached")
 }
 
 model Plan {
@@ -452,4 +431,41 @@ model ChannelNiche {
   Channel         Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
   @@index([cachedUntil], map: "idx_channel_niche_cached")
+}
+
+// ============================================
+// CHANNEL PROFILE (user-defined niche + AI structured)
+// ============================================
+
+model ChannelProfile {
+  id              String    @id @default(uuid()) @db.Uuid
+  channelId       Int       @unique
+  inputJson       String    @db.Text // Raw user input (ChannelProfileInput)
+  inputHash       String    @db.VarChar(64) // Hash for cache invalidation
+  aiProfileJson   String?   @db.Text // AI-generated structured profile (ChannelProfileAI)
+  lastGeneratedAt DateTime? @db.Timestamptz(6) // When AI profile was last generated
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  Channel         Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "fk_channel_profile_channel")
+
+  @@index([lastGeneratedAt], map: "idx_channel_profile_generated")
+}
+
+// ============================================
+// BADGE COLLECTION SYSTEM
+// ============================================
+
+// User's unlocked badges
+model UserBadge {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     Int
+  channelId  Int? // Which channel unlocked this
+  badgeId    String   @db.VarChar(64) // Badge ID from registry (e.g., "first-upload")
+  unlockedAt DateTime @default(now()) @db.Timestamptz(6)
+  seen       Boolean  @default(false) // Has user viewed this badge since unlock?
+
+  @@unique([userId, channelId, badgeId], map: "uq_user_badge")
+  @@index([userId], map: "idx_user_badge_user")
+  @@index([channelId], map: "idx_user_badge_channel")
+  @@index([unlockedAt(sort: Desc)], map: "idx_user_badge_unlocked")
 }

@@ -82,14 +82,6 @@ async function POSTHandler(req: NextRequest) {
 
           // Clean up expired caches
           const now = new Date();
-          
-          // Delete expired retention blobs
-          await prisma.retentionBlob.deleteMany({
-            where: {
-              channelId: channel.id,
-              cachedUntil: { lt: now },
-            },
-          });
 
           // Delete expired video metrics
           await prisma.videoMetrics.deleteMany({

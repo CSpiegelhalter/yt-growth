@@ -1,0 +1,152 @@
+/* ================================
+   BadgeArt Component Styles
+   Premium, collectible badge visuals
+   ================================ */
+
+.badgeWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.badgeSvg {
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+/* Rarity-specific styles */
+.common .badgeSvg {
+  filter: drop-shadow(0 2px 4px rgba(96, 165, 250, 0.3));
+}
+
+.rare .badgeSvg {
+  filter: drop-shadow(0 4px 8px rgba(167, 139, 250, 0.4));
+}
+
+.epic .badgeSvg {
+  filter: drop-shadow(0 6px 12px rgba(244, 114, 182, 0.4));
+}
+
+.legendary .badgeSvg {
+  filter: drop-shadow(0 8px 16px rgba(251, 191, 36, 0.5));
+}
+
+.locked .badgeSvg {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.6;
+}
+
+/* Badge shape animations */
+.badgeShape {
+  transition: all 0.3s ease;
+}
+
+.badgeShapeLocked {
+  opacity: 0.8;
+}
+
+/* Glow circle for epic/legendary */
+.glowCircle {
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.4;
+    r: 42;
+  }
+  50% {
+    opacity: 0.7;
+    r: 44;
+  }
+}
+
+/* Icon group */
+.iconGroup {
+  transition: transform 0.3s ease;
+}
+
+/* Lock overlay */
+.lockOverlay {
+  opacity: 0.9;
+}
+
+/* Sparkles for legendary badges */
+.sparkles circle {
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+.sparkle1 { animation-delay: 0s; }
+.sparkle2 { animation-delay: 0.5s; }
+.sparkle3 { animation-delay: 1s; }
+.sparkle4 { animation-delay: 1.5s; }
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+}
+
+/* Shine overlay for epic/legendary */
+.shineOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.3) 40%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.3) 60%,
+    transparent 80%
+  );
+  background-size: 200% 200%;
+  animation: shine 3s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: 50%;
+  clip-path: polygon(50% 8%, 88% 28%, 88% 72%, 50% 92%, 12% 72%, 12% 28%);
+}
+
+@keyframes shine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Hover states */
+.badgeWrap:not(.locked):hover .badgeSvg {
+  transform: scale(1.08) translateY(-2px);
+}
+
+.badgeWrap:not(.locked):hover .iconGroup {
+  transform: translate(50, 50) scale(0.6);
+}
+
+/* Focus states for accessibility */
+.badgeWrap:focus-visible {
+  outline: 3px solid #6366f1;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .glowCircle,
+  .sparkles circle,
+  .shineOverlay {
+    animation: none;
+  }
+
+  .badgeWrap:not(.locked):hover .badgeSvg {
+    transform: scale(1.02);
+  }
+}

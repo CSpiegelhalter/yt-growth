@@ -211,7 +211,6 @@ export type SimilarChannel = {
   channelId: string;
   channelTitle: string;
   channelThumbnailUrl: string | null;
-  similarityScore: number;
   recentWinners: Array<{
     videoId: string;
     title: string;
@@ -388,7 +387,6 @@ export type IdeaBoardSimilarChannel = {
   channelId: string;
   channelTitle: string;
   channelThumbnailUrl: string | null;
-  similarityScore: number;
 };
 
 export type IdeaBoardData = {
@@ -457,12 +455,10 @@ export type CompetitorVideo = {
     outlierScore?: number; // Z-score vs cohort baseline
     dataStatus?: "ready" | "building"; // "building" if insufficient snapshots
   };
-  similarityScore?: number;
 };
 
 export type CompetitorFeedResponse = {
   channelId: string;
-  range: "7d" | "28d";
   sort: "velocity" | "engagement" | "newest" | "outliers";
   generatedAt: string;
   cachedUntil: string;

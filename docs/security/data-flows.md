@@ -203,8 +203,7 @@ flowchart TD
     
     subgraph CacheExpiry["Automatic Cache Expiry"]
         I[Cache TTL reached] --> J[Cron job runs]
-        J --> K[Delete expired RetentionBlobs]
-        K --> L[Delete expired VideoMetrics]
-        L --> M[Delete expired Plans]
+        J --> K[Delete expired VideoMetrics]
+        K --> L[Delete expired Plans]
     end
 ```

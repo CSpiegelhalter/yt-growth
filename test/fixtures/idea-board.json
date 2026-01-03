@@ -226,10 +226,10 @@
     ]
   },
   "similarChannels": [
-    { "channelId": "fireship", "channelTitle": "Fireship", "channelThumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg", "similarityScore": 0.92 },
-    { "channelId": "theo", "channelTitle": "Theo - t3.gg", "channelThumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg", "similarityScore": 0.88 },
-    { "channelId": "primeagen", "channelTitle": "ThePrimeagen", "channelThumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg", "similarityScore": 0.85 },
-    { "channelId": "techwithtim", "channelTitle": "Tech With Tim", "channelThumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg", "similarityScore": 0.82 }
+    { "channelId": "fireship", "channelTitle": "Fireship", "channelThumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg" },
+    { "channelId": "theo", "channelTitle": "Theo - t3.gg", "channelThumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg" },
+    { "channelId": "primeagen", "channelTitle": "ThePrimeagen", "channelThumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg" },
+    { "channelId": "techwithtim", "channelTitle": "Tech With Tim", "channelThumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg" }
   ]
 }
 

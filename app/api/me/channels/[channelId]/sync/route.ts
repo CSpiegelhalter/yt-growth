@@ -167,9 +167,11 @@ async function POSTHandler(
       // Fetch analytics metrics for videos (for engagement metrics like watch time)
       const videoIds = videos.map((v) => v.videoId);
       const endDate = new Date().toISOString().split("T")[0];
-      const startDate = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      // Use lifetime date range for subscriber data (YouTube Analytics supports back to 2015)
+      // This ensures subscribersGained reflects all-time, not just recent 28 days
+      const lifetimeStartDate = "2015-01-01";
 
-      const analyticsMetrics = await fetchVideoMetrics(ga, channelId, videoIds, startDate, endDate);
+      const analyticsMetrics = await fetchVideoMetrics(ga, channelId, videoIds, lifetimeStartDate, endDate);
       const analyticsMap = new Map(analyticsMetrics.map((m) => [m.videoId, m]));
 
       // Create a map of Data API statistics (total lifetime views, likes, comments)

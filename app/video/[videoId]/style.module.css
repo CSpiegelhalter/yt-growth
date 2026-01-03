@@ -162,9 +162,10 @@
   /* Keep the loader vertically consistent across pages while accounting for the global header. */
   min-height: calc(100vh - 96px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: var(--space-lg) var(--space-md);
+  padding-top: 18vh;
 }
 
 .loading {
@@ -2311,6 +2312,9 @@
 }
 
 .shareLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -2320,6 +2324,10 @@
   border-radius: var(--radius-md);
   text-decoration: none;
   transition: all 0.15s;
+}
+
+.shareLink svg {
+  flex-shrink: 0;
 }
 
 .shareLink:hover {

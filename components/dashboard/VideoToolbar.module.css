@@ -1,0 +1,465 @@
+/* ================================
+   Video Toolbar - Control Bar for Video Tools
+   Clean, compact bar with sort, filters, search, actions
+   ================================ */
+
+.toolbar {
+  background: var(--bg);
+  padding: var(--space-3) 0;
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.toolbarInner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Primary controls row: Sort + Search + Actions */
+.primaryRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Sort dropdown */
+.sortWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+}
+
+.sortButton:hover {
+  border-color: var(--primary);
+  background: var(--surface-alt);
+}
+
+.sortButton:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.sortButton[aria-expanded="true"] {
+  border-color: var(--primary);
+}
+
+.sortButtonIcon {
+  flex-shrink: 0;
+  transition: transform var(--transition-base);
+}
+
+.sortButton[aria-expanded="true"] .sortButtonIcon {
+  transform: rotate(180deg);
+}
+
+.sortDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 220px;
+  max-width: calc(100vw - 32px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.sortOption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  width: 100%;
+  text-align: left;
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.sortOption:hover {
+  background: var(--surface-alt);
+}
+
+.sortOption:focus-visible {
+  outline: none;
+  background: var(--surface-alt);
+}
+
+.sortOption[aria-selected="true"] {
+  background: var(--accent-light);
+  color: var(--primary);
+}
+
+.sortOptionLabel {
+  font-weight: var(--font-medium);
+}
+
+.sortOptionDesc {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+/* Search input */
+.searchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.searchInput {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  padding-left: 36px;
+  padding-right: 32px;
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+}
+
+.searchInput::placeholder {
+  color: var(--text-tertiary);
+}
+
+.searchInput:hover {
+  border-color: var(--primary-muted, var(--border));
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.searchClear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: var(--surface-alt);
+  border: none;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.searchClear:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.searchClear:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Actions button (icon only on mobile) */
+.actionsWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.actionsButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.actionsButton:hover {
+  border-color: var(--primary);
+  color: var(--text);
+  background: var(--surface-alt);
+}
+
+.actionsButton:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Hide "Actions" text on mobile */
+.actionsButtonText {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .actionsButton {
+    padding: var(--space-2) var(--space-3);
+  }
+  
+  .actionsButtonText {
+    display: inline;
+  }
+}
+
+.actionsDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+}
+
+/* Ensure dropdown doesn't go off screen on mobile */
+@media (max-width: 640px) {
+  .actionsDropdown {
+    right: auto;
+    left: auto;
+    /* Position from the right edge of viewport with some margin */
+    position: fixed;
+    top: auto;
+    bottom: auto;
+    margin-top: 4px;
+  }
+}
+
+.actionItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.actionItem:hover {
+  background: var(--surface-alt);
+}
+
+.actionItem:focus-visible {
+  outline: none;
+  background: var(--surface-alt);
+}
+
+.actionItem svg {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+/* Secondary controls row (filters) - centered on mobile */
+.secondaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+@media (min-width: 640px) {
+  .secondaryRow {
+    justify-content: flex-start;
+    gap: var(--space-3);
+  }
+}
+
+/* Filter chips */
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filterLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.filterChips {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.filterChip {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .filterChip {
+    padding: var(--space-1) var(--space-3);
+  }
+}
+
+.filterChip:hover {
+  border-color: var(--primary-muted, var(--border));
+  color: var(--text);
+}
+
+.filterChip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.filterChip[aria-pressed="true"],
+.filterChipActive {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--text-inverse);
+}
+
+/* Preset chips - special styling */
+.presetChip {
+  background: var(--surface-alt);
+}
+
+.presetChip[aria-pressed="true"] {
+  background: var(--accent, #8b5cf6);
+  border-color: var(--accent, #8b5cf6);
+  color: var(--text-inverse);
+}
+
+/* Reset button */
+.resetButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.resetButton:hover {
+  color: var(--text);
+  border-color: var(--text-secondary);
+}
+
+.resetButton:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Video count - inline on larger screens */
+.videoCount {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .videoCount {
+    margin-left: auto;
+    font-size: var(--text-sm);
+  }
+}
+
+.videoCountNum {
+  font-weight: var(--font-semibold);
+  color: var(--text);
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: var(--space-6);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-3) var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--text-sm);
+  color: var(--text);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  animation: toastIn 0.2s ease-out;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.toastSuccess {
+  border-color: var(--success, #22c55e);
+}
+
+.toastSuccess svg {
+  color: var(--success, #22c55e);
+}

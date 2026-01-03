@@ -39,7 +39,6 @@ type SimilarChannelInput = {
   channelId: string;
   channelTitle: string;
   channelThumbnailUrl: string | null;
-  similarityScore: number;
 };
 
 type UserVideoInput = {
@@ -304,12 +303,7 @@ ${proofContext || "No competitor data - generate ideas based on niche keywords"}
 ═══════════════════════════════════════════════════════════
 SIMILAR CHANNELS IN NICHE
 ═══════════════════════════════════════════════════════════
-${input.similarChannels
-  .map(
-    (c) =>
-      `• ${c.channelTitle} (${Math.round(c.similarityScore * 100)}% relevance)`
-  )
-  .join("\n")}
+${input.similarChannels.map((c) => `• ${c.channelTitle}`).join("\n")}
 
 ═══════════════════════════════════════════════════════════
 YOUR TASK

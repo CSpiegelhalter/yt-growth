@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import s from "./style.module.css";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
-import { formatCompact, formatCompactFloored } from "@/lib/format";
 import type {
   Me,
   Channel,
@@ -15,8 +12,13 @@ import type {
 } from "@/types/api";
 import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
-
-type SortOption = "velocity" | "engagement" | "newest" | "outliers";
+import CompetitorVideoCard from "./CompetitorVideoCard";
+import {
+  type SortOption,
+  getSortDescription,
+  formatRelativeTime,
+  formatTimeUntil,
+} from "./utils";
 
 type RateLimitError = {
   resetAt: string;
@@ -57,7 +59,9 @@ export default function CompetitorsClient({
   const [feedData, setFeedData] = useState<CompetitorFeedResponse | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
   const [loadingMoreVideos, setLoadingMoreVideos] = useState(false);
-  const [rateLimitError, setRateLimitError] = useState<RateLimitError | null>(null);
+  const [rateLimitError, setRateLimitError] = useState<RateLimitError | null>(
+    null
+  );
   const [fetchError, setFetchError] = useState<string | null>(null);
   // Track if API told us subscription is required (overrides bootstrap data)
   const [subscriptionRequired, setSubscriptionRequired] = useState(false);
@@ -65,8 +69,6 @@ export default function CompetitorsClient({
   // How many videos to display (start with 12, increment by 6 each time - divisible by 2 and 3)
   const [visibleCount, setVisibleCount] = useState(12);
 
-  // Filters
-  const [range, setRange] = useState<"7d" | "28d">("7d");
   const [sort, setSort] = useState<SortOption>("velocity");
 
   const activeChannel = useMemo(
@@ -81,8 +83,8 @@ export default function CompetitorsClient({
   );
   const isSubscribed = isSubscribedFromBootstrap && !subscriptionRequired;
 
-  // Filter out videos with less than 100 views per day
-  const MIN_VIEWS_PER_DAY = 100;
+  // Filter out videos with less than 10 views per day (minimal quality threshold)
+  const MIN_VIEWS_PER_DAY = 10;
   const filteredVideos = useMemo(() => {
     if (!feedData?.videos) return [];
     return feedData.videos.filter(
@@ -105,18 +107,22 @@ export default function CompetitorsClient({
     setVisibleCount(12); // Reset visible count
     setRateLimitError(null); // Clear previous rate limit errors
     setFetchError(null); // Clear previous fetch errors
-    
+
     (async () => {
       try {
         const data = await apiFetchJson<any>(
-          `/api/me/channels/${activeChannelId}/competitors?range=${range}&sort=${sort}`,
+          `/api/me/channels/${activeChannelId}/competitors?sort=${sort}`,
           { cache: "no-store" }
         );
         setSubscriptionRequired(false);
         setFeedData(data?.videos ? (data as CompetitorFeedResponse) : null);
       } catch (err) {
         // Handle subscription required error gracefully
-        if (isApiClientError(err) && err.status === 403 && err.code === "SUBSCRIPTION_REQUIRED") {
+        if (
+          isApiClientError(err) &&
+          err.status === 403 &&
+          err.code === "SUBSCRIPTION_REQUIRED"
+        ) {
           setSubscriptionRequired(true);
           setFeedData(null);
           // Don't log or set fetchError - the UI will show the locked state
@@ -139,13 +145,7 @@ export default function CompetitorsClient({
         setDataLoading(false);
       }
     })();
-  }, [activeChannelId, range, sort, isSubscribedFromBootstrap]);
-
-  const handleRangeChange = useCallback((newRange: "7d" | "28d") => {
-    setRange(newRange);
-    setFeedData(null);
-    setVisibleCount(12);
-  }, []);
+  }, [activeChannelId, sort, isSubscribedFromBootstrap]);
 
   const handleSortChange = useCallback((newSort: SortOption) => {
     setSort(newSort);
@@ -163,12 +163,16 @@ export default function CompetitorsClient({
 
     const currentVisible = visibleCount;
     const targetVisible = currentVisible + LOAD_INCREMENT;
-    
-    console.log(`[LoadMore] Click! Current: ${currentVisible}, Target: ${targetVisible}, Filtered: ${filteredVideos.length}`);
+
+    console.log(
+      `[LoadMore] Click! Current: ${currentVisible}, Target: ${targetVisible}, Filtered: ${filteredVideos.length}`
+    );
 
     // If we already have enough qualifying videos, just show 6 more
     if (filteredVideos.length >= targetVisible) {
-      console.log(`[LoadMore] Have enough locally, showing: ${currentVisible} -> ${targetVisible}`);
+      console.log(
+        `[LoadMore] Have enough locally, showing: ${currentVisible} -> ${targetVisible}`
+      );
       setVisibleCount(targetVisible);
       return;
     }
@@ -176,7 +180,9 @@ export default function CompetitorsClient({
     // If no more pages to fetch, show whatever remains
     if (!feedData.hasMorePages) {
       if (filteredVideos.length > currentVisible) {
-        console.log(`[LoadMore] No more pages, showing all remaining: ${currentVisible} -> ${filteredVideos.length}`);
+        console.log(
+          `[LoadMore] No more pages, showing all remaining: ${currentVisible} -> ${filteredVideos.length}`
+        );
         setVisibleCount(filteredVideos.length);
       } else {
         console.log(`[LoadMore] No more pages and no more videos`);
@@ -191,28 +197,30 @@ export default function CompetitorsClient({
     try {
       // Track accumulated videos and pagination state
       let allVideos = [...(feedData.videos ?? [])];
-      let currentQueryIndex = feedData.nextQueryIndex ?? feedData.currentQueryIndex ?? 0;
+      let currentQueryIndex =
+        feedData.nextQueryIndex ?? feedData.currentQueryIndex ?? 0;
       let currentPageToken = feedData.nextPageToken;
       let hasMore: boolean = feedData.hasMorePages ?? false;
       let latestData = feedData;
 
-      // Keep fetching until we have enough qualifying videos or run out of pages
+      // Keep fetching until we have enough qualifying videos or run out of pages/queries
       while (hasMore) {
         const qualifyingCount = allVideos.filter(
           (v) => v.derived.viewsPerDay >= MIN_VIEWS_PER_DAY
         ).length;
-        
-        console.log(`[LoadMore] Qualifying so far: ${qualifyingCount}, need: ${targetVisible}`);
-        
+
+        console.log(
+          `[LoadMore] Qualifying: ${qualifyingCount}/${allVideos.length}, need: ${targetVisible}`
+        );
+
         // Check if we have enough now
         if (qualifyingCount >= targetVisible) {
-          console.log(`[LoadMore] Have enough qualifying videos now!`);
+          console.log(`[LoadMore] Have enough qualifying videos!`);
           break;
         }
 
         // Fetch more
         const params = new URLSearchParams({
-          range,
           sort,
           queryIndex: String(currentQueryIndex),
         });
@@ -220,7 +228,9 @@ export default function CompetitorsClient({
           params.set("pageToken", currentPageToken);
         }
 
-        console.log(`[LoadMore] Fetching batch... queryIndex=${currentQueryIndex}`);
+        console.log(
+          `[LoadMore] Fetching batch... queryIndex=${currentQueryIndex}`
+        );
         const res = await fetch(
           `/api/me/channels/${activeChannelId}/competitors?${params.toString()}`
         );
@@ -238,7 +248,11 @@ export default function CompetitorsClient({
             });
             return;
           }
-          if (res.status === 403 && (data?.code === "SUBSCRIPTION_REQUIRED" || data?.error?.code === "SUBSCRIPTION_REQUIRED")) {
+          if (
+            res.status === 403 &&
+            (data?.code === "SUBSCRIPTION_REQUIRED" ||
+              data?.error?.code === "SUBSCRIPTION_REQUIRED")
+          ) {
             setSubscriptionRequired(true);
             setFeedData(null);
             return;
@@ -260,15 +274,16 @@ export default function CompetitorsClient({
         const newVideos = data.videos.filter(
           (v: CompetitorVideo) => !existingIds.has(v.videoId)
         );
-        
+
         const newQualifying = newVideos.filter(
           (v: CompetitorVideo) => v.derived.viewsPerDay >= MIN_VIEWS_PER_DAY
         ).length;
-        
-        console.log(`[LoadMore] Got ${newVideos.length} new unique, ${newQualifying} qualify`);
+        console.log(
+          `[LoadMore] Got ${newVideos.length} new, ${newQualifying} qualify`
+        );
 
         allVideos = [...allVideos, ...newVideos];
-        
+
         // Update pagination state for next iteration
         hasMore = data.hasMorePages ?? false;
         currentQueryIndex = data.nextQueryIndex ?? currentQueryIndex;
@@ -292,17 +307,20 @@ export default function CompetitorsClient({
 
       let newVisible: number;
       if (!hasMore && finalQualifying < targetVisible) {
-        // Exhausted all videos, show everything
+        // Exhausted all queries, show everything we have
         newVisible = finalQualifying;
-        console.log(`[LoadMore] Exhausted, showing all: ${currentVisible} -> ${newVisible}`);
+        console.log(
+          `[LoadMore] Exhausted all queries, showing all: ${currentVisible} -> ${newVisible}`
+        );
       } else {
-        // Show exactly 6 more
+        // Show 6 more
         newVisible = targetVisible;
-        console.log(`[LoadMore] Showing 6 more: ${currentVisible} -> ${newVisible}`);
+        console.log(
+          `[LoadMore] Showing 6 more: ${currentVisible} -> ${newVisible}`
+        );
       }
 
       setVisibleCount(newVisible);
-
     } catch (err) {
       console.error("Failed to fetch more videos:", err);
       setFetchError("Failed to load more videos. Please try again.");
@@ -311,7 +329,6 @@ export default function CompetitorsClient({
     }
   }, [
     activeChannelId,
-    range,
     sort,
     loadingMoreVideos,
     feedData,
@@ -387,7 +404,8 @@ export default function CompetitorsClient({
             success.
           </p>
           <a href="/api/integrations/stripe/checkout" className={s.lockedBtn}>
-            Subscribe to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
+            Subscribe to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/
+            {SUBSCRIPTION.PRO_INTERVAL}
           </a>
         </div>
       </main>
@@ -413,18 +431,6 @@ export default function CompetitorsClient({
 
       {/* Controls - Side by side */}
       <div className={s.controls}>
-        <div className={s.filterGroup}>
-          <label className={s.filterLabel}>Time Range</label>
-          <select
-            className={s.select}
-            value={range}
-            onChange={(e) => handleRangeChange(e.target.value as "7d" | "28d")}
-          >
-            <option value="7d">Last 7 days</option>
-            <option value="28d">Last 28 days</option>
-          </select>
-        </div>
-
         <div className={s.filterGroup}>
           <label className={s.filterLabel}>Sort By</label>
           <select
@@ -533,7 +539,9 @@ export default function CompetitorsClient({
           </div>
 
           {/* Load More Videos */}
-          {(visibleCount < filteredVideos.length || feedData.hasMorePages || fetchError) && (
+          {(visibleCount < filteredVideos.length ||
+            feedData.hasMorePages ||
+            fetchError) && (
             <div className={s.fetchMoreWrap}>
               {fetchError && (
                 <p className={s.fetchErrorHint}>
@@ -587,138 +595,4 @@ export default function CompetitorsClient({
       )}
     </main>
   );
-}
-
-/* ---------- Competitor Video Card ---------- */
-function CompetitorVideoCard({
-  video,
-  channelId,
-}: {
-  video: CompetitorVideo;
-  channelId: string;
-}) {
-  const hasVelocity = video.derived.velocity24h !== undefined;
-  const [thumbOk, setThumbOk] = useState(true);
-  const [avatarOk, setAvatarOk] = useState(true);
-
-  return (
-    <Link
-      href={`/competitors/video/${video.videoId}?channelId=${channelId}`}
-      className={s.videoCard}
-    >
-      <div className={s.videoThumbWrap}>
-        {video.thumbnailUrl && thumbOk ? (
-          <Image
-            src={video.thumbnailUrl}
-            alt={`${video.title} thumbnail`}
-            fill
-            className={s.videoThumb}
-            sizes="(max-width: 768px) 100vw, 33vw"
-            onError={() => setThumbOk(false)}
-          />
-        ) : (
-          <div className={s.videoThumbPlaceholder}>
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          </div>
-        )}
-
-        {/* Views/day badge */}
-        <span className={s.vpdBadge}>
-          {formatCompactFloored(video.derived.viewsPerDay)}/day
-        </span>
-
-        {/* Velocity badge if available */}
-        {hasVelocity && (
-          <span className={s.velocityBadge}>
-            +{formatCompact(video.derived.velocity24h!)} 24h
-          </span>
-        )}
-      </div>
-
-      <div className={s.videoCardContent}>
-        <h3 className={s.videoCardTitle}>{video.title}</h3>
-
-        <div className={s.channelRow}>
-          {video.channelThumbnailUrl && avatarOk ? (
-            <Image
-              src={video.channelThumbnailUrl}
-              alt={`${video.channelTitle} channel avatar`}
-              width={24}
-              height={24}
-              className={s.channelAvatar}
-              sizes="24px"
-              onError={() => setAvatarOk(false)}
-            />
-          ) : null}
-          <span className={s.channelName}>{video.channelTitle}</span>
-        </div>
-
-        <div className={s.videoCardMeta}>
-          <span>{formatCompact(video.stats.viewCount)} views</span>
-          <span>{formatDate(video.publishedAt)}</span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-/* ---------- Helpers ---------- */
-function getSortDescription(sort: SortOption): string {
-  switch (sort) {
-    case "velocity":
-      return "Videos gaining the most views in the last 24 hours";
-    case "outliers":
-      return "Videos performing significantly above the channel's average";
-    case "engagement":
-      return "Videos with the highest like and comment rates";
-    case "newest":
-      return "Most recently published videos";
-    default:
-      return "";
-  }
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-  if (diffHours < 1) return "Just now";
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffHours < 48) return "Yesterday";
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function formatTimeUntil(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = date.getTime() - now.getTime();
-  
-  if (diffMs <= 0) return "now";
-  
-  const diffMinutes = Math.ceil(diffMs / (1000 * 60));
-  
-  if (diffMinutes < 60) {
-    return `in ${diffMinutes} minute${diffMinutes !== 1 ? "s" : ""}`;
-  }
-  
-  const diffHours = Math.ceil(diffMinutes / 60);
-  return `in about ${diffHours} hour${diffHours !== 1 ? "s" : ""}`;
 }

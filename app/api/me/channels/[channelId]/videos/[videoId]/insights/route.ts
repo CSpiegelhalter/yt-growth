@@ -1,23 +1,9 @@
-/**
- * GET/POST /api/me/channels/[channelId]/videos/[videoId]/insights
- *
- * Fetch or generate deep insights for an owned video using YouTube Analytics API.
- * Uses LLM to generate structured recommendations.
- *
- * Auth: Required
- * Rate limit: 30 per hour per user
- * Cache: 24h per video + range
- * Entitlements: owned_video_analysis (5/day FREE, 100/day PRO)
- */
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
-import {
-  getCurrentUserWithSubscription,
-  hasActiveSubscription,
-} from "@/lib/user";
+import { getCurrentUserWithSubscription } from "@/lib/user";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import {
@@ -33,7 +19,6 @@ import {
   fetchOwnedVideoComments,
   getDateRange,
   type DailyAnalyticsRow,
-  type AnalyticsTotals,
   type VideoMetadata,
   type VideoComment,
 } from "@/lib/youtube-analytics";
@@ -147,56 +132,23 @@ async function GETHandler(
       const derivedData = cached.derivedJson as any;
       const llmData = (cached.llmJson as any) ?? null;
 
-      // Fetch retention data if not in cache (backwards compat for old cache entries)
+      // Fetch retention data if not in derivedData cache
       let retention = derivedData.retention;
       if (!retention) {
-        const videoRecord = await prisma.video.findFirst({
-          where: { youtubeVideoId: videoId, channelId: channel.id },
-          select: { id: true },
-        });
-        if (videoRecord) {
-          const retentionBlob = await prisma.retentionBlob.findUnique({
-            where: { videoId: videoRecord.id },
-            select: { dataJson: true, cliffTimeSec: true, cliffReason: true },
-          });
-          if (retentionBlob?.dataJson) {
-            try {
-              const points = (
-                typeof retentionBlob.dataJson === "string"
-                  ? JSON.parse(retentionBlob.dataJson)
-                  : retentionBlob.dataJson
-              ) as RetentionPoint[];
+        try {
+          const ga = await getGoogleAccount(user.id, channelId);
+          if (ga) {
+            const points = await fetchRetentionCurve(ga, channelId, videoId);
+            if (points.length > 0) {
               retention = {
                 points,
-                cliffTimeSec: retentionBlob.cliffTimeSec,
-                cliffReason: retentionBlob.cliffReason,
+                cliffTimeSec: null,
+                cliffReason: null,
               };
-            } catch (e) {
-              console.warn(
-                "[VideoInsights] Failed to parse retention data:",
-                e
-              );
             }
           }
-        }
-
-        // If still no retention, fetch directly from YouTube
-        if (!retention) {
-          try {
-            const ga = await getGoogleAccount(user.id, channelId);
-            if (ga) {
-              const points = await fetchRetentionCurve(ga, channelId, videoId);
-              if (points.length > 0) {
-                retention = {
-                  points,
-                  cliffTimeSec: null,
-                  cliffReason: null,
-                };
-              }
-            }
-          } catch (e) {
-            console.warn("[VideoInsights] Failed to fetch retention:", e);
-          }
+        } catch (e) {
+          console.warn("[VideoInsights] Failed to fetch retention:", e);
         }
       }
       return Response.json({
@@ -485,56 +437,23 @@ async function POSTHandler(
         },
       });
 
-      // Fetch retention data if not in cache (backwards compat for old cache entries)
+      // Fetch retention data if not in derivedData cache
       let retention = derivedData.retention;
       if (!retention) {
-        const videoRecord = await prisma.video.findFirst({
-          where: { youtubeVideoId: videoId, channelId: channel.id },
-          select: { id: true },
-        });
-        if (videoRecord) {
-          const retentionBlob = await prisma.retentionBlob.findUnique({
-            where: { videoId: videoRecord.id },
-            select: { dataJson: true, cliffTimeSec: true, cliffReason: true },
-          });
-          if (retentionBlob?.dataJson) {
-            try {
-              const points = (
-                typeof retentionBlob.dataJson === "string"
-                  ? JSON.parse(retentionBlob.dataJson)
-                  : retentionBlob.dataJson
-              ) as RetentionPoint[];
-              retention = {
-                points,
-                cliffTimeSec: retentionBlob.cliffTimeSec,
-                cliffReason: retentionBlob.cliffReason,
-              };
-            } catch (e) {
-              console.warn(
-                "[VideoInsights] Failed to parse cached retention data (llmOnly):",
-                e
-              );
-            }
+        try {
+          const points = await fetchRetentionCurve(ga, channelId, videoId);
+          if (points.length > 0) {
+            retention = {
+              points,
+              cliffTimeSec: null,
+              cliffReason: null,
+            };
           }
-        }
-
-        // If still no retention, fetch directly from YouTube
-        if (!retention) {
-          try {
-            const points = await fetchRetentionCurve(ga, channelId, videoId);
-            if (points.length > 0) {
-              retention = {
-                points,
-                cliffTimeSec: null,
-                cliffReason: null,
-              };
-            }
-          } catch (e) {
-            console.warn(
-              "[VideoInsights] Failed to fetch retention from YouTube (llmOnly):",
-              e
-            );
-          }
+        } catch (e) {
+          console.warn(
+            "[VideoInsights] Failed to fetch retention from YouTube (llmOnly):",
+            e
+          );
         }
       }
 
@@ -745,52 +664,28 @@ async function generateInsights(
 ): Promise<InsightsResultInternal> {
   const { startDate, endDate } = getDateRange(range);
 
-  // Fetch video metadata, analytics, comments, retention cache, AND baseline all in parallel
-  const [
-    videoMeta,
-    totalsResult,
-    dailyResult,
-    comments,
-    retentionBlob,
-    baseline,
-  ] = await Promise.all([
-    fetchOwnedVideoMetadata(ga, videoId),
-    fetchVideoAnalyticsTotalsWithStatus(
-      ga,
-      youtubeChannelId,
-      videoId,
-      startDate,
-      endDate
-    ),
-    fetchVideoAnalyticsDailyWithStatus(
-      ga,
-      youtubeChannelId,
-      videoId,
-      startDate,
-      endDate
-    ),
-    fetchOwnedVideoComments(ga, videoId, 30),
-    // Fetch retention curve from cache (already fetched via video-analytics endpoint)
-    // First get the internal video ID from the Video table
-    prisma.video
-      .findFirst({
-        where: { youtubeVideoId: videoId, channelId: dbChannelId },
-        select: { id: true },
-      })
-      .then(async (v) => {
-        if (!v) return null;
-        return prisma.retentionBlob.findUnique({
-          where: { videoId: v.id },
-          select: {
-            dataJson: true,
-            cliffTimeSec: true,
-            cliffReason: true,
-          },
-        });
-      }),
-    // Get channel baseline from other videos (only needs function params, no dependencies)
-    getChannelBaselineFromDB(userId, dbChannelId, videoId, range),
-  ]);
+  // Fetch video metadata, analytics, comments, AND baseline all in parallel
+  const [videoMeta, totalsResult, dailyResult, comments, baseline] =
+    await Promise.all([
+      fetchOwnedVideoMetadata(ga, videoId),
+      fetchVideoAnalyticsTotalsWithStatus(
+        ga,
+        youtubeChannelId,
+        videoId,
+        startDate,
+        endDate
+      ),
+      fetchVideoAnalyticsDailyWithStatus(
+        ga,
+        youtubeChannelId,
+        videoId,
+        startDate,
+        endDate
+      ),
+      fetchOwnedVideoComments(ga, videoId, 30),
+      // Get channel baseline from other videos (only needs function params, no dependencies)
+      getChannelBaselineFromDB(userId, dbChannelId, videoId, range),
+    ]);
 
   if (!videoMeta) {
     throw new Error("Could not fetch video metadata");
@@ -909,7 +804,7 @@ async function generateInsights(
     },
   };
 
-  // Parse retention from cache (sync) or prepare to fetch from YouTube
+  // Retention will be fetched from YouTube API
   let retention:
     | {
         points: RetentionPoint[];
@@ -917,27 +812,7 @@ async function generateInsights(
         cliffReason?: string | null;
       }
     | undefined;
-  let needsRetentionFetch = false;
-
-  if (retentionBlob?.dataJson) {
-    try {
-      const points = (
-        typeof retentionBlob.dataJson === "string"
-          ? JSON.parse(retentionBlob.dataJson)
-          : retentionBlob.dataJson
-      ) as RetentionPoint[];
-      retention = {
-        points,
-        cliffTimeSec: retentionBlob.cliffTimeSec,
-        cliffReason: retentionBlob.cliffReason,
-      };
-    } catch (e) {
-      console.warn("[VideoInsights] Failed to parse retention data:", e);
-      needsRetentionFetch = true;
-    }
-  } else {
-    needsRetentionFetch = true;
-  }
+  const needsRetentionFetch = true;
 
   // Determine if we need to generate LLM insights
   const needsLlmGeneration = !(contentUnchanged && cachedLlmJson);

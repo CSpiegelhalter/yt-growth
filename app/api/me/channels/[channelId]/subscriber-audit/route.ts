@@ -9,9 +9,8 @@
  * Caching: 12-24h
  *
  * Query params:
- * - range: "28d" | "90d" (default: "28d")
- * - limit: number (default: 30, max: 100)
- * - sort: "subs_per_1k" | "views" | "playlist_adds" | "engaged_rate" (default: "subs_per_1k")
+ * - limit: number (default: 200, max: 200)
+ * - sort: "subs_gained" | "views" | "newest" | "engaged_rate" (default: "subs_gained")
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -40,7 +39,7 @@ const ParamsSchema = z.object({
 });
 
 const QuerySchema = z.object({
-  limit: z.coerce.number().min(1).max(100).default(30),
+  limit: z.coerce.number().min(1).max(200).default(200),
   sort: z
     .enum(["subs_gained", "views", "newest", "engaged_rate"])
     .default("subs_gained"),
@@ -87,7 +86,7 @@ async function GETHandler(
     // Parse query params
     const url = new URL(req.url);
     const queryResult = QuerySchema.safeParse({
-      limit: url.searchParams.get("limit") ?? "30",
+      limit: url.searchParams.get("limit") ?? "200",
       sort: url.searchParams.get("sort") ?? "subs_gained",
     });
 

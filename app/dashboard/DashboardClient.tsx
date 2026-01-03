@@ -10,18 +10,30 @@ import { Me, Channel } from "@/types/api";
 import ChannelsSection from "@/components/dashboard/ChannelSection";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
 import ChannelGoals from "@/components/dashboard/ChannelGoals";
+import VideoToolbar from "@/components/dashboard/VideoToolbar";
+import { ProfileCard } from "@/components/channel-profile";
+import { useChannelProfile } from "@/lib/hooks/use-channel-profile";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 import { formatCompact } from "@/lib/format";
+import {
+  DashboardVideo,
+  VideoWithMetrics,
+  SortKey,
+  VideoFilters,
+  DEFAULT_FILTERS,
+  enhanceVideosWithMetrics,
+  applyFilters,
+  sortVideos,
+  loadVideoToolsState,
+  saveVideoToolsState,
+  formatContextMetric,
+  formatDurationBadge,
+} from "@/lib/video-tools";
 
-type Video = {
-  id: number;
-  videoId?: string;
+type Video = DashboardVideo & {
+  id?: number;
   youtubeVideoId?: string;
-  title: string | null;
-  thumbnailUrl: string | null;
-  publishedAt: string | null;
   viewCount?: number | null;
-  views?: number | null;
   retention?: {
     hasData: boolean;
     cliffTimestamp?: string;
@@ -73,6 +85,10 @@ export default function DashboardClient({
     setActiveChannelId(next);
   }, [urlChannelId, initialActiveChannelId]);
 
+  // Channel profile hook
+  const { profile: channelProfile, loading: profileLoading } =
+    useChannelProfile(activeChannelId);
+
   // Video loading state
   const [videos, setVideos] = useState<Video[]>([]);
   const [videosLoading, setVideosLoading] = useState(false);
@@ -85,6 +101,10 @@ export default function DashboardClient({
   // Background sync state - when channel data is stale (>24h), a sync runs in background
   const [syncing, setSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+
+  // Video Tools state (sorting, filtering)
+  const [sortKey, setSortKey] = useState<SortKey>("newest");
+  const [filters, setFilters] = useState<VideoFilters>(DEFAULT_FILTERS);
 
   // Page size divisible by 6 for even grid layouts
   const PAGE_SIZE = 24;
@@ -108,6 +128,51 @@ export default function DashboardClient({
   const isSubscribed = useMemo(() => {
     return me.subscription?.isActive ?? false;
   }, [me]);
+
+  // Convert videos to DashboardVideo format and enhance with computed metrics
+  const dashboardVideos = useMemo((): DashboardVideo[] => {
+    return videos.map((v) => ({
+      videoId: v.videoId || v.youtubeVideoId || `video-${v.id}`,
+      title: v.title,
+      thumbnailUrl: v.thumbnailUrl,
+      durationSec: v.durationSec ?? null,
+      publishedAt: v.publishedAt,
+      views: v.views ?? v.viewCount ?? 0,
+      likes: v.likes ?? 0,
+      comments: v.comments ?? 0,
+      avgViewDuration: v.avgViewDuration,
+      avgViewPercentage: v.avgViewPercentage,
+      subscribersGained: v.subscribersGained,
+      subscribersLost: v.subscribersLost,
+      estimatedMinutesWatched: v.estimatedMinutesWatched,
+      shares: v.shares,
+    }));
+  }, [videos]);
+
+  // Enhance videos with computed metrics
+  const videosWithMetrics = useMemo((): VideoWithMetrics[] => {
+    return enhanceVideosWithMetrics(dashboardVideos);
+  }, [dashboardVideos]);
+
+  // Apply filters and sorting
+  const filteredAndSortedVideos = useMemo((): VideoWithMetrics[] => {
+    const filtered = applyFilters(videosWithMetrics, filters);
+    return sortVideos(filtered, sortKey);
+  }, [videosWithMetrics, filters, sortKey]);
+
+  // Handlers for VideoToolbar
+  const handleSortChange = useCallback((key: SortKey) => {
+    setSortKey(key);
+  }, []);
+
+  const handleFiltersChange = useCallback((newFilters: VideoFilters) => {
+    setFilters(newFilters);
+  }, []);
+
+  const handleResetFilters = useCallback(() => {
+    setFilters(DEFAULT_FILTERS);
+    setSortKey("newest");
+  }, []);
 
   // Handle checkout success/cancel from URL
   useEffect(() => {
@@ -276,6 +341,26 @@ export default function DashboardClient({
       // Silently ignore errors - this is just a pre-warm optimization
     });
   }, [activeChannelId, loadVideos]);
+
+  // Load saved video tools state when channel changes
+  useEffect(() => {
+    if (!activeChannelId) return;
+    const savedState = loadVideoToolsState(activeChannelId);
+    if (savedState) {
+      setSortKey(savedState.sortKey);
+      setFilters(savedState.filters);
+    } else {
+      // Reset to defaults for new channel
+      setSortKey("newest");
+      setFilters(DEFAULT_FILTERS);
+    }
+  }, [activeChannelId]);
+
+  // Save video tools state when it changes
+  useEffect(() => {
+    if (!activeChannelId) return;
+    saveVideoToolsState(activeChannelId, { sortKey, filters });
+  }, [activeChannelId, sortKey, filters]);
 
   // Auto-reload videos when background sync completes
   // Poll every 10 seconds while syncing, then stop once sync is done
@@ -475,12 +560,22 @@ export default function DashboardClient({
           </section>
         )}
 
+        {/* Channel Profile Card */}
+        {activeChannel && (
+          <ProfileCard
+            profile={channelProfile}
+            channelId={activeChannelId}
+            loading={profileLoading}
+          />
+        )}
+
         {/* Channel Goals/Milestones */}
         {activeChannel && videos.length > 0 && (
           <ChannelGoals
             videos={videos}
             channelTitle={activeChannel.title ?? undefined}
             totalVideoCount={activeChannel.totalVideoCount}
+            subscriberCount={activeChannel.subscriberCount}
           />
         )}
 
@@ -501,15 +596,52 @@ export default function DashboardClient({
               </div>
             ) : videos.length > 0 ? (
               <>
-                <div className={s.videoList}>
-                  {videos.map((video) => (
-                    <VideoCard
-                      key={getVideoId(video)}
-                      video={video}
-                      channelId={activeChannelId}
-                    />
-                  ))}
-                </div>
+                {/* Video Tools Bar */}
+                <VideoToolbar
+                  videos={dashboardVideos}
+                  filteredVideos={filteredAndSortedVideos}
+                  sortKey={sortKey}
+                  filters={filters}
+                  onSortChange={handleSortChange}
+                  onFiltersChange={handleFiltersChange}
+                  onReset={handleResetFilters}
+                />
+
+                {/* Video List */}
+                {filteredAndSortedVideos.length > 0 ? (
+                  <div className={s.videoList}>
+                    {filteredAndSortedVideos.map((video) => (
+                      <VideoCard
+                        key={video.videoId}
+                        video={video}
+                        channelId={activeChannelId}
+                        sortKey={sortKey}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className={s.emptyFiltered}>
+                    <svg
+                      width="40"
+                      height="40"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="M21 21l-4.35-4.35" />
+                    </svg>
+                    <p>No videos match these filters</p>
+                    <button
+                      className={s.resetBtn}
+                      onClick={handleResetFilters}
+                    >
+                      Reset filters
+                    </button>
+                  </div>
+                )}
+
                 {/* Load More Button */}
                 {pagination?.hasMore && (
                   <div className={s.loadMoreWrap}>
@@ -600,16 +732,17 @@ export default function DashboardClient({
   );
 }
 
-/* ---------- Helper to get video ID ---------- */
-function getVideoId(video: Video): string {
-  return video.videoId || video.youtubeVideoId || `video-${video.id}`;
-}
-
 /* ---------- Video Card Component ---------- */
-function VideoCard({ video, channelId }: { video: Video; channelId: string | null }) {
-  const videoId = getVideoId(video);
-  const hasDropOff = video.retention?.hasData && video.retention.cliffTimestamp;
-  const viewCount = video.views ?? video.viewCount;
+function VideoCard({
+  video,
+  channelId,
+  sortKey,
+}: {
+  video: VideoWithMetrics;
+  channelId: string | null;
+  sortKey: SortKey;
+}) {
+  const videoId = video.videoId;
 
   if (!videoId || videoId.startsWith("video-")) {
     console.error("Video missing videoId:", video);
@@ -621,6 +754,10 @@ function VideoCard({ video, channelId }: { video: Video; channelId: string | nul
         ? `/video/${videoId}?channelId=${encodeURIComponent(channelId)}`
         : `/video/${videoId}`
       : "#";
+
+  // Get context metric based on current sort
+  const contextMetric = formatContextMetric(video, sortKey);
+  const durationBadge = formatDurationBadge(video.durationSec);
 
   return (
     <Link
@@ -656,18 +793,19 @@ function VideoCard({ video, channelId }: { video: Video; channelId: string | nul
             </svg>
           </div>
         )}
-        {hasDropOff && (
-          <span className={s.dropOffBadge}>
-            Drop @ {video.retention!.cliffTimestamp}
-          </span>
+        {/* Duration badge */}
+        {durationBadge && (
+          <span className={s.durationBadge}>{durationBadge}</span>
         )}
       </div>
       <div className={s.videoCardContent}>
         <h3 className={s.videoCardTitle}>{video.title ?? "Untitled"}</h3>
         <div className={s.videoCardMeta}>
           {video.publishedAt && <span>{formatDate(video.publishedAt)}</span>}
-          {viewCount != null && (
-            <span>{formatCompactMaybe(viewCount)} views</span>
+          <span>{formatCompactMaybe(video.views)} views</span>
+          {/* Context metric based on sort */}
+          {contextMetric && (
+            <span className={s.contextMetric}>{contextMetric}</span>
           )}
         </div>
       </div>
