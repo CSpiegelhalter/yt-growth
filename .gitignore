@@ -143,3 +143,6 @@ test-results/
 playwright-report/
 playwright/.cache/
 blob-report/
+
+# Thumbnails
+./storage/*

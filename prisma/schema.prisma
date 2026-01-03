@@ -469,3 +469,55 @@ model UserBadge {
   @@index([channelId], map: "idx_user_badge_channel")
   @@index([unlockedAt(sort: Desc)], map: "idx_user_badge_unlocked")
 }
+
+// ============================================
+// THUMBNAIL GENERATOR - Jobs, Assets, Variants
+// ============================================
+
+model ThumbnailJob {
+  id        String             @id @default(uuid()) @db.Uuid
+  userId    Int
+  channelId Int? // Optional: which channel this is for
+  inputJson String             @db.Text // ThumbnailJobInput (title, topic, audience, style, etc.)
+  status    String             @default("queued") @db.VarChar(32) // queued, planning, generating, rendering, completed, failed
+  progress  Int                @default(0) // 0-100
+  phase     String?            @db.VarChar(64) // Current phase description
+  error     String?            @db.Text // Error message if failed
+  createdAt DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
+  Variants  ThumbnailVariant[]
+
+  @@index([userId], map: "idx_thumbnail_job_user")
+  @@index([channelId], map: "idx_thumbnail_job_channel")
+  @@index([status], map: "idx_thumbnail_job_status")
+  @@index([createdAt(sort: Desc)], map: "idx_thumbnail_job_created")
+}
+
+model ThumbnailAsset {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     Int
+  mime       String   @db.VarChar(64) // image/png, image/jpeg, image/webp
+  width      Int?
+  height     Int?
+  sizeBytes  Int?
+  storageKey String   @db.VarChar(512) // Storage key/path
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([userId], map: "idx_thumbnail_asset_user")
+  @@index([createdAt(sort: Desc)], map: "idx_thumbnail_asset_created")
+}
+
+model ThumbnailVariant {
+  id            String       @id @default(uuid()) @db.Uuid
+  jobId         String       @db.Uuid
+  planJson      String       @db.Text // ThumbnailPlan from LLM
+  specJson      String       @db.Text // ThumbnailSpec (plan + current edits)
+  baseImageKey  String?      @db.VarChar(512) // Storage key for base image
+  finalImageKey String?      @db.VarChar(512) // Storage key for final rendered image
+  createdAt     DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  Job           ThumbnailJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId], map: "idx_thumbnail_variant_job")
+  @@index([createdAt(sort: Desc)], map: "idx_thumbnail_variant_created")
+}

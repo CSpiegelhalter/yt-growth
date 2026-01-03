@@ -28,7 +28,8 @@ export type NavIconType =
   | "mail"
   | "logout"
   | "home"
-  | "channel";
+  | "channel"
+  | "image";
 
 /**
  * Primary navigation items - shown prominently in sidebar/top nav
@@ -72,6 +73,14 @@ export const primaryNavItems: NavItem[] = [
     match: (pathname) =>
       pathname === "/competitors" || pathname.startsWith("/competitors/"),
   },
+  // TODO: Add thumbnails back in when we have a way to generate them
+  // {
+  //   id: "thumbnails",
+  //   label: "Thumbnails",
+  //   href: "/thumbnails",
+  //   icon: "image",
+  //   channelScoped: false,
+  // },
   {
     id: "tag-generator",
     label: "Tags",

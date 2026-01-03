@@ -464,6 +464,97 @@ This topic combines your proven productivity niche with specific, curiosity-driv
 
 ---
 
+## 🎬 Recording for Google Verification
+
+When submitting your app for Google OAuth verification, you need to record a demo video showing:
+1. The OAuth consent screen on your **production domain**
+2. The permissions being requested
+3. The user granting access
+
+### The Challenge
+
+Google only shows the full consent screen when:
+- It's the first time a user authorizes your app, OR
+- The user has revoked access and is re-authorizing
+
+For normal users, we use `prompt=select_account` to avoid unnecessary consent prompts. But for verification recordings, we need to force the consent screen.
+
+### Solution: Verification Login
+
+This app includes a "Verification Login" flow that forces Google's consent screen for demo recordings without affecting normal users.
+
+### Setup (One-time)
+
+Add the verification callback URL to your Google Cloud Console:
+
+1. Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials)
+2. Edit your OAuth 2.0 Client ID
+3. Under "Authorized redirect URIs", add:
+   - `http://localhost:3000/auth/verify/callback` (development)
+   - `https://your-production-domain.com/auth/verify/callback` (production)
+4. Save
+
+### How to Use
+
+#### Step 1: Prepare
+
+1. **Open an Incognito/Private browser window** (ensures clean state)
+2. **Revoke previous access** (if any): Go to [myaccount.google.com/permissions](https://myaccount.google.com/permissions), find this app, and remove access
+
+#### Step 2: Access Verification Login
+
+**Option A: Via Query Parameter (recommended for ad-hoc use)**
+```
+https://your-domain.com/auth/login?verify=1
+```
+
+**Option B: In Development**
+The "Verification Login" button appears automatically on `/auth/login` and `/auth/signup` in development mode.
+
+**Option C: Enable in Production**
+Set in your environment:
+```bash
+NEXT_PUBLIC_ENABLE_OAUTH_VERIFY_BUTTON="true"
+```
+
+#### Step 3: Record
+
+1. Start screen recording
+2. Click the **"Verification Login"** button (appears below Google sign-in)
+3. Google will show the full consent screen with all scopes
+4. Grant permission
+5. You'll be redirected to the dashboard
+6. Stop recording
+
+### Technical Details
+
+The Verification Login flow:
+- Uses a custom OAuth flow at `/auth/verify` with `prompt=consent`
+- **Requests ALL scopes** (including YouTube API) to show the full permission screen
+- Custom callback handler at `/auth/verify/callback`
+- CSRF protection via state parameter stored in httpOnly cookie
+- Creates NextAuth-compatible session after successful auth
+- Stores YouTube API tokens for immediate use after login
+
+### Scopes Requested in Verification Flow
+
+The verification flow requests these scopes to show the detailed consent screen:
+- `openid` - Basic authentication
+- `email` - Email address
+- `profile` - Name and profile picture
+- `youtube.readonly` - View YouTube account
+- `youtube.force-ssl` - Manage YouTube account
+- `yt-analytics.readonly` - View YouTube Analytics reports
+
+### Security Notes
+
+- Uses same Google OAuth credentials as main flow
+- State parameter provides CSRF protection
+- No tokens or codes are logged (only metadata)
+- Normal users are never affected (separate flow)
+
+---
+
 ## 🐛 Troubleshooting
 
 ### Database connection fails

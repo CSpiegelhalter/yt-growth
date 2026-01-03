@@ -4,7 +4,9 @@
  * Returns the list of videos for a channel.
  * This is FREE for all users - no subscription required.
  *
- * Auto-syncs channel data if stale (>24h since last sync) - runs in background.
+ * Auto-syncs channel data if stale (>24h since last sync).
+ * Sync runs synchronously (blocks until complete) to work properly in serverless.
+ * Client shows loading skeletons while waiting for response.
  *
  * Auth: Required
  * Subscription: NOT required
@@ -22,8 +24,11 @@ import {
 import { getGoogleAccount, fetchChannelVideos } from "@/lib/youtube-api";
 import { ensureMockChannelSeeded } from "@/lib/mock-seed";
 
-// 24 hours in milliseconds - data older than this triggers a background sync
-const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
+// 12 hours in milliseconds - data older than this triggers a sync
+const STALE_THRESHOLD_MS = 12 * 60 * 60 * 1000;
+
+// 5 minutes - if a sync has been "running" longer than this, consider it stuck
+const SYNC_TIMEOUT_MS = 5 * 60 * 1000;
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -36,20 +41,20 @@ const DEFAULT_PAGE_SIZE = 24;
 const SYNC_VIDEO_COUNT = 96;
 
 /**
- * Trigger a background sync for a channel.
- * Fire-and-forget - doesn't block the response.
+ * Sync channel videos from YouTube.
+ * Runs synchronously - blocks until complete so serverless functions don't terminate early.
  */
-async function triggerBackgroundSync(
+async function syncChannelVideos(
   userId: number,
   youtubeChannelId: string,
   channelDbId: number
-): Promise<void> {
+): Promise<{ success: boolean; videosCount: number }> {
   const ga = await getGoogleAccount(userId, youtubeChannelId);
   if (!ga) {
     console.warn(
-      `[videos] No Google account for background sync: ${youtubeChannelId}`
+      `[videos] No Google account for sync: ${youtubeChannelId}`
     );
-    return;
+    return { success: false, videosCount: 0 };
   }
 
   // Mark channel as syncing
@@ -130,11 +135,12 @@ async function triggerBackgroundSync(
     });
 
     console.log(
-      `[videos] Background sync completed for ${youtubeChannelId}: ${videos.length} videos`
+      `[videos] Sync completed for ${youtubeChannelId}: ${videos.length} videos`
     );
+    return { success: true, videosCount: videos.length };
   } catch (err: any) {
     console.error(
-      `[videos] Background sync error for ${youtubeChannelId}:`,
+      `[videos] Sync error for ${youtubeChannelId}:`,
       err
     );
     await prisma.channel.update({
@@ -144,6 +150,7 @@ async function triggerBackgroundSync(
         syncError: err.message,
       },
     });
+    return { success: false, videosCount: 0 };
   }
 }
 
@@ -307,22 +314,68 @@ async function GETHandler(
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    // Check if data is stale (>24h) and trigger background sync if needed
-    // This is fire-and-forget - we return cached data immediately
-    let syncing = false;
+    // Check if data is stale (>24h) or sync is stuck and needs to be re-run
     const now = Date.now();
     const lastSyncTime = channel.lastSyncedAt?.getTime() ?? 0;
     const isStale = now - lastSyncTime > STALE_THRESHOLD_MS;
     const isSyncRunning = channel.syncStatus === "running";
+    
+    // Detect stuck sync: if status is "running" but lastSyncedAt is very old
+    // (sync should have updated lastSyncedAt when it completed successfully)
+    // If it's been "running" for more than 5 minutes without completing, it's stuck
+    const isSyncStuck = isSyncRunning && (now - lastSyncTime > SYNC_TIMEOUT_MS);
 
-    if (isStale && !isSyncRunning) {
-      syncing = true;
-      // Trigger background sync - don't await, fire-and-forget
-      triggerBackgroundSync(user.id, channelId, channel.id).catch((err) => {
-        console.error(`[videos] Background sync failed for ${channelId}:`, err);
+    // Run sync synchronously if needed - this blocks until complete
+    // so we can return fresh data. The client shows loading skeletons while waiting.
+    if (isStale || isSyncStuck) {
+      if (isSyncStuck) {
+        console.log(`[videos] Sync stuck for ${channelId} (running for ${Math.round((now - lastSyncTime) / 60000)}min), restarting...`);
+      }
+      
+      // Run sync and wait for it to complete
+      await syncChannelVideos(user.id, channelId, channel.id);
+      
+      // Re-query channel with fresh video data
+      channel = await prisma.channel.findFirst({
+        where: {
+          youtubeChannelId: channelId,
+          userId: user.id,
+        },
+        include: {
+          Video: {
+            where: {
+              OR: [
+                { privacyStatus: "public" },
+                { privacyStatus: null },
+              ],
+            },
+            orderBy: { publishedAt: "desc" },
+            skip: offset,
+            take: limit,
+            select: {
+              id: true,
+              youtubeVideoId: true,
+              title: true,
+              thumbnailUrl: true,
+              durationSec: true,
+              publishedAt: true,
+            },
+          },
+          _count: {
+            select: {
+              Video: {
+                where: {
+                  OR: [{ privacyStatus: "public" }, { privacyStatus: null }],
+                },
+              },
+            },
+          },
+        },
       });
-    } else if (isSyncRunning) {
-      syncing = true;
+      
+      if (!channel) {
+        return Response.json({ error: "Channel not found after sync" }, { status: 404 });
+      }
     }
 
     // Get total count for pagination
@@ -368,8 +421,8 @@ async function GETHandler(
         total: totalSynced,
         hasMore: offset + limit < totalSynced,
       },
-      // Indicate if a background sync is in progress
-      syncing,
+      // Sync always completes before response (no longer fire-and-forget)
+      syncing: false,
       lastSyncedAt: channel.lastSyncedAt?.toISOString() ?? null,
     });
   } catch (err: any) {

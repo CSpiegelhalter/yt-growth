@@ -97,6 +97,10 @@ export const RATE_LIMITS = {
   videoRemixes: { limit: 20, windowSec: 3600 },
   // Contact form: 5 per hour per IP
   contactForm: { limit: 5, windowSec: 3600 },
+  // Thumbnail job creation: 10 per 10 min per user
+  thumbnailJob: { limit: 10, windowSec: 600 },
+  // Thumbnail regenerate base: 5 per 10 min per user
+  thumbnailRegenerate: { limit: 5, windowSec: 600 },
 } as const;
 
 /**

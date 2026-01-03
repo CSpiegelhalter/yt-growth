@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import s from "./style.module.css";
@@ -14,8 +14,18 @@ export default function LoginForm() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const sp = useSearchParams();
+  const router = useRouter();
 
   const showSignupSuccess = sp.get("signup") === "1";
+
+  // Show verification login button when:
+  // 1. In development mode (for local testing), OR
+  // 2. NEXT_PUBLIC_ENABLE_OAUTH_VERIFY_BUTTON env var is "true", OR
+  // 3. URL has ?verify=1 query param (for ad-hoc verification demos)
+  const showVerifyButton =
+    process.env.NODE_ENV === "development" ||
+    process.env.NEXT_PUBLIC_ENABLE_OAUTH_VERIFY_BUTTON === "true" ||
+    sp.get("verify") === "1";
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -59,6 +69,17 @@ export default function LoginForm() {
   async function handleGoogleSignIn() {
     setLoading(true);
     await signIn("google", { callbackUrl: "/dashboard" });
+  }
+
+  /**
+   * Verification Login - forces Google consent screen for demo recordings.
+   * Used when recording for Google OAuth verification process.
+   */
+  function handleVerificationLogin() {
+    setLoading(true);
+    const callbackUrl = sp.get("callbackUrl") || "/dashboard";
+    // Full page navigation to hit the API route (not client-side routing)
+    window.location.href = `/auth/verify?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   }
 
   return (
@@ -170,6 +191,37 @@ export default function LoginForm() {
           </svg>
           Continue with Google
         </button>
+
+        {/* Verification Login - only shown when enabled for demo recordings */}
+        {showVerifyButton && (
+          <div className={s.verifySection}>
+            <button
+              type="button"
+              onClick={handleVerificationLogin}
+              disabled={loading}
+              className={s.verifyBtn}
+            >
+              <svg
+                className={s.verifyIcon}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
+              </svg>
+              Verification Login
+            </button>
+            <p className={s.verifyHint}>
+              Use for Google verification recordings. Forces consent screen.
+            </p>
+          </div>
+        )}
 
         {/* Footer */}
         <p className={s.footer}>
