@@ -79,7 +79,9 @@ export default function LoginForm() {
     setLoading(true);
     const callbackUrl = sp.get("callbackUrl") || "/dashboard";
     // Full page navigation to hit the API route (not client-side routing)
-    window.location.href = `/auth/verify?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+    window.location.href = `/auth/verify?callbackUrl=${encodeURIComponent(
+      callbackUrl
+    )}`;
   }
 
   return (

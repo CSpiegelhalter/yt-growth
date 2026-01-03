@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import SignupForm from "./SignupForm";
 import { BRAND } from "@/lib/brand";
 
@@ -12,5 +13,9 @@ export const metadata: Metadata = {
  * SignupPage - Server component wrapper for SEO metadata
  */
 export default function SignupPage() {
-  return <SignupForm />;
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
+  );
 }
