@@ -4,17 +4,19 @@ import { LEARN_ARTICLES } from "./learn/articles";
 
 /**
  * Generate sitemap.xml for SEO
- * Only include public, indexable pages
  *
- * Note: lastModified uses stable dates for learn articles
- * to avoid constant sitemap churn. Learn articles are automatically
- * included from LEARN_ARTICLES source of truth.
+ * Only includes public, indexable pages that are NOT blocked by robots.txt.
+ * Excludes:
+ * - /auth/* (noindex, disallowed in robots.txt)
+ * - /api/* (not pages)
+ * - All logged-in app routes (dashboard, profile, ideas, etc.)
+ *
+ * URLs use consistent format: no trailing slash for pages.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${BRAND.domain}`;
 
   // Learn article entries with stable dates from articles.ts
-  // All Learn pages are automatically included via LEARN_ARTICLES
   const learnArticleEntries = Object.values(LEARN_ARTICLES).map((article) => ({
     url: `${baseUrl}/learn/${article.slug}`,
     lastModified: new Date(article.dateModified),
@@ -39,19 +41,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     // Learn articles
     ...learnArticleEntries,
-    // Auth pages (public, but lower priority)
-    {
-      url: `${baseUrl}/auth/login`,
-      lastModified: new Date("2025-01-01"),
-      changeFrequency: "yearly",
-      priority: 0.4,
-    },
-    {
-      url: `${baseUrl}/auth/signup`,
-      lastModified: new Date("2025-01-01"),
-      changeFrequency: "yearly",
-      priority: 0.5,
-    },
     // Contact page
     {
       url: `${baseUrl}/contact`,

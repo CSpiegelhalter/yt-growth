@@ -3,8 +3,14 @@ import { BRAND } from "@/lib/brand";
 
 /**
  * Generate robots.txt for SEO
- * - Allow crawling of marketing/public pages and Learn section
- * - Disallow auth, api, private app pages, and internal routes
+ *
+ * By default all paths are allowed. We only specify Disallow rules
+ * for routes that should not be crawled:
+ * - /api/ - API endpoints
+ * - /auth/ - Login, signup, password reset flows
+ * - All logged-in app routes (dashboard, profile, ideas, etc.)
+ *
+ * Note: All disallowed routes also have noindex metadata as a defense-in-depth.
  */
 export default function robots(): MetadataRoute.Robots {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${BRAND.domain}`;
@@ -13,26 +19,23 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/learn/", "/contact", "/terms", "/privacy"],
         disallow: [
           // API routes
           "/api/",
-          // Auth flows
+          // Auth flows (noindex set on pages)
           "/auth/",
-          // Private app pages (require login)
-          "/dashboard",
+          // Private app pages (require login, noindex set on pages)
           "/dashboard/",
-          "/profile",
           "/profile/",
-          "/ideas",
           "/ideas/",
-          "/subscriber-insights",
+          "/goals/",
           "/subscriber-insights/",
-          "/competitors",
           "/competitors/",
-          "/saved-ideas",
           "/saved-ideas/",
           "/video/",
+          "/thumbnails/",
+          "/channel-profile/",
+          "/tag-generator/",
           // Admin routes
           "/admin/",
           // Internal integrations

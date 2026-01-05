@@ -11,6 +11,7 @@ import ThumbnailsClient from "./ThumbnailsClient";
 export const metadata = {
   title: "Thumbnail Generator | ChannelBoost",
   description: "Generate eye-catching YouTube thumbnails with AI",
+  robots: { index: false, follow: false },
 };
 
 export default async function ThumbnailsPage() {
