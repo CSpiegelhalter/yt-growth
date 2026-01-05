@@ -14,32 +14,73 @@ export default function PrivacyPage() {
     <main className={s.container}>
       <div className={s.content}>
         <h1 className={s.title}>Privacy Policy</h1>
-        <p className={s.updated}>Last updated: December 31, 2025</p>
+        <p className={s.updated}>Last updated: January 5, 2026</p>
 
         <section className={s.section}>
-          <h2>1. Information We Collect</h2>
-          <p>
-            When you use {BRAND.name}, we collect information you provide
-            directly to us, including:
-          </p>
+          <h2>Quick Summary</h2>
           <ul>
-            <li>Account information (email address, name)</li>
             <li>
-              YouTube channel data you authorize us to access (see Section 3 for
-              details)
+              {BRAND.name} helps you understand your YouTube channel performance
+              and generate user-facing insights and recommendations.
             </li>
-            <li>Usage data and preferences within our platform</li>
+            <li>
+              We use Google/YouTube APIs with your permission and access your
+              data <strong>read-only</strong>.
+            </li>
+            <li>
+              We may use a third-party AI service to generate insights. We send
+              only the minimum data needed for the feature you request.
+            </li>
+            <li>
+              We do not sell your data and do not use Google/YouTube user data
+              for advertising.
+            </li>
           </ul>
         </section>
 
         <section className={s.section}>
-          <h2>2. How We Use Your Information</h2>
-          <p>We use the information we collect to:</p>
+          <h2>1. Information We Collect</h2>
+          <p>When you use {BRAND.name}, we collect:</p>
           <ul>
-            <li>Provide, maintain, and improve our services</li>
-            <li>Analyze your YouTube channel performance</li>
-            <li>Generate personalized video ideas and insights</li>
-            <li>Send you technical notices and support messages</li>
+            <li>
+              <strong>Account information</strong> (e.g., email address, name),
+              provided by you or your sign-in provider.
+            </li>
+            <li>
+              <strong>OAuth tokens</strong> (access/refresh tokens) needed to
+              connect to YouTube API Services on your behalf.
+            </li>
+            <li>
+              <strong>YouTube data you authorize us to access</strong> (details
+              in Section 3).
+            </li>
+            <li>
+              <strong>App usage and preferences</strong> (e.g., feature usage,
+              settings, saved preferences).
+            </li>
+            <li>
+              <strong>Security/diagnostic data</strong> (e.g., logs related to
+              abuse prevention, debugging, and reliability).
+            </li>
+          </ul>
+          <p>
+            We do <strong>not</strong> collect your Google password.
+            Authentication happens via Google’s OAuth flow.
+          </p>
+        </section>
+
+        <section className={s.section}>
+          <h2>2. How We Use Your Information</h2>
+          <p>We use your information to:</p>
+          <ul>
+            <li>Provide, maintain, and improve {BRAND.name}</li>
+            <li>Display your channel and video analytics in your dashboard</li>
+            <li>
+              Generate user-facing insights and recommendations you request (for
+              example: summaries, performance diagnostics, video ideas)
+            </li>
+            <li>Provide customer support and respond to requests</li>
+            <li>Protect the security and integrity of our service</li>
           </ul>
         </section>
 
@@ -68,94 +109,99 @@ export default function PrivacyPage() {
             .
           </p>
 
-          <h3>3.1 What YouTube Data We Access</h3>
-          <p>When you connect your YouTube account, we request access to:</p>
+          <h3>3.1 Read-Only Access</h3>
+          <p>
+            Our access to YouTube data is <strong>read-only</strong>. We do not:
+          </p>
+          <ul>
+            <li>Upload videos</li>
+            <li>Edit video details</li>
+            <li>Delete videos</li>
+            <li>Post or delete comments</li>
+            <li>Manage your channel settings</li>
+          </ul>
+
+          <h3>3.2 What YouTube Data We Access</h3>
+          <p>When you connect your YouTube account, we may access:</p>
           <ul>
             <li>
-              <strong>YouTube channel information</strong> – Your channel ID,
-              name, and associated playlists (read-only)
+              <strong>Channel information</strong> – Channel ID, name, and
+              related read-only identifiers
             </li>
             <li>
               <strong>Video metadata</strong> – Titles, descriptions, tags,
-              thumbnails, and publish dates for your videos (read-only)
+              thumbnails, and publish dates (read-only)
             </li>
             <li>
-              <strong>YouTube Analytics</strong> – Views, watch time, retention
-              data, subscriber counts, and engagement metrics for your channel
-              and videos (read-only)
+              <strong>YouTube Analytics</strong> – Views, watch time, retention,
+              subscriber counts, and engagement metrics for your channel/videos
+              (read-only)
             </li>
             <li>
-              <strong>Comments data</strong> – Access to comments on your videos
-              for analysis purposes (read-only via secure endpoint)
+              <strong>Comments</strong> – Comments text on your videos for
+              analysis features you request (read-only)
             </li>
           </ul>
 
-          <h3>3.2 How We Use YouTube Data</h3>
-          <p>We use the YouTube data we access solely to:</p>
-          <ul>
-            <li>
-              Display your channel and video analytics within the {BRAND.name}{" "}
-              dashboard
-            </li>
-            <li>
-              Analyze retention patterns and identify drop-off points in your
-              videos
-            </li>
-            <li>Identify which videos are driving subscriber growth</li>
-            <li>
-              Generate AI-powered video ideas and content recommendations based
-              on your performance data
-            </li>
-            <li>
-              Compare your channel metrics to help you understand your content
-              performance
-            </li>
-          </ul>
-
-          <h3>3.3 How We Store YouTube Data</h3>
+          <h3>3.3 How We Use YouTube Data</h3>
           <p>
-            Your YouTube data is stored securely in our database with the
-            following protections:
+            We use YouTube data only to provide user-facing features, such as:
           </p>
           <ul>
-            <li>OAuth refresh tokens are encrypted at rest</li>
-            <li>All data is transmitted over HTTPS/TLS encryption</li>
-            <li>Access to data is restricted to authenticated users only</li>
+            <li>Showing your analytics in the {BRAND.name} dashboard</li>
             <li>
-              We store video metadata and analytics snapshots to provide
-              historical insights and reduce API calls
+              Identifying patterns (e.g., retention drop-offs, high performers)
+            </li>
+            <li>
+              Generating recommendations and ideas based on your performance
+              data
+            </li>
+            <li>Helping you compare performance across your own content</li>
+          </ul>
+
+          <h3>3.4 How We Store YouTube Data</h3>
+          <p>We follow a data-minimization approach. In general:</p>
+          <ul>
+            <li>
+              <strong>OAuth tokens</strong> are encrypted at rest and used only
+              to access YouTube API data on your behalf.
+            </li>
+            <li>
+              <strong>Raw YouTube API responses</strong> (e.g., video details,
+              analytics responses, comment text) may be cached to improve
+              performance and reduce API calls. Our standard cache window is
+              approximately <strong>12 hours</strong> before refresh.
+            </li>
+            <li>
+              We may store <strong>derived outputs</strong> you see in the app
+              (for example: your generated insights, recommendations, or summary
+              artifacts) so you can view them again, unless you delete them.
             </li>
           </ul>
 
-          <h3>3.4 Data Sharing</h3>
+          <h3>3.5 Data Sharing</h3>
           <p>
-            <strong>
-              We do not sell, rent, or share your YouTube data with third
-              parties
-            </strong>{" "}
-            except in the following limited circumstances:
+            <strong>We do not sell or rent your data.</strong> We also do not
+            share your YouTube data with third parties except:
           </p>
           <ul>
             <li>With your explicit consent</li>
-            <li>
-              To comply with legal obligations or respond to lawful requests
-              from public authorities
-            </li>
+            <li>To comply with legal obligations or lawful requests</li>
             <li>
               To protect the rights, property, or safety of {BRAND.name}, our
               users, or the public
             </li>
             <li>
-              With trusted service providers who process data on our behalf to
-              operate and provide features in {BRAND.name} (for example,
-              generating AI-powered insights), under contractual confidentiality
-              and security obligations
+              With vetted service providers who process data on our behalf to
+              run
+              {BRAND.name} features (for example, AI insight generation), under
+              confidentiality and security obligations
             </li>
           </ul>
 
-          <h3>3.5 Google Limited Use Disclosure</h3>
+          <h3>3.6 Google Limited Use Disclosure</h3>
           <p>
-            {BRAND.name}'s use and transfer to any other app of information
+            {BRAND.name}&apos;s use and transfer to any other app of information
             received from Google APIs will adhere to{" "}
             <a
               href="https://developers.google.com/terms/api-services-user-data-policy#additional_requirements_for_specific_api_scopes"
@@ -168,31 +214,33 @@ export default function PrivacyPage() {
             , including the Limited Use requirements.
           </p>
 
-          <h3>3.6 AI Processing</h3>
+          <h3>3.7 AI Processing (User-Facing Features)</h3>
           <p>
-            {BRAND.name} may use AI services to generate user-facing insights
-            such as summaries, comment sentiment/themes, and content
-            recommendations.
+            {BRAND.name} may use third-party AI services (for example, OpenAI’s
+            API) to generate user-facing insights such as summaries, comment
+            theme/sentiment analysis, and content recommendations.
           </p>
           <ul>
             <li>
               <strong>What we send:</strong> Only the minimum information needed
-              to perform the requested feature (for example, video
-              titles/descriptions, selected analytics metrics, and/or comments
-              text for sentiment analysis).
+              for the feature you requested (e.g., specific video
+              titles/descriptions, selected analytics metrics, and/or selected
+              comment text when you use comment analysis).
             </li>
             <li>
-              <strong>Purpose limitation:</strong> This processing is used only
-              to provide the feature the user is using inside {BRAND.name}.
+              <strong>Purpose limitation:</strong> AI processing is used only to
+              provide the in-product feature you are actively using.
             </li>
             <li>
-              <strong>No ads / no selling:</strong> We do not sell
-              Google/YouTube user data or use it for advertising.
+              <strong>No generalized training:</strong> We do not enable
+              optional data-sharing settings with our AI provider that would
+              allow our API inputs/outputs to be used to improve or train
+              general models.
             </li>
             <li>
-              <strong>Service providers:</strong> Any third-party AI processing
-              is performed by trusted providers under confidentiality and
-              security obligations.
+              <strong>No ads / no selling:</strong> We do not use Google/YouTube
+              user data for advertising, and we do not sell Google/YouTube user
+              data.
             </li>
           </ul>
         </section>
@@ -200,38 +248,41 @@ export default function PrivacyPage() {
         <section className={s.section}>
           <h2>4. Data Security</h2>
           <p>
-            We implement appropriate technical and organizational measures to
-            protect your personal information against unauthorized access,
-            alteration, disclosure, or destruction. These measures include:
+            We implement technical and organizational measures designed to
+            protect your information against unauthorized access, alteration,
+            disclosure, or destruction, including:
           </p>
           <ul>
             <li>Encryption of sensitive data at rest and in transit</li>
-            <li>Regular security assessments and monitoring</li>
             <li>Access controls and authentication requirements</li>
             <li>
-              Secure cloud infrastructure with industry-standard protections
+              Monitoring and safeguards to reduce abuse and unauthorized access
             </li>
           </ul>
         </section>
 
         <section className={s.section}>
           <h2>5. Data Retention</h2>
-          <p>
-            We retain your information for as long as your account is active or
-            as needed to provide you services. Specifically:
-          </p>
+          <p>Retention depends on the category of data:</p>
           <ul>
             <li>
-              <strong>Account data</strong> – Retained until you delete your
-              account or request deletion
+              <strong>Account data</strong> – retained until you delete your
+              account or request deletion.
             </li>
             <li>
-              <strong>YouTube analytics data</strong> – Retained while your
-              account is active to provide historical insights
+              <strong>OAuth tokens</strong> – retained until you disconnect
+              YouTube, revoke access, or delete your account.
             </li>
             <li>
-              <strong>OAuth tokens</strong> – Retained until you revoke access
-              or disconnect your YouTube account
+              <strong>Cached YouTube API data</strong> – typically retained for
+              approximately <strong>12 hours</strong> before refresh, unless a
+              longer period is required for security, debugging, or legal
+              compliance.
+            </li>
+            <li>
+              <strong>Saved/derived outputs</strong> (e.g., insight summaries
+              you choose to keep) – retained until you delete them or delete
+              your account.
             </li>
           </ul>
           <p>
@@ -247,14 +298,14 @@ export default function PrivacyPage() {
             <li>Access the personal data we hold about you</li>
             <li>Request correction of inaccurate data</li>
             <li>Request deletion of your data</li>
-            <li>Export your data</li>
+            <li>Export your data (where available)</li>
             <li>Revoke YouTube API access at any time</li>
           </ul>
 
           <h3>How to Revoke YouTube Access</h3>
           <p>
-            You can revoke {BRAND.name}'s access to your YouTube data at any
-            time by:
+            You can revoke {BRAND.name}&apos;s access to your YouTube data at
+            any time by:
           </p>
           <ol>
             <li>
@@ -269,14 +320,15 @@ export default function PrivacyPage() {
               </a>
             </li>
             <li>
-              Finding "{BRAND.name}" in the list of third-party apps with access
+              Finding &quot;{BRAND.name}&quot; in the list of third-party apps
+              with access
             </li>
-            <li>Clicking "Remove Access"</li>
+            <li>Clicking &quot;Remove Access&quot;</li>
           </ol>
           <p>
-            Upon revocation, we will no longer be able to access your YouTube
-            data, though previously stored analytics snapshots will remain in
-            your account until you request deletion.
+            After revocation, we can no longer access new YouTube data. Cached
+            data will expire on its normal schedule (typically ~12 hours) unless
+            you request deletion sooner.
           </p>
         </section>
 
@@ -284,17 +336,16 @@ export default function PrivacyPage() {
           <h2>7. Changes to This Policy</h2>
           <p>
             We may update this Privacy Policy from time to time. We will notify
-            you of any material changes by posting the new Privacy Policy on
-            this page and updating the "Last updated" date. We encourage you to
-            review this Privacy Policy periodically for any changes.
+            you of material changes by posting the updated policy on this page
+            and updating the &quot;Last updated&quot; date.
           </p>
         </section>
 
         <section className={s.section}>
           <h2>8. Contact Us</h2>
           <p>
-            If you have any questions about this Privacy Policy, how we handle
-            your data, or wish to exercise any of your data rights, please{" "}
+            If you have questions about this Privacy Policy or wish to exercise
+            your rights, please{" "}
             <a href="/contact" className={s.link}>
               contact us
             </a>

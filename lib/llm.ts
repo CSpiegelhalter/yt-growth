@@ -84,6 +84,7 @@ export async function callLLM(
       messages: messagesWithDate,
       max_tokens: maxTokens,
       temperature,
+      store: false,
       ...(responseFormat ? { response_format: { type: responseFormat } } : {}),
     }),
   });

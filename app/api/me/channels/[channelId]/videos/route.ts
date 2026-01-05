@@ -51,9 +51,7 @@ async function syncChannelVideos(
 ): Promise<{ success: boolean; videosCount: number }> {
   const ga = await getGoogleAccount(userId, youtubeChannelId);
   if (!ga) {
-    console.warn(
-      `[videos] No Google account for sync: ${youtubeChannelId}`
-    );
+    console.warn(`[videos] No Google account for sync: ${youtubeChannelId}`);
     return { success: false, videosCount: 0 };
   }
 
@@ -139,10 +137,7 @@ async function syncChannelVideos(
     );
     return { success: true, videosCount: videos.length };
   } catch (err: any) {
-    console.error(
-      `[videos] Sync error for ${youtubeChannelId}:`,
-      err
-    );
+    console.error(`[videos] Sync error for ${youtubeChannelId}:`, err);
     await prisma.channel.update({
       where: { id: channelDbId },
       data: {
@@ -319,22 +314,26 @@ async function GETHandler(
     const lastSyncTime = channel.lastSyncedAt?.getTime() ?? 0;
     const isStale = now - lastSyncTime > STALE_THRESHOLD_MS;
     const isSyncRunning = channel.syncStatus === "running";
-    
+
     // Detect stuck sync: if status is "running" but lastSyncedAt is very old
     // (sync should have updated lastSyncedAt when it completed successfully)
     // If it's been "running" for more than 5 minutes without completing, it's stuck
-    const isSyncStuck = isSyncRunning && (now - lastSyncTime > SYNC_TIMEOUT_MS);
+    const isSyncStuck = isSyncRunning && now - lastSyncTime > SYNC_TIMEOUT_MS;
 
     // Run sync synchronously if needed - this blocks until complete
     // so we can return fresh data. The client shows loading skeletons while waiting.
     if (isStale || isSyncStuck) {
       if (isSyncStuck) {
-        console.log(`[videos] Sync stuck for ${channelId} (running for ${Math.round((now - lastSyncTime) / 60000)}min), restarting...`);
+        console.log(
+          `[videos] Sync stuck for ${channelId} (running for ${Math.round(
+            (now - lastSyncTime) / 60000
+          )}min), restarting...`
+        );
       }
-      
+
       // Run sync and wait for it to complete
       await syncChannelVideos(user.id, channelId, channel.id);
-      
+
       // Re-query channel with fresh video data
       channel = await prisma.channel.findFirst({
         where: {
@@ -344,10 +343,7 @@ async function GETHandler(
         include: {
           Video: {
             where: {
-              OR: [
-                { privacyStatus: "public" },
-                { privacyStatus: null },
-              ],
+              OR: [{ privacyStatus: "public" }, { privacyStatus: null }],
             },
             orderBy: { publishedAt: "desc" },
             skip: offset,
@@ -372,9 +368,12 @@ async function GETHandler(
           },
         },
       });
-      
+
       if (!channel) {
-        return Response.json({ error: "Channel not found after sync" }, { status: 404 });
+        return Response.json(
+          { error: "Channel not found after sync" },
+          { status: 404 }
+        );
       }
     }
 
