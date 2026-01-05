@@ -314,6 +314,7 @@
 .hubCtaPrimary:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.5);
+  color: var(--text-inverse);
 }
 
 .hubCtaPrimary:focus-visible {

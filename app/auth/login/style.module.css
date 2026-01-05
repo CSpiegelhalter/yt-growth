@@ -179,6 +179,7 @@
 
 .submitBtn:hover:not(:disabled) {
   background: var(--primary-hover);
+  color: var(--primary-contrast);
 }
 
 .submitBtn:active:not(:disabled) {

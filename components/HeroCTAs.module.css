@@ -36,6 +36,7 @@
   transform: translateY(-1px);
   box-shadow: 0 10px 20px -10px rgba(37, 99, 235, 0.5);
   text-decoration: none;
+  color: white;
 }
 
 .btnSecondary {

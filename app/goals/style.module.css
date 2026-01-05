@@ -61,6 +61,7 @@
 
 .connectBtn:hover {
   background: #4f46e5;
+  color: white;
 }
 
 /* Loading */
@@ -407,6 +408,7 @@
 
 .resetBtn:hover {
   background: #4f46e5;
+  color: white;
 }
 
 /* ================================

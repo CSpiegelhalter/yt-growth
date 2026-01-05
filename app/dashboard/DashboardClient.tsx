@@ -85,6 +85,19 @@ export default function DashboardClient({
     setActiveChannelId(next);
   }, [urlChannelId, initialActiveChannelId]);
 
+  // Handle OAuth return - redirect to original page after reconnecting
+  useEffect(() => {
+    const reconnected = searchParams.get("reconnected") === "1";
+    if (reconnected && typeof window !== "undefined") {
+      const returnTo = sessionStorage.getItem("oauthReturnTo");
+      if (returnTo) {
+        sessionStorage.removeItem("oauthReturnTo");
+        // Redirect to the original page
+        window.location.href = returnTo;
+      }
+    }
+  }, [searchParams]);
+
   // Channel profile hook
   const { profile: channelProfile, loading: profileLoading } =
     useChannelProfile(activeChannelId);

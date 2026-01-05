@@ -634,6 +634,7 @@ nav a:hover {
 
 .btn-primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
+  color: white;
 }
 
 .btn-danger {

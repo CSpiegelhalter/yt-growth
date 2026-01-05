@@ -22,3 +22,6 @@ export * from "./ShareKit";
 export * from "./LowDataModePanel";
 export * from "./ImpactSimulator";
 export * from "./Benchmarks";
+// Progressive loading components
+export * from "./AiSummaryCard";
+export * from "./DeepDiveTabs";

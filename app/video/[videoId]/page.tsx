@@ -20,8 +20,10 @@ type Props = {
 /**
  * Video Insights Page - Server component
  * 
- * Renders immediately with skeleton, data is fetched client-side.
- * This ensures the page navigates instantly when clicked.
+ * Renders immediately with skeleton, data is fetched client-side progressively:
+ * - Phase 1: Analytics (fast, ~1-2s)
+ * - Phase 2: AI Summary (single LLM, ~2-3s)
+ * - Phase 3: Deep dives (lazy, on-demand)
  */
 export default async function VideoPage({ params, searchParams }: Props) {
   const [{ videoId }, search] = await Promise.all([params, searchParams]);
@@ -32,14 +34,12 @@ export default async function VideoPage({ params, searchParams }: Props) {
   // Get bootstrap data (user, channels, active channel) - fast DB lookup only
   const bootstrap = await getAppBootstrap({ channelId: search.channelId });
 
-  // Don't fetch insights server-side - let client fetch them with loading state
-  // This ensures the page loads immediately when navigating
+  // Client handles all data fetching progressively
   return (
     <VideoInsightsClientNoSSR
       key={videoId}
       videoId={videoId}
       channelId={bootstrap.activeChannelId ?? undefined}
-      initialInsights={null}
       initialRange={range}
       from={search.from}
     />

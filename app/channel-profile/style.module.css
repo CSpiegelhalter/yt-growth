@@ -300,4 +300,5 @@
 .backBtn:hover {
   background: var(--primary-dark, #4f46e5);
   text-decoration: none;
+  color: var(--text-inverse);
 }

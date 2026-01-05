@@ -751,6 +751,7 @@
 .transcriptAnalyze:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  color: white;
 }
 
 .transcriptAnalyze:disabled {
@@ -894,6 +895,7 @@
 .emptyBtn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  color: white;
 }
 
 /* Skeleton Loading */

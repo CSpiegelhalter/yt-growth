@@ -1,0 +1,20 @@
+/* VideoInsightsV2 - Clean, modern layout */
+
+.page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 16px;
+  padding-bottom: 64px;
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: 24px;
+    padding-bottom: 80px;
+  }
+}
+
+/* Tab Content Area */
+.tabContent {
+  min-height: 400px;
+}

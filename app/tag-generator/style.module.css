@@ -163,6 +163,7 @@
 .upgradeBtn:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
+  color: #ffffff;
 }
 
 /* Limit Reached Banner */

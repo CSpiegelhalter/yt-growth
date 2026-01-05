@@ -384,6 +384,7 @@
 
 .watchBtn:hover {
   background: #dc2626;
+  color: white;
 }
 
 /* ================================
@@ -969,6 +970,7 @@
 .backBtn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  color: white;
 }
 
 /* ================================
