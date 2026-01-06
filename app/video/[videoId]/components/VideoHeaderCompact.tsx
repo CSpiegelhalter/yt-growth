@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./VideoHeaderCompact.module.css";
@@ -44,17 +45,31 @@ export function VideoHeaderCompact({
   backLabel,
   isDemo,
 }: VideoHeaderCompactProps) {
+  const router = useRouter();
   const youtubeUrl = `https://youtube.com/watch?v=${videoId}`;
+
+  // Use router.back() to preserve browser history state (dashboard stays cached)
+  // Fall back to direct navigation if user navigated directly to this page
+  const handleBack = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Check if we have history to go back to
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      // No history - navigate directly
+      router.push(backHref);
+    }
+  };
 
   return (
     <header className={styles.header}>
-      {/* Back navigation */}
-      <Link href={backHref} className={styles.backLink}>
+      {/* Back navigation - uses history.back() to preserve dashboard state */}
+      <a href={backHref} onClick={handleBack} className={styles.backLink}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
         {backLabel}
-      </Link>
+      </a>
 
       {/* Demo banner */}
       {isDemo && (

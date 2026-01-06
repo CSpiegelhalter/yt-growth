@@ -33,6 +33,17 @@ import {
 import type { CoreAnalysis } from "./components/AiSummaryCard";
 import type { BottleneckResult } from "@/types/api";
 
+// Loading stages for progress animation
+const LOADING_STAGES = [
+  { atMs: 0, text: "Connecting to YouTube..." },
+  { atMs: 800, text: "Fetching video metadata..." },
+  { atMs: 1600, text: "Loading analytics data..." },
+  { atMs: 2400, text: "Computing performance metrics..." },
+  { atMs: 3200, text: "Analyzing retention curve..." },
+  { atMs: 4000, text: "Comparing to channel baseline..." },
+  { atMs: 5000, text: "Finalizing insights..." },
+];
+
 // Types for deep dive data
 type SeoData = {
   titleAnalysis?: any;
@@ -138,6 +149,43 @@ export default function VideoInsightsClientV2({
   const [error, setError] = useState<InsightsError | null>(null);
   const fetchedRef = useRef<string | null>(null);
   
+  // Progress animation state
+  const [loadingProgress, setLoadingProgress] = useState(8);
+  const [loadingStage, setLoadingStage] = useState(LOADING_STAGES[0].text);
+  const loadingStartRef = useRef<number>(0);
+
+  // Smooth progress bar animation while loading
+  useEffect(() => {
+    if (!analyticsLoading || analytics) return;
+    
+    loadingStartRef.current = Date.now();
+    setLoadingProgress(8);
+    setLoadingStage(LOADING_STAGES[0].text);
+
+    // Update loading stage text based on elapsed time
+    const stageTimer = window.setInterval(() => {
+      const elapsed = Date.now() - loadingStartRef.current;
+      const currentStage = [...LOADING_STAGES].reverse().find((s) => elapsed >= s.atMs);
+      if (currentStage) {
+        setLoadingStage(currentStage.text);
+      }
+    }, 300);
+
+    // Smoothly animate progress bar (asymptotically approaches 92%)
+    const progressTimer = window.setInterval(() => {
+      setLoadingProgress((p) => {
+        const target = 92;
+        const increment = Math.max(1, Math.round((target - p) * 0.08));
+        return Math.min(target, p + increment);
+      });
+    }, 200);
+
+    return () => {
+      window.clearInterval(stageTimer);
+      window.clearInterval(progressTimer);
+    };
+  }, [analyticsLoading, analytics]);
+  
   // Deep dive data - prefetched in parallel
   const [deepDive, setDeepDive] = useState<DeepDiveState>({
     seo: { data: null, loading: false, error: null },
@@ -149,6 +197,7 @@ export default function VideoInsightsClientV2({
   const fetchAnalytics = useCallback(async () => {
     setAnalyticsLoading(true);
     setError(null);
+    setLoadingProgress(8);
 
     try {
       const url = channelId
@@ -179,6 +228,9 @@ export default function VideoInsightsClientV2({
       }
 
       const data = (await res.json()) as AnalyticsResponse;
+      // Snap progress to 100% before showing content
+      setLoadingProgress(100);
+      setLoadingStage("Ready!");
       setAnalytics(data);
       return data;
     } catch (err: any) {
@@ -365,9 +417,9 @@ export default function VideoInsightsClientV2({
     );
   }
 
-  // Full loading state
+  // Full loading state with animated progress
   if (analyticsLoading && !analytics) {
-    return <LoadingState loadingStage="Loading video analytics..." llmProgress={10} />;
+    return <LoadingState loadingStage={loadingStage} llmProgress={loadingProgress} />;
   }
 
   // No analytics available

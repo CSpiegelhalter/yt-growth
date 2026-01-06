@@ -1096,11 +1096,38 @@ const GOOGLE_SUGGESTIONS = [
 // Main Audit Function
 // ============================================
 
-export function runDescriptionSeoAudit(input: DescriptionSeoInput): DescriptionSeoResult {
+export type DescriptionSeoOptions = {
+  /** Override the auto-detected focus keyword with a specific keyword (e.g., from LLM) */
+  focusKeywordOverride?: string | null;
+};
+
+export function runDescriptionSeoAudit(
+  input: DescriptionSeoInput,
+  options?: DescriptionSeoOptions
+): DescriptionSeoResult {
   const { title, description, tags } = input;
 
-  // Detect focus keyword
-  const focusKeyword = detectFocusKeyword(input);
+  // Detect focus keyword (or use override if provided)
+  const detectedKeyword = detectFocusKeyword(input);
+  
+  // If an override keyword is provided, use it but keep the detected candidates for alternatives
+  const focusKeyword: {
+    value: string | null;
+    candidates: string[];
+    confidence: FocusKeywordConfidence;
+  } = options?.focusKeywordOverride
+    ? {
+        value: options.focusKeywordOverride,
+        // Keep original candidates but add the override if not present
+        candidates: [
+          options.focusKeywordOverride,
+          ...detectedKeyword.candidates.filter(
+            (c) => c.toLowerCase() !== options.focusKeywordOverride?.toLowerCase()
+          ),
+        ].slice(0, 5),
+        confidence: "high", // Override from API is considered high confidence
+      }
+    : detectedKeyword;
 
   // Run all description checks
   const descriptionChecks: DescriptionCheck[] = [

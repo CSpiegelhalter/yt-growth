@@ -148,23 +148,8 @@ async function GETHandler(
       );
     }
 
-    // Fast permission probe
-    const { startDate: probeStart, endDate: probeEnd } = getDateRange("7d");
-    const probe = await fetchVideoAnalyticsTotalsWithStatus(
-      ga,
-      channelId,
-      videoId,
-      probeStart,
-      probeEnd
-    );
-    if (
-      !probe.permission.ok &&
-      probe.permission.reason === "permission_denied"
-    ) {
-      throw new YouTubePermissionDeniedError(
-        "Google account is missing required YouTube Analytics permissions."
-      );
-    }
+    // NOTE: Skip separate permission probe - we'll detect permission errors from the main fetch
+    // This saves ~500-1500ms on every request
 
     // Fetch all analytics data in parallel
     const result = await fetchAnalyticsData(
@@ -249,8 +234,9 @@ async function fetchAnalyticsData(
 ) {
   const { startDate, endDate } = getDateRange(range);
 
-  // Fetch everything in parallel
-  const [videoMeta, totalsResult, dailyResult, baseline, retentionPoints] =
+  // Fetch EVERYTHING in parallel - this is critical for speed
+  // Previously discoveryMetrics was fetched sequentially, adding 500-1500ms
+  const [videoMeta, totalsResult, dailyResult, baseline, retentionPoints, discoveryMetrics] =
     await Promise.all([
       fetchOwnedVideoMetadata(ga, videoId),
       fetchVideoAnalyticsTotalsWithStatus(
@@ -269,6 +255,20 @@ async function fetchAnalyticsData(
       ),
       getChannelBaselineFromDB(userId, dbChannelId, videoId, range),
       fetchRetentionCurve(ga, youtubeChannelId, videoId).catch(() => []),
+      // Discovery metrics now fetched in parallel instead of sequentially
+      fetchVideoDiscoveryMetrics(
+        ga,
+        youtubeChannelId,
+        videoId,
+        startDate,
+        endDate
+      ).catch(() => ({
+        impressions: null,
+        impressionsCtr: null,
+        trafficSources: null,
+        hasData: false,
+        reason: "connect_analytics" as const,
+      })),
     ]);
 
   if (!videoMeta) {
@@ -290,21 +290,6 @@ async function fetchAnalyticsData(
   if (!totals) {
     throw new Error("Could not fetch analytics totals");
   }
-
-  // Fetch discovery metrics
-  const discoveryMetrics = await fetchVideoDiscoveryMetrics(
-    ga,
-    youtubeChannelId,
-    videoId,
-    startDate,
-    endDate
-  ).catch(() => ({
-    impressions: null,
-    impressionsCtr: null,
-    trafficSources: null,
-    hasData: false,
-    reason: "connect_analytics" as const,
-  }));
 
   // Compute derived metrics
   const derived = computeDerivedMetrics(

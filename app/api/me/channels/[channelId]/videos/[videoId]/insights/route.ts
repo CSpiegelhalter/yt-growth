@@ -664,8 +664,9 @@ async function generateInsights(
 ): Promise<InsightsResultInternal> {
   const { startDate, endDate } = getDateRange(range);
 
-  // Fetch video metadata, analytics, comments, AND baseline all in parallel
-  const [videoMeta, totalsResult, dailyResult, comments, baseline] =
+  // Fetch EVERYTHING in parallel - including discovery metrics
+  // Previously discoveryMetrics was fetched sequentially, adding 500-1500ms latency
+  const [videoMeta, totalsResult, dailyResult, comments, baseline, discoveryMetrics] =
     await Promise.all([
       fetchOwnedVideoMetadata(ga, videoId),
       fetchVideoAnalyticsTotalsWithStatus(
@@ -685,6 +686,20 @@ async function generateInsights(
       fetchOwnedVideoComments(ga, videoId, 30),
       // Get channel baseline from other videos (only needs function params, no dependencies)
       getChannelBaselineFromDB(userId, dbChannelId, videoId, range),
+      // Discovery metrics now in parallel instead of sequential
+      fetchVideoDiscoveryMetrics(
+        ga,
+        youtubeChannelId,
+        videoId,
+        startDate,
+        endDate
+      ).catch(() => ({
+        impressions: null,
+        impressionsCtr: null,
+        trafficSources: null,
+        hasData: false,
+        reason: "connect_analytics" as const,
+      })),
     ]);
 
   if (!videoMeta) {
@@ -718,22 +733,6 @@ async function generateInsights(
   if (!totals) {
     throw new Error("Could not fetch analytics totals");
   }
-
-  // Fetch discovery metrics (impressions, CTR, traffic sources) in parallel
-  // This is a separate API call that may fail if user doesn't have analytics scope
-  const discoveryMetrics = await fetchVideoDiscoveryMetrics(
-    ga,
-    youtubeChannelId,
-    videoId,
-    startDate,
-    endDate
-  ).catch(() => ({
-    impressions: null,
-    impressionsCtr: null,
-    trafficSources: null,
-    hasData: false,
-    reason: "connect_analytics" as const,
-  }));
 
   // Compute derived metrics (including discovery metrics if available)
   const derived = computeDerivedMetrics(

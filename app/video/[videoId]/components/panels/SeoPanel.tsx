@@ -7,6 +7,7 @@ import {
   DescriptionSeoInput,
   DescriptionCheck,
   DescriptionCheckStatus,
+  DescriptionSeoOptions,
 } from "@/lib/youtube/descriptionSeoAudit";
 import { copyToClipboard } from "@/components/ui/Toast";
 
@@ -175,6 +176,12 @@ function SeoContent({
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // Use API-provided focus keyword if available (LLM-based, smarter)
+  const apiFocusKeyword = apiData?.focusKeyword;
+  
+  // Determine the effective keyword: user selection > API keyword > auto-detected
+  const effectiveKeyword = selectedKeyword ?? apiFocusKeyword?.keyword ?? null;
+
   const auditInput: DescriptionSeoInput = useMemo(
     () => ({
       title: video.title ?? "",
@@ -184,41 +191,37 @@ function SeoContent({
     [video]
   );
 
+  // Run audit with the effective keyword as override (so description/tag checks use the right keyword)
   const auditResult = useMemo(
-    () => runDescriptionSeoAudit(auditInput),
-    [auditInput]
+    () => runDescriptionSeoAudit(auditInput, { focusKeywordOverride: effectiveKeyword }),
+    [auditInput, effectiveKeyword]
   );
 
-  // Use API-provided focus keyword if available (LLM-based, smarter)
-  // Fall back to deterministic audit result
-  const apiFocusKeyword = apiData?.focusKeyword;
-  const focusKeyword =
-    selectedKeyword ??
-    apiFocusKeyword?.keyword ??
-    auditResult.focusKeyword.value;
+  // The focus keyword is now always from the audit (which uses our override)
+  const focusKeyword = auditResult.focusKeyword.value;
 
-  // Merge candidates: API alternatives + deterministic candidates
+  // Merge candidates: API alternatives + audit candidates (audit now includes override)
   const allCandidates = useMemo(() => {
     const apiAlts = apiFocusKeyword?.alternatives ?? [];
     const auditCandidates = auditResult.focusKeyword.candidates;
     const seen = new Set<string>();
     const merged: string[] = [];
 
-    // Add API alternatives first (they're usually better)
-    for (const alt of apiAlts) {
-      const lower = alt.toLowerCase();
+    // Add audit candidates first (these include the effective keyword)
+    for (const c of auditCandidates) {
+      const lower = c.toLowerCase();
       if (!seen.has(lower)) {
         seen.add(lower);
-        merged.push(alt);
+        merged.push(c);
       }
     }
 
-    // Add deterministic candidates that aren't duplicates
-    for (const c of auditCandidates) {
-      const lower = c.toLowerCase();
+    // Add API alternatives that aren't duplicates
+    for (const alt of apiAlts) {
+      const lower = alt.toLowerCase();
       if (!seen.has(lower) && merged.length < 6) {
         seen.add(lower);
-        merged.push(c);
+        merged.push(alt);
       }
     }
 
