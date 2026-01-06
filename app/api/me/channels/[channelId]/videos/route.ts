@@ -160,7 +160,7 @@ async function GETHandler(
     parseInt(url.searchParams.get("offset") ?? "0", 10) || 0
   );
   const limit = Math.min(
-    48,
+    100,
     Math.max(
       6,
       parseInt(

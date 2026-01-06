@@ -26,6 +26,9 @@ type Props = {
   onSortChange: (key: SortKey) => void;
   onFiltersChange: (filters: VideoFilters) => void;
   onReset: () => void;
+  pageSize: number;
+  pageSizeOptions: readonly number[];
+  onPageSizeChange: (size: number) => void;
 };
 
 export default function VideoToolbar({
@@ -36,13 +39,18 @@ export default function VideoToolbar({
   onSortChange,
   onFiltersChange,
   onReset,
+  pageSize,
+  pageSizeOptions,
+  onPageSizeChange,
 }: Props) {
   const [sortOpen, setSortOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [pageSizeOpen, setPageSizeOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const sortRef = useRef<HTMLDivElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
+  const pageSizeRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Get available sort options based on data
@@ -56,6 +64,9 @@ export default function VideoToolbar({
       }
       if (actionsRef.current && !actionsRef.current.contains(e.target as Node)) {
         setActionsOpen(false);
+      }
+      if (pageSizeRef.current && !pageSizeRef.current.contains(e.target as Node)) {
+        setPageSizeOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -87,6 +98,12 @@ export default function VideoToolbar({
   const handleSortSelect = (key: SortKey) => {
     onSortChange(key);
     setSortOpen(false);
+  };
+
+  // Handle page size selection
+  const handlePageSizeSelect = (size: number) => {
+    onPageSizeChange(size);
+    setPageSizeOpen(false);
   };
 
   // Handle time range change
@@ -218,6 +235,46 @@ export default function VideoToolbar({
                   <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
               </button>
+            )}
+          </div>
+
+          {/* Page size dropdown */}
+          <div className={s.pageSizeWrap} ref={pageSizeRef}>
+            <button
+              className={s.pageSizeButton}
+              onClick={() => setPageSizeOpen(!pageSizeOpen)}
+              aria-expanded={pageSizeOpen}
+              aria-haspopup="listbox"
+              aria-label={`Show ${pageSize} videos per page`}
+            >
+              <span className={s.pageSizeLabel}>Show</span>
+              <span className={s.pageSizeValue}>{pageSize}</span>
+              <svg
+                className={s.pageSizeIcon}
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            {pageSizeOpen && (
+              <div className={s.pageSizeDropdown} role="listbox" aria-label="Videos per page">
+                {pageSizeOptions.map((size) => (
+                  <button
+                    key={size}
+                    className={s.pageSizeOption}
+                    role="option"
+                    aria-selected={pageSize === size}
+                    onClick={() => handlePageSizeSelect(size)}
+                  >
+                    {size} videos
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 

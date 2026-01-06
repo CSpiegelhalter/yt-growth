@@ -119,8 +119,10 @@ export default function DashboardClient({
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [filters, setFilters] = useState<VideoFilters>(DEFAULT_FILTERS);
 
-  // Page size divisible by 6 for even grid layouts
-  const PAGE_SIZE = 24;
+  // Page size options: 15, 25, 50, 100
+  const PAGE_SIZE_OPTIONS = [15, 25, 50, 100] as const;
+  type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
+  const [pageSize, setPageSize] = useState<PageSizeOption>(25);
 
   // UI state
   const [err, setErr] = useState<string | null>(null);
@@ -185,6 +187,12 @@ export default function DashboardClient({
   const handleResetFilters = useCallback(() => {
     setFilters(DEFAULT_FILTERS);
     setSortKey("newest");
+  }, []);
+
+  const handlePageSizeChange = useCallback((size: number) => {
+    setPageSize(size as PageSizeOption);
+    // Save preference to localStorage
+    localStorage.setItem("dashboardPageSize", String(size));
   }, []);
 
   // Handle checkout success/cancel from URL
@@ -286,7 +294,7 @@ export default function DashboardClient({
     setPagination(null);
     try {
       const res = await fetch(
-        `/api/me/channels/${channelId}/videos?limit=${PAGE_SIZE}&offset=0`,
+        `/api/me/channels/${channelId}/videos?limit=${pageSize}&offset=0`,
         { cache: "no-store" }
       );
       if (res.ok) {
@@ -308,7 +316,7 @@ export default function DashboardClient({
     } finally {
       setVideosLoading(false);
     }
-  }, []);
+  }, [pageSize]);
 
   // Load more videos (pagination)
   const loadMoreVideos = useCallback(async () => {
@@ -317,7 +325,7 @@ export default function DashboardClient({
     setLoadingMore(true);
     try {
       const res = await fetch(
-        `/api/me/channels/${activeChannelId}/videos?limit=${PAGE_SIZE}&offset=${pagination.offset}`,
+        `/api/me/channels/${activeChannelId}/videos?limit=${pageSize}&offset=${pagination.offset}`,
         { cache: "no-store" }
       );
       if (res.ok) {
@@ -336,9 +344,20 @@ export default function DashboardClient({
     } finally {
       setLoadingMore(false);
     }
-  }, [activeChannelId, pagination, loadingMore]);
+  }, [activeChannelId, pagination, loadingMore, pageSize]);
 
-  // Load videos when active channel changes (FREE endpoint - no subscription required)
+  // Load saved page size from localStorage on mount
+  useEffect(() => {
+    const savedPageSize = localStorage.getItem("dashboardPageSize");
+    if (savedPageSize) {
+      const parsed = parseInt(savedPageSize, 10);
+      if (PAGE_SIZE_OPTIONS.includes(parsed as PageSizeOption)) {
+        setPageSize(parsed as PageSizeOption);
+      }
+    }
+  }, []);
+
+  // Load videos when active channel changes or page size changes
   useEffect(() => {
     if (!activeChannelId) {
       setVideos([]);
@@ -353,7 +372,7 @@ export default function DashboardClient({
     }).catch(() => {
       // Silently ignore errors - this is just a pre-warm optimization
     });
-  }, [activeChannelId, loadVideos]);
+  }, [activeChannelId, loadVideos, pageSize]);
 
   // Load saved video tools state when channel changes
   useEffect(() => {
@@ -383,7 +402,7 @@ export default function DashboardClient({
     const pollInterval = setInterval(async () => {
       try {
         const res = await fetch(
-          `/api/me/channels/${activeChannelId}/videos?limit=${PAGE_SIZE}&offset=0`,
+          `/api/me/channels/${activeChannelId}/videos?limit=${pageSize}&offset=0`,
           { cache: "no-store" }
         );
         if (res.ok) {
@@ -408,7 +427,7 @@ export default function DashboardClient({
     }, 10000); // Poll every 10 seconds
 
     return () => clearInterval(pollInterval);
-  }, [syncing, activeChannelId]);
+  }, [syncing, activeChannelId, pageSize]);
 
   // Refresh data (re-fetch channels)
   const refreshData = useCallback(async () => {
@@ -618,6 +637,9 @@ export default function DashboardClient({
                   onSortChange={handleSortChange}
                   onFiltersChange={handleFiltersChange}
                   onReset={handleResetFilters}
+                  pageSize={pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageSizeChange={handlePageSizeChange}
                 />
 
                 {/* Video List */}
@@ -669,12 +691,7 @@ export default function DashboardClient({
                           Loading...
                         </>
                       ) : (
-                        <>
-                          Load More Videos
-                          <span className={s.loadMoreCount}>
-                            {pagination.total - videos.length} remaining
-                          </span>
-                        </>
+                        "Load More Videos"
                       )}
                     </button>
                   </div>
@@ -755,6 +772,7 @@ function VideoCard({
   channelId: string | null;
   sortKey: SortKey;
 }) {
+  const [imgError, setImgError] = useState(false);
   const videoId = video.videoId;
 
   if (!videoId || videoId.startsWith("video-")) {
@@ -772,6 +790,8 @@ function VideoCard({
   const contextMetric = formatContextMetric(video, sortKey);
   const durationBadge = formatDurationBadge(video.durationSec);
 
+  const showPlaceholder = !video.thumbnailUrl || imgError;
+
   return (
     <Link
       href={href}
@@ -784,15 +804,7 @@ function VideoCard({
       }}
     >
       <div className={s.videoThumbWrap}>
-        {video.thumbnailUrl ? (
-          <Image
-            src={video.thumbnailUrl}
-            alt={`${video.title ?? "Video"} thumbnail`}
-            fill
-            className={s.videoThumb}
-            sizes="(max-width: 768px) 100vw, 33vw"
-          />
-        ) : (
+        {showPlaceholder ? (
           <div className={s.videoThumbPlaceholder}>
             <svg
               width="32"
@@ -805,6 +817,15 @@ function VideoCard({
               <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
           </div>
+        ) : (
+          <Image
+            src={video.thumbnailUrl!}
+            alt={`${video.title ?? "Video"} thumbnail`}
+            fill
+            className={s.videoThumb}
+            sizes="(max-width: 768px) 100vw, 33vw"
+            onError={() => setImgError(true)}
+          />
         )}
         {/* Duration badge */}
         {durationBadge && (
