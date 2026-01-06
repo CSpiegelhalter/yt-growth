@@ -45,6 +45,7 @@ import {
 import { normalizeIdeaBoardData } from "@/lib/idea-board-normalize";
 import { getOrGenerateNiche } from "@/lib/channel-niche";
 import type { IdeaBoardData, SimilarChannel } from "@/types/api";
+import type { ChannelProfileAI } from "@/lib/channel-profile/types";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -292,19 +293,48 @@ async function POSTHandler(
     // Get Google account for this channel
     const ga = await getGoogleAccount(user.id, channelId);
 
-    // Get niche from cache or generate from last 15 videos
-    // This uses the ChannelNiche table and regenerates if video titles change
-    const nicheData = await getOrGenerateNiche(channel.id);
+    // Fetch channel profile FIRST - it takes priority over video-inferred niche
+    // The profile represents what the user WANTS to create, not just what they've made
+    let channelProfile: ChannelProfileAI | null = null;
+    try {
+      const profiles = await prisma.$queryRaw<{ aiProfileJson: string | null }[]>`
+        SELECT "aiProfileJson" FROM "ChannelProfile" WHERE "channelId" = ${channel.id} LIMIT 1
+      `;
+      if (profiles[0]?.aiProfileJson) {
+        channelProfile = JSON.parse(profiles[0].aiProfileJson) as ChannelProfileAI;
+        console.log(
+          `[IdeaBoard] Using channel profile: "${channelProfile.nicheLabel}"`
+        );
+      }
+    } catch {
+      // Profile table may not exist or no profile set - continue without it
+    }
 
-    // Use niche queries as keywords for idea generation
-    // These are more relevant than raw title/tag extraction
-    const keywords = nicheData?.queries?.slice(0, 8) ?? [];
+    // Determine keywords: profile takes priority, then fall back to video-based niche
+    let keywords: string[] = [];
+    let nicheLabel = "unknown";
 
-    console.log(
-      `[IdeaBoard] Using cached niche: "${
-        nicheData?.niche ?? "unknown"
-      }", keywords: ${keywords.join(", ")}`
-    );
+    if (channelProfile) {
+      // Use profile's keywords/hints directly - this is the user's stated intent
+      keywords = [
+        ...(channelProfile.competitorSearchHints ?? []),
+        ...(channelProfile.keywords ?? []),
+      ]
+        .filter((k, i, arr) => arr.indexOf(k) === i) // dedupe
+        .slice(0, 12);
+      nicheLabel = channelProfile.nicheLabel;
+      console.log(
+        `[IdeaBoard] Using profile keywords: ${keywords.slice(0, 5).join(", ")}... (${keywords.length} total)`
+      );
+    } else {
+      // Fall back to video-based niche inference
+      const nicheData = await getOrGenerateNiche(channel.id);
+      keywords = nicheData?.queries?.slice(0, 8) ?? [];
+      nicheLabel = nicheData?.niche ?? "unknown";
+      console.log(
+        `[IdeaBoard] Using video-inferred niche: "${nicheLabel}", keywords: ${keywords.join(", ")}`
+      );
+    }
 
     // Fetch similar channels and their winners
     let similarChannels: SimilarChannel[] = [];
@@ -446,6 +476,7 @@ async function POSTHandler(
         nicheKeywords: keywords,
         proofVideos: proofVideos.slice(0, 12),
         count: 6,
+        channelProfile: channelProfile ?? undefined,
       });
 
       console.log("[IdeaBoard POST] Generated", newIdeas.length, "new ideas");
@@ -473,6 +504,7 @@ async function POSTHandler(
           channelTitle: sc.channelTitle,
           channelThumbnailUrl: sc.channelThumbnailUrl,
         })),
+        channelProfile: channelProfile ?? undefined,
       });
       console.log(
         "[IdeaBoard POST] Generated",

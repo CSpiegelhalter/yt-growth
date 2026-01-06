@@ -8,6 +8,7 @@ import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { callLLM } from "@/lib/llm";
 import type { DerivedMetrics, BaselineComparison } from "@/lib/owned-video-math";
 import type { VideoMetadata } from "@/lib/youtube-analytics";
+import type { ChannelProfileAI } from "@/lib/channel-profile/types";
 
 const ParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -103,10 +104,24 @@ async function GETHandler(
       );
     }
 
+    // Fetch channel profile for better idea context
+    let channelProfile: ChannelProfileAI | null = null;
+    try {
+      const profiles = await prisma.$queryRaw<{ aiProfileJson: string | null }[]>`
+        SELECT "aiProfileJson" FROM "ChannelProfile" WHERE "channelId" = ${channel.id} LIMIT 1
+      `;
+      if (profiles[0]?.aiProfileJson) {
+        channelProfile = JSON.parse(profiles[0].aiProfileJson) as ChannelProfileAI;
+      }
+    } catch {
+      // Profile table may not exist or no profile set - continue without it
+    }
+
     const ideas = await generateIdeasAnalysis(
       derivedData.video,
       derivedData.derived,
-      derivedData.comparison
+      derivedData.comparison,
+      channelProfile
     );
 
     if (!ideas) {
@@ -142,10 +157,26 @@ export const GET = createApiRoute(
 async function generateIdeasAnalysis(
   video: VideoMetadata,
   derived: DerivedMetrics,
-  comparison: BaselineComparison
+  comparison: BaselineComparison,
+  channelProfile: ChannelProfileAI | null
 ): Promise<IdeasAnalysis | null> {
-  const systemPrompt = `You are a YouTube content strategist. Generate spinoff and remix ideas based on this video's topic and performance.
+  // Build channel profile context if available
+  const profileContext = channelProfile
+    ? `
+CHANNEL PROFILE (use as PRIMARY context for idea generation):
+- Channel Niche: ${channelProfile.nicheLabel}
+- Description: ${channelProfile.nicheDescription}
+- Target Audience: ${channelProfile.targetAudience}
+- Content Pillars: ${channelProfile.contentPillars.map(p => p.name).join(", ")}
+- Value Proposition: ${channelProfile.channelValueProposition}
+- Tone/Style: ${channelProfile.toneAndStyle.join(", ")}
 
+IMPORTANT: Generate ideas that align with this channel's niche and audience. Ideas should fit within their content pillars and match their tone/style.
+`
+    : "";
+
+  const systemPrompt = `You are a YouTube content strategist. Generate spinoff and remix ideas based on this video's topic and performance.
+${profileContext}
 Return ONLY valid JSON:
 {
   "remixIdeas": [
@@ -162,9 +193,9 @@ Return ONLY valid JSON:
 RULES:
 1. Generate exactly 4 remix ideas
 2. Each title must be complete and usable (not a template)
-3. Ideas should be genuine spinoffs from THIS video's topic
+3. Ideas should be genuine spinoffs from THIS video's topic${channelProfile ? " that align with the channel's niche and audience" : ""}
 4. Include a mix: deep-dive, beginner version, contrarian take, related topic
-5. Keywords should be searchable terms
+5. Keywords should be searchable terms${channelProfile ? ` relevant to ${channelProfile.nicheLabel}` : ""}
 6. Content gaps should be what viewers of this video would want next
 7. No emojis, no hashtags`;
 

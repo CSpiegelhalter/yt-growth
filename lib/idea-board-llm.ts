@@ -2,15 +2,19 @@
  * LLM generation for IdeaBoard - premium structured output
  *
  * Generates rich idea data with proof from similar channel winners.
+ * Uses channel profile (when available) as the primary context for idea generation.
  */
 
 import { callLLM } from "./llm";
 import type { IdeaBoardData, Idea, ProofVideo } from "@/types/api";
 import { normalizeIdeaBoardData } from "@/lib/idea-board-normalize";
+import type { ChannelProfileAI } from "@/lib/channel-profile/types";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-function extractYouTubeVideoId(candidate: string | null | undefined): string | null {
+function extractYouTubeVideoId(
+  candidate: string | null | undefined
+): string | null {
   const s = String(candidate ?? "").trim();
   if (!s) return null;
   if (/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
@@ -18,7 +22,9 @@ function extractYouTubeVideoId(candidate: string | null | undefined): string | n
   return m?.[1] ?? null;
 }
 
-function youTubeThumbFromVideoId(candidate: string | null | undefined): string | null {
+function youTubeThumbFromVideoId(
+  candidate: string | null | undefined
+): string | null {
   const id = extractYouTubeVideoId(candidate);
   if (!id) return null;
   return `https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg`;
@@ -59,6 +65,7 @@ type GenerateIdeaBoardInput = {
   nicheKeywords: string[];
   proofVideos: ProofVideoInput[];
   similarChannels: SimilarChannelInput[];
+  channelProfile?: ChannelProfileAI;
 };
 
 /**
@@ -68,8 +75,26 @@ type GenerateIdeaBoardInput = {
 export async function generateIdeaBoardIdeasOnly(
   input: GenerateIdeaBoardInput
 ): Promise<IdeaBoardData> {
-  const systemPrompt = `You are a YouTube creative strategist. Generate a list of strong, specific video ideas.
+  // Build channel profile context if available - this takes priority
+  const profileContext = input.channelProfile
+    ? `
+CHANNEL PROFILE (use as PRIMARY context - the creator's stated intent):
+- Niche: ${input.channelProfile.nicheLabel}
+- Description: ${input.channelProfile.nicheDescription}
+- Target Audience: ${input.channelProfile.targetAudience}
+- Content Pillars: ${input.channelProfile.contentPillars
+        .map((p) => p.name)
+        .join(", ")}
+- Value Proposition: ${input.channelProfile.channelValueProposition}
+- Tone/Style: ${input.channelProfile.toneAndStyle.join(", ")}
+- Key Topics: ${input.channelProfile.keywords.slice(0, 10).join(", ")}
 
+IMPORTANT: All ideas MUST align with this channel's niche, audience, and content pillars. Match their tone/style.
+`
+    : "";
+
+  const systemPrompt = `You are a YouTube creative strategist. Generate a list of strong, specific video ideas.
+${profileContext}
 OUTPUT FORMAT: Return ONLY valid JSON:
 {
   "ideas": [
@@ -81,7 +106,14 @@ RULES:
 - Generate EXACTLY 6 ideas.
 - No emojis.
 - Titles must be specific (topic + mechanism + outcome).
-- Angle must be concrete and filmable (what you would say/show).
+- Angle must be concrete and filmable (what you would say/show).${
+    input.channelProfile
+      ? `
+- Ideas must fit within the channel's content pillars: ${input.channelProfile.contentPillars
+          .map((p) => p.name)
+          .join(", ")}`
+      : ""
+  }
 - Do NOT include hooks, title options, keywords, proof, difficulty, format, or estimated views.`;
 
   const userVideosContext = input.topPerformingVideos
@@ -105,7 +137,11 @@ ${userVideosContext || "N/A"}
 Competitor winners:
 ${proofContext || "N/A"}
 
-Generate 6 ideas.`;
+Generate 6 ideas${
+    input.channelProfile
+      ? ` that align with the channel's niche: "${input.channelProfile.nicheLabel}"`
+      : ""
+  }.`;
 
   try {
     const result = await callLLM(
@@ -129,7 +165,7 @@ Generate 6 ideas.`;
       generatedAt: new Date().toISOString(),
       cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       ideas: (parsed.ideas ?? []).map((idea, idx) => ({
-        id: idea.id || `idea-${idx + 1}`,
+        id: `idea-${Date.now()}-${idx}`,
         title: idea.title ?? `Idea ${idx + 1}`,
         angle: idea.angle ?? "",
       })) as any,
@@ -138,8 +174,10 @@ Generate 6 ideas.`;
     };
 
     return (
-      normalizeIdeaBoardData(rawBoard, { nicheKeywords: input.nicheKeywords, mode: "light" }) ??
-      rawBoard
+      normalizeIdeaBoardData(rawBoard, {
+        nicheKeywords: input.nicheKeywords,
+        mode: "light",
+      }) ?? rawBoard
     );
   } catch (err) {
     console.error("[IdeaBoard] Light generation failed:", err);
@@ -367,10 +405,12 @@ Each idea should feel like it was custom-made for THIS creator, not generic advi
     }
 
     // Enrich ideas with missing proof video data, then normalize shape so UI never gets partial ideas.
+    // Always generate unique IDs - ignore LLM-provided IDs to prevent collisions
+    const timestamp = Date.now();
     const enrichedIdeas = parsed.ideas.map((idea, index) => {
       const enriched = {
         ...idea,
-        id: idea.id || `idea-${index + 1}`,
+        id: `idea-${timestamp}-${index}`,
         proof: enrichProofData(idea.proof, input.proofVideos),
       };
       return enriched;
@@ -398,8 +438,9 @@ Each idea should feel like it was custom-made for THIS creator, not generic advi
     };
 
     return (
-      normalizeIdeaBoardData(rawBoard, { nicheKeywords: input.nicheKeywords }) ??
-      rawBoard
+      normalizeIdeaBoardData(rawBoard, {
+        nicheKeywords: input.nicheKeywords,
+      }) ?? rawBoard
     );
   } catch (err) {
     console.error("[IdeaBoard] Generation failed:", err);
@@ -420,16 +461,39 @@ export async function generateMoreIdeas(input: {
   nicheKeywords: string[];
   proofVideos: ProofVideoInput[];
   count: number;
+  channelProfile?: ChannelProfileAI;
 }): Promise<Idea[]> {
-  const systemPrompt = `You are a YouTube creative director. Generate ${input.count} NEW video ideas that are different from existing ones.
+  // Build channel profile context if available - this takes priority
+  const profileContext = input.channelProfile
+    ? `
+CHANNEL PROFILE (use as PRIMARY context):
+- Niche: ${input.channelProfile.nicheLabel}
+- Target Audience: ${input.channelProfile.targetAudience}
+- Content Pillars: ${input.channelProfile.contentPillars
+        .map((p) => p.name)
+        .join(", ")}
+- Tone/Style: ${input.channelProfile.toneAndStyle.join(", ")}
 
+All ideas MUST align with this channel's niche and content pillars.
+`
+    : "";
+
+  const systemPrompt = `You are a YouTube creative director. Generate ${
+    input.count
+  } NEW video ideas that are different from existing ones.
+${profileContext}
 Return ONLY a JSON array:
 [
   { "id": "new-idea-1", "title": "Specific concept", "angle": "1-2 sentence premise/description" }
 ]
 
 RULES:
-- No emojis.
+- No emojis.${
+    input.channelProfile
+      ? `
+- Ideas must fit within the channel's niche: ${input.channelProfile.nicheLabel}`
+      : ""
+  }
 - Do NOT include hooks, title options, keywords, proof, difficulty, format, or estimated views.`;
 
   const userPrompt = `Channel: ${input.channelTitle}
@@ -438,7 +502,11 @@ Niche: ${input.nicheKeywords.join(", ")}
 EXISTING IDEAS (do NOT duplicate):
 ${input.existingIdeas.map((t, i) => `${i + 1}. ${t}`).join("\n")}
 
-Generate ${input.count} completely different ideas.`;
+Generate ${input.count} completely different ideas${
+    input.channelProfile
+      ? ` that align with the channel's niche: "${input.channelProfile.nicheLabel}"`
+      : ""
+  }.`;
 
   try {
     const result = await callLLM(
@@ -455,8 +523,10 @@ Generate ${input.count} completely different ideas.`;
     }
 
     const ideas = JSON.parse(jsonMatch[0]) as Array<Partial<Idea>>;
+    // Always generate unique IDs - ignore LLM-provided IDs to prevent collisions
+    const timestamp = Date.now();
     const withIds = ideas.map((idea, index) => ({
-      id: idea.id || `new-idea-${Date.now()}-${index}`,
+      id: `more-${timestamp}-${index}`,
       title: idea.title ?? `Idea ${index + 1}`,
       angle: idea.angle ?? "",
     })) as any;
@@ -468,7 +538,11 @@ Generate ${input.count} completely different ideas.`;
         generatedAt: new Date().toISOString(),
         cachedUntil: new Date(Date.now() + 60_000).toISOString(),
         ideas: withIds,
-        nicheInsights: { momentumNow: [], patternsToCopy: [], gapsToExploit: [] },
+        nicheInsights: {
+          momentumNow: [],
+          patternsToCopy: [],
+          gapsToExploit: [],
+        },
         similarChannels: [],
       },
       { nicheKeywords: input.nicheKeywords, mode: "light" }
@@ -500,10 +574,7 @@ function enrichProofData(
       title: normalizeText(v.title, "Untitled video"),
       channelId: v.channelId,
       channelTitle: normalizeText(v.channelTitle, "Unknown channel"),
-      thumbnailUrl:
-        v.thumbnailUrl ??
-        youTubeThumbFromVideoId(v.videoId) ??
-        "",
+      thumbnailUrl: v.thumbnailUrl ?? youTubeThumbFromVideoId(v.videoId) ?? "",
       publishedAt: v.publishedAt,
       metrics: { views: v.views, viewsPerDay: v.viewsPerDay },
       whyItWorked: ["Strong title and thumbnail combination"],
@@ -532,7 +603,8 @@ function enrichProofData(
         p.channelTitle,
         normalizeText(fullVideo?.channelTitle, "Unknown channel")
       ),
-      thumbnailUrl: p.thumbnailUrl || fullVideo?.thumbnailUrl || derivedThumb || "",
+      thumbnailUrl:
+        p.thumbnailUrl || fullVideo?.thumbnailUrl || derivedThumb || "",
       publishedAt: p.publishedAt || fullVideo?.publishedAt || "",
       metrics: p.metrics || {
         views: fullVideo?.views ?? 0,
