@@ -241,10 +241,10 @@ async function PUTHandler(
     `;
     updatedProfile = updated[0];
   } else {
-    // Insert new profile
+    // Insert new profile (explicitly generate UUID since database default was dropped)
     await prisma.$executeRaw`
-      INSERT INTO "ChannelProfile" ("channelId", "inputJson", "inputHash", "createdAt", "updatedAt")
-      VALUES (${channel.id}, ${inputJson}, ${inputHash}, NOW(), NOW())
+      INSERT INTO "ChannelProfile" ("id", "channelId", "inputJson", "inputHash", "createdAt", "updatedAt")
+      VALUES (gen_random_uuid(), ${channel.id}, ${inputJson}, ${inputHash}, NOW(), NOW())
     `;
 
     // Fetch created profile
