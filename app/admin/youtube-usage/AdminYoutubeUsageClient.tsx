@@ -100,7 +100,7 @@ export default function AdminYoutubeUsageClient() {
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   useEffect(() => {
@@ -109,7 +109,7 @@ export default function AdminYoutubeUsageClient() {
       fetchData();
     }, 2000);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [autoRefresh]);
 
   const hostRows = useMemo(() => (data ? sortEntries(data.byHost) : []), [data]);

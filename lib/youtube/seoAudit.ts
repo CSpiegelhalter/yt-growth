@@ -1118,7 +1118,6 @@ export function runSeoAudit(input: SeoAuditInput): SeoAuditResult {
 
   // Generate summary
   const strongCount = allChecks.filter((c) => c.status === "strong").length;
-  const needsWorkCount = allChecks.filter((c) => c.status === "needs_work").length;
   const missingCount = allChecks.filter((c) => c.status === "missing").length;
 
   let summary: string;

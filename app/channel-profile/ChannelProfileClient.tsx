@@ -6,7 +6,6 @@ import Link from "next/link";
 import s from "./style.module.css";
 import { ProfileEditor } from "@/components/channel-profile";
 import { useChannelProfile } from "@/lib/hooks/use-channel-profile";
-import { ChannelProfileAI } from "@/lib/channel-profile/types";
 
 export default function ChannelProfileClient() {
   const searchParams = useSearchParams();

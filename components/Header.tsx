@@ -7,9 +7,8 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import s from "./Header.module.css";
 import { BRAND } from "@/lib/brand";
-import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { LIMITS } from "@/lib/product";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
-import type { ApiErrorResponse } from "@/lib/client/api";
 
 type Channel = {
   id: number;
@@ -17,8 +16,6 @@ type Channel = {
   title: string | null;
   thumbnailUrl: string | null;
 };
-
-type Plan = "FREE" | "PRO" | "ENTERPRISE";
 
 /**
  * Site header with auth-aware navigation and channel selector.
@@ -32,7 +29,6 @@ export function Header() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [channelLimit, setChannelLimit] = useState<number>(1);
-  const [plan, setPlan] = useState<Plan>("FREE");
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [mounted, setMounted] = useState(false);
   const autoSignOutTriggeredRef = useRef(false);
@@ -62,9 +58,7 @@ export function Header() {
         if (data.channelLimit !== undefined) {
           setChannelLimit(data.channelLimit);
         }
-        if (data.plan) {
-          setPlan(data.plan);
-        }
+        // data.plan is returned for some endpoints, but currently not used in the header UI.
 
         const urlChannelId = searchParams.get("channelId");
         const storedChannelId = localStorage.getItem("activeChannelId");
@@ -251,9 +245,6 @@ export function Header() {
     if (allow.length === 0) return false;
     return allow.includes(email);
   }, [session?.user?.email]);
-
-  // Helper to determine if user can add more channels
-  const canAddChannel = channels.length < channelLimit;
 
   return (
     <>
@@ -594,7 +585,11 @@ export function Header() {
             <h3 className={s.modalTitle}>Channel Limit Reached</h3>
             <p className={s.modalDesc}>
               {channelLimit < LIMITS.PRO_MAX_CONNECTED_CHANNELS
-                ? `Your current plan allows ${channelLimit} channel${channelLimit === 1 ? "" : "s"}. Upgrade to Pro to connect up to ${LIMITS.PRO_MAX_CONNECTED_CHANNELS} channels.`
+                ? `Your current plan allows ${channelLimit} channel${
+                    channelLimit === 1 ? "" : "s"
+                  }. Upgrade to Pro to connect up to ${
+                    LIMITS.PRO_MAX_CONNECTED_CHANNELS
+                  } channels.`
                 : `You've reached the maximum of ${channelLimit} channels for your plan.`}
             </p>
             {channelLimit < LIMITS.PRO_MAX_CONNECTED_CHANNELS && (
@@ -611,7 +606,9 @@ export function Header() {
               onClick={() => setShowUpgradePrompt(false)}
               type="button"
             >
-              {channelLimit < LIMITS.PRO_MAX_CONNECTED_CHANNELS ? "Maybe Later" : "Got it"}
+              {channelLimit < LIMITS.PRO_MAX_CONNECTED_CHANNELS
+                ? "Maybe Later"
+                : "Got it"}
             </button>
           </div>
         </div>
@@ -778,7 +775,9 @@ function isChannelScopedPath(pathname: string): boolean {
 
 function isVideoPath(pathname: string): boolean {
   // Video detail pages - should redirect to dashboard on channel switch.
-  return pathname.startsWith("/video/") || pathname.startsWith("/competitors/video/");
+  return (
+    pathname.startsWith("/video/") || pathname.startsWith("/competitors/video/")
+  );
 }
 
 function withChannelId(href: string, channelId: string | null): string {

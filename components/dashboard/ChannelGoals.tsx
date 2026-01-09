@@ -37,6 +37,7 @@ type Milestone = {
  * Eye-catching "focus goal" with supporting milestones
  */
 export default function ChannelGoals({ videos, channelTitle, totalVideoCount, subscriberCount }: Props) {
+  void channelTitle;
   const searchParams = useSearchParams();
   const channelId = searchParams.get("channelId");
 

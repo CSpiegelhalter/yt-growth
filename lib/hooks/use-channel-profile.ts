@@ -12,7 +12,6 @@ import {
   ChannelProfile,
   ChannelProfileInput,
   ChannelProfileAI,
-  DEFAULT_PROFILE_INPUT,
 } from "@/lib/channel-profile/types";
 
 export type UseChannelProfileResult = {

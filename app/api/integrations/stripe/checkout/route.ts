@@ -59,7 +59,7 @@ export const POST = createApiRoute(
       try {
         const { url } = await createCheckoutSession(user.id, user.email);
         return jsonOk({ url }, { requestId: api.requestId });
-      } catch (err) {
+      } catch {
         throw new ApiError({
           code: "INTEGRATION_ERROR",
           status: 502,

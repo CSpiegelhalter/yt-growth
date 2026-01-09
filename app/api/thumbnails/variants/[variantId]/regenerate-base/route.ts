@@ -13,9 +13,9 @@ import { withRateLimit } from "@/lib/api/withRateLimit";
 import { ApiError } from "@/lib/api/errors";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
-import { parseSpecJson, parsePlanJson } from "@/lib/thumbnails/schemas";
+import { parseSpecJson } from "@/lib/thumbnails/schemas";
 import { regenerateBaseImage } from "@/lib/thumbnails/openaiImages";
-import { renderThumbnail, renderFallbackThumbnail } from "@/lib/thumbnails/render";
+import { renderThumbnail } from "@/lib/thumbnails/render";
 import { getConceptMeta } from "@/lib/thumbnails/concepts";
 import { getStorage, thumbnailKey } from "@/lib/storage";
 import type { ThumbnailVariantResponse, ConceptPlan, ConceptSpec } from "@/lib/thumbnails/types";
@@ -42,6 +42,8 @@ export const POST = createApiRoute(
       withValidation(
         { params: paramsSchema },
         async (req: NextRequest, ctx, api: ApiAuthContext, validated) => {
+          void req;
+          void ctx;
           const userId = api.userId!;
           const { variantId } = validated.params!;
 
@@ -86,22 +88,22 @@ export const POST = createApiRoute(
           // Regenerate base scene image
           const newBase = await regenerateBaseImage(plan as ConceptPlan);
 
-          let finalImage;
-          let newBaseKey: string | null = null;
-
-          if (newBase) {
-            // Save new base image
-            newBaseKey = thumbnailKey("base", variant.jobId, variantId);
-            await storage.put(newBaseKey, newBase.buffer, {
-              contentType: newBase.mime,
+          if (!newBase) {
+            throw new ApiError({
+              code: "INTERNAL",
+              status: 500,
+              message: "AI image generation failed. Please try again.",
             });
-
-            // Render final with new base
-            finalImage = await renderThumbnail(newBase.buffer, spec);
-          } else {
-            // AI failed, use fallback (still has concept overlay)
-            finalImage = await renderFallbackThumbnail(spec);
           }
+
+          // Save new base image
+          const newBaseKey = thumbnailKey("base", variant.jobId, variantId);
+          await storage.put(newBaseKey, newBase.buffer, {
+            contentType: newBase.mime,
+          });
+
+          // Render final with new base
+          const finalImage = await renderThumbnail(newBase.buffer, spec);
 
           // Save final image
           const finalKey = thumbnailKey("final", variant.jobId, variantId);
@@ -113,7 +115,7 @@ export const POST = createApiRoute(
           await prisma.thumbnailVariant.update({
             where: { id: variantId },
             data: {
-              baseImageKey: newBaseKey ?? variant.baseImageKey,
+              baseImageKey: newBaseKey,
               finalImageKey: finalKey,
             },
           });

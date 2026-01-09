@@ -8,7 +8,6 @@
  * - Return standardized error responses
  */
 
-import { NextRequest } from "next/server";
 import { getCurrentUserWithSubscription, type AuthUserWithSubscription } from "./user";
 import { getSubscriptionStatus } from "./stripe";
 import {

@@ -68,7 +68,7 @@ async function main() {
 
     console.log("\n=====================================");
     console.log("✅ E2E tests completed successfully!\n");
-  } catch (error) {
+  } catch {
     console.error("\n❌ E2E tests failed\n");
     process.exitCode = 1;
   } finally {

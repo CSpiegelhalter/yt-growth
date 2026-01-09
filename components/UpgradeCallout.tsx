@@ -165,6 +165,7 @@ export function UsageIndicator({
   limit: number;
   resetAt: string;
 }) {
+  void resetAt;
   const remaining = Math.max(0, limit - used);
   const percentage = (remaining / limit) * 100;
 

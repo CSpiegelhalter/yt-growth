@@ -5,7 +5,7 @@
  *
  * Auth: Required
  */
-import { createApiRoute, emptyParamsContext } from "@/lib/api/route";
+import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { jsonOk } from "@/lib/api/response";
 import type { ApiAuthContext } from "@/lib/api/withAuth";

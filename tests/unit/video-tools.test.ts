@@ -13,7 +13,6 @@ import {
   calcSubsPerThousandViews,
   determineContentType,
   computeMetrics,
-  enhanceVideosWithMetrics,
   getAvailableSortOptions,
   filterByTimeRange,
   filterByContentType,
@@ -25,12 +24,8 @@ import {
   DashboardVideo,
   VideoWithMetrics,
   VideoFilters,
-  DEFAULT_FILTERS,
-  SORT_OPTIONS,
 } from "@/lib/video-tools";
 
-// Mock date for consistent testing
-const NOW = new Date("2026-01-02T12:00:00Z");
 const ONE_DAY_AGO = new Date("2026-01-01T12:00:00Z").toISOString();
 const SEVEN_DAYS_AGO = new Date("2025-12-26T12:00:00Z").toISOString();
 const THIRTY_DAYS_AGO = new Date("2025-12-03T12:00:00Z").toISOString();

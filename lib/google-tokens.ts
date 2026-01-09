@@ -286,7 +286,7 @@ export async function googleFetchWithAutoRefresh<T>(
 
   if (r.status === 401) {
     // Token rejected - try refresh once using mutex to prevent concurrent refreshes
-    const errorBody = await r.text();
+    await r.text(); // consume response body before retry
     accessToken = await getAccessToken(ga, true);
     r = await fetch(url, {
       ...(init ?? {}),

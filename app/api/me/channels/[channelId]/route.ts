@@ -19,6 +19,7 @@ async function DELETEHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
+  void req;
   try {
     // Auth check
     const user = await getCurrentUser();
@@ -116,6 +117,7 @@ async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
+  void req;
   try {
     // Auth check
     const user = await getCurrentUser();

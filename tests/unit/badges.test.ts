@@ -375,10 +375,6 @@ describe("getNextBadge", () => {
   test("returns null when all badges are unlocked or locked", () => {
     const badges = computeAllBadgesProgress([], undefined, []);
     // Most badges will be locked due to missing data
-    const unlockedOrLocked = badges.filter(
-      (b) => b.unlocked || b.progress.lockedReason
-    );
-
     // This might still have some in progress, so we just check the function works
     const next = getNextBadge(badges);
     expect(next === null || next.progress.percent > 0).toBe(true);

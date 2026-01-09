@@ -44,7 +44,7 @@ async function main() {
       console.log(`  ✓ Truncated ${tablename}`);
     }
     console.log("");
-  } catch (error) {
+  } catch {
     console.log("  Tables may not exist yet, running migrations...\n");
   }
 

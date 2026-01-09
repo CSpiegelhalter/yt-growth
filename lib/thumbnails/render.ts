@@ -2,10 +2,14 @@
  * Thumbnail Renderer (Concept-Based)
  *
  * Orchestrates the rendering pipeline:
- * 1. Take base image (AI-generated scene or fallback gradient)
+ * 1. Take base image (AI-generated scene - REQUIRED)
  * 2. Generate SVG overlay using concept template
  * 3. Composite overlay onto base (with attention elements)
- * 4. Export as optimized PNG (1280x720)
+ * 4. Add text contrast enhancement
+ * 5. Export as optimized PNG (1280x720)
+ *
+ * Note: AI base image is required - no fallbacks.
+ * If AI generation fails, an error is shown to the user.
  *
  * Note: Requires `sharp` package for image processing.
  */
@@ -14,21 +18,20 @@ import type {
   ConceptSpec,
   ThumbnailPalette,
   TemplateRenderOutput,
-  ConceptPlan,
 } from "./types";
 import {
   generateOverlay,
-  generateGradientBackground,
   THUMBNAIL_WIDTH,
   THUMBNAIL_HEIGHT,
 } from "./templates";
+import { validateImage, isPngBuffer } from "./validation";
 
 // ============================================
 // DYNAMIC SHARP IMPORT
 // ============================================
 
 // Sharp is an optional heavy dependency - only load when needed
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 let sharpModule: any = null;
 
 async function getSharp(): Promise<any> {
@@ -52,54 +55,92 @@ async function getSharp(): Promise<any> {
 
 /**
  * Render a complete thumbnail from base image and concept spec.
+ * Base image is REQUIRED - throws error if not provided.
  */
 export async function renderThumbnail(
-  baseImage: Buffer | null,
-  spec: ConceptSpec
+  baseImage: Buffer,
+  spec: ConceptSpec,
+  options?: {
+    addContrastOverlay?: boolean;
+    validateOutput?: boolean;
+  }
 ): Promise<TemplateRenderOutput> {
+  const {
+    addContrastOverlay = true,
+    validateOutput = true,
+  } = options ?? {};
+
+  // Base image is required - no fallbacks
+  if (!baseImage || baseImage.length === 0) {
+    throw new Error("Base image is required for thumbnail rendering");
+  }
+
   const sharp = await getSharp();
+  const conceptId = spec.plan.conceptId;
+
+  console.log(`[renderThumbnail] Rendering concept: ${conceptId}, baseImage: ${baseImage.length} bytes`);
+
+  // Validate the base image first
+  const isValidPng = isPngBuffer(baseImage);
+  console.log(`[renderThumbnail] Base image isPNG: ${isValidPng}`);
 
   // Generate the SVG overlay (concept-based with attention elements)
   const overlaySvg = generateOverlay(spec);
   const overlayBuffer = Buffer.from(overlaySvg);
 
-  let baseBuffer: Buffer;
+  // Ensure base image is correct size (1280x720)
+  const baseBuffer = await sharp(baseImage)
+    .resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, {
+      fit: "cover",
+      position: "center",
+    })
+    .toBuffer();
+  console.log(`[renderThumbnail] Resized base image to ${THUMBNAIL_WIDTH}x${THUMBNAIL_HEIGHT}`);
 
-  if (baseImage) {
-    // Ensure base image is correct size (1280x720)
-    baseBuffer = await sharp(baseImage)
-      .resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, {
-        fit: "cover",
-        position: "center",
-      })
-      .toBuffer();
-  } else {
-    // Use fallback gradient background (enhanced for concept)
-    const gradientSvg = generateGradientBackground(
-      spec.plan.palette,
-      THUMBNAIL_WIDTH,
-      THUMBNAIL_HEIGHT,
-      spec.plan.conceptId
-    );
-    baseBuffer = await sharp(Buffer.from(gradientSvg))
-      .resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT)
-      .toBuffer();
+  // Build composite layers
+  const compositeLayers: Array<{ input: Buffer; top: number; left: number }> = [];
+
+  // Add text contrast enhancement overlay (gradient behind text area)
+  if (addContrastOverlay) {
+    const contrastSvg = generateTextContrastOverlay(spec);
+    compositeLayers.push({
+      input: Buffer.from(contrastSvg),
+      top: 0,
+      left: 0,
+    });
   }
 
-  // Composite overlay onto base
+  // Add the main overlay (text, badges, symbols)
+  compositeLayers.push({
+    input: overlayBuffer,
+    top: 0,
+    left: 0,
+  });
+
+  // Composite all layers onto base
   const finalBuffer = await sharp(baseBuffer)
-    .composite([
-      {
-        input: overlayBuffer,
-        top: 0,
-        left: 0,
-      },
-    ])
+    .composite(compositeLayers)
     .png({
-      quality: 90,
       compressionLevel: 9,
     })
     .toBuffer();
+
+  // Validate output if requested
+  if (validateOutput) {
+    const validation = await validateImage(finalBuffer, {
+      requireExactSize: true,
+      expectedWidth: THUMBNAIL_WIDTH,
+      expectedHeight: THUMBNAIL_HEIGHT,
+      checkQuality: false, // Skip quality check on final output
+    });
+
+    if (!validation.valid) {
+      console.error("[renderThumbnail] Output validation failed:", validation.issues);
+      throw new Error(`Output validation failed: ${validation.issues.join(", ")}`);
+    }
+  }
+
+  console.log(`[renderThumbnail] Final output: ${finalBuffer.length} bytes`);
 
   return {
     buffer: finalBuffer,
@@ -107,6 +148,81 @@ export async function renderThumbnail(
     width: THUMBNAIL_WIDTH,
     height: THUMBNAIL_HEIGHT,
   };
+}
+
+/**
+ * Generate a subtle gradient overlay to improve text contrast.
+ * Placed behind text based on composition settings.
+ */
+function generateTextContrastOverlay(spec: ConceptSpec): string {
+  const { textSafeArea } = spec.plan.composition;
+  
+  // Determine where to place the contrast gradient based on text position
+  let gradientDef = "";
+  let rect = "";
+
+  switch (textSafeArea) {
+    case "left":
+      gradientDef = `
+        <linearGradient id="textContrast" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#000000;stop-opacity:0.5"/>
+          <stop offset="60%" style="stop-color:#000000;stop-opacity:0.2"/>
+          <stop offset="100%" style="stop-color:#000000;stop-opacity:0"/>
+        </linearGradient>
+      `;
+      rect = `<rect x="0" y="0" width="${THUMBNAIL_WIDTH * 0.55}" height="${THUMBNAIL_HEIGHT}" fill="url(#textContrast)"/>`;
+      break;
+
+    case "right":
+      gradientDef = `
+        <linearGradient id="textContrast" x1="100%" y1="0%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#000000;stop-opacity:0.5"/>
+          <stop offset="60%" style="stop-color:#000000;stop-opacity:0.2"/>
+          <stop offset="100%" style="stop-color:#000000;stop-opacity:0"/>
+        </linearGradient>
+      `;
+      rect = `<rect x="${THUMBNAIL_WIDTH * 0.45}" y="0" width="${THUMBNAIL_WIDTH * 0.55}" height="${THUMBNAIL_HEIGHT}" fill="url(#textContrast)"/>`;
+      break;
+
+    case "top":
+      gradientDef = `
+        <linearGradient id="textContrast" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#000000;stop-opacity:0.6"/>
+          <stop offset="50%" style="stop-color:#000000;stop-opacity:0.2"/>
+          <stop offset="100%" style="stop-color:#000000;stop-opacity:0"/>
+        </linearGradient>
+      `;
+      rect = `<rect x="0" y="0" width="${THUMBNAIL_WIDTH}" height="${THUMBNAIL_HEIGHT * 0.5}" fill="url(#textContrast)"/>`;
+      break;
+
+    case "bottom":
+      gradientDef = `
+        <linearGradient id="textContrast" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#000000;stop-opacity:0.6"/>
+          <stop offset="50%" style="stop-color:#000000;stop-opacity:0.2"/>
+          <stop offset="100%" style="stop-color:#000000;stop-opacity:0"/>
+        </linearGradient>
+      `;
+      rect = `<rect x="0" y="${THUMBNAIL_HEIGHT * 0.5}" width="${THUMBNAIL_WIDTH}" height="${THUMBNAIL_HEIGHT * 0.5}" fill="url(#textContrast)"/>`;
+      break;
+
+    case "center":
+    default:
+      // Vignette-style for centered text
+      gradientDef = `
+        <radialGradient id="textContrast" cx="50%" cy="50%" r="70%">
+          <stop offset="0%" style="stop-color:#000000;stop-opacity:0.4"/>
+          <stop offset="100%" style="stop-color:#000000;stop-opacity:0"/>
+        </radialGradient>
+      `;
+      rect = `<rect x="0" y="0" width="${THUMBNAIL_WIDTH}" height="${THUMBNAIL_HEIGHT}" fill="url(#textContrast)"/>`;
+      break;
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${THUMBNAIL_WIDTH}" height="${THUMBNAIL_HEIGHT}" viewBox="0 0 ${THUMBNAIL_WIDTH} ${THUMBNAIL_HEIGHT}">
+    <defs>${gradientDef}</defs>
+    ${rect}
+  </svg>`;
 }
 
 // ============================================
@@ -156,19 +272,11 @@ export async function rerenderOverlay(
 }
 
 // ============================================
-// FALLBACK RENDER (No AI)
+// NO FALLBACK RENDER
 // ============================================
 
-/**
- * Render a thumbnail using only gradient background (no AI).
- * Used as fallback when AI generation fails.
- * Still applies full concept overlay with attention elements.
- */
-export async function renderFallbackThumbnail(
-  spec: ConceptSpec
-): Promise<TemplateRenderOutput> {
-  return renderThumbnail(null, spec);
-}
+// Note: Fallback rendering has been removed.
+// AI image generation is required. If it fails, an error is shown to the user.
 
 // ============================================
 // GRADIENT ONLY (Preview)
@@ -185,7 +293,18 @@ export async function renderGradientPreview(
 ): Promise<Buffer> {
   const sharp = await getSharp();
 
-  const gradientSvg = generateGradientBackground(palette, width, height);
+  // Simple gradient for palette preview
+  const gradientSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <defs>
+      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:${palette.bg1};stop-opacity:1"/>
+        <stop offset="100%" style="stop-color:${palette.bg2};stop-opacity:1"/>
+      </linearGradient>
+    </defs>
+    <rect width="${width}" height="${height}" fill="url(#bg)"/>
+    <circle cx="${width * 0.75}" cy="${height * 0.5}" r="${height * 0.3}" fill="${palette.accent}" opacity="0.3"/>
+  </svg>`;
+
   return sharp(Buffer.from(gradientSvg))
     .png()
     .toBuffer();
@@ -270,6 +389,9 @@ export async function renderBatch(
 
   for (let i = 0; i < items.length; i++) {
     const { baseImage, spec } = items[i];
+    if (!baseImage) {
+      throw new Error(`baseImage is null for item ${i}`);
+    }
     const result = await renderThumbnail(baseImage, spec);
     results.push(result);
     onProgress?.(i + 1, items.length);

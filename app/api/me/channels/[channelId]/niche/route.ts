@@ -19,7 +19,6 @@ import { getCurrentUserWithSubscription } from "@/lib/user";
 import {
   getChannelNiche,
   triggerNicheGenerationInBackground,
-  type ChannelNicheData,
 } from "@/lib/channel-niche";
 
 const ParamsSchema = z.object({
@@ -33,6 +32,7 @@ async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
+  void req;
   try {
     const user = await getCurrentUserWithSubscription();
     if (!user) {
@@ -98,6 +98,7 @@ async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
+  void req;
   try {
     const user = await getCurrentUserWithSubscription();
     if (!user) {

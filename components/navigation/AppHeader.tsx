@@ -50,6 +50,7 @@ export function AppHeader({
   onChannelChange,
   mobileNavSlot,
 }: AppHeaderProps) {
+  void plan;
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();

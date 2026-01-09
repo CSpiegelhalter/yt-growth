@@ -130,12 +130,6 @@ export default function SubscriberInsightsClient({
     [filteredVideos]
   );
 
-  // Channel baseline (from ALL videos in range)
-  const channelBaseline = useMemo(
-    () => (auditData?.videos ? computeRollups(auditData.videos) : null),
-    [auditData?.videos]
-  );
-
   const displayedVideos = filteredVideos.slice(0, displayCount);
   const hasMore = displayCount < filteredVideos.length;
 

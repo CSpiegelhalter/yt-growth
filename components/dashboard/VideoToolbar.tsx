@@ -4,13 +4,11 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import s from "./VideoToolbar.module.css";
 import {
   SortKey,
-  SortOption,
   VideoFilters,
   TimeRange,
   ContentType,
   Preset,
   DEFAULT_FILTERS,
-  SORT_OPTIONS,
   getAvailableSortOptions,
   getSortLabel,
   downloadCSV,

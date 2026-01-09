@@ -126,8 +126,6 @@ test.describe("Stripe Checkout Flow", () => {
     );
     const codeInputCount = await codeInputs.count();
 
-    let usedStripeLink = false;
-
     if (codeInputCount >= 6) {
       // Stripe Link flow - enter verification code and subscribe directly
       console.log(
@@ -149,7 +147,6 @@ test.describe("Stripe Checkout Flow", () => {
       await subscribeBtn.waitFor({ state: "visible", timeout: 10000 });
       console.log("✓ Clicking Subscribe button...");
       await subscribeBtn.click();
-      usedStripeLink = true;
     } else {
       // No Link verification - need to fill card form manually
       // Try clicking "Pay without Link" first

@@ -9,7 +9,7 @@ import { useEffect } from "react";
 export function ClientErrorReporter() {
   useEffect(() => {
     const onError = (event: ErrorEvent) => {
-      // eslint-disable-next-line no-console
+       
       console.error("[client.error]", {
         message: event.message,
         filename: event.filename,
@@ -21,7 +21,7 @@ export function ClientErrorReporter() {
 
     const onRejection = (event: PromiseRejectionEvent) => {
       const reason = event.reason;
-      // eslint-disable-next-line no-console
+       
       console.error("[client.unhandledrejection]", {
         reason: reason instanceof Error ? reason.message : String(reason),
       });

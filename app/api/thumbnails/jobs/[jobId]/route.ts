@@ -29,6 +29,8 @@ export const GET = createApiRoute(
     withValidation(
       { params: paramsSchema },
       async (req: NextRequest, ctx, api: ApiAuthContext, validated) => {
+        void req;
+        void ctx;
         const userId = api.userId!;
         const { jobId } = validated.params!;
 
@@ -119,6 +121,8 @@ export const DELETE = createApiRoute(
     withValidation(
       { params: paramsSchema },
       async (req: NextRequest, ctx, api: ApiAuthContext, validated) => {
+        void req;
+        void ctx;
         const userId = api.userId!;
         const { jobId } = validated.params!;
 

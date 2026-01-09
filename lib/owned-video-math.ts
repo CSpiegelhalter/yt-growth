@@ -8,7 +8,6 @@
  */
 import type { AnalyticsTotals, DailyAnalyticsRow } from "./youtube-analytics";
 import type {
-  BottleneckType,
   BottleneckResult,
   ConfidenceLevel,
   SectionConfidence,
@@ -323,7 +322,6 @@ function computeEarlyViews(
 
   try {
     const pubDate = new Date(publishedAt);
-    const pubDateStr = pubDate.toISOString().split("T")[0];
 
     // Sort by date ascending
     const sorted = [...dailySeries].sort((a, b) =>

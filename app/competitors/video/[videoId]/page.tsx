@@ -40,7 +40,6 @@ export default async function CompetitorVideoDetailPage({
     <VideoDetailClient
       videoId={videoId}
       channelId={bootstrap.activeChannelId ?? undefined}
-      isSubscribed={bootstrap.me.subscription?.isActive ?? false}
     />
   );
 }

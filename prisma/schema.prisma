@@ -521,3 +521,24 @@ model ThumbnailVariant {
   @@index([jobId], map: "idx_thumbnail_variant_job")
   @@index([createdAt(sort: Desc)], map: "idx_thumbnail_variant_created")
 }
+
+// ============================================
+// USER FACE REFERENCES - For "Put Me in the Image"
+// ============================================
+
+model UserFaceReference {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      Int
+  label       String   @db.VarChar(64) // e.g., "Primary", "Serious", "Smiling"
+  storageKey  String   @db.VarChar(512) // Storage key/path for the image
+  mime        String   @db.VarChar(64) // image/png, image/jpeg
+  width       Int?
+  height      Int?
+  sizeBytes   Int?
+  isDefault   Boolean  @default(false) // Primary face reference
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([userId], map: "idx_user_face_ref_user")
+  @@index([userId, isDefault], map: "idx_user_face_ref_default")
+}

@@ -38,11 +38,10 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
   const chartHeight = height - padding.top - padding.bottom;
 
   // Process data
-  const { pathD, areaD, smoothPath, avgRetention, cliffX, sortedPoints } =
+  const { areaD, smoothPath, avgRetention, cliffX, sortedPoints } =
     useMemo(() => {
       if (!points.length) {
         return {
-          pathD: "",
           areaD: "",
           smoothPath: "",
           avgRetention: 0,
@@ -58,8 +57,7 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
 
       // Scale functions
       const xScale = (ratio: number) => padding.left + ratio * chartWidth;
-      const yScale = (ratio: number) =>
-        padding.top + (1 - ratio) * chartHeight;
+      const yScale = (ratio: number) => padding.top + (1 - ratio) * chartHeight;
 
       // Build smooth bezier curve path
       const curvePoints = sorted.map((p) => ({
@@ -72,7 +70,7 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
 
       // Simple line path as fallback
       const linePoints = curvePoints.map((p) => `${p.x},${p.y}`);
-      const pathD = `M ${linePoints.join(" L ")}`;
+      void linePoints;
 
       // Build filled area
       const areaD = `${smoothPath} L ${xScale(
@@ -81,7 +79,8 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
 
       // Calculate average retention
       const avgRetention =
-        sorted.reduce((sum, p) => sum + p.audienceWatchRatio, 0) / sorted.length;
+        sorted.reduce((sum, p) => sum + p.audienceWatchRatio, 0) /
+        sorted.length;
 
       // Calculate cliff position
       let cliffX: number | null = null;
@@ -91,14 +90,21 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
       }
 
       return {
-        pathD,
         areaD,
         smoothPath,
         avgRetention,
         cliffX,
         sortedPoints: sorted,
       };
-    }, [points, durationSec, cliffTimeSec, chartWidth, chartHeight, padding.left, padding.top]);
+    }, [
+      points,
+      durationSec,
+      cliffTimeSec,
+      chartWidth,
+      chartHeight,
+      padding.left,
+      padding.top,
+    ]);
 
   // Handle mouse/touch interaction
   const handleInteraction = useCallback(
@@ -128,7 +134,8 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
       // Interpolate for smoother tooltip
       const timeSec = ratio * durationSec;
       const x = padding.left + ratio * chartWidth;
-      const y = padding.top + (1 - closestPoint.audienceWatchRatio) * chartHeight;
+      const y =
+        padding.top + (1 - closestPoint.audienceWatchRatio) * chartHeight;
 
       setHoverData({
         x,
@@ -138,7 +145,15 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
         visible: true,
       });
     },
-    [sortedPoints, durationSec, chartWidth, chartHeight, padding.left, padding.top, width]
+    [
+      sortedPoints,
+      durationSec,
+      chartWidth,
+      chartHeight,
+      padding.left,
+      padding.top,
+      width,
+    ]
   );
 
   const handleMouseMove = useCallback(
@@ -205,7 +220,9 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
         </div>
         <div className={s.retentionStats}>
           <div className={`${s.retentionStat} ${s[retentionQuality]}`}>
-            <span className={s.statValue}>{Math.round(avgRetention * 100)}%</span>
+            <span className={s.statValue}>
+              {Math.round(avgRetention * 100)}%
+            </span>
             <span className={s.statLabel}>avg. viewed</span>
           </div>
         </div>
@@ -234,19 +251,25 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
               x2="0%"
               y2="100%"
             >
-              <stop offset="0%" stopColor="var(--retention-color)" stopOpacity="0.35" />
-              <stop offset="50%" stopColor="var(--retention-color)" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="var(--retention-color)" stopOpacity="0" />
+              <stop
+                offset="0%"
+                stopColor="var(--retention-color)"
+                stopOpacity="0.35"
+              />
+              <stop
+                offset="50%"
+                stopColor="var(--retention-color)"
+                stopOpacity="0.15"
+              />
+              <stop
+                offset="100%"
+                stopColor="var(--retention-color)"
+                stopOpacity="0"
+              />
             </linearGradient>
 
             {/* Line gradient for depth */}
-            <linearGradient
-              id="lineGradient"
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="0%"
-            >
+            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="var(--retention-color)" />
               <stop offset="100%" stopColor="var(--retention-color-end)" />
             </linearGradient>
@@ -342,7 +365,10 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
                 y2={padding.top + chartHeight}
                 className={s.cliffLine}
               />
-              <g className={s.cliffBadge} transform={`translate(${cliffX}, ${padding.top - 8})`}>
+              <g
+                className={s.cliffBadge}
+                transform={`translate(${cliffX}, ${padding.top - 8})`}
+              >
                 <rect
                   x={-20}
                   y={-12}
@@ -406,7 +432,7 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
         <div className={s.retentionInsight}>
           <span className={s.insightIcon}>⚠️</span>
           <span className={s.insightText}>
-            Significant drop at <strong>{formatTime(cliffTimeSec)}</strong> — 
+            Significant drop at <strong>{formatTime(cliffTimeSec)}</strong> —
             consider tightening your edit or adding a hook here
           </span>
         </div>
@@ -418,9 +444,7 @@ export function RetentionCurve({ points, durationSec, cliffTimeSec }: Props) {
 /**
  * Generate a smooth SVG path using cardinal spline interpolation
  */
-function generateSmoothPath(
-  points: { x: number; y: number }[]
-): string {
+function generateSmoothPath(points: { x: number; y: number }[]): string {
   if (points.length < 2) return "";
   if (points.length === 2) {
     return `M ${points[0].x},${points[0].y} L ${points[1].x},${points[1].y}`;

@@ -14,7 +14,7 @@ import { ApiError } from "@/lib/api/errors";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { rerenderPatchSchema, parseSpecJson } from "@/lib/thumbnails/schemas";
-import { rerenderOverlay, renderFallbackThumbnail } from "@/lib/thumbnails/render";
+import { rerenderOverlay } from "@/lib/thumbnails/render";
 import { getConceptMeta } from "@/lib/thumbnails/concepts";
 import { getStorage, thumbnailKey } from "@/lib/storage";
 import type { ConceptSpec, ThumbnailVariantResponse } from "@/lib/thumbnails/types";
@@ -36,6 +36,8 @@ export const POST = createApiRoute(
     withValidation(
       { params: paramsSchema, body: bodySchema },
       async (req: NextRequest, ctx, api: ApiAuthContext, validated) => {
+        void req;
+        void ctx;
         const userId = api.userId!;
         const { variantId } = validated.params!;
         const { patch } = validated.body!;
@@ -94,18 +96,25 @@ export const POST = createApiRoute(
 
         const storage = getStorage();
 
-        // Re-render with new overlay
-        let finalImage;
-        if (variant.baseImageKey) {
-          const baseObj = await storage.get(variant.baseImageKey);
-          if (baseObj) {
-            finalImage = await rerenderOverlay(baseObj.buffer, newSpec);
-          }
+        // Re-render with new overlay - requires base image
+        if (!variant.baseImageKey) {
+          throw new ApiError({
+            code: "INTERNAL",
+            status: 500,
+            message: "No base image available for this variant",
+          });
         }
 
-        if (!finalImage) {
-          finalImage = await renderFallbackThumbnail(newSpec);
+        const baseObj = await storage.get(variant.baseImageKey);
+        if (!baseObj) {
+          throw new ApiError({
+            code: "INTERNAL",
+            status: 500,
+            message: "Failed to load base image",
+          });
         }
+
+        const finalImage = await rerenderOverlay(baseObj.buffer, newSpec);
 
         // Save new final image
         const newKey = thumbnailKey("final", variant.jobId, variantId);

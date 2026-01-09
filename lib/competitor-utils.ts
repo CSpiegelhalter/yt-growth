@@ -128,8 +128,6 @@ export type NumberAnalysis = {
  * - Episode/part numbers (for series)
  */
 export function analyzeNumberInTitle(title: string): NumberAnalysis {
-  const titleLower = title.toLowerCase();
-
   // Common proper nouns with numbers that should NOT count as performance drivers
   const properNounPatterns = [
     // Video games

@@ -8,7 +8,6 @@ import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { callLLM } from "@/lib/llm";
 import type {
   DerivedMetrics,
-  BaselineComparison,
 } from "@/lib/owned-video-math";
 import type { VideoMetadata } from "@/lib/youtube-analytics";
 
@@ -126,11 +125,7 @@ async function GETHandler(
       );
     }
 
-    const seoAnalysis = await generateSeoAnalysis(
-      derivedData.video,
-      derivedData.derived,
-      derivedData.comparison
-    );
+    const seoAnalysis = await generateSeoAnalysis(derivedData.video, derivedData.derived);
 
     if (!seoAnalysis) {
       return Response.json(
@@ -215,8 +210,7 @@ TAGS: [${video.tags
 
 async function generateSeoAnalysis(
   video: VideoMetadata,
-  derived: DerivedMetrics,
-  comparison: BaselineComparison
+  derived: DerivedMetrics
 ): Promise<SeoAnalysis | null> {
   // First, detect the focus keyword (fast, separate call)
   const focusKeyword = await detectFocusKeyword(video);

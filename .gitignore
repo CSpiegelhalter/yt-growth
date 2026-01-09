@@ -145,4 +145,4 @@ playwright/.cache/
 blob-report/
 
 # Thumbnails
-./storage/*
+.storage/

@@ -26,6 +26,7 @@ async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
+  void req;
   const session = await getServerSession(authOptions);
   const userIdRaw = (session?.user as { id?: string } | undefined)?.id;
   if (!userIdRaw) {

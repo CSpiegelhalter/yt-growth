@@ -200,7 +200,7 @@ async function isValidStripeCustomer(customerId: string): Promise<boolean> {
       method: "GET",
     });
     return true;
-  } catch (err) {
+  } catch {
     // Customer doesn't exist or other error
     return false;
   }

@@ -21,6 +21,7 @@ export default function BillingCTA({
   cancelAtPeriodEnd,
   cancelAt,
 }: Props) {
+  void status;
   const [loading, setLoading] = useState(false);
 
   const handleSubscribe = async () => {

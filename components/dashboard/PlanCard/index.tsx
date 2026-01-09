@@ -710,7 +710,6 @@ function MarkdownRenderer({ content }: { content: string }) {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
   let listItems: string[] = [];
-  let inList = false;
 
   const flushList = () => {
     if (listItems.length > 0) {
@@ -723,7 +722,6 @@ function MarkdownRenderer({ content }: { content: string }) {
       );
       listItems = [];
     }
-    inList = false;
   };
 
   lines.forEach((line, i) => {
@@ -747,10 +745,8 @@ function MarkdownRenderer({ content }: { content: string }) {
     }
     // List items (- or numbered)
     else if (trimmed.match(/^[-*]\s+\[?\s?\]?\s*/)) {
-      inList = true;
       listItems.push(trimmed.replace(/^[-*]\s+\[?\s?\]?\s*/, ""));
     } else if (trimmed.match(/^\d+\.\s+/)) {
-      inList = true;
       listItems.push(trimmed.replace(/^\d+\.\s+/, ""));
     }
     // Bold text as standalone line (like **"Title"**)

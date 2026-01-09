@@ -43,7 +43,7 @@ export const POST = createApiRoute(
       customerSubs = await stripeRequest<{ data: StripeSubscription[] }>(
         `/subscriptions?customer=${subscription.stripeCustomerId}&status=all&limit=1`
       );
-    } catch (err) {
+    } catch {
       throw new ApiError({
         code: "INTEGRATION_ERROR",
         status: 502,

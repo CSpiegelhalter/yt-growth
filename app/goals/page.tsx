@@ -25,7 +25,6 @@ export default async function GoalsPage({ searchParams }: Props) {
 
   return (
     <GoalsClient
-      initialMe={bootstrap.me}
       initialChannels={bootstrap.channels}
       initialActiveChannelId={bootstrap.activeChannelId}
     />

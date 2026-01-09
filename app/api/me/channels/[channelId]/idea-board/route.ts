@@ -39,7 +39,6 @@ import {
 } from "@/lib/demo-fixtures";
 import {
   generateIdeaBoardIdeasOnly,
-  generateIdeaBoardPlan,
   generateMoreIdeas,
 } from "@/lib/idea-board-llm";
 import { normalizeIdeaBoardData } from "@/lib/idea-board-normalize";
@@ -353,7 +352,7 @@ async function POSTHandler(
         ).toISOString();
 
         similarChannels = await Promise.all(
-          filteredChannels.map(async (sc, index) => {
+          filteredChannels.map(async (sc) => {
             try {
               const recentVideos = await fetchRecentChannelVideos(
                 ga,

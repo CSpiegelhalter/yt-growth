@@ -4,7 +4,7 @@
  * Tests for the test-mode helper functions.
  * Uses bun's test runner (no vitest mocking utilities).
  */
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
+import { describe, it, expect, afterAll } from "bun:test";
 import {
   isTestMode,
   isFakeYouTube,

@@ -18,7 +18,6 @@ import {
 type Props = {
   videoId: string;
   channelId?: string;
-  isSubscribed?: boolean;
 };
 
 /**
@@ -29,7 +28,6 @@ type Props = {
 export default function VideoDetailClient({
   videoId,
   channelId,
-  isSubscribed = false,
 }: Props) {
   const router = useRouter();
   const [analysis, setAnalysis] = useState<CompetitorVideoAnalysis | null>(

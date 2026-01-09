@@ -633,7 +633,7 @@ export async function fetchChannelStats(
 
   // TEST_MODE: Return fixture data
   if (USE_FIXTURES) {
-    channelIds.forEach((id, idx) => {
+    channelIds.forEach((id) => {
       // Generate realistic-ish subscriber counts for test mode
       const hash = id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
       results.set(id, {
@@ -1186,6 +1186,7 @@ function parseDuration(iso: string): number {
 
 // TEST_MODE Fixtures
 function getTestModeVideos(channelId: string): YouTubeVideo[] {
+  void channelId;
   return [
     {
       videoId: "test-video-1",
@@ -1244,6 +1245,7 @@ function getTestModeMetrics(videoIds: string[]): VideoMetricsData[] {
 }
 
 function getTestModeRetention(videoId: string): RetentionPoint[] {
+  void videoId;
   // Generate a realistic retention curve that drops off
   const points: RetentionPoint[] = [];
   for (let i = 0; i <= 100; i += 2) {
@@ -1292,6 +1294,7 @@ function getTestModeCompetitors(query: string): CompetitorVideo[] {
 function getTestModeSimilarChannels(
   keywords: string[]
 ): SimilarChannelResult[] {
+  void keywords;
   return [
     {
       channelId: "similar-1",
@@ -1566,6 +1569,7 @@ export async function fetchVideosStatsBatch(
 }
 
 function getTestModeComments(videoId: string): FetchCommentsResult {
+  void videoId;
   return {
     comments: [
       {

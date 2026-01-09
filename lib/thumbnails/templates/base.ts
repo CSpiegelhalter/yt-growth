@@ -8,7 +8,6 @@
 import type { ConceptSpec, ThumbnailPalette, ConceptPlan } from "../types";
 import { svgEscape, svgTextWithOutline, svgDropShadowFilter } from "../svg";
 import { generateAllOverlays } from "../overlays";
-import { getConcept } from "../concepts";
 
 // ============================================
 // CONSTANTS
@@ -77,7 +76,6 @@ export type HookPosition = {
  */
 export function getHookPosition(plan: ConceptPlan): HookPosition {
   const { textSafeArea } = plan.composition;
-  const concept = getConcept(plan.conceptId);
 
   // Default positions by safe area
   switch (textSafeArea) {
@@ -384,35 +382,28 @@ export function generateConceptOverlay(spec: ConceptSpec): string {
 }
 
 // ============================================
-// FALLBACK GRADIENT BACKGROUND
+// GRADIENT BACKGROUND (for previews only)
 // ============================================
 
 /**
- * Generate an SVG gradient background (used when AI image fails).
- * Enhanced version that includes concept-appropriate visual elements.
+ * Generate an SVG gradient background.
+ * Note: This is only used for palette previews, NOT for thumbnails.
+ * AI image generation is required for actual thumbnails.
  */
 export function generateGradientBackground(
   palette: ThumbnailPalette,
   width: number = THUMBNAIL_WIDTH,
   height: number = THUMBNAIL_HEIGHT,
-  conceptId?: string
+  _conceptId?: string
 ): string {
-  // Add subtle visual interest to gradient backgrounds
-  const pattern = conceptId === "before-after-split" 
-    ? `<line x1="${width / 2}" y1="0" x2="${width / 2}" y2="${height}" stroke="rgba(255,255,255,0.2)" stroke-width="4" />`
-    : conceptId === "vs-face-off"
-    ? `<line x1="${width / 2}" y1="0" x2="${width / 2}" y2="${height}" stroke="rgba(255,255,255,0.3)" stroke-width="8" stroke-dasharray="20 10" />`
-    : "";
-
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
     <defs>
       <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:${svgEscape(palette.bg1)};stop-opacity:1" />
-        <stop offset="100%" style="stop-color:${svgEscape(palette.bg2)};stop-opacity:1" />
+        <stop offset="0%" style="stop-color:${svgEscape(palette.bg1)};stop-opacity:1"/>
+        <stop offset="100%" style="stop-color:${svgEscape(palette.bg2)};stop-opacity:1"/>
       </linearGradient>
     </defs>
     <rect width="${width}" height="${height}" fill="url(#bg)"/>
-    ${pattern}
   </svg>`;
 }
 

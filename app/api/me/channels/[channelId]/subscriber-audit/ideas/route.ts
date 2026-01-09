@@ -25,6 +25,7 @@ async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
+  void req;
   try {
     // Auth check
     const user = await getCurrentUserWithSubscription();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import s from "./style.module.css";
@@ -58,7 +58,6 @@ export default function DashboardClient({
   initialActiveChannelId,
   checkoutStatus,
 }: Props) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const urlChannelId = searchParams.get("channelId");
 
@@ -113,7 +112,7 @@ export default function DashboardClient({
   } | null>(null);
   // Background sync state - when channel data is stale (>24h), a sync runs in background
   const [syncing, setSyncing] = useState(false);
-  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [, setLastSyncedAt] = useState<string | null>(null);
 
   // Video Tools state (sorting, filtering)
   const [sortKey, setSortKey] = useState<SortKey>("newest");

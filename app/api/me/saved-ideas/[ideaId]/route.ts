@@ -26,6 +26,7 @@ type RouteContext = { params: Promise<{ ideaId: string }> };
  * DELETE - Remove a saved idea
  */
 async function DELETEHandler(req: NextRequest, ctx: RouteContext) {
+  void req;
   try {
     const user = await getCurrentUser();
     if (!user) {

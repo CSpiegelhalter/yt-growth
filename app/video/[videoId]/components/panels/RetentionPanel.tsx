@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import styles from "./panels.module.css";
-import { InsightCard, TwoColumnInsight, NextSteps, BulletList } from "../ui";
+import { InsightCard, TwoColumnInsight, NextSteps } from "../ui";
 
 type RetentionPoint = {
   elapsedRatio: number;

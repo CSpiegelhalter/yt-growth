@@ -19,13 +19,11 @@ import {
 } from "@/lib/thumbnails/svg";
 import {
   thumbnailJobInputSchema,
-  conceptPlanSchema,
   hexColorSchema,
   hookTextSchema,
   normalizeJobInput,
   isHookTooSimilarToTitle,
   shortenHookText,
-  containsBannedTerms,
   ensurePromptSafety,
 } from "@/lib/thumbnails/schemas";
 import {
@@ -165,11 +163,13 @@ describe("thumbnailJobInputSchema", () => {
   it("should accept valid input", () => {
     const result = thumbnailJobInputSchema.safeParse({
       title: "10 Tips for Success",
+      description: "Learn the top 10 tips that will help you succeed in your career.",
       style: "Bold",
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.title).toBe("10 Tips for Success");
+      expect(result.data.description).toBe("Learn the top 10 tips that will help you succeed in your career.");
       expect(result.data.style).toBe("Bold");
       expect(result.data.count).toBe(12); // default
       expect(result.data.aiBase).toBe(true); // default
@@ -179,6 +179,7 @@ describe("thumbnailJobInputSchema", () => {
   it("should reject empty title", () => {
     const result = thumbnailJobInputSchema.safeParse({
       title: "",
+      description: "Valid description here.",
     });
     expect(result.success).toBe(false);
   });
@@ -186,6 +187,7 @@ describe("thumbnailJobInputSchema", () => {
   it("should reject invalid style", () => {
     const result = thumbnailJobInputSchema.safeParse({
       title: "Test",
+      description: "Valid description here.",
       style: "InvalidStyle",
     });
     expect(result.success).toBe(false);
@@ -194,12 +196,14 @@ describe("thumbnailJobInputSchema", () => {
   it("should clamp count to valid range", () => {
     const high = thumbnailJobInputSchema.safeParse({
       title: "Test",
+      description: "Valid description here.",
       count: 100,
     });
     expect(high.success).toBe(false);
 
     const low = thumbnailJobInputSchema.safeParse({
       title: "Test",
+      description: "Valid description here.",
       count: 0,
     });
     expect(low.success).toBe(false);
@@ -208,6 +212,7 @@ describe("thumbnailJobInputSchema", () => {
   it("should trim whitespace from title", () => {
     const result = thumbnailJobInputSchema.safeParse({
       title: "  Spaced Title  ",
+      description: "Valid description here.",
     });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.title).toBe("Spaced Title");
@@ -238,14 +243,20 @@ describe("hookTextSchema", () => {
 
 describe("normalizeJobInput", () => {
   it("should return normalized input for valid data", () => {
-    const result = normalizeJobInput({ title: "Test" });
+    const result = normalizeJobInput({ 
+      title: "Test",
+      description: "Valid description that explains the video content."
+    });
     expect(result).not.toBeNull();
     expect(result?.title).toBe("Test");
+    expect(result?.description).toBe("Valid description that explains the video content.");
   });
 
   it("should return null for invalid data", () => {
     expect(normalizeJobInput({})).toBeNull();
     expect(normalizeJobInput({ title: "" })).toBeNull();
+    expect(normalizeJobInput({ title: "Test" })).toBeNull(); // missing description
+    expect(normalizeJobInput({ title: "Test", description: "short" })).toBeNull(); // description too short
     expect(normalizeJobInput(null)).toBeNull();
   });
 });
@@ -285,24 +296,6 @@ describe("shortenHookText", () => {
 
   it("should handle empty string", () => {
     expect(shortenHookText("", 5)).toBe("");
-  });
-});
-
-describe("containsBannedTerms", () => {
-  it("should detect brand names", () => {
-    const result = containsBannedTerms("A Nike shoe");
-    expect(result.banned).toBe(true);
-    expect(result.term).toBe("nike");
-  });
-
-  it("should detect character names", () => {
-    const result = containsBannedTerms("Mickey Mouse in a field");
-    expect(result.banned).toBe(true);
-  });
-
-  it("should allow clean text", () => {
-    const result = containsBannedTerms("Abstract colorful background");
-    expect(result.banned).toBe(false);
   });
 });
 
@@ -610,17 +603,18 @@ describe("hardenPrompt", () => {
 
   it("should allow clean prompts", () => {
     const plan = makeBasePlan();
-    plan.basePrompt = "Abstract colorful background, no text, no words, no letters";
+    plan.basePrompt = "Abstract colorful background with gradient";
     const result = hardenPrompt(plan);
     expect(result.blocked).toBe(false);
     expect(result.prompt).toContain("Abstract colorful background");
   });
 
-  it("should append safety suffix", () => {
+  it("should include the hookText in prompt", () => {
     const plan = makeBasePlan();
+    plan.hookText = "DO THIS";
     const result = hardenPrompt(plan);
-    // The prompt should contain the safety requirements
-    expect(result.prompt.toLowerCase()).toContain("no text");
+    // The prompt should contain the hook text for rendering
+    expect(result.prompt).toContain("DO THIS");
     expect(result.blocked).toBe(false);
   });
 

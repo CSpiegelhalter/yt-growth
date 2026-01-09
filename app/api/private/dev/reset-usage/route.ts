@@ -12,6 +12,7 @@ import { getCurrentUser } from "@/lib/user";
 import { resetUserUsage, getAllUsage } from "@/lib/usage";
 
 async function POSTHandler(req: NextRequest) {
+  void req;
   // Block in production
   if (process.env.NODE_ENV === "production") {
     return Response.json(
@@ -64,6 +65,7 @@ export const POST = createApiRoute(
  * DEV-ONLY: This route only works when NODE_ENV !== "production"
  */
 async function GETHandler(req: NextRequest) {
+  void req;
   // Block in production
   if (process.env.NODE_ENV === "production") {
     return Response.json(

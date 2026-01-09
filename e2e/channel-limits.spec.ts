@@ -17,7 +17,6 @@ import {
   linkFakeChannel,
   unlinkFakeChannel,
   resetUsage,
-  getMe,
   DEMO_USER,
 } from "./fixtures/test-helpers";
 

@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { CONCEPT_IDS } from "./concepts";
+import { generationControlsSchema } from "./generationControls";
 
 // ============================================
 // BASIC VALIDATORS
@@ -40,12 +41,18 @@ export const thumbnailStyleSchema = z.enum([
 
 export const thumbnailJobInputSchema = z.object({
   title: trimmedString(200).min(1, "Title is required"),
+  description: trimmedString(1000).min(
+    10,
+    "Description is required (min 10 characters). Explain what happens in the video or what the viewer learns."
+  ),
   topic: trimmedString(100).optional(),
   audience: trimmedString(100).optional(),
   style: thumbnailStyleSchema.optional().default("Bold"),
   count: z.coerce.number().int().min(1).max(12).optional().default(12),
   assetId: z.string().uuid().optional(),
   aiBase: z.boolean().optional().default(true),
+  // Generation controls for fine-tuning subject, style, meme, environment, color, text
+  controls: generationControlsSchema.optional(),
 });
 
 export type ThumbnailJobInputSchema = z.infer<typeof thumbnailJobInputSchema>;
@@ -65,7 +72,9 @@ export const thumbnailPaletteSchema = z.object({
 // CONCEPT PLAN SCHEMA (NEW)
 // ============================================
 
-export const conceptIdSchema = z.enum(CONCEPT_IDS as unknown as [string, ...string[]]);
+export const conceptIdSchema = z.enum(
+  CONCEPT_IDS as unknown as [string, ...string[]]
+);
 
 export const emotionToneSchema = z.enum([
   "urgent",
@@ -78,15 +87,34 @@ export const emotionToneSchema = z.enum([
   "mysterious",
 ]);
 
-export const textSafeAreaSchema = z.enum(["left", "right", "top", "bottom", "center"]);
+export const textSafeAreaSchema = z.enum([
+  "left",
+  "right",
+  "top",
+  "bottom",
+  "center",
+]);
 
 export const focalPositionSchema = z.enum(["left", "right", "center", "split"]);
 
 export const backgroundComplexitySchema = z.enum(["low", "medium", "high"]);
 
-export const bigSymbolSchema = z.enum(["X", "CHECK", "VS", "ARROW", "QUESTION", "NONE"]);
+export const bigSymbolSchema = z.enum([
+  "X",
+  "CHECK",
+  "VS",
+  "ARROW",
+  "QUESTION",
+  "NONE",
+]);
 
-export const badgeStyleSchema = z.enum(["pill", "corner-flag", "stamp", "ribbon", "circle"]);
+export const badgeStyleSchema = z.enum([
+  "pill",
+  "corner-flag",
+  "stamp",
+  "ribbon",
+  "circle",
+]);
 
 export const overlayElementTypeSchema = z.enum([
   "arrow",
@@ -99,9 +127,11 @@ export const overlayElementTypeSchema = z.enum([
 ]);
 
 export const badgeDirectiveSchema = z.object({
-  text: trimmedString(20),
+  text: z.string().trim(),
   style: badgeStyleSchema,
-  position: z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]).optional(),
+  position: z
+    .enum(["top-left", "top-right", "bottom-left", "bottom-right"])
+    .optional(),
 });
 
 export const highlightDirectiveSchema = z.object({
@@ -123,82 +153,26 @@ export const overlayDirectivesSchema = z.object({
 });
 
 /**
- * Hook text validation - must be short and punchy.
- * - 2-5 words
- * - Max 28 characters total
- * - No single word longer than 18 chars
+ * Hook text validation - short punchy text for thumbnails.
+ * Trust the LLM to generate appropriate length.
  */
-export const hookTextSchema = z
-  .string()
-  .trim()
-  .min(1, "Hook text is required")
-  .max(28, "Hook text must be 28 characters or less")
-  .refine(
-    (text) => {
-      const words = text.split(/\s+/).filter(Boolean);
-      return words.length >= 1 && words.length <= 5;
-    },
-    { message: "Hook text must be 1-5 words" }
-  )
-  .refine(
-    (text) => {
-      const words = text.split(/\s+/).filter(Boolean);
-      return words.every((word) => word.length <= 18);
-    },
-    { message: "Each word must be 18 characters or less" }
-  );
+export const hookTextSchema = z.string().trim().min(1, "Hook text is required");
 
 /**
- * Base prompt safety validation.
- * Must include the safety suffix and not contain banned terms.
+ * Base prompt validation.
+ * Trust the LLM - no arbitrary length limits.
  */
-const PROMPT_SAFETY_REQUIRED = ["no text", "no words", "no letters"];
-const BANNED_PROMPT_TERMS = [
-  // Brands
-  "nike", "adidas", "apple", "google", "microsoft", "amazon",
-  "coca-cola", "pepsi", "mcdonalds", "starbucks", "youtube",
-  // Characters
-  "mickey mouse", "mario", "pikachu", "spider-man", "batman",
-  "superman", "darth vader", "iron man", "captain america",
-  // People (public figures)
-  "elon musk", "trump", "biden", "obama", "taylor swift",
-  // Sensitive
-  "nude", "naked", "violence", "blood", "gore", "weapon", "gun", "knife",
-];
-
 export const basePromptSchema = z
   .string()
   .trim()
-  .min(20, "Base prompt too short")
-  .max(1000, "Base prompt must be 1000 characters or less")
-  .refine(
-    (prompt) => {
-      const lower = prompt.toLowerCase();
-      return PROMPT_SAFETY_REQUIRED.every((req) => lower.includes(req));
-    },
-    {
-      message: `Base prompt must include safety phrases: ${PROMPT_SAFETY_REQUIRED.join(", ")}`,
-    }
-  )
-  .refine(
-    (prompt) => {
-      const lower = prompt.toLowerCase();
-      return !BANNED_PROMPT_TERMS.some((term) => lower.includes(term));
-    },
-    { message: "Base prompt contains banned terms" }
-  );
+  .min(10, "Base prompt too short");
 
 export const negativePromptSchema = z
   .string()
   .trim()
-  .max(500, "Negative prompt must be 500 characters or less")
   .default("text, words, letters, logos, watermarks, brands, signatures");
 
-export const subjectsSchema = z
-  .string()
-  .trim()
-  .max(200, "Subjects description must be 200 characters or less")
-  .default("");
+export const subjectsSchema = z.string().trim().default("");
 
 /**
  * Full ConceptPlan schema.
@@ -206,7 +180,7 @@ export const subjectsSchema = z
 export const conceptPlanSchema = z.object({
   conceptId: conceptIdSchema,
   hookText: hookTextSchema,
-  subHook: trimmedString(18).optional(),
+  subHook: z.string().trim().optional(),
   emotionTone: emotionToneSchema,
   palette: thumbnailPaletteSchema,
   composition: compositionDirectivesSchema,
@@ -224,8 +198,8 @@ export type ConceptPlanSchema = z.infer<typeof conceptPlanSchema>;
 
 export const conceptSpecSchema = z.object({
   plan: conceptPlanSchema,
-  hookText: trimmedString(28).optional(),
-  subHook: trimmedString(18).optional(),
+  hookText: z.string().trim().optional(),
+  subHook: z.string().trim().optional(),
   palette: thumbnailPaletteSchema.partial().optional(),
   align: z.enum(["left", "center", "right"]).optional(),
   outline: z.boolean().optional(),
@@ -233,7 +207,7 @@ export const conceptSpecSchema = z.object({
   showBadges: z.boolean().optional(),
   showSymbol: z.boolean().optional(),
   showHighlights: z.boolean().optional(),
-  badgeText: trimmedString(20).optional(),
+  badgeText: z.string().trim().optional(),
 });
 
 export type ConceptSpecSchema = z.infer<typeof conceptSpecSchema>;
@@ -243,9 +217,9 @@ export type ConceptSpecSchema = z.infer<typeof conceptSpecSchema>;
 // ============================================
 
 export const rerenderPatchSchema = z.object({
-  hookText: trimmedString(28).optional(),
-  subHook: trimmedString(18).optional(),
-  badgeText: trimmedString(20).optional(),
+  hookText: z.string().trim().optional(),
+  subHook: z.string().trim().optional(),
+  badgeText: z.string().trim().optional(),
   palette: thumbnailPaletteSchema.partial().optional(),
   align: z.enum(["left", "center", "right"]).optional(),
   outline: z.boolean().optional(),
@@ -344,23 +318,11 @@ export function shortenHookText(text: string, maxWords: number = 5): string {
 }
 
 /**
- * Check if prompt contains banned terms.
- */
-export function containsBannedTerms(text: string): { banned: boolean; term?: string } {
-  const lower = text.toLowerCase();
-  for (const term of BANNED_PROMPT_TERMS) {
-    if (lower.includes(term)) {
-      return { banned: true, term };
-    }
-  }
-  return { banned: false };
-}
-
-/**
- * Ensure base prompt includes safety suffix.
+ * Ensure base prompt includes comprehensive safety suffix.
  */
 export function ensurePromptSafety(prompt: string): string {
-  const safetyClause = "no text, no words, no letters, no watermark, no logos";
+  const safetyClause =
+    "absolutely no text, no words, no letters, no numbers, no writing, no captions, no watermarks, no logos, no signs anywhere in the image";
   const lower = prompt.toLowerCase();
 
   if (!lower.includes("no text")) {

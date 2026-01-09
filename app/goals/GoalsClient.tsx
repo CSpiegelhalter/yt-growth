@@ -6,7 +6,7 @@ import { PageContainer, PageHeader } from "@/components/ui";
 import BadgeArt from "@/components/badges/BadgeArt";
 import BadgeDetailModal from "@/components/badges/BadgeDetailModal";
 import s from "./style.module.css";
-import type { Me, Channel } from "@/types/api";
+import type { Channel } from "@/types/api";
 import type {
   BadgeWithProgress,
   GoalWithProgress,
@@ -25,21 +25,17 @@ import {
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 
 type Props = {
-  initialMe: Me;
   initialChannels: Channel[];
   initialActiveChannelId: string | null;
 };
 
 export default function GoalsClient({
-  initialMe,
   initialChannels,
   initialActiveChannelId,
 }: Props) {
   const searchParams = useSearchParams();
   const urlChannelId = searchParams.get("channelId");
-  const [activeChannelId, setActiveChannelId] = useState<string | null>(
-    urlChannelId ?? initialActiveChannelId
-  );
+  const [activeChannelId] = useState<string | null>(urlChannelId ?? initialActiveChannelId);
 
   useSyncActiveChannelIdToLocalStorage(activeChannelId);
 

@@ -12,10 +12,8 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
-import {
-  getCurrentUserWithSubscription,
-  hasActiveSubscription,
-} from "@/lib/user";
+
+
 import { isDemoMode } from "@/lib/demo-fixtures";
 import { callLLM } from "@/lib/llm";
 import {

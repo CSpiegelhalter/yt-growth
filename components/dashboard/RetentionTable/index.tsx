@@ -246,10 +246,7 @@ function VideoRetentionCard({
     video.retention.cliffReason,
     video.retention.cliffTimestamp
   );
-  const fixes = getFixSuggestions(
-    video.retention.cliffReason,
-    video.retention.cliffTimestamp
-  );
+  const fixes = getFixSuggestions(video.retention.cliffTimestamp);
   const patternInterrupts = getPatternInterrupts(
     video.retention.cliffTimestamp
   );
@@ -567,7 +564,6 @@ function getLikelyCauses(
 }
 
 function getFixSuggestions(
-  reason: string | null | undefined,
   timestamp: string | null | undefined
 ): string[] {
   const seconds = timestamp ? parseTimestamp(timestamp) : 0;

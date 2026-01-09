@@ -71,7 +71,7 @@ function emit(level: LogLevel, message: string, fields?: LogFields) {
     env: process.env.NODE_ENV ?? "unknown",
     ...redacted,
   };
-  // eslint-disable-next-line no-console
+   
   console.log(safeJson(payload));
 }
 

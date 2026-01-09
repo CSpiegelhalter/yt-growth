@@ -439,7 +439,6 @@ export default function VideoInsightsClientV2({
     video,
     derived,
     baseline,
-    comparison,
     bottleneck,
     isLowDataMode: lowDataMode,
     retention,

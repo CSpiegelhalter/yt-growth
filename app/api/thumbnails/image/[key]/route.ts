@@ -15,6 +15,8 @@ export const GET = createApiRoute(
   withAuth(
     { mode: "optional" }, // Allow public access for preview URLs
     async (req: NextRequest, ctx, api: ApiAuthContext) => {
+      void ctx;
+      void api;
       // Get key from URL path
       const url = new URL(req.url);
       const pathParts = url.pathname.split("/");
@@ -31,10 +33,11 @@ export const GET = createApiRoute(
       // Decode the key
       const key = decodeURIComponent(encodedKey);
 
-      // Security: Validate key format (should be thumbnails/... or assets/...)
+      // Security: Validate key format (should be thumbnails/..., assets/..., or face-refs/...)
       if (
         !key.startsWith("thumbnails/") &&
-        !key.startsWith("assets/")
+        !key.startsWith("assets/") &&
+        !key.startsWith("face-refs/")
       ) {
         throw new ApiError({
           code: "FORBIDDEN",

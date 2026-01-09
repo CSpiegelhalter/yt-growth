@@ -15,7 +15,6 @@ const SYNC_VIDEO_COUNT = 96;
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
-import { getCurrentUser } from "@/lib/user";
 import { getGoogleAccount, fetchChannelVideos, fetchVideoMetrics } from "@/lib/youtube-api";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import {
@@ -32,6 +31,7 @@ async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
+  void req;
   try {
     // Validate params first (before auth/entitlement to give useful error)
     const paramsObj = await params;

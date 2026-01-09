@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { usePathname } from "next/navigation";
 import { AppSidebar } from "./AppSidebar";
 import { MobileNav } from "./MobileNav";
 import { AppHeader } from "./AppHeader";
@@ -49,7 +48,6 @@ export function AppShell({
   isAdmin = false,
   onChannelChange,
 }: AppShellProps) {
-  const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Load sidebar collapse state from localStorage

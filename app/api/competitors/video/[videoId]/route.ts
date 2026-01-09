@@ -20,10 +20,8 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
-import {
-  getCurrentUserWithSubscription,
-  hasActiveSubscription,
-} from "@/lib/user";
+
+
 import {
   getGoogleAccount,
   fetchVideoDetails,
@@ -39,7 +37,6 @@ import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { hashVideoContent, hashCommentsContent } from "@/lib/content-hash";
 import {
   analyzeNumberInTitle,
-  analyzeTitleTruncation,
   formatDuration,
   getDurationBucket,
   detectChapters,
@@ -893,16 +890,6 @@ function computeStrategicInsights(input: {
   const durationMin = Math.round(durationSec / 60);
   const durationFormatted = formatDuration(durationSec);
   const durationBucket = getDurationBucket(durationSec);
-
-  // Map bucket to legacy category for backward compatibility
-  const bucketToCategory: Record<string, "Short" | "Medium" | "Long" | "Very Long"> = {
-    "Shorts": "Short",
-    "Short": "Short",
-    "Medium": "Medium",
-    "Long": "Long",
-    "Very Long": "Very Long",
-  };
-  const lengthCategory = bucketToCategory[durationBucket] ?? "Medium";
 
   const lengthInsights: Record<string, string> = {
     "Shorts": "YouTube Short format - vertical, quick consumption",

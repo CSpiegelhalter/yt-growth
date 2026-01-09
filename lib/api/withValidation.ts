@@ -15,7 +15,7 @@ export type Validated<P, Q, B> = {
   body?: B;
 };
 
-export function withValidation<PIn, QIn, BIn, POut, QOut, BOut>(
+export function withValidation<PIn, POut, QOut, BOut>(
   schemas: ValidationSchemas<POut, QOut, BOut>,
   handler: (
     req: NextRequest,

@@ -632,6 +632,7 @@ export function saveVideoToolsState(channelId: string, state: VideoToolsState): 
  * Export videos to CSV format
  */
 export function exportToCSV(videos: VideoWithMetrics[], sortKey: SortKey): string {
+  void sortKey;
   const headers = [
     "Title",
     "Video ID",

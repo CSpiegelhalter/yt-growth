@@ -7,7 +7,7 @@
  *
  * Auth: Required
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
 import { jsonOk } from "@/lib/api/response";

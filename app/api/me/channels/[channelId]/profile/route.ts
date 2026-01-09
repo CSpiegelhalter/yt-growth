@@ -84,6 +84,7 @@ async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
+  void req;
   const user = await getCurrentUser();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

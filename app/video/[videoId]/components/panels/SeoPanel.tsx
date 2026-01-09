@@ -7,7 +7,6 @@ import {
   DescriptionSeoInput,
   DescriptionCheck,
   DescriptionCheckStatus,
-  DescriptionSeoOptions,
 } from "@/lib/youtube/descriptionSeoAudit";
 import { copyToClipboard } from "@/components/ui/Toast";
 

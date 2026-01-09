@@ -9,11 +9,7 @@
  */
 import { test, expect } from "@playwright/test";
 import {
-  TEST_USER,
-  signUp,
   signIn,
-  signOut,
-  isSignedIn,
 } from "./fixtures/test-helpers";
 
 test.describe("Authentication", () => {

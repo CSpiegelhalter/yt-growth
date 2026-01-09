@@ -36,12 +36,73 @@ export type ThumbnailStyle = "Bold" | "Minimal" | "Neon" | "Clean" | "Dramatic";
 
 export type ThumbnailJobInput = {
   title: string; // Video title (required) - used to derive hook
+  description: string; // Video description (required) - what happens/what viewer learns
   topic?: string; // Topic / niche
   audience?: string; // Target audience
   style?: ThumbnailStyle; // Style preset (affects palettes)
   count?: number; // Number of variants (default 12)
   assetId?: string; // Optional subject image asset
   aiBase?: boolean; // Generate AI base image (default true)
+};
+
+// ============================================
+// THUMBNAIL PLAN (Anti-AI Artifact Structure)
+// ============================================
+
+/** Subject type for thumbnail - determines risk level */
+export type SubjectType = "human_face" | "hands_only" | "mascot" | "object" | "icon_only";
+
+/** Fallback mode - lower number = lower AI artifact risk */
+export type FallbackMode = 
+  | "icon_driven"    // Lowest risk: icons, no humans/hands/complex screens
+  | "face_only"      // Medium risk: face close-up + 1-2 simple props
+  | "full_scene";    // Highest risk: full scene with multiple elements
+
+/** Structured plan to prevent AI artifacts and ensure topic accuracy */
+export type ThumbnailPlan = {
+  /** Brief summary of what the video is about */
+  topicSummary: string;
+  /** 3-6 nouns that MUST be visually depicted to anchor the topic */
+  topicAnchors: string[];
+  /** Scene configuration */
+  scene: {
+    setting: string;
+    props: string[];
+    prohibitedProps: string[];
+  };
+  /** Subject configuration with anti-artifact constraints */
+  subject: {
+    type: SubjectType;
+    description: string;
+    pose: string;
+    emotion: "curious" | "shocked" | "confident" | "focused" | "excited" | "neutral";
+    constraints: string[]; // Anti-AI artifact constraints
+  };
+  /** Layout for composition */
+  layout: "subject-left_text-right" | "subject-right_text-left" | "center";
+  /** Headline text */
+  headline: {
+    text: string; // <= 4 words ideally
+    style: "bold" | "clean" | "dramatic";
+  };
+  /** BOGY-compliant palette */
+  palette: {
+    primary: "blue" | "orange" | "green" | "yellow";
+    secondary: string;
+    accent: string;
+  };
+  /** Quality requirements for the image */
+  qualityBar: string[];
+  /** Selected fallback mode based on risk assessment */
+  fallbackMode: FallbackMode;
+};
+
+/** Risk review result from LLM self-check */
+export type RiskReview = {
+  approved: boolean;
+  risks: string[];
+  suggestedMode: FallbackMode;
+  revisions?: Partial<ThumbnailPlan>;
 };
 
 export type ThumbnailJobStatus =
@@ -122,6 +183,8 @@ export type ConceptPlan = {
   overlayDirectives: OverlayDirectives;
   /** Description of key subjects/props in the scene */
   subjects: string;
+  /** Optional style reference image path (for meme style transfer) */
+  styleReferenceImagePath?: string;
 };
 
 // ============================================
@@ -255,9 +318,6 @@ export type ConceptScore = {
 // ============================================
 // LEGACY TYPE ALIASES (for backward compatibility)
 // ============================================
-
-/** @deprecated Use ConceptPlan instead */
-export type ThumbnailPlan = ConceptPlan;
 
 /** @deprecated Use ConceptSpec instead */
 export type ThumbnailSpec = ConceptSpec;

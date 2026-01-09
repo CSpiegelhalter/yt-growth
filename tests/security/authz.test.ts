@@ -28,7 +28,6 @@ import { prisma } from "@/prisma";
 import {
   verifyChannelOwnership,
   verifyVideoOwnership,
-  verifySavedIdeaOwnership,
   hasActiveSubscription,
   checkChannelLimit,
   isAdminUser,

@@ -15,6 +15,7 @@ import { createApiRoute } from "@/lib/api/route";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
 async function POSTHandler(req: NextRequest) {
+  void req;
   const guardResponse = requireTestMode();
   if (guardResponse) return guardResponse;
 

@@ -15,11 +15,6 @@ const DEFAULT_MODEL = "gpt-4o-mini";
 const MAX_TOKENS = 2000;
 
 /**
- * Get the current year for use in LLM prompts and fixtures
- */
-const CURRENT_YEAR = new Date().getFullYear();
-
-/**
  * Get the current date context string to inject into LLM system prompts.
  * This ensures the LLM knows the correct current date/year.
  */
@@ -156,26 +151,6 @@ export type PatternAnalysisJson = {
     }>;
   };
 };
-
-function generateMarkdownFromAnalysis(analysis: PatternAnalysisJson): string {
-  return `## Summary
-${analysis.summary}
-
-## Common Patterns
-${analysis.commonPatterns.map((p) => `- ${p}`).join("\n")}
-
-## CTA Patterns
-${analysis.ctaPatterns.map((p) => `- ${p}`).join("\n")}
-
-## Format Patterns
-${analysis.formatPatterns.map((p) => `- ${p}`).join("\n")}
-
-## Try Next
-${analysis.nextExperiments.map((p) => `- ${p}`).join("\n")}
-
-## Hooks to Try
-${analysis.hooksToTry.map((p) => `- ${p}`).join("\n")}`;
-}
 
 /**
  * Generate structured subscriber insights for Subscriber Drivers page.
@@ -987,8 +962,7 @@ function getPersonaCacheKey(channelId: number, contentHash: string): string {
  */
 function getCachedPersona(
   channelId: number,
-  contentHash: string,
-  currentTitles: string[]
+  contentHash: string
 ): PersonaCacheEntry | null {
   // First, try exact match with current content hash
   const exactKey = getPersonaCacheKey(channelId, contentHash);
@@ -1359,7 +1333,7 @@ Rules:
     // Compute content hash for cache key
     const contentHash = computeContentHash(videoTitles, topTags, categoryName);
 
-    const cached = getCachedPersona(channelId, contentHash, videoTitles);
+    const cached = getCachedPersona(channelId, contentHash);
     if (cached) {
       persona = { niche: cached.niche, systemPrompt: cached.systemPrompt };
     } else {

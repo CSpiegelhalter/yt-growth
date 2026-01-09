@@ -10,10 +10,8 @@ import { createApiRoute } from "@/lib/api/route";
 import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
 import { withRateLimit } from "@/lib/api/withRateLimit";
-import { ApiError } from "@/lib/api/errors";
 import { PrismaClient } from "@prisma/client";
 import { thumbnailJobInputSchema } from "@/lib/thumbnails/schemas";
-import { moderateContent } from "@/lib/thumbnails/llmPlanner";
 
 const prisma = new PrismaClient();
 
@@ -33,22 +31,10 @@ export const POST = createApiRoute(
       withValidation(
         { body: thumbnailJobInputSchema },
         async (req: NextRequest, ctx, api: ApiAuthContext, validated) => {
+          void req;
+          void ctx;
           const userId = api.userId!;
           const input = validated.body!;
-
-          // Moderation check on user input
-          const contentToCheck = [input.title, input.topic, input.audience]
-            .filter(Boolean)
-            .join(" ");
-
-          const moderation = await moderateContent(contentToCheck);
-          if (!moderation.safe) {
-            throw new ApiError({
-              code: "VALIDATION_ERROR",
-              status: 400,
-              message: moderation.reason ?? "Content flagged by moderation",
-            });
-          }
 
           // Create job record
           const job = await prisma.thumbnailJob.create({
@@ -77,6 +63,8 @@ export const POST = createApiRoute(
 export const GET = createApiRoute(
   { route: "/api/thumbnails/jobs" },
   withAuth({ mode: "required" }, async (req: NextRequest, ctx, api: ApiAuthContext) => {
+    void req;
+    void ctx;
     const userId = api.userId!;
 
     const jobs = await prisma.thumbnailJob.findMany({

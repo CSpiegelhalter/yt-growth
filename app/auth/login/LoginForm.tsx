@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import s from "./style.module.css";
@@ -14,7 +14,6 @@ export default function LoginForm() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const sp = useSearchParams();
-  const router = useRouter();
 
   const showSignupSuccess = sp.get("signup") === "1";
 

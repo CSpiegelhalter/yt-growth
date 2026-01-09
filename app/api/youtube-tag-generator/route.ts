@@ -15,7 +15,7 @@ import { ApiError } from "@/lib/api/errors";
 import { callLLM } from "@/lib/llm";
 import { parseYouTubeVideoId } from "@/lib/youtube-video-id";
 import { getLimit, type Plan } from "@/lib/entitlements";
-import { checkAndIncrement, getUsageInfo } from "@/lib/usage";
+import { checkAndIncrement } from "@/lib/usage";
 import { hasActiveSubscription } from "@/lib/user";
 import { logger } from "@/lib/logger";
 
