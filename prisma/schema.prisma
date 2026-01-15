@@ -9,17 +9,21 @@ datasource db {
 }
 
 model User {
-  id            Int             @id @default(autoincrement())
-  email         String          @unique(map: "uq_user_email") @db.VarChar(255)
-  name          String?         @db.VarChar(255)
-  passwordHash  String?         @db.VarChar(255)
-  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
-  Channel       Channel[]
-  GoogleAccount GoogleAccount[]
-  OAuthState    OAuthState[]
-  Subscription  Subscription?
-  Plan          Plan[]
+  id                Int                 @id @default(autoincrement())
+  email             String              @unique(map: "uq_user_email") @db.VarChar(255)
+  name              String?             @db.VarChar(255)
+  passwordHash      String?             @db.VarChar(255)
+  createdAt         DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
+  Channel           Channel[]
+  GoogleAccount     GoogleAccount[]
+  OAuthState        OAuthState[]
+  Subscription      Subscription?
+  Plan              Plan[]
+  UserModel         UserModel?
+  UserTrainingAsset UserTrainingAsset[]
+  ThumbnailJob      ThumbnailJob[]
+  ThumbnailProject  ThumbnailProject[]
 
   @@index([email], map: "idx_user_email")
 }
@@ -474,26 +478,27 @@ model UserBadge {
 // THUMBNAIL GENERATOR - Jobs, Assets, Variants
 // ============================================
 
-model ThumbnailJob {
-  id        String             @id @default(uuid()) @db.Uuid
+model LegacyThumbnailJob {
+  id        String                   @id @default(uuid()) @db.Uuid
   userId    Int
   channelId Int? // Optional: which channel this is for
-  inputJson String             @db.Text // ThumbnailJobInput (title, topic, audience, style, etc.)
-  status    String             @default("queued") @db.VarChar(32) // queued, planning, generating, rendering, completed, failed
-  progress  Int                @default(0) // 0-100
-  phase     String?            @db.VarChar(64) // Current phase description
-  error     String?            @db.Text // Error message if failed
-  createdAt DateTime           @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
-  Variants  ThumbnailVariant[]
+  inputJson String                   @db.Text // ThumbnailJobInput (title, topic, audience, style, etc.)
+  status    String                   @default("queued") @db.VarChar(32) // queued, planning, generating, rendering, completed, failed
+  progress  Int                      @default(0) // 0-100
+  phase     String?                  @db.VarChar(64) // Current phase description
+  error     String?                  @db.Text // Error message if failed
+  createdAt DateTime                 @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime                 @default(now()) @updatedAt @db.Timestamptz(6)
+  Variants  LegacyThumbnailVariant[]
 
-  @@index([userId], map: "idx_thumbnail_job_user")
-  @@index([channelId], map: "idx_thumbnail_job_channel")
-  @@index([status], map: "idx_thumbnail_job_status")
-  @@index([createdAt(sort: Desc)], map: "idx_thumbnail_job_created")
+  @@index([userId], map: "idx_legacy_thumbnail_job_user")
+  @@index([channelId], map: "idx_legacy_thumbnail_job_channel")
+  @@index([status], map: "idx_legacy_thumbnail_job_status")
+  @@index([createdAt(sort: Desc)], map: "idx_legacy_thumbnail_job_created")
+  @@map("ThumbnailJob")
 }
 
-model ThumbnailAsset {
+model LegacyThumbnailAsset {
   id         String   @id @default(uuid()) @db.Uuid
   userId     Int
   mime       String   @db.VarChar(64) // image/png, image/jpeg, image/webp
@@ -503,23 +508,152 @@ model ThumbnailAsset {
   storageKey String   @db.VarChar(512) // Storage key/path
   createdAt  DateTime @default(now()) @db.Timestamptz(6)
 
-  @@index([userId], map: "idx_thumbnail_asset_user")
-  @@index([createdAt(sort: Desc)], map: "idx_thumbnail_asset_created")
+  @@index([userId], map: "idx_legacy_thumbnail_asset_user")
+  @@index([createdAt(sort: Desc)], map: "idx_legacy_thumbnail_asset_created")
 }
 
-model ThumbnailVariant {
-  id            String       @id @default(uuid()) @db.Uuid
-  jobId         String       @db.Uuid
-  planJson      String       @db.Text // ThumbnailPlan from LLM
-  specJson      String       @db.Text // ThumbnailSpec (plan + current edits)
-  baseImageKey  String?      @db.VarChar(512) // Storage key for base image
-  finalImageKey String?      @db.VarChar(512) // Storage key for final rendered image
-  createdAt     DateTime     @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
-  Job           ThumbnailJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+model LegacyThumbnailVariant {
+  id            String             @id @default(uuid()) @db.Uuid
+  jobId         String             @db.Uuid
+  planJson      String             @db.Text // ThumbnailPlan from LLM
+  specJson      String             @db.Text // ThumbnailSpec (plan + current edits)
+  baseImageKey  String?            @db.VarChar(512) // Storage key for base image
+  finalImageKey String?            @db.VarChar(512) // Storage key for final rendered image
+  createdAt     DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
+  Job           LegacyThumbnailJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
-  @@index([jobId], map: "idx_thumbnail_variant_job")
-  @@index([createdAt(sort: Desc)], map: "idx_thumbnail_variant_created")
+  @@index([jobId], map: "idx_legacy_thumbnail_variant_job")
+  @@index([createdAt(sort: Desc)], map: "idx_legacy_thumbnail_variant_created")
+  @@map("ThumbnailVariant")
+}
+
+// ============================================
+// THUMBNAIL WORKFLOW V2 - Identity + Generation + Editor Projects
+// ============================================
+
+enum UserModelStatus {
+  pending
+  training
+  ready
+  failed
+  canceled
+}
+
+enum ThumbnailStyleV2 {
+  compare
+  subject
+  object
+  hold
+}
+
+enum ThumbnailJobStatusV2 {
+  queued
+  running
+  succeeded
+  failed
+  canceled
+}
+
+model UserModel {
+  id                    String          @id @default(uuid()) @db.Uuid
+  userId                Int             @unique
+  replicateModelOwner   String          @db.VarChar(128)
+  replicateModelName    String          @db.VarChar(255)
+  replicateModelVersion String?         @db.VarChar(128)
+  triggerWord           String          @db.VarChar(16)
+  status                UserModelStatus @default(pending)
+  trainingId            String?         @db.VarChar(128)
+  trainingStartedAt     DateTime?       @db.Timestamptz(6)
+  trainingCompletedAt   DateTime?       @db.Timestamptz(6)
+  errorMessage          String?         @db.Text
+  createdAt             DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+
+  User   User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Assets UserTrainingAsset[]
+
+  @@index([userId, status], map: "idx_user_model_user_status")
+}
+
+model UserTrainingAsset {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          Int
+  identityModelId String?  @db.Uuid
+  s3KeyOriginal   String   @db.VarChar(512)
+  s3KeyNormalized String?  @db.VarChar(512)
+  width           Int
+  height          Int
+  sha256          String   @db.VarChar(64)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+
+  User          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  IdentityModel UserModel? @relation(fields: [identityModelId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, sha256], map: "uq_user_training_asset_user_sha")
+  @@index([userId], map: "idx_user_training_asset_user")
+  @@index([identityModelId], map: "idx_user_training_asset_model")
+}
+
+model ThumbnailJob {
+  id                     String               @id @default(uuid()) @db.Uuid
+  userId                 Int
+  style                  ThumbnailStyleV2
+  styleModelVersionId    String               @db.VarChar(128)
+  identityModelVersionId String?              @db.VarChar(128)
+  userPrompt             String               @db.Text
+  llmPrompt              String               @db.Text
+  negativePrompt         String?              @db.Text
+  replicatePredictionId  String?              @db.VarChar(128)
+  status                 ThumbnailJobStatusV2 @default(queued)
+  outputImages           Json                 @default("[]")
+  createdAt              DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
+
+  User        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Predictions ThumbnailJobPrediction[]
+  Projects    ThumbnailProject[]
+
+  @@index([userId, createdAt(sort: Desc)], map: "idx_thumbnail_job_v2_user_created")
+  @@index([userId, status], map: "idx_thumbnail_job_v2_user_status")
+  @@map("ThumbnailJobV2")
+}
+
+model ThumbnailJobPrediction {
+  id                    String   @id @default(uuid()) @db.Uuid
+  thumbnailJobId        String   @db.Uuid
+  replicatePredictionId String   @unique @db.VarChar(128)
+  status                String   @default("starting") @db.VarChar(32)
+  outputImages          Json     @default("[]")
+  createdAt             DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  Job ThumbnailJob @relation(fields: [thumbnailJobId], references: [id], onDelete: Cascade)
+
+  @@index([thumbnailJobId], map: "idx_thumbnail_job_pred_job")
+  @@index([status], map: "idx_thumbnail_job_pred_status")
+}
+
+model ThumbnailProject {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         Int
+  thumbnailJobId String   @db.Uuid
+  baseImageUrl   String   @db.Text
+  editorState    Json
+  exports        Json     @default("[]")
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  User User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Job  ThumbnailJob @relation(fields: [thumbnailJobId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)], map: "idx_thumbnail_project_user_created")
+  @@index([thumbnailJobId], map: "idx_thumbnail_project_job")
+}
+
+model ReplicateWebhookEvent {
+  id        String   @id @db.VarChar(255) // e.g. "prediction:<id>:<status>"
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
 }
 
 // ============================================
@@ -527,17 +661,17 @@ model ThumbnailVariant {
 // ============================================
 
 model UserFaceReference {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      Int
-  label       String   @db.VarChar(64) // e.g., "Primary", "Serious", "Smiling"
-  storageKey  String   @db.VarChar(512) // Storage key/path for the image
-  mime        String   @db.VarChar(64) // image/png, image/jpeg
-  width       Int?
-  height      Int?
-  sizeBytes   Int?
-  isDefault   Boolean  @default(false) // Primary face reference
-  createdAt   DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     Int
+  label      String   @db.VarChar(64) // e.g., "Primary", "Serious", "Smiling"
+  storageKey String   @db.VarChar(512) // Storage key/path for the image
+  mime       String   @db.VarChar(64) // image/png, image/jpeg
+  width      Int?
+  height     Int?
+  sizeBytes  Int?
+  isDefault  Boolean  @default(false) // Primary face reference
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@index([userId], map: "idx_user_face_ref_user")
   @@index([userId, isDefault], map: "idx_user_face_ref_default")

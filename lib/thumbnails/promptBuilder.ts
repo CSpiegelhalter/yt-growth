@@ -75,7 +75,7 @@ const NO_TEXT_INSTRUCTION = `CRITICAL: Generate NO text, NO words, NO letters, N
 /**
  * Negative prompt for exclusions (includes anti-AI artifact terms)
  */
-export const STANDARD_NEGATIVE_PROMPT = `text, words, letters, numbers, watermarks, logos, signatures, low contrast, flat background, blurry, grainy, cluttered, busy collage, tiny subject, oversaturated, washed out, dark muddy colors, amateur quality, stock photo look, deformed, extra fingers, extra limbs, malformed hands, distorted face, duplicated objects, impossible screens, warped keyboard, uncanny valley, bad anatomy, wrong proportions, mutated, disfigured, poorly drawn`;
+export const STANDARD_NEGATIVE_PROMPT = `text, words, letters, numbers, watermarks, logos, signatures, low contrast, flat background, blurry, blurry text, grainy, cluttered, busy collage, tiny subject, oversaturated, washed out, dark muddy colors, amateur quality, stock photo look, deformed, extra fingers, extra limbs, malformed hands, distorted face, duplicated objects, impossible screens, warped keyboard, uncanny valley, bad anatomy, wrong proportions, mutated, disfigured, poorly drawn`;
 
 // ============================================
 // STYLE RECIPES - Explicit meme style prompts
@@ -986,7 +986,7 @@ export function buildSafePrompt(plan: ThumbnailPlan): {
   // 1. Base format instruction
   sections.push(
     `Design a YouTube thumbnail base image. 16:9 aspect ratio, 1280x720.
-Leave space for text overlay to be added separately.`
+Leave space for HEADLINE TEXT overlay to be added separately (big, bold, readable, high-contrast).`
   );
 
   // 2. NO TEXT instruction (critical, early)
@@ -1016,8 +1016,14 @@ Keep it believable and realistic.`
   }
 
   // 7. Layout and composition
+  const layoutToken =
+    plan.layout === "subject-left_text-right"
+      ? "SUBJECT LEFT, TEXT RIGHT"
+      : plan.layout === "subject-right_text-left"
+      ? "SUBJECT RIGHT, TEXT LEFT"
+      : plan.layout.toUpperCase().replace(/_/g, ", ").replace(/-/g, " ");
   sections.push(
-    `COMPOSITION: ${plan.layout.replace(/_/g, ", ").replace(/-/g, " ")}.
+    `COMPOSITION: ${layoutToken}.
 Subject on one side, leave space for text overlay on the other. Balanced composition.`
   );
 

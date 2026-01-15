@@ -26,9 +26,10 @@ import {
   VideoFilters,
 } from "@/lib/video-tools";
 
-const ONE_DAY_AGO = new Date("2026-01-01T12:00:00Z").toISOString();
-const SEVEN_DAYS_AGO = new Date("2025-12-26T12:00:00Z").toISOString();
-const THIRTY_DAYS_AGO = new Date("2025-12-03T12:00:00Z").toISOString();
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const ONE_DAY_AGO = new Date(Date.now() - ONE_DAY_MS).toISOString();
+const SEVEN_DAYS_AGO = new Date(Date.now() - 7 * ONE_DAY_MS).toISOString();
+const THIRTY_DAYS_AGO = new Date(Date.now() - 30 * ONE_DAY_MS).toISOString();
 
 // Helper to create test videos
 function createTestVideo(overrides: Partial<DashboardVideo> = {}): DashboardVideo {

@@ -18,6 +18,46 @@ export function getTestModeResponse(messages: LLMMessage[]): LLMResponse {
   const systemMessage =
     messages.find((m) => m.role === "system")?.content ?? "";
 
+  // Detect Thumbnail Workflow V2 prompt builder (JSON variants contract)
+  if (
+    systemMessage.includes("prompt transformer for image generation") &&
+    lastMessage.includes("Generate exactly") &&
+    lastMessage.includes("variants")
+  ) {
+    const match = lastMessage.match(/Generate exactly\s+(\d+)\s+variants/i);
+    const n = Math.max(1, Math.min(4, Number(match?.[1] ?? "3")));
+    const variants = Array.from({ length: n }).map((_, idx) => ({
+      variationNote:
+        idx === 0
+          ? "tight close-up"
+          : idx === 1
+          ? "medium shot with prop"
+          : idx === 2
+          ? "more negative space"
+          : "dramatic angle",
+      scene: "A clean, high-contrast scene matching the user's description.",
+      composition:
+        idx === 0
+          ? "tight close-up, subject fills frame"
+          : idx === 1
+          ? "medium shot with one clear prop"
+          : idx === 2
+          ? "leave significant negative space on one side for later text"
+          : "dynamic, slightly tilted framing with motion energy",
+      lighting: "dramatic studio lighting, strong rim light, high contrast",
+      background: "simple blurred background, uncluttered",
+      camera: "35mm lens look, sharp focus, slight depth of field",
+      props: "one relevant prop only, clean and recognizable",
+      avoid: ["text", "letters", "watermark", "logo"],
+    }));
+
+    return {
+      content: JSON.stringify({ variants }),
+      tokensUsed: 350,
+      model: "gpt-4o-mini-test",
+    };
+  }
+
   // Detect IdeaBoard request
   if (
     systemMessage.includes("elite YouTube creative") ||

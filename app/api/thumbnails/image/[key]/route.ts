@@ -33,11 +33,12 @@ export const GET = createApiRoute(
       // Decode the key
       const key = decodeURIComponent(encodedKey);
 
-      // Security: Validate key format (should be thumbnails/..., assets/..., or face-refs/...)
+      // Security: Validate key format (should be thumbnails/..., assets/..., face-refs/..., or identity/...)
       if (
         !key.startsWith("thumbnails/") &&
         !key.startsWith("assets/") &&
-        !key.startsWith("face-refs/")
+        !key.startsWith("face-refs/") &&
+        !key.startsWith("identity/")
       ) {
         throw new ApiError({
           code: "FORBIDDEN",

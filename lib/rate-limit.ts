@@ -101,6 +101,12 @@ export const RATE_LIMITS = {
   thumbnailJob: { limit: 10, windowSec: 600 },
   // Thumbnail regenerate base: 5 per 10 min per user
   thumbnailRegenerate: { limit: 5, windowSec: 600 },
+  // Identity training asset uploads: 40 per day per user
+  identityUpload: { limit: 40, windowSec: 86400 },
+  // Identity training commits: 3 per day per user
+  identityCommit: { limit: 3, windowSec: 86400 },
+  // Thumbnail workflow v2 generation: 30 per day per user
+  thumbnailGenerateV2: { limit: 30, windowSec: 86400 },
 } as const;
 
 /**
