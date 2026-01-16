@@ -9,19 +9,15 @@ import { defineConfig, devices } from "@playwright/test";
  *   bun run test:e2e:headed # With browser visible
  *
  * Test order (alphabetical by file):
- *   1. channel-limits.spec.ts - Channel limit enforcement
- *   2. gating.spec.ts - Feature gating & usage limits
- *   3. happy-path.spec.ts - Core user journeys
- *   4. smoke.spec.ts - Basic app functionality
- *   5. youtube.spec.ts - Fake YouTube integration
- *   6. z-stripe-checkout.spec.ts - Stripe checkout (runs last)
+ *   1. happy-path.spec.ts - Core user journeys
+ *   2. smoke.spec.ts - Basic app functionality
+ *   3. z-stripe-checkout.spec.ts - Stripe checkout (runs last)
  *
  * Requirements for Stripe tests:
  *   - Stripe CLI running: stripe listen --forward-to localhost:3000/api/integrations/stripe/webhook
  *
  * Environment:
- *   APP_TEST_MODE=1   - Enables test-only API routes
- *   FAKE_YOUTUBE=1    - Uses fake YouTube data
+ *   DISABLE_RATE_LIMITS=1 - Disables rate limits for testing
  */
 export default defineConfig({
   testDir: "./e2e",
@@ -69,13 +65,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "bun run dev:test",
+    command: "bun run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000, // 2 minutes to start
     env: {
-      APP_TEST_MODE: "1",
-      FAKE_YOUTUBE: "1",
       DISABLE_RATE_LIMITS: "1",
     },
   },

@@ -1,9 +1,5 @@
-import { describe, test, expect, beforeEach } from "bun:test";
+import { describe, test, expect } from "bun:test";
 import { buildThumbnailPrompt } from "@/lib/server/prompting/buildThumbnailPrompt";
-
-beforeEach(() => {
-  process.env.TEST_MODE = "1";
-});
 
 describe("buildThumbnailPrompt (workflow v2)", () => {
   test("starts with style trigger and includes no-text constraints", async () => {

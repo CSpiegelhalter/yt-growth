@@ -1,0 +1,159 @@
+---
+name: rule
+description: Core project mission + architecture/quality rules (always apply)
+globs: ["**/*"]
+alwaysApply: true
+---
+
+## Mission
+Build a YouTube growth application that helps creators make better content faster:
+- Channel + competitor analysis
+- Idea generation
+- Thumbnail generation
+- Anything else that measurably improves growth (CTR, retention, upload consistency)
+
+Success looks like: fast, clear workflows that create “wow” moments, keep users engaged, and improve creator outcomes.
+
+---
+
+## Tech & Platform
+- Runtime/package manager: **bun** (prefer `bun` commands and bun-compatible tooling).
+- Framework: **Next.js App Router** (`app/`).
+- **Do NOT use Next.js middleware** (deprecated for this project). We use **proxy.ts** for request proxying instead.
+- Payments: **Stripe**.
+  - Stripe webhooks exist and are critical—treat webhook routes as externally-invoked entrypoints.
+  - Never assume a webhook route is unused just because UI doesn’t call it.
+
+---
+
+## Architecture & Project Structure (assumptions)
+- `app/` is the canonical source of routes (RSC-first).
+  - `app/**/page.tsx` = pages
+  - `app/api/**/route.ts` = server endpoints (treat as entrypoints)
+  - `app/sitemap.ts` and `app/robots.ts` exist, but sitemap omissions are not proof a route is dead.
+- `components/` contains UI components; keep them small and composable.
+- `lib/` contains reusable logic (server helpers, integrations like YouTube/Stripe, thumbnail generation, etc.).
+- `scripts/` contains CLI/maintenance scripts (entrypoints).
+- `tests/` contains unit/integration tests (treat test-only helpers as “alive” if tests depend on them).
+- `proxy.ts` is used for proxying; keep it aligned with routes and API boundaries.
+
+If the actual structure differs, update this file to match reality.
+
+---
+
+## UX Principles (non-negotiables)
+- User-centric workflows: help creators move from “question” → “action” quickly.
+- Usability: clear navigation, predictable flows, minimal friction.
+- Consistency: reuse patterns and components.
+- Clarity & hierarchy: important info stands out; reduce noise.
+- Accessibility: semantic HTML, keyboard nav, ARIA where needed.
+- User control & freedom: undo/cancel/escape hatches.
+- Feedback: visible loading/error/success states; explain outcomes.
+
+---
+
+## Product Design Heuristics
+- Minimize cognitive load: fewer choices per screen; progressive disclosure.
+- Context-aware UI: tailor based on channel state, plan tier, device.
+- Error prevention & recovery: guard rails + helpful messages.
+- Recognition over recall: keep key info visible.
+- Peak-end rule: make “results” screens and completion moments delightful.
+
+---
+
+## Rendering & Data Fetching Policy (Next.js)
+- Default to **React Server Components** and server-side data fetching.
+- Minimize:
+  - `'use client'`
+  - `useEffect`
+  - `useState`
+- Use client components only when required:
+  - interactive UI state
+  - browser-only APIs
+  - realtime UX
+- Prefer server actions / route handlers for mutations when appropriate.
+- Keep pages thin: pages compose smaller components and call into `lib/`.
+
+---
+
+## Code Quality & Maintainability
+- Components should be small; avoid giant files.
+- Prefer clear separation of responsibilities:
+  - UI (components/app)
+  - domain logic (lib)
+  - integrations (lib/*integration*)
+- Reuse logic; avoid duplication.
+- Keep performance in mind (avoid heavy client bundles; code split).
+- Write code that is easy to change and test.
+
+---
+
+## SEO Requirements
+- “SEO is a feature.” Pages must be indexable, fast, and content-rich.
+- Use Next.js metadata APIs correctly:
+  - `generateMetadata` where appropriate
+  - unique titles/descriptions per route
+  - canonical URLs where needed
+- Optimize performance:
+  - dynamic imports for code splitting
+  - images: Next/Image, WebP when possible, explicit sizes, lazy loading
+  - responsive, mobile-first layouts
+- Avoid client-only rendering for pages that should rank.
+
+---
+
+## Error Handling & Validation
+- Use guard clauses / early returns.
+- Handle edge cases explicitly (missing channel data, rate limits, empty results).
+- Prefer custom error types and consistent error surfaces.
+- Validate inputs at boundaries (API routes, server actions, webhook handlers):
+  - use **Zod** schemas for parsing/validation
+- Never log secrets. Be careful with webhook payloads and auth tokens.
+
+---
+
+## State Management
+- Prefer server state when possible (RSC/SSR).
+- If client state is required:
+  - use **Zustand** for global UI state
+  - use **TanStack React Query** for client fetching/caching
+- Avoid redundant fetching; use caching where appropriate.
+
+---
+
+## Stripe Webhooks (Special Rules)
+- Treat webhook endpoints as **public entrypoints** triggered by Stripe.
+- Never remove/refactor webhook code without:
+  - verifying Stripe event types used
+  - confirming handling paths
+  - ensuring idempotency and signature verification remain intact
+- Prefer storing enough metadata to reconcile payments safely.
+
+---
+
+## Safe Refactors & Cleanup Policy
+- Do not delete routes/files/exports unless you have 2 proofs of unused:
+  1) IDE/TypeScript “Find References” or compiler/linter evidence, AND
+  2) repo-wide search evidence (including dynamic imports and string-based usage)
+- Always check for:
+  - `import()`, `require()`, `next/dynamic`, `React.lazy`
+  - string references (`fetch("/api/...")`, route names, config keys)
+  - usage from scripts/tests/CI/infra
+- Make changes in small batches; run verification commands after each batch.
+
+Recommended verification (bun):
+- `bun run lint`
+- `bun run typecheck`
+- `bun run test:unit` (and integration/e2e if present)
+
+---
+
+## Implementation Method
+When implementing or refactoring:
+1) Analyze requirements and constraints.
+2) Plan the smallest safe change set.
+3) Implement step-by-step.
+4) Review for edge cases, performance, security.
+5) Finalize with verification commands.
+
+Prefer the simplest solution that is safe, maintainable, and performant.

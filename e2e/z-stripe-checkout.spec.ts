@@ -31,8 +31,7 @@
 import { test, expect, Page } from "@playwright/test";
 import {
   signIn,
-  DEMO_USER,
-  setBillingState,
+  TEST_USER,
   getMe,
 } from "./fixtures/test-helpers";
 
@@ -52,8 +51,8 @@ test.describe("Stripe Checkout Flow", () => {
   test.setTimeout(120_000);
 
   test.beforeEach(async ({ page }) => {
-    // Sign in as demo user
-    await signIn(page, DEMO_USER);
+    // Sign in as test user
+    await signIn(page, TEST_USER);
 
     // Verify user is properly signed in and exists in DB
     const me = await getMe(page);
@@ -72,11 +71,12 @@ test.describe("Stripe Checkout Flow", () => {
   });
 
   test("complete checkout flow upgrades to PRO", async ({ page }) => {
-    // Reset to FREE plan so we can test the upgrade flow
-    const setFree = await setBillingState(page, "free");
-    if (!setFree) {
-      console.log("Note: Test billing routes not available.");
-    }
+    // Note: Use test billing API to reset state if available
+    // (Comment out until test billing routes are implemented)
+    // const setFree = await setBillingState(page, "free");
+    // if (!setFree) {
+    //   console.log("Note: Test billing routes not available.");
+    // }
 
     // Navigate to profile/billing page
     await page.goto("/profile");

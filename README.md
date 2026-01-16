@@ -249,7 +249,6 @@ YouTube growth tools built with Next.js 14, Prisma, and TypeScript.
 | `/api/integrations/google/callback` | GET | - | Google OAuth callback |
 | `/api/integrations/stripe/checkout` | POST | ✅ | Create Stripe checkout session |
 | `/api/integrations/stripe/webhook` | POST | - | Handle Stripe webhooks |
-| `/api/integrations/stripe/test-activate` | GET | - | TEST_MODE only: Activate subscription |
 
 ### Internal/Cron
 
@@ -292,11 +291,6 @@ cp env.example .env.local
 - `OPENAI_API_KEY` - OpenAI for plan generation
 - `CRON_SECRET` - For cron endpoint
 
-**For local testing without real APIs:**
-```bash
-TEST_MODE=1
-```
-
 ### Step 4: Run Migrations and Seed
 ```bash
 npm run db:migrate
@@ -309,10 +303,6 @@ npm run dev
 ```
 
 Visit http://localhost:3000
-
-### Demo Credentials (from seed)
-- **Pro user:** demo@example.com / demo123
-- **Free user:** free@example.com / demo123
 
 ---
 
@@ -355,7 +345,7 @@ npm test
 | `db:reset` | Reset database (destroy + recreate + migrate) |
 | `db:migrate` | Run Prisma migrations |
 | `db:push` | Push schema without migrations |
-| `db:seed` | Seed demo data |
+| `db:seed` | Seed development database |
 | `db:studio` | Open Prisma Studio |
 | `test` | Run all tests |
 | `test:unit` | Run unit tests |
@@ -391,8 +381,7 @@ yt-growth/
 │   ├── schema.prisma     # Schema definition
 │   ├── client.ts         # Prisma client singleton
 │   └── seed.ts           # Seed script
-├── types/                # TypeScript types
-└── test/                 # Test fixtures
+└── types/                # TypeScript types
 ```
 
 ---
@@ -405,21 +394,6 @@ yt-growth/
 - Google tokens never exposed to client
 - Rate limiting on expensive operations
 - CRON endpoint secured with header secret
-
----
-
-## 🧩 TEST_MODE
-
-When `TEST_MODE=1`:
-- Subscription checks always pass
-- YouTube API returns fixture data
-- Stripe checkout returns test URL that auto-activates
-- LLM returns fixture responses
-
-Use this for:
-- Local development without API keys
-- Running E2E tests
-- Demo purposes
 
 ---
 

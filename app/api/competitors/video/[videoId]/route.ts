@@ -17,69 +17,82 @@
  * - channelId: string (the user's active channel for context)
  */
 import { NextRequest } from "next/server";
-import { z } from "zod";
-import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
-
-
-import {
-  getGoogleAccount,
-  fetchVideoDetails,
-  fetchRecentChannelVideos,
-  fetchVideoComments,
-} from "@/lib/youtube-api";
-import {
-  generateCompetitorVideoAnalysisParallel,
-  analyzeVideoComments,
-} from "@/lib/llm";
-import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
+import { createLogger } from "@/lib/logger";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { hashVideoContent, hashCommentsContent } from "@/lib/content-hash";
-import {
-  analyzeNumberInTitle,
-  formatDuration,
-  getDurationBucket,
-  detectChapters,
-  analyzeExternalLinks,
-  analyzeHashtags,
-  computePublicSignals,
-} from "@/lib/competitor-utils";
 import {
   checkEntitlement,
   entitlementErrorResponse,
 } from "@/lib/with-entitlements";
 import type {
   CompetitorVideoAnalysis,
-  CompetitorVideo,
   CompetitorCommentsAnalysis,
 } from "@/types/api";
 
-const ParamsSchema = z.object({
-  videoId: z.string().min(1),
-});
+// Import from refactored modules
+import {
+  // Types
+  VideoDetailError,
+  type RequestContext,
+  // Validation
+  parseParams,
+  parseQuery,
+  // YouTube
+  getGoogleAccountOrThrow,
+  fetchVideoDetailsWithTimeout,
+  fetchCommentsWithTimeout,
+  fetchRecentChannelVideosWithTimeout,
+  // Cache
+  readCachesParallel,
+  isCommentsCacheFresh,
+  isAnalysisCacheFresh,
+  upsertCompetitorVideo,
+  saveAnalysisCache,
+  backfillBeatChecklist,
+  // Analysis
+  normalizeBeatChecklist,
+  normalizeAnalysis,
+  runParallelAnalysis,
+  cacheCommentsInBackground,
+  // Response
+  buildVideoObject,
+  buildMoreFromChannel,
+  buildResponse,
+  buildLLMErrorResponse,
+} from "@/lib/competitors/video-detail";
 
-const QuerySchema = z.object({
-  channelId: z.string().min(1),
-  includeMoreFromChannel: z
-    .union([z.literal("0"), z.literal("1")])
-    .optional()
-    .default("1"),
-});
+const logger = createLogger({ module: "api.competitors.video" });
+
+// ============================================
+// MAIN ROUTE HANDLER
+// ============================================
 
 async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ videoId: string }> }
 ) {
+  const routeStartTime = Date.now();
   const paramsObj = await params;
 
-  // Return demo data if demo mode is enabled
-  if (isDemoMode() && !isYouTubeMockMode()) {
-    const demoData = generateDemoVideoAnalysis(paramsObj.videoId);
-    return Response.json(demoData);
-  }
+  // Initialize request context for logging
+  const ctx: RequestContext = {
+    route: "/api/competitors/video/[videoId]",
+    requestId: crypto.randomUUID().slice(0, 8),
+    userId: 0,
+    channelId: "",
+    videoId: "",
+    startTime: routeStartTime,
+    timings: [],
+  };
 
   try {
-    // Entitlement check - competitor video analysis is a usage-limited feature
+    // ==========================================
+    // STAGE 1: GATEKEEPING (Auth, Rate Limit, Validation)
+    // ==========================================
+    const gatekeepStart = Date.now();
+
+    // Entitlement check
     const entitlementResult = await checkEntitlement({
       featureKey: "competitor_video_analysis",
       increment: true,
@@ -88,8 +101,9 @@ async function GETHandler(
       return entitlementErrorResponse(entitlementResult.error);
     }
     const user = entitlementResult.context.user;
+    ctx.userId = user.id;
 
-    // Rate limit check (per-hour limit for API protection)
+    // Rate limit check
     const rlKey = rateLimitKey("competitorDetail", user.id);
     const rlResult = checkRateLimit(rlKey, RATE_LIMITS.competitorDetail);
     if (!rlResult.success) {
@@ -102,239 +116,107 @@ async function GETHandler(
       );
     }
 
-    // Validate params
-    const parsedParams = ParamsSchema.safeParse(paramsObj);
-    if (!parsedParams.success) {
-      return Response.json({ error: "Invalid video ID" }, { status: 400 });
-    }
+    // Validate params and query
+    const { videoId } = parseParams(paramsObj);
+    ctx.videoId = videoId;
 
-    const { videoId } = parsedParams.data;
-
-    // Parse query params
     const url = new URL(req.url);
-    const queryResult = QuerySchema.safeParse({
-      channelId: url.searchParams.get("channelId") ?? "",
-      includeMoreFromChannel:
-        (url.searchParams.get("includeMoreFromChannel") as "0" | "1" | null) ??
-        undefined,
-    });
-
-    if (!queryResult.success) {
-      return Response.json(
-        { error: "channelId query parameter required" },
-        { status: 400 }
-      );
-    }
-
-    const { channelId, includeMoreFromChannel } = queryResult.data;
+    const { channelId, includeMoreFromChannel } = parseQuery(url);
+    ctx.channelId = channelId;
     const shouldIncludeMoreFromChannel = includeMoreFromChannel !== "0";
 
-    // Verify the user owns this channel
-    const channel = await prisma.channel.findFirst({
-      where: {
-        youtubeChannelId: channelId,
-        userId: user.id,
-      },
+    ctx.timings.push({
+      stage: "gatekeeping",
+      durationMs: Date.now() - gatekeepStart,
     });
 
-    if (!channel) {
-      return Response.json({ error: "Channel not found" }, { status: 404 });
-    }
+    // ==========================================
+    // STAGE 2: PARALLEL DB READS
+    // ==========================================
+    const { cachedVideo, cachedComments, channelOwnership } =
+      await readCachesParallel(videoId, channelId, user.id, ctx);
 
-    // Get Google account for API calls (use channelId to get the correct account)
-    const ga = await getGoogleAccount(user.id, channelId);
-    if (!ga) {
-      return Response.json(
-        { error: "Google account not connected" },
-        { status: 400 }
+    if (!channelOwnership) {
+      throw new VideoDetailError(
+        "Channel not found",
+        "CHANNEL_NOT_FOUND",
+        404,
+        { channelId }
       );
     }
 
-    // Check for cached analysis in DB
-    const cachedComments = await prisma.competitorVideoComments.findUnique({
-      where: { videoId },
-    });
+    // ==========================================
+    // STAGE 3: YOUTUBE API FETCH
+    // ==========================================
+    const ga = await getGoogleAccountOrThrow(user.id, channelId);
 
-    // If comment analysis is fresh (within 7 days), use cached
-    const commentsCacheDays = 7;
-    const now = new Date();
-    const isCacheFresh =
-      cachedComments &&
-      now.getTime() - cachedComments.capturedAt.getTime() <
-        commentsCacheDays * 24 * 60 * 60 * 1000;
+    const videoDetails = await fetchVideoDetailsWithTimeout(ga, videoId, ctx);
 
-    // Fetch video details from YouTube API
-    const videoDetails = await fetchVideoDetails(ga, videoId);
-    if (!videoDetails) {
-      return Response.json({ error: "Video not found" }, { status: 404 });
-    }
-
-    console.log("[competitor.video] fetched video details", {
-      videoId,
-      channelId: videoDetails.channelId,
-      titleLen: videoDetails.title?.length ?? 0,
-      descLen: videoDetails.description?.length ?? 0,
-      tagsCount: videoDetails.tags?.length ?? 0,
-      hasThumb: Boolean(videoDetails.thumbnailUrl),
-      hasDuration: Boolean(videoDetails.durationSec),
-    });
-
-    // Upsert competitor video metadata (enables caching LLM analysis even if it wasn't tracked before)
-    await prisma.competitorVideo.upsert({
-      where: { videoId },
-      create: {
-        videoId,
-        channelId: videoDetails.channelId,
-        channelTitle: videoDetails.channelTitle,
-        title: videoDetails.title,
-        description: videoDetails.description,
-        publishedAt: new Date(videoDetails.publishedAt),
-        durationSec: videoDetails.durationSec,
-        thumbnailUrl: videoDetails.thumbnailUrl ?? undefined,
-        tags: videoDetails.tags ?? [],
-        categoryId: videoDetails.category,
-        lastFetchedAt: now,
-      },
-      update: {
-        channelId: videoDetails.channelId,
-        channelTitle: videoDetails.channelTitle,
-        title: videoDetails.title,
-        description: videoDetails.description,
-        publishedAt: new Date(videoDetails.publishedAt),
-        durationSec: videoDetails.durationSec,
-        thumbnailUrl: videoDetails.thumbnailUrl ?? undefined,
-        tags: videoDetails.tags ?? [],
-        categoryId: videoDetails.category,
-        lastFetchedAt: now,
-      },
-    });
-
-    // Calculate derived metrics
-    const publishedAt = new Date(videoDetails.publishedAt);
-    const daysSincePublish = Math.max(
-      1,
-      Math.floor(
-        (now.getTime() - publishedAt.getTime()) / (1000 * 60 * 60 * 24)
-      )
-    );
-    const viewsPerDay = Math.round(videoDetails.viewCount / daysSincePublish);
-
-    // Calculate engagement rates from public metrics
-    const engagementPerView =
-      videoDetails.viewCount > 0
-        ? (videoDetails.likeCount + videoDetails.commentCount) /
-          videoDetails.viewCount
-        : undefined;
-
-    // Get velocity from snapshots if available (+ cached LLM analysis)
-    const dbVideo = await prisma.competitorVideo.findUnique({
-      where: { videoId },
-      include: {
-        Snapshots: {
-          orderBy: { capturedAt: "desc" },
-          take: 5,
-        },
-      },
-    });
-
-    let velocity24h: number | undefined;
-    let velocity7d: number | undefined;
-
-    if (dbVideo && dbVideo.Snapshots.length >= 2) {
-      const latest = dbVideo.Snapshots[0];
-      const snapshot24h = dbVideo.Snapshots.find((s) => {
-        const age = now.getTime() - s.capturedAt.getTime();
-        return age >= 20 * 60 * 60 * 1000 && age <= 28 * 60 * 60 * 1000;
-      });
-      const snapshot7d = dbVideo.Snapshots.find((s) => {
-        const age = now.getTime() - s.capturedAt.getTime();
-        return age >= 6 * 24 * 60 * 60 * 1000 && age <= 8 * 24 * 60 * 60 * 1000;
-      });
-
-      if (snapshot24h) velocity24h = latest.viewCount - snapshot24h.viewCount;
-      if (snapshot7d) velocity7d = latest.viewCount - snapshot7d.viewCount;
-    }
-
-    // Build video object
-    const video: CompetitorVideo = {
-      videoId: videoDetails.videoId,
-      title: videoDetails.title,
+    // Upsert video metadata (enables caching even if not tracked before)
+    await upsertCompetitorVideo(videoId, {
       channelId: videoDetails.channelId,
       channelTitle: videoDetails.channelTitle,
-      channelThumbnailUrl: null,
-      videoUrl: `https://youtube.com/watch?v=${videoDetails.videoId}`,
-      channelUrl: `https://youtube.com/channel/${videoDetails.channelId}`,
-      thumbnailUrl: videoDetails.thumbnailUrl,
-      publishedAt: videoDetails.publishedAt,
+      title: videoDetails.title,
+      description: videoDetails.description,
+      publishedAt: new Date(videoDetails.publishedAt),
       durationSec: videoDetails.durationSec,
-      stats: {
-        viewCount: videoDetails.viewCount,
-        likeCount: videoDetails.likeCount,
-        commentCount: videoDetails.commentCount,
-      },
-      derived: {
-        viewsPerDay,
-        velocity24h,
-        velocity7d,
-        engagementPerView,
-        dataStatus: velocity24h !== undefined ? "ready" : "building",
-      },
-    };
+      thumbnailUrl: videoDetails.thumbnailUrl,
+      tags: videoDetails.tags ?? [],
+      categoryId: videoDetails.category,
+    });
 
-    // ============================================
-    // PARALLEL FETCH: Comments + More from Channel
-    // ============================================
-    const rangeDays = 28;
-    const publishedAfter = new Date(
-      now.getTime() - rangeDays * 24 * 60 * 60 * 1000
-    ).toISOString();
+    // Build video object
+    const now = new Date();
+    const video = buildVideoObject(
+      videoDetails,
+      cachedVideo?.Snapshots ?? [],
+      now
+    );
 
-    // Start parallel fetches for comments and more videos
+    // ==========================================
+    // STAGE 4: PARALLEL FETCH (Comments + More Videos)
+    // ==========================================
     const commentsRlKey = rateLimitKey("competitorComments", user.id);
     const commentsRlResult = checkRateLimit(
       commentsRlKey,
       RATE_LIMITS.competitorComments
     );
 
+    const isCacheFresh = isCommentsCacheFresh(cachedComments);
+    const shouldFetchComments =
+      !isCacheFresh && !cachedComments?.analysisJson && commentsRlResult.success;
+
     const [commentsResult, channelVideosResult] = await Promise.all([
-      // Fetch comments (skip if cached or rate limited)
-      isCacheFresh && cachedComments?.analysisJson
-        ? Promise.resolve(null) // Use cached
-        : commentsRlResult.success
-          ? fetchVideoComments(ga, videoId, 50)
-          : Promise.resolve(null),
-      // Fetch more videos from channel
+      shouldFetchComments
+        ? fetchCommentsWithTimeout(ga, videoId, 50, ctx)
+        : Promise.resolve(null),
       shouldIncludeMoreFromChannel
-        ? fetchRecentChannelVideos(ga, videoDetails.channelId, publishedAfter, 6).catch(() => [])
+        ? fetchRecentChannelVideosWithTimeout(ga, videoDetails.channelId, ctx)
         : Promise.resolve([]),
     ]);
 
-    // Process "more from channel" results
-    const moreFromChannel: CompetitorVideo[] = (channelVideosResult ?? [])
-      .filter((v) => v.videoId !== videoId)
-      .slice(0, 4)
-      .map((v) => ({
-        videoId: v.videoId,
-        title: v.title,
-        channelId: videoDetails.channelId,
-        channelTitle: videoDetails.channelTitle,
-        channelThumbnailUrl: null,
-        videoUrl: `https://youtube.com/watch?v=${v.videoId}`,
-        channelUrl: `https://youtube.com/channel/${videoDetails.channelId}`,
-        thumbnailUrl: v.thumbnailUrl,
-        publishedAt: v.publishedAt,
-        stats: { viewCount: v.views },
-        derived: { viewsPerDay: v.viewsPerDay },
-      }));
+    // Build more from channel
+    const moreFromChannel = buildMoreFromChannel(
+      channelVideosResult,
+      videoId,
+      videoDetails.channelId,
+      videoDetails.channelTitle
+    );
 
-    // Process comments - prepare for parallel LLM calls
+    // ==========================================
+    // STAGE 5: PROCESS COMMENTS
+    // ==========================================
     let commentsAnalysis: CompetitorCommentsAnalysis | undefined;
     let needsCommentsLLM = false;
-    let commentsForLLM: Array<{ text: string; likeCount: number; authorName: string }> | null = null;
+    let commentsForLLM: Array<{
+      text: string;
+      likeCount: number;
+      authorName: string;
+    }> | null = null;
     let commentsContentHash: string | null = null;
 
     if (isCacheFresh && cachedComments?.analysisJson) {
-      console.log(`[competitor.video] Using cached comments analysis`);
+      logger.info("Using cached comments analysis", { videoId });
       commentsAnalysis =
         cachedComments.analysisJson as unknown as CompetitorCommentsAnalysis;
     } else if (commentsResult) {
@@ -366,10 +248,14 @@ async function GETHandler(
         const cachedHasRealAnalysis =
           cachedComments?.analysisJson &&
           (cachedComments.analysisJson as { themes?: unknown[] }).themes &&
-          (cachedComments.analysisJson as { themes?: unknown[] }).themes!.length > 0;
+          (cachedComments.analysisJson as { themes?: unknown[] }).themes!
+            .length > 0;
 
         if (commentsUnchanged && cachedHasRealAnalysis) {
-          console.log(`[competitor.video] Reusing cached comments LLM (hash: ${commentsContentHash})`);
+          logger.info("Reusing cached comments LLM (hash match)", {
+            videoId,
+            contentHash: commentsContentHash,
+          });
           commentsAnalysis =
             cachedComments.analysisJson as unknown as CompetitorCommentsAnalysis;
           commentsAnalysis.topComments = commentsResult.comments
@@ -402,42 +288,9 @@ async function GETHandler(
       }
     }
 
-    // ============================================
-    // PARALLEL LLM: Comments Analysis + Main Analysis
-    // ============================================
-    let analysis: CompetitorVideoAnalysis["analysis"];
-    let beatThisVideoLLM:
-      | Array<{
-          action: string;
-          difficulty: "Easy" | "Medium" | "Hard";
-          impact: "Low" | "Medium" | "High";
-        }>
-      | undefined;
-
-    const normalizeBeatChecklist = (input: unknown) => {
-      if (!Array.isArray(input)) return undefined;
-      const out = input
-        .map((x: any) => ({
-          action: typeof x?.action === "string" ? x.action.trim() : "",
-          difficulty:
-            x?.difficulty === "Easy" ||
-            x?.difficulty === "Medium" ||
-            x?.difficulty === "Hard"
-              ? x.difficulty
-              : "Medium",
-          impact:
-            x?.impact === "Low" ||
-            x?.impact === "Medium" ||
-            x?.impact === "High"
-              ? x.impact
-              : "High",
-        }))
-        .filter((x) => x.action.length >= 16)
-        .slice(0, 10);
-      return out.length > 0 ? out : undefined;
-    };
-
-    // Compute content hash for the current video
+    // ==========================================
+    // STAGE 6: LLM ANALYSIS
+    // ==========================================
     const currentContentHash = hashVideoContent({
       title: video.title,
       description: videoDetails.description,
@@ -446,298 +299,193 @@ async function GETHandler(
       categoryId: videoDetails.category,
     });
 
-    // Check if cached analysis is still valid
-    const analysisCacheDays = 30;
-    const isWithinTimeWindow =
-      dbVideo?.analysisCapturedAt &&
-      now.getTime() - dbVideo.analysisCapturedAt.getTime() <
-        analysisCacheDays * 24 * 60 * 60 * 1000;
-    const contentHashMatches =
-      dbVideo?.analysisContentHash === currentContentHash;
-    const isAnalysisCacheFresh =
-      isWithinTimeWindow &&
-      (contentHashMatches || !dbVideo?.analysisContentHash);
+    const analysisIsCacheFresh = isAnalysisCacheFresh(
+      cachedVideo,
+      currentContentHash
+    );
 
-    if (isAnalysisCacheFresh && dbVideo?.analysisJson) {
+    let analysis: CompetitorVideoAnalysis["analysis"];
+    let beatChecklist:
+      | Array<{
+          action: string;
+          difficulty: "Easy" | "Medium" | "Hard";
+          impact: "Low" | "Medium" | "High";
+        }>
+      | undefined;
+    let llmFailed = false;
+    let llmFailureReason: string | null = null;
+    let commentsLLMResult: Awaited<
+      ReturnType<typeof runParallelAnalysis>
+    >["commentsLLMResult"] = null;
+
+    if (analysisIsCacheFresh && cachedVideo?.analysisJson) {
       // Use cached analysis
-      console.log(
-        `[competitor.video] Using cached analysis (hash: ${currentContentHash})`
-      );
-      const cached = dbVideo.analysisJson as any;
+      logger.info("Using cached analysis", {
+        videoId,
+        contentHash: currentContentHash,
+      });
+      const cached = cachedVideo.analysisJson as Record<string, unknown>;
       analysis = cached as CompetitorVideoAnalysis["analysis"];
-      beatThisVideoLLM = normalizeBeatChecklist(cached?.beatThisVideo);
+      beatChecklist = normalizeBeatChecklist(cached?.beatThisVideo);
 
-      // Still need to run comments LLM if needed (in background, non-blocking)
-      if (needsCommentsLLM && commentsForLLM) {
-        analyzeVideoComments(commentsForLLM, video.title)
-          .then((result) => {
-            // Cache in background
-            if (result.themes && result.themes.length > 0 && commentsContentHash) {
-              prisma.competitorVideoComments.upsert({
-                where: { videoId },
-                create: {
-                  videoId,
-                  capturedAt: now,
-                  topCommentsJson: commentsForLLM!.slice(0, 20),
-                  contentHash: commentsContentHash,
-                  analysisJson: result as object,
-                  sentimentPos: result.sentiment.positive,
-                  sentimentNeu: result.sentiment.neutral,
-                  sentimentNeg: result.sentiment.negative,
-                  themesJson: result.themes,
-                },
-                update: {
-                  capturedAt: now,
-                  topCommentsJson: commentsForLLM!.slice(0, 20),
-                  contentHash: commentsContentHash,
-                  analysisJson: result as object,
-                  sentimentPos: result.sentiment.positive,
-                  sentimentNeu: result.sentiment.neutral,
-                  sentimentNeg: result.sentiment.negative,
-                  themesJson: result.themes,
-                },
-              }).catch(() => {});
-            }
-          })
-          .catch(() => {});
+      // Still run comments LLM if needed (in background)
+      if (needsCommentsLLM && commentsForLLM && commentsContentHash) {
+        // Fire background comments analysis (non-blocking)
+        import("@/lib/competitors/video-detail/analysis").then(
+          ({ runCommentsAnalysis, cacheCommentsInBackground }) => {
+            runCommentsAnalysis(commentsForLLM!, video.title, ctx)
+              .then((result) => {
+                if (result && commentsAnalysis) {
+                  cacheCommentsInBackground(
+                    videoId,
+                    commentsForLLM!,
+                    commentsContentHash!,
+                    commentsAnalysis,
+                    result
+                  );
+                }
+              })
+              .catch(() => {});
+          }
+        );
       }
     } else {
-      // Generate fresh analysis - run comments LLM + main LLM in PARALLEL
-      console.log(
-        `[competitor.video] Generating new analysis with parallel LLM (hash changed: ${dbVideo?.analysisContentHash} -> ${currentContentHash})`
-      );
-
-      const videoInput = {
-        videoId: video.videoId,
-        title: video.title,
-        description: videoDetails.description,
-        tags: videoDetails.tags ?? [],
-        channelTitle: video.channelTitle,
-        durationSec: video.durationSec,
-        stats: video.stats,
-        derived: {
-          viewsPerDay: video.derived.viewsPerDay,
-          engagementPerView,
-        },
-      };
+      // Generate fresh analysis
+      logger.info("Generating new analysis", {
+        videoId,
+        contentHashOld: cachedVideo?.analysisContentHash,
+        contentHashNew: currentContentHash,
+      });
 
       try {
-        if (needsCommentsLLM && commentsForLLM) {
-          // Run BOTH comments LLM and main analysis LLM in parallel
-          console.log("[competitor.video] Running comments + main LLM in parallel");
-          const [commentsLLMResult, mainLLMResult] = await Promise.all([
-            analyzeVideoComments(commentsForLLM, video.title).catch(() => null),
-            generateCompetitorVideoAnalysisParallel(
-              videoInput,
-              channel.title ?? "Your Channel",
-              commentsAnalysis // Use partial data, main analysis has its own context
-            ),
-          ]);
+        const result = await runParallelAnalysis(
+          video,
+          videoDetails,
+          channelOwnership.title ?? "Your Channel",
+          needsCommentsLLM ? commentsForLLM : null,
+          commentsAnalysis,
+          ctx
+        );
 
-          // Update comments analysis with LLM result
-          if (commentsLLMResult) {
-            commentsAnalysis = {
-              ...commentsAnalysis!,
-              sentiment: commentsLLMResult.sentiment,
-              themes: commentsLLMResult.themes,
-              viewerLoved: commentsLLMResult.viewerLoved,
-              viewerAskedFor: commentsLLMResult.viewerAskedFor,
-              hookInspiration: commentsLLMResult.hookInspiration,
-            };
+        analysis = result.analysis;
+        beatChecklist = result.beatChecklist;
+        commentsLLMResult = result.commentsLLMResult;
 
-            // Cache comments analysis (non-blocking)
-            if (commentsLLMResult.themes && commentsLLMResult.themes.length > 0 && commentsContentHash) {
-              prisma.competitorVideoComments.upsert({
-                where: { videoId },
-                create: {
-                  videoId,
-                  capturedAt: now,
-                  topCommentsJson: commentsForLLM.slice(0, 20),
-                  contentHash: commentsContentHash,
-                  analysisJson: commentsAnalysis as object,
-                  sentimentPos: commentsLLMResult.sentiment.positive,
-                  sentimentNeu: commentsLLMResult.sentiment.neutral,
-                  sentimentNeg: commentsLLMResult.sentiment.negative,
-                  themesJson: commentsLLMResult.themes,
-                },
-                update: {
-                  capturedAt: now,
-                  topCommentsJson: commentsForLLM.slice(0, 20),
-                  contentHash: commentsContentHash,
-                  analysisJson: commentsAnalysis as object,
-                  sentimentPos: commentsLLMResult.sentiment.positive,
-                  sentimentNeu: commentsLLMResult.sentiment.neutral,
-                  sentimentNeg: commentsLLMResult.sentiment.negative,
-                  themesJson: commentsLLMResult.themes,
-                },
-              }).catch(() => {});
-            }
-          }
+        // Update comments analysis with LLM result
+        if (result.commentsAnalysis) {
+          commentsAnalysis = result.commentsAnalysis;
+        }
 
-          beatThisVideoLLM = normalizeBeatChecklist(mainLLMResult.beatThisVideo);
-          const { beatThisVideo: _beat, ...analysisOnly } = mainLLMResult;
-          analysis = analysisOnly as CompetitorVideoAnalysis["analysis"];
-        } else {
-          // No comments LLM needed, just run main analysis
-          const llm = await generateCompetitorVideoAnalysisParallel(
-            videoInput,
-            channel.title ?? "Your Channel",
-            commentsAnalysis
+        // Cache comments in background
+        if (
+          needsCommentsLLM &&
+          commentsForLLM &&
+          commentsContentHash &&
+          commentsAnalysis &&
+          commentsLLMResult
+        ) {
+          cacheCommentsInBackground(
+            videoId,
+            commentsForLLM,
+            commentsContentHash,
+            commentsAnalysis,
+            commentsLLMResult
           );
-          beatThisVideoLLM = normalizeBeatChecklist(llm.beatThisVideo);
-          const { beatThisVideo: _beat, ...analysisOnly } = llm;
-          analysis = analysisOnly as CompetitorVideoAnalysis["analysis"];
         }
       } catch (err) {
-        console.warn(
-          "Failed to generate competitor analysis, using defaults:",
-          err
-        );
-        analysis = getDefaultAnalysis(video);
+        if (err instanceof VideoDetailError) {
+          // LLM failed - return error response (strategy A)
+          return buildLLMErrorResponse(err, ctx);
+        }
+        throw err;
       }
     }
 
-    // Normalize analysis to protect the UI from partial LLM output.
-    // (We keep packagingNotes in the type for backward compatibility, but the UI no longer displays it.)
-    analysis = {
-      whatItsAbout:
-        (analysis.whatItsAbout ?? "").trim() ||
-        fallbackWhatItsAbout({
-          title: videoDetails.title,
-          description: videoDetails.description,
-          tags: videoDetails.tags ?? [],
-        }),
-      whyItsWorking: Array.isArray(analysis.whyItsWorking)
-        ? analysis.whyItsWorking
-        : [],
-      themesToRemix: Array.isArray(analysis.themesToRemix)
-        ? analysis.themesToRemix
-        : [],
-      titlePatterns: Array.isArray(analysis.titlePatterns)
-        ? analysis.titlePatterns
-        : [],
-      packagingNotes: Array.isArray(analysis.packagingNotes)
-        ? analysis.packagingNotes
-        : [],
-      remixIdeasForYou: Array.isArray(analysis.remixIdeasForYou)
-        ? analysis.remixIdeasForYou
-        : [],
-    };
+    // Normalize analysis (defensive)
+    analysis = normalizeAnalysis(analysis, videoDetails);
 
-    // If analysis was served from cache but beat checklist was missing, we need to backfill it
-    if (
-      isAnalysisCacheFresh &&
-      dbVideo?.analysisJson &&
-      beatThisVideoLLM &&
-      !Array.isArray((dbVideo.analysisJson as any)?.beatThisVideo)
+    // ==========================================
+    // STAGE 7: CACHE ANALYSIS (if fresh)
+    // ==========================================
+    if (!analysisIsCacheFresh) {
+      // Save fresh analysis to cache
+      saveAnalysisCache(
+        videoId,
+        {
+          ...analysis,
+          beatThisVideo: beatChecklist,
+        },
+        currentContentHash
+      ).catch(() => {}); // Non-blocking
+    } else if (
+      cachedVideo?.analysisJson &&
+      beatChecklist &&
+      !Array.isArray((cachedVideo.analysisJson as Record<string, unknown>)?.beatThisVideo)
     ) {
-      try {
-        await prisma.competitorVideo.update({
-          where: { videoId },
-          data: {
-            analysisJson: {
-              ...(dbVideo.analysisJson as any),
-              beatThisVideo: beatThisVideoLLM,
-            } as object,
-          },
-        });
-      } catch (err) {
-        console.warn("Failed to backfill beat checklist cache:", err);
-      }
+      // Backfill beat checklist if missing from cached analysis
+      backfillBeatChecklist(
+        videoId,
+        cachedVideo.analysisJson as object,
+        beatChecklist
+      ).catch(() => {}); // Non-blocking
     }
 
-    // Persist normalized analysis (cache) so the "What it's about" stays useful without re-calling the LLM.
-    // Only write when cache was missing/stale.
-    if (!isAnalysisCacheFresh) {
-      try {
-        await prisma.competitorVideo.update({
-          where: { videoId },
-          data: {
-            analysisJson: {
-              ...analysis,
-              beatThisVideo: beatThisVideoLLM,
-            } as object,
-            analysisContentHash: currentContentHash,
-            analysisCapturedAt: now,
-          },
-        });
-      } catch (err) {
-        console.warn("Failed to cache competitor video analysis:", err);
-      }
-    }
-
-    console.log("[competitor.video] analysis summary", {
-      videoId,
-      whatItsAboutLen: analysis.whatItsAbout.length,
-      whyItsWorkingCount: analysis.whyItsWorking.length,
-      themesToRemixCount: analysis.themesToRemix.length,
-      titlePatternsCount: analysis.titlePatterns.length,
-      remixIdeasCount: analysis.remixIdeasForYou.length,
-      hasCommentsAnalysis: Boolean(commentsAnalysis),
-    });
-
-    // Derive keywords if tags are empty
-    let derivedKeywords: string[] | undefined;
-    if (!videoDetails.tags || videoDetails.tags.length === 0) {
-      derivedKeywords = deriveKeywordsFromText(
-        `${videoDetails.title} ${videoDetails.description?.slice(0, 500) ?? ""}`
-      );
-    }
-
-    // Generate strategic insights
-    const strategicInsights = computeStrategicInsights({
+    // ==========================================
+    // STAGE 8: BUILD RESPONSE
+    // ==========================================
+    const response = buildResponse({
       video,
       videoDetails,
-      commentsAnalysis,
-      beatThisVideo: beatThisVideoLLM,
-    });
-
-    // Compute public signals (all measured, deterministic)
-    const publicSignals = computePublicSignals({
-      title: video.title,
-      description: videoDetails.description ?? "",
-      publishedAt: videoDetails.publishedAt,
-      durationSec: videoDetails.durationSec ?? 0,
-      viewCount: videoDetails.viewCount,
-      likeCount: videoDetails.likeCount,
-      commentCount: videoDetails.commentCount,
-    });
-
-    // Build response with new fields
-    const response: CompetitorVideoAnalysis = {
-      video,
       analysis,
-      strategicInsights,
-      comments: commentsAnalysis,
-      tags: videoDetails.tags ?? [],
-      derivedKeywords,
-      category: videoDetails.category,
+      beatChecklist,
+      commentsAnalysis,
       moreFromChannel,
-      // NEW: Public signals (all measured)
-      publicSignals,
-      // NEW: Data limitations notice
-      dataLimitations: {
-        whatWeCanKnow: [
-          "Public metrics (views, likes, comments)",
-          "Title/description patterns and structure",
-          "Upload timing and video duration",
-          "Comment themes and sentiment",
-          "Competitor channel recent uploads",
-        ],
-        whatWeCantKnow: [
-          "Impressions and click-through rate (CTR)",
-          "Retention curve and average view duration",
-          "Subscriber conversion rate",
-          "Traffic sources breakdown",
-          "Revenue and monetization data",
-        ],
+      llmFailed,
+      llmFailureReason,
+      ctx,
+    });
+
+    // Log final timings
+    const totalDuration = Date.now() - routeStartTime;
+    logger.info("Request complete", {
+      videoId,
+      userId: user.id,
+      channelId,
+      totalDurationMs: totalDuration,
+      timings: ctx.timings,
+      cacheHit: {
+        analysis: analysisIsCacheFresh,
+        comments: isCacheFresh,
       },
-    };
+    });
 
     return Response.json(response);
   } catch (err: unknown) {
+    // Handle known error types
+    if (err instanceof VideoDetailError) {
+      logger.warn("VideoDetailError", {
+        code: err.code,
+        message: err.message,
+        statusCode: err.statusCode,
+        details: err.details,
+        videoId: ctx.videoId,
+      });
+      return Response.json(
+        { error: err.message, code: err.code, ...err.details },
+        { status: err.statusCode }
+      );
+    }
+
+    // Handle unexpected errors
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Competitor video analysis error:", err);
+    logger.error("Unexpected error", {
+      videoId: ctx.videoId,
+      error: message,
+      stack: err instanceof Error ? err.stack : undefined,
+      totalDurationMs: Date.now() - routeStartTime,
+      timings: ctx.timings,
+    });
+
     return Response.json(
       { error: "Failed to analyze competitor video", detail: message },
       { status: 500 }
@@ -747,1166 +495,5 @@ async function GETHandler(
 
 export const GET = createApiRoute(
   { route: "/api/competitors/video/[videoId]" },
-  async (req, ctx) => GETHandler(req, ctx as any)
+  async (req, ctx) => GETHandler(req, ctx as { params: Promise<{ videoId: string }> })
 );
-
-// Compute strategic insights from video data
-function computeStrategicInsights(input: {
-  video: CompetitorVideo;
-  videoDetails: {
-    title: string;
-    description?: string;
-    tags?: string[];
-    viewCount: number;
-    likeCount: number;
-    commentCount: number;
-    publishedAt: string;
-    durationSec?: number;
-  };
-  commentsAnalysis?: CompetitorCommentsAnalysis;
-  beatThisVideo?: Array<{
-    action: string;
-    difficulty: "Easy" | "Medium" | "Hard";
-    impact: "Low" | "Medium" | "High";
-  }>;
-}): CompetitorVideoAnalysis["strategicInsights"] {
-  const { video, videoDetails, commentsAnalysis } = input;
-  const title = videoDetails.title;
-  const description = videoDetails.description ?? "";
-
-  // ===== TITLE ANALYSIS =====
-  const titleLength = title.length;
-  const powerWords = [
-    "secret",
-    "shocking",
-    "amazing",
-    "ultimate",
-    "best",
-    "worst",
-    "never",
-    "always",
-    "proven",
-    "guaranteed",
-    "free",
-    "instant",
-    "easy",
-    "simple",
-    "fast",
-    "new",
-    "finally",
-    "revealed",
-    "truth",
-    "mistake",
-    "hack",
-    "trick",
-    "strategy",
-  ];
-  const hasPowerWord = powerWords.some((w) => title.toLowerCase().includes(w));
-  const hasCuriosityGap =
-    /\?|\.{3}|how|why|what|secret|truth|reveal|nobody|everyone/i.test(title);
-  const hasTimeframe =
-    /202\d|today|now|this year|\d+\s*(day|week|month|hour)/i.test(title);
-
-  let titleScore = 5;
-  const titleStrengths: string[] = [];
-  const titleWeaknesses: string[] = [];
-
-  if (titleLength >= 40 && titleLength <= 60) {
-    titleScore += 1;
-    titleStrengths.push("Optimal length (40-60 chars)");
-  } else if (titleLength < 30) {
-    titleScore -= 1;
-    titleWeaknesses.push("Title might be too short");
-  } else if (titleLength > 70) {
-    titleWeaknesses.push("Title may get truncated on mobile");
-  }
-
-  // FIXED: Use accurate number analysis instead of simple regex
-  // Don't claim "increases CTR" - we don't have CTR data for competitors
-  const numberAnalysis = analyzeNumberInTitle(title);
-  if (numberAnalysis.hasNumber) {
-    if (numberAnalysis.isPerformanceDriver) {
-      titleScore += 1;
-      // Neutral, evidence-based explanation without CTR claims
-      const typeLabels: Record<string, string> = {
-        ranking: "Uses ranking (#1) → increases perceived credibility",
-        list_count: "Uses list count → sets clear viewer expectations",
-        episode: "Uses episode/part number → builds series continuity",
-        time_constraint: "Uses time constraint → creates urgency",
-        quantity: "Uses specific quantity → adds concrete stakes",
-        year: "Uses year reference → signals timeliness",
-      };
-      titleStrengths.push(
-        typeLabels[numberAnalysis.type] ?? "Uses quantifier → increases specificity"
-      );
-    }
-    // Note: proper_noun numbers (like "iPhone 15") don't get added as strengths
-  } else {
-    titleWeaknesses.push("No quantifier to create specificity");
-  }
-
-  if (hasPowerWord) {
-    titleScore += 1;
-    titleStrengths.push("Contains emotional trigger word");
-  }
-
-  if (hasCuriosityGap) {
-    titleScore += 1;
-    titleStrengths.push("Creates curiosity gap");
-  } else {
-    titleWeaknesses.push("Could add more curiosity/tension");
-  }
-
-  if (hasTimeframe) {
-    titleScore += 0.5;
-    titleStrengths.push("Time-relevant (freshness signal)");
-  }
-
-  titleScore = Math.min(10, Math.max(1, Math.round(titleScore)));
-
-  // ===== POSTING TIMING =====
-  const publishedDate = new Date(videoDetails.publishedAt);
-  const dayOfWeek = publishedDate.toLocaleDateString("en-US", {
-    weekday: "long",
-  });
-  const hourOfDay = publishedDate.getHours();
-  const isWeekend =
-    publishedDate.getDay() === 0 || publishedDate.getDay() === 6;
-  const daysAgo = Math.floor(
-    (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  // FIXED: Don't claim "off-peak" without channel upload history
-  // We don't have the competitor channel's upload pattern data
-  const localTimeFormatted = publishedDate.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-  const timingInsight = `Posted ${dayOfWeek} ${localTimeFormatted}. Posting-time pattern unavailable for this channel.`;
-
-  // ===== VIDEO LENGTH (with consistent formatting) =====
-  const durationSec = videoDetails.durationSec ?? 0;
-  const durationMin = Math.round(durationSec / 60);
-  const durationFormatted = formatDuration(durationSec);
-  const durationBucket = getDurationBucket(durationSec);
-
-  const lengthInsights: Record<string, string> = {
-    "Shorts": "YouTube Short format - vertical, quick consumption",
-    "Short": "Short-form content - quick delivery, higher completion typical",
-    "Medium": "Standard length - balances depth with watchability",
-    "Long": "Long-form content - requires strong pacing throughout",
-    "Very Long": "Extended content - appeals to highly engaged viewers",
-  };
-  const lengthInsight = lengthInsights[durationBucket] ?? "Standard length";
-
-  // ===== ENGAGEMENT BENCHMARKS =====
-  const views = videoDetails.viewCount || 1;
-  const likes = videoDetails.likeCount || 0;
-  const comments = videoDetails.commentCount || 0;
-
-  const likeRate = (likes / views) * 100; // likes per 100 views
-  const commentRate = (comments / views) * 1000; // comments per 1000 views
-
-  let likeRateVerdict:
-    | "Below Average"
-    | "Average"
-    | "Above Average"
-    | "Exceptional" = "Average";
-  if (likeRate < 2) likeRateVerdict = "Below Average";
-  else if (likeRate >= 2 && likeRate < 4) likeRateVerdict = "Average";
-  else if (likeRate >= 4 && likeRate < 6) likeRateVerdict = "Above Average";
-  else likeRateVerdict = "Exceptional";
-
-  let commentRateVerdict:
-    | "Below Average"
-    | "Average"
-    | "Above Average"
-    | "Exceptional" = "Average";
-  if (commentRate < 1) commentRateVerdict = "Below Average";
-  else if (commentRate >= 1 && commentRate < 3) commentRateVerdict = "Average";
-  else if (commentRate >= 3 && commentRate < 6)
-    commentRateVerdict = "Above Average";
-  else commentRateVerdict = "Exceptional";
-
-  // ===== COMPETITION DIFFICULTY (with transparent basis) =====
-  let difficultyScore: "Easy" | "Medium" | "Hard" | "Very Hard" = "Medium";
-  const difficultyReasons: string[] = [];
-  const difficultyWhyThisScore: string[] = [];
-
-  if (views > 1_000_000) {
-    difficultyScore = "Very Hard";
-    difficultyReasons.push("Viral video (1M+ views) - hard to match reach");
-    difficultyWhyThisScore.push(`View count: ${views.toLocaleString()} (Very Hard threshold: 1M+)`);
-  } else if (views > 100_000) {
-    difficultyScore = "Hard";
-    difficultyReasons.push("High-performing video (100K+ views)");
-    difficultyWhyThisScore.push(`View count: ${views.toLocaleString()} (Hard threshold: 100K-1M)`);
-  } else if (views > 10_000) {
-    difficultyScore = "Medium";
-    difficultyReasons.push("Solid performer - achievable with good execution");
-    difficultyWhyThisScore.push(`View count: ${views.toLocaleString()} (Medium threshold: 10K-100K)`);
-  } else {
-    difficultyScore = "Easy";
-    difficultyReasons.push("Lower view count - opportunity to do better");
-    difficultyWhyThisScore.push(`View count: ${views.toLocaleString()} (Easy threshold: <10K)`);
-  }
-
-  if (likeRateVerdict === "Exceptional") {
-    difficultyReasons.push(
-      "Very high like rate - content is resonating strongly"
-    );
-    difficultyWhyThisScore.push(`Like rate: ${likeRate.toFixed(1)}% (Exceptional: >6%)`);
-  } else {
-    difficultyWhyThisScore.push(`Like rate: ${likeRate.toFixed(1)}% (${likeRateVerdict})`);
-  }
-
-  if (durationMin > 15) {
-    difficultyReasons.push("Long-form requires significant production time");
-    difficultyWhyThisScore.push(`Duration: ${durationFormatted} (long-form production overhead)`);
-  }
-
-  // ===== FORMAT SIGNALS (used for both angles + display) =====
-  const likelyFormat = guessLikelyFormat(title, description);
-  const productionLevel = guessProductionLevel(durationMin, views);
-
-  // ===== OPPORTUNITY SCORE (with transparent breakdown) =====
-  let opportunityScore = 5;
-  const gaps: string[] = [];
-  const angles: string[] = [];
-  const opportunityWhyThisScore: string[] = [];
-  
-  // Track score breakdown for transparency
-  let descriptionGapScore = 0;
-  let hashtagGapScore = 0;
-  let commentOpportunityScore = 0;
-  let formatMismatchScore = 0;
-
-  // Analyze hashtags early for use in opportunity scoring
-  const hashtagAnalysisEarly = analyzeHashtags(title, description);
-
-  // Check hashtags/keywords (NOT "tags" - those aren't reliably visible for competitors)
-  // Only count hashtags we can actually see in title/description
-  const hashtagCount = hashtagAnalysisEarly.count;
-  const descWordCount = description.split(/\s+/).filter(Boolean).length;
-
-  // If description is empty (0 words), recommend adding description + hashtags
-  if (descWordCount === 0) {
-    gaps.push(
-      "Empty description (0 words) - packaging improvement: add a description with 1-3 relevant hashtags"
-    );
-    opportunityScore += 1.5;
-    descriptionGapScore = 1.5;
-    opportunityWhyThisScore.push(`Description: empty (0 words) → +1.5 opportunity`);
-  } else if (descWordCount < 50) {
-    gaps.push("Minimal description - opportunity to add more context and hashtags");
-    opportunityScore += 1;
-    descriptionGapScore = 1;
-    opportunityWhyThisScore.push(`Description: minimal (${descWordCount} words) → +1 opportunity`);
-  } else if (hashtagCount === 0) {
-    gaps.push("No visible hashtags in title/description - could add 1-3 topic-relevant hashtags");
-    opportunityScore += 0.5;
-    hashtagGapScore = 0.5;
-    opportunityWhyThisScore.push(`Hashtags: none visible → +0.5 opportunity`);
-  } else {
-    opportunityWhyThisScore.push(`Description: ${descWordCount} words, ${hashtagCount} hashtags (adequate)`);
-  }
-
-  // Check for timestamps using improved chapter detection
-  const chapterDetection = detectChapters(description);
-  if (!chapterDetection.hasChapters && durationMin > 5) {
-    gaps.push("No chapter timestamps - add chapters for better UX");
-    opportunityScore += 0.5;
-    formatMismatchScore += 0.5;
-    opportunityWhyThisScore.push(`Chapters: none (${durationFormatted} video) → +0.5 opportunity`);
-  }
-
-  // Fresh angles (dynamic + video-specific)
-  angles.push(
-    ...generateFreshAngles({
-      seed: `${video.videoId}|${title}`,
-      title,
-      description,
-      tags: videoDetails.tags ?? [],
-      likelyFormat,
-      durationMin,
-      productionLevel,
-      hasCuriosityGap,
-      hasNumber: numberAnalysis.isPerformanceDriver,
-      commentsAnalysis,
-    })
-  );
-
-  // Comment-based opportunities
-  if (
-    commentsAnalysis?.viewerAskedFor &&
-    commentsAnalysis.viewerAskedFor.length > 0
-  ) {
-    gaps.push(
-      `Viewers asking for: ${commentsAnalysis.viewerAskedFor[0]} - make that video!`
-    );
-    opportunityScore += 1;
-    commentOpportunityScore = 1;
-    opportunityWhyThisScore.push(`Comment requests: found (${commentsAnalysis.viewerAskedFor.length} themes) → +1 opportunity`);
-  } else {
-    opportunityWhyThisScore.push(`Comment requests: none detected`);
-  }
-
-  opportunityScore = Math.min(10, Math.max(1, Math.round(opportunityScore)));
-  opportunityWhyThisScore.unshift(`Base score: 5, Final: ${opportunityScore}/10`);
-
-  let opportunityVerdict = "";
-  if (opportunityScore >= 8) {
-    opportunityVerdict = "High opportunity - gaps to exploit!";
-  } else if (opportunityScore >= 6) {
-    opportunityVerdict = "Good opportunity - room to differentiate";
-  } else if (opportunityScore >= 4) {
-    opportunityVerdict = "Moderate - will need strong execution";
-  } else {
-    opportunityVerdict = "Tough to beat - focus on unique angles";
-  }
-
-  // ===== BEAT THIS VIDEO CHECKLIST =====
-  const fallbackBeatChecklist: Array<{
-    action: string;
-    difficulty: "Easy" | "Medium" | "Hard";
-    impact: "Low" | "Medium" | "High";
-  }> = [];
-
-  // (Fallback only) Keep it a bit more tailored than the previous mostly-static list.
-  if (durationMin <= 4) {
-    fallbackBeatChecklist.push({
-      action:
-        "Deliver the payoff faster: cut intro to <5 seconds and show the result upfront",
-      difficulty: "Easy",
-      impact: "High",
-    });
-  } else {
-    fallbackBeatChecklist.push({
-      action:
-        "Use a sharper opening promise than theirs, then validate it with a quick preview of what’s coming",
-      difficulty: "Medium",
-      impact: "High",
-    });
-  }
-
-  if (!numberAnalysis.isPerformanceDriver && /how|why|what|best|stop|fix|make/i.test(title)) {
-    fallbackBeatChecklist.push({
-      action:
-        "Make the title more specific with a number or constraint (time, steps, or result)",
-      difficulty: "Easy",
-      impact: "Medium",
-    });
-  }
-
-  if (!chapterDetection.hasChapters && durationMin >= 8) {
-    fallbackBeatChecklist.push({
-      action:
-        "Add clear chapters and reference them on-screen to reduce drop-off in the middle",
-      difficulty: "Easy",
-      impact: "Medium",
-    });
-  }
-
-  if (commentsAnalysis?.viewerAskedFor?.length) {
-    fallbackBeatChecklist.push({
-      action: `Directly answer what viewers asked for most: "${commentsAnalysis.viewerAskedFor[0]}"`,
-      difficulty: "Medium",
-      impact: "High",
-    });
-  }
-
-  fallbackBeatChecklist.push({
-    action:
-      "Differentiate with a unique angle they didn’t cover (a contrarian take, a case study, or a tighter framework)",
-    difficulty: "Medium",
-    impact: "High",
-  });
-
-  if (durationMin > 12) {
-    fallbackBeatChecklist.push({
-      action:
-        "Tighten pacing: remove repetition and add pattern interrupts every ~60–90 seconds",
-      difficulty: "Medium",
-      impact: "Medium",
-    });
-  }
-
-  const beatChecklist =
-    input.beatThisVideo && input.beatThisVideo.length > 0
-      ? input.beatThisVideo
-      : fallbackBeatChecklist;
-
-  // ===== DESCRIPTION ANALYSIS (using improved utilities) =====
-  const linkAnalysis = analyzeExternalLinks(description);
-  // Reuse the early hashtag analysis
-  const hashtagAnalysis = hashtagAnalysisEarly;
-  const hasCTA =
-    /subscribe|like|comment|share|follow|check out|click|link|download/i.test(
-      description
-    );
-  const estimatedWordCount = description.split(/\s+/).filter(Boolean).length;
-
-  const keyElements: string[] = [];
-  if (chapterDetection.hasChapters) keyElements.push(`Chapter timestamps (${chapterDetection.chapterCount})`);
-  if (linkAnalysis.hasLinks) keyElements.push(`External links (${linkAnalysis.linkCount})`);
-  if (hasCTA) keyElements.push("Call-to-action");
-  if (hashtagAnalysis.count > 0) keyElements.push(`Hashtags (${hashtagAnalysis.count})`);
-  if (linkAnalysis.hasSocialLinks) keyElements.push("Social media links");
-
-  // ===== FORMAT SIGNALS =====
-  let paceEstimate: "Slow" | "Medium" | "Fast" = "Medium";
-  if (durationMin < 5) {
-    paceEstimate = "Fast";
-  } else if (durationMin > 20) {
-    paceEstimate = "Slow";
-  }
-
-  return {
-    titleAnalysis: {
-      score: titleScore,
-      characterCount: titleLength,
-      hasNumber: numberAnalysis.hasNumber,
-      numberAnalysis, // Include detailed analysis for UI tooltip
-      hasPowerWord,
-      hasCuriosityGap,
-      hasTimeframe,
-      strengths: titleStrengths.slice(0, 4),
-      weaknesses: titleWeaknesses.slice(0, 3),
-      confidence: "Medium" as const, // Title patterns are computed, not direct metrics
-    },
-    competitionDifficulty: {
-      score: difficultyScore,
-      reasons: difficultyReasons.slice(0, 3),
-      whyThisScore: difficultyWhyThisScore,
-      basisMetrics: {
-        viewCount: views,
-        viewsPerDay: video.derived.viewsPerDay,
-        likeRate: Math.round(likeRate * 100) / 100,
-      },
-      confidence: "Medium" as const,
-    },
-    postingTiming: {
-      dayOfWeek,
-      hourOfDay,
-      localTimeFormatted,
-      daysAgo,
-      isWeekend,
-      timingInsight,
-      hasChannelHistory: false, // We don't have competitor channel upload history
-      confidence: "Low" as const,
-      measurement: "Inferred" as const,
-    },
-    lengthAnalysis: {
-      durationSec,
-      durationFormatted,
-      bucket: durationBucket,
-      insight: lengthInsight,
-      confidence: "High" as const, // Duration is directly measured
-    },
-    engagementBenchmarks: {
-      likeRate: Math.round(likeRate * 100) / 100,
-      commentRate: Math.round(commentRate * 100) / 100,
-      likeRateVerdict,
-      commentRateVerdict,
-      confidence: "High" as const,
-      measurement: "Measured" as const,
-    },
-    opportunityScore: {
-      score: opportunityScore,
-      verdict: opportunityVerdict,
-      gaps: gaps.slice(0, 4),
-      angles: angles.slice(0, 4),
-      whyThisScore: opportunityWhyThisScore,
-      scoreBreakdown: {
-        descriptionGap: descriptionGapScore,
-        hashtagGap: hashtagGapScore,
-        commentOpportunity: commentOpportunityScore,
-        formatMismatch: formatMismatchScore,
-      },
-      confidence: "Medium" as const,
-    },
-    beatThisVideo: beatChecklist.slice(0, 6),
-    descriptionAnalysis: {
-      hasTimestamps: chapterDetection.hasChapters,
-      hasLinks: linkAnalysis.hasLinks,
-      hasCTA,
-      estimatedWordCount,
-      keyElements,
-      confidence: "High" as const,
-    },
-    formatSignals: {
-      likelyFormat,
-      productionLevel,
-      paceEstimate,
-      confidence: "Low" as const, // Format is guessed
-    },
-  };
-}
-
-// Derive keywords from text when tags are missing
-function deriveKeywordsFromText(text: string): string[] {
-  const words = text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 4 && !commonWords.has(w));
-
-  const wordCounts = new Map<string, number>();
-  words.forEach((w) => {
-    wordCounts.set(w, (wordCounts.get(w) ?? 0) + 1);
-  });
-
-  return [...wordCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([word]) => word);
-}
-
-function guessLikelyFormat(
-  title: string,
-  description: string
-):
-  | "General"
-  | "Tutorial"
-  | "Review"
-  | "Vlog"
-  | "Reaction"
-  | "Story/Documentary"
-  | "Listicle"
-  | "Explainer" {
-  const haystack = `${title} ${description}`;
-  if (/tutorial|how to|guide|step|learn/i.test(haystack)) return "Tutorial";
-  if (/review|honest|vs |compared|worth/i.test(title)) return "Review";
-  if (/vlog|day in|week in|behind/i.test(haystack)) return "Vlog";
-  if (/react|watch|reacts/i.test(title)) return "Reaction";
-  if (/story|journey|experience/i.test(haystack)) return "Story/Documentary";
-  if (/top \d|best \d|\d things|\d ways/i.test(title)) return "Listicle";
-  if (/explained|what is|why/i.test(title)) return "Explainer";
-  return "General";
-}
-
-function guessProductionLevel(
-  durationMin: number,
-  views: number
-): "Low" | "Medium" | "High" {
-  if (durationMin < 3) return "Low";
-  if (durationMin > 15 && views > 50_000) return "High";
-  return "Medium";
-}
-
-function hashStringToUint32(input: string): number {
-  // FNV-1a 32-bit
-  let hash = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function mulberry32(seed: number): () => number {
-  return () => {
-    let t = (seed += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function pickTopicHint(input: {
-  title: string;
-  tags: string[];
-  description: string;
-}): string {
-  const tag = (input.tags ?? [])
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .find((t) => !/youtube|subscribe|video|views/i.test(t.toLowerCase()));
-  if (tag) return tag;
-
-  const kws = deriveKeywordsFromText(
-    `${input.title} ${input.description}`.slice(0, 800)
-  );
-  if (kws.length >= 2) return `${kws[0]} ${kws[1]}`;
-  if (kws.length === 1) return kws[0];
-  return "this topic";
-}
-
-function generateFreshAngles(input: {
-  seed: string;
-  title: string;
-  description: string;
-  tags: string[];
-  likelyFormat: ReturnType<typeof guessLikelyFormat>;
-  durationMin: number;
-  productionLevel: "Low" | "Medium" | "High";
-  hasCuriosityGap: boolean;
-  hasNumber: boolean;
-  commentsAnalysis?: CompetitorCommentsAnalysis;
-}): string[] {
-  const rng = mulberry32(hashStringToUint32(input.seed));
-  const topic = pickTopicHint({
-    title: input.title,
-    description: input.description,
-    tags: input.tags,
-  });
-
-  const numberChoices = [3, 5, 7, 9];
-  const dayChoices = [7, 14, 30];
-  const pick = <T>(arr: T[]) => arr[Math.floor(rng() * arr.length)]!;
-  const n = pick(numberChoices);
-  const days = pick(dayChoices);
-
-  const candidates: string[] = [];
-
-  if (!input.hasCuriosityGap) {
-    candidates.push(
-      `Open-loop hook: “The part about ${topic} nobody tells you…” (build curiosity before the payoff)`
-    );
-  }
-  if (!input.hasNumber) {
-    candidates.push(
-      `Add a concrete promise: “${n} ${topic} mistakes to avoid” or “${topic} in ${days} days”`
-    );
-  } else {
-    candidates.push(
-      `Refresh the constraint: try a tighter time-box (“${topic} in ${days} days”) or a ranked list (“Top ${n} ${topic} moves”)`
-    );
-  }
-
-  // Format-specific remixes (forces variety across different types of videos)
-  switch (input.likelyFormat) {
-    case "Tutorial":
-      candidates.push(
-        `Beginner-friendly variant: “${topic} for absolute beginners” (step-by-step + printable checklist)`
-      );
-      candidates.push(
-        `Troubleshooting angle: “Why your ${topic} isn’t working (and the ${n} fixes)”`
-      );
-      break;
-    case "Review":
-      candidates.push(
-        `Long-term update: “${topic} after ${days} days — what held up, what I’d buy instead”`
-      );
-      candidates.push(
-        `Budget showdown: “The ${topic} alternative that’s 80% as good for half the cost”`
-      );
-      break;
-    case "Explainer":
-      candidates.push(
-        `One-model explanation: “${topic} explained with 1 simple framework + real examples”`
-      );
-      candidates.push(
-        `Myth-busting: “${n} myths about ${topic} that waste your time”`
-      );
-      break;
-    case "Listicle":
-      candidates.push(
-        `Ranked comparison: “${n} ${topic} approaches ranked (beginner → advanced)”`
-      );
-      candidates.push(
-        `Tiers/scorecard: “I scored ${topic} options on 5 criteria — here’s the winner”`
-      );
-      break;
-    case "Vlog":
-    case "Story/Documentary":
-      candidates.push(
-        `Case study story: “I tried ${topic} for ${days} days — results, mistakes, and what I’d do differently”`
-      );
-      candidates.push(
-        `Behind-the-scenes: “What it really takes to do ${topic} (the messy parts included)”`
-      );
-      break;
-    case "Reaction":
-      candidates.push(
-        `Expert scorecard reaction: “Reacting to ${topic} — what’s good, what’s wrong, and the fixes”`
-      );
-      candidates.push(
-        `Before/after reaction: “I react, then rebuild it properly (so you can copy the template)”`
-      );
-      break;
-    default:
-      candidates.push(
-        `Tighter promise: “${topic} — the simplest path from 0 → 1 (no fluff, just steps)”`
-      );
-      candidates.push(
-        `Contrarian framing: “Most advice about ${topic} is backwards — do this instead”`
-      );
-  }
-
-  if (input.durationMin > 10) {
-    candidates.push(
-      `Shorter remix: “${topic} — the 5-minute version” (faster pacing + only the essentials)`
-    );
-  } else if (input.durationMin < 4) {
-    candidates.push(
-      `Deep-dive companion: “Everything about ${topic} (full walkthrough + examples)”`
-    );
-  }
-
-  if (input.productionLevel === "High") {
-    candidates.push(
-      `Low-production version: “${topic} with zero fancy gear” (phone-only / simple setup)`
-    );
-  }
-
-  const topAsk = input.commentsAnalysis?.viewerAskedFor?.[0]?.trim();
-  if (topAsk) {
-    const clipped = topAsk.length > 90 ? `${topAsk.slice(0, 87)}...` : topAsk;
-    candidates.push(
-      `Answer the #1 viewer request directly: “${clipped}” (make it the main promise)`
-    );
-  }
-
-  // De-dupe + deterministic shuffle (stable per video)
-  const uniq = [...new Set(candidates)].filter(Boolean);
-  for (let i = uniq.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [uniq[i], uniq[j]] = [uniq[j]!, uniq[i]!];
-  }
-
-  // Ensure we always return enough angles
-  const out = uniq.slice(0, 6);
-  while (out.length < 4) {
-    out.push(
-      `Add specificity by focusing on one sub-problem of ${topic} (a single “before → after” transformation)`
-    );
-  }
-  return out.slice(0, 6);
-}
-
-function fallbackWhatItsAbout(input: {
-  title: string;
-  description?: string | null;
-  tags: string[];
-}): string {
-  const desc = (input.description ?? "")
-    .replace(/https?:\/\/\S+/gi, "")
-    .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  // Prefer the first “real” sentence from the description (not the title).
-  const firstSentence = desc.split(/(?<=[.!?])\s+/).find((s) => {
-    const t = s.trim();
-    return t.length >= 60 && t.length <= 240;
-  });
-  if (firstSentence) return firstSentence.trim();
-
-  const topTags = (input.tags ?? []).slice(0, 4).filter(Boolean);
-  if (topTags.length > 0) {
-    return `A video centered on ${topTags.join(
-      ", "
-    )}, framed as a practical breakdown for viewers.`;
-  }
-
-  // Last resort: avoid echoing the title; keep it general.
-  return "A video that explores the core topic implied by the title, focusing on the main promise and viewer takeaway.";
-}
-
-// Default analysis when LLM fails
-function getDefaultAnalysis(
-  video: CompetitorVideo
-): CompetitorVideoAnalysis["analysis"] {
-  return {
-    whatItsAbout: `A video about ${
-      video.title?.split(" ").slice(0, 5).join(" ") || "this topic"
-    }...`,
-    whyItsWorking: [
-      "Strong initial hook captures attention in the first few seconds",
-      "Title creates clear curiosity gap without revealing the answer",
-      "Specific outcome or transformation promised",
-      "High engagement indicates strong audience resonance",
-    ],
-    themesToRemix: [
-      {
-        theme: "Personal experience angle",
-        why: "Adds authenticity and relatability to the topic",
-      },
-      {
-        theme: "Contrarian perspective",
-        why: "Stands out in a crowded niche by challenging assumptions",
-      },
-    ],
-    titlePatterns: [
-      "Uses specific, believable numbers",
-      "Creates urgency with timely language",
-    ],
-    packagingNotes: [
-      "Clear value proposition visible at a glance",
-      "Likely uses emotional triggers in thumbnail",
-    ],
-    remixIdeasForYou: [
-      {
-        title: `My Take on ${video.title?.slice(0, 30) || "This Topic"}`,
-        hook: "What if there's an even better approach nobody talks about?",
-        overlayText: "MY VERSION",
-        angle: "Personal experiment documenting your unique results",
-      },
-      {
-        title: `The Truth About ${
-          video.title?.split(" ").slice(0, 3).join(" ") || "This"
-        }`,
-        hook: "Everyone's talking about this, but nobody mentions the real problem...",
-        overlayText: "THE TRUTH",
-        angle: "Myth-busting with evidence from your experience",
-      },
-    ],
-  };
-}
-
-// Generate demo video analysis
-function generateDemoVideoAnalysis(videoId: string): CompetitorVideoAnalysis {
-  const now = new Date();
-
-  return {
-    video: {
-      videoId,
-      title: "This One Change DOUBLED My YouTube Growth",
-      channelId: "demo-channel",
-      channelTitle: "Creator Academy",
-      channelThumbnailUrl: null,
-      videoUrl: `https://youtube.com/watch?v=${videoId}`,
-      channelUrl: "https://youtube.com/channel/demo-channel",
-      thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-      publishedAt: new Date(
-        now.getTime() - 3 * 24 * 60 * 60 * 1000
-      ).toISOString(),
-      durationSec: 847,
-      stats: {
-        viewCount: 245000,
-        likeCount: 11760,
-        commentCount: 735,
-      },
-      derived: {
-        viewsPerDay: 81666,
-        velocity24h: 52000,
-        velocity7d: 180000,
-        engagementPerView: 0.051,
-        dataStatus: "ready",
-      },
-    },
-    analysis: {
-      whatItsAbout:
-        "A creator shares how changing their upload strategy from 3 videos per week to 1 high-quality video doubled their subscriber growth and watch time metrics.",
-      whyItsWorking: [
-        "Addresses a common pain point: quantity vs quality debate that every creator faces",
-        "Promise of 'doubling growth' is specific, believable, and highly desirable",
-        "Published during peak creator burnout discussion period, making it timely",
-        "Strong thumbnail with before/after visual contrast draws immediate attention",
-        "Title creates curiosity about the 'one change' without revealing it",
-        "Comments show high resonance with personal stories of similar results",
-      ],
-      themesToRemix: [
-        {
-          theme: "Quality over quantity",
-          why: "Resonates with burned-out creators looking for permission to slow down",
-        },
-        {
-          theme: "Data-driven decisions",
-          why: "Appeals to analytical creators who want proof before making changes",
-        },
-        {
-          theme: "Sustainable growth",
-          why: "Taps into long-term thinking mindset vs short-term metrics",
-        },
-      ],
-      titlePatterns: [
-        "'This One Change' creates curiosity about the single solution",
-        "'DOUBLED' is a specific, believable metric (not 10x exaggeration)",
-        "Direct address with 'My' makes it personal and authentic",
-      ],
-      packagingNotes: [
-        "Thumbnail likely shows creator face with expression of surprise/realization",
-        "Before/after numbers or visuals create immediate proof element",
-        "Title promises transformation with minimal effort perception",
-      ],
-      remixIdeasForYou: [
-        {
-          title: "I Tried Posting Less for 30 Days (Here's What Happened)",
-          hook: "I was posting 5 times a week and burning out. Then I tried something counterintuitive...",
-          overlayText: "I STOPPED",
-          angle:
-            "Personal experiment documenting your shift to quality over quantity with real metrics",
-        },
-        {
-          title: "The Upload Schedule That Actually Works in 2024",
-          hook: "Forget everything you've heard about 'consistency being key'. Here's what the data shows...",
-          overlayText: "NEW STRATEGY",
-          angle:
-            "Data-backed breakdown of optimal posting frequency for your specific niche",
-        },
-        {
-          title: "Why Less Content = More Growth (Proof Inside)",
-          hook: "What if the secret to growing faster isn't making more videos?",
-          overlayText: "PROOF",
-          angle:
-            "Counter-intuitive deep dive with case studies from creators in your niche",
-        },
-      ],
-    },
-    comments: {
-      topComments: [
-        {
-          text: "This completely changed my approach. Went from 3 videos/week to 1 and my retention went up 40%.",
-          likeCount: 342,
-          authorName: "Creative Mind",
-          publishedAt: new Date(
-            now.getTime() - 2 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-        },
-        {
-          text: "Can you do a follow-up on how to decide WHICH videos to make when posting less?",
-          likeCount: 187,
-          authorName: "Aspiring Creator",
-          publishedAt: new Date(
-            now.getTime() - 1 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-        },
-        {
-          text: "The data at 4:32 was mind-blowing. Never realized retention matters more than frequency.",
-          likeCount: 98,
-          authorName: "Data Dave",
-          publishedAt: new Date(
-            now.getTime() - 3 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-        },
-      ],
-      sentiment: {
-        positive: 72,
-        neutral: 22,
-        negative: 6,
-      },
-      themes: [
-        {
-          theme: "Quality over quantity",
-          count: 45,
-          examples: ["finally permission to slow down", "quality matters more"],
-        },
-        {
-          theme: "Personal results",
-          count: 38,
-          examples: ["tried this and it worked", "my retention went up"],
-        },
-        {
-          theme: "Burnout relief",
-          count: 24,
-          examples: ["was burning out", "sustainable approach"],
-        },
-      ],
-      viewerLoved: [
-        "The permission to post less without guilt",
-        "Specific data and proof, not just theory",
-        "Relatable burnout acknowledgment",
-      ],
-      viewerAskedFor: [
-        "How to decide which video topics to prioritize",
-        "Case studies for smaller channels (under 10k)",
-        "Deep dive on retention optimization",
-      ],
-      hookInspiration: [
-        "This completely changed my approach",
-        "The data at 4:32 was mind-blowing",
-        "Finally someone said what we all needed to hear",
-      ],
-    },
-    strategicInsights: {
-      titleAnalysis: {
-        score: 8,
-        characterCount: 44,
-        hasNumber: false,
-        hasPowerWord: true,
-        hasCuriosityGap: true,
-        hasTimeframe: false,
-        strengths: [
-          "Creates curiosity gap with 'This One Change'",
-          "Specific metric 'DOUBLED' builds trust",
-          "Personal pronoun 'My' adds authenticity",
-          "Optimal length (40-60 chars)",
-        ],
-        weaknesses: ["Could add a number for specificity (e.g., '30 Days')"],
-        confidence: "Medium" as const,
-      },
-      competitionDifficulty: {
-        score: "Hard",
-        reasons: [
-          "High-performing video (245K+ views)",
-          "Very high engagement - content is resonating strongly",
-          "Established channel with loyal audience",
-        ],
-        confidence: "Medium" as const,
-      },
-      postingTiming: {
-        dayOfWeek: "Tuesday",
-        hourOfDay: 14,
-        localTimeFormatted: "2:00 PM",
-        daysAgo: 3,
-        isWeekend: false,
-        timingInsight: "Posted Tuesday 2:00 PM. Posting-time pattern unavailable for this channel.",
-        hasChannelHistory: false,
-        confidence: "Low" as const,
-        measurement: "Inferred" as const,
-      },
-      lengthAnalysis: {
-        durationSec: 847,
-        durationFormatted: "14m 7s",
-        bucket: "Long" as const,
-        insight: "Long-form content - requires strong pacing throughout",
-        confidence: "High" as const,
-      },
-      engagementBenchmarks: {
-        likeRate: 4.8,
-        commentRate: 3.0,
-        likeRateVerdict: "Above Average",
-        commentRateVerdict: "Average",
-        confidence: "High" as const,
-        measurement: "Measured" as const,
-      },
-      opportunityScore: {
-        score: 7,
-        verdict: "Good opportunity - room to differentiate",
-        gaps: [
-          "Viewers asking for: How to decide which video topics to prioritize",
-          "No case studies for smaller channels under 10K",
-          "Could include more actionable templates/frameworks",
-        ],
-        angles: [
-          "Open-loop hook: “The real reason posting ‘more’ fails (and what works instead)”",
-          "Add a concrete promise: “3 posting rules I used for 14 days (with results)”",
-          "Scorecard format: “I ranked posting strategies on 5 criteria — here’s the winner”",
-          "Shorter remix: “The 5-minute posting strategy for small channels (0 → 1K subs)”",
-        ],
-      },
-      beatThisVideo: [
-        {
-          action: "Study their first 30 seconds and make your hook stronger",
-          difficulty: "Medium",
-          impact: "High",
-        },
-        {
-          action:
-            "Add specific numbers to your title (e.g., '30 Days', '5 Steps')",
-          difficulty: "Easy",
-          impact: "Medium",
-        },
-        {
-          action:
-            "Address what viewers asked for: smaller channel case studies",
-          difficulty: "Medium",
-          impact: "High",
-        },
-        {
-          action: "Create a more compelling thumbnail with clear focal point",
-          difficulty: "Medium",
-          impact: "High",
-        },
-        {
-          action: "Add downloadable templates/checklists as value-add",
-          difficulty: "Easy",
-          impact: "Medium",
-        },
-        {
-          action: "Share YOUR unique results - they can't replicate your data",
-          difficulty: "Hard",
-          impact: "High",
-        },
-      ],
-      descriptionAnalysis: {
-        hasTimestamps: true,
-        hasLinks: true,
-        hasCTA: true,
-        estimatedWordCount: 245,
-        keyElements: [
-          "Chapter timestamps",
-          "Social media links",
-          "Call-to-action",
-          "External links",
-        ],
-      },
-      formatSignals: {
-        likelyFormat: "Tutorial",
-        productionLevel: "High",
-        paceEstimate: "Medium",
-      },
-    },
-    tags: [
-      "youtube growth",
-      "content strategy",
-      "creator tips",
-      "upload schedule",
-      "quality vs quantity",
-    ],
-    category: "Education",
-    moreFromChannel: [
-      {
-        videoId: "more-1",
-        title: "Stop Making This Thumbnail Mistake",
-        channelId: "demo-channel",
-        channelTitle: "Creator Academy",
-        channelThumbnailUrl: null,
-        videoUrl: "https://youtube.com/watch?v=more-1",
-        channelUrl: "https://youtube.com/channel/demo-channel",
-        thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-        publishedAt: new Date(
-          now.getTime() - 7 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        stats: { viewCount: 156000 },
-        derived: { viewsPerDay: 22285 },
-      },
-      {
-        videoId: "more-2",
-        title: "The Title Formula That Gets Clicks",
-        channelId: "demo-channel",
-        channelTitle: "Creator Academy",
-        channelThumbnailUrl: null,
-        videoUrl: "https://youtube.com/watch?v=more-2",
-        channelUrl: "https://youtube.com/channel/demo-channel",
-        thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-        publishedAt: new Date(
-          now.getTime() - 10 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        stats: { viewCount: 198000 },
-        derived: { viewsPerDay: 19800 },
-      },
-    ],
-    demo: true,
-  };
-}
-
-// Common words to filter out
-const commonWords = new Set([
-  "the",
-  "and",
-  "for",
-  "with",
-  "this",
-  "that",
-  "from",
-  "have",
-  "you",
-  "what",
-  "when",
-  "where",
-  "how",
-  "why",
-  "who",
-  "which",
-  "your",
-  "will",
-  "can",
-  "all",
-  "are",
-  "been",
-  "being",
-  "but",
-  "each",
-  "had",
-  "has",
-  "about",
-  "video",
-  "watch",
-  "youtube",
-  "channel",
-  "subscribe",
-]);

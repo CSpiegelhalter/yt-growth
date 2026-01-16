@@ -1,0 +1,254 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
+import { AppSidebar } from "./AppSidebar";
+import { MobileNav } from "./MobileNav";
+import { AppHeader } from "./AppHeader";
+import { apiFetchJson, isApiClientError } from "@/lib/client/api";
+import s from "./AppShell.module.css";
+
+type Channel = {
+  channel_id: string;
+  id: number;
+  title: string | null;
+  thumbnailUrl: string | null;
+};
+
+type Plan = "FREE" | "PRO" | "ENTERPRISE";
+
+type AppShellServerProps = {
+  children: React.ReactNode;
+  channels: Channel[];
+  activeChannelId: string | null;
+  userEmail: string;
+  userName: string | null;
+  plan: Plan;
+  channelLimit: number;
+  isAdmin?: boolean;
+};
+
+const SIDEBAR_COLLAPSE_KEY = "sidebar-collapsed";
+
+/**
+ * App shell component that receives initial data from server.
+ * 
+ * Key differences from AppShellWrapper:
+ * - No auth checking (done server-side in layout)
+ * - Receives initial channel/user data as props
+ * - Still manages client-side state (sidebar collapse, channel switching)
+ * - Can refresh channel list on certain events (channel added/removed)
+ * 
+ * This eliminates layout shift by having stable shell from first paint.
+ */
+export function AppShellServer({
+  children,
+  channels: initialChannels,
+  activeChannelId: initialActiveChannelId,
+  userEmail,
+  userName,
+  plan,
+  channelLimit,
+  isAdmin = false,
+}: AppShellServerProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  // Channels state (can be refreshed client-side)
+  const [channels, setChannels] = useState(initialChannels);
+  const [activeChannelId, setActiveChannelId] = useState(() => {
+    // Check URL for channelId param first
+    const urlChannelId = searchParams.get("channelId");
+    if (urlChannelId && initialChannels.some(c => c.channel_id === urlChannelId)) {
+      return urlChannelId;
+    }
+    // Check localStorage
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("activeChannelId");
+      if (stored && initialChannels.some(c => c.channel_id === stored)) {
+        return stored;
+      }
+    }
+    // Fall back to initial
+    return initialActiveChannelId;
+  });
+  
+  // Sidebar collapse state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  // Track if we've done initial URL sync
+  const didInitialSync = useRef(false);
+
+  // Load sidebar collapse state from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
+    if (stored !== null) {
+      setSidebarCollapsed(stored === "true");
+    }
+  }, []);
+  
+  // Sync active channel to localStorage and URL on mount
+  useEffect(() => {
+    if (didInitialSync.current) return;
+    didInitialSync.current = true;
+    
+    if (activeChannelId) {
+      localStorage.setItem("activeChannelId", activeChannelId);
+      
+      // Sync URL if on a channel-scoped page and URL doesn't match
+      const urlChannelId = searchParams.get("channelId");
+      if (isChannelScopedPath(pathname) && urlChannelId !== activeChannelId) {
+        const next = new URLSearchParams(searchParams.toString());
+        next.set("channelId", activeChannelId);
+        // Remove newChannel param if present
+        next.delete("newChannel");
+        router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+      }
+    }
+  }, [activeChannelId, pathname, searchParams, router]);
+
+  // Listen for channel-removed events
+  useEffect(() => {
+    const handleChannelRemoved = (e: CustomEvent<{ channelId: string }>) => {
+      const removedChannelId = e.detail.channelId;
+
+      setChannels((prev) => {
+        const updated = prev.filter((c) => c.channel_id !== removedChannelId);
+
+        if (activeChannelId === removedChannelId) {
+          if (updated.length > 0) {
+            setActiveChannelId(updated[0].channel_id);
+            localStorage.setItem("activeChannelId", updated[0].channel_id);
+          } else {
+            setActiveChannelId(null);
+            localStorage.removeItem("activeChannelId");
+          }
+        }
+
+        return updated;
+      });
+    };
+
+    window.addEventListener("channel-removed", handleChannelRemoved as EventListener);
+    return () => {
+      window.removeEventListener("channel-removed", handleChannelRemoved as EventListener);
+    };
+  }, [activeChannelId]);
+  
+  // Listen for newChannel query param (after OAuth redirect)
+  useEffect(() => {
+    const isNewChannel = searchParams.get("newChannel") === "1";
+    if (!isNewChannel) return;
+    
+    // Refresh channels from API to get the newly added channel
+    async function refreshChannels() {
+      try {
+        const data = await apiFetchJson<any>("/api/me/channels", {
+          cache: "no-store",
+        });
+        const channelList = Array.isArray(data) ? data : data.channels;
+        setChannels(channelList);
+        
+        // Set the new channel as active
+        if (channelList.length > 0) {
+          const newChannelId = channelList[0].channel_id;
+          setActiveChannelId(newChannelId);
+          localStorage.setItem("activeChannelId", newChannelId);
+          
+          // Clear newChannel param from URL
+          const next = new URLSearchParams(searchParams.toString());
+          next.delete("newChannel");
+          if (isChannelScopedPath(pathname)) {
+            next.set("channelId", newChannelId);
+          }
+          router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+        }
+      } catch (error) {
+        if (isApiClientError(error) && error.status === 401) {
+          await signOut({ callbackUrl: "/" });
+        }
+        console.error("Failed to refresh channels:", error);
+      }
+    }
+    
+    refreshChannels();
+  }, [searchParams, pathname, router]);
+
+  const handleToggleCollapse = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_COLLAPSE_KEY, String(next));
+      return next;
+    });
+  }, []);
+
+  const handleChannelChange = useCallback((channelId: string) => {
+    setActiveChannelId(channelId);
+    localStorage.setItem("activeChannelId", channelId);
+
+    // If on a video page, redirect to dashboard
+    if (isVideoPath(pathname)) {
+      router.push(`/dashboard?channelId=${channelId}`);
+      return;
+    }
+
+    // If on a channel-scoped page, update the URL
+    if (isChannelScopedPath(pathname)) {
+      const next = new URLSearchParams(searchParams.toString());
+      next.set("channelId", channelId);
+      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+      router.refresh();
+    }
+  }, [pathname, searchParams, router]);
+
+  return (
+    <div className={s.shell}>
+      {/* Desktop Sidebar */}
+      <AppSidebar
+        activeChannelId={activeChannelId}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={handleToggleCollapse}
+      />
+
+      {/* Main Content Area */}
+      <div className={s.main}>
+        {/* App Header */}
+        <AppHeader
+          channels={channels}
+          activeChannelId={activeChannelId}
+          userEmail={userEmail}
+          userName={userName}
+          plan={plan}
+          channelLimit={channelLimit}
+          isAdmin={isAdmin}
+          onChannelChange={handleChannelChange}
+          mobileNavSlot={<MobileNav activeChannelId={activeChannelId} />}
+        />
+
+        {/* Page Content */}
+        <main className={s.content} id="main-content">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Helpers ---------- */
+
+function isChannelScopedPath(pathname: string): boolean {
+  if (pathname === "/dashboard") return true;
+  if (pathname === "/ideas") return true;
+  if (pathname === "/goals") return true;
+  if (pathname === "/subscriber-insights") return true;
+  if (pathname === "/competitors") return true;
+  if (pathname.startsWith("/video/")) return true;
+  if (pathname.startsWith("/competitors/video/")) return true;
+  return false;
+}
+
+function isVideoPath(pathname: string): boolean {
+  return pathname.startsWith("/video/") || pathname.startsWith("/competitors/video/");
+}

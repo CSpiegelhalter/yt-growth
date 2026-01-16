@@ -268,7 +268,7 @@ model GoogleApiCallLog {
   url            String   @db.Text
   host           String   @db.VarChar(255)
   path           String   @db.VarChar(255)
-  status         String   @db.VarChar(16) // "mock" or HTTP code
+  status         String   @db.VarChar(16) // HTTP status code
   estimatedUnits Int      @default(0)
 
   @@index([at], map: "idx_google_api_calllog_at")

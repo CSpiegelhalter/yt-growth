@@ -4,7 +4,6 @@ import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUserWithSubscription } from "@/lib/user";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { callLLM } from "@/lib/llm";
 import type { DerivedMetrics, BaselineComparison } from "@/lib/owned-video-math";
 import type { VideoMetadata } from "@/lib/youtube-analytics";
@@ -39,10 +38,6 @@ async function GETHandler(
   { params }: { params: Promise<{ channelId: string; videoId: string }> }
 ) {
   const resolvedParams = await params;
-
-  if (isDemoMode() || (isYouTubeMockMode() && !process.env.OPENAI_API_KEY)) {
-    return Response.json(getDemoIdeas());
-  }
 
   const parsedParams = ParamsSchema.safeParse(resolvedParams);
   if (!parsedParams.success) {
@@ -220,41 +215,3 @@ PERFORMANCE: ${derived.totalViews.toLocaleString()} views, ${comparison.healthLa
   }
 }
 
-function getDemoIdeas() {
-  return {
-    ideas: {
-      remixIdeas: [
-        {
-          title: "The 5 Mistakes Keeping You Under 10K Subs",
-          hook: "If you're stuck under 10K, it's probably one of these five things. I made all of them, and fixing just ONE doubled my growth rate.",
-          keywords: ["youtube mistakes", "subscriber growth", "small youtuber"],
-          angle: "Focuses on problems instead of solutions - contrarian approach",
-        },
-        {
-          title: "I Analyzed My Top 10 Videos — Here's What They Have in Common",
-          hook: "I pulled the data on my best performers and found 3 surprising patterns. Number 2 completely changed how I structure my content.",
-          keywords: ["youtube analytics", "video performance", "content strategy"],
-          angle: "Data-driven deep dive into what works",
-        },
-        {
-          title: "YouTube Growth for Beginners: The First 1000 Subscribers",
-          hook: "Everything I wish I knew when I started. No fluff, just the exact steps that actually work in 2024.",
-          keywords: ["youtube beginner", "first 1000 subscribers", "youtube tips"],
-          angle: "Beginner-friendly version for new creators",
-        },
-        {
-          title: "The Exact Posting Schedule That Got Me to 100K",
-          hook: "I tested 4 different schedules over 2 years. Here's what actually worked — and it's not what the gurus tell you.",
-          keywords: ["posting schedule", "youtube algorithm", "consistency"],
-          angle: "Specific focus on timing and consistency",
-        },
-      ],
-      contentGaps: [
-        "How to maintain momentum after hitting a milestone",
-        "Dealing with burnout while growing a channel",
-        "When to quit your day job for YouTube",
-      ],
-    },
-    demo: true,
-  };
-}

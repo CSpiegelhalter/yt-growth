@@ -58,38 +58,6 @@ Respond with JSON only:`;
 export async function generateChannelProfileAI(
   input: ChannelProfileInput
 ): Promise<ChannelProfileAI> {
-  // TEST_MODE: Return fixture
-  if (process.env.TEST_MODE === "1") {
-    return {
-      nicheLabel: "Tech Education for Beginners",
-      nicheDescription: "Educational technology content helping beginners learn programming and software development.",
-      primaryCategories: ["Education", "Tech"],
-      contentPillars: [
-        { name: "Programming Tutorials", description: "Step-by-step coding lessons" },
-        { name: "Tech Reviews", description: "Software and tool reviews" },
-        { name: "Career Advice", description: "Breaking into tech industry" },
-      ],
-      targetAudience: "Aspiring developers and tech-curious beginners aged 18-35",
-      channelValueProposition: "Learn tech skills from zero with beginner-friendly explanations",
-      keywords: [
-        "programming", "coding", "tutorials", "beginner", "tech", "software",
-        "javascript", "python", "web development", "learn to code", "developer",
-        "programming tips", "coding bootcamp", "tech career", "software engineer",
-      ],
-      competitorSearchHints: [
-        "coding tutorials", "learn programming", "tech education",
-        "beginner developer", "programming tips", "coding for beginners",
-        "web dev tutorials", "software tutorials",
-      ],
-      videoIdeaAngles: [
-        "Beginner mistake videos", "Tool comparisons", "Day in the life",
-        "Project walkthroughs", "Interview prep", "Learning roadmaps",
-        "Quick tips", "Code reviews",
-      ],
-      toneAndStyle: ["Calm", "Analytical", "Inspirational"],
-    };
-  }
-
   const formattedInput = formatInputForLLM(input);
   const userPrompt = USER_PROMPT_TEMPLATE.replace("{INPUT}", formattedInput);
 

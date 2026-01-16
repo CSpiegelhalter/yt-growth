@@ -5,7 +5,7 @@ import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUserWithSubscription } from "@/lib/user";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
+
 import {
   checkEntitlement,
   entitlementErrorResponse,
@@ -53,11 +53,6 @@ async function GETHandler(
   { params }: { params: Promise<{ channelId: string; videoId: string }> }
 ) {
   const resolvedParams = await params;
-
-  // Demo mode
-  if (isDemoMode() || (isYouTubeMockMode() && !process.env.OPENAI_API_KEY)) {
-    return Response.json(getDemoSummary());
-  }
 
   const parsedParams = ParamsSchema.safeParse(resolvedParams);
   if (!parsedParams.success) {
@@ -312,53 +307,4 @@ CRITICAL RULES:
     console.error("Core analysis LLM failed:", err);
     return null;
   }
-}
-
-function getDemoSummary(): { summary: CoreAnalysis; cached: boolean; demo: boolean } {
-  return {
-    summary: {
-      headline: "Strong engagement but retention drops mid-video",
-      wins: [
-        {
-          label: "High engagement rate",
-          metric: "6.4% vs 4.2% baseline",
-          why: "Viewers are actively liking, commenting, and sharing - the personal story format resonates",
-        },
-        {
-          label: "Strong subscriber conversion",
-          metric: "3.0 subs/1K vs 2.5 baseline",
-          why: "Topic attracts your ideal audience who want more content like this",
-        },
-        {
-          label: "Above-average sharing",
-          metric: "2.8 shares/1K views",
-          why: "Content is emotionally resonant enough that viewers share it",
-        },
-      ],
-      improvements: [
-        {
-          label: "Mid-video retention drop",
-          metric: "39% avg viewed",
-          fix: "Add a pattern interrupt or mini-story around the 4-minute mark",
-        },
-        {
-          label: "Slow intro",
-          metric: "First 30s has steepest drop",
-          fix: "Get to the first valuable insight within 15 seconds",
-        },
-        {
-          label: "Missing search optimization",
-          metric: "Tags missing trending terms",
-          fix: "Add 'youtube algorithm 2024' and 'small youtuber tips' to tags",
-        },
-      ],
-      topAction: {
-        what: "Add a pattern interrupt at the 4-minute mark with a quick preview of what's coming",
-        why: "Your retention drops sharply here - this could recover 5-10% watch time",
-        effort: "low",
-      },
-    },
-    cached: false,
-    demo: true,
-  };
 }

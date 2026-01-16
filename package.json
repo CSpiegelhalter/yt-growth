@@ -12,7 +12,6 @@
   ],
   "scripts": {
     "dev": "next dev -p 3000",
-    "dev:test": "APP_TEST_MODE=1 FAKE_YOUTUBE=1 next dev -p 3000",
     "build": "rm -rf .next && next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
@@ -29,8 +28,8 @@
     "test:unit:watch": "bun test --watch tests/unit lib/__tests__",
     "test:integration": "bun test tests/integration",
     "test:e2e": "bun scripts/test/run-e2e.ts",
-    "test:e2e:ui": "APP_TEST_MODE=1 FAKE_YOUTUBE=1 playwright test --ui",
-    "test:e2e:headed": "APP_TEST_MODE=1 FAKE_YOUTUBE=1 playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
     "test:all": "bun run test:unit && bun run test:integration && bun run test:e2e",
     "test:db:reset": "bun scripts/test/reset-db.ts",
     "typecheck": "rm -rf .next/types && tsc --noEmit",

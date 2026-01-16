@@ -59,8 +59,6 @@ async function main() {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        APP_TEST_MODE: "1",
-        FAKE_YOUTUBE: "1",
         DISABLE_RATE_LIMITS: "1",
         PLAYWRIGHT_BASE_URL: BASE_URL,
       },
@@ -84,8 +82,6 @@ async function startServer(): Promise<ChildProcess> {
       env: {
         ...process.env,
         PORT,
-        APP_TEST_MODE: "1",
-        FAKE_YOUTUBE: "1",
         DISABLE_RATE_LIMITS: "1",
         DATABASE_URL:
           process.env.TEST_DATABASE_URL ||

@@ -14,7 +14,6 @@ import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 
 
-import { isDemoMode } from "@/lib/demo-fixtures";
 import { callLLM } from "@/lib/llm";
 import {
   checkEntitlement,
@@ -88,11 +87,6 @@ async function POSTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
-  // Return demo data if demo mode
-  if (isDemoMode()) {
-    return Response.json(getDemoMoreIdeas());
-  }
-
   try {
     // Entitlement check - idea generation is a usage-limited feature
     const entitlementResult = await checkEntitlement({
@@ -264,66 +258,4 @@ Generate MORE content that complements (not duplicates) this idea.`;
     console.error("LLM generation failed:", err);
     throw err;
   }
-}
-
-/**
- * Demo/fallback data
- */
-function getDemoMoreIdeas(): MoreIdeaResponse {
-  return {
-    hooks: [
-      "Most creators get this completely wrong. Here's the fix.",
-      "I tested this for 30 days. The results surprised me.",
-      "Stop doing what everyone else does. Try this instead.",
-    ],
-    titles: [
-      "The Counterintuitive Secret to [Topic]",
-      "Why [Topic] Is Harder Than It Looks",
-      "I Was Wrong About [Topic] for Years",
-    ],
-    keywords: [
-      "tutorial",
-      "tips and tricks",
-      "beginner guide",
-      "advanced techniques",
-      "mistakes to avoid",
-    ],
-    packaging: {
-      titleAngles: [
-        "Lead with the unexpected outcome",
-        "Frame it as a common mistake most people make",
-        "Use a specific number or timeframe for credibility",
-      ],
-      hookSetups: [
-        "Start with a bold contrarian statement",
-        "Open with a relatable struggle your audience faces",
-        "Begin by showing the end result, then rewind",
-      ],
-      visualMoments: [
-        "Show a before/after comparison in the first 3 seconds",
-        "Use a text overlay that matches your title promise",
-        "Cut to yourself reacting to a surprising result",
-      ],
-    },
-    remixes: [
-      {
-        title: "Why I Stopped [Common Practice] (And You Should Too)",
-        hook: "Everyone told me to do this. They were wrong.",
-        overlayText: "I WAS WRONG",
-        angle: "Contrarian take that challenges conventional wisdom",
-      },
-      {
-        title: "The Beginner's Guide to [Topic] That Actually Works",
-        hook: "If you're just starting out, this is the only video you need.",
-        overlayText: "START HERE",
-        angle: "Beginner-friendly approach with step-by-step clarity",
-      },
-      {
-        title: "I Tried [Topic] for 30 Days - Here's What Happened",
-        hook: "I didn't expect these results. Let me show you everything.",
-        overlayText: "30 DAYS LATER",
-        angle: "Personal experiment format with documented journey",
-      },
-    ],
-  };
 }

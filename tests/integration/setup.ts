@@ -11,8 +11,6 @@ import bcrypt from "bcryptjs";
 import { LIMITS } from "@/lib/product";
 
 // Set test environment
-process.env.APP_TEST_MODE = "1";
-process.env.FAKE_YOUTUBE = "1";
 process.env.DISABLE_RATE_LIMITS = "1";
 
 // Use test database if not already set

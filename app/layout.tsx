@@ -1,8 +1,4 @@
-import { Suspense } from "react";
 import { Inter } from "next/font/google";
-import { LayoutShell } from "@/components/LayoutShell";
-import { HeaderStatic } from "@/components/HeaderStatic";
-import { Footer } from "@/components/Footer";
 import { Providers } from "@/components/Providers";
 import { BRAND, STRUCTURED_DATA } from "@/lib/brand";
 import { Analytics } from "@vercel/analytics/next";
@@ -107,6 +103,21 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Root Layout
+ * 
+ * This layout provides:
+ * - HTML/head with fonts, metadata, structured data
+ * - Providers wrapper (SessionProvider, ToastProvider)
+ * - Analytics
+ * 
+ * Layout chrome (headers, sidebars, footers) is handled by:
+ * - (marketing)/layout.tsx - for public pages
+ * - (app)/layout.tsx - for authenticated app pages
+ * 
+ * This eliminates layout shift by ensuring each route group
+ * has deterministic layout chrome from first paint.
+ */
 export default async function RootLayout({
   children,
 }: {
@@ -139,19 +150,7 @@ export default async function RootLayout({
         />
       </head>
       <body>
-        <Providers>
-          <Suspense
-            fallback={
-              <div className="appShell">
-                <HeaderStatic />
-                <div className="appMain">{children}</div>
-                <Footer />
-              </div>
-            }
-          >
-            <LayoutShell>{children}</LayoutShell>
-          </Suspense>
-        </Providers>
+        <Providers>{children}</Providers>
         <Analytics />
       </body>
     </html>

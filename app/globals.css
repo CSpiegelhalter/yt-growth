@@ -545,20 +545,6 @@ body {
   flex: 1 0 auto;
 }
 
-/* Container (legacy) */
-.container {
-  width: 100%;
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--page-padding-mobile);
-}
-
-@media (min-width: 768px) {
-  .container {
-    padding: var(--page-padding-desktop);
-  }
-}
-
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
@@ -637,37 +623,6 @@ nav a:hover {
   color: white;
 }
 
-.btn-danger {
-  color: var(--color-danger);
-  border-color: var(--color-danger);
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: var(--color-danger);
-  color: white;
-}
-
-.btn-success {
-  background: var(--color-success);
-  border-color: var(--color-success);
-  color: white;
-}
-
-/* Cards */
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
-  box-shadow: var(--shadow-sm);
-}
-
-@media (min-width: 768px) {
-  .card {
-    padding: var(--space-lg);
-  }
-}
-
 /* Form elements */
 input, textarea, select {
   width: 100%;
@@ -691,31 +646,6 @@ label {
   font-weight: 500;
   margin-bottom: var(--space-xs);
   color: var(--color-text-secondary);
-}
-
-/* Alerts */
-.alert {
-  padding: var(--space-md);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-}
-
-.alert-error {
-  background: var(--danger-light);
-  border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--danger-light));
-  color: var(--danger-dark);
-}
-
-.alert-success {
-  background: var(--success-light);
-  border: 1px solid color-mix(in srgb, var(--success) 25%, var(--success-light));
-  color: var(--success-dark);
-}
-
-.alert-warning {
-  background: var(--warning-light);
-  border: 1px solid color-mix(in srgb, var(--warning) 25%, var(--warning-light));
-  color: var(--warning-dark);
 }
 
 /* Skeleton loading */
@@ -766,134 +696,6 @@ label {
 .tab.active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
-}
-
-/* Badge */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border-radius: 9999px;
-  background: var(--primary-light);
-  color: color-mix(in srgb, var(--primary) 45%, black);
-}
-
-.badge-success {
-  background: var(--success-light);
-  color: var(--success-dark);
-}
-
-.badge-warning {
-  background: var(--warning-light);
-  color: var(--warning-dark);
-}
-
-.badge-danger {
-  background: var(--danger-light);
-  color: var(--danger-dark);
-}
-
-/* Grid utilities */
-.grid {
-  display: grid;
-  gap: var(--space-md);
-}
-
-.grid-2 {
-  grid-template-columns: repeat(1, 1fr);
-}
-
-@media (min-width: 640px) {
-  .grid-2 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Flex utilities */
-.flex {
-  display: flex;
-}
-
-.flex-col {
-  flex-direction: column;
-}
-
-.flex-wrap {
-  flex-wrap: wrap;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.justify-between {
-  justify-content: space-between;
-}
-
-.gap-sm {
-  gap: var(--space-sm);
-}
-
-.gap-md {
-  gap: var(--space-md);
-}
-
-/* Text utilities */
-.text-sm {
-  font-size: 0.875rem;
-}
-
-.text-secondary {
-  color: var(--color-text-secondary);
-}
-
-.text-success {
-  color: var(--color-success);
-}
-
-.text-danger {
-  color: var(--color-danger);
-}
-
-/* Spacing utilities */
-.mt-sm { margin-top: var(--space-sm); }
-.mt-md { margin-top: var(--space-md); }
-.mt-lg { margin-top: var(--space-lg); }
-.mb-md { margin-bottom: var(--space-md); }
-.mb-lg { margin-bottom: var(--space-lg); }
-
-/* Markdown content */
-.markdown h2 {
-  margin-top: var(--space-lg);
-  margin-bottom: var(--space-md);
-}
-
-.markdown h3 {
-  margin-top: var(--space-md);
-  margin-bottom: var(--space-sm);
-}
-
-.markdown p {
-  margin-bottom: var(--space-md);
-}
-
-.markdown ul, .markdown ol {
-  margin-left: var(--space-lg);
-  margin-bottom: var(--space-md);
-}
-
-.markdown li {
-  margin-bottom: var(--space-xs);
-}
-
-.markdown code {
-  background: #f1f5f9;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: var(--font-mono);
-  font-size: 0.875em;
 }
 
 /* Responsive visibility */
@@ -1265,7 +1067,7 @@ label {
 
 .landingCtaSection .heroCtas__primary:hover {
   background: #f8fafc;
-  color: #fff;
+  color: #1e3a5f;
   box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
 }
 

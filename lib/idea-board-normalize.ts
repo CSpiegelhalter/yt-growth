@@ -182,7 +182,6 @@ export function normalizeIdeaBoardData(
     ideas,
     nicheInsights: d.nicheInsights ?? { momentumNow: [], patternsToCopy: [], gapsToExploit: [] },
     similarChannels: Array.isArray(d.similarChannels) ? d.similarChannels : [],
-    demo: d.demo === true ? true : undefined,
   };
 }
 

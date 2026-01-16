@@ -4,11 +4,8 @@ import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUserWithSubscription } from "@/lib/user";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
 import { callLLM } from "@/lib/llm";
-import type {
-  DerivedMetrics,
-} from "@/lib/owned-video-math";
+import type { DerivedMetrics } from "@/lib/owned-video-math";
 import type { VideoMetadata } from "@/lib/youtube-analytics";
 
 const ParamsSchema = z.object({
@@ -57,10 +54,6 @@ async function GETHandler(
   { params }: { params: Promise<{ channelId: string; videoId: string }> }
 ) {
   const resolvedParams = await params;
-
-  if (isDemoMode() || (isYouTubeMockMode() && !process.env.OPENAI_API_KEY)) {
-    return Response.json(getDemoSeoAnalysis());
-  }
 
   const parsedParams = ParamsSchema.safeParse(resolvedParams);
   if (!parsedParams.success) {
@@ -125,7 +118,10 @@ async function GETHandler(
       );
     }
 
-    const seoAnalysis = await generateSeoAnalysis(derivedData.video, derivedData.derived);
+    const seoAnalysis = await generateSeoAnalysis(
+      derivedData.video,
+      derivedData.derived
+    );
 
     if (!seoAnalysis) {
       return Response.json(
@@ -287,68 +283,4 @@ VIEWS: ${derived.totalViews.toLocaleString()}`;
     console.error("SEO analysis LLM failed:", err);
     return null;
   }
-}
-
-function getDemoSeoAnalysis() {
-  return {
-    seo: {
-      focusKeyword: {
-        keyword: "YouTube growth",
-        confidence: "high",
-        reasoning:
-          "The video is about growing a YouTube channel to 100K subscribers",
-        alternatives: [
-          "grow YouTube channel",
-          "100K subscribers",
-          "YouTube strategy",
-        ],
-      },
-      titleAnalysis: {
-        score: 7,
-        strengths: [
-          "Specific milestone (100K) creates credibility",
-          "Promise of actionable content",
-        ],
-        weaknesses: ["No curiosity gap or tension", "Missing power words"],
-        suggestions: [
-          "I Grew From 0 to 100K Subscribers in 18 Months (Here's What Actually Worked)",
-          "100K Subscribers: The 5 Strategies That Changed Everything",
-          "How I Hit 100K Subs (And The Mistake That Almost Stopped Me)",
-        ],
-      },
-      descriptionAnalysis: {
-        score: 6,
-        weaknesses: [
-          "First line doesn't include main keyword",
-          "Missing timestamps",
-        ],
-        rewrittenOpening:
-          "How to grow on YouTube to 100K subscribers: In this video, I break down the exact strategies that helped me hit 100K subs, including the mistakes to avoid.",
-        addTheseLines: [
-          "TIMESTAMPS:",
-          "00:00 - Intro",
-          "In this video: YouTube growth strategy, subscriber milestones, content creation tips",
-        ],
-      },
-      tagAnalysis: {
-        score: 6,
-        feedback:
-          "Good foundation but missing trending terms and long-tail variations.",
-        missing: [
-          "youtube algorithm 2024",
-          "how to grow on youtube",
-          "100k subscribers",
-          "youtube growth tips",
-          "small youtuber tips",
-          "youtube strategy",
-          "content creator tips",
-          "grow youtube channel fast",
-          "youtube success",
-          "subscriber growth",
-        ],
-        impactLevel: "medium",
-      },
-    },
-    demo: true,
-  };
 }

@@ -22,15 +22,10 @@ import {
 } from "@/lib/user";
 import { calcSubsPerThousandViews } from "@/lib/retention";
 import { generateSubscriberInsights } from "@/lib/llm";
-import {
-  isDemoMode,
-  isYouTubeMockMode,
-  getDemoData,
-} from "@/lib/demo-fixtures";
+
 import { hashSubscriberAuditContent } from "@/lib/content-hash";
 import type {
   SubscriberMagnetVideo,
-  SubscriberAuditResponse,
   PatternAnalysisJson,
 } from "@/types/api";
 
@@ -49,16 +44,6 @@ async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
-  // Return demo data ONLY if demo mode is on AND mock mode is off
-  if (isDemoMode() && !isYouTubeMockMode()) {
-    const demoData = getDemoData(
-      "subscriber-audit"
-    ) as SubscriberAuditResponse | null;
-    if (demoData) {
-      return Response.json({ ...demoData, demo: true });
-    }
-  }
-
   try {
     // Auth check
     const user = await getCurrentUserWithSubscription();

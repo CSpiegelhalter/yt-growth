@@ -49,9 +49,12 @@ function shouldUsePublicLayout(pathname: string): boolean {
 }
 
 /**
- * Layout shell that conditionally renders:
- * - Public layout (header + footer) for marketing/public pages
- * - App shell (sidebar + header) for authenticated app pages
+ * @deprecated This component is no longer used in the app.
+ * Layout switching is now handled by route groups:
+ * - (marketing)/layout.tsx for public pages
+ * - (app)/layout.tsx for authenticated app pages
+ * 
+ * This component is kept for backwards compatibility only.
  */
 export function LayoutShell({ children }: LayoutShellProps) {
   const { status } = useSession();

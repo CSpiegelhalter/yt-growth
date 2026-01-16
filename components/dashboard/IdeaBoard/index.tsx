@@ -266,7 +266,6 @@ export default function IdeaBoard({
         <div className={s.headerLeft}>
           <h1 className={s.title}>Idea Engine</h1>
           {channelName && <span className={s.channelName}>{channelName}</span>}
-          {data.demo && <span className={s.demoBadge}>Demo Data</span>}
         </div>
         {needsDailyRefresh && (
           <button

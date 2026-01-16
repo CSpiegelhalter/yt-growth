@@ -1,7 +1,5 @@
 /**
  * Stripe payment integration helpers
- *
- * In TEST_MODE, bypasses Stripe entirely for local testing.
  */
 import { prisma } from "@/prisma";
 import { LIMITS } from "@/lib/product";
@@ -190,11 +188,6 @@ export async function stripeRequest<T>(
  * Check if a Stripe customer ID is valid (exists in Stripe)
  */
 async function isValidStripeCustomer(customerId: string): Promise<boolean> {
-  // Skip validation for obviously fake test IDs
-  if (customerId.startsWith("cus_test_") || customerId === "cus_demo") {
-    return false;
-  }
-
   try {
     await stripeRequest<StripeCustomer>(`/customers/${customerId}`, {
       method: "GET",

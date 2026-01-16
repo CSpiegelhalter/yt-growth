@@ -16,13 +16,8 @@ import { z } from "zod";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/user";
-import {
-  isDemoMode,
-  getDemoData,
-  isYouTubeMockMode,
-} from "@/lib/demo-fixtures";
+
 import { getGoogleAccount, fetchChannelVideos } from "@/lib/youtube-api";
-import { ensureMockChannelSeeded } from "@/lib/mock-seed";
 
 // 12 hours in milliseconds - data older than this triggers a sync
 const STALE_THRESHOLD_MS = 12 * 60 * 60 * 1000;
@@ -170,39 +165,6 @@ async function GETHandler(
     )
   );
 
-  // Return demo data if demo mode is enabled
-  if (isDemoMode() && !isYouTubeMockMode()) {
-    const demoData = getDemoData("retention"); // Reuse retention fixture for video list
-    const allVideos = (demoData as any)?.videos ?? [];
-    const paginatedVideos = allVideos.slice(offset, offset + limit);
-    return Response.json({
-      videos: paginatedVideos.map((v: any) => ({
-        videoId: v.videoId,
-        title: v.title,
-        thumbnailUrl: v.thumbnailUrl,
-        durationSec: v.durationSec,
-        publishedAt: v.publishedAt,
-        views: v.views ?? 0,
-        likes: v.likes ?? 0,
-        comments: v.comments ?? 0,
-        // Extended metrics for Video Tools
-        shares: v.shares ?? null,
-        subscribersGained: v.subscribersGained ?? null,
-        subscribersLost: v.subscribersLost ?? null,
-        estimatedMinutesWatched: v.estimatedMinutesWatched ?? null,
-        avgViewDuration: v.avgViewDuration ?? null,
-        avgViewPercentage: v.avgViewPercentage ?? null,
-      })),
-      pagination: {
-        offset,
-        limit,
-        total: allVideos.length,
-        hasMore: offset + limit < allVideos.length,
-      },
-      demo: true,
-    });
-  }
-
   try {
     // Auth check
     const user = await getCurrentUser();
@@ -257,53 +219,6 @@ async function GETHandler(
         },
       },
     });
-
-    // In YT_MOCK_MODE, auto-seed the channel/videos if missing
-    if (!channel && isYouTubeMockMode()) {
-      const ga = await getGoogleAccount(user.id, channelId);
-      if (!ga) {
-        return Response.json(
-          { error: "Google account not connected" },
-          { status: 400 }
-        );
-      }
-      await ensureMockChannelSeeded({
-        userId: user.id,
-        youtubeChannelId: channelId,
-        minVideos: 25,
-        ga,
-      });
-      channel = await prisma.channel.findFirst({
-        where: { youtubeChannelId: channelId, userId: user.id },
-        include: {
-          Video: {
-            where: {
-              OR: [{ privacyStatus: "public" }, { privacyStatus: null }],
-            },
-            orderBy: { publishedAt: "desc" },
-            skip: offset,
-            take: limit,
-            select: {
-              id: true,
-              youtubeVideoId: true,
-              title: true,
-              thumbnailUrl: true,
-              durationSec: true,
-              publishedAt: true,
-            },
-          },
-          _count: {
-            select: {
-              Video: {
-                where: {
-                  OR: [{ privacyStatus: "public" }, { privacyStatus: null }],
-                },
-              },
-            },
-          },
-        },
-      });
-    }
 
     if (!channel) {
       return Response.json({ error: "Channel not found" }, { status: 404 });

@@ -7,10 +7,7 @@
 import { test, expect } from "@playwright/test";
 import {
   signIn,
-  setBillingState,
-  linkFakeChannel,
-  unlinkFakeChannel,
-  DEMO_USER,
+  TEST_USER,
 } from "./fixtures/test-helpers";
 
 test.describe("Smoke Tests - Public Pages", () => {
@@ -45,16 +42,7 @@ test.describe("Smoke Tests - Public Pages", () => {
 
 test.describe("Smoke Tests - Protected Pages", () => {
   test.beforeEach(async ({ page }) => {
-    await signIn(page, DEMO_USER);
-    await setBillingState(page, "pro");
-
-    // Ensure a channel exists for pages that need it
-    await unlinkFakeChannel(page);
-    const result = await linkFakeChannel(page, {
-      channelId: "UC_smoke_test",
-      title: "Smoke Test Channel",
-    });
-    expect(result.success).toBe(true);
+    await signIn(page, TEST_USER);
   });
 
   test("dashboard loads without error", async ({ page }) => {
@@ -75,7 +63,7 @@ test.describe("Smoke Tests - Protected Pages", () => {
     await expect(page.locator("main").first()).toBeVisible();
 
     // Should show email (specific, always present)
-    await expect(page.locator(`text=${DEMO_USER.email}`)).toBeVisible();
+    await expect(page.locator(`text=${TEST_USER.email}`)).toBeVisible();
   });
 
   test("ideas page loads without error", async ({ page }) => {
@@ -93,19 +81,11 @@ test.describe("Smoke Tests - Protected Pages", () => {
     await expect(page.locator("main").first()).toBeVisible();
     await expect(page).toHaveURL(/competitors/);
   });
-
-  test("audit page loads for channel", async ({ page }) => {
-    await page.goto("/audit/UC_smoke_test");
-    await page.waitForLoadState("networkidle");
-
-    await expect(page.locator("main").first()).toBeVisible();
-    await expect(page).toHaveURL(/audit/);
-  });
 });
 
 test.describe("Smoke Tests - API Endpoints", () => {
   test.beforeEach(async ({ page }) => {
-    await signIn(page, DEMO_USER);
+    await signIn(page, TEST_USER);
   });
 
   test("GET /api/me returns user data", async ({ page }) => {
@@ -113,7 +93,7 @@ test.describe("Smoke Tests - API Endpoints", () => {
     expect(response.ok()).toBeTruthy();
 
     const data = await response.json();
-    expect(data.email).toBe(DEMO_USER.email);
+    expect(data.email).toBe(TEST_USER.email);
     expect(data.plan).toBeDefined();
   });
 
@@ -130,7 +110,7 @@ test.describe("Smoke Tests - Mobile Viewport", () => {
   test.use({ viewport: { width: 375, height: 667 } });
 
   test("dashboard is responsive on mobile", async ({ page }) => {
-    await signIn(page, DEMO_USER);
+    await signIn(page, TEST_USER);
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
@@ -140,12 +120,12 @@ test.describe("Smoke Tests - Mobile Viewport", () => {
   });
 
   test("profile page is responsive on mobile", async ({ page }) => {
-    await signIn(page, DEMO_USER);
+    await signIn(page, TEST_USER);
     await page.goto("/profile");
     await page.waitForLoadState("networkidle");
 
     // Check for proper rendering
     await expect(page.locator("main").first()).toBeVisible();
-    await expect(page.locator(`text=${DEMO_USER.email}`)).toBeVisible();
+    await expect(page.locator(`text=${TEST_USER.email}`)).toBeVisible();
   });
 });

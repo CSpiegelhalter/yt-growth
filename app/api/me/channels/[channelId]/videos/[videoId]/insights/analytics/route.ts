@@ -5,7 +5,7 @@ import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUserWithSubscription } from "@/lib/user";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
+
 import { getGoogleAccount, fetchRetentionCurve } from "@/lib/youtube-api";
 import { GoogleTokenRefreshError } from "@/lib/google-tokens";
 import {
@@ -56,11 +56,6 @@ async function GETHandler(
   { params }: { params: Promise<{ channelId: string; videoId: string }> }
 ) {
   const resolvedParams = await params;
-
-  // Demo mode - return demo analytics
-  if (isDemoMode() || (isYouTubeMockMode() && !process.env.OPENAI_API_KEY)) {
-    return Response.json(getDemoAnalytics({ videoId: resolvedParams.videoId }));
-  }
 
   // Validate params
   const parsedParams = ParamsSchema.safeParse(resolvedParams);
@@ -236,40 +231,46 @@ async function fetchAnalyticsData(
 
   // Fetch EVERYTHING in parallel - this is critical for speed
   // Previously discoveryMetrics was fetched sequentially, adding 500-1500ms
-  const [videoMeta, totalsResult, dailyResult, baseline, retentionPoints, discoveryMetrics] =
-    await Promise.all([
-      fetchOwnedVideoMetadata(ga, videoId),
-      fetchVideoAnalyticsTotalsWithStatus(
-        ga,
-        youtubeChannelId,
-        videoId,
-        startDate,
-        endDate
-      ),
-      fetchVideoAnalyticsDailyWithStatus(
-        ga,
-        youtubeChannelId,
-        videoId,
-        startDate,
-        endDate
-      ),
-      getChannelBaselineFromDB(userId, dbChannelId, videoId, range),
-      fetchRetentionCurve(ga, youtubeChannelId, videoId).catch(() => []),
-      // Discovery metrics now fetched in parallel instead of sequentially
-      fetchVideoDiscoveryMetrics(
-        ga,
-        youtubeChannelId,
-        videoId,
-        startDate,
-        endDate
-      ).catch(() => ({
-        impressions: null,
-        impressionsCtr: null,
-        trafficSources: null,
-        hasData: false,
-        reason: "connect_analytics" as const,
-      })),
-    ]);
+  const [
+    videoMeta,
+    totalsResult,
+    dailyResult,
+    baseline,
+    retentionPoints,
+    discoveryMetrics,
+  ] = await Promise.all([
+    fetchOwnedVideoMetadata(ga, videoId),
+    fetchVideoAnalyticsTotalsWithStatus(
+      ga,
+      youtubeChannelId,
+      videoId,
+      startDate,
+      endDate
+    ),
+    fetchVideoAnalyticsDailyWithStatus(
+      ga,
+      youtubeChannelId,
+      videoId,
+      startDate,
+      endDate
+    ),
+    getChannelBaselineFromDB(userId, dbChannelId, videoId, range),
+    fetchRetentionCurve(ga, youtubeChannelId, videoId).catch(() => []),
+    // Discovery metrics now fetched in parallel instead of sequentially
+    fetchVideoDiscoveryMetrics(
+      ga,
+      youtubeChannelId,
+      videoId,
+      startDate,
+      endDate
+    ).catch(() => ({
+      impressions: null,
+      impressionsCtr: null,
+      trafficSources: null,
+      hasData: false,
+      reason: "connect_analytics" as const,
+    })),
+  ]);
 
   if (!videoMeta) {
     throw new Error("Could not fetch video metadata");
@@ -366,7 +367,9 @@ async function fetchAnalyticsData(
       : undefined;
 
   // Store daily analytics in background
-  storeDailyAnalytics(userId, dbChannelId, videoId, dailySeries).catch(() => {});
+  storeDailyAnalytics(userId, dbChannelId, videoId, dailySeries).catch(
+    () => {}
+  );
 
   return {
     video: videoMeta,
@@ -447,9 +450,11 @@ async function getChannelBaselineFromDB(
       viewsPerDay: views / days,
       totalViews: views,
       daysInRange: days,
-      subsPer1k: v.subsGained != null ? Number(v.subsGained) / viewsPer1k : null,
+      subsPer1k:
+        v.subsGained != null ? Number(v.subsGained) / viewsPer1k : null,
       sharesPer1k: v.shares != null ? Number(v.shares) / viewsPer1k : null,
-      commentsPer1k: v.comments != null ? Number(v.comments) / viewsPer1k : null,
+      commentsPer1k:
+        v.comments != null ? Number(v.comments) / viewsPer1k : null,
       likesPer1k: v.likes != null ? Number(v.likes) / viewsPer1k : null,
       playlistAddsPer1k: null,
       netSubsPer1k: null,
@@ -462,7 +467,10 @@ async function getChannelBaselineFromDB(
       avgViewDuration: null,
       avgViewPercentage: v.avgViewPct != null ? Number(v.avgViewPct) : null,
       engagementPerView:
-        (Number(v.likes ?? 0) + Number(v.comments ?? 0) + Number(v.shares ?? 0)) / views,
+        (Number(v.likes ?? 0) +
+          Number(v.comments ?? 0) +
+          Number(v.shares ?? 0)) /
+        views,
       engagedViewRate: null,
       cardClickRate: null,
       endScreenClickRate: null,
@@ -609,7 +617,8 @@ function getConversionAction(grade: string): string {
 }
 
 function getEngagementReason(derived: DerivedMetrics, comparison: any): string {
-  if (derived.engagementPerView == null) return "Engagement data not available.";
+  if (derived.engagementPerView == null)
+    return "Engagement data not available.";
   const eng = (derived.engagementPerView * 100).toFixed(2);
   if (comparison.engagementPerView.vsBaseline === "above") {
     return `${eng}% engagement rate is above your channel average.`;
@@ -631,79 +640,4 @@ function getEngagementAction(grade: string): string {
     default:
       return "Your engagement is strong.";
   }
-}
-
-function getDemoAnalytics(opts?: { videoId?: string }) {
-  // Return minimal demo analytics for fast display
-  return {
-    video: {
-      videoId: opts?.videoId ?? "demo-video-id",
-      title: "How I Grew My Channel to 100K Subscribers",
-      description: "In this video I share my journey...",
-      publishedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      tags: ["youtube growth", "subscribers", "content creation"],
-      categoryId: "22",
-      thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-      durationSec: 720,
-      viewCount: 150000,
-      likeCount: 8500,
-      commentCount: 650,
-      topicCategories: ["Entertainment", "Education"],
-    },
-    analytics: {
-      totals: {
-        views: 150000,
-        likes: 8500,
-        comments: 650,
-        shares: 420,
-        subscribersGained: 450,
-        subscribersLost: 45,
-        averageViewPercentage: 39,
-        estimatedMinutesWatched: 180000,
-      },
-      dailySeries: [],
-    },
-    derived: {
-      viewsPerDay: 5357,
-      totalViews: 150000,
-      daysInRange: 28,
-      subsPer1k: 3.0,
-      sharesPer1k: 2.8,
-      engagementPerView: 0.064,
-      avdRatio: 0.39,
-    },
-    baseline: {
-      sampleSize: 24,
-      viewsPerDay: { mean: 4200, std: 1800 },
-      avgViewPercentage: { mean: 0.35, std: 0.08 },
-      subsPer1k: { mean: 2.5, std: 0.8 },
-      engagementPerView: { mean: 0.05, std: 0.015 },
-    },
-    comparison: {
-      viewsPerDay: { value: 5357, vsBaseline: "above", delta: 27.5 },
-      avgViewPercentage: { value: 0.39, vsBaseline: "at", delta: 11.4 },
-      subsPer1k: { value: 3.0, vsBaseline: "above", delta: 20.0 },
-      engagementPerView: { value: 0.064, vsBaseline: "above", delta: 28.0 },
-      healthScore: 72,
-      healthLabel: "Good",
-    },
-    levers: {
-      retention: { grade: "Good", color: "lime", reason: "39% avg viewed is above average.", action: "Test mid-roll pattern interrupts." },
-      conversion: { grade: "Good", color: "lime", reason: "3.0 subs per 1K views is strong.", action: "Replicate this subscribe prompt style." },
-      engagement: { grade: "Great", color: "green", reason: "6.4% engagement is excellent.", action: "Note what sparked discussion here." },
-    },
-    // No bottleneck for this well-performing demo video
-    confidence: { retention: "High", discovery: "Medium", conversion: "High" },
-    isLowDataMode: false,
-    analyticsAvailability: { hasImpressions: true, hasCtr: true, hasTrafficSources: true },
-    retention: {
-      points: Array.from({ length: 100 }, (_, i) => ({
-        elapsedRatio: i / 100,
-        audienceWatchRatio: Math.max(0.1, 1 - (i / 100) * 0.7 + Math.random() * 0.05),
-      })),
-    },
-    cached: false,
-    hasSummary: false,
-    demo: true,
-  };
 }

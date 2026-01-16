@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 import { BRAND } from "@/lib/brand";
-import { LEARN_ARTICLES } from "./learn/articles";
+import { LEARN_ARTICLES } from "./(marketing)/learn/articles";
 
 /**
  * Generate sitemap.xml for SEO

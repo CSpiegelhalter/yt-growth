@@ -204,7 +204,6 @@ export type SubscriberAuditResponse = {
     avgPlaylistAddsPer1k?: number;
     avgEngagedRate?: number;
   };
-  demo?: boolean;
 };
 
 export type SimilarChannel = {
@@ -398,7 +397,6 @@ export type IdeaBoardData = {
   ideas: Idea[];
   nicheInsights: IdeaBoardNicheInsights;
   similarChannels: IdeaBoardSimilarChannel[];
-  demo?: boolean;
 };
 
 /* ============================================
@@ -464,7 +462,6 @@ export type CompetitorFeedResponse = {
   cachedUntil: string;
   nextCursor?: string;
   videos: CompetitorVideo[];
-  demo?: boolean;
   /** Description of the competitor channel size range being shown */
   targetSizeDescription?: string;
   /** Current page number (for loading more batches) */
@@ -805,7 +802,6 @@ export type CompetitorVideoAnalysis = {
   derivedKeywords?: string[];
   category?: string;
   moreFromChannel: CompetitorVideo[];
-  demo?: boolean;
 
   // NEW: Data limitations notice
   dataLimitations?: {
@@ -1219,7 +1215,6 @@ export type VideoInsightsResponse = {
   retention?: RetentionData;
   llmInsights: VideoInsightsLLM | null;
   cachedUntil: string;
-  demo?: boolean;
   // NEW: Bottleneck detection
   bottleneck?: BottleneckResult;
   // NEW: Section confidence levels

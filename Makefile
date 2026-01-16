@@ -9,7 +9,7 @@ help:
 	@echo "  make db-down       # stop Postgres"
 	@echo "  make db-nuke       # nuke DB, restart, migrate, and seed (fresh start)"
 	@echo "  make db-migrate    # run prisma migrations"
-	@echo "  make db-seed       # seed demo data"
+	@echo "  make db-seed       # seed development database"
 	@echo "  make db-studio     # open Prisma Studio"
 	@echo "  make logs          # tail compose logs"
 	@echo "  make ps            # show compose services"

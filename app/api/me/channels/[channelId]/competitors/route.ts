@@ -12,8 +12,7 @@ import {
   fetchVideosStatsBatch,
   type VideoDurationFilter,
 } from "@/lib/youtube-api";
-import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
-import { ensureMockChannelSeeded } from "@/lib/mock-seed";
+
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { getOrGenerateNiche } from "@/lib/channel-niche";
 import type { CompetitorFeedResponse, CompetitorVideo } from "@/types/api";
@@ -47,20 +46,6 @@ async function GETHandler(
 ) {
   const paramsObj = await params;
 
-  // Fixture demo mode short-circuits. If YT_MOCK_MODE=1, we want to run real codepaths instead.
-  if (isDemoMode() && !isYouTubeMockMode()) {
-    const url = new URL(req.url);
-    const queryResult = QuerySchema.safeParse({
-      range: url.searchParams.get("range") ?? "7d",
-      sort: url.searchParams.get("sort") ?? "velocity",
-      cursor: url.searchParams.get("cursor") ?? undefined,
-      limit: url.searchParams.get("limit") ?? "12",
-    });
-    const q = queryResult.success ? queryResult.data : QuerySchema.parse({});
-    const demoData = generateDemoCompetitorFeed(q);
-    return Response.json({ ...demoData, demo: true });
-  }
-
   try {
     // Auth check
     const user = await getCurrentUserWithSubscription();
@@ -82,7 +67,7 @@ async function GETHandler(
     }
 
     // Subscription check (paid feature)
-    if (!isYouTubeMockMode() && !hasActiveSubscription(user.subscription)) {
+    if (!hasActiveSubscription(user.subscription)) {
       return Response.json(
         { error: "Subscription required", code: "SUBSCRIPTION_REQUIRED" },
         { status: 403 }
@@ -119,32 +104,12 @@ async function GETHandler(
     const { sort, page, pageToken, queryIndex } = queryResult.data;
 
     // Get channel and verify ownership
-    let channel = await prisma.channel.findFirst({
+    const channel = await prisma.channel.findFirst({
       where: {
         youtubeChannelId: channelId,
         userId: user.id,
       },
     });
-
-    // In YT_MOCK_MODE, auto-seed the channel/videos if missing so pages work immediately.
-    if (isYouTubeMockMode()) {
-      const ga = await getGoogleAccount(user.id, channelId);
-      if (!ga) {
-        return Response.json(
-          { error: "Google account not connected" },
-          { status: 400 }
-        );
-      }
-      await ensureMockChannelSeeded({
-        userId: user.id,
-        youtubeChannelId: channelId,
-        minVideos: 25,
-        ga,
-      });
-      channel = await prisma.channel.findFirst({
-        where: { youtubeChannelId: channelId, userId: user.id },
-      });
-    }
 
     if (!channel) {
       return Response.json({ error: "Channel not found" }, { status: 404 });
@@ -703,102 +668,3 @@ function sortVideos(videos: CompetitorVideo[], sort: string): void {
   }
 }
 
-// Generate demo competitor feed data
-function generateDemoCompetitorFeed(input: {
-  range: "7d" | "28d";
-  sort: "velocity" | "engagement" | "newest" | "outliers";
-  cursor?: string;
-  limit: number;
-}): CompetitorFeedResponse {
-  const now = new Date();
-  const channels = Array.from({ length: 18 }).map((_, i) => ({
-    channelId: `demo-ch-${String(i + 1).padStart(2, "0")}`,
-    channelTitle: `Demo Channel ${i + 1}`,
-  }));
-
-  const days = input.range === "7d" ? 7 : 28;
-  const pool: CompetitorVideo[] = [];
-
-  for (const ch of channels) {
-    for (let i = 0; i < 5; i++) {
-      const idx = pool.length + 1;
-      const publishedAt = new Date(
-        now.getTime() - ((idx % days) + 1) * 24 * 60 * 60 * 1000
-      ).toISOString();
-      const viewCount = 50_000 + ((idx * 19_123) % 2_000_000);
-      const likeCount = Math.floor(viewCount * 0.05);
-      const commentCount = Math.floor(viewCount * 0.004);
-      const viewsPerDay = Math.round(viewCount / Math.max(1, (idx % days) + 1));
-      const velocity24h = Math.round(viewsPerDay * (0.7 + (idx % 10) / 20));
-      const velocity7d = Math.round(velocity24h * 5.2);
-      const engagementPerView =
-        viewCount > 0 ? (likeCount + commentCount) / viewCount : undefined;
-
-      pool.push({
-        videoId: `demo-comp-${idx}`,
-        title: `Demo Winner #${idx}: A High-Performing Idea to Remix`,
-        channelId: ch.channelId,
-        channelTitle: ch.channelTitle,
-        channelThumbnailUrl: null,
-        videoUrl: `https://youtube.com/watch?v=demo-comp-${idx}`,
-        channelUrl: `https://youtube.com/channel/${ch.channelId}`,
-        thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-        publishedAt,
-        stats: { viewCount, likeCount, commentCount },
-        derived: {
-          viewsPerDay,
-          velocity24h,
-          velocity7d,
-          engagementPerView,
-          outlierScore: (idx % 9) / 2,
-          dataStatus: "ready",
-        },
-      });
-    }
-  }
-
-  // Sort by requested sort type (simplified)
-  const videos = [...pool];
-  switch (input.sort) {
-    case "newest":
-      videos.sort(
-        (a, b) =>
-          new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-      );
-      break;
-    case "engagement":
-      videos.sort(
-        (a, b) =>
-          (b.derived.engagementPerView ?? 0) -
-          (a.derived.engagementPerView ?? 0)
-      );
-      break;
-    case "outliers":
-      videos.sort(
-        (a, b) => (b.derived.outlierScore ?? 0) - (a.derived.outlierScore ?? 0)
-      );
-      break;
-    case "velocity":
-    default:
-      videos.sort(
-        (a, b) =>
-          (b.derived.velocity24h ?? b.derived.viewsPerDay) -
-          (a.derived.velocity24h ?? a.derived.viewsPerDay)
-      );
-      break;
-  }
-
-  const cursorOffset = input.cursor ? parseInt(input.cursor, 10) : 0;
-  const paginated = videos.slice(cursorOffset, cursorOffset + input.limit);
-  const hasMore = cursorOffset + input.limit < videos.length;
-  const nextCursor = hasMore ? String(cursorOffset + input.limit) : undefined;
-
-  return {
-    channelId: "demo-channel",
-    sort: input.sort,
-    generatedAt: now.toISOString(),
-    cachedUntil: new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString(),
-    nextCursor,
-    videos: paginated,
-  };
-}

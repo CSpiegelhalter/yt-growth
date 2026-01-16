@@ -9,14 +9,12 @@
  * Rate limit: 5 per hour per user (for POST only)
  * Caching: 24h per channelId + range
  *
- * GET - returns cached IdeaBoard or demo data
+ * GET - returns cached IdeaBoard
  * POST - generates new IdeaBoard or adds more ideas
  *
  * Query params:
  * - range: "7d" | "28d" (default: "7d")
  * - mode: "default" | "more" (POST only, default: "default")
- *
- * Demo mode: Returns fixture data when NEXT_PUBLIC_DEMO_MODE=1 or on API failure
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -32,11 +30,6 @@ import {
   fetchRecentChannelVideos,
 } from "@/lib/youtube-api";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import {
-  isDemoMode,
-  getDemoData,
-  isYouTubeMockMode,
-} from "@/lib/demo-fixtures";
 import {
   generateIdeaBoardIdeasOnly,
   generateMoreIdeas,
@@ -60,18 +53,12 @@ const BodySchema = z.object({
 });
 
 /**
- * GET - Return cached IdeaBoard or demo data
+ * GET - Return cached IdeaBoard
  */
 async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
-  // Return demo data if demo mode is enabled
-  if (isDemoMode() && !isYouTubeMockMode()) {
-    const demoData = getDemoData("idea-board") as IdeaBoardData;
-    return Response.json({ ...demoData, demo: true });
-  }
-
   try {
     const paramsObj = await params;
 
@@ -181,19 +168,6 @@ async function POSTHandler(
   { params }: { params: Promise<{ channelId: string }> }
 ) {
   console.log("[IdeaBoard POST] Starting generation...");
-  console.log(
-    "[IdeaBoard POST] isDemoMode:",
-    isDemoMode(),
-    "isYouTubeMockMode:",
-    isYouTubeMockMode()
-  );
-
-  // Return demo data if demo mode is enabled
-  if (isDemoMode() && !isYouTubeMockMode()) {
-    console.log("[IdeaBoard POST] Returning demo fixture data");
-    const demoData = getDemoData("idea-board") as IdeaBoardData;
-    return Response.json({ ...demoData, demo: true });
-  }
 
   try {
     const paramsObj = await params;
@@ -296,11 +270,15 @@ async function POSTHandler(
     // The profile represents what the user WANTS to create, not just what they've made
     let channelProfile: ChannelProfileAI | null = null;
     try {
-      const profiles = await prisma.$queryRaw<{ aiProfileJson: string | null }[]>`
+      const profiles = await prisma.$queryRaw<
+        { aiProfileJson: string | null }[]
+      >`
         SELECT "aiProfileJson" FROM "ChannelProfile" WHERE "channelId" = ${channel.id} LIMIT 1
       `;
       if (profiles[0]?.aiProfileJson) {
-        channelProfile = JSON.parse(profiles[0].aiProfileJson) as ChannelProfileAI;
+        channelProfile = JSON.parse(
+          profiles[0].aiProfileJson
+        ) as ChannelProfileAI;
         console.log(
           `[IdeaBoard] Using channel profile: "${channelProfile.nicheLabel}"`
         );
@@ -323,7 +301,9 @@ async function POSTHandler(
         .slice(0, 12);
       nicheLabel = channelProfile.nicheLabel;
       console.log(
-        `[IdeaBoard] Using profile keywords: ${keywords.slice(0, 5).join(", ")}... (${keywords.length} total)`
+        `[IdeaBoard] Using profile keywords: ${keywords
+          .slice(0, 5)
+          .join(", ")}... (${keywords.length} total)`
       );
     } else {
       // Fall back to video-based niche inference
@@ -331,7 +311,9 @@ async function POSTHandler(
       keywords = nicheData?.queries?.slice(0, 8) ?? [];
       nicheLabel = nicheData?.niche ?? "unknown";
       console.log(
-        `[IdeaBoard] Using video-inferred niche: "${nicheLabel}", keywords: ${keywords.join(", ")}`
+        `[IdeaBoard] Using video-inferred niche: "${nicheLabel}", keywords: ${keywords.join(
+          ", "
+        )}`
       );
     }
 

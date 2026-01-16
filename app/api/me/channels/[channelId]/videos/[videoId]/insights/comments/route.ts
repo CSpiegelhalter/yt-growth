@@ -4,7 +4,7 @@ import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUserWithSubscription } from "@/lib/user";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDemoMode, isYouTubeMockMode } from "@/lib/demo-fixtures";
+
 import { getGoogleAccount } from "@/lib/youtube-api";
 import { GoogleTokenRefreshError } from "@/lib/google-tokens";
 import { fetchOwnedVideoComments, type VideoComment } from "@/lib/youtube-analytics";
@@ -44,10 +44,6 @@ async function GETHandler(
   { params }: { params: Promise<{ channelId: string; videoId: string }> }
 ) {
   const resolvedParams = await params;
-
-  if (isDemoMode() || (isYouTubeMockMode() && !process.env.OPENAI_API_KEY)) {
-    return Response.json(getDemoCommentInsights());
-  }
 
   const parsedParams = ParamsSchema.safeParse(resolvedParams);
   if (!parsedParams.success) {
@@ -231,32 +227,4 @@ RULES:
       hookInspiration: [],
     };
   }
-}
-
-function getDemoCommentInsights() {
-  return {
-    comments: {
-      sentiment: { positive: 70, neutral: 22, negative: 8 },
-      themes: [
-        { theme: "Gratitude", count: 12, examples: ["This helped me so much"] },
-        { theme: "Questions", count: 8, examples: ["How long did it take you?"] },
-        { theme: "Personal stories", count: 5, examples: ["I'm at 500 subs now"] },
-      ],
-      viewerLoved: [
-        "The step-by-step breakdown was incredibly helpful",
-        "Finally someone who gives real numbers",
-        "The part about consistency really hit home",
-      ],
-      viewerAskedFor: [
-        "More videos about the algorithm",
-        "A video on monetization strategies",
-        "Tips for the first 1000 subscribers",
-      ],
-      hookInspiration: [
-        "This is the video I wish I had when I started",
-        "Why didn't anyone tell me this before?",
-      ],
-    },
-    demo: true,
-  };
 }

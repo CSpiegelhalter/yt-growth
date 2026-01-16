@@ -15,13 +15,6 @@ export const TEST_USER = {
   name: "E2E Test User",
 };
 
-// Demo user (seeded by reset-db)
-export const DEMO_USER = {
-  email: "demo@example.com",
-  password: "demo123",
-  name: "Demo User",
-};
-
 /**
  * Sign up a new user via the UI
  */
@@ -53,28 +46,13 @@ export async function signUp(
 /**
  * Sign in an existing user
  * 
- * First tries the test API (faster), then falls back to UI login
+ * Uses UI login
  */
 export async function signIn(
   page: Page,
   user: { email: string; password: string } = TEST_USER
 ): Promise<void> {
-  // Try test API first (faster and more reliable)
-  const response = await page.request.post("/api/test/auth/signin", {
-    data: { email: user.email, password: user.password },
-  });
-
-  if (response.ok()) {
-    const data = await response.json();
-    console.log(`Signed in via test API: ${data.user?.email}`);
-    // Navigate to dashboard to verify session works
-    await page.goto("/dashboard");
-    await page.waitForLoadState("networkidle");
-    return;
-  }
-
-  // Fall back to UI login
-  console.log("Test auth API not available, using UI login...");
+  // Uses UI login
   await page.goto("/auth/login");
   await page.waitForLoadState("networkidle");
 
@@ -130,78 +108,6 @@ export async function isSignedIn(page: Page): Promise<boolean> {
   const loginButton = page.getByRole("link", { name: /log in|sign in/i });
   const isLoginVisible = await loginButton.isVisible().catch(() => false);
   return !isLoginVisible;
-}
-
-/**
- * Set billing state via test API
- *
- * @returns true if successful, false if test routes are not available
- */
-export async function setBillingState(
-  page: Page,
-  state: "pro" | "free" | "canceled",
-  options?: { endsAt?: string }
-): Promise<boolean> {
-  const endpoint =
-    state === "canceled"
-      ? `/api/test/billing/set-canceled${options?.endsAt ? `?endsAt=${options.endsAt}` : ""}`
-      : `/api/test/billing/set-${state}`;
-
-  const response = await page.request.post(endpoint);
-
-  if (!response.ok()) {
-    // Test routes may not be available (APP_TEST_MODE not set)
-    console.log(`setBillingState failed: ${response.status()} - Test mode may not be enabled`);
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Link a fake YouTube channel via test API
- *
- * @param bypassLimit - If true, bypasses channel limit check (for test setup)
- * @returns Object with success status, channelId, and optional error info
- */
-export async function linkFakeChannel(
-  page: Page,
-  options?: { channelId?: string; title?: string; bypassLimit?: boolean }
-): Promise<{ success: boolean; channelId: string; error?: string; current?: number; limit?: number; plan?: string }> {
-  const response = await page.request.post("/api/test/youtube/link", {
-    data: options || {},
-  });
-
-  const data = await response.json();
-
-  if (!response.ok()) {
-    return {
-      success: false,
-      channelId: options?.channelId || "",
-      error: data.error,
-      current: data.current,
-      limit: data.limit,
-      plan: data.plan,
-    };
-  }
-
-  return {
-    success: true,
-    channelId: data.channelId,
-  };
-}
-
-/**
- * Unlink a YouTube channel via test API
- */
-export async function unlinkFakeChannel(
-  page: Page,
-  channelId?: string
-): Promise<void> {
-  const response = await page.request.post("/api/test/youtube/unlink", {
-    data: channelId ? { channelId } : {},
-  });
-  expect(response.ok()).toBeTruthy();
 }
 
 /**
@@ -273,7 +179,7 @@ export async function resetUsage(page: Page): Promise<void> {
 export async function navigateAuthenticated(
   page: Page,
   path: string,
-  user: { email: string; password: string } = DEMO_USER
+  user: { email: string; password: string } = TEST_USER
 ): Promise<void> {
   await page.goto(path);
 
@@ -284,79 +190,5 @@ export async function navigateAuthenticated(
   }
 
   await page.waitForLoadState("networkidle");
-}
-
-/**
- * Link a fake YouTube channel WITHOUT any videos
- * Use this to test the "no videos → upload → see videos" flow
- */
-export async function linkEmptyChannel(
-  page: Page,
-  options?: { channelId?: string; title?: string; bypassLimit?: boolean }
-): Promise<{
-  success: boolean;
-  channelId: string;
-  error?: string;
-  current?: number;
-  limit?: number;
-  plan?: string;
-}> {
-  const response = await page.request.post("/api/test/youtube/link-empty", {
-    data: options || {},
-  });
-
-  const data = await response.json();
-
-  if (!response.ok()) {
-    return {
-      success: false,
-      channelId: options?.channelId || "",
-      error: data.error,
-      current: data.current,
-      limit: data.limit,
-      plan: data.plan,
-    };
-  }
-
-  return {
-    success: true,
-    channelId: data.channelId,
-  };
-}
-
-/**
- * Add a fake video to an existing channel
- * Simulates a user uploading a new video to YouTube
- */
-export async function addFakeVideo(
-  page: Page,
-  channelId: string,
-  options?: { videoId?: string; title?: string }
-): Promise<{
-  success: boolean;
-  videoId: string;
-  error?: string;
-}> {
-  const response = await page.request.post("/api/test/youtube/add-video", {
-    data: {
-      channelId,
-      ...options,
-    },
-  });
-
-  const data = await response.json();
-
-  if (!response.ok()) {
-    return {
-      success: false,
-      videoId: options?.videoId || "",
-      error: data.error,
-    };
-  }
-
-  return {
-    success: true,
-    videoId: data.videoId,
-  };
 }
 

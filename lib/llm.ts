@@ -1,4 +1,3 @@
-import { getTestModeResponse } from "../tests/unit/llm-fixtures";
 
 export type LLMMessage = {
   role: "system" | "user" | "assistant";
@@ -34,7 +33,6 @@ function withDateContext(systemPrompt: string): string {
 
 /**
  * Call the OpenAI API with messages.
- * In TEST_MODE, returns fixture data instead of making real API calls.
  * Automatically injects current date context into system messages.
  */
 export async function callLLM(
@@ -52,11 +50,6 @@ export async function callLLM(
       ? { ...msg, content: withDateContext(msg.content) }
       : msg
   );
-
-  // TEST_MODE: Return fixture response
-  if (process.env.TEST_MODE === "1") {
-    return getTestModeResponse(messagesWithDate);
-  }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -1080,26 +1073,6 @@ export async function generateNichePersona(
   tags: string[],
   category?: string | null
 ): Promise<NichePersona> {
-  // TEST_MODE: Return fixture
-  if (process.env.TEST_MODE === "1") {
-    return {
-      niche: "YouTube Creator Education",
-      systemPrompt: `You are a YouTube growth expert who helps creators find competitor channels. You specialize in the YouTube education and creator coaching space.
-
-For this niche, prioritize:
-- Channels teaching YouTube strategy, algorithm tips, and growth tactics
-- Creator coaching and consulting channels
-- Analytics and data-driven content creation channels
-
-High Quality in this niche means:
-- Channels with proven track records (showing real results)
-- Educational content that's actionable and specific
-- Professional production quality with clear explanations
-
-Generate search queries that would find established YouTube educators and creator coaches.`,
-    };
-  }
-
   const userPrompt = `Analyze this YouTube channel's content to determine their exact niche and create a specialized system prompt for finding competitor channels:
 
 VIDEO TITLES (raw, unfiltered):
@@ -1242,20 +1215,6 @@ export async function generateNicheQueries(input: {
 }> {
   const { channelId, videoTitles, topTags, categoryName, channelProfile } =
     input;
-
-  // TEST_MODE: Return fixture
-  if (process.env.TEST_MODE === "1") {
-    return {
-      niche: channelProfile?.nicheLabel || "YouTube Creator Education",
-      queries: channelProfile?.competitorSearchHints || [
-        "youtube tips",
-        "grow youtube channel",
-        "youtube strategy",
-        "content creator tips",
-        "youtube analytics",
-      ],
-    };
-  }
 
   // HIGHEST PRIORITY: If we have a channel profile, use it as the primary source
   // The user's stated intent is more valuable than video-inferred data

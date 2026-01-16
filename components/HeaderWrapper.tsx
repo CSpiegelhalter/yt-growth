@@ -14,11 +14,12 @@ const HeaderFull = dynamic(
 );
 
 /**
- * Smart header that shows:
- * - Static header (no JS) for unauthenticated users
- * - Full header (with channel selector, menus) for authenticated users
+ * @deprecated This component is no longer used in the app.
+ * Layout switching is now handled by route groups:
+ * - (marketing)/layout.tsx uses MarketingHeader
+ * - (app)/layout.tsx uses AppShellServer
  * 
- * This reduces JS bundle on public pages significantly.
+ * This component is kept for backwards compatibility only.
  */
 export function HeaderWrapper() {
   const { status } = useSession();

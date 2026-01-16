@@ -1,6 +1,5 @@
 // lib/google-tokens.ts
 import { prisma } from "@/prisma";
-import { mockYouTubeApiResponse } from "@/lib/youtube-mock";
 
 /**
  * Custom error for when Google token refresh fails (revoked access, invalid token, etc.)
@@ -8,7 +7,9 @@ import { mockYouTubeApiResponse } from "@/lib/youtube-mock";
  */
 export class GoogleTokenRefreshError extends Error {
   code = "youtube_permissions" as const; // Reuse existing error code for reconnect prompt
-  constructor(message: string = "Google access has been revoked. Please reconnect your Google account.") {
+  constructor(
+    message: string = "Google access has been revoked. Please reconnect your Google account."
+  ) {
     super(message);
     this.name = "GoogleTokenRefreshError";
   }
@@ -17,13 +18,12 @@ export class GoogleTokenRefreshError extends Error {
 type GA = {
   id: number;
   refreshTokenEnc: string | null;
-  accessTokenEnc?: string | null;  // Cached access token from DB
+  accessTokenEnc?: string | null; // Cached access token from DB
   tokenExpiresAt: Date | null;
 };
 
 // Mutex to prevent concurrent refreshes for the same account (still useful within a worker)
 const refreshInProgress = new Map<number, Promise<string>>();
-
 
 type GoogleApiStats = {
   startedAt: string;
@@ -34,7 +34,7 @@ type GoogleApiStats = {
   lastCalls: Array<{
     at: string;
     url: string;
-    status: number | "mock";
+    status: number;
     estimatedUnits: number;
   }>;
   quotaExceededSeen: boolean;
@@ -66,7 +66,7 @@ function estimateYouTubeQuotaUnits(urlStr: string): number {
 
 function recordGoogleApiCall(input: {
   url: string;
-  status: number | "mock";
+  status: number;
   estimatedUnits: number;
 }) {
   const at = new Date().toISOString();
@@ -137,47 +137,10 @@ export function resetGoogleApiUsageStats() {
   googleApiStats.quotaExceededSeen = false;
 }
 
-function isYouTubeOrAnalyticsUrl(urlStr: string): boolean {
-  try {
-    const u = new URL(urlStr);
-    if (u.host.includes("youtubeanalytics.googleapis.com")) return true;
-    if (
-      u.host.includes("googleapis.com") &&
-      u.pathname.includes("/youtube/v3/")
-    )
-      return true;
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-function shouldMockYouTubeRequests(): boolean {
-  // YT_MOCK_MODE: forces returning raw YouTube-shaped JSON without network calls.
-  // YT_AUTO_MOCK_ON_QUOTA: after we see quotaExceeded once, we'll auto-mock further YouTube calls.
-  if (process.env.YT_MOCK_MODE === "1") {
-    console.log("[YouTube] MOCK MODE ACTIVE (YT_MOCK_MODE=1)");
-    return true;
-  }
-  if (
-    process.env.YT_AUTO_MOCK_ON_QUOTA === "1" &&
-    googleApiStats.quotaExceededSeen
-  ) {
-    console.log("[YouTube] MOCK MODE ACTIVE (quota exceeded previously)");
-    return true;
-  }
-  // Log when we're using real API
-  return false;
-}
-
-// Log env vars on module load
-console.log("[YouTube] Config:", {
-  YT_MOCK_MODE: process.env.YT_MOCK_MODE ?? "not set",
-  YT_AUTO_MOCK_ON_QUOTA: process.env.YT_AUTO_MOCK_ON_QUOTA ?? "not set",
-  DEMO_MODE: process.env.DEMO_MODE ?? "not set",
-});
-
-export async function getAccessToken(ga: GA, forceRefresh = false): Promise<string> {
+export async function getAccessToken(
+  ga: GA,
+  forceRefresh = false
+): Promise<string> {
   const now = Date.now();
   const exp = ga.tokenExpiresAt?.getTime() ?? 0;
 
@@ -196,7 +159,7 @@ export async function getAccessToken(ga: GA, forceRefresh = false): Promise<stri
   // Start a new refresh and track it to prevent concurrent refreshes within this worker
   const refreshPromise = refreshAccessToken(ga);
   refreshInProgress.set(ga.id, refreshPromise);
-  
+
   try {
     return await refreshPromise;
   } finally {
@@ -222,7 +185,9 @@ export async function refreshAccessToken(ga: GA): Promise<string> {
 
   if (!res.ok) {
     // 400 invalid_grant -> refresh token revoked or user removed access
-    console.error(`[GoogleTokens] Token refresh failed with status ${res.status}`);
+    console.error(
+      `[GoogleTokens] Token refresh failed with status ${res.status}`
+    );
     throw new GoogleTokenRefreshError(
       "Your Google access has been revoked or expired. Please reconnect your Google account."
     );
@@ -233,9 +198,9 @@ export async function refreshAccessToken(ga: GA): Promise<string> {
     expires_in: number;
     scope?: string;
   };
-  
+
   const expiresAt = Date.now() + tok.expires_in * 1000;
-  
+
   // Store the access token in the database (so it works across Next.js workers)
   await prisma.googleAccount.update({
     where: { id: ga.id },
@@ -255,13 +220,6 @@ export async function googleFetchWithAutoRefresh<T>(
   url: string,
   init?: RequestInit
 ): Promise<T> {
-  // Mock YouTube APIs at the transport layer so the rest of the app runs unmodified.
-  if (isYouTubeOrAnalyticsUrl(url) && shouldMockYouTubeRequests()) {
-    const units = estimateYouTubeQuotaUnits(url);
-    recordGoogleApiCall({ url, status: "mock", estimatedUnits: units });
-    return mockYouTubeApiResponse(url) as T;
-  }
-
   let accessToken = await getAccessToken(ga);
 
   let r = await fetch(url, {
@@ -286,7 +244,10 @@ export async function googleFetchWithAutoRefresh<T>(
     if (r.status === 401) {
       // Still failing after refresh - reconstruct response for error handling below
       const retryErrorBody = await r.text();
-      r = new Response(retryErrorBody, { status: 401, statusText: "Unauthorized" });
+      r = new Response(retryErrorBody, {
+        status: 401,
+        statusText: "Unauthorized",
+      });
     }
   }
 
@@ -298,13 +259,6 @@ export async function googleFetchWithAutoRefresh<T>(
     // Check for quota exceeded
     if (r.status === 403 && body.includes('"reason": "quotaExceeded"')) {
       googleApiStats.quotaExceededSeen = true;
-      if (
-        process.env.YT_AUTO_MOCK_ON_QUOTA === "1" &&
-        isYouTubeOrAnalyticsUrl(url)
-      ) {
-        recordGoogleApiCall({ url, status: "mock", estimatedUnits: units });
-        return mockYouTubeApiResponse(url) as T;
-      }
     }
 
     // Check for scope/permission errors - create a cleaner error
