@@ -176,6 +176,12 @@ export default function ThumbnailEditorClient(props: Props) {
   const historyRef = useRef<EditorStateV1[]>([]);
   const redoRef = useRef<EditorStateV1[]>([]);
   const lastCommittedRef = useRef<string>("");
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const updateUndoRedoAvailability = useCallback(() => {
+    setCanUndo(historyRef.current.length > 0);
+    setCanRedo(redoRef.current.length > 0);
+  }, []);
 
   const sortedObjects = useMemo(() => {
     const objs = (state.objects as AnyObj[]).slice();
@@ -195,10 +201,11 @@ export default function ThumbnailEditorClient(props: Props) {
       historyRef.current.push(state);
       if (historyRef.current.length > 50) historyRef.current.shift();
       redoRef.current = [];
+      updateUndoRedoAvailability();
       lastCommittedRef.current = serialized;
       setState(next);
     },
-    [state]
+    [state, updateUndoRedoAvailability]
   );
 
   // Transformer attachment
@@ -252,7 +259,8 @@ export default function ThumbnailEditorClient(props: Props) {
           rotation: 0,
           zIndex: maxZ + 1,
           text: "Add text",
-          fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+          fontFamily:
+            "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial",
           fontSize: 96,
           fontWeight: "800",
           fill: "#FFFFFF",
@@ -390,7 +398,9 @@ export default function ThumbnailEditorClient(props: Props) {
         // Basic center snapping (fast + low-risk)
         merged.x = snapTo(merged.x, 640);
         merged.y = snapTo(merged.y, 360);
-        merged.rotation = Number.isFinite(merged.rotation) ? merged.rotation : 0;
+        merged.rotation = Number.isFinite(merged.rotation)
+          ? merged.rotation
+          : 0;
         return merged;
       });
       commit({ ...state, objects: objs });
@@ -430,14 +440,16 @@ export default function ThumbnailEditorClient(props: Props) {
     if (!prev) return;
     redoRef.current.push(state);
     setState(prev);
-  }, [state]);
+    updateUndoRedoAvailability();
+  }, [state, updateUndoRedoAvailability]);
 
   const redo = useCallback(() => {
     const next = redoRef.current.pop();
     if (!next) return;
     historyRef.current.push(state);
     setState(next);
-  }, [state]);
+    updateUndoRedoAvailability();
+  }, [state, updateUndoRedoAvailability]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -457,36 +469,46 @@ export default function ThumbnailEditorClient(props: Props) {
       }
       if (!mod && selectedObj) {
         const step = e.shiftKey ? 10 : 2;
-        if (e.key === "ArrowLeft") updateSelected({ x: selectedObj.x - step } as any);
-        if (e.key === "ArrowRight") updateSelected({ x: selectedObj.x + step } as any);
-        if (e.key === "ArrowUp") updateSelected({ y: selectedObj.y - step } as any);
-        if (e.key === "ArrowDown") updateSelected({ y: selectedObj.y + step } as any);
+        if (e.key === "ArrowLeft")
+          updateSelected({ x: selectedObj.x - step } as any);
+        if (e.key === "ArrowRight")
+          updateSelected({ x: selectedObj.x + step } as any);
+        if (e.key === "ArrowUp")
+          updateSelected({ y: selectedObj.y - step } as any);
+        if (e.key === "ArrowDown")
+          updateSelected({ y: selectedObj.y + step } as any);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [deleteSelected, redo, selectedObj, undo, updateSelected]);
 
-  const onWheel = useCallback((e: any) => {
-    e.evt.preventDefault();
-    const stage = stageRef.current;
-    if (!stage) return;
-    const oldScale = scale;
-    const pointer = stage.getPointerPosition();
-    if (!pointer) return;
-    const mousePointTo = {
-      x: (pointer.x - stagePos.x) / oldScale,
-      y: (pointer.y - stagePos.y) / oldScale,
-    };
-    const direction = e.evt.deltaY > 0 ? -1 : 1;
-    const factor = 1.06;
-    const newScale = Math.max(0.3, Math.min(2.5, direction > 0 ? oldScale * factor : oldScale / factor));
-    setScale(newScale);
-    setStagePos({
-      x: pointer.x - mousePointTo.x * newScale,
-      y: pointer.y - mousePointTo.y * newScale,
-    });
-  }, [scale, stagePos.x, stagePos.y]);
+  const onWheel = useCallback(
+    (e: any) => {
+      e.evt.preventDefault();
+      const stage = stageRef.current;
+      if (!stage) return;
+      const oldScale = scale;
+      const pointer = stage.getPointerPosition();
+      if (!pointer) return;
+      const mousePointTo = {
+        x: (pointer.x - stagePos.x) / oldScale,
+        y: (pointer.y - stagePos.y) / oldScale,
+      };
+      const direction = e.evt.deltaY > 0 ? -1 : 1;
+      const factor = 1.06;
+      const newScale = Math.max(
+        0.3,
+        Math.min(2.5, direction > 0 ? oldScale * factor : oldScale / factor)
+      );
+      setScale(newScale);
+      setStagePos({
+        x: pointer.x - mousePointTo.x * newScale,
+        y: pointer.y - mousePointTo.y * newScale,
+      });
+    },
+    [scale, stagePos.x, stagePos.y]
+  );
 
   const exportImage = useCallback(
     async (format: "png" | "jpg") => {
@@ -512,7 +534,13 @@ export default function ThumbnailEditorClient(props: Props) {
       }
       setExportsList((prev) => [
         ...prev,
-        { url: data.url, format, width: 1280, height: 720, createdAt: new Date().toISOString() },
+        {
+          url: data.url,
+          format,
+          width: 1280,
+          height: 720,
+          createdAt: new Date().toISOString(),
+        },
       ]);
       toast("Export saved", "success");
     },
@@ -550,13 +578,16 @@ export default function ThumbnailEditorClient(props: Props) {
             />
             Import image
           </label>
-          <button className={s.btn} onClick={undo} disabled={historyRef.current.length === 0}>
+          <button className={s.btn} onClick={undo} disabled={!canUndo}>
             Undo
           </button>
-          <button className={s.btn} onClick={redo} disabled={redoRef.current.length === 0}>
+          <button className={s.btn} onClick={redo} disabled={!canRedo}>
             Redo
           </button>
-          <button className={`${s.btn} ${s.btnPrimary}`} onClick={() => void exportImage("png")}>
+          <button
+            className={`${s.btn} ${s.btnPrimary}`}
+            onClick={() => void exportImage("png")}
+          >
             Export PNG
           </button>
           <button className={s.btn} onClick={() => void exportImage("jpg")}>
@@ -619,7 +650,10 @@ export default function ThumbnailEditorClient(props: Props) {
                       onClick={() => setSelectedId(t.id)}
                       onTap={() => setSelectedId(t.id)}
                       onDragEnd={(e) =>
-                        updateSelected({ x: e.target.x(), y: e.target.y() } as any)
+                        updateSelected({
+                          x: e.target.x(),
+                          y: e.target.y(),
+                        } as any)
                       }
                       onTransformEnd={(e) => {
                         const node = e.target;
@@ -685,7 +719,9 @@ export default function ThumbnailEditorClient(props: Props) {
                               onDragMove={(e) => {
                                 const nx = e.target.x();
                                 const ny = e.target.y();
-                                updateSelected({ points: [nx, ny, points[2], points[3]] } as any);
+                                updateSelected({
+                                  points: [nx, ny, points[2], points[3]],
+                                } as any);
                               }}
                             />
                             <Circle
@@ -699,7 +735,9 @@ export default function ThumbnailEditorClient(props: Props) {
                               onDragMove={(e) => {
                                 const nx = e.target.x();
                                 const ny = e.target.y();
-                                updateSelected({ points: [points[0], points[1], nx, ny] } as any);
+                                updateSelected({
+                                  points: [points[0], points[1], nx, ny],
+                                } as any);
                               }}
                             />
                           </>
@@ -803,7 +841,10 @@ export default function ThumbnailEditorClient(props: Props) {
                       onClick={() => setSelectedId(el.id)}
                       onTap={() => setSelectedId(el.id)}
                       onDragEnd={(e) =>
-                        updateSelected({ x: e.target.x(), y: e.target.y() } as any)
+                        updateSelected({
+                          x: e.target.x(),
+                          y: e.target.y(),
+                        } as any)
                       }
                       onTransformEnd={(e) => {
                         const node = e.target as any;
@@ -869,7 +910,9 @@ export default function ThumbnailEditorClient(props: Props) {
                 .map((o) => (
                   <div
                     key={o.id}
-                    className={`${s.layerItem} ${o.id === selectedId ? s.layerItemActive : ""}`}
+                    className={`${s.layerItem} ${
+                      o.id === selectedId ? s.layerItemActive : ""
+                    }`}
                     onClick={() => setSelectedId(o.id)}
                   >
                     <div className={s.layerLabel}>{objLabel(o)}</div>
@@ -902,7 +945,9 @@ export default function ThumbnailEditorClient(props: Props) {
 
           <div className={s.panelSection}>
             <h3 className={s.panelTitle}>Selected</h3>
-            {!selectedObj && <div className={s.small}>Click an object to edit it.</div>}
+            {!selectedObj && (
+              <div className={s.small}>Click an object to edit it.</div>
+            )}
 
             {selectedObj?.type === "text" && (
               <>
@@ -912,7 +957,9 @@ export default function ThumbnailEditorClient(props: Props) {
                 <input
                   className={s.input}
                   value={(selectedObj as TextObj).text}
-                  onChange={(e) => updateSelected({ text: e.target.value } as any)}
+                  onChange={(e) =>
+                    updateSelected({ text: e.target.value } as any)
+                  }
                 />
                 <div className={s.row}>
                   <span className={s.small}>Font size</span>
@@ -920,7 +967,11 @@ export default function ThumbnailEditorClient(props: Props) {
                     type="number"
                     className={s.input}
                     value={(selectedObj as TextObj).fontSize}
-                    onChange={(e) => updateSelected({ fontSize: Number(e.target.value) } as any)}
+                    onChange={(e) =>
+                      updateSelected({
+                        fontSize: Number(e.target.value),
+                      } as any)
+                    }
                   />
                 </div>
                 <div className={s.row}>
@@ -928,7 +979,9 @@ export default function ThumbnailEditorClient(props: Props) {
                   <input
                     type="color"
                     value={(selectedObj as TextObj).fill}
-                    onChange={(e) => updateSelected({ fill: e.target.value } as any)}
+                    onChange={(e) =>
+                      updateSelected({ fill: e.target.value } as any)
+                    }
                   />
                 </div>
                 <div className={s.row}>
@@ -936,7 +989,9 @@ export default function ThumbnailEditorClient(props: Props) {
                   <input
                     type="color"
                     value={(selectedObj as TextObj).stroke}
-                    onChange={(e) => updateSelected({ stroke: e.target.value } as any)}
+                    onChange={(e) =>
+                      updateSelected({ stroke: e.target.value } as any)
+                    }
                   />
                 </div>
                 <div className={s.row}>
@@ -945,7 +1000,11 @@ export default function ThumbnailEditorClient(props: Props) {
                     type="number"
                     className={s.input}
                     value={(selectedObj as TextObj).strokeWidth}
-                    onChange={(e) => updateSelected({ strokeWidth: Number(e.target.value) } as any)}
+                    onChange={(e) =>
+                      updateSelected({
+                        strokeWidth: Number(e.target.value),
+                      } as any)
+                    }
                   />
                 </div>
               </>
@@ -958,7 +1017,9 @@ export default function ThumbnailEditorClient(props: Props) {
                   <input
                     type="color"
                     value={(selectedObj as ArrowObj).color}
-                    onChange={(e) => updateSelected({ color: e.target.value } as any)}
+                    onChange={(e) =>
+                      updateSelected({ color: e.target.value } as any)
+                    }
                   />
                 </div>
                 <div className={s.row}>
@@ -968,7 +1029,9 @@ export default function ThumbnailEditorClient(props: Props) {
                     className={s.input}
                     value={(selectedObj as ArrowObj).thickness}
                     onChange={(e) =>
-                      updateSelected({ thickness: Number(e.target.value) } as any)
+                      updateSelected({
+                        thickness: Number(e.target.value),
+                      } as any)
                     }
                   />
                 </div>
@@ -982,7 +1045,9 @@ export default function ThumbnailEditorClient(props: Props) {
                   <input
                     type="color"
                     value={(selectedObj as EllipseObj).stroke}
-                    onChange={(e) => updateSelected({ stroke: e.target.value } as any)}
+                    onChange={(e) =>
+                      updateSelected({ stroke: e.target.value } as any)
+                    }
                   />
                 </div>
                 <div className={s.row}>
@@ -992,7 +1057,9 @@ export default function ThumbnailEditorClient(props: Props) {
                     className={s.input}
                     value={(selectedObj as EllipseObj).strokeWidth}
                     onChange={(e) =>
-                      updateSelected({ strokeWidth: Number(e.target.value) } as any)
+                      updateSelected({
+                        strokeWidth: Number(e.target.value),
+                      } as any)
                     }
                   />
                 </div>
@@ -1010,14 +1077,22 @@ export default function ThumbnailEditorClient(props: Props) {
             <h3 className={s.panelTitle}>Exports</h3>
             <div className={s.exports}>
               {exportsList.length === 0 && (
-                <div className={s.small}>No exports yet. Use Export PNG/JPG.</div>
+                <div className={s.small}>
+                  No exports yet. Use Export PNG/JPG.
+                </div>
               )}
               {exportsList
                 .slice()
                 .reverse()
                 .slice(0, 6)
                 .map((x, i) => (
-                  <a key={`${x.url}-${i}`} className={s.exportLink} href={x.url} target="_blank" rel="noreferrer">
+                  <a
+                    key={`${x.url}-${i}`}
+                    className={s.exportLink}
+                    href={x.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     {x.format?.toUpperCase?.() ?? "FILE"} — {x.url}
                   </a>
                 ))}
@@ -1028,4 +1103,3 @@ export default function ThumbnailEditorClient(props: Props) {
     </div>
   );
 }
-

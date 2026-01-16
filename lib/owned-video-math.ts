@@ -929,22 +929,3 @@ function getPackagingConfidence(
 export function isLowDataMode(derived: DerivedMetrics): boolean {
   return derived.totalViews < 100 && (derived.impressions ?? 0) < 500;
 }
-
-/**
- * Get the threshold description for unlocking higher confidence
- */
-export function getConfidenceUnlockHint(derived: DerivedMetrics): string {
-  const views = derived.totalViews;
-  const impressions = derived.impressions ?? 0;
-
-  if (views < 100) {
-    return `After ~${100 - views} more views, engagement metrics become meaningful.`;
-  }
-  if (impressions < 500) {
-    return `After ~${500 - impressions} more impressions, CTR analysis becomes reliable.`;
-  }
-  if (impressions < 1000) {
-    return `After ~${1000 - impressions} more impressions, discovery insights gain confidence.`;
-  }
-  return "Good data volume for reliable analysis.";
-}

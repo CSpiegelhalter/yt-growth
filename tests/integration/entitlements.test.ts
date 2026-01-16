@@ -13,7 +13,6 @@ import {
 import {
   getPlanFromSubscription,
   getLimits,
-  getMaxChannels,
   featureLocked,
 } from "@/lib/entitlements";
 import { LIMITS } from "@/lib/product";
@@ -148,16 +147,6 @@ describe("Entitlements Integration", () => {
       expect(limits.idea_generate).toBe(200);
       expect(limits.channel_sync).toBe(50);
       expect(limits.keyword_research).toBe(0); // Still locked
-    });
-  });
-
-  describe("getMaxChannels", () => {
-    it("returns 1 for FREE", () => {
-      expect(getMaxChannels("FREE")).toBe(1);
-    });
-
-    it("returns 3 for PRO", () => {
-      expect(getMaxChannels("PRO")).toBe(LIMITS.PRO_MAX_CONNECTED_CHANNELS);
     });
   });
 

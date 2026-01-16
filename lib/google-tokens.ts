@@ -24,18 +24,6 @@ type GA = {
 // Mutex to prevent concurrent refreshes for the same account (still useful within a worker)
 const refreshInProgress = new Map<number, Promise<string>>();
 
-/**
- * Clear the cached access token for a GoogleAccount.
- * Call this after updating the refresh token (e.g., after OAuth callback).
- */
-export async function clearAccessTokenCache(googleAccountId: number): Promise<void> {
-  refreshInProgress.delete(googleAccountId);
-  // Clear the DB-stored access token so it gets refreshed on next use
-  await prisma.googleAccount.update({
-    where: { id: googleAccountId },
-    data: { accessTokenEnc: null, tokenExpiresAt: null },
-  });
-}
 
 type GoogleApiStats = {
   startedAt: string;

@@ -25,7 +25,7 @@ export default function DataLimitations({ whatWeCanKnow, whatWeCantKnow }: Props
         aria-expanded={isExpanded}
       >
         <span className={s.icon}>ℹ️</span>
-        <span className={s.label}>What we can &amp; can&apos;t know about competitor videos</span>
+        <span className={s.label}>What we can & can't know about competitor videos</span>
         <span className={s.chevron} data-expanded={isExpanded}>
           ›
         </span>
@@ -49,7 +49,7 @@ export default function DataLimitations({ whatWeCanKnow, whatWeCantKnow }: Props
           <div className={s.column}>
             <h4 className={s.columnTitle}>
               <span className={s.xIcon}>✕</span>
-              What we can&apos;t know
+              What we can't know
             </h4>
             <ul className={s.list}>
               {whatWeCantKnow.map((item, i) => (

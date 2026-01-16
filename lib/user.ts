@@ -125,37 +125,3 @@ export function hasActiveSubscription(
   );
 }
 
-/**
- * Get channel limit for user based on subscription.
- */
-export function getChannelLimit(
-  subscription: AuthUserWithSubscription["subscription"]
-): number {
-  if (!subscription) return 1;
-  return subscription.channelLimit;
-}
-
-/**
- * Require authenticated user or throw.
- */
-export async function requireUser(): Promise<AuthUser> {
-  const user = await getCurrentUser();
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-  return user;
-}
-
-/**
- * Require user with active subscription or throw.
- */
-export async function requireSubscribedUser(): Promise<AuthUserWithSubscription> {
-  const user = await getCurrentUserWithSubscription();
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-  if (!hasActiveSubscription(user.subscription)) {
-    throw new Error("Subscription required");
-  }
-  return user;
-}

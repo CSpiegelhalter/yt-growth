@@ -8,7 +8,10 @@
  * - Return standardized error responses
  */
 
-import { getCurrentUserWithSubscription, type AuthUserWithSubscription } from "./user";
+import {
+  getCurrentUserWithSubscription,
+  type AuthUserWithSubscription,
+} from "./user";
 import { getSubscriptionStatus } from "./stripe";
 import {
   getPlanFromSubscription,
@@ -18,7 +21,11 @@ import {
   type Plan,
   type FeatureKey,
 } from "./entitlements";
-import { checkAndIncrement, getUsageInfo, type UsageCheckResult } from "./usage";
+import {
+  checkAndIncrement,
+  getUsageInfo,
+  type UsageCheckResult,
+} from "./usage";
 
 // ============================================
 // TYPES
@@ -188,46 +195,6 @@ export function entitlementErrorResponse(error: EntitlementError): Response {
 }
 
 /**
- * Create a standard limit_reached error response
- */
-export function limitReachedResponse(
-  featureKey: FeatureKey,
-  usage: UsageCheckResult,
-  plan: Plan
-): Response {
-  return Response.json(
-    {
-      error: "limit_reached",
-      featureKey,
-      used: usage.used,
-      limit: usage.limit,
-      remaining: usage.remaining,
-      resetAt: usage.resetAt,
-      upgrade: plan === "FREE",
-    },
-    { status: 403 }
-  );
-}
-
-/**
- * Create a standard upgrade_required error response (for locked features)
- */
-export function upgradeRequiredResponse(featureKey: FeatureKey): Response {
-  return Response.json(
-    {
-      error: "upgrade_required",
-      featureKey,
-      message: `${getFeatureDisplayName(featureKey)} is available on Pro.`,
-    },
-    { status: 403 }
-  );
-}
-
-// ============================================
-// CHANNEL LIMIT HELPERS
-// ============================================
-
-/**
  * Check if user can connect another channel
  */
 export async function checkChannelLimit(userId: number): Promise<{
@@ -253,63 +220,3 @@ export async function checkChannelLimit(userId: number): Promise<{
     plan,
   };
 }
-
-/**
- * Create channel limit exceeded error response
- */
-export function channelLimitResponse(current: number, limit: number, plan: Plan): Response {
-  return Response.json(
-    {
-      error: "channel_limit_reached",
-      featureKey: "channels_connected",
-      current,
-      limit,
-      message:
-        plan === "FREE"
-          ? `Free plan allows ${limit} channel. Upgrade to Pro for more.`
-          : `You have reached the maximum of ${limit} channels for your plan.`,
-      upgrade: plan === "FREE",
-    },
-    { status: 403 }
-  );
-}
-
-// ============================================
-// COMBINED HELPER FOR ROUTE HANDLERS
-// ============================================
-
-/**
- * Higher-order function to wrap a route handler with entitlement checking
- *
- * Example usage:
- * ```ts
- * export const GET = withEntitlements(
- *   { featureKey: "owned_video_analysis" },
- *   async (req, context) => {
- *     // context.user, context.plan, context.usage are available
- *     return Response.json({ data: "..." });
- *   }
- * );
- * ```
- */
-export function withEntitlements<T extends (...args: any[]) => Promise<Response>>(
-  options: {
-    featureKey: FeatureKey;
-    increment?: boolean;
-    amount?: number;
-  },
-  handler: (
-    ...args: [...Parameters<T>, EntitlementContext]
-  ) => Promise<Response>
-): T {
-  return (async (...args: Parameters<T>) => {
-    const result = await checkEntitlement(options);
-
-    if (!result.ok) {
-      return entitlementErrorResponse(result.error);
-    }
-
-    return handler(...args, result.context);
-  }) as T;
-}
-

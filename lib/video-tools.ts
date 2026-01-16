@@ -1,6 +1,6 @@
 /**
  * Video Tools - Sorting, filtering, and metrics computations for the Dashboard
- * 
+ *
  * This module provides high-value video management tools that help creators
  * quickly sort, filter, and find what to work on next.
  */
@@ -71,19 +71,73 @@ export type SortOption = {
 };
 
 export const SORT_OPTIONS: SortOption[] = [
-  { key: "views_desc", label: "Most views", description: "Videos with highest view count", supportsDirection: true },
-  { key: "views_asc", label: "Fewest views", description: "Videos with lowest view count" },
-  { key: "velocity_desc", label: "View velocity", description: "Fastest growing (views/day since publish)" },
-  { key: "newest", label: "Newest first", description: "Most recently published" },
+  {
+    key: "views_desc",
+    label: "Most views",
+    description: "Videos with highest view count",
+    supportsDirection: true,
+  },
+  {
+    key: "views_asc",
+    label: "Fewest views",
+    description: "Videos with lowest view count",
+  },
+  {
+    key: "velocity_desc",
+    label: "View velocity",
+    description: "Fastest growing (views/day since publish)",
+  },
+  {
+    key: "newest",
+    label: "Newest first",
+    description: "Most recently published",
+  },
   { key: "oldest", label: "Oldest first", description: "Oldest videos first" },
-  { key: "likes_desc", label: "Most likes", description: "Videos with highest like count" },
-  { key: "comments_desc", label: "Most comments", description: "Videos sparking most discussion" },
-  { key: "like_rate_desc", label: "Highest like rate", description: "Best likes-to-views ratio" },
-  { key: "watch_time_desc", label: "Watch time", description: "Most total watch time", requiresMetric: "estimatedMinutesWatched" },
-  { key: "avg_view_duration_desc", label: "Avg view duration", description: "Highest average view duration", requiresMetric: "avgViewDuration" },
-  { key: "ctr_desc", label: "Highest CTR", description: "Best click-through rate", requiresMetric: "ctr" },
-  { key: "retention_asc", label: "Needs retention help", description: "Lowest avg % viewed (fix these)", requiresMetric: "avgViewPercentage" },
-  { key: "sub_conversion_desc", label: "Best converters", description: "Highest subs gained per 1k views", requiresMetric: "subscribersGained" },
+  {
+    key: "likes_desc",
+    label: "Most likes",
+    description: "Videos with highest like count",
+  },
+  {
+    key: "comments_desc",
+    label: "Most comments",
+    description: "Videos sparking most discussion",
+  },
+  {
+    key: "like_rate_desc",
+    label: "Highest like rate",
+    description: "Best likes-to-views ratio",
+  },
+  {
+    key: "watch_time_desc",
+    label: "Watch time",
+    description: "Most total watch time",
+    requiresMetric: "estimatedMinutesWatched",
+  },
+  {
+    key: "avg_view_duration_desc",
+    label: "Avg view duration",
+    description: "Highest average view duration",
+    requiresMetric: "avgViewDuration",
+  },
+  {
+    key: "ctr_desc",
+    label: "Highest CTR",
+    description: "Best click-through rate",
+    requiresMetric: "ctr",
+  },
+  {
+    key: "retention_asc",
+    label: "Needs retention help",
+    description: "Lowest avg % viewed (fix these)",
+    requiresMetric: "avgViewPercentage",
+  },
+  {
+    key: "sub_conversion_desc",
+    label: "Best converters",
+    description: "Highest subs gained per 1k views",
+    requiresMetric: "subscribersGained",
+  },
 ];
 
 // Filter types
@@ -140,7 +194,10 @@ export function calcLikeRate(likes: number, views: number): number {
 /**
  * Calculate views per day since publish
  */
-export function calcViewsPerDay(views: number, publishedAt: string | null): number {
+export function calcViewsPerDay(
+  views: number,
+  publishedAt: string | null
+): number {
   if (!publishedAt) return 0;
   const days = daysSincePublish(publishedAt);
   return views / days;
@@ -157,7 +214,11 @@ export function calcCommentRate(comments: number, views: number): number {
 /**
  * Calculate engagement rate ((likes + comments) / views)
  */
-export function calcEngagementRate(likes: number, comments: number, views: number): number {
+export function calcEngagementRate(
+  likes: number,
+  comments: number,
+  views: number
+): number {
   if (views === 0) return 0;
   return (likes + comments) / views;
 }
@@ -165,7 +226,10 @@ export function calcEngagementRate(likes: number, comments: number, views: numbe
 /**
  * Calculate subscriber conversion (subs per 1k views)
  */
-export function calcSubsPerThousandViews(subsGained: number | null | undefined, views: number): number | null {
+export function calcSubsPerThousandViews(
+  subsGained: number | null | undefined,
+  views: number
+): number | null {
   if (subsGained == null || views === 0) return null;
   return (subsGained / views) * 1000;
 }
@@ -176,7 +240,9 @@ export function calcSubsPerThousandViews(subsGained: number | null | undefined, 
  * - Long-form: > 60 seconds
  * - Unknown: no duration data
  */
-export function determineContentType(durationSec: number | null): "short" | "long" | "live" | "unknown" {
+export function determineContentType(
+  durationSec: number | null
+): "short" | "long" | "live" | "unknown" {
   if (durationSec == null) return "unknown";
   if (durationSec <= 60) return "short";
   return "long";
@@ -187,14 +253,21 @@ export function determineContentType(durationSec: number | null): "short" | "lon
  */
 export function computeMetrics(video: DashboardVideo): ComputedMetrics {
   const days = daysSincePublish(video.publishedAt);
-  
+
   return {
     likeRate: calcLikeRate(video.likes, video.views),
     viewsPerDay: calcViewsPerDay(video.views, video.publishedAt),
     daysSincePublish: days,
     commentRate: calcCommentRate(video.comments, video.views),
-    engagementRate: calcEngagementRate(video.likes, video.comments, video.views),
-    subsPerThousandViews: calcSubsPerThousandViews(video.subscribersGained, video.views),
+    engagementRate: calcEngagementRate(
+      video.likes,
+      video.comments,
+      video.views
+    ),
+    subsPerThousandViews: calcSubsPerThousandViews(
+      video.subscribersGained,
+      video.views
+    ),
     retentionPercent: video.avgViewPercentage ?? null,
     watchTimeMinutes: video.estimatedMinutesWatched ?? null,
     contentType: determineContentType(video.durationSec),
@@ -204,8 +277,10 @@ export function computeMetrics(video: DashboardVideo): ComputedMetrics {
 /**
  * Enhance videos with computed metrics
  */
-export function enhanceVideosWithMetrics(videos: DashboardVideo[]): VideoWithMetrics[] {
-  return videos.map(video => ({
+export function enhanceVideosWithMetrics(
+  videos: DashboardVideo[]
+): VideoWithMetrics[] {
+  return videos.map((video) => ({
     ...video,
     computed: computeMetrics(video),
   }));
@@ -218,15 +293,20 @@ export function enhanceVideosWithMetrics(videos: DashboardVideo[]): VideoWithMet
 /**
  * Check if a specific metric is available in the video data
  */
-export function hasMetric(videos: DashboardVideo[], metric: keyof DashboardVideo): boolean {
-  return videos.some(v => v[metric] != null);
+export function hasMetric(
+  videos: DashboardVideo[],
+  metric: keyof DashboardVideo
+): boolean {
+  return videos.some((v) => v[metric] != null);
 }
 
 /**
  * Get available sort options based on what metrics exist in the data
  */
-export function getAvailableSortOptions(videos: DashboardVideo[]): SortOption[] {
-  return SORT_OPTIONS.filter(opt => {
+export function getAvailableSortOptions(
+  videos: DashboardVideo[]
+): SortOption[] {
+  return SORT_OPTIONS.filter((opt) => {
     if (!opt.requiresMetric) return true;
     return hasMetric(videos, opt.requiresMetric);
   });
@@ -239,37 +319,44 @@ export function getAvailableSortOptions(videos: DashboardVideo[]): SortOption[] 
 /**
  * Filter videos by time range (published within range)
  */
-export function filterByTimeRange(videos: VideoWithMetrics[], range: TimeRange): VideoWithMetrics[] {
+export function filterByTimeRange(
+  videos: VideoWithMetrics[],
+  range: TimeRange
+): VideoWithMetrics[] {
   if (range === "lifetime") return videos;
-  
+
   const daysMap: Record<TimeRange, number> = {
     "7d": 7,
     "28d": 28,
     "90d": 90,
-    "lifetime": Infinity,
+    lifetime: Infinity,
   };
-  
+
   const maxDays = daysMap[range];
-  return videos.filter(v => v.computed.daysSincePublish <= maxDays);
+  return videos.filter((v) => v.computed.daysSincePublish <= maxDays);
 }
 
 /**
  * Filter videos by content type
  */
-export function filterByContentType(videos: VideoWithMetrics[], type: ContentType): VideoWithMetrics[] {
+export function filterByContentType(
+  videos: VideoWithMetrics[],
+  type: ContentType
+): VideoWithMetrics[] {
   if (type === "all") return videos;
-  return videos.filter(v => v.computed.contentType === type);
+  return videos.filter((v) => v.computed.contentType === type);
 }
 
 /**
  * Filter videos by search query (title match)
  */
-export function filterBySearch(videos: VideoWithMetrics[], query: string): VideoWithMetrics[] {
+export function filterBySearch(
+  videos: VideoWithMetrics[],
+  query: string
+): VideoWithMetrics[] {
   if (!query.trim()) return videos;
   const lowerQuery = query.toLowerCase().trim();
-  return videos.filter(v => 
-    v.title?.toLowerCase().includes(lowerQuery)
-  );
+  return videos.filter((v) => v.title?.toLowerCase().includes(lowerQuery));
 }
 
 /**
@@ -282,29 +369,42 @@ export function calcChannelBaselines(videos: VideoWithMetrics[]): {
   medianCtr: number | null;
 } {
   if (videos.length === 0) {
-    return { medianViewsPerDay: 0, medianLikeRate: 0, medianRetention: null, medianCtr: null };
+    return {
+      medianViewsPerDay: 0,
+      medianLikeRate: 0,
+      medianRetention: null,
+      medianCtr: null,
+    };
   }
 
-  const sortedVelocity = [...videos].sort((a, b) => a.computed.viewsPerDay - b.computed.viewsPerDay);
-  const sortedLikeRate = [...videos].sort((a, b) => a.computed.likeRate - b.computed.likeRate);
-  
+  const sortedVelocity = [...videos].sort(
+    (a, b) => a.computed.viewsPerDay - b.computed.viewsPerDay
+  );
+  const sortedLikeRate = [...videos].sort(
+    (a, b) => a.computed.likeRate - b.computed.likeRate
+  );
+
   const midIndex = Math.floor(videos.length / 2);
-  
-  const retentions = videos.filter(v => v.computed.retentionPercent != null);
-  const ctrs = videos.filter(v => v.ctr != null);
-  
+
+  const retentions = videos.filter((v) => v.computed.retentionPercent != null);
+  const ctrs = videos.filter((v) => v.ctr != null);
+
   let medianRetention: number | null = null;
   if (retentions.length > 0) {
-    const sortedRet = [...retentions].sort((a, b) => (a.computed.retentionPercent ?? 0) - (b.computed.retentionPercent ?? 0));
-    medianRetention = sortedRet[Math.floor(sortedRet.length / 2)].computed.retentionPercent;
+    const sortedRet = [...retentions].sort(
+      (a, b) =>
+        (a.computed.retentionPercent ?? 0) - (b.computed.retentionPercent ?? 0)
+    );
+    medianRetention =
+      sortedRet[Math.floor(sortedRet.length / 2)].computed.retentionPercent;
   }
-  
+
   let medianCtr: number | null = null;
   if (ctrs.length > 0) {
     const sortedCtr = [...ctrs].sort((a, b) => (a.ctr ?? 0) - (b.ctr ?? 0));
     medianCtr = sortedCtr[Math.floor(sortedCtr.length / 2)].ctr ?? null;
   }
-  
+
   return {
     medianViewsPerDay: sortedVelocity[midIndex].computed.viewsPerDay,
     medianLikeRate: sortedLikeRate[midIndex].computed.likeRate,
@@ -317,23 +417,29 @@ export function calcChannelBaselines(videos: VideoWithMetrics[]): {
  * Apply "Needs attention" preset
  * Low CTR OR low retention OR low engagement vs baseline
  */
-export function filterNeedsAttention(videos: VideoWithMetrics[]): VideoWithMetrics[] {
+export function filterNeedsAttention(
+  videos: VideoWithMetrics[]
+): VideoWithMetrics[] {
   const baselines = calcChannelBaselines(videos);
-  
-  return videos.filter(v => {
+
+  return videos.filter((v) => {
     // Low retention (below 70% of median)
-    if (baselines.medianRetention != null && v.computed.retentionPercent != null) {
-      if (v.computed.retentionPercent < baselines.medianRetention * 0.7) return true;
+    if (
+      baselines.medianRetention != null &&
+      v.computed.retentionPercent != null
+    ) {
+      if (v.computed.retentionPercent < baselines.medianRetention * 0.7)
+        return true;
     }
-    
+
     // Low CTR (below 70% of median)
     if (baselines.medianCtr != null && v.ctr != null) {
       if (v.ctr < baselines.medianCtr * 0.7) return true;
     }
-    
+
     // Low engagement (below 50% of median like rate)
     if (v.computed.likeRate < baselines.medianLikeRate * 0.5) return true;
-    
+
     return false;
   });
 }
@@ -342,12 +448,14 @@ export function filterNeedsAttention(videos: VideoWithMetrics[]): VideoWithMetri
  * Apply "Top performers" preset
  * Top 20% by total views
  */
-export function filterTopPerformers(videos: VideoWithMetrics[]): VideoWithMetrics[] {
+export function filterTopPerformers(
+  videos: VideoWithMetrics[]
+): VideoWithMetrics[] {
   if (videos.length === 0) return [];
-  
+
   // Sort by total views (most intuitive for "top performers")
   const sorted = [...videos].sort((a, b) => b.views - a.views);
-  
+
   // Take top 20% (minimum 3 videos for meaningful results)
   const topCount = Math.max(3, Math.ceil(videos.length * 0.2));
   return sorted.slice(0, topCount);
@@ -356,25 +464,28 @@ export function filterTopPerformers(videos: VideoWithMetrics[]): VideoWithMetric
 /**
  * Apply all filters
  */
-export function applyFilters(videos: VideoWithMetrics[], filters: VideoFilters): VideoWithMetrics[] {
+export function applyFilters(
+  videos: VideoWithMetrics[],
+  filters: VideoFilters
+): VideoWithMetrics[] {
   let result = [...videos];
-  
+
   // Time range
   result = filterByTimeRange(result, filters.timeRange);
-  
+
   // Content type
   result = filterByContentType(result, filters.contentType);
-  
+
   // Search
   result = filterBySearch(result, filters.searchQuery);
-  
+
   // Presets (apply last)
   if (filters.preset === "needs_attention") {
     result = filterNeedsAttention(result);
   } else if (filters.preset === "top_performers") {
     result = filterTopPerformers(result);
   }
-  
+
   return result;
 }
 
@@ -385,9 +496,12 @@ export function applyFilters(videos: VideoWithMetrics[], filters: VideoFilters):
 /**
  * Sort videos by the specified key
  */
-export function sortVideos(videos: VideoWithMetrics[], sortKey: SortKey): VideoWithMetrics[] {
+export function sortVideos(
+  videos: VideoWithMetrics[],
+  sortKey: SortKey
+): VideoWithMetrics[] {
   const sorted = [...videos];
-  
+
   switch (sortKey) {
     case "views_desc":
       return sorted.sort((a, b) => b.views - a.views);
@@ -403,18 +517,28 @@ export function sortVideos(videos: VideoWithMetrics[], sortKey: SortKey): VideoW
       return sorted.sort((a, b) => {
         if (!a.publishedAt) return 1;
         if (!b.publishedAt) return -1;
-        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+        return (
+          new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+        );
       });
     case "oldest":
       return sorted.sort((a, b) => {
         if (!a.publishedAt) return 1;
         if (!b.publishedAt) return -1;
-        return new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime();
+        return (
+          new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime()
+        );
       });
     case "watch_time_desc":
-      return sorted.sort((a, b) => (b.computed.watchTimeMinutes ?? 0) - (a.computed.watchTimeMinutes ?? 0));
+      return sorted.sort(
+        (a, b) =>
+          (b.computed.watchTimeMinutes ?? 0) -
+          (a.computed.watchTimeMinutes ?? 0)
+      );
     case "avg_view_duration_desc":
-      return sorted.sort((a, b) => (b.avgViewDuration ?? 0) - (a.avgViewDuration ?? 0));
+      return sorted.sort(
+        (a, b) => (b.avgViewDuration ?? 0) - (a.avgViewDuration ?? 0)
+      );
     case "ctr_desc":
       return sorted.sort((a, b) => (b.ctr ?? 0) - (a.ctr ?? 0));
     case "retention_asc":
@@ -425,7 +549,9 @@ export function sortVideos(videos: VideoWithMetrics[], sortKey: SortKey): VideoW
         return aRet - bRet;
       });
     case "velocity_desc":
-      return sorted.sort((a, b) => b.computed.viewsPerDay - a.computed.viewsPerDay);
+      return sorted.sort(
+        (a, b) => b.computed.viewsPerDay - a.computed.viewsPerDay
+      );
     case "sub_conversion_desc":
       return sorted.sort((a, b) => {
         const aSubs = a.computed.subsPerThousandViews ?? 0;
@@ -454,135 +580,6 @@ export type Insight = {
     sortKey?: SortKey;
   };
 };
-
-/**
- * Generate rule-based insights from videos
- */
-export function generateInsights(videos: VideoWithMetrics[]): Insight[] {
-  const insights: Insight[] = [];
-  const baselines = calcChannelBaselines(videos);
-  
-  // Strong views but low CTR → improve thumbnails/titles
-  if (baselines.medianCtr != null) {
-    const lowCtrHighViews = videos.filter(v => {
-      if (v.ctr == null) return false;
-      // High views (above median velocity) but low CTR (below 70% of median)
-      return v.computed.viewsPerDay > baselines.medianViewsPerDay && v.ctr < baselines.medianCtr! * 0.7;
-    });
-    
-    if (lowCtrHighViews.length > 0) {
-      insights.push({
-        id: "low-ctr-high-views",
-        type: "ctr",
-        title: `${lowCtrHighViews.length} video${lowCtrHighViews.length > 1 ? "s" : ""} with strong views but low CTR`,
-        description: "These videos are getting traffic but could get more with better thumbnails/titles",
-        videoIds: lowCtrHighViews.map(v => v.videoId),
-        severity: "high",
-        action: {
-          label: "View these videos",
-          sortKey: "ctr_desc",
-        },
-      });
-    }
-  }
-  
-  // High CTR but poor retention → fix hooks
-  if (baselines.medianRetention != null && baselines.medianCtr != null) {
-    const highCtrLowRetention = videos.filter(v => {
-      if (v.ctr == null || v.computed.retentionPercent == null) return false;
-      // High CTR (above median) but low retention (below 70% of median)
-      return v.ctr > baselines.medianCtr! && v.computed.retentionPercent < baselines.medianRetention! * 0.7;
-    });
-    
-    if (highCtrLowRetention.length > 0) {
-      insights.push({
-        id: "high-ctr-low-retention",
-        type: "retention",
-        title: `${highCtrLowRetention.length} video${highCtrLowRetention.length > 1 ? "s" : ""} with high CTR but poor retention`,
-        description: "People are clicking but leaving early - improve your hooks in the first 30 seconds",
-        videoIds: highCtrLowRetention.map(v => v.videoId),
-        severity: "high",
-        action: {
-          label: "Fix these hooks",
-          sortKey: "retention_asc",
-        },
-      });
-    }
-  }
-  
-  // Trending videos (high views/day relative to channel)
-  const trendingThreshold = baselines.medianViewsPerDay * 2;
-  const trending = videos.filter(v => v.computed.viewsPerDay > trendingThreshold);
-  
-  if (trending.length > 0 && trending.length <= 5) {
-    insights.push({
-      id: "trending",
-      type: "trending",
-      title: `${trending.length} video${trending.length > 1 ? "s" : ""} ${trending.length > 1 ? "are" : "is"} trending`,
-      description: "High views per day - consider making follow-up content",
-      videoIds: trending.map(v => v.videoId),
-      severity: "medium",
-      action: {
-        label: "See trending",
-        sortKey: "velocity_desc",
-      },
-    });
-  }
-  
-  // Best subscriber converters
-  const converters = videos.filter(v => {
-    if (v.computed.subsPerThousandViews == null) return false;
-    // Get all videos with sub data
-    const videosWithSubs = videos.filter(x => x.computed.subsPerThousandViews != null);
-    if (videosWithSubs.length < 3) return false;
-    
-    // Sort and find top 20%
-    const sorted = videosWithSubs.sort((a, b) => (b.computed.subsPerThousandViews ?? 0) - (a.computed.subsPerThousandViews ?? 0));
-    const top20Index = Math.ceil(sorted.length * 0.2);
-    const top20 = sorted.slice(0, top20Index);
-    return top20.some(x => x.videoId === v.videoId);
-  });
-  
-  if (converters.length > 0 && converters.length <= 5) {
-    insights.push({
-      id: "top-converters",
-      type: "converter",
-      title: `Your best subscriber converters`,
-      description: `${converters.length} video${converters.length > 1 ? "s" : ""} drive the most subscriptions per view - replicate this format`,
-      videoIds: converters.map(v => v.videoId),
-      severity: "medium",
-      action: {
-        label: "See converters",
-        sortKey: "sub_conversion_desc",
-      },
-    });
-  }
-  
-  // Low engagement videos that have good views
-  const lowEngagement = videos.filter(v => {
-    // Good views (above median) but low like rate (below 50% of median)
-    return v.computed.viewsPerDay > baselines.medianViewsPerDay * 0.8 && 
-           v.computed.likeRate < baselines.medianLikeRate * 0.5;
-  });
-  
-  if (lowEngagement.length > 0 && lowEngagement.length <= 5) {
-    insights.push({
-      id: "low-engagement",
-      type: "engagement",
-      title: `${lowEngagement.length} video${lowEngagement.length > 1 ? "s" : ""} with views but low engagement`,
-      description: "Add stronger CTAs to encourage likes and comments",
-      videoIds: lowEngagement.map(v => v.videoId),
-      severity: "low",
-      action: {
-        label: "Improve engagement",
-        sortKey: "like_rate_desc",
-      },
-    });
-  }
-  
-  return insights;
-}
-
 // ============================================
 // PERSISTENCE
 // ============================================
@@ -601,7 +598,7 @@ export function getStorageKey(channelId: string): string {
  */
 export function loadVideoToolsState(channelId: string): VideoToolsState | null {
   if (typeof window === "undefined") return null;
-  
+
   try {
     const stored = localStorage.getItem(getStorageKey(channelId));
     if (!stored) return null;
@@ -614,9 +611,12 @@ export function loadVideoToolsState(channelId: string): VideoToolsState | null {
 /**
  * Save state to localStorage
  */
-export function saveVideoToolsState(channelId: string, state: VideoToolsState): void {
+export function saveVideoToolsState(
+  channelId: string,
+  state: VideoToolsState
+): void {
   if (typeof window === "undefined") return;
-  
+
   try {
     localStorage.setItem(getStorageKey(channelId), JSON.stringify(state));
   } catch {
@@ -631,7 +631,10 @@ export function saveVideoToolsState(channelId: string, state: VideoToolsState): 
 /**
  * Export videos to CSV format
  */
-export function exportToCSV(videos: VideoWithMetrics[], sortKey: SortKey): string {
+export function exportToCSV(
+  videos: VideoWithMetrics[],
+  sortKey: SortKey
+): string {
   void sortKey;
   const headers = [
     "Title",
@@ -645,20 +648,20 @@ export function exportToCSV(videos: VideoWithMetrics[], sortKey: SortKey): strin
     "Type",
     "Duration (sec)",
   ];
-  
+
   // Add optional columns if data exists
-  if (videos.some(v => v.avgViewPercentage != null)) {
+  if (videos.some((v) => v.avgViewPercentage != null)) {
     headers.push("Avg View %");
   }
-  if (videos.some(v => v.subscribersGained != null)) {
+  if (videos.some((v) => v.subscribersGained != null)) {
     headers.push("Subs Gained");
     headers.push("Subs/1k Views");
   }
-  if (videos.some(v => v.ctr != null)) {
+  if (videos.some((v) => v.ctr != null)) {
     headers.push("CTR (%)");
   }
-  
-  const rows = videos.map(v => {
+
+  const rows = videos.map((v) => {
     const row: (string | number)[] = [
       v.title?.replace(/,/g, ";") ?? "Untitled", // Escape commas
       v.videoId,
@@ -671,35 +674,41 @@ export function exportToCSV(videos: VideoWithMetrics[], sortKey: SortKey): strin
       v.computed.contentType,
       v.durationSec ?? "",
     ];
-    
-    if (videos.some(x => x.avgViewPercentage != null)) {
+
+    if (videos.some((x) => x.avgViewPercentage != null)) {
       row.push(v.avgViewPercentage?.toFixed(1) ?? "");
     }
-    if (videos.some(x => x.subscribersGained != null)) {
+    if (videos.some((x) => x.subscribersGained != null)) {
       row.push(v.subscribersGained ?? "");
       row.push(v.computed.subsPerThousandViews?.toFixed(2) ?? "");
     }
-    if (videos.some(x => x.ctr != null)) {
+    if (videos.some((x) => x.ctr != null)) {
       row.push(v.ctr?.toFixed(2) ?? "");
     }
-    
+
     return row.join(",");
   });
-  
+
   return [headers.join(","), ...rows].join("\n");
 }
 
 /**
  * Download CSV file
  */
-export function downloadCSV(videos: VideoWithMetrics[], sortKey: SortKey, filename?: string): void {
+export function downloadCSV(
+  videos: VideoWithMetrics[],
+  sortKey: SortKey,
+  filename?: string
+): void {
   const csv = exportToCSV(videos, sortKey);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
-  
+
   const link = document.createElement("a");
   link.href = url;
-  link.download = filename ?? `videos-${sortKey}-${new Date().toISOString().split("T")[0]}.csv`;
+  link.download =
+    filename ??
+    `videos-${sortKey}-${new Date().toISOString().split("T")[0]}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -714,45 +723,17 @@ export function downloadCSV(videos: VideoWithMetrics[], sortKey: SortKey, filena
  * Format a sort key as a human-readable label
  */
 export function getSortLabel(sortKey: SortKey): string {
-  const option = SORT_OPTIONS.find(o => o.key === sortKey);
+  const option = SORT_OPTIONS.find((o) => o.key === sortKey);
   return option?.label ?? "Sort";
-}
-
-/**
- * Get context metric label for current sort
- */
-export function getContextMetricLabel(sortKey: SortKey): string | null {
-  switch (sortKey) {
-    case "views_desc":
-    case "views_asc":
-      return "views";
-    case "comments_desc":
-      return "comments";
-    case "likes_desc":
-      return "likes";
-    case "like_rate_desc":
-      return "like rate";
-    case "velocity_desc":
-      return "views/day";
-    case "ctr_desc":
-      return "CTR";
-    case "retention_asc":
-      return "avg view %";
-    case "sub_conversion_desc":
-      return "subs/1k";
-    case "watch_time_desc":
-      return "watch time";
-    case "avg_view_duration_desc":
-      return "avg duration";
-    default:
-      return null;
-  }
 }
 
 /**
  * Format context metric value for display
  */
-export function formatContextMetric(video: VideoWithMetrics, sortKey: SortKey): string | null {
+export function formatContextMetric(
+  video: VideoWithMetrics,
+  sortKey: SortKey
+): string | null {
   switch (sortKey) {
     case "views_desc":
     case "views_asc":
@@ -768,13 +749,23 @@ export function formatContextMetric(video: VideoWithMetrics, sortKey: SortKey): 
     case "ctr_desc":
       return video.ctr != null ? `${video.ctr.toFixed(1)}% CTR` : null;
     case "retention_asc":
-      return video.computed.retentionPercent != null ? `${video.computed.retentionPercent.toFixed(0)}% avg viewed` : null;
+      return video.computed.retentionPercent != null
+        ? `${video.computed.retentionPercent.toFixed(0)}% avg viewed`
+        : null;
     case "sub_conversion_desc":
-      return video.computed.subsPerThousandViews != null ? `${video.computed.subsPerThousandViews.toFixed(1)} subs/1k views` : null;
+      return video.computed.subsPerThousandViews != null
+        ? `${video.computed.subsPerThousandViews.toFixed(1)} subs/1k views`
+        : null;
     case "watch_time_desc":
-      return video.computed.watchTimeMinutes != null ? `${(video.computed.watchTimeMinutes / 60).toFixed(0)}h watch time` : null;
+      return video.computed.watchTimeMinutes != null
+        ? `${(video.computed.watchTimeMinutes / 60).toFixed(0)}h watch time`
+        : null;
     case "avg_view_duration_desc":
-      return video.avgViewDuration != null ? `${Math.floor(video.avgViewDuration / 60)}:${String(Math.floor(video.avgViewDuration % 60)).padStart(2, "0")} avg` : null;
+      return video.avgViewDuration != null
+        ? `${Math.floor(video.avgViewDuration / 60)}:${String(
+            Math.floor(video.avgViewDuration % 60)
+          ).padStart(2, "0")} avg`
+        : null;
     default:
       return null;
   }

@@ -109,26 +109,6 @@ export type AnalyticsTotals = DailyAnalyticsRow & {
 };
 
 /**
- * Fetch daily analytics for a single video
- */
-export async function fetchVideoAnalyticsDaily(
-  ga: GoogleAccount,
-  channelId: string,
-  videoId: string,
-  startDate: string,
-  endDate: string
-): Promise<DailyAnalyticsRow[]> {
-  const { rows } = await fetchVideoAnalyticsDailyWithStatus(
-    ga,
-    channelId,
-    videoId,
-    startDate,
-    endDate
-  );
-  return rows;
-}
-
-/**
  * Fetch daily analytics for a single video + permission status
  * (Used by owned-video insights route to fail fast when scopes are missing)
  */

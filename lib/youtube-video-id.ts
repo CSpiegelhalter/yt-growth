@@ -100,10 +100,3 @@ export function parseYouTubeVideoId(url: string): string | null {
 
   return null;
 }
-
-/**
- * Check if a string is a valid YouTube URL.
- */
-export function isValidYouTubeUrl(url: string): boolean {
-  return parseYouTubeVideoId(url) !== null;
-}

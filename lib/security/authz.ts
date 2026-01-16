@@ -5,82 +5,12 @@
  */
 
 import { prisma } from "@/prisma";
-import type { AuthUser, AuthUserWithSubscription } from "@/lib/user";
+import type { AuthUserWithSubscription } from "@/lib/user";
 
 export type AuthzResult = {
   allowed: boolean;
   reason?: string;
 };
-
-/**
- * Verify user owns a specific channel
- */
-export async function verifyChannelOwnership(
-  userId: number,
-  channelId: string | number
-): Promise<AuthzResult> {
-  const channel = await prisma.channel.findFirst({
-    where: {
-      ...(typeof channelId === "number"
-        ? { id: channelId }
-        : { youtubeChannelId: channelId }),
-      userId,
-    },
-    select: { id: true },
-  });
-
-  if (!channel) {
-    return { allowed: false, reason: "Channel not found or not owned by user" };
-  }
-
-  return { allowed: true };
-}
-
-/**
- * Verify user owns a specific video (via channel ownership)
- */
-export async function verifyVideoOwnership(
-  userId: number,
-  videoId: string | number
-): Promise<AuthzResult> {
-  const video = await prisma.video.findFirst({
-    where: {
-      ...(typeof videoId === "number"
-        ? { id: videoId }
-        : { youtubeVideoId: videoId }),
-      Channel: { userId },
-    },
-    select: { id: true },
-  });
-
-  if (!video) {
-    return { allowed: false, reason: "Video not found or not owned by user" };
-  }
-
-  return { allowed: true };
-}
-
-/**
- * Verify user owns a saved idea
- */
-export async function verifySavedIdeaOwnership(
-  userId: number,
-  ideaId: string
-): Promise<AuthzResult> {
-  const idea = await prisma.savedIdea.findFirst({
-    where: {
-      ideaId,
-      userId,
-    },
-    select: { id: true },
-  });
-
-  if (!idea) {
-    return { allowed: false, reason: "Idea not found or not owned by user" };
-  }
-
-  return { allowed: true };
-}
 
 /**
  * Check if user has active subscription
@@ -148,46 +78,4 @@ export async function checkChannelLimit(
   }
 
   return { allowed: true, limit, current: count };
-}
-
-/**
- * Check if user is admin
- */
-export function isAdminUser(user: AuthUser): boolean {
-  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-  const adminIds = (process.env.ADMIN_USER_IDS ?? "")
-    .split(",")
-    .map((id) => Number(id.trim()))
-    .filter(Number.isFinite);
-
-  return (
-    adminEmails.includes(user.email.toLowerCase()) || adminIds.includes(user.id)
-  );
-}
-
-/**
- * Require ownership or throw
- */
-export async function requireChannelOwnership(
-  userId: number,
-  channelId: string | number
-): Promise<void> {
-  const result = await verifyChannelOwnership(userId, channelId);
-  if (!result.allowed) {
-    throw new Error(result.reason ?? "Unauthorized");
-  }
-}
-
-/**
- * Require subscription or throw
- */
-export function requireSubscription(user: AuthUserWithSubscription): void {
-  const result = hasActiveSubscription(user);
-  if (!result.allowed) {
-    throw new Error(result.reason ?? "Subscription required");
-  }
 }

@@ -1,14 +1,3 @@
-/**
- * Entitlements Module - Central source of truth for plan detection and feature gating
- *
- * This module handles:
- * - Plan detection (FREE vs PRO)
- * - Feature limits by plan
- * - Feature lock status
- * - Usage reset timing
- */
-
-import type { Me } from "@/types/api";
 import { LIMITS } from "@/lib/product";
 
 // ============================================
@@ -66,46 +55,16 @@ const LOCKED_FEATURES: Record<Plan, FeatureKey[]> = {
   PRO: ["keyword_research"], // Still locked for now
 };
 
-// ============================================
-// PLAN DETECTION
-// ============================================
-
-/**
- * Determine the user's plan from their /api/me response
- *
- * PRO if:
- * - subscription.isActive is true
- * - plan is not 'free'
- * - currentPeriodEnd is in the future (if set)
- */
-export function getPlanFromMe(me: Me | null | undefined): Plan {
-  if (!me) return "FREE";
-
-  const { subscription, plan } = me;
-
-  // Must have active subscription
-  if (!subscription?.isActive) return "FREE";
-
-  // Plan must not be 'free'
-  if (!plan || plan === "free") return "FREE";
-
-  // If we have a period end date, check it hasn't expired
-  if (subscription.currentPeriodEnd) {
-    const periodEnd = new Date(subscription.currentPeriodEnd);
-    if (periodEnd.getTime() <= Date.now()) return "FREE";
-  }
-
-  return "PRO";
-}
-
 /**
  * Alternative: determine plan from raw subscription object (server-side)
  */
-export function getPlanFromSubscription(subscription: {
-  isActive: boolean;
-  plan: string;
-  currentPeriodEnd: Date | string | null;
-} | null): Plan {
+export function getPlanFromSubscription(
+  subscription: {
+    isActive: boolean;
+    plan: string;
+    currentPeriodEnd: Date | string | null;
+  } | null
+): Plan {
   if (!subscription) return "FREE";
   if (!subscription.isActive) return "FREE";
   if (subscription.plan === "free") return "FREE";
@@ -139,32 +98,11 @@ export function getLimit(plan: Plan, feature: FeatureKey): number {
   const limits = getLimits(plan);
   return limits[feature];
 }
-
-/**
- * Get max channels allowed for a plan
- */
-export function getMaxChannels(plan: Plan): number {
-  return getLimits(plan).channels_connected;
-}
-
 /**
  * Check if a feature is completely locked (not usage-limited, just no access)
  */
 export function featureLocked(plan: Plan, feature: FeatureKey): boolean {
   return LOCKED_FEATURES[plan].includes(feature);
-}
-
-/**
- * Check if a feature is usage-limited (has a daily cap)
- */
-export function isUsageLimited(feature: FeatureKey): boolean {
-  return [
-    "owned_video_analysis",
-    "competitor_video_analysis",
-    "idea_generate",
-    "channel_sync",
-    "tag_generate",
-  ].includes(feature);
 }
 
 // ============================================
@@ -240,11 +178,3 @@ export function getFeatureDisplayName(feature: FeatureKey): string {
   };
   return names[feature];
 }
-
-/**
- * Get plan display name
- */
-export function getPlanDisplayName(plan: Plan): string {
-  return plan === "PRO" ? "Pro" : "Free";
-}
-

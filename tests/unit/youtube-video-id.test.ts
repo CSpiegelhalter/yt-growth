@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  parseYouTubeVideoId,
-  isValidYouTubeUrl,
-} from "@/lib/youtube-video-id";
+import { parseYouTubeVideoId } from "@/lib/youtube-video-id";
 
 describe("parseYouTubeVideoId", () => {
   describe("standard watch URLs", () => {
@@ -95,9 +92,9 @@ describe("parseYouTubeVideoId", () => {
 
   describe("old embed format", () => {
     it("parses youtube.com/v/VIDEOID", () => {
-      expect(
-        parseYouTubeVideoId("https://www.youtube.com/v/dQw4w9WgXcQ")
-      ).toBe("dQw4w9WgXcQ");
+      expect(parseYouTubeVideoId("https://www.youtube.com/v/dQw4w9WgXcQ")).toBe(
+        "dQw4w9WgXcQ"
+      );
     });
   });
 
@@ -187,23 +184,5 @@ describe("parseYouTubeVideoId", () => {
         parseYouTubeVideoId("https://www.youtube.com/watch?v=dQw4w9WgXcQ  ")
       ).toBe("dQw4w9WgXcQ");
     });
-  });
-});
-
-describe("isValidYouTubeUrl", () => {
-  it("returns true for valid YouTube URLs", () => {
-    expect(isValidYouTubeUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe(
-      true
-    );
-    expect(isValidYouTubeUrl("https://youtu.be/dQw4w9WgXcQ")).toBe(true);
-    expect(isValidYouTubeUrl("https://www.youtube.com/shorts/dQw4w9WgXcQ")).toBe(
-      true
-    );
-  });
-
-  it("returns false for invalid URLs", () => {
-    expect(isValidYouTubeUrl("")).toBe(false);
-    expect(isValidYouTubeUrl("https://vimeo.com/12345678")).toBe(false);
-    expect(isValidYouTubeUrl("not-a-url")).toBe(false);
   });
 });
