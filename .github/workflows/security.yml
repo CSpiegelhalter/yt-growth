@@ -163,6 +163,26 @@ jobs:
         run: bun run test:unit
         continue-on-error: true
 
+  seo-checks:
+    name: SEO & Internal Linking
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      
+      - name: Check for orphaned pages
+        run: bun run check:orphaned
+      
+      - name: Check anchor text
+        run: bun run check:anchors
+        continue-on-error: true
+
   security-tests:
     name: Security Tests
     runs-on: ubuntu-latest

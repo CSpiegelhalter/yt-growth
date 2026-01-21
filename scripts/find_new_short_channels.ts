@@ -595,7 +595,8 @@ async function main(): Promise<void> {
           pageToken
         );
 
-        totalSearches++;
+        // Track searches for debugging (unused but kept for potential logging)
+        void totalSearches++;
 
         for (const videoId of result.videoIds) {
           if (!videoToQuery.has(videoId)) {

@@ -3,7 +3,6 @@
  * Server component - no "use client" directive.
  */
 
-import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import type { BodyProps } from "./index";
 

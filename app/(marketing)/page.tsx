@@ -454,9 +454,13 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 
 /**
  * Popular Learn Guides - Internal links section for SEO
- * Links to 10 high-value learn articles to improve internal linking
+ * Links to high-value learn articles to improve internal linking.
+ *
+ * IMPORTANT: This list should include ALL learn articles to prevent orphaned pages.
+ * The check:orphaned script verifies every sitemap URL has inbound links.
  */
 const POPULAR_GUIDE_SLUGS = [
+  // Core guides (most important for SEO + user value)
   "youtube-channel-audit",
   "youtube-retention-analysis",
   "how-to-get-more-subscribers",
@@ -467,15 +471,55 @@ const POPULAR_GUIDE_SLUGS = [
   "youtube-monetization-requirements",
   "how-to-make-a-youtube-channel",
   "youtube-tag-generator",
+  // Content & ideas
+  "find-video-inspiration",
+  "how-to-find-video-ideas",
+  "youtube-thumbnail-best-practices",
+  "how-to-increase-audience-retention",
+  // Growth & promotion
+  "how-to-promote-youtube-videos",
+  "find-similar-youtube-channels",
+  "how-to-be-a-youtuber",
+  // Monetization
+  "how-much-does-youtube-pay",
+  "youtube-shorts-monetization",
+  // Formats & features
+  "youtube-shorts-length",
+  "how-to-go-live-on-youtube",
+  // Subscriber insights
+  "how-to-see-your-subscribers-on-youtube",
+  "free-youtube-subscribers",
+  "buy-youtube-subscribers",
+  "buy-youtube-views",
+  // Tools
+  "youtube-analytics-tools",
 ] as const;
 
+/**
+ * Featured guides shown with full cards (first 10)
+ */
+const FEATURED_GUIDE_SLUGS = POPULAR_GUIDE_SLUGS.slice(0, 10);
+
+/**
+ * Additional guides shown in compact list format
+ */
+const ADDITIONAL_GUIDE_SLUGS = POPULAR_GUIDE_SLUGS.slice(10);
+
 function PopularGuidesSection() {
-  const guides = POPULAR_GUIDE_SLUGS.map((slug) => {
+  const featuredGuides = FEATURED_GUIDE_SLUGS.map((slug) => {
     const article = LEARN_ARTICLES[slug];
     return {
       slug,
       title: article.shortTitle,
       description: article.description.slice(0, 120) + "...",
+    };
+  });
+
+  const additionalGuides = ADDITIONAL_GUIDE_SLUGS.map((slug) => {
+    const article = LEARN_ARTICLES[slug];
+    return {
+      slug,
+      title: article.shortTitle,
     };
   });
 
@@ -485,8 +529,9 @@ function PopularGuidesSection() {
       <p className="landingSectionSubtitle">
         Learn proven strategies to grow your channel with our free guides
       </p>
+      {/* Featured guides with full cards */}
       <div className="landingGuidesGrid">
-        {guides.map((guide) => (
+        {featuredGuides.map((guide) => (
           <Link
             key={guide.slug}
             href={`/learn/${guide.slug}`}
@@ -498,6 +543,23 @@ function PopularGuidesSection() {
           </Link>
         ))}
       </div>
+      {/* Additional guides in compact list */}
+      {additionalGuides.length > 0 && (
+        <div className="landingGuidesCompact">
+          <h3 className="landingGuidesCompactTitle">More Guides</h3>
+          <div className="landingGuidesCompactList">
+            {additionalGuides.map((guide) => (
+              <Link
+                key={guide.slug}
+                href={`/learn/${guide.slug}`}
+                className="landingGuidesCompactLink"
+              >
+                {guide.title}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="landingGuidesMore">
         <Link href="/learn" className="landingGuidesMoreLink">
           View all YouTube growth guides →
