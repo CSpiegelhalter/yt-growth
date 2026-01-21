@@ -36,6 +36,7 @@ import { Body as YouTubeRetentionAnalysisBody } from "./youtube-retention-analys
 import { Body as HowToIncreaseAudienceRetentionBody } from "./how-to-increase-audience-retention";
 import { Body as YouTubeThumbnailBestPracticesBody } from "./youtube-thumbnail-best-practices";
 import { Body as YouTubeVideoIdeasBody } from "./youtube-video-ideas";
+import { Body as HowToFindVideoIdeasBody } from "./how-to-find-video-ideas";
 import { Body as FindVideoInspirationBody } from "./find-video-inspiration";
 import { Body as HowToGetMoreSubscribersBody } from "./how-to-get-more-subscribers";
 import { Body as HowToMakeAYouTubeChannelBody } from "./how-to-make-a-youtube-channel";
@@ -67,6 +68,7 @@ export const BODY_COMPONENTS: Record<string, React.ComponentType<BodyProps>> = {
   "how-to-increase-audience-retention": HowToIncreaseAudienceRetentionBody,
   "youtube-thumbnail-best-practices": YouTubeThumbnailBestPracticesBody,
   "youtube-video-ideas": YouTubeVideoIdeasBody,
+  "how-to-find-video-ideas": HowToFindVideoIdeasBody,
   "find-video-inspiration": FindVideoInspirationBody,
   "how-to-get-more-subscribers": HowToGetMoreSubscribersBody,
   "how-to-make-a-youtube-channel": HowToMakeAYouTubeChannelBody,

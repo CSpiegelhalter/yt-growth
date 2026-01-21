@@ -35,7 +35,8 @@
     "typecheck": "rm -rf .next/types && tsc --noEmit",
     "check:anchors": "bun scripts/check-anchor-text.ts",
     "create:google-reviewer": "bun scripts/create-google-reviewer.ts",
-    "seo:ratio": "node scripts/text-html-ratio.mjs",
+    "seo:ratio": "node scripts/seo-text-html.mjs",
+    "seo:ratio:ci": "node scripts/seo-text-html.mjs",
     "seo:verify-links": "bun scripts/verify-internal-links.ts"
   },
   "dependencies": {

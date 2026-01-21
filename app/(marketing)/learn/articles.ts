@@ -727,6 +727,86 @@ export const LEARN_ARTICLES = {
       },
     ],
   },
+  "how-to-find-video-ideas": {
+    slug: "how-to-find-video-ideas",
+    title: "How to Find Video Ideas: A Practical Research Process (2026)",
+    shortTitle: "Find Video Ideas",
+    navLabel: "Find Ideas",
+    description:
+      "A step-by-step process for finding YouTube video ideas that viewers actually want. Learn research methods that reveal proven topics, techniques for uncovering gaps in your niche, and how to build an idea research system that keeps your channel growing.",
+    metaDescription:
+      "How to find video ideas for YouTube using a repeatable research process. Discover methods for finding proven topics, identifying gaps in your niche, and building a system that never runs dry.",
+    datePublished: "2026-01-21",
+    dateModified: "2026-01-21",
+    readingTime: "14 min read",
+    category: "Content",
+    keywords: [
+      "how to find video ideas",
+      "find video ideas",
+      "how to find youtube video ideas",
+      "video idea research",
+      "finding video topics",
+      "youtube video research",
+      "content research youtube",
+      "find video topics",
+      "video idea finding",
+      "research video ideas",
+    ],
+    toc: [
+      { id: "research-mindset", title: "The Research Mindset" },
+      { id: "demand-signals", title: "Recognizing Demand Signals" },
+      { id: "competitor-mining", title: "Mining Competitor Channels" },
+      { id: "search-research", title: "YouTube Search as Research" },
+      { id: "comment-hunting", title: "Comment Section Hunting" },
+      { id: "adjacent-niches", title: "Borrowing from Adjacent Niches" },
+      { id: "idea-evaluation", title: "Evaluating What You Find" },
+      { id: "research-system", title: "Building a Research System" },
+      { id: "common-traps", title: "Common Research Traps" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How do I find video ideas when I feel completely stuck?",
+        answer:
+          "Start with what already exists. Open three competitor channels and sort by most popular. Look for topics you could cover differently or better. Then type your main topic into YouTube search and note the autocomplete suggestions. These represent actual searches. Combine competitor patterns with real search demand to find ideas with built-in audiences.",
+      },
+      {
+        question: "How long should I spend researching video ideas?",
+        answer:
+          "Most creators benefit from 20 to 30 minutes of focused research per week. Do not research for hours at a time since you will hit diminishing returns. Short, regular research sessions build a better backlog than occasional marathons. The goal is a sustainable habit, not exhaustive analysis.",
+      },
+      {
+        question: "Should I make videos on topics competitors already cover?",
+        answer:
+          "Yes, if you can add genuine value. Proven topics mean proven demand. Your job is to offer a different angle, better depth, clearer explanation, or updated information. Avoid direct imitation, but do not avoid topics just because they have been done. Everything has been done. What matters is how you do it.",
+      },
+      {
+        question: "How do I know if a video idea is worth pursuing?",
+        answer:
+          "Check three things. First, demand: does evidence suggest viewers want this content? Second, fit: does this match your channel's focus and your ability to deliver? Third, differentiation: can you add something the existing videos lack? Ideas that pass all three are worth pursuing.",
+      },
+      {
+        question: "Where do the best video ideas come from?",
+        answer:
+          "The best ideas usually come from the intersection of viewer demand and creator expertise. Look for topics where you have genuine knowledge or perspective and where viewers are actively searching or engaging. Pure data-driven ideas without passion tend to feel hollow. Pure passion projects without audience interest tend to underperform.",
+      },
+      {
+        question: "How many video ideas should I have ready at any time?",
+        answer:
+          "Keep 15 to 25 validated ideas in your backlog. This gives you flexibility to choose based on your energy, current events, or production constraints. Replenish weekly so you never drop below 10. A healthy backlog prevents rushed decisions and creative panic.",
+      },
+      {
+        question: "How do I find ideas that are not oversaturated?",
+        answer:
+          "Look for specificity. Broad topics are crowded, but specific angles often have room. Instead of 'photography tips,' try 'street photography in bad weather' or 'portrait lighting with one window.' Also look for emerging subtopics where demand is growing but supply has not caught up.",
+      },
+      {
+        question: "Can I use AI to find video ideas?",
+        answer:
+          "AI can help brainstorm and expand on themes, but it cannot tell you what viewers actually want. Use AI to generate variations on topics you have already validated through research. Do not rely on AI alone since it will suggest ideas without evidence of demand. Combine AI brainstorming with real-world research.",
+      },
+    ],
+  },
   "find-video-inspiration": {
     slug: "find-video-inspiration",
     title: "How to Find Video Inspiration: What's Working in Your Niche (2026)",
