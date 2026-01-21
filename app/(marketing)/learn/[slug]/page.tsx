@@ -9,7 +9,7 @@ import {
   LearnFAQ,
   RelatedArticles,
 } from "@/components/learn/server";
-import { LearnStaticCTA, TableOfContents } from "@/components/learn";
+import { LearnStaticCTA, LearnToc, normalizeItems } from "@/components/learn";
 import { BRAND } from "@/lib/brand";
 import s from "../style.module.css";
 
@@ -135,8 +135,8 @@ export default async function LearnArticlePage({ params }: LearnArticlePageProps
         styles={heroStyles}
       />
 
-      {/* Table of Contents */}
-      <TableOfContents items={article.toc} />
+      {/* Table of Contents - Mobile collapsible, desktop visible */}
+      <LearnToc items={normalizeItems(article.toc)} />
 
       {/* Article Content */}
       <article className={s.content}>

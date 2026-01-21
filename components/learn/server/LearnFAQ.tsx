@@ -1,6 +1,8 @@
 /**
  * Server component that renders the FAQ section with native details/summary.
  * Must remain a server component - no "use client" directive.
+ * 
+ * Two-column grid on desktop is now built into the CSS.
  */
 
 interface FAQ {
@@ -38,8 +40,8 @@ export function LearnFAQ({
               <span className={s.faqQuestionText}>{faq.question}</span>
               <svg
                 className={s.faqChevron}
-                width="20"
-                height="20"
+                width="18"
+                height="18"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"

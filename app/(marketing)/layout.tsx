@@ -1,6 +1,7 @@
 import { MarketingHeader } from "@/components/marketing";
 import { Footer } from "@/components/Footer";
 import { getCurrentUserServer } from "@/lib/server/bootstrap";
+import "@/components/learn/learn-components.css";
 
 /**
  * Marketing layout for public pages.
