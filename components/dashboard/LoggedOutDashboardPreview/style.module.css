@@ -1,0 +1,416 @@
+/* ================================
+   Logged-Out Dashboard Preview
+   Mobile-first, conversion-focused
+   ================================ */
+
+.page {
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--page-padding-mobile);
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: var(--page-padding-desktop);
+  }
+}
+
+/* ================================
+   Hero Section
+   ================================ */
+
+.hero {
+  text-align: center;
+  padding: var(--space-8) 0 var(--space-10);
+}
+
+@media (min-width: 768px) {
+  .hero {
+    padding: var(--space-12) 0 var(--space-16);
+  }
+}
+
+.heroTitle {
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
+  font-weight: var(--font-bold);
+  color: var(--text);
+  margin: 0 0 var(--space-4);
+  line-height: var(--leading-tight);
+}
+
+.heroSubtitle {
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+  margin: 0 auto var(--space-8);
+  max-width: 540px;
+  line-height: var(--leading-relaxed);
+}
+
+.heroCtas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+@media (min-width: 480px) {
+  .heroCtas {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+.primaryCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text-inverse);
+  background: var(--primary);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: all var(--transition-base);
+  min-height: 48px;
+  min-width: 200px;
+}
+
+.primaryCta:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.primaryCta:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.secondaryCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--primary);
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: all var(--transition-base);
+  min-height: 48px;
+  min-width: 180px;
+}
+
+.secondaryCta:hover {
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+
+.secondaryCta:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ================================
+   Preview Cards Section
+   ================================ */
+
+.previewSection {
+  padding: var(--space-8) 0;
+}
+
+.sectionTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--text);
+  text-align: center;
+  margin: 0 0 var(--space-8);
+}
+
+@media (min-width: 768px) {
+  .sectionTitle {
+    font-size: var(--text-2xl);
+  }
+}
+
+.previewGrid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 480px) {
+  .previewGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-5);
+  }
+}
+
+@media (min-width: 1024px) {
+  .previewGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.previewCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  text-align: center;
+  transition: all var(--transition-base);
+}
+
+.previewCard:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-card);
+}
+
+.previewCardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto var(--space-4);
+  background: var(--primary-bg, #eff6ff);
+  border-radius: var(--radius-full);
+  color: var(--primary);
+}
+
+.previewCardTitle {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text);
+  margin: 0 0 var(--space-2);
+}
+
+.previewCardDesc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: var(--leading-relaxed);
+}
+
+/* ================================
+   How It Works Section
+   ================================ */
+
+.howItWorks {
+  padding: var(--space-10) 0;
+  background: var(--surface-alt);
+  border-radius: var(--radius-lg);
+  margin: var(--space-6) 0;
+}
+
+@media (min-width: 768px) {
+  .howItWorks {
+    padding: var(--space-12) var(--space-8);
+  }
+}
+
+.stepsGrid {
+  display: grid;
+  gap: var(--space-6);
+  padding: 0 var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .stepsGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-8);
+    padding: 0;
+  }
+}
+
+.step {
+  text-align: center;
+}
+
+.stepNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto var(--space-4);
+  background: var(--primary);
+  color: var(--text-inverse);
+  border-radius: var(--radius-full);
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+}
+
+.stepTitle {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text);
+  margin: 0 0 var(--space-2);
+}
+
+.stepDesc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: var(--leading-relaxed);
+}
+
+/* ================================
+   Social Proof / Testimonial
+   ================================ */
+
+.socialProof {
+  padding: var(--space-8) 0;
+  text-align: center;
+}
+
+.testimonial {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.testimonialQuote {
+  font-size: var(--text-lg);
+  font-style: italic;
+  color: var(--text);
+  margin: 0 0 var(--space-4);
+  line-height: var(--leading-relaxed);
+}
+
+.testimonialAuthor {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: var(--font-medium);
+}
+
+/* ================================
+   FAQ Section
+   ================================ */
+
+.faqSection {
+  padding: var(--space-10) 0;
+}
+
+.faqList {
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.faqItem {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color var(--transition-base);
+}
+
+.faqItem:hover {
+  border-color: var(--border-hover, var(--primary));
+}
+
+.faqItem[open] {
+  border-color: var(--primary);
+}
+
+.faqQuestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.faqQuestion::-webkit-details-marker {
+  display: none;
+}
+
+.faqQuestionText {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  color: var(--text);
+  text-align: left;
+}
+
+.faqChevron {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  transition: transform var(--transition-base);
+}
+
+.faqItem[open] .faqChevron {
+  transform: rotate(180deg);
+}
+
+.faqAnswer {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-4);
+  line-height: var(--leading-relaxed);
+}
+
+/* ================================
+   Final CTA Section
+   ================================ */
+
+.finalCta {
+  text-align: center;
+  padding: var(--space-10) var(--space-4);
+  background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+  border-radius: var(--radius-lg);
+  margin: var(--space-6) 0;
+}
+
+@media (min-width: 768px) {
+  .finalCta {
+    padding: var(--space-12) var(--space-8);
+  }
+}
+
+.finalCtaTitle {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: var(--font-bold);
+  color: var(--text-inverse);
+  margin: 0 0 var(--space-3);
+}
+
+.finalCtaSubtitle {
+  font-size: var(--text-base);
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 var(--space-8);
+}
+
+.finalCta .primaryCta {
+  background: var(--text-inverse);
+  color: var(--primary);
+}
+
+.finalCta .primaryCta:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.finalCta .secondaryCta {
+  background: transparent;
+  color: var(--text-inverse);
+  border-color: var(--text-inverse);
+}
+
+.finalCta .secondaryCta:hover {
+  background: var(--text-inverse);
+  color: var(--primary);
+}

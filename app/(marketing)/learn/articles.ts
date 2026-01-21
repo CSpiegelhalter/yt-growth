@@ -205,6 +205,177 @@ export const LEARN_ARTICLES = {
       },
     ],
   },
+  "how-to-increase-audience-retention": {
+    slug: "how-to-increase-audience-retention",
+    title: "How to Increase Audience Retention on YouTube (2026)",
+    shortTitle: "Increase Retention",
+    navLabel: "Increase Retention",
+    description:
+      "Practical strategies to increase audience retention on YouTube. Learn hook techniques, pacing strategies, pattern interrupts, and editing tips that keep viewers watching longer.",
+    metaDescription:
+      "How to increase audience retention on YouTube in 2026. Actionable tips for hooks, pacing, pattern interrupts, and editing that keep viewers watching to the end.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "14 min read",
+    category: "Content",
+    keywords: [
+      "how to increase audience retention",
+      "increase youtube retention",
+      "improve audience retention youtube",
+      "youtube retention tips",
+      "keep viewers watching",
+      "youtube watch time",
+      "video retention strategies",
+      "youtube engagement",
+      "viewer retention",
+      "average view duration",
+    ],
+    toc: [
+      { id: "why-retention-matters", title: "Why Retention Matters" },
+      { id: "retention-checklist", title: "Retention Improvement Checklist" },
+      { id: "hook-techniques", title: "Hook Techniques That Work" },
+      { id: "pacing-strategies", title: "Pacing Strategies" },
+      { id: "pattern-interrupts", title: "Pattern Interrupts" },
+      { id: "editing-tips", title: "Editing Tips for Retention" },
+      { id: "content-structure", title: "Content Structure" },
+      { id: "common-mistakes", title: "Common Mistakes" },
+      { id: "measure-progress", title: "Measure Your Progress" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How do I increase audience retention on YouTube?",
+        answer:
+          "Start with a strong hook in the first 5 to 10 seconds, deliver on your title promise quickly, use pattern interrupts every 30 to 60 seconds, cut all filler content, and structure your video to build toward a payoff. Analyze your retention graphs to find where viewers leave and fix those specific moments.",
+      },
+      {
+        question: "What is a good audience retention rate?",
+        answer:
+          "For short videos under 5 minutes, aim for 50 to 70 percent. For medium videos 8 to 15 minutes, 40 to 60 percent is good. For long videos over 20 minutes, 30 to 50 percent is solid. Focus on improving your own baseline rather than hitting specific numbers.",
+      },
+      {
+        question: "Why do viewers leave my videos early?",
+        answer:
+          "The most common reasons are weak hooks that do not grab attention, content that does not match the title and thumbnail promise, too much setup before delivering value, slow pacing or filler content, and lack of variety in visuals or delivery. Check your retention graph to see exactly where viewers drop off.",
+      },
+      {
+        question: "What is a pattern interrupt?",
+        answer:
+          "A pattern interrupt is any change that resets viewer attention: camera angle changes, b-roll footage, graphics, music shifts, pacing changes, or topic transitions. The brain notices change, so interrupts prevent viewers from zoning out. Aim for some form of change every 30 to 90 seconds.",
+      },
+      {
+        question: "How do I hook viewers in the first 10 seconds?",
+        answer:
+          "Use one of these techniques: tease the result or payoff, ask a question that creates curiosity, make a bold or surprising statement, show the end result before explaining how, or jump straight into action. Avoid generic intros like hey guys welcome back.",
+      },
+      {
+        question: "Does video length affect retention?",
+        answer:
+          "Yes. Longer videos typically have lower percentage retention but can have higher absolute watch time. Make your video as long as it needs to be and no longer. A tight 8 minute video often outperforms a padded 15 minute video because viewers watch more of it.",
+      },
+      {
+        question: "How often should I check my retention data?",
+        answer:
+          "Review retention for every video about 48 to 72 hours after publishing when you have meaningful data. Do a deeper comparison across multiple videos monthly to identify patterns. Your audience behavior is usually consistent across videos.",
+      },
+      {
+        question: "Can I improve retention with editing alone?",
+        answer:
+          "Editing helps significantly but content matters most. Good editing adds pattern interrupts, removes dead air, improves pacing, and enhances visuals. But if the core content is not valuable or engaging, no amount of editing will save retention. Start with good content, then use editing to make it better.",
+      },
+    ],
+  },
+  "youtube-thumbnail-best-practices": {
+    slug: "youtube-thumbnail-best-practices",
+    title: "YouTube Thumbnail Best Practices: Get More Clicks (2026)",
+    shortTitle: "Thumbnail Best Practices",
+    navLabel: "Thumbnails",
+    description:
+      "Learn YouTube thumbnail best practices that increase CTR. This guide covers design principles, text usage, faces, colors, testing strategies, and common mistakes to avoid.",
+    metaDescription:
+      "YouTube thumbnail best practices for 2026. Learn design principles, text tips, face expressions, color choices, and A/B testing strategies to get more clicks on your videos.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "15 min read",
+    category: "Content",
+    keywords: [
+      "youtube thumbnail best practices",
+      "youtube thumbnail tips",
+      "how to make good thumbnails",
+      "thumbnail design youtube",
+      "increase ctr youtube",
+      "youtube thumbnail size",
+      "thumbnail text",
+      "youtube click through rate",
+      "thumbnail maker",
+      "custom thumbnails youtube",
+    ],
+    toc: [
+      { id: "why-thumbnails-matter", title: "Why Thumbnails Matter" },
+      { id: "thumbnail-checklist", title: "Thumbnail Checklist" },
+      { id: "design-principles", title: "Design Principles" },
+      { id: "text-best-practices", title: "Text Best Practices" },
+      { id: "faces-and-emotions", title: "Faces and Emotions" },
+      { id: "colors-and-contrast", title: "Colors and Contrast" },
+      { id: "thumbnail-title-combo", title: "Thumbnail and Title Combo" },
+      { id: "testing-thumbnails", title: "Testing Thumbnails" },
+      { id: "tools-and-specs", title: "Tools and Specs" },
+      { id: "common-mistakes", title: "Common Mistakes" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "What makes a good YouTube thumbnail?",
+        answer:
+          "A good thumbnail is readable at small sizes, has high contrast, communicates the video topic in a split second, creates curiosity or promises value, and stands out from other videos in search results or suggested feeds. It should complement the title, not repeat it.",
+      },
+      {
+        question: "What is the best YouTube thumbnail size?",
+        answer:
+          "YouTube recommends 1280 by 720 pixels with a 16:9 aspect ratio. The minimum width is 640 pixels. Keep file size under 2MB. Use JPG, GIF, or PNG format. Always test how your thumbnail looks at small sizes since most viewers see it on mobile.",
+      },
+      {
+        question: "Should I use text on my thumbnails?",
+        answer:
+          "Text can be effective but use it sparingly. Limit to 3 to 4 words maximum. Make text large enough to read on mobile. Use high contrast colors. The text should add information the title does not provide, not repeat the title exactly.",
+      },
+      {
+        question: "Do faces in thumbnails get more clicks?",
+        answer:
+          "Faces with clear emotions often perform well because humans are naturally drawn to faces. Expressive faces showing surprise, excitement, concern, or curiosity tend to outperform neutral expressions. However, this varies by niche. Test what works for your audience.",
+      },
+      {
+        question: "How do I increase my YouTube CTR?",
+        answer:
+          "Improve your thumbnails by making them more readable, adding contrast, using expressive faces, and testing different styles. Write clearer titles that create curiosity. Make sure your thumbnail and title work together and deliver on the promise in your content.",
+      },
+      {
+        question: "What is a good CTR on YouTube?",
+        answer:
+          "CTR varies by niche and traffic source. For browse and suggested traffic, 4 to 6 percent is common. For search traffic, 5 to 10 percent is typical. More important than hitting a number is tracking your trend over time. Rising CTR means your packaging is improving.",
+      },
+      {
+        question: "How do I test different thumbnails?",
+        answer:
+          "YouTube offers built-in A/B testing for some creators called Test and Compare. Alternatively, upload a thumbnail, wait a few days to gather CTR data, then change it and compare. Give each test at least 48 to 72 hours with meaningful impressions before judging.",
+      },
+      {
+        question: "What colors work best for thumbnails?",
+        answer:
+          "High contrast colors that stand out from YouTube's white and red interface work well. Yellow, blue, and green often pop. Avoid colors that blend with YouTube's UI. Bright, saturated colors typically outperform muted tones. Test what works for your specific niche.",
+      },
+      {
+        question: "Should my thumbnails have a consistent style?",
+        answer:
+          "Consistency helps returning viewers recognize your videos instantly. Use similar fonts, color palettes, or layouts. However, do not be so consistent that every thumbnail looks identical. Each video should still communicate its unique value proposition.",
+      },
+      {
+        question: "What thumbnail mistakes should I avoid?",
+        answer:
+          "Common mistakes include text too small to read on mobile, low contrast that blends together, cluttered designs with too many elements, misleading images that do not match content, inconsistent branding, and copying your title exactly instead of complementing it.",
+      },
+    ],
+  },
   "how-to-get-more-subscribers": {
     slug: "how-to-get-more-subscribers",
     title: "How to Get More YouTube Subscribers (2026)",
@@ -553,6 +724,86 @@ export const LEARN_ARTICLES = {
         question: "How often should I brainstorm new video ideas?",
         answer:
           "Spend 30 minutes to 1 hour weekly on idea research. Keep a backlog of 10 to 20 validated ideas so you always have options. This prevents creative blocks and rushed decisions. A regular cadence beats occasional marathon brainstorming sessions.",
+      },
+    ],
+  },
+  "find-video-inspiration": {
+    slug: "find-video-inspiration",
+    title: "How to Find Video Inspiration: What's Working in Your Niche (2026)",
+    shortTitle: "Video Inspiration",
+    navLabel: "Find Inspiration",
+    description:
+      "Stuck on what video to make next? Learn how to find video inspiration by studying what's working for other channels, spotting patterns in successful content, and using idea generators to never run out of content.",
+    metaDescription:
+      "How to find video inspiration when you're stuck. Learn to study competitors, spot what's working in your niche, and use idea generators to build a content backlog that keeps your channel growing.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "12 min read",
+    category: "Content",
+    keywords: [
+      "find video inspiration",
+      "youtube video inspiration",
+      "what video should i make",
+      "youtube content inspiration",
+      "video idea generator",
+      "youtube idea generator",
+      "find content ideas",
+      "what to post on youtube",
+      "youtube content ideas",
+      "inspiration for youtube videos",
+    ],
+    toc: [
+      { id: "why-inspiration-matters", title: "Why Inspiration Matters" },
+      { id: "inspiration-checklist", title: "10 Minute Inspiration Checklist" },
+      { id: "study-competitors", title: "Study What's Working for Others" },
+      { id: "spot-patterns", title: "Spot Patterns in Successful Videos" },
+      { id: "use-analytics", title: "Use Your Own Analytics" },
+      { id: "idea-generators", title: "Video Idea Generators" },
+      { id: "build-backlog", title: "Build a Content Backlog" },
+      { id: "stay-inspired", title: "Stay Inspired Long Term" },
+      { id: "mistakes", title: "Common Mistakes" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How do I find video inspiration when I'm stuck?",
+        answer:
+          "Start by looking at what's already working. Check your own top performing videos, study competitors to see their outliers, browse YouTube search suggestions for your niche, and read comments on popular videos for questions viewers have. Use an idea generator to combine these signals into actionable topics.",
+      },
+      {
+        question: "How do I know what videos are working in my niche?",
+        answer:
+          "Look at competitor channels and sort their videos by most popular. Look for outliers, videos that got significantly more views than their typical content. Multiple competitors having hits on the same topic is a strong signal. Also check upload recency, recent hits indicate current demand.",
+      },
+      {
+        question: "What is a video idea generator?",
+        answer:
+          "A video idea generator analyzes what's working in your niche and suggests topics based on proven demand. The best generators combine competitor analysis, trending topics, and your channel's strengths to suggest ideas that fit your audience and have demonstrated viewer interest.",
+      },
+      {
+        question: "How often should I look for new video inspiration?",
+        answer:
+          "Build a habit of weekly research. Spend 15 to 30 minutes each week scanning competitors, checking trends, and adding ideas to your backlog. This prevents last minute scrambling and ensures you always have validated topics ready to film.",
+      },
+      {
+        question: "Should I copy what competitors are doing?",
+        answer:
+          "Learn from patterns, do not copy executions. If a topic works for multiple creators, that validates demand. Your version should add your unique perspective, better research, improved production, or a different angle. Direct copying rarely works and can hurt your reputation.",
+      },
+      {
+        question: "How do I find inspiration without copying?",
+        answer:
+          "Study the why behind successful videos, not just the what. Why did viewers click? What problem did it solve? What made viewers watch to the end? Apply those principles to your own topics and style. Inspiration means learning patterns, not duplicating content.",
+      },
+      {
+        question: "What if my niche feels oversaturated?",
+        answer:
+          "Oversaturated niches often have underserved sub-niches. Look for specific angles, audiences, or formats that aren't well covered. A broad topic like photography tips might be saturated, but night photography for iPhone users might have opportunity. Go specific.",
+      },
+      {
+        question: "How many video ideas should I have in my backlog?",
+        answer:
+          "Aim for 15 to 25 validated ideas at any time. This gives you enough options to choose based on mood, current events, or production capacity. Replenish weekly so you never drop below 10. A healthy backlog eliminates creative panic.",
       },
     ],
   },
@@ -1926,8 +2177,71 @@ export function generateLearnArticleSchema(article: LearnArticle) {
 }
 
 /**
- * Get all other articles for cross-linking (excludes current)
+ * Get related articles for cross-linking (deterministic, category-aware)
+ *
+ * Returns 4-8 related articles prioritizing:
+ * 1. Same category (up to 4)
+ * 2. Fill remaining slots with "popular" guides from other categories
+ *
+ * Selection is deterministic (no randomization) for SSG consistency.
  */
-export function getRelatedArticles(currentSlug: string) {
-  return learnArticles.filter((a) => a.slug !== currentSlug);
+export function getRelatedArticles(
+  currentSlug: string,
+  options: { limit?: number } = {}
+) {
+  const { limit = 6 } = options;
+  const currentArticle = LEARN_ARTICLES[currentSlug as keyof typeof LEARN_ARTICLES];
+  const currentCategory = currentArticle?.category;
+
+  // Filter out current article
+  const otherArticles = learnArticles.filter((a) => a.slug !== currentSlug);
+
+  // Split into same category and different category
+  const sameCategory = otherArticles.filter((a) => a.category === currentCategory);
+  const differentCategory = otherArticles.filter((a) => a.category !== currentCategory);
+
+  // Popular guides to fill remaining slots (high-value, cross-category appeal)
+  // Ordered by general usefulness/traffic potential
+  const popularSlugs = [
+    "youtube-channel-audit",
+    "youtube-retention-analysis",
+    "how-to-get-more-subscribers",
+    "youtube-video-ideas",
+    "youtube-competitor-analysis",
+    "youtube-seo",
+    "youtube-monetization-requirements",
+    "youtube-algorithm",
+  ];
+
+  // Take up to 4 from same category
+  const sameCategoryPicks = sameCategory.slice(0, 4);
+
+  // Calculate remaining slots
+  const remainingSlots = Math.max(0, limit - sameCategoryPicks.length);
+
+  // Fill remaining with popular guides (not already picked, not current)
+  const popularPicks = popularSlugs
+    .filter(
+      (slug) =>
+        slug !== currentSlug &&
+        !sameCategoryPicks.some((a) => a.slug === slug)
+    )
+    .slice(0, remainingSlots)
+    .map((slug) => differentCategory.find((a) => a.slug === slug))
+    .filter(Boolean) as typeof learnArticles;
+
+  // If still need more, fill from remaining different category articles
+  const stillNeeded = remainingSlots - popularPicks.length;
+  const fallbackPicks =
+    stillNeeded > 0
+      ? differentCategory
+          .filter(
+            (a) =>
+              !popularPicks.some((p) => p.slug === a.slug) &&
+              !sameCategoryPicks.some((s) => s.slug === a.slug)
+          )
+          .slice(0, stillNeeded)
+      : [];
+
+  return [...sameCategoryPicks, ...popularPicks, ...fallbackPicks];
 }

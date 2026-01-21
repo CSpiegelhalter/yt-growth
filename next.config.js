@@ -99,6 +99,14 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // Canonical domain redirect: non-www to www
+      // Ensures all traffic uses the canonical www domain for SEO consistency
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "getchannelboost.com" }],
+        destination: "https://www.getchannelboost.com/:path*",
+        permanent: true,
+      },
       // Legacy route -> Subscriber Insights
       { source: "/converters", destination: "/subscriber-insights", permanent: true },
       { source: "/converters/:path*", destination: "/subscriber-insights", permanent: true },

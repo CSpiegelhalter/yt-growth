@@ -23,7 +23,7 @@ interface RelatedArticlesProps {
 
 export function RelatedArticles({
   items,
-  title = "Continue Learning",
+  title = "Related Guides",
   styles: s,
 }: RelatedArticlesProps) {
   return (

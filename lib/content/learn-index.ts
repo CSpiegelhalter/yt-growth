@@ -9,21 +9,17 @@ export const LEARN_INDEX_CONTENT = {
   hero: {
     title: "YouTube Growth Guides",
     titleAccent: "With Data-Driven Strategies",
-    subtitle: `Free guides and tutorials to help you understand your analytics, 
-optimize your content, and grow faster. No fluff, just actionable insights.`,
+    subtitle: `Free guides and tutorials to help you understand your analytics, optimize your content, and grow faster. No fluff, just actionable insights from years of studying what works on the platform.`,
   },
 
   intro: {
-    text: `Growing a YouTube channel takes more than just uploading videos. You need to understand 
-your analytics, learn from what's working (and what isn't), and consistently create content your 
-audience wants to watch. These guides break down the strategies that actually work—backed by data, 
-not guesswork.`,
+    text: `Growing a YouTube channel takes more than just uploading videos. You need to understand your analytics, learn from what's working (and what isn't), and consistently create content your audience wants to watch. These guides break down the strategies that actually work—backed by data, not guesswork. Whether you're trying to get your first 1,000 subscribers, improve your retention rates, or understand why the algorithm isn't recommending your videos, you'll find practical answers here. Every guide is written by creators who have analyzed thousands of channels and millions of data points to identify what separates growing channels from stagnant ones.`,
 
     highlights: [
-      "Written for creators at any level, from beginners to established channels",
-      "Practical advice you can apply to your next video",
-      "Updated regularly with the latest algorithm insights and best practices",
-      "Free forever—no signup required to read",
+      "Written for creators at any level, from beginners to established channels with millions of views",
+      "Practical advice you can apply to your next video, including step-by-step checklists",
+      "Updated regularly with the latest algorithm insights and platform changes for 2026",
+      "Free forever with no signup required—read everything without creating an account",
     ],
   },
 
@@ -31,57 +27,43 @@ not guesswork.`,
     {
       id: "analytics",
       title: "Analytics & Auditing",
-      description: `Your YouTube analytics tell a story—if you know how to read them. Learn to interpret 
-retention curves, understand traffic sources, and audit your channel for growth opportunities. 
-These skills are the foundation of any successful content strategy.`,
+      description: `Your YouTube analytics tell a story—if you know how to read them. Learn to interpret retention curves, understand where your traffic comes from, and audit your channel for growth opportunities. Many creators upload videos without ever checking their analytics, missing critical insights about why some videos perform and others don't. These skills are the foundation of any successful content strategy, helping you make informed decisions instead of guessing what might work.`,
       relatedSlugs: ["youtube-channel-audit", "youtube-retention-analysis", "youtube-analytics-tools"],
     },
     {
       id: "growth",
       title: "Subscriber Growth",
-      description: `Getting more subscribers isn't about tricks or shortcuts. It's about creating content 
-that makes viewers want to come back. Learn the proven strategies for converting casual viewers 
-into loyal subscribers and building an audience that actually watches your videos.`,
+      description: `Getting more subscribers isn't about tricks or shortcuts. It's about creating content that makes viewers want to come back for more. Subscribers are the lifeblood of a YouTube channel—they provide a baseline of views for every video you publish and signal to the algorithm that your content has ongoing value. Learn the proven strategies for converting casual viewers into loyal subscribers and building an audience that actually watches your videos when you upload them.`,
       relatedSlugs: ["how-to-get-more-subscribers", "free-youtube-subscribers", "how-to-see-your-subscribers-on-youtube"],
     },
     {
       id: "content",
       title: "Content Strategy & Ideas",
-      description: `The best YouTubers don't run out of ideas—they have systems for generating them. 
-Discover how to research your niche, find trending topics before they saturate, and develop 
-a content strategy that keeps your audience engaged video after video.`,
+      description: `The best YouTubers don't run out of ideas—they have systems for generating them consistently. Running out of video ideas is one of the main reasons creators burn out or abandon their channels. Discover how to research your niche effectively, find trending topics before they become saturated, and develop a content strategy that keeps your audience engaged video after video. Good ideas validated by data perform better than random uploads every time.`,
       relatedSlugs: ["youtube-video-ideas", "how-to-be-a-youtuber", "how-to-make-a-youtube-channel"],
     },
     {
       id: "seo",
       title: "SEO & Discovery",
-      description: `YouTube is the world's second-largest search engine. Learn how to optimize your titles, 
-descriptions, and tags so your videos get found. Understand how the algorithm decides which 
-videos to recommend and how to position your content for maximum reach.`,
+      description: `YouTube is the world's second-largest search engine, processing over 3 billion searches per month. Learn how to optimize your titles, descriptions, and tags so your videos get found by people actively searching for content like yours. Understand how the algorithm decides which videos to recommend in browse and suggested feeds, and learn how to position your content for maximum reach across all traffic sources.`,
       relatedSlugs: ["youtube-seo", "youtube-tag-generator", "youtube-algorithm"],
     },
     {
       id: "competitors",
       title: "Competitor Research",
-      description: `The fastest way to grow is to learn from channels that are already succeeding. 
-These guides show you how to analyze competitors, identify outlier videos, and adapt 
-winning strategies for your own content without copying.`,
+      description: `The fastest way to grow is to learn from channels that are already succeeding in your niche. Every video your competitors publish is an experiment—some work, most don't. By studying their successes and failures, you can identify proven topics, formats, and packaging strategies without spending months figuring them out yourself. These guides show you how to analyze competitors effectively, identify outlier videos that signal audience demand, and adapt winning strategies for your own content without copying.`,
       relatedSlugs: ["youtube-competitor-analysis", "find-similar-youtube-channels"],
     },
     {
       id: "monetization",
       title: "Monetization & Revenue",
-      description: `Turning your channel into a business requires understanding YouTube's monetization 
-requirements and revenue opportunities. Learn about Partner Program eligibility, RPM 
-optimization, and diversifying your income beyond AdSense.`,
+      description: `Turning your channel into a business requires understanding YouTube's monetization requirements and the full range of revenue opportunities available to creators. The Partner Program is just the starting point—successful creators diversify with sponsorships, affiliate marketing, memberships, and digital products. Learn about Partner Program eligibility thresholds, how to calculate your potential earnings, and strategies for maximizing your revenue per viewer.`,
       relatedSlugs: ["youtube-monetization-requirements", "how-much-does-youtube-pay", "youtube-shorts-monetization"],
     },
     {
       id: "formats",
       title: "Video Formats & Shorts",
-      description: `Different formats serve different purposes. Long-form builds watch time, Shorts 
-drive discovery, and live streams build community. Understand when to use each format 
-and how to optimize for the specific requirements of each.`,
+      description: `Different video formats serve different purposes in your content strategy. Long-form videos build watch time and deeper engagement, YouTube Shorts drive discovery and reach new audiences quickly, and live streams build real-time community connection. Understanding when to use each format and how to optimize for their specific requirements—from aspect ratios to pacing to optimal length—helps you build a well-rounded channel that grows from multiple traffic sources.`,
       relatedSlugs: ["youtube-shorts-length", "how-to-go-live-on-youtube", "how-to-promote-youtube-videos"],
     },
   ],

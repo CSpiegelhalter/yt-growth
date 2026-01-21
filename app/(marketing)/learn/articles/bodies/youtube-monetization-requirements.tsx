@@ -12,22 +12,7 @@ export function Body({ s }: BodyProps) {
     <>
       {/* Overview */}
       <section id="overview" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <line x1="12" y1="1" x2="12" y2="23" />
-              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-            </svg>
-          </span>
-          Monetization Overview
-        </h2>
+        <h2 className={s.sectionTitle}>Monetization Overview</h2>
         <p className={s.sectionText}>
           YouTube monetization means earning money from your videos. The primary
           path is the YouTube Partner Program (YPP), which lets you earn from
@@ -45,21 +30,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Requirements Checklist */}
       <section id="requirements-checklist" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-          </span>
-          YouTube Monetization Requirements Checklist
-        </h2>
+        <h2 className={s.sectionTitle}>YouTube Monetization Requirements Checklist</h2>
         <ul className={s.list}>
           <li>
             <strong>1,000 subscribers</strong> on your channel
@@ -93,23 +64,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Partner Program */}
       <section id="partner-program" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-            </svg>
-          </span>
-          YouTube Partner Program
-        </h2>
+        <h2 className={s.sectionTitle}>YouTube Partner Program</h2>
         <ul className={s.list}>
           <li>
             <strong>Ad revenue:</strong> Earn a share of advertising shown on
@@ -144,22 +99,7 @@ export function Body({ s }: BodyProps) {
 
       {/* How to Apply */}
       <section id="how-to-apply" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-            </svg>
-          </span>
-          How to Apply for Monetization
-        </h2>
+        <h2 className={s.sectionTitle}>How to Apply for Monetization</h2>
         <ol className={s.numberedList}>
           <li>
             Open YouTube Studio and click <strong>Earn</strong>
@@ -179,22 +119,7 @@ export function Body({ s }: BodyProps) {
 
       {/* While You Wait */}
       <section id="while-you-wait" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-          </span>
-          What to Do While You Wait
-        </h2>
+        <h2 className={s.sectionTitle}>What to Do While You Wait</h2>
         <h3 className={s.subheading}>For Subscribers</h3>
         <ul className={s.list}>
           <li>Create content that gives viewers a reason to come back</li>
@@ -221,22 +146,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Revenue Streams */}
       <section id="revenue-streams" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-              <line x1="1" y1="10" x2="23" y2="10" />
-            </svg>
-          </span>
-          Revenue Streams Explained
-        </h2>
+        <h2 className={s.sectionTitle}>Revenue Streams Explained</h2>
         <h3 className={s.subheading}>Ad Revenue</h3>
         <p className={s.sectionText}>
           YouTube takes 45%, you keep 55%. Earnings vary by niche and audience
@@ -258,22 +168,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Affiliate Basics */}
       <section id="affiliate-basics" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-              <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-            </svg>
-          </span>
-          Affiliate Marketing Basics
-        </h2>
+        <h2 className={s.sectionTitle}>Affiliate Marketing Basics</h2>
         <ol className={s.numberedList}>
           <li>Join affiliate programs related to your niche</li>
           <li>Mention products naturally in your content</li>
@@ -285,21 +180,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Realistic Expectations */}
       <section id="realistic-expectations" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M18 20V10M12 20V4M6 20v-6" />
-            </svg>
-          </span>
-          Realistic Expectations
-        </h2>
+        <h2 className={s.sectionTitle}>Realistic Expectations</h2>
         <ul className={s.list}>
           <li>
             <strong>Most channels earn little:</strong> Reaching 1,000
@@ -325,22 +206,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Mistakes */}
       <section id="mistakes" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M15 9l-6 6M9 9l6 6" />
-            </svg>
-          </span>
-          Monetization Mistakes to Avoid
-        </h2>
+        <h2 className={s.sectionTitle}>Monetization Mistakes to Avoid</h2>
         <ul className={s.list}>
           <li>
             <strong>Buying fake subscribers or views:</strong> Gets your channel

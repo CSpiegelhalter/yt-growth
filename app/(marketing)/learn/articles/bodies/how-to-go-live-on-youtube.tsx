@@ -11,15 +11,7 @@ export function Body({ s }: BodyProps) {
     <>
       {/* Overview */}
       <section id="overview" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <polygon points="10 8 16 12 10 16 10 8" />
-            </svg>
-          </span>
-          Live Streaming Overview
-        </h2>
+        <h2 className={s.sectionTitle}>Live Streaming Overview</h2>
         <p className={s.sectionText}>
           Learning how to go live on YouTube opens up new ways to connect with your
           audience in real-time. Live streams build community, drive engagement, and
@@ -33,14 +25,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Requirements */}
       <section id="requirements" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-          </span>
-          Requirements to Go Live
-        </h2>
+        <h2 className={s.sectionTitle}>Requirements to Go Live</h2>
         <h3 className={s.subheading}>Account Requirements</h3>
         <ul className={s.list}>
           <li><strong>Verified channel:</strong> You need a verified YouTube account</li>
@@ -66,16 +51,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Desktop Streaming */}
       <section id="desktop-streaming" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-              <line x1="8" y1="21" x2="16" y2="21" />
-              <line x1="12" y1="17" x2="12" y2="21" />
-            </svg>
-          </span>
-          Go Live from Desktop
-        </h2>
+        <h2 className={s.sectionTitle}>Go Live from Desktop</h2>
         <h3 className={s.subheading}>Webcam Streaming (Simplest)</h3>
         <ol className={s.numberedList}>
           <li>Go to <strong>YouTube Studio</strong></li>
@@ -98,15 +74,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Mobile Streaming */}
       <section id="mobile-streaming" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-              <line x1="12" y1="18" x2="12.01" y2="18" />
-            </svg>
-          </span>
-          Go Live from Mobile
-        </h2>
+        <h2 className={s.sectionTitle}>Go Live from Mobile</h2>
         <p className={s.sectionText}>
           Mobile streaming is great for on-the-go content, behind-the-scenes, and
           casual Q&amp;A sessions.
@@ -135,16 +103,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Streaming Software */}
       <section id="streaming-software" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
-          </span>
-          Streaming Software Options
-        </h2>
+        <h2 className={s.sectionTitle}>Streaming Software Options</h2>
         <p className={s.sectionText}>
           Streaming software gives you control over scenes, overlays, and production quality.
         </p>
@@ -164,15 +123,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Stream Settings */}
       <section id="stream-settings" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
-            </svg>
-          </span>
-          Optimal Stream Settings
-        </h2>
+        <h2 className={s.sectionTitle}>Optimal Stream Settings</h2>
         <h3 className={s.subheading}>Resolution and Bitrate</h3>
         <ul className={s.list}>
           <li><strong>720p at 30fps:</strong> 2,500-4,000 kbps. Works with most connections.</li>
@@ -196,14 +147,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Growing Live Audience */}
       <section id="growing-live-audience" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
-          </span>
-          Growing Your Live Audience
-        </h2>
+        <h2 className={s.sectionTitle}>Growing Your Live Audience</h2>
         <p className={s.sectionText}>
           Building a live streaming audience takes different strategies than growing
           through uploaded videos.
@@ -232,15 +176,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Monetization */}
       <section id="monetization" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="1" x2="12" y2="23" />
-              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-            </svg>
-          </span>
-          Live Stream Monetization
-        </h2>
+        <h2 className={s.sectionTitle}>Live Stream Monetization</h2>
         <p className={s.sectionText}>
           Live streams offer unique monetization opportunities beyond standard ads.
         </p>
@@ -266,15 +202,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Mistakes */}
       <section id="mistakes" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M15 9l-6 6M9 9l6 6" />
-            </svg>
-          </span>
-          Common Live Streaming Mistakes
-        </h2>
+        <h2 className={s.sectionTitle}>Common Live Streaming Mistakes</h2>
         <ul className={s.list}>
           <li><strong>Poor audio quality:</strong> Viewers tolerate bad video but leave for bad audio</li>
           <li><strong>No schedule:</strong> Streaming randomly means viewers cannot plan to attend</li>

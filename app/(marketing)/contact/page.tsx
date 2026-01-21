@@ -19,6 +19,46 @@ export const metadata: Metadata = {
   },
 };
 
+// Structured data for contact page
+const contactPageSchema = {
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  name: `Contact ${BRAND.name}`,
+  description: `Get in touch with the ${BRAND.name} support team for help with YouTube growth analytics, technical support, billing questions, and feature requests.`,
+  url: `${BRAND.url}/contact`,
+  mainEntity: {
+    "@type": "Organization",
+    name: BRAND.name,
+    url: BRAND.url,
+    email: BRAND.email,
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      email: BRAND.email,
+      availableLanguage: "English",
+    },
+  },
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: BRAND.url,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Contact",
+      item: `${BRAND.url}/contact`,
+    },
+  ],
+};
+
 export default async function ContactPage() {
   const session = await getServerSession(authOptions);
   const userEmail = session?.user?.email ?? null;
@@ -26,6 +66,14 @@ export default async function ContactPage() {
 
   return (
     <main className={s.page}>
+      {/* Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([contactPageSchema, breadcrumbSchema]),
+        }}
+      />
+
       <div className={s.pageInner}>
         {/* Page Header */}
         <header className={s.pageHeader}>

@@ -12,15 +12,7 @@ export function Body({ s }: BodyProps) {
     <>
       {/* Why Ideas Fail */}
       <section id="why-ideas-fail" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 16v-4M12 8h.01" />
-            </svg>
-          </span>
-          Why Most Video Ideas Fail
-        </h2>
+        <h2 className={s.sectionTitle}>Why Most Video Ideas Fail</h2>
         <p className={s.sectionText}>
           Most creators brainstorm ideas based on gut feeling or what they personally find interesting. The problem is that your interests do not always align with what your audience searches for or what the algorithm promotes.
         </p>
@@ -31,14 +23,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Ideas Checklist */}
       <section id="ideas-checklist" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-          </span>
-          15 Minute Ideas Checklist
-        </h2>
+        <h2 className={s.sectionTitle}>15 Minute Ideas Checklist</h2>
         <ol className={s.numberedList}>
           <li><strong>Check your own analytics (3 min):</strong> Top 5 videos in the last 90 days.</li>
           <li><strong>Scan 3 competitor channels (5 min):</strong> Sort by Popular. Note topics you haven&apos;t covered.</li>
@@ -50,14 +35,7 @@ export function Body({ s }: BodyProps) {
 
       {/* 5 Data-Driven Sources */}
       <section id="idea-sources" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-          </span>
-          5 Data Driven Sources for Video Ideas
-        </h2>
+        <h2 className={s.sectionTitle}>5 Data Driven Sources for Video Ideas</h2>
         <h3 className={s.subheading}>1. Your Own Best Performers</h3>
         <p className={s.sectionText}>Videos that got more views, subscribers, or engagement than your average.</p>
         <h3 className={s.subheading}>2. Competitor Outliers</h3>
@@ -72,14 +50,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Find Trending Videos */}
       <section id="find-trending" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          </span>
-          How to Find Trending Videos in Your Niche
-        </h2>
+        <h2 className={s.sectionTitle}>How to Find Trending Videos in Your Niche</h2>
         <ol className={s.numberedList}>
           <li>Start with seed topics</li>
           <li>Scan competitor uploads for outliers</li>
@@ -93,14 +64,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Keyword Research */}
       <section id="keyword-research" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </span>
-          YouTube Keyword Research for Beginners
-        </h2>
+        <h2 className={s.sectionTitle}>YouTube Keyword Research for Beginners</h2>
         <ol className={s.numberedList}>
           <li>Go to YouTube search (use incognito)</li>
           <li>Type a broad topic</li>
@@ -112,15 +76,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Shorts Ideas */}
       <section id="shorts-ideas" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="6" y="3" width="12" height="18" rx="2" />
-              <path d="M9 18h6" />
-            </svg>
-          </span>
-          YouTube Shorts Ideas
-        </h2>
+        <h2 className={s.sectionTitle}>YouTube Shorts Ideas</h2>
         <h3 className={s.subheading}>Educational Niches</h3>
         <ul className={s.list}>
           <li>One quick tip in 30 seconds</li>
@@ -137,14 +93,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Niche Ideas */}
       <section id="niche-ideas" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </span>
-          YouTube Niche Ideas
-        </h2>
+        <h2 className={s.sectionTitle}>YouTube Niche Ideas</h2>
         <ul className={s.list}>
           <li>Technology (reviews, tutorials, news)</li>
           <li>Gaming (gameplay, guides, commentary)</li>
@@ -161,14 +110,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Validation */}
       <section id="validation" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </span>
-          How to Validate an Idea Before You Create
-        </h2>
+        <h2 className={s.sectionTitle}>How to Validate an Idea Before You Create</h2>
         <ul className={s.list}>
           <li><strong>Search volume check:</strong> Does anyone search for this topic?</li>
           <li><strong>Competition assessment:</strong> Can you compete?</li>
@@ -187,16 +129,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Title and Thumbnail */}
       <section id="title-thumbnail" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path d="M21 15l-5-5L5 21" />
-            </svg>
-          </span>
-          YouTube Title Ideas and Thumbnail Ideas
-        </h2>
+        <h2 className={s.sectionTitle}>YouTube Title Ideas and Thumbnail Ideas</h2>
         <h3 className={s.subheading}>15 YouTube Title Templates</h3>
         <ol className={s.numberedList}>
           <li>How to [achieve result] in [timeframe]</li>
@@ -214,17 +147,7 @@ export function Body({ s }: BodyProps) {
 
       {/* 30 Day Content Plan */}
       <section id="content-plan" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-          </span>
-          30 Day Content Plan
-        </h2>
+        <h2 className={s.sectionTitle}>30 Day Content Plan</h2>
         <h3 className={s.subheading}>Week 1: Research and Brainstorm</h3>
         <ul className={s.list}>
           <li>Run the 15 minute ideas checklist 3 times</li>
@@ -253,15 +176,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Mistakes */}
       <section id="mistakes" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M15 9l-6 6M9 9l6 6" />
-            </svg>
-          </span>
-          Common Video Idea Mistakes
-        </h2>
+        <h2 className={s.sectionTitle}>Common Video Idea Mistakes</h2>
         <ul className={s.list}>
           <li><strong>Making videos only you care about.</strong> Validate demand first.</li>
           <li><strong>Copying competitor videos directly.</strong> Learn patterns, not executions.</li>

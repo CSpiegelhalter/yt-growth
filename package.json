@@ -34,7 +34,9 @@
     "test:db:reset": "bun scripts/test/reset-db.ts",
     "typecheck": "rm -rf .next/types && tsc --noEmit",
     "check:anchors": "bun scripts/check-anchor-text.ts",
-    "create:google-reviewer": "bun scripts/create-google-reviewer.ts"
+    "create:google-reviewer": "bun scripts/create-google-reviewer.ts",
+    "seo:ratio": "node scripts/text-html-ratio.mjs",
+    "seo:verify-links": "bun scripts/verify-internal-links.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

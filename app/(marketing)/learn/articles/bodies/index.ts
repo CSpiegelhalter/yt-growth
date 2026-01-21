@@ -33,7 +33,10 @@ import { Body as YouTubeChannelAuditBody } from "./youtube-channel-audit";
 import { Body as YouTubeCompetitorAnalysisBody } from "./youtube-competitor-analysis";
 import { Body as YouTubeMonetizationRequirementsBody } from "./youtube-monetization-requirements";
 import { Body as YouTubeRetentionAnalysisBody } from "./youtube-retention-analysis";
+import { Body as HowToIncreaseAudienceRetentionBody } from "./how-to-increase-audience-retention";
+import { Body as YouTubeThumbnailBestPracticesBody } from "./youtube-thumbnail-best-practices";
 import { Body as YouTubeVideoIdeasBody } from "./youtube-video-ideas";
+import { Body as FindVideoInspirationBody } from "./find-video-inspiration";
 import { Body as HowToGetMoreSubscribersBody } from "./how-to-get-more-subscribers";
 import { Body as HowToMakeAYouTubeChannelBody } from "./how-to-make-a-youtube-channel";
 
@@ -61,7 +64,10 @@ export const BODY_COMPONENTS: Record<string, React.ComponentType<BodyProps>> = {
   "youtube-competitor-analysis": YouTubeCompetitorAnalysisBody,
   "youtube-monetization-requirements": YouTubeMonetizationRequirementsBody,
   "youtube-retention-analysis": YouTubeRetentionAnalysisBody,
+  "how-to-increase-audience-retention": HowToIncreaseAudienceRetentionBody,
+  "youtube-thumbnail-best-practices": YouTubeThumbnailBestPracticesBody,
   "youtube-video-ideas": YouTubeVideoIdeasBody,
+  "find-video-inspiration": FindVideoInspirationBody,
   "how-to-get-more-subscribers": HowToGetMoreSubscribersBody,
   "how-to-make-a-youtube-channel": HowToMakeAYouTubeChannelBody,
 

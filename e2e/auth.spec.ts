@@ -128,10 +128,12 @@ test.describe("Authentication", () => {
     // Should sign out immediately and land on the homepage
     await expect(page).toHaveURL(/\/($|\?)/, { timeout: 15000 });
 
-    // Verify we're signed out by trying to access dashboard
+    // Verify we're signed out - dashboard shows logged-out preview (no redirect)
     await page.goto("/dashboard");
-    // Should redirect to login (or stay on dashboard with login prompt)
-    await expect(page).toHaveURL(/login|auth/, { timeout: 10000 });
+    // Should stay on /dashboard with the logged-out preview (200 OK, no redirect)
+    await expect(page).toHaveURL(/dashboard/);
+    // Should show login CTA on the logged-out preview
+    await expect(page.locator('a[href*="/auth/login?redirect=/dashboard"]')).toBeVisible();
   });
 
   test("invalid credentials shows error", async ({ page }) => {

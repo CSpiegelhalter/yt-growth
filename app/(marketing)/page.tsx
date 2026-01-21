@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BRAND, FEATURES } from "@/lib/brand";
 import { HOME_CONTENT } from "@/lib/content/home";
 import { HeroStaticCTAs } from "@/components/HeroStaticCTAs";
+import { LEARN_ARTICLES } from "./learn/articles";
 
 export const metadata: Metadata = {
   title: "YouTube Growth Analytics and Video Ideas for Creators",
@@ -249,6 +250,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Popular Learn Guides - Internal links for SEO */}
+      <PopularGuidesSection />
+
       {/* SEO Content Section - Additional text-rich content */}
       <section className="landingSeoSection">
         <h2 className="landingSeoTitle">{HOME_CONTENT.seoSection.title}</h2>
@@ -445,5 +449,60 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
       <h3 className="landingFaqQuestion">{question}</h3>
       <p className="landingFaqAnswer">{answer}</p>
     </div>
+  );
+}
+
+/**
+ * Popular Learn Guides - Internal links section for SEO
+ * Links to 10 high-value learn articles to improve internal linking
+ */
+const POPULAR_GUIDE_SLUGS = [
+  "youtube-channel-audit",
+  "youtube-retention-analysis",
+  "how-to-get-more-subscribers",
+  "youtube-video-ideas",
+  "youtube-competitor-analysis",
+  "youtube-seo",
+  "youtube-algorithm",
+  "youtube-monetization-requirements",
+  "how-to-make-a-youtube-channel",
+  "youtube-tag-generator",
+] as const;
+
+function PopularGuidesSection() {
+  const guides = POPULAR_GUIDE_SLUGS.map((slug) => {
+    const article = LEARN_ARTICLES[slug];
+    return {
+      slug,
+      title: article.shortTitle,
+      description: article.description.slice(0, 120) + "...",
+    };
+  });
+
+  return (
+    <section className="landingGuidesSection">
+      <h2 className="landingSectionTitle">Free YouTube Growth Guides</h2>
+      <p className="landingSectionSubtitle">
+        Learn proven strategies to grow your channel with our free guides
+      </p>
+      <div className="landingGuidesGrid">
+        {guides.map((guide) => (
+          <Link
+            key={guide.slug}
+            href={`/learn/${guide.slug}`}
+            className="landingGuideCard"
+          >
+            <h3 className="landingGuideTitle">{guide.title}</h3>
+            <p className="landingGuideDesc">{guide.description}</p>
+            <span className="landingGuideLink">Read guide →</span>
+          </Link>
+        ))}
+      </div>
+      <div className="landingGuidesMore">
+        <Link href="/learn" className="landingGuidesMoreLink">
+          View all YouTube growth guides →
+        </Link>
+      </div>
+    </section>
   );
 }

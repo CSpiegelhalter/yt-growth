@@ -38,6 +38,35 @@ test.describe("Smoke Tests - Public Pages", () => {
     await expect(page.locator('input[type="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
+
+  test("dashboard returns 200 OK for anonymous users (no redirect)", async ({
+    page,
+  }) => {
+    // Navigate to dashboard without being logged in
+    const response = await page.goto("/dashboard");
+
+    // Should return 200 OK, not a redirect (302/307)
+    expect(response?.status()).toBe(200);
+
+    // URL should remain /dashboard (no redirect to login)
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    // Should show the logged-out preview page with CTAs
+    await expect(
+      page.locator('a[href*="/auth/login?redirect=/dashboard"]')
+    ).toBeVisible();
+    await expect(
+      page.locator('a[href*="/auth/signup?redirect=/dashboard"]')
+    ).toBeVisible();
+
+    // Should have appropriate page title
+    await expect(page).toHaveTitle(/Dashboard.*ChannelBoost/i);
+
+    // Should NOT show any error states
+    await expect(
+      page.locator("text=/error|something went wrong/i")
+    ).not.toBeVisible();
+  });
 });
 
 test.describe("Smoke Tests - Protected Pages", () => {

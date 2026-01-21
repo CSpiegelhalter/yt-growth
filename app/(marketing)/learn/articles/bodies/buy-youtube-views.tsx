@@ -14,16 +14,7 @@ export function Body({ s }: BodyProps) {
     <>
       {/* Overview */}
       <section id="overview" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </span>
-          The Problem with Buying Views
-        </h2>
+        <h2 className={s.sectionTitle}>The Problem with Buying Views</h2>
         <p className={s.sectionText}>
           Services that let you buy YouTube views promise quick results, but they
           deliver the opposite. Purchased views come from bots or click farms that
@@ -45,16 +36,7 @@ export function Body({ s }: BodyProps) {
 
       {/* How View Services Work */}
       <section id="how-view-services-work" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </span>
-          How View Services Work
-        </h2>
+        <h2 className={s.sectionTitle}>How View Services Work</h2>
         <p className={s.sectionText}>
           Understanding the mechanics reveals why bought views are worthless.
         </p>
@@ -83,15 +65,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Policy Violations */}
       <section id="policy-violations" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-            </svg>
-          </span>
-          YouTube Policy Violations
-        </h2>
+        <h2 className={s.sectionTitle}>YouTube Policy Violations</h2>
         <p className={s.sectionText}>
           YouTube explicitly prohibits artificial view inflation in their policies.
         </p>
@@ -113,15 +87,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Damage to Metrics */}
       <section id="damage-to-metrics" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 3v18h18" />
-              <path d="M18 17V9M13 17V5M8 17v-3" />
-            </svg>
-          </span>
-          How It Damages Your Metrics
-        </h2>
+        <h2 className={s.sectionTitle}>How It Damages Your Metrics</h2>
         <p className={s.sectionText}>
           Fake views do not just fail to help—they actively harm your channel performance.
         </p>
@@ -150,15 +116,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Detection */}
       <section id="detection" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
-          </span>
-          How YouTube Detects Fake Views
-        </h2>
+        <h2 className={s.sectionTitle}>How YouTube Detects Fake Views</h2>
         <p className={s.sectionText}>
           YouTube invests heavily in filtering invalid traffic. Their detection
           systems catch most fake views.
@@ -182,15 +140,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Monetization Impact */}
       <section id="monetization-impact" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="1" x2="12" y2="23" />
-              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-            </svg>
-          </span>
-          Impact on Monetization
-        </h2>
+        <h2 className={s.sectionTitle}>Impact on Monetization</h2>
         <p className={s.sectionText}>
           If you are buying views hoping to monetize faster, it backfires.
         </p>
@@ -216,15 +166,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Legitimate Alternatives */}
       <section id="legitimate-alternatives" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-          </span>
-          Legitimate Alternatives
-        </h2>
+        <h2 className={s.sectionTitle}>Legitimate Alternatives</h2>
         <p className={s.sectionText}>
           Instead of buying fake views, invest in strategies that generate real,
           engaged viewership.

@@ -12,16 +12,7 @@ export function Body({ s }: BodyProps) {
     <>
       {/* What is a Channel Audit */}
       <section id="what-is-audit" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-              <circle cx="12" cy="17" r="0.5" fill="currentColor" />
-            </svg>
-          </span>
-          What is a YouTube Channel Audit?
-        </h2>
+        <h2 className={s.sectionTitle}>What is a YouTube Channel Audit?</h2>
         <p className={s.sectionText}>
           You&apos;re posting consistently, your content is good, but your views are flat and subscribers aren&apos;t growing. Sound familiar? A channel audit is how you figure out exactly what&apos;s going wrong and what to fix first.
         </p>
@@ -35,14 +26,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Key Metrics */}
       <section id="key-metrics" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          </span>
-          The 6 Metrics That Actually Matter
-        </h2>
+        <h2 className={s.sectionTitle}>The 6 Metrics That Actually Matter</h2>
         <p className={s.sectionText}>
           YouTube tracks dozens of numbers, but only a handful tell you what&apos;s actually happening with your channel. Focus on these six.
         </p>
@@ -58,15 +42,7 @@ export function Body({ s }: BodyProps) {
 
       {/* YouTube Studio Guide */}
       <section id="youtube-studio-guide" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <path d="M3 9h18M9 21V9" />
-            </svg>
-          </span>
-          Where to Find Each Metric in YouTube Studio
-        </h2>
+        <h2 className={s.sectionTitle}>Where to Find Each Metric in YouTube Studio</h2>
         <ol className={s.numberedList}>
           <li><strong>Open YouTube Studio:</strong> Go to studio.youtube.com</li>
           <li><strong>Impressions and CTR:</strong> Analytics → Reach tab</li>
@@ -79,15 +55,7 @@ export function Body({ s }: BodyProps) {
 
       {/* What Good Looks Like */}
       <section id="what-good-looks-like" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-          </span>
-          What Good Looks Like (Benchmarks)
-        </h2>
+        <h2 className={s.sectionTitle}>What Good Looks Like (Benchmarks)</h2>
         <div className={s.statsGrid}>
           <div className={s.stat}>
             <div className={s.statValue}>4-10%</div>
@@ -106,15 +74,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Diagnose Your Problem */}
       <section id="diagnose-problem" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
-          </span>
-          Diagnose Your Problem
-        </h2>
+        <h2 className={s.sectionTitle}>Diagnose Your Problem</h2>
         <ul className={s.list}>
           <li><strong>Low Impressions + Low CTR:</strong> Focus on CTR first with better thumbnails/titles.</li>
           <li><strong>High Impressions + Low CTR:</strong> Packaging problem. Test new thumbnail styles.</li>
@@ -126,14 +86,7 @@ export function Body({ s }: BodyProps) {
 
       {/* 15 Minute Checklist */}
       <section id="checklist" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-          </span>
-          15 Minute Channel Audit Checklist
-        </h2>
+        <h2 className={s.sectionTitle}>15 Minute Channel Audit Checklist</h2>
         <ol className={s.numberedList}>
           <li>Compare last 28 days vs previous 28 days</li>
           <li>Check impressions trend</li>
@@ -150,14 +103,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Common Issues */}
       <section id="common-issues" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </span>
-          Why Your YouTube Channel Isn&apos;t Growing
-        </h2>
+        <h2 className={s.sectionTitle}>Why Your YouTube Channel Isn&apos;t Growing</h2>
         <ul className={s.list}>
           <li><strong>Hooks are too slow:</strong> 40%+ retention drop in first 30 seconds. Fix: Start with the payoff.</li>
           <li><strong>Thumbnails don&apos;t stand out:</strong> Low CTR. Fix: High contrast, emotion on faces.</li>
@@ -171,14 +117,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Quick Wins */}
       <section id="quick-wins" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-            </svg>
-          </span>
-          Quick Wins You Can Fix Today
-        </h2>
+        <h2 className={s.sectionTitle}>Quick Wins You Can Fix Today</h2>
         <ul className={s.list}>
           <li><strong>Update 3 worst-performing thumbnails</strong></li>
           <li><strong>Add end screens to last 10 videos</strong></li>
@@ -193,15 +132,7 @@ export function Body({ s }: BodyProps) {
 
       {/* Common Mistakes */}
       <section id="common-mistakes" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M15 9l-6 6M9 9l6 6" />
-            </svg>
-          </span>
-          Mistakes Creators Make During Audits
-        </h2>
+        <h2 className={s.sectionTitle}>Mistakes Creators Make During Audits</h2>
         <ul className={s.list}>
           <li><strong>Looking at too short a time period.</strong> Look at 28 or 90 day trends.</li>
           <li><strong>Focusing on views instead of leading indicators.</strong> Focus on CTR, retention, impressions.</li>
@@ -213,15 +144,7 @@ export function Body({ s }: BodyProps) {
 
       {/* 30 Day Action Plan */}
       <section id="action-plan" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <path d="M16 2v4M8 2v4M3 10h18" />
-            </svg>
-          </span>
-          30 Day Action Plan
-        </h2>
+        <h2 className={s.sectionTitle}>30 Day Action Plan</h2>
         <div className={s.highlight}>
           <p><strong>Week 1: Fix your packaging.</strong> Update thumbnails on 5 lowest CTR videos. Rewrite titles on 5 most-viewed videos.</p>
         </div>
@@ -238,14 +161,7 @@ export function Body({ s }: BodyProps) {
 
       {/* YouTube SEO Basics */}
       <section id="youtube-seo" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </span>
-          YouTube SEO Basics
-        </h2>
+        <h2 className={s.sectionTitle}>YouTube SEO Basics</h2>
         <p className={s.sectionText}>
           YouTube SEO is different from website SEO. While keywords matter, YouTube heavily weights engagement signals.
         </p>
