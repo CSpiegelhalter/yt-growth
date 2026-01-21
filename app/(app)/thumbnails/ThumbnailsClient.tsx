@@ -66,6 +66,8 @@ type ThumbnailJobV2 = {
   jobId: string;
   status: "queued" | "running" | "succeeded" | "failed" | "canceled";
   style: StyleV2;
+  source?: "txt2img" | "img2img";
+  parentJobId?: string;
   outputImages: Array<{
     url: string;
     width?: number;
@@ -137,22 +139,23 @@ export default function ThumbnailsClient({ initialUser }: Props) {
 
   const [identity, setIdentity] = useState<IdentityStatus>({ status: "none", photoCount: 0 });
   const [uploading, setUploading] = useState(false);
-  const [training, setTraining] = useState(false);
   const [photoCount, setPhotoCount] = useState(0);
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null);
+  const [resettingModel, setResettingModel] = useState(false);
 
   const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<ThumbnailJobV2 | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [generationPhase, setGenerationPhase] = useState<"training" | "generating" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // ============================================
   // IDENTITY STATUS
   // ============================================
 
-  const identityReady =
-    identity.status !== "none" && identity.status === "ready";
+  const identityReady = identity.status === "ready";
+  const hasEnoughPhotos = photoCount >= 7;
 
   const loadIdentityStatus = useCallback(async () => {
     try {
@@ -203,6 +206,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
           if (pollRef.current) window.clearInterval(pollRef.current);
           pollRef.current = null;
           setGenerating(false);
+          setGenerationPhase(null);
         }
       } catch {
         // ignore transient errors
@@ -222,21 +226,46 @@ export default function ThumbnailsClient({ initialUser }: Props) {
     };
   }, [jobId, pollJob]);
 
-  const canUseIdentity = identityReady && (style === "subject" || style === "hold");
+  // Can use identity if user has 7+ photos AND is using a style that supports it
+  const canUseIdentity = hasEnoughPhotos && (style === "subject" || style === "hold");
 
+  // Auto-enable toggle when user first gets 7+ photos with a compatible style
   useEffect(() => {
+    if (canUseIdentity && !identityReady && photoCount >= 7) {
+      setIncludeIdentity(true);
+    }
     if (!canUseIdentity) setIncludeIdentity(false);
-  }, [canUseIdentity]);
+  }, [canUseIdentity, identityReady, photoCount]);
 
   const examples = useMemo(
     () => STYLE_CARDS.find((c) => c.id === style)?.examples ?? [],
     [style]
   );
 
+  // Helper to wait for identity training to complete
+  const waitForTraining = useCallback(async (): Promise<string | null> => {
+    const maxAttempts = 120; // 10 minutes max (5s intervals)
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      const res = await fetch("/api/identity/status");
+      if (!res.ok) continue;
+      const data = await res.json();
+      setIdentity(data);
+      if (data.status === "ready") {
+        return data.identityModelId;
+      }
+      if (data.status === "failed" || data.status === "canceled") {
+        throw new Error(data.errorMessage || "Identity training failed");
+      }
+    }
+    throw new Error("Training timed out. Please try again.");
+  }, []);
+
   const handleGenerate = useCallback(async () => {
     setError(null);
     setJob(null);
     setJobId(null);
+    setGenerationPhase(null);
 
     const p = prompt.trim();
     if (p.length < 3) {
@@ -245,7 +274,34 @@ export default function ThumbnailsClient({ initialUser }: Props) {
     }
 
     setGenerating(true);
+
+    let identityModelId: string | undefined;
+
     try {
+      // If user wants identity but model isn't ready, train first
+      if (includeIdentity && !identityReady) {
+        setGenerationPhase("training");
+        toast("Training your identity model first… this may take a few minutes.", "info");
+        
+        // Start training
+        const trainRes = await fetch("/api/identity/commit", { method: "POST" });
+        const trainData = await trainRes.json().catch(() => ({}));
+        
+        if (!trainRes.ok) {
+          // If already training, just wait for it
+          if (trainRes.status !== 409) {
+            throw new Error(trainData.message || "Failed to start training");
+          }
+        }
+        
+        // Wait for training to complete
+        identityModelId = (await waitForTraining()) ?? undefined;
+        toast("Identity trained! Now generating thumbnails…", "success");
+      } else if (includeIdentity && identity.status !== "none" && "identityModelId" in identity) {
+        identityModelId = identity.identityModelId;
+      }
+
+      setGenerationPhase("generating");
       const res = await fetch("/api/thumbnails/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -254,10 +310,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
           prompt: p,
           variants: 3,
           includeIdentity,
-          identityModelId:
-            includeIdentity && identity.status !== "none"
-              ? identity.identityModelId
-              : undefined,
+          identityModelId,
         }),
       });
 
@@ -269,19 +322,21 @@ export default function ThumbnailsClient({ initialUser }: Props) {
       toast("Generating variants…", "success");
     } catch (err) {
       setGenerating(false);
+      setGenerationPhase(null);
       setError(err instanceof Error ? err.message : "Generation failed");
-      toast("Generation failed", "error");
+      toast(err instanceof Error ? err.message : "Generation failed", "error");
     }
-  }, [prompt, style, includeIdentity, identity, toast]);
+  }, [prompt, style, includeIdentity, identityReady, identity, toast, waitForTraining]);
 
   const openEditor = useCallback(
-    async (baseImageUrl: string) => {
-      if (!jobId) return;
+    async (baseImageUrl: string, targetJobId?: string) => {
+      const jid = targetJobId ?? jobId;
+      if (!jid) return;
       try {
         const res = await fetch("/api/thumbnails/projects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ thumbnailJobId: jobId, baseImageUrl }),
+          body: JSON.stringify({ thumbnailJobId: jid, baseImageUrl }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -295,8 +350,47 @@ export default function ThumbnailsClient({ initialUser }: Props) {
     [jobId, router, toast]
   );
 
-  const handleUploadPhotos = useCallback(async (files: FileList | null) => {
+  const [regenerating, setRegenerating] = useState<string | null>(null);
+
+  const handleRegenerate = useCallback(
+    async (inputImageUrl: string, parentJobId: string) => {
+      if (regenerating) return;
+      setRegenerating(inputImageUrl);
+      try {
+        const res = await fetch("/api/thumbnails/generate-img2img", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            inputImageUrl,
+            parentJobId,
+            strength: 0.6, // Moderate variation
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to start variation");
+        }
+        // Start polling the new job
+        setJobId(data.jobId);
+        setGenerating(true);
+        setGenerationPhase("generating");
+        toast("Creating variation...", "success");
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Failed to create variation", "error");
+      } finally {
+        setRegenerating(null);
+      }
+    },
+    [regenerating, toast]
+  );
+
+  const handleUploadPhotos = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
     if (!files || files.length === 0) return;
+    
+    // Reset input immediately so user can re-select same files
+    const inputEl = e.target;
+    
     setUploading(true);
     try {
       const form = new FormData();
@@ -333,22 +427,10 @@ export default function ThumbnailsClient({ initialUser }: Props) {
       toast(err instanceof Error ? err.message : "Upload failed", "error");
     } finally {
       setUploading(false);
+      // Reset file input so user can select same files again
+      inputEl.value = "";
     }
   }, [toast, loadIdentityStatus]);
-
-  const handleStartTraining = useCallback(async () => {
-    setTraining(true);
-    try {
-      const res = await fetch("/api/identity/commit", { method: "POST" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || "Training failed to start");
-      toast("Training started. This can take a while.", "success");
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "Training failed", "error");
-    } finally {
-      setTraining(false);
-    }
-  }, [toast]);
 
   const handleDeletePhoto = useCallback(async (photoId: string) => {
     setDeletingPhotoId(photoId);
@@ -371,6 +453,36 @@ export default function ThumbnailsClient({ initialUser }: Props) {
       setDeletingPhotoId(null);
     }
   }, [toast]);
+
+  const handleResetModel = useCallback(async (deletePhotos = false) => {
+    if (!confirm(
+      deletePhotos
+        ? "This will delete your trained model AND all uploaded photos. You'll need to upload new photos to retrain. Continue?"
+        : "This will delete your trained model. Your photos will remain so you can retrain after making changes. Continue?"
+    )) {
+      return;
+    }
+
+    setResettingModel(true);
+    try {
+      const res = await fetch("/api/identity/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deletePhotos }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Failed to reset model");
+
+      toast(data.message || "Model reset successfully", "success");
+      
+      // Reload identity status to reflect changes
+      await loadIdentityStatus();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to reset", "error");
+    } finally {
+      setResettingModel(false);
+    }
+  }, [toast, loadIdentityStatus]);
 
   // ============================================
   // RENDER
@@ -464,46 +576,55 @@ export default function ThumbnailsClient({ initialUser }: Props) {
           </div>
 
           <div className={`${s.formGroup} ${s.fullWidth}`}>
-            <label className={s.label}>Identity model (optional)</label>
+            <label className={s.label}>Put yourself in the thumbnail (optional)</label>
             <div className={s.identityRow}>
               <div className={s.identityStatus}>
-                Status:{" "}
-                <strong>
-                  {identity.status === "none" ? "not trained" : identity.status}
-                </strong>
-                {" · "}
                 <span>{photoCount} photo{photoCount !== 1 ? "s" : ""} uploaded</span>
+                {photoCount < 7 && !identityReady && (
+                  <span className={s.identityHint}> — need {7 - photoCount} more to enable</span>
+                )}
+                {identityReady && (
+                  <span className={s.identityReady}> ✓ Ready to use</span>
+                )}
+                {identity.status === "training" && (
+                  <span className={s.identityTraining}> — Training in progress…</span>
+                )}
                 {identity.status !== "none" && identity.errorMessage && (
                   <span className={s.identityError}> — {identity.errorMessage}</span>
                 )}
               </div>
               <div className={s.identityActions}>
+                {identityReady && (
+                  <button
+                    type="button"
+                    className={s.resetBtn}
+                    onClick={() => void handleResetModel(false)}
+                    disabled={resettingModel || generating}
+                    title="Reset your identity model to retrain with new photos"
+                  >
+                    {resettingModel ? "Resetting…" : "Reset Model"}
+                  </button>
+                )}
                 <label className={s.uploadBtn}>
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     multiple
-                    onChange={(e) => void handleUploadPhotos(e.target.files)}
-                    disabled={uploading}
+                    onChange={(e) => void handleUploadPhotos(e)}
+                    disabled={uploading || generating || identityReady}
                     style={{ display: "none" }}
                   />
                   {uploading ? "Uploading…" : "Upload photos"}
                 </label>
-                <button
-                  type="button"
-                  className={s.secondaryBtn}
-                  onClick={() => void handleStartTraining()}
-                  disabled={training || identity.status === "training" || photoCount < 7}
-                  title={photoCount < 7 ? `Need at least 7 photos (have ${photoCount})` : undefined}
-                >
-                  {identity.status === "training"
-                    ? "Training…"
-                    : training
-                    ? "Starting…"
-                    : `Train identity (${photoCount}/7 photos)`}
-                </button>
               </div>
             </div>
+            
+            {/* Help text when model is ready */}
+            {identityReady && (
+              <p className={s.identityHelp}>
+                Your identity model is trained and ready. To update your photos, click "Reset Model" first.
+              </p>
+            )}
 
             {/* Uploaded Photos Grid */}
             {photos.length > 0 && (
@@ -549,29 +670,34 @@ export default function ThumbnailsClient({ initialUser }: Props) {
                 disabled={!canUseIdentity || generating}
                 title={
                   canUseIdentity
-                    ? "Include your identity model"
-                    : "Train your identity model (and use SUBJECT/HOLD styles) to enable"
+                    ? "Include your face in the thumbnail"
+                    : `Upload ${7 - photoCount} more photo${7 - photoCount !== 1 ? "s" : ""} to enable (works with Subject/Hold styles)`
                 }
               >
                 <span className={s.toggleKnob} />
               </button>
               <span className={s.toggleLabel}>
-                Use my identity model (SUBJECT / HOLD)
+                Include my face
+                {!identityReady && hasEnoughPhotos && (
+                  <span className={s.toggleHint}> (will train automatically)</span>
+                )}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Generate Button */}
+        {/* Generate Button (Desktop) */}
         <button
-          className={s.generateBtn}
+          className={`${s.generateBtn} ${s.desktopOnlyGenerateBtn}`}
           onClick={handleGenerate}
           disabled={generating || prompt.trim().length < 3}
         >
           {generating ? (
             <>
               <span className={s.spinner} />
-              Generating...
+              {generationPhase === "training" 
+                ? "Training identity…" 
+                : "Generating…"}
             </>
           ) : (
             <>
@@ -585,7 +711,43 @@ export default function ThumbnailsClient({ initialUser }: Props) {
               >
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
               </svg>
-              Generate 3 Variants
+              {includeIdentity && !identityReady 
+                ? "Train & Generate" 
+                : "Generate 3 Variants"}
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Mobile-pinned Generate Button */}
+      <div className={s.mobileGenerateWrapper}>
+        <button
+          className={s.mobileGenerateBtn}
+          onClick={handleGenerate}
+          disabled={generating || prompt.trim().length < 3}
+        >
+          {generating ? (
+            <>
+              <span className={s.spinner} />
+              {generationPhase === "training" 
+                ? "Training…" 
+                : "Generating…"}
+            </>
+          ) : (
+            <>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+              </svg>
+              {includeIdentity && !identityReady 
+                ? "Train & Generate" 
+                : "Generate"}
             </>
           )}
         </button>
@@ -629,13 +791,27 @@ export default function ThumbnailsClient({ initialUser }: Props) {
           </div>
 
           <div className={s.variantsGrid}>
-            {job.outputImages.map((img) => (
+            {job.outputImages.map((img, idx) => (
               <div key={img.url} className={s.variantCard}>
-                <div className={s.variantThumb}>
+                <div
+                  className={s.variantThumb}
+                  onClick={() => void openEditor(img.url)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      void openEditor(img.url);
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                >
+                  {job.source === "img2img" && (
+                    <span className={s.variantBadge}>Variant</span>
+                  )}
                   {img.url ? (
                     <Image
                       src={img.url}
-                      alt="Generated thumbnail"
+                      alt="Generated thumbnail - click to edit"
                       fill
                       sizes="(max-width: 768px) 100vw, 33vw"
                       style={{ objectFit: "cover" }}
@@ -646,22 +822,36 @@ export default function ThumbnailsClient({ initialUser }: Props) {
                   {/* Action buttons overlay */}
                   <div className={s.variantActions}>
                     <button
-                      className={s.editOverlayBtn}
-                      onClick={() => void openEditor(img.url)}
-                      title="Open editor"
+                      className={s.regenerateBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleRegenerate(img.url, job.jobId);
+                      }}
+                      disabled={regenerating === img.url}
+                      title="Create variation"
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                      Open editor
+                      {regenerating === img.url ? (
+                        <>
+                          <span className={s.spinner} />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path d="M23 4v6h-6" />
+                            <path d="M1 20v-6h6" />
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                          </svg>
+                          Re-generate
+                        </>
+                      )}
                     </button>
                     <button
                       className={s.downloadBtn}
@@ -673,7 +863,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement("a");
                           a.href = url;
-                          a.download = `thumbnail-${job.jobId}.png`;
+                          a.download = `thumbnail-${job.jobId}-${idx + 1}.png`;
                           document.body.appendChild(a);
                           a.click();
                           document.body.removeChild(a);
@@ -702,7 +892,9 @@ export default function ThumbnailsClient({ initialUser }: Props) {
                   </div>
                 </div>
                 <div className={s.variantInfo}>
-                  <p className={s.variantHook}>Text-free base image</p>
+                  <p className={s.variantHook}>
+                    {job.source === "img2img" ? "Image variation" : "Text-free base"}
+                  </p>
                 </div>
               </div>
             ))}

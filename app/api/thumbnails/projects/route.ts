@@ -27,7 +27,13 @@ export const POST = createApiRoute(
 
         const job = await prisma.thumbnailJob.findUnique({
           where: { id: thumbnailJobId },
-          select: { id: true, userId: true, status: true, outputImages: true },
+          select: {
+            id: true,
+            userId: true,
+            status: true,
+            outputImages: true,
+            Predictions: { select: { outputImages: true } },
+          },
         });
         if (!job || job.userId !== userId) {
           throw new ApiError({
@@ -44,11 +50,24 @@ export const POST = createApiRoute(
           });
         }
 
+        // Collect all valid output URLs (from job.outputImages or predictions as fallback)
+        const allOutputUrls = new Set<string>();
+        if (Array.isArray(job.outputImages)) {
+          for (const img of job.outputImages) {
+            if ((img as any)?.url) allOutputUrls.add((img as any).url);
+          }
+        }
+        // Fallback: also check predictions (for jobs that completed before fix)
+        for (const pred of job.Predictions) {
+          if (Array.isArray(pred.outputImages)) {
+            for (const img of pred.outputImages) {
+              if ((img as any)?.url) allOutputUrls.add((img as any).url);
+            }
+          }
+        }
+
         // Ensure baseImageUrl is one of the job outputs (defense-in-depth)
-        const allowed = Array.isArray(job.outputImages)
-          ? job.outputImages.some((x: any) => x?.url === baseImageUrl)
-          : false;
-        if (!allowed) {
+        if (!allOutputUrls.has(baseImageUrl)) {
           throw new ApiError({
             code: "FORBIDDEN",
             status: 403,

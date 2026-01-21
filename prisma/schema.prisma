@@ -22,8 +22,8 @@ model User {
   Plan              Plan[]
   UserModel         UserModel?
   UserTrainingAsset UserTrainingAsset[]
-  ThumbnailJob      ThumbnailJob[]
-  ThumbnailProject  ThumbnailProject[]
+  ThumbnailJobs     ThumbnailJob[]
+  ThumbnailProjects ThumbnailProject[]
 
   @@index([email], map: "idx_user_email")
 }
@@ -475,69 +475,17 @@ model UserBadge {
 }
 
 // ============================================
-// THUMBNAIL GENERATOR - Jobs, Assets, Variants
-// ============================================
-
-model LegacyThumbnailJob {
-  id        String                   @id @default(uuid()) @db.Uuid
-  userId    Int
-  channelId Int? // Optional: which channel this is for
-  inputJson String                   @db.Text // ThumbnailJobInput (title, topic, audience, style, etc.)
-  status    String                   @default("queued") @db.VarChar(32) // queued, planning, generating, rendering, completed, failed
-  progress  Int                      @default(0) // 0-100
-  phase     String?                  @db.VarChar(64) // Current phase description
-  error     String?                  @db.Text // Error message if failed
-  createdAt DateTime                 @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime                 @default(now()) @updatedAt @db.Timestamptz(6)
-  Variants  LegacyThumbnailVariant[]
-
-  @@index([userId], map: "idx_legacy_thumbnail_job_user")
-  @@index([channelId], map: "idx_legacy_thumbnail_job_channel")
-  @@index([status], map: "idx_legacy_thumbnail_job_status")
-  @@index([createdAt(sort: Desc)], map: "idx_legacy_thumbnail_job_created")
-  @@map("ThumbnailJob")
-}
-
-model LegacyThumbnailAsset {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     Int
-  mime       String   @db.VarChar(64) // image/png, image/jpeg, image/webp
-  width      Int?
-  height     Int?
-  sizeBytes  Int?
-  storageKey String   @db.VarChar(512) // Storage key/path
-  createdAt  DateTime @default(now()) @db.Timestamptz(6)
-
-  @@index([userId], map: "idx_legacy_thumbnail_asset_user")
-  @@index([createdAt(sort: Desc)], map: "idx_legacy_thumbnail_asset_created")
-}
-
-model LegacyThumbnailVariant {
-  id            String             @id @default(uuid()) @db.Uuid
-  jobId         String             @db.Uuid
-  planJson      String             @db.Text // ThumbnailPlan from LLM
-  specJson      String             @db.Text // ThumbnailSpec (plan + current edits)
-  baseImageKey  String?            @db.VarChar(512) // Storage key for base image
-  finalImageKey String?            @db.VarChar(512) // Storage key for final rendered image
-  createdAt     DateTime           @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
-  Job           LegacyThumbnailJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  @@index([jobId], map: "idx_legacy_thumbnail_variant_job")
-  @@index([createdAt(sort: Desc)], map: "idx_legacy_thumbnail_variant_created")
-  @@map("ThumbnailVariant")
-}
-
-// ============================================
-// THUMBNAIL WORKFLOW V2 - Identity + Generation + Editor Projects
+// THUMBNAIL WORKFLOW - Identity + Generation + Editor Projects
 // ============================================
 
 enum UserModelStatus {
+  none
   pending
   training
   ready
   failed
   canceled
+  deleting
 }
 
 enum ThumbnailStyleV2 {
@@ -555,18 +503,26 @@ enum ThumbnailJobStatusV2 {
   canceled
 }
 
+enum ThumbnailSourceV2 {
+  txt2img
+  img2img
+}
+
 model UserModel {
   id                    String          @id @default(uuid()) @db.Uuid
   userId                Int             @unique
   replicateModelOwner   String          @db.VarChar(128)
   replicateModelName    String          @db.VarChar(255)
-  replicateModelVersion String?         @db.VarChar(128)
+  replicateModelVersion String?         @db.VarChar(256)
+  loraWeightsUrl        String?         @db.Text
   triggerWord           String          @db.VarChar(16)
   status                UserModelStatus @default(pending)
   trainingId            String?         @db.VarChar(128)
   trainingStartedAt     DateTime?       @db.Timestamptz(6)
   trainingCompletedAt   DateTime?       @db.Timestamptz(6)
   errorMessage          String?         @db.Text
+  datasetHash           String?         @db.VarChar(64) // SHA256 of sorted training asset keys
+  needsRetrain          Boolean         @default(false) // Coalescing flag for rapid uploads/deletes
   createdAt             DateTime        @default(now()) @db.Timestamptz(6)
   updatedAt             DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
 
@@ -598,24 +554,30 @@ model UserTrainingAsset {
 model ThumbnailJob {
   id                     String               @id @default(uuid()) @db.Uuid
   userId                 Int
+  source                 ThumbnailSourceV2    @default(txt2img)
   style                  ThumbnailStyleV2
-  styleModelVersionId    String               @db.VarChar(128)
-  identityModelVersionId String?              @db.VarChar(128)
+  styleModelVersionId    String               @db.VarChar(256)
+  identityModelVersionId String?              @db.VarChar(256)
   userPrompt             String               @db.Text
   llmPrompt              String               @db.Text
   negativePrompt         String?              @db.Text
   replicatePredictionId  String?              @db.VarChar(128)
+  parentJobId            String?              @db.Uuid // For img2img variants
+  inputImageUrl          String?              @db.Text // Source image URL for img2img
   status                 ThumbnailJobStatusV2 @default(queued)
   outputImages           Json                 @default("[]")
   createdAt              DateTime             @default(now()) @db.Timestamptz(6)
   updatedAt              DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
 
   User        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ParentJob   ThumbnailJob?            @relation("ThumbnailJobVariants", fields: [parentJobId], references: [id], onDelete: SetNull)
+  ChildJobs   ThumbnailJob[]           @relation("ThumbnailJobVariants")
   Predictions ThumbnailJobPrediction[]
   Projects    ThumbnailProject[]
 
   @@index([userId, createdAt(sort: Desc)], map: "idx_thumbnail_job_v2_user_created")
   @@index([userId, status], map: "idx_thumbnail_job_v2_user_status")
+  @@index([parentJobId], map: "idx_thumbnail_job_v2_parent")
   @@map("ThumbnailJobV2")
 }
 

@@ -50,6 +50,8 @@ const nextConfig = {
       // YouTube thumbnails + channel avatars (hosts can vary by region/CDN)
       { protocol: "https", hostname: "**.ytimg.com", pathname: "/**" },
       { protocol: "https", hostname: "**.ggpht.com", pathname: "/**" },
+      // Replicate AI-generated images
+      { protocol: "https", hostname: "replicate.delivery", pathname: "/**" },
     ],
   },
   experimental: {

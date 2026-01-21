@@ -63,12 +63,14 @@ export async function buildThumbnailPrompt(
   const styleTrigger = input.styleTriggerWord.trim();
   const identityTrigger = input.identityTriggerWord?.trim();
 
+  // When identity is included, heavily emphasize the trigger word for maximum resemblance
+  // Repeat trigger word 3 times and add face-focused descriptors
   const prefix = identityTrigger
-    ? `${styleTrigger} ${identityTrigger} YouTube thumbnail, 16:9, 1280x720,`
-    : `${styleTrigger} YouTube thumbnail, 16:9, 1280x720,`;
+    ? `${identityTrigger} person, portrait of ${identityTrigger}, ${identityTrigger} face, ${styleTrigger} YouTube thumbnail, 16:9, 1280x720, professional photo, highly detailed face, facial features of ${identityTrigger}, same person as ${identityTrigger}, correct human anatomy, natural proportions,`
+    : `${styleTrigger} YouTube thumbnail, 16:9, 1280x720, professional photo, correct human anatomy, natural proportions,`;
 
   const mustNoText =
-    "no text, no letters, no numbers, no watermark, no logos, no brand names";
+    "absolutely no text, no words, no letters, no numbers, no writing, no watermark, no logos, no brand names, no signage, clean image without any typography";
 
   const suffix = input.style === "compare" ? "COMPARE" : "";
 

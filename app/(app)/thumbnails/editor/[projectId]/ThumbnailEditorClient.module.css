@@ -1,12 +1,15 @@
+/* Mobile-first editor layout */
 .page {
   max-width: min(1400px, 100%);
   margin: 0 auto;
   padding: var(--page-padding-mobile);
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0));
 }
 
 @media (min-width: 768px) {
   .page {
     padding: var(--page-padding-desktop);
+    padding-bottom: var(--page-padding-desktop);
   }
 }
 
@@ -24,10 +27,168 @@
   margin: 0;
 }
 
+/* Desktop toolbar - hidden on mobile */
 .toolbar {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .toolbar {
+    display: flex;
+  }
+}
+
+/* Mobile Bottom Toolbar */
+.mobileToolbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+@media (min-width: 768px) {
+  .mobileToolbar {
+    display: none;
+  }
+}
+
+.mobileToolbarRow {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  gap: var(--space-1);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobileToolbarRow::-webkit-scrollbar {
+  display: none;
+}
+
+.mobileToolBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 48px;
+  padding: var(--space-2);
+  font-size: 10px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.mobileToolBtn:hover,
+.mobileToolBtn:active {
+  color: var(--text);
+  background: var(--surface-alt);
+}
+
+.mobileToolBtn.active {
+  color: var(--primary);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.mobileToolBtn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.mobileToolBtnPrimary {
+  color: var(--primary);
+  font-weight: var(--font-medium);
+}
+
+/* Mobile bottom sheet for tool settings */
+.bottomSheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--surface);
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25);
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.bottomSheet.open {
+  transform: translateY(0);
+}
+
+.bottomSheetHandle {
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  margin: var(--space-3) auto var(--space-2);
+}
+
+.bottomSheetHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.bottomSheetTitle {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text);
+  margin: 0;
+}
+
+.bottomSheetClose {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.bottomSheetContent {
+  padding: var(--space-4);
+}
+
+.bottomSheetOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.bottomSheetOverlay.visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .btn {
@@ -82,6 +243,50 @@
   border-radius: var(--radius-lg);
   padding: var(--space-3);
   overflow: hidden;
+  position: relative;
+  min-height: 200px;
+}
+
+.canvasLoading,
+.canvasError {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  z-index: 5;
+}
+
+.canvasError {
+  color: var(--danger);
+}
+
+.canvasError small {
+  font-size: var(--text-xs);
+  word-break: break-all;
+  max-width: 80%;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.canvasSpinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .sideCard {

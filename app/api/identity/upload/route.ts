@@ -7,6 +7,7 @@ import { withRateLimit } from "@/lib/api/withRateLimit";
 import { ApiError } from "@/lib/api/errors";
 import { prisma } from "@/prisma";
 import { getStorage, mimeToExt } from "@/lib/storage";
+import { handleDatasetChange, MIN_TRAINING_PHOTOS } from "@/lib/identity/modelService";
 
 export const runtime = "nodejs";
 
@@ -152,6 +153,7 @@ export const POST = createApiRoute(
 
           // Create DB row first (dedupe by userId+sha256)
           let asset: { id: string };
+          let isExistingPhoto = false;
           try {
             asset = await prisma.userTrainingAsset
               .create({
@@ -166,16 +168,34 @@ export const POST = createApiRoute(
                 select: { id: true },
               })
               .catch(async (err) => {
-                // Unique constraint: already uploaded
+                // Unique constraint: already uploaded - find existing and reuse
                 const existing = await prisma.userTrainingAsset.findFirst({
                   where: { userId, sha256 },
-                  select: { id: true },
+                  select: { id: true, identityModelId: true, s3KeyOriginal: true },
                 });
-                if (existing) return existing;
+                if (existing) {
+                  isExistingPhoto = true;
+                  // If the photo was committed to a previous model, uncommit it
+                  // so it can be used for new training
+                  if (existing.identityModelId !== null) {
+                    await prisma.userTrainingAsset.update({
+                      where: { id: existing.id },
+                      data: { identityModelId: null },
+                    });
+                  }
+                  return { id: existing.id };
+                }
                 throw err;
               });
           } catch {
             results.push({ filename, status: "error", error: "Failed to save to database" });
+            continue;
+          }
+          
+          // Skip storage upload if photo already exists (it's already stored)
+          if (isExistingPhoto) {
+            results.push({ filename, status: "ok", id: asset.id, width, height });
+            successCount++;
             continue;
           }
 
@@ -185,6 +205,8 @@ export const POST = createApiRoute(
           try {
             await storage.put(key, bytes, { contentType: file.type });
           } catch {
+            // Clean up orphan DB row since storage failed
+            await prisma.userTrainingAsset.delete({ where: { id: asset.id } }).catch(() => {});
             results.push({ filename, status: "error", error: "Failed to upload to storage" });
             continue;
           }
@@ -206,6 +228,13 @@ export const POST = createApiRoute(
 
         const hasErrors = results.some((r) => r.status === "error");
 
+        // Handle dataset change (invalidation + coalescing)
+        let datasetAction: "none" | "invalidated" | "coalesced" | "training_started" = "none";
+        if (successCount > 0) {
+          const changeResult = await handleDatasetChange(userId);
+          datasetAction = changeResult.action;
+        }
+
         return NextResponse.json({
           results,
           counts: {
@@ -213,9 +242,10 @@ export const POST = createApiRoute(
             uncommitted,
             uploaded: successCount,
             failed: results.length - successCount,
-            minRequiredToTrain: 7,
+            minRequiredToTrain: MIN_TRAINING_PHOTOS,
             maxAllowed: MAX_ASSETS_PER_USER,
           },
+          datasetAction,
           // If some succeeded and some failed, return 200 with partial success info
           // Frontend will show which failed
           hasErrors,

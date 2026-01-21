@@ -4,6 +4,7 @@ import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
 import { ApiError } from "@/lib/api/errors";
 import { prisma } from "@/prisma";
 import { getStorage } from "@/lib/storage";
+import { handleDatasetChange, MIN_TRAINING_PHOTOS } from "@/lib/identity/modelService";
 
 export const runtime = "nodejs";
 
@@ -53,14 +54,8 @@ export const DELETE = createApiRoute(
         });
       }
 
-      // Don't allow deleting photos that are part of a trained model
-      if (asset.identityModelId) {
-        throw new ApiError({
-          code: "VALIDATION_ERROR",
-          status: 400,
-          message: "Cannot delete photos that are part of a trained model",
-        });
-      }
+      // If photo is part of a trained model, it will trigger invalidation
+      // This is now allowed - the model will be invalidated and can be retrained
 
       // Delete from storage
       const storage = getStorage();
@@ -76,18 +71,30 @@ export const DELETE = createApiRoute(
         // Continue to delete from DB even if storage delete fails
       }
 
+      // If asset was committed to a model, unlink it first
+      if (asset.identityModelId) {
+        await prisma.userTrainingAsset.update({
+          where: { id },
+          data: { identityModelId: null },
+        });
+      }
+
       // Delete from database
       await prisma.userTrainingAsset.delete({ where: { id } });
 
       // Get updated counts
       const total = await prisma.userTrainingAsset.count({ where: { userId } });
 
+      // Handle dataset change (invalidation + coalescing)
+      const changeResult = await handleDatasetChange(userId);
+
       return NextResponse.json({
         deleted: true,
         counts: {
           total,
-          minRequiredToTrain: 7,
+          minRequiredToTrain: MIN_TRAINING_PHOTOS,
         },
+        datasetAction: changeResult.action,
       });
     }
   )

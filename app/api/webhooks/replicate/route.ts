@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma";
 import { verifyReplicateWebhook } from "@/lib/replicate/webhook";
+import { handleTrainingComplete } from "@/lib/identity/modelService";
 import { createLogger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -66,15 +67,42 @@ export async function POST(req: NextRequest) {
   });
   if (model) {
     if (status === "succeeded") {
+      // Log the full output to understand what the trainer returns
+      log.info("Training succeeded, examining output", {
+        modelId: model.id,
+        trainingId: id,
+        outputKeys: payload.output ? Object.keys(payload.output) : [],
+        output: payload.output,
+      });
+      
       const versionId = getOutputVersionId(payload.output);
-      await prisma.userModel.update({
-        where: { id: model.id },
-        data: {
-          status: "ready",
-          replicateModelVersion: versionId ?? model.replicateModelVersion,
-          trainingCompletedAt: new Date(),
-          errorMessage: null,
-        },
+      
+      // Try multiple possible field names for weights URL
+      const weightsUrl = 
+        payload.output?.weights ??
+        payload.output?.lora_weights ??
+        payload.output?.lora ??
+        payload.output?.model_weights ??
+        payload.output?.safetensors ??
+        null;
+      
+      log.info("Extracted training output", {
+        modelId: model.id,
+        versionId,
+        weightsUrl,
+        hasWeights: !!weightsUrl,
+      });
+      
+      // Use the model service for coalescing logic
+      const result = await handleTrainingComplete(model.id, {
+        version: versionId,
+        weightsUrl,
+      });
+      
+      log.info("Training webhook processed", {
+        modelId: model.id,
+        action: result.action,
+        needsRetrain: result.needsRetrain,
       });
     } else if (status === "failed") {
       await prisma.userModel.update({

@@ -200,6 +200,26 @@
   color: var(--danger);
 }
 
+.identityHint {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.identityReady {
+  color: var(--success);
+  font-weight: var(--font-medium);
+}
+
+.identityTraining {
+  color: var(--primary);
+}
+
+.toggleHint {
+  color: var(--text-muted);
+  font-weight: var(--font-normal);
+  font-size: var(--text-sm);
+}
+
 .identityActions {
   display: flex;
   flex-wrap: wrap;
@@ -241,8 +261,45 @@
   cursor: pointer;
 }
 
-.uploadBtn:hover {
+.uploadBtn:hover:not(:disabled) {
   border-color: var(--border-hover);
+}
+
+.uploadBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.resetBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--warning, #f59e0b);
+  background: var(--surface);
+  border: 1px solid var(--warning, #f59e0b);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.resetBtn:hover:not(:disabled) {
+  background: var(--warning, #f59e0b);
+  color: #fff;
+}
+
+.resetBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.identityHelp {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 .secondaryBtn {
@@ -1219,4 +1276,159 @@
 
 .deletePhotoBtn:hover {
   background: rgba(239, 68, 68, 0.3);
+}
+
+/* ================================
+   Mobile-Pinned Generate Button
+   ================================ */
+
+.mobileGenerateWrapper {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0));
+  background: linear-gradient(to top, var(--bg), transparent);
+  backdrop-filter: blur(8px);
+}
+
+@media (min-width: 768px) {
+  .mobileGenerateWrapper {
+    display: none;
+  }
+}
+
+.mobileGenerateBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-4);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--primary-contrast);
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background var(--transition-base);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.mobileGenerateBtn:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.mobileGenerateBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Desktop generate button visibility */
+.desktopOnlyGenerateBtn {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .desktopOnlyGenerateBtn {
+    display: flex;
+  }
+}
+
+/* ================================
+   Re-generate Button (img2img)
+   ================================ */
+
+.regenerateBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: #fff;
+  background: rgba(168, 85, 247, 0.9);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: all 0.2s ease;
+}
+
+.variantCard:hover .regenerateBtn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.regenerateBtn:hover {
+  background: rgba(168, 85, 247, 1);
+  border-color: rgba(168, 85, 247, 0.8);
+}
+
+.regenerateBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Make buttons always visible on touch devices */
+@media (hover: none) {
+  .variantCard .editOverlayBtn,
+  .variantCard .downloadBtn,
+  .variantCard .regenerateBtn {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ================================
+   Variant Badge for img2img
+   ================================ */
+
+.variantBadge {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: #fff;
+  background: rgba(168, 85, 247, 0.9);
+  border-radius: var(--radius-full);
+  z-index: 5;
+}
+
+/* ================================
+   Gallery history section
+   ================================ */
+
+.historySection {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+}
+
+.historyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.historyTitle {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text);
+  margin: 0;
+}
+
+/* Add safe area padding for content above fixed button */
+@media (max-width: 767px) {
+  .page {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0));
+  }
 }

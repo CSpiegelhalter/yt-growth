@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Stage,
   Layer,
@@ -96,13 +96,38 @@ function objLabel(o: AnyObj): string {
 
 function useHtmlImage(src: string) {
   const [img, setImg] = useState<HTMLImageElement | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  
   useEffect(() => {
+    if (!src) {
+      setError("No image URL provided");
+      return;
+    }
+    setImg(null);
+    setError(null);
+    
     const i = new window.Image();
     i.crossOrigin = "anonymous";
-    i.onload = () => setImg(i);
+    i.onload = () => {
+      setImg(i);
+      setError(null);
+    };
+    i.onerror = () => {
+      // Retry without crossOrigin for external URLs that don't support CORS
+      const retry = new window.Image();
+      retry.onload = () => {
+        setImg(retry);
+        setError(null);
+      };
+      retry.onerror = () => {
+        setError(`Failed to load image: ${src.slice(0, 50)}...`);
+      };
+      retry.src = src;
+    };
     i.src = src;
   }, [src]);
-  return img;
+  
+  return { img, error };
 }
 
 function EditorImageNode(props: {
@@ -111,7 +136,7 @@ function EditorImageNode(props: {
   onSelect: () => void;
   onChange: (patch: Partial<ImageObj>) => void;
 }) {
-  const overlay = useHtmlImage(props.obj.srcUrl);
+  const { img: overlay } = useHtmlImage(props.obj.srcUrl);
   return (
     <KonvaImage
       id={props.obj.id}
@@ -158,7 +183,7 @@ export default function ThumbnailEditorClient(props: Props) {
   const stageRef = useRef<Konva.Stage | null>(null);
   const trRef = useRef<Konva.Transformer | null>(null);
 
-  const baseImg = useHtmlImage(props.baseImageUrl);
+  const { img: baseImg, error: baseImgError } = useHtmlImage(props.baseImageUrl);
 
   const [state, setState] = useState<EditorStateV1>(() =>
     normalizeInitialState(props.initialEditorState)
@@ -171,6 +196,16 @@ export default function ThumbnailEditorClient(props: Props) {
   // Zoom/pan
   const [scale, setScale] = useState(1);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+  
+  // Mobile bottom sheet state
+  const [mobileSheet, setMobileSheet] = useState<string | null>(null);
+  
+  // Show toast on base image error
+  useEffect(() => {
+    if (baseImgError) {
+      toast(baseImgError, "error");
+    }
+  }, [baseImgError, toast]);
 
   // Undo/redo
   const historyRef = useRef<EditorStateV1[]>([]);
@@ -552,6 +587,9 @@ export default function ThumbnailEditorClient(props: Props) {
   const displayWidth = 1000;
   const displayHeight = (displayWidth * 9) / 16;
 
+  // Handle mobile file input
+  const mobileFileInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div className={s.page}>
       <div className={s.header}>
@@ -596,8 +634,33 @@ export default function ThumbnailEditorClient(props: Props) {
         </div>
       </div>
 
+      {/* Hidden file input for mobile */}
+      <input
+        ref={mobileFileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        onChange={(e) => {
+          void addImage(e.target.files);
+          if (mobileFileInputRef.current) mobileFileInputRef.current.value = "";
+        }}
+        style={{ display: "none" }}
+      />
+
       <div className={s.layout}>
         <div className={s.canvasCard}>
+          {/* Loading state when base image is loading */}
+          {!baseImg && !baseImgError && (
+            <div className={s.canvasLoading}>
+              <div className={s.canvasSpinner} />
+              <span>Loading image...</span>
+            </div>
+          )}
+          {baseImgError && (
+            <div className={s.canvasError}>
+              <span>Failed to load thumbnail</span>
+              <small>{props.baseImageUrl.slice(0, 60)}...</small>
+            </div>
+          )}
           <Stage
             ref={(n) => {
               stageRef.current = n;
@@ -679,9 +742,8 @@ export default function ThumbnailEditorClient(props: Props) {
                   // Straight arrows use Konva's native Arrow (includes head)
                   if (a.mode === "straight" && points.length >= 4) {
                     return (
-                      <>
+                      <React.Fragment key={a.id}>
                         <Arrow
-                          key={a.id}
                           id={a.id}
                           points={points.slice(0, 4)}
                           stroke={color}
@@ -742,7 +804,7 @@ export default function ThumbnailEditorClient(props: Props) {
                             />
                           </>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   }
 
@@ -756,9 +818,8 @@ export default function ThumbnailEditorClient(props: Props) {
 
                   const isCurved = a.mode === "curved";
                   return (
-                    <>
+                    <React.Fragment key={a.id}>
                       <Line
-                        key={a.id}
                         id={a.id}
                         x={0}
                         y={0}
@@ -818,7 +879,7 @@ export default function ThumbnailEditorClient(props: Props) {
                           )}
                         </>
                       )}
-                    </>
+                    </React.Fragment>
                   );
                 }
 
@@ -1098,6 +1159,154 @@ export default function ThumbnailEditorClient(props: Props) {
                 ))}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Bottom Toolbar */}
+      <div className={s.mobileToolbar}>
+        <div className={s.mobileToolbarRow}>
+          <button
+            className={s.mobileToolBtn}
+            onClick={() => { addText(); setMobileSheet(null); }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 7V4h16v3M9 20h6M12 4v16" />
+            </svg>
+            Text
+          </button>
+          <button
+            className={s.mobileToolBtn}
+            onClick={() => { addArrow("straight"); setMobileSheet(null); }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+            Arrow
+          </button>
+          <button
+            className={s.mobileToolBtn}
+            onClick={() => { addEllipse(); setMobileSheet(null); }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <ellipse cx="12" cy="12" rx="10" ry="6" />
+            </svg>
+            Shape
+          </button>
+          <button
+            className={s.mobileToolBtn}
+            onClick={() => mobileFileInputRef.current?.click()}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            Image
+          </button>
+          <button
+            className={s.mobileToolBtn}
+            onClick={() => setMobileSheet(mobileSheet === "layers" ? null : "layers")}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2" />
+              <polyline points="2 17 12 22 22 17" />
+              <polyline points="2 12 12 17 22 12" />
+            </svg>
+            Layers
+          </button>
+          <button
+            className={s.mobileToolBtn}
+            onClick={undo}
+            disabled={!canUndo}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="1 4 1 10 7 10" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+            Undo
+          </button>
+          <button
+            className={s.mobileToolBtn}
+            onClick={redo}
+            disabled={!canRedo}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Redo
+          </button>
+          <button
+            className={`${s.mobileToolBtn} ${s.mobileToolBtnPrimary}`}
+            onClick={() => void exportImage("png")}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Bottom Sheet Overlay */}
+      <div 
+        className={`${s.bottomSheetOverlay} ${mobileSheet ? s.visible : ""}`}
+        onClick={() => setMobileSheet(null)}
+      />
+
+      {/* Mobile Bottom Sheet - Layers */}
+      <div className={`${s.bottomSheet} ${mobileSheet === "layers" ? s.open : ""}`}>
+        <div className={s.bottomSheetHandle} />
+        <div className={s.bottomSheetHeader}>
+          <h3 className={s.bottomSheetTitle}>Layers</h3>
+          <button className={s.bottomSheetClose} onClick={() => setMobileSheet(null)}>
+            ×
+          </button>
+        </div>
+        <div className={s.bottomSheetContent}>
+          <div className={s.layers}>
+            {sortedObjects
+              .slice()
+              .sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0))
+              .map((o) => (
+                <div
+                  key={o.id}
+                  className={`${s.layerItem} ${o.id === selectedId ? s.layerItemActive : ""}`}
+                  onClick={() => { setSelectedId(o.id); setMobileSheet(null); }}
+                >
+                  <div className={s.layerLabel}>{objLabel(o)}</div>
+                  <div className={s.layerButtons}>
+                    <button
+                      className={s.iconBtn}
+                      onClick={(e) => { e.stopPropagation(); moveLayer(o.id, 1); }}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      className={s.iconBtn}
+                      onClick={(e) => { e.stopPropagation(); moveLayer(o.id, -1); }}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                </div>
+              ))}
+            {sortedObjects.length === 0 && (
+              <div className={s.small}>No objects yet. Add text, arrows, or images.</div>
+            )}
+          </div>
+          {selectedObj && (
+            <button 
+              className={s.btn} 
+              onClick={() => { deleteSelected(); setMobileSheet(null); }}
+              style={{ marginTop: "var(--space-4)", width: "100%" }}
+            >
+              Delete Selected
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -105,8 +105,12 @@ export const RATE_LIMITS = {
   identityUpload: { limit: 40, windowSec: 86400 },
   // Identity training commits: 3 per day per user
   identityCommit: { limit: 3, windowSec: 86400 },
+  // Identity model reset: 5 per day per user
+  identityReset: { limit: 5, windowSec: 86400 },
   // Thumbnail workflow v2 generation: 30 per day per user
   thumbnailGenerateV2: { limit: 30, windowSec: 86400 },
+  // Thumbnail img2img variations: 20 per day per user
+  thumbnailImg2Img: { limit: 20, windowSec: 86400 },
 } as const;
 
 /**
