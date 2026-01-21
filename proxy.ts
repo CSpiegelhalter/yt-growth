@@ -65,8 +65,10 @@ function getOrCreateRequestId(req: NextRequest) {
 }
 
 function isProtectedPath(pathname: string) {
+  // NOTE: /dashboard is NOT protected at the middleware level.
+  // The dashboard page handles auth itself and renders a preview for logged-out users.
+  // This allows /dashboard to return 200 OK for SEO instead of redirecting.
   const prefixes = [
-    "/dashboard",
     "/channels",
     "/audit",
     "/profile",
