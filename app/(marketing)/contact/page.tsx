@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: `Contact Us | ${BRAND.name} Support`,
   description: `Get in touch with the ${BRAND.name} team. We help with technical support, billing questions, feature requests, and YouTube growth strategies. Response within 24-48 hours.`,
   alternates: { canonical: `${BRAND.url}/contact` },
+  robots: { index: true, follow: true },
   openGraph: {
     title: `Contact ${BRAND.name} - Get Help`,
     description: `Have questions about YouTube growth or need help with ${BRAND.name}? Contact our support team for personalized assistance.`,

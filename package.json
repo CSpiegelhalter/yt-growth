@@ -38,7 +38,8 @@
     "seo:ratio": "node scripts/seo-text-html.mjs",
     "seo:ratio:ci": "node scripts/seo-text-html.mjs",
     "seo:verify-links": "bun scripts/verify-internal-links.ts",
-    "check:orphaned": "bun scripts/check-internal-linking.ts"
+    "check:orphaned": "bun scripts/check-internal-linking.ts",
+    "verify:crawlability": "bun scripts/verify-crawlability.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

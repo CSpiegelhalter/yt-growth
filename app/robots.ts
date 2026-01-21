@@ -14,7 +14,12 @@ import { CANONICAL_ORIGIN } from "@/lib/brand";
  * Sitemap URL uses the canonical www origin for consistency.
  */
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = CANONICAL_ORIGIN;
+  // Belt-and-suspenders: even if CANONICAL_ORIGIN is wrong, force www for our domain
+  const baseUrl = (
+    CANONICAL_ORIGIN === "https://getchannelboost.com"
+      ? "https://www.getchannelboost.com"
+      : CANONICAL_ORIGIN
+  ).replace(/\/$/, "");
 
   return {
     rules: [

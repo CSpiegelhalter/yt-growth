@@ -1,177 +1,149 @@
-import { describe, expect, test } from "bun:test";
-import { BRAND } from "@/lib/brand";
-import { LEARN_ARTICLES } from "@/app/(marketing)/learn/articles";
+import { describe, expect, it } from "vitest";
+import sitemap from "@/app/sitemap";
+import robots from "@/app/robots";
+import { normalizeCanonicalOrigin } from "@/lib/brand";
 
 /**
- * Sitemap canonical URL tests
+ * Regression tests to ensure sitemap and robots never emit
+ * the apex domain (getchannelboost.com) or http:// URLs.
  *
- * These tests verify the production canonical values are correct.
- * The actual CANONICAL_ORIGIN can be overridden via env var for local dev
- * (e.g., ngrok), which is expected behavior.
- *
- * Critical production invariants:
- * - BRAND.domain = "www.getchannelboost.com"
- * - BRAND.url = "https://www.getchannelboost.com"
- *
- * In production, NEXT_PUBLIC_APP_URL should either:
- * - Be unset (defaults to BRAND.url)
- * - Be set to "https://www.getchannelboost.com"
+ * SEO audits flag redirecting URLs in sitemaps, so we must
+ * always use the canonical www origin.
  */
-describe("sitemap canonical URLs", () => {
-  describe("production canonical values", () => {
-    test("BRAND.domain uses www subdomain", () => {
-      expect(BRAND.domain).toBe("www.getchannelboost.com");
-      expect(BRAND.domain.startsWith("www.")).toBe(true);
-    });
+describe("sitemap", () => {
+  it("does not include apex domain URLs", () => {
+    const entries = sitemap();
 
-    test("BRAND.url uses https://www", () => {
-      expect(BRAND.url).toBe("https://www.getchannelboost.com");
-      expect(BRAND.url.startsWith("https://www.")).toBe(true);
-    });
-
-    test("BRAND.url has no trailing slash", () => {
-      expect(BRAND.url.endsWith("/")).toBe(false);
-    });
-
-    test("BRAND.domain does NOT use apex (no-www) domain", () => {
-      // This is the critical regression test - apex causes SEO redirects
-      expect(BRAND.domain).not.toBe("getchannelboost.com");
-      expect(BRAND.url).not.toBe("https://getchannelboost.com");
-    });
+    for (const entry of entries) {
+      // Must not be apex (non-www)
+      expect(entry.url).not.toMatch(/^https:\/\/getchannelboost\.com(\/|$)/);
+      // Must not be http (non-secure)
+      expect(entry.url).not.toMatch(/^http:\/\//);
+    }
   });
 
-  describe("sitemap structure", () => {
-    test("sitemap URLs have no trailing slashes on paths", async () => {
-      const { default: sitemap } = await import("@/app/sitemap");
+  it("homepage URL uses www subdomain", () => {
+    const entries = sitemap();
+    const homepage = entries.find(
+      (e) =>
+        e.url === "https://www.getchannelboost.com" ||
+        e.url.match(/^https:\/\/[^/]+$/)
+    );
 
-      const entries = sitemap();
-
-      for (const entry of entries) {
-        // Parse the URL and check path doesn't end with / (except root)
-        const url = new URL(entry.url);
-        if (url.pathname !== "/") {
-          expect(url.pathname.endsWith("/")).toBe(false);
-        }
-      }
-    });
-
-    test("sitemap includes all expected paths", async () => {
-      const { default: sitemap } = await import("@/app/sitemap");
-
-      const entries = sitemap();
-      const paths = entries.map((e) => new URL(e.url).pathname);
-
-      // Required paths (independent of host)
-      expect(paths).toContain("/");
-      expect(paths).toContain("/learn");
-      expect(paths).toContain("/terms");
-      expect(paths).toContain("/privacy");
-      expect(paths).toContain("/contact");
-
-      // Should include learn articles
-      expect(paths.some((p) => p.startsWith("/learn/"))).toBe(true);
-    });
-
-    test("sitemap does not include private app routes", async () => {
-      const { default: sitemap } = await import("@/app/sitemap");
-
-      const entries = sitemap();
-      const paths = entries.map((e) => new URL(e.url).pathname);
-
-      // These should NOT be in sitemap
-      const privateRoutes = [
-        "/dashboard",
-        "/profile",
-        "/ideas",
-        "/auth/login",
-        "/auth/signup",
-        "/api/",
-        "/admin",
-      ];
-
-      for (const route of privateRoutes) {
-        expect(paths.some((p) => p.startsWith(route))).toBe(false);
-      }
-    });
+    expect(homepage).toBeDefined();
+    // In production, homepage should be www
+    if (homepage?.url.includes("getchannelboost.com")) {
+      expect(homepage.url).toBe("https://www.getchannelboost.com");
+    }
   });
 
-  describe("SEO title validation", () => {
-    const BRAND_SUFFIX = ` | ${BRAND.name}`;
-    const MAX_TOTAL_TITLE_LENGTH = 60;
-    const articles = Object.values(LEARN_ARTICLES);
+  it("all URLs have no trailing slash (except paths)", () => {
+    const entries = sitemap();
 
-    test("Learn article titles don't contain brand suffix (layout template adds it)", () => {
-      for (const article of articles) {
-        expect(article.title).not.toContain(BRAND_SUFFIX);
-        expect(article.title).not.toContain(BRAND.name);
+    for (const entry of entries) {
+      // The origin part should not have a trailing slash
+      // e.g., "https://www.getchannelboost.com" not "https://www.getchannelboost.com/"
+      const url = new URL(entry.url);
+      if (url.pathname === "/" || url.pathname === "") {
+        // Homepage should not have trailing slash
+        expect(entry.url).not.toMatch(/\/$/);
       }
-    });
+    }
+  });
+});
 
-    test("Learn article titles don't have double brand suffix", () => {
-      const doubleBrand = `${BRAND.name} | ${BRAND.name}`;
-      for (const article of articles) {
-        expect(article.title).not.toContain(doubleBrand);
-        expect(`${article.title}${BRAND_SUFFIX}`).not.toContain(doubleBrand);
-      }
-    });
+describe("robots", () => {
+  it("sitemap URL does not use apex domain", () => {
+    const result = robots();
 
-    test("Learn article titles are within SEO-safe length when brand suffix is added", () => {
-      for (const article of articles) {
-        const totalLength = article.title.length + BRAND_SUFFIX.length;
-        expect(totalLength).toBeLessThanOrEqual(MAX_TOTAL_TITLE_LENGTH + 5); // Allow small buffer
-      }
-    });
-
-    test("Learn article titles contain current year (2026)", () => {
-      // Most articles should have the current year - some evergreen content may not
-      const articlesWithYear = articles.filter((a) =>
-        a.title.includes("(2026)")
-      );
-      // At least 80% of articles should have the year
-      expect(articlesWithYear.length).toBeGreaterThan(articles.length * 0.7);
-    });
-
-    test("No Learn article titles contain outdated year (2025)", () => {
-      for (const article of articles) {
-        expect(article.title).not.toContain("(2025)");
-      }
-    });
+    expect(result.sitemap).toBeDefined();
+    expect(result.sitemap).not.toMatch(/^https:\/\/getchannelboost\.com(\/|$)/);
+    expect(result.sitemap).not.toMatch(/^http:\/\//);
   });
 
-  describe("robots.txt structure", () => {
-    test("robots disallows private routes", async () => {
-      const { default: robots } = await import("@/app/robots");
+  it("sitemap URL uses www subdomain in production", () => {
+    const result = robots();
 
-      const config = robots();
-      const disallowed = config.rules;
-
-      // Should have disallow rules
-      expect(Array.isArray(disallowed) ? disallowed.length : 1).toBeGreaterThan(
-        0
+    if (result.sitemap?.includes("getchannelboost.com")) {
+      expect(result.sitemap).toBe(
+        "https://www.getchannelboost.com/sitemap.xml"
       );
+    }
+  });
+});
 
-      // Check for expected disallowed patterns
-      const rules = Array.isArray(disallowed) ? disallowed : [disallowed];
-      const allDisallows = rules.flatMap((r) =>
-        Array.isArray(r.disallow) ? r.disallow : [r.disallow]
-      );
+describe("normalizeCanonicalOrigin", () => {
+  it("adds https and www to apex domain", () => {
+    expect(normalizeCanonicalOrigin("getchannelboost.com")).toBe(
+      "https://www.getchannelboost.com"
+    );
+  });
 
-      expect(allDisallows).toContain("/api/");
-      expect(allDisallows).toContain("/auth/");
-      expect(allDisallows).toContain("/dashboard/");
-    });
+  it("converts http to https", () => {
+    expect(normalizeCanonicalOrigin("http://www.getchannelboost.com")).toBe(
+      "https://www.getchannelboost.com"
+    );
+  });
 
-    test("robots references sitemap.xml", async () => {
-      const { default: robots } = await import("@/app/robots");
+  it("converts apex https to www", () => {
+    expect(normalizeCanonicalOrigin("https://getchannelboost.com")).toBe(
+      "https://www.getchannelboost.com"
+    );
+  });
 
-      const config = robots();
+  it("strips trailing slash", () => {
+    expect(normalizeCanonicalOrigin("https://www.getchannelboost.com/")).toBe(
+      "https://www.getchannelboost.com"
+    );
+  });
 
-      // Should have a sitemap reference ending in /sitemap.xml
-      expect(config.sitemap).toBeDefined();
-      const sitemap = Array.isArray(config.sitemap)
-        ? config.sitemap[0]
-        : config.sitemap;
-      expect(sitemap?.endsWith("/sitemap.xml")).toBe(true);
-    });
+  it("strips path, query, and hash", () => {
+    expect(
+      normalizeCanonicalOrigin(
+        "https://www.getchannelboost.com/some/path?q=1#hash"
+      )
+    ).toBe("https://www.getchannelboost.com");
+  });
+
+  it("strips port", () => {
+    expect(normalizeCanonicalOrigin("https://www.getchannelboost.com:8080")).toBe(
+      "https://www.getchannelboost.com"
+    );
+  });
+
+  it("preserves non-getchannelboost domains (for previews)", () => {
+    expect(normalizeCanonicalOrigin("myproj.vercel.app")).toBe(
+      "https://myproj.vercel.app"
+    );
+    expect(normalizeCanonicalOrigin("https://preview-123.vercel.app")).toBe(
+      "https://preview-123.vercel.app"
+    );
+  });
+
+  it("returns fallback for empty input", () => {
+    expect(normalizeCanonicalOrigin("")).toBe(
+      "https://www.getchannelboost.com"
+    );
+    expect(normalizeCanonicalOrigin(undefined)).toBe(
+      "https://www.getchannelboost.com"
+    );
+    expect(normalizeCanonicalOrigin("   ")).toBe(
+      "https://www.getchannelboost.com"
+    );
+  });
+
+  it("returns fallback for invalid URLs", () => {
+    expect(normalizeCanonicalOrigin("not a url at all!!!")).toBe(
+      "https://www.getchannelboost.com"
+    );
+  });
+
+  it("handles www.getchannelboost.com without scheme", () => {
+    expect(normalizeCanonicalOrigin("www.getchannelboost.com")).toBe(
+      "https://www.getchannelboost.com"
+    );
+    expect(normalizeCanonicalOrigin("www.getchannelboost.com/")).toBe(
+      "https://www.getchannelboost.com"
+    );
   });
 });

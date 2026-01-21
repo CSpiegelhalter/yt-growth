@@ -21,19 +21,80 @@ export const BRAND = {
 } as const;
 
 /**
- * Canonical origin URL for sitemap, robots.txt, and metadata.
- * Uses env var if set, otherwise defaults to production www domain.
+ * Normalizes a URL input to a canonical origin.
  *
  * Rules:
- * - Always includes https://
- * - Always uses www subdomain
+ * - Forces https://
+ * - Forces www for getchannelboost.com (apex → www)
+ * - Strips trailing slashes, paths, query, hash, and ports
+ * - Returns fallback for empty/invalid inputs
+ *
+ * @example
+ * normalizeCanonicalOrigin("getchannelboost.com") // "https://www.getchannelboost.com"
+ * normalizeCanonicalOrigin("https://getchannelboost.com/") // "https://www.getchannelboost.com"
+ * normalizeCanonicalOrigin("http://www.getchannelboost.com") // "https://www.getchannelboost.com"
+ * normalizeCanonicalOrigin("myproj.vercel.app") // "https://myproj.vercel.app" (preview)
+ */
+export function normalizeCanonicalOrigin(input?: string): string {
+  const FALLBACK = "https://www.getchannelboost.com";
+
+  const raw = (input ?? "").trim();
+  if (!raw) return FALLBACK;
+
+  // Ensure it has a scheme so URL() can parse it
+  const withScheme =
+    raw.startsWith("http://") || raw.startsWith("https://")
+      ? raw
+      : `https://${raw}`;
+
+  let url: URL;
+  try {
+    url = new URL(withScheme);
+  } catch {
+    return FALLBACK;
+  }
+
+  // Enforce https
+  url.protocol = "https:";
+
+  // Normalize hostname to lowercase
+  const host = url.hostname.toLowerCase();
+
+  // Force www for our root domain (apex → www)
+  if (host === "getchannelboost.com") {
+    url.hostname = "www.getchannelboost.com";
+  }
+
+  // Drop port (shouldn't be in canonical URLs)
+  url.port = "";
+
+  // Strip path/query/hash to get just the origin
+  url.pathname = "";
+  url.search = "";
+  url.hash = "";
+
+  // Remove trailing slash
+  return url.toString().replace(/\/$/, "");
+}
+
+/**
+ * Canonical origin URL for sitemap, robots.txt, and metadata.
+ *
+ * Uses env vars in priority order, normalized to ensure:
+ * - Always https://
+ * - Always www for getchannelboost.com
  * - Never ends with trailing slash
  *
  * To add new Learn pages: add them to app/(marketing)/learn/articles.ts
  * and they will automatically appear in the sitemap.
  */
-export const CANONICAL_ORIGIN =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? BRAND.url;
+export const CANONICAL_ORIGIN = normalizeCanonicalOrigin(
+  process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.SITE_URL ??
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+    process.env.VERCEL_URL
+);
 
 /**
  * SEO-focused keywords and phrases

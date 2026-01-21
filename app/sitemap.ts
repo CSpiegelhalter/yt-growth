@@ -15,7 +15,12 @@ import { LEARN_ARTICLES } from "./(marketing)/learn/articles";
  * All URLs use the canonical www origin to avoid redirect warnings in SEO audits.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = CANONICAL_ORIGIN;
+  // Belt-and-suspenders: even if CANONICAL_ORIGIN is wrong, force www for our domain
+  const baseUrl = (
+    CANONICAL_ORIGIN === "https://getchannelboost.com"
+      ? "https://www.getchannelboost.com"
+      : CANONICAL_ORIGIN
+  ).replace(/\/$/, "");
 
   // Learn article entries with stable dates from articles.ts
   const learnArticleEntries = Object.values(LEARN_ARTICLES).map((article) => ({
