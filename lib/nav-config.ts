@@ -74,13 +74,13 @@ export const primaryNavItems: NavItem[] = [
       pathname === "/competitors" || pathname.startsWith("/competitors/"),
   },
   // TODO: Add thumbnails back in when we have a way to generate them
-  // {
-  //   id: "thumbnails",
-  //   label: "Thumbnails",
-  //   href: "/thumbnails",
-  //   icon: "image",
-  //   channelScoped: false,
-  // },
+  {
+    id: "thumbnails",
+    label: "Thumbnails",
+    href: "/thumbnails",
+    icon: "image",
+    channelScoped: false,
+  },
   {
     id: "tag-generator",
     label: "Tags",

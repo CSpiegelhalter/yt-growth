@@ -92,6 +92,7 @@ const STATIC_FILES = [
   "/apple-touch-icon.svg",
   "/robots.txt",
   "/sitemap.xml",
+  "/llms.txt",
 ];
 
 /**

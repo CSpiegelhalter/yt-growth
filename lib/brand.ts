@@ -5,8 +5,10 @@
 
 export const BRAND = {
   name: "ChannelBoost",
-  domain: "getchannelboost.com",
-  url: "https://getchannelboost.com",
+  /** Canonical domain with www prefix for SEO consistency */
+  domain: "www.getchannelboost.com",
+  /** Canonical origin URL - always use www for sitemap/robots/metadata */
+  url: "https://www.getchannelboost.com",
   tagline: "YouTube Growth Analytics for Creators",
   description:
     "YouTube growth tool with channel audits, retention analysis, competitor insights, and AI-powered video ideas. Get more subscribers and views with data-driven content strategy.",
@@ -17,6 +19,21 @@ export const BRAND = {
   themeColor: "#2563eb",
   email: "hello@getchannelboost.com",
 } as const;
+
+/**
+ * Canonical origin URL for sitemap, robots.txt, and metadata.
+ * Uses env var if set, otherwise defaults to production www domain.
+ *
+ * Rules:
+ * - Always includes https://
+ * - Always uses www subdomain
+ * - Never ends with trailing slash
+ *
+ * To add new Learn pages: add them to app/(marketing)/learn/articles.ts
+ * and they will automatically appear in the sitemap.
+ */
+export const CANONICAL_ORIGIN =
+  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? BRAND.url;
 
 /**
  * SEO-focused keywords and phrases

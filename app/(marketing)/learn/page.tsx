@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
+import { LEARN_INDEX_CONTENT } from "@/lib/content/learn-index";
 import { learnArticles } from "./articles";
 import s from "./style.module.css";
 
 export const metadata: Metadata = {
-  title: `YouTube Growth Guides: Free Tutorials for Creators (2025) | ${BRAND.name}`,
+  title: "YouTube Growth Guides (2026)",
   description:
     "Free YouTube growth guides and tutorials. Learn channel auditing, retention analysis, competitor research, video ideas, and proven strategies to get more subscribers.",
   keywords: [
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: `YouTube Growth Guides | ${BRAND.name}`,
+    title: "YouTube Growth Guides (2026)",
     description:
       "Free guides to help you grow your YouTube channel with data-driven strategies.",
     url: `${BRAND.url}/learn`,
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `YouTube Growth Guides | ${BRAND.name}`,
+    title: "YouTube Growth Guides (2026)",
     description:
       "Free guides to help you grow your YouTube channel with data-driven strategies.",
   },
@@ -167,6 +168,96 @@ function ArticleIcon({ type }: { type: string }) {
           <path d="M16 3.13a4 4 0 010 7.75" />
         </svg>
       );
+    case "how-to-promote-youtube-videos":
+      // Megaphone/promotion icon
+      return (
+        <svg {...props}>
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+        </svg>
+      );
+    case "how-to-see-your-subscribers-on-youtube":
+      // Eye/view icon
+      return (
+        <svg {...props}>
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      );
+    case "how-to-go-live-on-youtube":
+      // Live/broadcast icon
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="2" />
+          <path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14" />
+        </svg>
+      );
+    case "buy-youtube-subscribers":
+    case "buy-youtube-views":
+      // Warning icon
+      return (
+        <svg {...props}>
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      );
+    case "youtube-analytics-tools":
+      // Analytics/chart icon
+      return (
+        <svg {...props}>
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+      );
+    case "find-similar-youtube-channels":
+      // Search/discover icon
+      return (
+        <svg {...props}>
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+      );
+    case "how-to-be-a-youtuber":
+      // Star icon
+      return (
+        <svg {...props}>
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      );
+    case "youtube-tag-generator":
+      // Tag icon
+      return (
+        <svg {...props}>
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+          <line x1="7" y1="7" x2="7.01" y2="7" />
+        </svg>
+      );
+    case "youtube-shorts-length":
+      // Clock/duration icon
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      );
+    case "youtube-shorts-monetization":
+      // Shorts + money icon
+      return (
+        <svg {...props}>
+          <rect x="6" y="2" width="12" height="20" rx="2" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <path d="M14 10h-3a1 1 0 000 2h2a1 1 0 010 2h-3" />
+        </svg>
+      );
+    case "youtube-algorithm":
+      // Algorithm/network icon
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+      );
     default:
       // Default document icon
       return (
@@ -180,6 +271,11 @@ function ArticleIcon({ type }: { type: string }) {
 }
 
 export default function LearnPage() {
+  const content = LEARN_INDEX_CONTENT;
+
+  // Get article by slug helper
+  const getArticle = (slug: string) => learnArticles.find((a) => a.slug === slug);
+
   return (
     <main className={s.learnHub}>
       {/* Structured Data */}
@@ -206,16 +302,45 @@ export default function LearnPage() {
           Learning Center
         </div>
         <h1 className={s.hubTitle}>
-          Grow Your YouTube Channel
+          {content.hero.title}
           <br />
-          <span className={s.hubTitleAccent}>With Data-Driven Strategies</span>
+          <span className={s.hubTitleAccent}>{content.hero.titleAccent}</span>
         </h1>
-        <p className={s.hubSubtitle}>
-          Free guides and tutorials to help you understand your analytics,
-          optimize your content, and grow faster. No fluff, just actionable
-          insights.
-        </p>
+        <p className={s.hubSubtitle}>{content.hero.subtitle}</p>
       </header>
+
+      {/* Intro Section - SEO text content */}
+      <section className={s.introSection}>
+        <p className={s.introText}>{content.intro.text}</p>
+        <ul className={s.introHighlights}>
+          {content.intro.highlights.map((h, i) => (
+            <li key={i}>{h}</li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Start Here Section */}
+      <section className={s.startHereSection}>
+        <h2 className={s.startHereTitle}>{content.startHere.title}</h2>
+        <p className={s.startHereDesc}>{content.startHere.description}</p>
+        <div className={s.startHereGuides}>
+          {content.startHere.guides.map((guide) => {
+            const article = getArticle(guide.slug);
+            return (
+              <Link
+                key={guide.slug}
+                href={`/learn/${guide.slug}`}
+                className={s.startHereGuide}
+              >
+                <span className={s.startHereGuideTitle}>
+                  {article?.title ?? guide.slug}
+                </span>
+                <p className={s.startHereGuideReason}>{guide.reason}</p>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Articles Grid */}
       <section className={s.articlesSection} aria-label="YouTube growth guides">
@@ -236,7 +361,7 @@ export default function LearnPage() {
                 <div className={s.articleMeta}>
                   <span className={s.readTime}>{article.readingTime}</span>
                   <span className={s.readMore}>
-                    Read guide
+                    {article.ctaLabel}
                     <svg
                       width="14"
                       height="14"
@@ -258,7 +383,7 @@ export default function LearnPage() {
 
       {/* What You'll Learn */}
       <section className={s.valueSection}>
-        <h2 className={s.valueSectionTitle}>What You'll Learn</h2>
+        <h2 className={s.valueSectionTitle}>What You&apos;ll Learn</h2>
         <div className={s.valueGrid}>
           <div className={s.valueItem}>
             <h3>Understand Your Analytics</h3>
@@ -284,19 +409,56 @@ export default function LearnPage() {
         </div>
       </section>
 
+      {/* Categories Section - Browse by Topic */}
+      <section className={s.categoriesSection}>
+        <h2 className={s.categoriesSectionTitle}>Browse Guides by Topic</h2>
+        <div className={s.categoriesGrid}>
+          {content.categories.map((cat) => (
+            <div key={cat.id} className={s.categoryCard}>
+              <h3 className={s.categoryTitle}>{cat.title}</h3>
+              <p className={s.categoryDesc}>{cat.description}</p>
+              <div className={s.categoryLinks}>
+                {cat.relatedSlugs.map((slug) => {
+                  const article = getArticle(slug);
+                  return (
+                    <Link
+                      key={slug}
+                      href={`/learn/${slug}`}
+                      className={s.categoryLink}
+                    >
+                      {article?.title ?? article?.label ?? slug}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className={s.learnFaqSection}>
+        <h2 className={s.learnFaqTitle}>{content.faq.title}</h2>
+        <div className={s.learnFaqList}>
+          {content.faq.items.map((faq, idx) => (
+            <details key={idx} className={s.learnFaqItem}>
+              <summary className={s.learnFaqQuestion}>{faq.question}</summary>
+              <p className={s.learnFaqAnswer}>{faq.answer}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
       {/* Bottom CTA */}
       <section className={s.hubCta}>
-        <h2 className={s.hubCtaTitle}>Ready to Put This Into Practice?</h2>
-        <p className={s.hubCtaText}>
-          {BRAND.name} automates these analyses and gives you personalized
-          insights for your channel.
-        </p>
+        <h2 className={s.hubCtaTitle}>{content.cta.title}</h2>
+        <p className={s.hubCtaText}>{content.cta.description}</p>
         <div className={s.hubCtaButtons}>
-          <Link href="/dashboard" className={s.hubCtaPrimary}>
-            Get Started Free
+          <Link href={content.cta.primaryButton.href} className={s.hubCtaPrimary}>
+            {content.cta.primaryButton.label}
           </Link>
-          <Link href="/" className={s.hubCtaSecondary}>
-            Learn More
+          <Link href={content.cta.secondaryButton.href} className={s.hubCtaSecondary}>
+            {content.cta.secondaryButton.label}
           </Link>
         </div>
       </section>

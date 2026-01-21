@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { BRAND } from "@/lib/brand";
+import { CANONICAL_ORIGIN } from "@/lib/brand";
 import { LEARN_ARTICLES } from "./(marketing)/learn/articles";
 
 /**
@@ -12,9 +12,10 @@ import { LEARN_ARTICLES } from "./(marketing)/learn/articles";
  * - All logged-in app routes (dashboard, profile, ideas, etc.)
  *
  * URLs use consistent format: no trailing slash for pages.
+ * All URLs use the canonical www origin to avoid redirect warnings in SEO audits.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${BRAND.domain}`;
+  const baseUrl = CANONICAL_ORIGIN;
 
   // Learn article entries with stable dates from articles.ts
   const learnArticleEntries = Object.values(LEARN_ARTICLES).map((article) => ({

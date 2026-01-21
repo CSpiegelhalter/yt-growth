@@ -7,8 +7,7 @@ import { BRAND } from "@/lib/brand";
 export const LEARN_ARTICLES = {
   "youtube-channel-audit": {
     slug: "youtube-channel-audit",
-    title:
-      "YouTube Channel Audit: How to Find and Fix What's Killing Your Growth (2026)",
+    title: "YouTube Channel Audit: Fix Growth Issues (2026)",
     shortTitle: "Channel Audit",
     navLabel: "Channel Audit",
     description:
@@ -117,51 +116,98 @@ export const LEARN_ARTICLES = {
   },
   "youtube-retention-analysis": {
     slug: "youtube-retention-analysis",
-    title: "YouTube Retention Analysis: How to Keep Viewers Watching (2026)",
+    title: "YouTube Retention Analysis: Complete Guide (2026)",
     shortTitle: "Retention Analysis",
     navLabel: "Retention",
     description:
-      "Master YouTube audience retention analysis. Learn to identify drop-off points, understand viewer behavior, and improve watch time with proven strategies.",
+      "Master YouTube audience retention analysis. Learn to read retention curves, identify drop-off points, use hook frameworks, add pattern interrupts, and improve watch time with proven strategies.",
     metaDescription:
-      "Master YouTube retention in 2026. Learn to read retention curves, identify drop-off points, and apply proven fixes to keep viewers watching longer.",
+      "Master YouTube retention in 2026. Learn to read retention curves, identify drop-off points, apply hook frameworks, and use pattern interrupts to keep viewers watching longer.",
     datePublished: "2024-01-15",
-    dateModified: "2026-01-15",
-    readingTime: "7 min read",
+    dateModified: "2026-01-20",
+    readingTime: "18 min read",
     category: "Analytics",
     keywords: [
       "youtube retention",
       "audience retention",
       "watch time",
       "viewer drop-off",
+      "youtube hooks",
+      "pattern interrupts",
+      "retention curves",
+      "average view duration",
+      "youtube analytics",
     ],
     toc: [
       { id: "why-retention-matters", title: "Why Retention Matters" },
       { id: "reading-curves", title: "Reading Retention Curves" },
       { id: "drop-off-patterns", title: "Common Drop-Off Patterns" },
+      { id: "hook-frameworks", title: "Hook Frameworks" },
+      { id: "pacing-structure", title: "Pacing and Structure" },
+      { id: "pattern-interrupts", title: "Pattern Interrupts" },
+      { id: "retention-audit", title: "Retention Audit Workflow" },
       { id: "improvement-strategies", title: "Strategies to Improve" },
+      { id: "benchmarks", title: "Retention Benchmarks" },
+      { id: "common-mistakes", title: "Common Mistakes" },
+      { id: "tools", title: "Tools and Resources" },
       { id: "faq", title: "FAQ" },
     ],
     faqs: [
       {
         question: "What's a good audience retention rate on YouTube?",
         answer:
-          "It varies by video length and niche, but 50%+ average view duration is generally good. For longer videos (15+ min), 40%+ is solid. Focus on improving your own baseline rather than comparing to others.",
+          "It varies by video length and niche. For short videos (2-5 minutes), aim for 50-70%. For medium videos (8-15 minutes), 40-60% is good. For long videos (20+ minutes), 30-50% is solid. Focus on improving your own baseline rather than comparing to others.",
       },
       {
         question: "How do I find where viewers drop off?",
         answer:
-          "In YouTube Studio, go to Analytics → Engagement → Audience Retention. The graph shows exactly where viewers leave. Look for steep drops and investigate what's happening at those timestamps.",
+          "In YouTube Studio, go to Analytics → Engagement → Audience Retention. The graph shows exactly where viewers leave. Look for steep drops and investigate what's happening at those timestamps. Compare to your best-performing videos to identify patterns.",
       },
       {
         question: "Does video length affect retention?",
         answer:
-          "Yes. Longer videos typically have lower percentage retention but can still have high absolute watch time. Make your video as long as it needs to be—no longer. Cut filler content ruthlessly.",
+          "Yes. Longer videos typically have lower percentage retention but can still have high absolute watch time. Make your video as long as it needs to be—no longer. Cut filler content ruthlessly. A tight 8-minute video often outperforms a padded 15-minute video.",
+      },
+      {
+        question: "What are pattern interrupts and why do they matter?",
+        answer:
+          "Pattern interrupts are changes in your video that reset viewer attention: camera angle changes, b-roll, graphics, music shifts, pacing changes, or topic transitions. The brain notices change, so interrupts prevent viewers from zoning out. Aim for some form of change every 30-90 seconds.",
+      },
+      {
+        question: "How do I write a good hook for my YouTube video?",
+        answer:
+          "A good hook accomplishes three things in the first 5-10 seconds: grabs attention, establishes relevance to the viewer, and creates a reason to keep watching. Use frameworks like the curiosity gap, problem-solution, result tease, or direct promise. Script your first 30 seconds word-for-word.",
+      },
+      {
+        question: "Why do viewers leave in the first 30 seconds?",
+        answer:
+          "The most common causes are: weak or missing hook, content that doesn't match the title/thumbnail promise, slow or generic intros ('hey guys, welcome back'), and too much setup before delivering value. Fix these by scripting your opening and getting to the main content faster.",
+      },
+      {
+        question: "What's the difference between average view duration and average percentage viewed?",
+        answer:
+          "Average view duration is the total time in minutes/seconds that viewers watch. Average percentage viewed is that time as a percentage of total video length. A 10-minute video with 4 minutes average view duration has 40% average percentage viewed. Both metrics matter for different reasons.",
+      },
+      {
+        question: "Should I use chapters in my videos?",
+        answer:
+          "Yes, for most videos over 5 minutes. Chapters help viewers find specific content, improve watch time by reducing abandonment, and can appear in search results. They also force you to structure your content clearly, which usually improves retention.",
+      },
+      {
+        question: "How often should I analyze my retention data?",
+        answer:
+          "Review retention for every video about 48-72 hours after publishing, when you have meaningful data. Do a deeper audit comparing multiple videos monthly. Look for patterns across videos—your audience's behavior is usually consistent.",
+      },
+      {
+        question: "Can I fix retention on an already-published video?",
+        answer:
+          "You can't change the content of a published video, but you can use what you learn to improve future videos. Some creators re-upload significantly improved versions of poor-performing videos. Focus most energy on applying lessons to new content.",
       },
     ],
   },
   "how-to-get-more-subscribers": {
     slug: "how-to-get-more-subscribers",
-    title: "How to Get More Subscribers on YouTube: The Complete Guide (2026)",
+    title: "How to Get More YouTube Subscribers (2026)",
     shortTitle: "Get More Subscribers",
     navLabel: "Subscribers",
     description:
@@ -294,8 +340,7 @@ export const LEARN_ARTICLES = {
   },
   "youtube-competitor-analysis": {
     slug: "youtube-competitor-analysis",
-    title:
-      "YouTube Competitor Analysis: How to Find What Works in Your Niche (2026)",
+    title: "YouTube Competitor Analysis (2026)",
     shortTitle: "Competitor Analysis",
     navLabel: "Competitors",
     description:
@@ -405,8 +450,7 @@ export const LEARN_ARTICLES = {
   },
   "youtube-video-ideas": {
     slug: "youtube-video-ideas",
-    title:
-      "YouTube Video Ideas: How to Find Topics That Get Views (2026 Guide)",
+    title: "YouTube Video Ideas That Get Views (2026)",
     shortTitle: "Video Ideas",
     navLabel: "Video Ideas",
     description:
@@ -514,7 +558,7 @@ export const LEARN_ARTICLES = {
   },
   "how-to-make-a-youtube-channel": {
     slug: "how-to-make-a-youtube-channel",
-    title: "How to Make a YouTube Channel: Complete Setup Guide (2026)",
+    title: "How to Make a YouTube Channel (2026)",
     shortTitle: "Make a Channel",
     navLabel: "Start a Channel",
     description:
@@ -591,7 +635,7 @@ export const LEARN_ARTICLES = {
   },
   "youtube-monetization-requirements": {
     slug: "youtube-monetization-requirements",
-    title: "YouTube Monetization Requirements: How to Get Monetized in 2026",
+    title: "YouTube Monetization Requirements (2026)",
     shortTitle: "Monetization",
     navLabel: "Monetization",
     description:
@@ -668,7 +712,7 @@ export const LEARN_ARTICLES = {
   },
   "how-much-does-youtube-pay": {
     slug: "how-much-does-youtube-pay",
-    title: "How Much Does YouTube Pay? RPM, CPM, and Real Earnings (2026)",
+    title: "How Much Does YouTube Pay? (2026)",
     shortTitle: "YouTube Pay",
     navLabel: "YouTube Pay",
     description:
@@ -745,7 +789,7 @@ export const LEARN_ARTICLES = {
   },
   "youtube-seo": {
     slug: "youtube-seo",
-    title: "YouTube SEO: How to Rank Videos and Get More Views (2026)",
+    title: "YouTube SEO: Rank Videos & Get Views (2026)",
     shortTitle: "YouTube SEO",
     navLabel: "YouTube SEO",
     description:
@@ -823,8 +867,7 @@ export const LEARN_ARTICLES = {
   },
   "free-youtube-subscribers": {
     slug: "free-youtube-subscribers",
-    title:
-      "Free YouTube Subscribers and Views: Why These Services Hurt Your Channel",
+    title: "Free YouTube Subscribers & Views: Why It Hurts",
     shortTitle: "Free Subscribers",
     navLabel: "Avoid Fake Growth",
     description:
@@ -896,9 +939,925 @@ export const LEARN_ARTICLES = {
       },
     ],
   },
+  /**
+   * ==========================================================================
+   * NEW SEO PAGES - Added to target additional keyword clusters
+   * ==========================================================================
+   * 
+   * HOW TO ADD A NEW SEO PAGE:
+   * 1. Add the article config below with all required fields
+   * 2. Create a body component at articles/bodies/{slug}.tsx
+   * 3. Add the import and mapping in articles/bodies/index.ts
+   * 4. Run `bun run build` to verify - sitemap auto-includes new articles
+   * ==========================================================================
+   */
+  "how-to-promote-youtube-videos": {
+    slug: "how-to-promote-youtube-videos",
+    title: "How to Promote YouTube Videos (2026)",
+    shortTitle: "Promote Videos",
+    navLabel: "Promotion",
+    description:
+      "Learn how to promote your YouTube videos and channel to reach more viewers. Covers YouTube SEO, social media promotion, community building, collaborations, and paid strategies.",
+    metaDescription:
+      "How to promote YouTube videos and grow your channel in 2026. Proven promotion strategies including SEO optimization, social media, collaborations, and community building.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "14 min read",
+    category: "Growth",
+    keywords: [
+      "how to promote youtube videos",
+      "how to promote your youtube channel",
+      "youtube video promotion",
+      "promote youtube channel",
+      "youtube marketing",
+      "grow youtube channel",
+      "youtube promotion strategies",
+    ],
+    toc: [
+      { id: "why-promotion-matters", title: "Why Promotion Matters" },
+      { id: "promotion-checklist", title: "15 Minute Promotion Checklist" },
+      { id: "youtube-seo", title: "YouTube SEO Optimization" },
+      { id: "social-media", title: "Social Media Promotion" },
+      { id: "community-building", title: "Community Building" },
+      { id: "collaborations", title: "Collaborations" },
+      { id: "cross-promotion", title: "Cross-Promotion Strategies" },
+      { id: "paid-promotion", title: "Paid Promotion" },
+      { id: "mistakes", title: "Promotion Mistakes to Avoid" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How do I promote my YouTube videos for free?",
+        answer:
+          "Promote for free by optimizing titles and thumbnails for search, sharing in relevant online communities, cross-posting to social media, engaging in comments on similar videos, collaborating with other creators, and using YouTube Shorts to drive traffic to longer content. Consistency and providing genuine value matter more than any single tactic.",
+      },
+      {
+        question: "How do I promote my YouTube channel on social media?",
+        answer:
+          "Share clips or highlights on Twitter, TikTok, Instagram Reels, and relevant Facebook groups. Adapt content for each platform rather than just posting links. Engage authentically in communities before promoting. Build an email list for direct notification when you upload. Quality engagement beats spamming links.",
+      },
+      {
+        question: "Should I pay to promote my YouTube videos?",
+        answer:
+          "Paid promotion can help with initial visibility but rarely builds lasting audiences. YouTube ads work best for established channels testing new content angles. For new channels, focus on organic growth first. Paid promotion amplifies what already works; it does not fix content that viewers do not want.",
+      },
+      {
+        question: "How do I get my videos to show up in YouTube search?",
+        answer:
+          "Optimize your title with target keywords, write detailed descriptions with relevant terms, use clear thumbnails that encourage clicks, and most importantly create content that viewers watch through to the end. High retention is the strongest ranking signal.",
+      },
+      {
+        question: "How long does it take to see results from YouTube promotion?",
+        answer:
+          "Organic promotion typically shows results over weeks and months, not days. Search traffic builds as YouTube learns what your content is about. Social media spikes are fast but temporary. Focus on compounding growth from multiple sources rather than expecting overnight success.",
+      },
+      {
+        question: "How do I find communities to promote my YouTube videos?",
+        answer:
+          "Search Reddit for subreddits in your niche, join Discord servers for your topic, find Facebook groups where your audience hangs out, and participate in Twitter/X conversations. Always provide value before promoting. Communities that ban self-promotion are usually not worth spamming anyway.",
+      },
+      {
+        question: "Does YouTube promote videos automatically?",
+        answer:
+          "YouTube recommends videos to viewers based on their watch history and engagement signals. If your video has strong retention and CTR, YouTube will show it to more people. This is not guaranteed promotion but earned distribution based on viewer response.",
+      },
+      {
+        question: "How do collaborations help promote my channel?",
+        answer:
+          "Collaborations expose your content to another creator's audience. Choose collaborators with similar audience size and complementary content. Genuine collaborations where both parties add value perform better than forced partnerships. Even small collaborations can introduce you to highly relevant viewers.",
+      },
+    ],
+  },
+  "how-to-see-your-subscribers-on-youtube": {
+    slug: "how-to-see-your-subscribers-on-youtube",
+    title: "How to See YouTube Subscribers (2026)",
+    shortTitle: "See Subscribers",
+    navLabel: "View Subscribers",
+    description:
+      "Learn how to check your subscriber count, see who subscribed, view subscriber analytics, and understand subscriber growth patterns on YouTube.",
+    metaDescription:
+      "How to see your subscribers on YouTube in 2026. Check your subscriber count, view subscriber lists, and understand subscriber analytics in YouTube Studio.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "8 min read",
+    category: "Analytics",
+    keywords: [
+      "how to check subscribers on youtube",
+      "how to view my subscribers on youtube",
+      "how can i see who subscribed to my youtube channel",
+      "how do i see my subscribers on youtube",
+      "youtube subscriber count",
+      "youtube subscriber list",
+      "check youtube subscribers",
+    ],
+    toc: [
+      { id: "overview", title: "Subscriber Visibility Overview" },
+      { id: "check-count", title: "How to Check Your Subscriber Count" },
+      { id: "see-who-subscribed", title: "Can You See Who Subscribed?" },
+      { id: "youtube-studio", title: "Subscriber Data in YouTube Studio" },
+      { id: "subscriber-analytics", title: "Subscriber Analytics" },
+      { id: "mobile-app", title: "Check Subscribers on Mobile" },
+      { id: "realtime", title: "Real-Time Subscriber Count" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How do I check my subscriber count on YouTube?",
+        answer:
+          "Open YouTube Studio and look at the dashboard. Your subscriber count appears prominently. For more detail, go to Analytics, then Audience. You can also see your count on the main YouTube site by clicking your channel name.",
+      },
+      {
+        question: "Can I see who subscribed to my YouTube channel?",
+        answer:
+          "You can only see subscribers who have set their subscriptions to public. In YouTube Studio, go to Analytics, then Audience, then See More under Subscribers. Most subscribers keep their subscriptions private, so you will typically only see a small portion of your total subscribers.",
+      },
+      {
+        question: "How do I view my subscribers on the YouTube mobile app?",
+        answer:
+          "Open the YouTube Studio app (not the regular YouTube app). Your subscriber count shows on the dashboard. Tap Analytics, then Audience to see more subscriber details. The mobile app shows the same data as the desktop version.",
+      },
+      {
+        question: "Why can't I see all my subscribers?",
+        answer:
+          "YouTube respects subscriber privacy. Users can make their subscriptions private, and most do. You cannot override this setting. Focus on creating content that attracts the right subscribers rather than trying to identify individuals.",
+      },
+      {
+        question: "How do I see my real-time subscriber count?",
+        answer:
+          "YouTube Studio shows a real-time subscriber count on the dashboard and in Analytics. Third party sites like Social Blade also track subscriber counts. Note that real-time counts can fluctuate as YouTube updates its database.",
+      },
+      {
+        question: "How do I see which videos got the most subscribers?",
+        answer:
+          "In YouTube Studio, go to Analytics, then Audience. The Subscribers section shows which videos drove the most new subscribers. This helps you understand what content converts viewers into subscribers.",
+      },
+      {
+        question: "What does it mean when I lose subscribers?",
+        answer:
+          "Subscriber loss is normal. YouTube periodically removes closed accounts and spam accounts, which can cause drops. Some viewers also unsubscribe if your content changes or they lose interest. Focus on net growth over time rather than daily fluctuations.",
+      },
+      {
+        question: "How accurate is YouTube's subscriber count?",
+        answer:
+          "YouTube rounds public subscriber counts above 1,000 to make the numbers cleaner. In YouTube Studio, you see exact counts. Both are accurate, just displayed differently. The Studio count is what matters for monetization thresholds.",
+      },
+    ],
+  },
+  "how-to-go-live-on-youtube": {
+    slug: "how-to-go-live-on-youtube",
+    title: "How to Go Live on YouTube (2026)",
+    shortTitle: "Go Live",
+    navLabel: "Live Streaming",
+    description:
+      "Learn how to go live on YouTube from desktop and mobile. Covers streaming setup, requirements, best practices, and how to grow your audience with live streams.",
+    metaDescription:
+      "How to go live on YouTube in 2026. Step by step guide to YouTube live streaming setup, requirements, and best practices for growing your live audience.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "12 min read",
+    category: "Content",
+    keywords: [
+      "how to go live on youtube",
+      "youtube live streaming",
+      "youtube live stream setup",
+      "stream on youtube",
+      "youtube live",
+      "go live youtube",
+    ],
+    toc: [
+      { id: "overview", title: "Live Streaming Overview" },
+      { id: "requirements", title: "Requirements to Go Live" },
+      { id: "desktop-streaming", title: "Go Live from Desktop" },
+      { id: "mobile-streaming", title: "Go Live from Mobile" },
+      { id: "streaming-software", title: "Streaming Software Options" },
+      { id: "stream-settings", title: "Optimal Stream Settings" },
+      { id: "growing-live-audience", title: "Growing Your Live Audience" },
+      { id: "monetization", title: "Live Stream Monetization" },
+      { id: "mistakes", title: "Common Live Streaming Mistakes" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How do I go live on YouTube?",
+        answer:
+          "Click Create (the plus icon) in YouTube, select Go Live. First-time streamers must enable live streaming in their account, which takes 24 hours. Choose webcam for simple streams or streaming software for more control. Add a title, description, and thumbnail, then start streaming.",
+      },
+      {
+        question: "What do I need to go live on YouTube?",
+        answer:
+          "You need a verified YouTube channel and 24 hours after enabling live streaming. For mobile streaming from the YouTube app, you need at least 50 subscribers. Equipment-wise, a webcam and microphone work for basic streams. Streaming software like OBS gives more control.",
+      },
+      {
+        question: "Can I go live on YouTube from my phone?",
+        answer:
+          "Yes. Open the YouTube app, tap Create, then Go Live. Mobile streaming requires at least 50 subscribers. Mobile streams are simpler but offer less control than desktop streaming software. Good lighting and stable internet are essential for mobile streaming quality.",
+      },
+      {
+        question: "What is the best streaming software for YouTube?",
+        answer:
+          "OBS Studio is free and widely used. Streamlabs offers a more user-friendly interface with built-in alerts. XSplit is a paid option with professional features. For beginners, the built-in YouTube webcam option works fine. Upgrade to software when you need scenes and overlays.",
+      },
+      {
+        question: "How do I get more viewers on my YouTube live streams?",
+        answer:
+          "Announce streams in advance with community posts. Stream consistently at the same times so viewers know your schedule. Engage actively with chat during streams. Create compelling titles and thumbnails. Consider streaming trending topics or events in your niche.",
+      },
+      {
+        question: "Can I make money from YouTube live streams?",
+        answer:
+          "Yes, if you meet YouTube Partner Program requirements. Live streams can earn through Super Chat (paid messages), Super Stickers, channel memberships, and ads. Super Chat is often more lucrative per viewer than regular video ads because engaged viewers tip directly.",
+      },
+      {
+        question: "What internet speed do I need to stream on YouTube?",
+        answer:
+          "YouTube recommends at least 3 Mbps upload speed for 720p streaming and 6 Mbps for 1080p. Use a wired ethernet connection rather than WiFi for stability. Test your connection before important streams. Consider lowering quality if you experience buffering.",
+      },
+      {
+        question: "Can I save my YouTube live stream as a video?",
+        answer:
+          "Yes, YouTube automatically archives live streams to your channel. You can edit the archive after the stream ends, adjust visibility, and change the title or thumbnail. Archives become searchable and can continue generating views long after the live event.",
+      },
+    ],
+  },
+  "buy-youtube-subscribers": {
+    slug: "buy-youtube-subscribers",
+    title: "Buying YouTube Subscribers: Why It Hurts (2026)",
+    shortTitle: "Buying Subscribers",
+    navLabel: "Avoid Buying Subs",
+    description:
+      "Why buying YouTube subscribers hurts your channel, violates policies, and wastes money. Learn the real consequences and discover effective alternatives for organic growth.",
+    metaDescription:
+      "Why buying YouTube subscribers destroys your channel. Understand the policy violations, engagement damage, and real consequences. Plus safe alternatives for organic growth.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "10 min read",
+    category: "Safety",
+    keywords: [
+      "buy youtube subscribers",
+      "buy subscribers",
+      "buy followers youtube",
+      "purchase youtube subscribers",
+      "youtube subscriber services",
+      "are bought subscribers safe",
+    ],
+    toc: [
+      { id: "overview", title: "The Problem with Buying Subscribers" },
+      { id: "how-it-works", title: "How Subscriber Services Work" },
+      { id: "policy-violations", title: "YouTube Policy Violations" },
+      { id: "damage-to-channel", title: "How It Damages Your Channel" },
+      { id: "detection", title: "How YouTube Detects Fake Subscribers" },
+      { id: "consequences", title: "Real Consequences" },
+      { id: "alternatives", title: "Effective Alternatives" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "Is it safe to buy YouTube subscribers?",
+        answer:
+          "No. Buying subscribers violates YouTube Terms of Service. It damages your engagement metrics because fake subscribers never watch your videos. YouTube regularly removes fake accounts, and repeated violations can result in channel termination. There is no safe way to buy subscribers.",
+      },
+      {
+        question: "Can YouTube detect purchased subscribers?",
+        answer:
+          "Yes. YouTube uses sophisticated systems to identify fake accounts, bot behavior, and artificial engagement patterns. They regularly audit channels and remove fake subscribers. Even if purchases are not detected immediately, they harm your engagement rate which hurts recommendations.",
+      },
+      {
+        question: "What happens if YouTube catches me buying subscribers?",
+        answer:
+          "YouTube may remove fake subscribers, causing sudden count drops. Repeated violations can result in strikes, monetization suspension, or channel termination. Even if not caught directly, the damaged engagement metrics will limit your organic reach.",
+      },
+      {
+        question: "Do bought subscribers watch my videos?",
+        answer:
+          "No. Purchased subscribers are fake accounts or bots. They never watch your content, like, comment, or share. This destroys your engagement rate, which signals to YouTube that your content is not worth recommending. Fake subscribers make real growth harder.",
+      },
+      {
+        question: "Why do some channels seem to succeed after buying subscribers?",
+        answer:
+          "They do not. Channels with real success have genuine engagement. Some channels buy subscribers and also create good content, succeeding despite the fake subscribers, not because of them. The purchased subscribers are dead weight that hurts their recommendation potential.",
+      },
+      {
+        question: "What about services claiming to provide real subscribers?",
+        answer:
+          "No service can ethically provide real subscribers. If they claim to, they are either lying, using incentivized subscriptions (also against policy), or using sub4sub schemes. All of these violate YouTube policies and result in subscribers who never engage with your content.",
+      },
+      {
+        question: "How can I grow subscribers without buying them?",
+        answer:
+          "Create content viewers want to watch. Optimize titles and thumbnails for clicks. Improve retention so viewers watch longer. Ask for subscriptions after delivering value. Study what works in your niche. Consistent quality content is the only sustainable path to real subscribers.",
+      },
+      {
+        question: "My competitor bought subscribers. Should I do the same?",
+        answer:
+          "No. Their fake subscribers give them no advantage. If they have real success, it comes from content quality, not purchased numbers. Focus on your own content and audience. Authentic growth compounds over time while fake growth stagnates.",
+      },
+    ],
+  },
+  "buy-youtube-views": {
+    slug: "buy-youtube-views",
+    title: "Buying YouTube Views: Why It Hurts (2026)",
+    shortTitle: "Buying Views",
+    navLabel: "Avoid Buying Views",
+    description:
+      "Why buying YouTube views damages your channel, wastes money, and violates platform policies. Learn the real risks and discover legitimate strategies to get more views.",
+    metaDescription:
+      "Why buying YouTube views hurts your channel in 2026. Understand the policy risks, detection methods, and engagement damage. Plus legitimate alternatives for real views.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "10 min read",
+    category: "Safety",
+    keywords: [
+      "buy youtube views",
+      "purchase youtube views",
+      "youtube view services",
+      "fake youtube views",
+      "are bought views safe",
+      "youtube view bots",
+    ],
+    toc: [
+      { id: "overview", title: "The Problem with Buying Views" },
+      { id: "how-view-services-work", title: "How View Services Work" },
+      { id: "policy-violations", title: "YouTube Policy Violations" },
+      { id: "damage-to-metrics", title: "How It Damages Your Metrics" },
+      { id: "detection", title: "How YouTube Detects Fake Views" },
+      { id: "monetization-impact", title: "Impact on Monetization" },
+      { id: "legitimate-alternatives", title: "Legitimate Alternatives" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "Is it safe to buy YouTube views?",
+        answer:
+          "No. Buying views violates YouTube Terms of Service and puts your channel at risk. Fake views damage your retention metrics because bots do not watch your content. YouTube detects and removes fake views, and repeated violations can result in channel penalties or termination.",
+      },
+      {
+        question: "Can YouTube detect purchased views?",
+        answer:
+          "Yes. YouTube uses advanced systems to identify bot traffic, unusual viewing patterns, and coordinated activity. They regularly audit view counts and remove artificial views. Even views that initially count may be removed later during audits.",
+      },
+      {
+        question: "Do bought views help my video get recommended?",
+        answer:
+          "No. YouTube recommendations depend on engagement signals like watch time, retention, and interaction. Fake views have zero retention because bots do not watch. This actually hurts your video's performance in recommendations. Real views from engaged viewers are the only views that help.",
+      },
+      {
+        question: "What happens to monetization if I buy views?",
+        answer:
+          "Fake views do not count toward monetization thresholds and violate partner program policies. If YouTube detects artificial inflation, you could lose monetization eligibility or have earnings withheld. Advertisers also avoid channels with suspicious traffic patterns.",
+      },
+      {
+        question: "My video has low views. Will buying views kickstart growth?",
+        answer:
+          "No. Growth comes from content that viewers want to watch. Buying views creates the appearance of interest but no actual engagement. YouTube's algorithm sees that viewers are not watching, and recommendations decrease. Fix your content and packaging instead of faking results.",
+      },
+      {
+        question: "What about high retention view services?",
+        answer:
+          "Services claiming high retention views are either lying or using click farms that still produce unnatural patterns. YouTube detects these through behavioral analysis, geographic anomalies, and engagement ratios. No purchased view service can replicate genuine viewer behavior.",
+      },
+      {
+        question: "How do I get more real views on YouTube?",
+        answer:
+          "Optimize titles and thumbnails to improve click-through rate. Create content that keeps viewers watching to boost retention. Research what topics your audience wants. Post consistently. Promote in relevant communities. Study your analytics to understand what works. Real growth takes effort but compounds sustainably.",
+      },
+      {
+        question: "A competitor is buying views. What should I do?",
+        answer:
+          "Focus on your own channel. Their fake views give them no algorithmic advantage and may be hurting them. If their videos have poor retention despite high view counts, YouTube will not recommend them. Your genuine engagement will outperform their artificial numbers over time.",
+      },
+    ],
+  },
+  "youtube-analytics-tools": {
+    slug: "youtube-analytics-tools",
+    title: "YouTube Analytics Tools (2026)",
+    shortTitle: "Analytics Tools",
+    navLabel: "Analytics Tools",
+    description:
+      "Discover the best YouTube analytics tools to track your channel stats, monitor growth, and analyze performance. Covers YouTube Studio, third-party trackers, and what metrics matter.",
+    metaDescription:
+      "Best YouTube analytics tools in 2026. Learn to track your stats, monitor subscriber growth, and analyze video performance with YouTube Studio and third-party tools.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "12 min read",
+    category: "Analytics",
+    keywords: [
+      "youtube stats",
+      "youtube statistics",
+      "youtube tracker",
+      "youtube analytics tools",
+      "youtube channel stats",
+      "track youtube growth",
+      "youtube performance metrics",
+    ],
+    toc: [
+      { id: "overview", title: "Why Analytics Matter" },
+      { id: "youtube-studio", title: "YouTube Studio Analytics" },
+      { id: "key-metrics", title: "Key Metrics to Track" },
+      { id: "third-party-tools", title: "Third-Party Analytics Tools" },
+      { id: "competitor-tracking", title: "Tracking Competitor Stats" },
+      { id: "growth-tracking", title: "Tracking Your Growth" },
+      { id: "using-data", title: "Using Data to Improve" },
+      { id: "mistakes", title: "Analytics Mistakes to Avoid" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "What is the best YouTube analytics tool?",
+        answer:
+          "YouTube Studio is the most important because it shows your actual performance data directly from YouTube. For competitor research and industry benchmarking, tools like Social Blade, vidIQ, and TubeBuddy offer additional insights. Start with YouTube Studio and add tools as needed.",
+      },
+      {
+        question: "How do I check my YouTube channel stats?",
+        answer:
+          "Go to YouTube Studio and click Analytics in the left menu. The Overview tab shows views, watch time, and subscribers. The Reach tab shows impressions and CTR. Engagement shows retention and playlists. Audience shows who watches. Use Advanced Mode for detailed comparisons.",
+      },
+      {
+        question: "What YouTube stats should I track?",
+        answer:
+          "Focus on click-through rate (CTR) for packaging effectiveness, average view duration for content quality, subscriber conversion rate for audience building, traffic sources to understand where views come from, and impressions to see how much YouTube promotes you. Track trends over time, not daily fluctuations.",
+      },
+      {
+        question: "How do I track my YouTube subscriber growth?",
+        answer:
+          "In YouTube Studio Analytics, the Audience tab shows subscriber changes. See which videos gained or lost subscribers, subscriber sources, and growth over time. Third-party tools like Social Blade show historical growth charts and can project future milestones.",
+      },
+      {
+        question: "Can I see other channels' YouTube statistics?",
+        answer:
+          "You can see public stats like subscriber count, view counts, and upload dates. Tools like Social Blade show estimated earnings and growth trends. You cannot see private metrics like CTR, retention, or revenue for other channels. Focus on patterns you can observe publicly.",
+      },
+      {
+        question: "What is a YouTube tracker?",
+        answer:
+          "A YouTube tracker monitors channel statistics over time. YouTube Studio tracks your own channel. Third-party trackers like Social Blade track public data for any channel. Use trackers to monitor your progress, set goals, and understand growth patterns in your niche.",
+      },
+      {
+        question: "How often should I check my YouTube analytics?",
+        answer:
+          "Check weekly for trends and monthly for strategic decisions. Avoid obsessing over daily numbers, which fluctuate naturally. After uploading, check initial performance at 24 hours, 48 hours, and one week. Focus on long-term patterns rather than short-term noise.",
+      },
+      {
+        question: "Which metrics matter most for YouTube growth?",
+        answer:
+          "Retention and CTR are the most important for algorithmic growth. High retention signals quality content; high CTR signals effective packaging. Together they determine how much YouTube recommends your videos. Subscriber count matters less than whether subscribers actually watch.",
+      },
+    ],
+  },
+  "find-similar-youtube-channels": {
+    slug: "find-similar-youtube-channels",
+    title: "Find Similar YouTube Channels (2026)",
+    shortTitle: "Find Similar Channels",
+    navLabel: "Similar Channels",
+    description:
+      "Learn how to find similar YouTube channels in your niche for competitor analysis, collaboration opportunities, and content inspiration. Step-by-step research methods.",
+    metaDescription:
+      "How to find similar YouTube channels in 2026. Discover competitors and collaborators in your niche using search, suggestions, and research tools.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "10 min read",
+    category: "Research",
+    keywords: [
+      "find similar youtube channels",
+      "youtube channel finder",
+      "find youtube competitors",
+      "discover youtube channels",
+      "youtube niche research",
+      "similar channels to mine",
+    ],
+    toc: [
+      { id: "why-find-similar", title: "Why Find Similar Channels" },
+      { id: "using-youtube-search", title: "Using YouTube Search" },
+      { id: "suggested-channels", title: "Suggested Channels Feature" },
+      { id: "end-screens", title: "End Screen and Card Analysis" },
+      { id: "community-research", title: "Community Research" },
+      { id: "tools", title: "Channel Discovery Tools" },
+      { id: "analyzing-competitors", title: "What to Analyze" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How do I find YouTube channels similar to mine?",
+        answer:
+          "Search for your main topics and note which channels appear consistently. Check the suggested channels sidebar on videos like yours. Look at who appears in end screens and cards of channels in your niche. Ask your audience what other channels they watch.",
+      },
+      {
+        question: "Is there a YouTube channel finder tool?",
+        answer:
+          "YouTube does not have a built-in channel finder, but search suggestions, the Explore page, and suggested videos help discover channels. Third-party tools can search by niche keywords. The most effective method is studying who appears alongside successful videos in your topic.",
+      },
+      {
+        question: "How do I find competitors in my YouTube niche?",
+        answer:
+          "Search your main keywords and identify channels making similar content. Look for channels with comparable subscriber counts and upload styles. Check which channels get suggested alongside videos in your niche. Your competitors are whoever your target audience watches instead of you.",
+      },
+      {
+        question: "How do I analyze a competitor YouTube channel?",
+        answer:
+          "Study their most popular videos to understand what resonates. Note their upload frequency, video length, and content themes. Analyze their titles and thumbnails for patterns. Watch how they structure intros and keep attention. Learn from their experiments without copying directly.",
+      },
+      {
+        question: "Should I collaborate with similar YouTube channels?",
+        answer:
+          "Yes, collaborations can help both channels reach new audiences. Look for channels with similar subscriber counts and complementary content. Genuine collaborations where both add value work better than forced partnerships. Even small channels benefit from authentic collaboration.",
+      },
+      {
+        question: "How many competitor channels should I track?",
+        answer:
+          "Track 5 to 10 channels actively. Include some at your level, some slightly larger, and a few top performers in your niche. Too many becomes overwhelming; too few limits your perspective. Focus on channels you can realistically learn from.",
+      },
+      {
+        question: "What should I look for in competitor videos?",
+        answer:
+          "Look for outliers: videos that performed much better than their average. Study the topic, title, thumbnail, and structure. Note patterns in their top performers. Understand why certain videos resonated and consider how to bring those insights to your own content.",
+      },
+      {
+        question: "How do I find channels to collaborate with?",
+        answer:
+          "Start with channels you genuinely enjoy. Look for creators at similar subscriber levels who make complementary content. Engage authentically before pitching. Propose specific collaboration ideas that benefit both audiences. Quality matches matter more than quantity.",
+      },
+    ],
+  },
+  "how-to-be-a-youtuber": {
+    slug: "how-to-be-a-youtuber",
+    title: "How to Be a YouTuber (2026)",
+    shortTitle: "Be a YouTuber",
+    navLabel: "Become a YouTuber",
+    description:
+      "Learn how to become a YouTuber from scratch. Covers finding your niche, creating content, growing an audience, and building a sustainable channel. Beginner-friendly guide.",
+    metaDescription:
+      "How to be a YouTuber in 2026. Complete beginner guide to starting a YouTube channel, finding your niche, creating content, and building an audience.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "16 min read",
+    category: "Getting Started",
+    keywords: [
+      "how to be a youtuber",
+      "become a youtuber",
+      "youtube channel ideas",
+      "youtube for beginners",
+      "start youtube channel",
+      "youtuber guide",
+    ],
+    toc: [
+      { id: "what-it-takes", title: "What It Takes to Be a YouTuber" },
+      { id: "finding-niche", title: "Finding Your Niche" },
+      { id: "channel-setup", title: "Setting Up Your Channel" },
+      { id: "equipment", title: "Equipment for Beginners" },
+      { id: "content-creation", title: "Creating Your First Videos" },
+      { id: "consistency", title: "Building Consistency" },
+      { id: "growing-audience", title: "Growing Your Audience" },
+      { id: "common-challenges", title: "Common Challenges" },
+      { id: "monetization-path", title: "Path to Monetization" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How do I become a YouTuber with no experience?",
+        answer:
+          "Start by choosing a topic you know about and enjoy. Create your first video with whatever equipment you have, even a smartphone. Your early videos will not be perfect, and that is fine. Learn by doing, study what works in your niche, and improve with each upload. Experience comes from creating.",
+      },
+      {
+        question: "What niche should I choose for YouTube?",
+        answer:
+          "Pick something where you have knowledge or genuine interest, a clear audience exists with problems you can solve, other creators are succeeding (proof of demand), and you can generate many video ideas. Start specific and expand later. Your passion helps sustain effort through slow early growth.",
+      },
+      {
+        question: "What equipment do I need to start YouTube?",
+        answer:
+          "A smartphone is enough to start. Audio quality matters more than video quality, so consider a basic microphone early. Good lighting (even a window) improves quality dramatically. Upgrade gradually as you learn what you actually need for your content style.",
+      },
+      {
+        question: "How long does it take to become a successful YouTuber?",
+        answer:
+          "Success timelines vary enormously. Some channels grow quickly by finding an underserved niche; others take years of consistent effort. Focus on improving your skills and understanding your audience rather than timelines. Most overnight successes have years of work behind them.",
+      },
+      {
+        question: "Can I be a YouTuber while working a full-time job?",
+        answer:
+          "Yes, many successful creators started as side projects. Set a realistic upload schedule you can maintain. Batch content creation to be efficient. Quality matters more than quantity. Build gradually until your channel supports full-time work, if that is your goal.",
+      },
+      {
+        question: "What are good YouTube channel ideas for beginners?",
+        answer:
+          "Good ideas combine your expertise with audience demand. Tutorials, reviews, commentary, and educational content work well because they provide clear value. Avoid oversaturated niches where you cannot differentiate. Consider your unique perspective and what only you can offer.",
+      },
+      {
+        question: "How many videos do I need to post per week?",
+        answer:
+          "Consistency matters more than frequency. One quality video per week beats daily rushed content. Choose a schedule you can maintain long-term. It is better to post twice a month consistently than to burn out trying to post daily.",
+      },
+      {
+        question: "How do YouTubers make money?",
+        answer:
+          "Income sources include ad revenue (requires Partner Program), sponsorships, affiliate marketing, merchandise, memberships, and selling products or services. Diversify income streams rather than relying only on ads. Many creators earn more from sponsorships than ad revenue.",
+      },
+    ],
+  },
+  "youtube-tag-generator": {
+    slug: "youtube-tag-generator",
+    title: "YouTube Tag Generator (2026)",
+    shortTitle: "Tag Generator",
+    navLabel: "Tag Generator",
+    description:
+      "Learn how to generate and use YouTube tags effectively. Covers tag best practices, research methods, and why tags matter less than you think for SEO.",
+    metaDescription:
+      "YouTube tag generator guide for 2026. Learn how to find good tags, understand tag impact on SEO, and use tags effectively without wasting time.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "10 min read",
+    category: "SEO",
+    keywords: [
+      "youtube tag generator",
+      "tag generator",
+      "get youtube tags",
+      "how to add tags to youtube video",
+      "good tags on youtube",
+      "best hashtags for youtube",
+      "great youtube tags",
+    ],
+    toc: [
+      { id: "what-are-tags", title: "What Are YouTube Tags" },
+      { id: "do-tags-matter", title: "Do Tags Still Matter in 2026" },
+      { id: "finding-tags", title: "How to Find Good Tags" },
+      { id: "tag-best-practices", title: "Tag Best Practices" },
+      { id: "tags-vs-hashtags", title: "Tags vs Hashtags" },
+      { id: "tag-tools", title: "Tag Generator Tools" },
+      { id: "what-matters-more", title: "What Matters More Than Tags" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How do I add tags to my YouTube video?",
+        answer:
+          "In YouTube Studio, click Content, select your video, then click Details. Scroll down to Show More and find the Tags field. Add relevant keywords separated by commas. You can use up to 500 characters of tags. Add 3 to 5 focused tags rather than stuffing dozens.",
+      },
+      {
+        question: "What are good tags for YouTube videos?",
+        answer:
+          "Good tags are relevant to your video content. Use your main keyword, topic variations, and related terms. Include common misspellings if applicable. Do not use misleading tags or copy irrelevant popular tags. Quality and relevance matter more than quantity.",
+      },
+      {
+        question: "Do YouTube tags still matter in 2026?",
+        answer:
+          "Tags have minimal impact on YouTube ranking. YouTube's own documentation says tags are most useful for commonly misspelled words. Your title, thumbnail, and retention matter far more for discovery. Spend 30 seconds on tags and focus your optimization effort elsewhere.",
+      },
+      {
+        question: "What is the difference between tags and hashtags on YouTube?",
+        answer:
+          "Tags are hidden metadata that help YouTube categorize your video. Hashtags appear visibly above your video title and in the description. Hashtags are clickable and link to a results page. Both have limited SEO impact; focus on content quality instead.",
+      },
+      {
+        question: "How do I see what tags other YouTubers use?",
+        answer:
+          "YouTube hides video tags by default. You can view page source or use browser extensions to see them. However, copying competitor tags will not help you rank. Their success comes from content quality and engagement, not tags.",
+      },
+      {
+        question: "What is a YouTube tag generator?",
+        answer:
+          "A tag generator suggests tags based on your topic or keyword. Tools analyze search data to recommend relevant terms. While convenient, remember that tags have minimal ranking impact. Use generators to quickly find a few relevant tags, then move on to more impactful optimizations.",
+      },
+      {
+        question: "How many tags should I use on YouTube?",
+        answer:
+          "Use 3 to 5 highly relevant tags. YouTube allows up to 500 characters, but more tags are not better. Each tag should directly relate to your video content. Stuffing tags with irrelevant terms can actually hurt your video by confusing YouTube's categorization.",
+      },
+      {
+        question: "What are the best hashtags for YouTube?",
+        answer:
+          "Use 3 to 5 hashtags that describe your video content. Include your main topic and niche identifiers. Avoid overly broad hashtags like gaming or vlog where you will be lost. Hashtags in your title are more visible than those buried in the description.",
+      },
+    ],
+  },
+  "youtube-shorts-length": {
+    slug: "youtube-shorts-length",
+    title: "YouTube Shorts Length & Specs (2026)",
+    shortTitle: "Shorts Length",
+    navLabel: "Shorts Length",
+    description:
+      "Complete guide to YouTube Shorts specifications. Covers video length limits, aspect ratio requirements, optimal duration for engagement, and technical requirements.",
+    metaDescription:
+      "YouTube Shorts length and specs guide for 2026. Learn the maximum duration, aspect ratio, resolution requirements, and optimal length for engagement.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "8 min read",
+    category: "Content",
+    keywords: [
+      "how long can youtube shorts be",
+      "how long are youtube shorts",
+      "youtube shorts length",
+      "youtube shorts aspect ratio",
+      "youtube shorts duration",
+      "youtube shorts specs",
+    ],
+    toc: [
+      { id: "length-limits", title: "YouTube Shorts Length Limits" },
+      { id: "aspect-ratio", title: "Aspect Ratio Requirements" },
+      { id: "optimal-length", title: "Optimal Length for Engagement" },
+      { id: "resolution", title: "Resolution and Quality" },
+      { id: "creating-shorts", title: "How to Create Shorts" },
+      { id: "shorts-vs-regular", title: "Shorts vs Regular Videos" },
+      { id: "tips", title: "Shorts Best Practices" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How long can YouTube Shorts be?",
+        answer:
+          "YouTube Shorts can be up to 60 seconds long. Videos must be 60 seconds or less to qualify as Shorts. There is no minimum length, but very short videos (under 15 seconds) may have limited engagement time to make an impact.",
+      },
+      {
+        question: "What aspect ratio do YouTube Shorts need?",
+        answer:
+          "YouTube Shorts should be vertical with a 9:16 aspect ratio. This means 1080x1920 pixels is the standard resolution. Horizontal videos will not display properly in the Shorts feed. Square videos (1:1) can work but vertical performs best.",
+      },
+      {
+        question: "What is the optimal length for YouTube Shorts?",
+        answer:
+          "15 to 45 seconds tends to perform well. Long enough to deliver value, short enough to maintain attention. The best length depends on your content. Quick tips might work at 15 seconds; mini tutorials might need the full 60. Test different lengths with your audience.",
+      },
+      {
+        question: "What resolution should YouTube Shorts be?",
+        answer:
+          "1080x1920 pixels (1080p vertical) is the standard. This provides crisp quality on mobile devices where most Shorts are watched. You can upload higher resolution, but 1080p is sufficient. Lower resolutions may appear blurry.",
+      },
+      {
+        question: "Can I turn a regular video into a YouTube Short?",
+        answer:
+          "Yes, if you can extract a compelling 60-second vertical clip. Use Shorts to highlight key moments from longer videos. This drives viewers to your full content. Repurposing works well but ensure the clip makes sense standalone.",
+      },
+      {
+        question: "Do YouTube Shorts need to be exactly 60 seconds?",
+        answer:
+          "No, Shorts must be 60 seconds or less. Shorter videos qualify. There is no benefit to padding content to reach 60 seconds. Make your Short as long as it needs to be to deliver value, then end it. Engaging 20-second Shorts outperform boring 60-second ones.",
+      },
+      {
+        question: "How do I create a YouTube Short?",
+        answer:
+          "In the YouTube app, tap Create, then Create a Short. Record up to 60 seconds of vertical video. Add music, text, and effects. You can also upload pre-made vertical videos under 60 seconds by adding shorts to the title or description.",
+      },
+      {
+        question: "Why are my Shorts not getting views?",
+        answer:
+          "Shorts need strong hooks in the first 2 seconds. If viewers swipe past, engagement drops. Check that your videos are actually appearing in the Shorts feed (vertical, under 60 seconds). Test different content styles and posting times. Shorts discovery is algorithmic and takes time.",
+      },
+    ],
+  },
+  "youtube-shorts-monetization": {
+    slug: "youtube-shorts-monetization",
+    title: "YouTube Shorts Monetization (2026)",
+    shortTitle: "Shorts Monetization",
+    navLabel: "Shorts Money",
+    description:
+      "Learn how YouTube Shorts monetization works in 2026. Covers the Shorts revenue model, eligibility requirements, earning potential, and strategies to maximize income.",
+    metaDescription:
+      "YouTube Shorts monetization guide for 2026. Understand the revenue model, eligibility requirements, earning potential, and how to maximize your Shorts income.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "10 min read",
+    category: "Monetization",
+    keywords: [
+      "youtube shorts monetization",
+      "shorts revenue",
+      "make money from shorts",
+      "youtube shorts earnings",
+      "shorts fund",
+      "shorts partner program",
+    ],
+    toc: [
+      { id: "overview", title: "How Shorts Monetization Works" },
+      { id: "eligibility", title: "Eligibility Requirements" },
+      { id: "revenue-model", title: "The Shorts Revenue Model" },
+      { id: "earning-potential", title: "Realistic Earning Potential" },
+      { id: "maximizing-earnings", title: "Maximizing Your Earnings" },
+      { id: "shorts-vs-long", title: "Shorts vs Long-Form Revenue" },
+      { id: "strategy", title: "Shorts Monetization Strategy" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How does YouTube Shorts monetization work?",
+        answer:
+          "Shorts earn from ads shown between videos in the Shorts feed. Revenue is pooled and distributed based on your share of total Shorts views and the music used in your videos. This differs from long-form videos where ads play on your specific content.",
+      },
+      {
+        question: "What are the requirements to monetize YouTube Shorts?",
+        answer:
+          "Join the YouTube Partner Program with either 1,000 subscribers plus 10 million Shorts views in 90 days, or 1,000 subscribers plus 4,000 watch hours on long-form content. Once in the program, Shorts monetization is automatically enabled.",
+      },
+      {
+        question: "How much do YouTube Shorts pay per 1,000 views?",
+        answer:
+          "Shorts typically pay $0.01 to $0.05 per 1,000 views, much lower than long-form content. Rates vary based on viewer location, time of year, and music usage. High volume is needed to generate meaningful Shorts revenue.",
+      },
+      {
+        question: "Why do Shorts pay less than regular videos?",
+        answer:
+          "Shorts are short, so there is less ad inventory per video. Ads appear between Shorts rather than during them. Revenue is shared across all Shorts creators. The format is designed for volume and discovery rather than per-video monetization.",
+      },
+      {
+        question: "Can I make money from Shorts without the Partner Program?",
+        answer:
+          "Not directly through YouTube ad revenue. However, you can use Shorts to drive traffic to monetized long-form content, grow your audience for sponsorships, or promote products and services. Shorts work best as a growth tool rather than a primary income source.",
+      },
+      {
+        question: "Does using music affect my Shorts earnings?",
+        answer:
+          "Yes. If your Short uses licensed music from YouTube's library, a portion of revenue goes to music rights holders. Original audio Shorts keep more of the revenue. Consider using original audio or royalty-free music for better earnings.",
+      },
+      {
+        question: "How do I maximize my YouTube Shorts earnings?",
+        answer:
+          "Create high-volume, engaging content that gets views. Use original audio when possible. Post consistently to build momentum. Drive viewers to longer monetized content. Think of Shorts as part of a broader strategy rather than a standalone income source.",
+      },
+      {
+        question: "Should I focus on Shorts or long-form videos for income?",
+        answer:
+          "Long-form videos typically generate more revenue per view. Shorts excel at discovery and audience growth. The best strategy combines both: use Shorts to attract new viewers, then convert them to long-form content where you earn more per view.",
+      },
+    ],
+  },
+  "youtube-algorithm": {
+    slug: "youtube-algorithm",
+    title: "How the YouTube Algorithm Works (2026)",
+    shortTitle: "Algorithm",
+    navLabel: "Algorithm",
+    description:
+      "Understand how the YouTube algorithm decides what videos to recommend. Covers ranking factors, how to optimize for recommendations, and common algorithm myths.",
+    metaDescription:
+      "How the YouTube algorithm works in 2026. Understand ranking factors, recommendation systems, and what actually matters for getting your videos seen.",
+    datePublished: "2026-01-20",
+    dateModified: "2026-01-20",
+    readingTime: "14 min read",
+    category: "Growth",
+    keywords: [
+      "youtube algorithm",
+      "youtube recommendations",
+      "how youtube algorithm works",
+      "youtube ranking factors",
+      "beat youtube algorithm",
+      "youtube algorithm 2026",
+    ],
+    toc: [
+      { id: "overview", title: "How the Algorithm Works" },
+      { id: "recommendation-types", title: "Types of Recommendations" },
+      { id: "ranking-factors", title: "Key Ranking Factors" },
+      { id: "viewer-satisfaction", title: "Viewer Satisfaction Signals" },
+      { id: "myths", title: "Algorithm Myths Debunked" },
+      { id: "optimization", title: "Optimizing for the Algorithm" },
+      { id: "what-doesnt-work", title: "What Does Not Work" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How does the YouTube algorithm work?",
+        answer:
+          "The YouTube algorithm recommends videos it predicts viewers will watch and enjoy. It considers your watch history, what similar viewers watched, video performance metrics, and viewer satisfaction signals. The goal is keeping viewers on the platform by showing relevant content.",
+      },
+      {
+        question: "What are the main YouTube ranking factors?",
+        answer:
+          "Click-through rate (do people click), watch time (how long they watch), engagement (likes, comments, shares), and viewer satisfaction (do they watch more afterward). Retention is especially important because it directly measures content quality.",
+      },
+      {
+        question: "How do I get YouTube to recommend my videos?",
+        answer:
+          "Create content viewers want to watch through. Optimize titles and thumbnails for clicks. Improve retention by delivering value quickly and maintaining interest. Post consistently so YouTube learns your audience. There is no trick, just genuinely satisfying viewers.",
+      },
+      {
+        question: "Does posting frequency affect the algorithm?",
+        answer:
+          "Consistency helps YouTube understand your channel and audience. But quality matters more than quantity. One well-performing video beats several poor performers. Find a sustainable schedule that lets you maintain quality. More videos only helps if they are good.",
+      },
+      {
+        question: "Does the YouTube algorithm favor certain video lengths?",
+        answer:
+          "YouTube favors videos that keep viewers watching, regardless of length. A 5-minute video with 80% retention performs better than a 20-minute video with 30% retention. Match your length to what your content requires. Do not pad for length or cut valuable content short.",
+      },
+      {
+        question: "Why do my videos stop getting views after a few days?",
+        answer:
+          "Initial performance depends on how your existing audience responds. If early viewers watch through and engage, YouTube shows it to more people. If not, promotion slows. Some videos find audiences later through search or getting picked up by suggestions. Evergreen content has longer life.",
+      },
+      {
+        question: "Can I beat the YouTube algorithm?",
+        answer:
+          "There is nothing to beat. The algorithm tries to show viewers what they want. If you make content viewers want to watch, the algorithm works for you. If you try to trick it, you might get initial views but poor retention will limit growth. Work with the algorithm, not against it.",
+      },
+      {
+        question: "Does the algorithm change frequently?",
+        answer:
+          "YouTube continuously improves its recommendation systems, but the core principle stays the same: recommend videos viewers will enjoy. Focus on viewer satisfaction rather than chasing algorithm updates. Channels that create genuine value adapt easily to any changes.",
+      },
+    ],
+  },
 } as const;
 
-// Array version for iteration (nav, sitemap)
+/**
+ * Array version for iteration (nav, sitemap, card grids)
+ * 
+ * ctaLabel is generated from shortTitle to ensure descriptive anchor text
+ * for SEO and AI search indexability. Pattern: "Read {topic} guide"
+ */
 export const learnArticles = Object.values(LEARN_ARTICLES).map((article) => ({
   slug: article.slug,
   label: article.navLabel,
@@ -906,6 +1865,8 @@ export const learnArticles = Object.values(LEARN_ARTICLES).map((article) => ({
   description: article.description,
   readingTime: article.readingTime,
   category: article.category,
+  /** Descriptive CTA label for link anchor text - avoids generic "Learn More" */
+  ctaLabel: `Read ${article.shortTitle.toLowerCase()} guide`,
 }));
 
 // Type exports

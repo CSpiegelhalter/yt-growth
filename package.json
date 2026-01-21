@@ -33,6 +33,7 @@
     "test:all": "bun run test:unit && bun run test:integration && bun run test:e2e",
     "test:db:reset": "bun scripts/test/reset-db.ts",
     "typecheck": "rm -rf .next/types && tsc --noEmit",
+    "check:anchors": "bun scripts/check-anchor-text.ts",
     "create:google-reviewer": "bun scripts/create-google-reviewer.ts"
   },
   "dependencies": {

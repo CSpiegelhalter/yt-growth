@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { BRAND } from "@/lib/brand";
+import { CANONICAL_ORIGIN } from "@/lib/brand";
 
 /**
  * Generate robots.txt for SEO
@@ -11,9 +11,10 @@ import { BRAND } from "@/lib/brand";
  * - All logged-in app routes (dashboard, profile, ideas, etc.)
  *
  * Note: All disallowed routes also have noindex metadata as a defense-in-depth.
+ * Sitemap URL uses the canonical www origin for consistency.
  */
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${BRAND.domain}`;
+  const baseUrl = CANONICAL_ORIGIN;
 
   return {
     rules: [

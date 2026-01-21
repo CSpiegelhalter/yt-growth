@@ -1071,6 +1071,127 @@ label {
   box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
 }
 
+/* SEO Content Section - Additional text-rich content */
+.landingSeoSection {
+  padding: var(--space-12) var(--space-4);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.landingSeoTitle {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  text-align: center;
+  margin-bottom: var(--space-4);
+  color: var(--text);
+}
+
+.landingSeoIntro {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  text-align: center;
+  margin-bottom: var(--space-8);
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landingSeoContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+.landingSeoBlock {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+
+.landingSeoBlock h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text);
+  margin-bottom: var(--space-3);
+}
+
+.landingSeoBlock p {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
+/* Who It's For / Use Cases Grid */
+.landingSeoGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+@media (min-width: 768px) {
+  .landingSeoGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.landingSeoGridSection {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+
+.landingSeoGridSection h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text);
+  margin-bottom: var(--space-4);
+}
+
+.landingSeoList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.landingSeoList li {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: var(--leading-relaxed);
+}
+
+.landingSeoList li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--primary);
+}
+
+.landingSeoCallout {
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--secondary-light) 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+  text-align: center;
+}
+
+.landingSeoCallout p {
+  font-size: var(--text-base);
+  color: #4338ca;
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
 /* =====================================
    STATIC HEADER (for public pages)
    Server component - zero client JS

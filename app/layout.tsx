@@ -1,6 +1,6 @@
 import { Inter } from "next/font/google";
 import { Providers } from "@/components/Providers";
-import { BRAND, STRUCTURED_DATA } from "@/lib/brand";
+import { BRAND, CANONICAL_ORIGIN, STRUCTURED_DATA } from "@/lib/brand";
 import { Analytics } from "@vercel/analytics/next";
 import "@/app/globals.css";
 import type { Metadata, Viewport } from "next";
@@ -39,9 +39,7 @@ export const metadata: Metadata = {
     template: `%s | ${BRAND.name}`,
   },
   description: BRAND.description,
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || `https://${BRAND.domain}`
-  ),
+  metadataBase: new URL(CANONICAL_ORIGIN),
   keywords: [
     "youtube growth tool",
     "youtube analytics",
@@ -99,7 +97,7 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   alternates: {
-    canonical: BRAND.url,
+    canonical: CANONICAL_ORIGIN,
   },
 };
 

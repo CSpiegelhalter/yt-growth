@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND, FEATURES } from "@/lib/brand";
+import { HOME_CONTENT } from "@/lib/content/home";
 import { HeroStaticCTAs } from "@/components/HeroStaticCTAs";
 
 export const metadata: Metadata = {
@@ -248,6 +249,47 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* SEO Content Section - Additional text-rich content */}
+      <section className="landingSeoSection">
+        <h2 className="landingSeoTitle">{HOME_CONTENT.seoSection.title}</h2>
+        <p className="landingSeoIntro">{HOME_CONTENT.seoSection.intro}</p>
+
+        {/* Content Paragraphs */}
+        <div className="landingSeoContent">
+          {HOME_CONTENT.seoSection.paragraphs.map((para) => (
+            <div key={para.heading} className="landingSeoBlock">
+              <h3>{para.heading}</h3>
+              <p>{para.text}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Who It's For + Use Cases */}
+        <div className="landingSeoGrid">
+          <div className="landingSeoGridSection">
+            <h3>{HOME_CONTENT.seoSection.whoItsFor.title}</h3>
+            <ul className="landingSeoList">
+              {HOME_CONTENT.seoSection.whoItsFor.items.map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="landingSeoGridSection">
+            <h3>{HOME_CONTENT.seoSection.useCases.title}</h3>
+            <ul className="landingSeoList">
+              {HOME_CONTENT.seoSection.useCases.items.map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Callout */}
+        <div className="landingSeoCallout">
+          <p>{HOME_CONTENT.seoSection.callout.text}</p>
+        </div>
+      </section>
+
       {/* FAQ Section */}
       <section className="landingFaqSection" id="faq">
         <h2 className="landingSectionTitle">Frequently Asked Questions</h2>
@@ -280,8 +322,16 @@ export default function HomePage() {
             question="Do I need a minimum number of videos or subscribers?"
             answer="ChannelBoost works best for channels with at least 10 videos and some view history. The more data we have, the better our insights. However, even newer channels can benefit from competitor analysis and video ideas based on niche trends."
           />
+          {/* Additional FAQs from content */}
+          {HOME_CONTENT.additionalFaq.map((faq) => (
+            <FAQItem
+              key={faq.question}
+              question={faq.question}
+              answer={faq.answer}
+            />
+          ))}
         </div>
-        {/* FAQ JSON-LD Schema - All 7 FAQ items for complete structured data */}
+        {/* FAQ JSON-LD Schema - All FAQ items for complete structured data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -343,6 +393,30 @@ export default function HomePage() {
                   acceptedAnswer: {
                     "@type": "Answer",
                     text: "ChannelBoost works best for channels with at least 10 videos and some view history. The more data we have, the better our insights. However, even newer channels can benefit from competitor analysis and video ideas based on niche trends.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Is ChannelBoost free to use?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "You can connect your channel and see basic insights for free. Pro features like unlimited video ideas, advanced retention analysis, and competitor tracking require a subscription.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "How is ChannelBoost different from YouTube Studio?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "YouTube Studio shows you raw data. ChannelBoost interprets that data and gives you specific, actionable recommendations. We also add competitor analysis, AI video ideas, and niche benchmarking that YouTube doesn't provide.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Is my channel data secure?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Yes. We use OAuth 2.0 for authentication (we never see your password), request only read-only analytics access, and encrypt all stored data. We never share your information with third parties.",
                   },
                 },
               ],

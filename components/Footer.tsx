@@ -18,7 +18,7 @@ export function Footer() {
 
         <nav className={s.links} aria-label="Footer navigation">
           <Link href="/learn" className={s.link}>
-            Learn
+            YouTube Guides
           </Link>
           <span className={s.divider} aria-hidden="true">·</span>
           <Link href="/contact" className={s.link}>
