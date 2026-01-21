@@ -33,11 +33,6 @@ interface CliArgs {
   selfTest: boolean;
 }
 
-interface VideoSearchResult {
-  videoId: string;
-  query: string;
-}
-
 interface VideoDetails {
   videoId: string;
   channelId: string;
