@@ -869,6 +869,185 @@ export function computeChannelBaselines(
   };
 }
 
+// ============================================
+// ENGAGEMENT OUTLIER DETECTION
+// ============================================
+
+export type EngagementOutlierResult = {
+  /** The computed engagement score: (likes + comments) / views */
+  engagementScore: number;
+  /** Whether this video has exceptional engagement */
+  isOutlier: boolean;
+  /** Human-readable label for the engagement level */
+  label: "Exceptional" | "High" | "Above Average" | "Average" | "Below Average";
+  /** Tooltip explanation */
+  explanation: string;
+  /** How the outlier was computed */
+  method: "channel_comparison" | "heuristic_threshold";
+};
+
+/**
+ * Detect if a video has exceptional engagement (outlier detection).
+ * 
+ * Engagement score = (likes + comments) / max(views, 1)
+ * 
+ * Two modes:
+ * 1. If we have channel's recent videos: compute median and flag outliers using IQR
+ * 2. If single video only: use heuristic thresholds based on platform benchmarks
+ * 
+ * Platform benchmarks (approximate):
+ * - Exceptional: engagement > 6% (6 engagements per 100 views)
+ * - High: engagement 4-6%
+ * - Above Average: engagement 2.5-4%
+ * - Average: engagement 1-2.5%
+ * - Below Average: engagement < 1%
+ */
+export function detectEngagementOutlier(input: {
+  views: number;
+  likes: number;
+  comments: number;
+  /** Optional: recent channel videos to compute relative outlier */
+  channelVideos?: Array<{
+    views: number;
+    likes: number;
+    comments: number;
+  }>;
+}): EngagementOutlierResult {
+  const { views, likes, comments, channelVideos } = input;
+  
+  // Compute engagement score
+  const safeViews = Math.max(views, 1);
+  const engagementScore = (likes + comments) / safeViews;
+  const engagementPct = engagementScore * 100;
+  
+  // Method 1: Channel comparison (if we have data)
+  if (channelVideos && channelVideos.length >= 5) {
+    const channelScores = channelVideos
+      .map(v => (v.likes + v.comments) / Math.max(v.views, 1))
+      .sort((a, b) => a - b);
+    
+    // Compute median and IQR
+    const n = channelScores.length;
+    const median = n % 2 === 0
+      ? (channelScores[n / 2 - 1] + channelScores[n / 2]) / 2
+      : channelScores[Math.floor(n / 2)];
+    
+    const q1Idx = Math.floor(n * 0.25);
+    const q3Idx = Math.floor(n * 0.75);
+    const q1 = channelScores[q1Idx];
+    const q3 = channelScores[q3Idx];
+    const iqr = q3 - q1;
+    
+    // Outlier thresholds
+    const highThreshold = median + iqr * 1.0; // Above upper quartile
+    const exceptionalThreshold = median + iqr * 1.5; // 1.5x IQR above Q3
+    
+    const medianPct = (median * 100).toFixed(2);
+    
+    if (engagementScore >= exceptionalThreshold) {
+      return {
+        engagementScore,
+        isOutlier: true,
+        label: "Exceptional",
+        explanation: `Engagement is ${(engagementScore / median).toFixed(1)}x the channel median (${medianPct}%). This video is significantly outperforming.`,
+        method: "channel_comparison",
+      };
+    }
+    
+    if (engagementScore >= highThreshold) {
+      return {
+        engagementScore,
+        isOutlier: true,
+        label: "High",
+        explanation: `Engagement is ${(engagementScore / median).toFixed(1)}x the channel median (${medianPct}%). Above average for this channel.`,
+        method: "channel_comparison",
+      };
+    }
+    
+    if (engagementScore >= median) {
+      return {
+        engagementScore,
+        isOutlier: false,
+        label: "Above Average",
+        explanation: `Engagement is at or above the channel median (${medianPct}%).`,
+        method: "channel_comparison",
+      };
+    }
+    
+    if (engagementScore >= q1) {
+      return {
+        engagementScore,
+        isOutlier: false,
+        label: "Average",
+        explanation: `Engagement is near the channel median (${medianPct}%).`,
+        method: "channel_comparison",
+      };
+    }
+    
+    return {
+      engagementScore,
+      isOutlier: false,
+      label: "Below Average",
+      explanation: `Engagement is below the channel median (${medianPct}%).`,
+      method: "channel_comparison",
+    };
+  }
+  
+  // Method 2: Heuristic threshold (single video)
+  // Based on platform benchmarks:
+  // - Avg YouTube like rate: ~2-4%
+  // - Avg comments/1K: ~1-3
+  // Combined engagement > 5-6% is strong
+  
+  if (engagementPct >= 6) {
+    return {
+      engagementScore,
+      isOutlier: true,
+      label: "Exceptional",
+      explanation: `${engagementPct.toFixed(1)}% engagement rate. Top-tier performance - viewers are actively responding.`,
+      method: "heuristic_threshold",
+    };
+  }
+  
+  if (engagementPct >= 4) {
+    return {
+      engagementScore,
+      isOutlier: true,
+      label: "High",
+      explanation: `${engagementPct.toFixed(1)}% engagement rate. Strong audience response.`,
+      method: "heuristic_threshold",
+    };
+  }
+  
+  if (engagementPct >= 2.5) {
+    return {
+      engagementScore,
+      isOutlier: false,
+      label: "Above Average",
+      explanation: `${engagementPct.toFixed(1)}% engagement rate. Solid performance.`,
+      method: "heuristic_threshold",
+    };
+  }
+  
+  if (engagementPct >= 1) {
+    return {
+      engagementScore,
+      isOutlier: false,
+      label: "Average",
+      explanation: `${engagementPct.toFixed(1)}% engagement rate. Typical for YouTube.`,
+      method: "heuristic_threshold",
+    };
+  }
+  
+  return {
+    engagementScore,
+    isOutlier: false,
+    label: "Below Average",
+    explanation: `${engagementPct.toFixed(1)}% engagement rate. Lower than typical.`,
+    method: "heuristic_threshold",
+  };
+}
+
 /**
  * Compare a video's metrics to channel baselines and return verdict
  */

@@ -12,6 +12,7 @@ import {
   analyzeExternalLinks,
   analyzeHashtags,
   computePublicSignals,
+  detectEngagementOutlier,
 } from "@/lib/competitor-utils";
 
 describe("formatDuration", () => {
@@ -364,5 +365,166 @@ describe("computePublicSignals", () => {
     // With 0 views, rates should be null, not NaN
     // (division by zero protection)
     expect(result.likeRate).toBeNull();
+  });
+});
+
+describe("detectEngagementOutlier", () => {
+  describe("heuristic threshold mode (single video)", () => {
+    it("labels exceptional engagement (>6%)", () => {
+      const result = detectEngagementOutlier({
+        views: 10000,
+        likes: 600,
+        comments: 50,
+      });
+      expect(result.label).toBe("Exceptional");
+      expect(result.isOutlier).toBe(true);
+      expect(result.method).toBe("heuristic_threshold");
+    });
+
+    it("labels high engagement (4-6%)", () => {
+      const result = detectEngagementOutlier({
+        views: 10000,
+        likes: 400,
+        comments: 50,
+      });
+      expect(result.label).toBe("High");
+      expect(result.isOutlier).toBe(true);
+    });
+
+    it("labels above average engagement (2.5-4%)", () => {
+      const result = detectEngagementOutlier({
+        views: 10000,
+        likes: 250,
+        comments: 25,
+      });
+      expect(result.label).toBe("Above Average");
+      expect(result.isOutlier).toBe(false);
+    });
+
+    it("labels average engagement (1-2.5%)", () => {
+      const result = detectEngagementOutlier({
+        views: 10000,
+        likes: 150,
+        comments: 10,
+      });
+      expect(result.label).toBe("Average");
+      expect(result.isOutlier).toBe(false);
+    });
+
+    it("labels below average engagement (<1%)", () => {
+      const result = detectEngagementOutlier({
+        views: 10000,
+        likes: 50,
+        comments: 5,
+      });
+      expect(result.label).toBe("Below Average");
+      expect(result.isOutlier).toBe(false);
+    });
+
+    it("handles zero views gracefully", () => {
+      const result = detectEngagementOutlier({
+        views: 0,
+        likes: 100,
+        comments: 10,
+      });
+      // Should not throw, should compute based on max(views, 1)
+      expect(result.engagementScore).toBe(110); // (100+10)/1
+      expect(result.label).toBe("Exceptional");
+    });
+  });
+
+  describe("channel comparison mode (with channel data)", () => {
+    const channelVideos = [
+      { views: 10000, likes: 200, comments: 20 }, // 2.2%
+      { views: 8000, likes: 160, comments: 16 }, // 2.2%
+      { views: 12000, likes: 240, comments: 24 }, // 2.2%
+      { views: 9000, likes: 180, comments: 18 }, // 2.2%
+      { views: 11000, likes: 220, comments: 22 }, // 2.2%
+    ];
+
+    it("uses channel comparison when data is available", () => {
+      const result = detectEngagementOutlier({
+        views: 10000,
+        likes: 200,
+        comments: 20,
+        channelVideos,
+      });
+      expect(result.method).toBe("channel_comparison");
+    });
+
+    it("detects exceptional outlier above channel median", () => {
+      const result = detectEngagementOutlier({
+        views: 10000,
+        likes: 600,
+        comments: 60, // 6.6% vs ~2.2% median
+        channelVideos,
+      });
+      expect(result.isOutlier).toBe(true);
+      expect(result.label).toBe("Exceptional");
+    });
+
+    it("labels above average when at channel median", () => {
+      const result = detectEngagementOutlier({
+        views: 10000,
+        likes: 200,
+        comments: 20, // exactly at median
+        channelVideos,
+      });
+      // At median = "Above Average", not an outlier
+      expect(result.isOutlier).toBe(false);
+      expect(result.label).toBe("Above Average");
+    });
+
+    it("labels below average when under channel median", () => {
+      const result = detectEngagementOutlier({
+        views: 10000,
+        likes: 50,
+        comments: 5, // 0.55% vs ~2.2% median
+        channelVideos,
+      });
+      expect(result.isOutlier).toBe(false);
+      expect(result.label).toBe("Below Average");
+    });
+
+    it("falls back to heuristic with insufficient channel data", () => {
+      const result = detectEngagementOutlier({
+        views: 10000,
+        likes: 600,
+        comments: 50,
+        channelVideos: [
+          { views: 1000, likes: 50, comments: 5 },
+          { views: 2000, likes: 100, comments: 10 },
+        ], // Only 2 videos, need 5
+      });
+      expect(result.method).toBe("heuristic_threshold");
+    });
+  });
+
+  describe("determinism", () => {
+    it("produces consistent results for same input", () => {
+      const input = { views: 10000, likes: 300, comments: 30 };
+      const result1 = detectEngagementOutlier(input);
+      const result2 = detectEngagementOutlier(input);
+      
+      expect(result1.engagementScore).toBe(result2.engagementScore);
+      expect(result1.label).toBe(result2.label);
+      expect(result1.isOutlier).toBe(result2.isOutlier);
+    });
+
+    it("produces consistent results with channel data", () => {
+      const channelVideos = [
+        { views: 10000, likes: 200, comments: 20 },
+        { views: 8000, likes: 160, comments: 16 },
+        { views: 12000, likes: 240, comments: 24 },
+        { views: 9000, likes: 180, comments: 18 },
+        { views: 11000, likes: 220, comments: 22 },
+      ];
+      const input = { views: 10000, likes: 500, comments: 50, channelVideos };
+      const result1 = detectEngagementOutlier(input);
+      const result2 = detectEngagementOutlier(input);
+      
+      expect(result1.engagementScore).toBe(result2.engagementScore);
+      expect(result1.label).toBe(result2.label);
+    });
   });
 });

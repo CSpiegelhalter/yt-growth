@@ -3,22 +3,35 @@
  *
  * Receives pre-fetched analysis data and renders the UI.
  * Interactive parts are delegated to client components.
+ * 
+ * Section Order:
+ * 1. Back Link
+ * 2. Video Header (thumbnail, title, channel, date)
+ * 3. Performance Snapshot (Views, Views/Day, Likes, Comments, Age, Outlier)
+ * 4. Tags Section (copyable)
+ * 5. Top Comments & Sentiment (with filters)
+ * 6. Ways to Outperform (comment-driven)
+ * 7. What It's About
+ * 8. What's Driving Performance
+ * 9. Portable Patterns
+ * 10. Title Patterns (always visible, no emoji)
+ * 11. Make Your Better Version
+ * 12. Data Limitations
+ * 13. More from Channel
  */
 import { type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { CompetitorVideoAnalysis } from "@/types/api";
-import { formatCompact, formatCompactFloored } from "@/lib/format";
+import { detectEngagementOutlier } from "@/lib/competitor-utils";
 import {
   DataLimitations,
-  PublicScorecard,
-  CollapsiblePanel,
-  NumberBadge,
+  PerformanceSnapshot,
 } from "../components";
 import {
-  TagsInline,
-  RemixCardCopy,
-  HookQuoteCopy,
+  TagsSection,
+  CommentsSection,
+  WaysToOutperform,
 } from "./InteractiveHeaderClient";
 import s from "../style.module.css";
 
@@ -48,24 +61,6 @@ function formatDuration(seconds: number): string {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
-/* ---------- Sub-components (Server) ---------- */
-function MetricCard({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className={`${s.metricCard} ${highlight ? s.metricHighlight : ""}`}>
-      <span className={s.metricValue}>{value}</span>
-      <span className={s.metricLabel}>{label}</span>
-    </div>
-  );
-}
-
 /* ---------- Main Shell Component ---------- */
 export default function VideoDetailShell({
   analysis: data,
@@ -75,7 +70,6 @@ export default function VideoDetailShell({
   const {
     video,
     analysis: insights,
-    strategicInsights,
     comments,
     tags,
     derivedKeywords,
@@ -84,7 +78,6 @@ export default function VideoDetailShell({
   } = data;
 
   const allTags = tags ?? derivedKeywords ?? [];
-  const hasTags = allTags.length > 0;
 
   const whyCards = (insights.whyItsWorking ?? []).slice(0, 6);
   const themeCards = (insights.themesToRemix ?? []).slice(0, 6);
@@ -95,16 +88,25 @@ export default function VideoDetailShell({
     howToUse: "Write 2 variants using this pattern with your main keyword.",
   }));
 
-  // Strategic insights
-  const titleAnalysis = strategicInsights?.titleAnalysis;
-  const competitionDifficulty = strategicInsights?.competitionDifficulty;
-  const opportunityScore = strategicInsights?.opportunityScore;
-  const beatChecklist = strategicInsights?.beatThisVideo ?? [];
-  const engagementBenchmarks = strategicInsights?.engagementBenchmarks;
-  const lengthAnalysis = strategicInsights?.lengthAnalysis;
-  const postingTiming = strategicInsights?.postingTiming;
-  const formatSignals = strategicInsights?.formatSignals;
-  const descriptionAnalysis = strategicInsights?.descriptionAnalysis;
+  // Compute engagement outlier
+  const outlier = detectEngagementOutlier({
+    views: video.stats.viewCount,
+    likes: video.stats.likeCount ?? 0,
+    comments: video.stats.commentCount ?? 0,
+  });
+
+  // Compute engagement per 1K views
+  const engagementPer1k =
+    video.stats.viewCount > 0
+      ? ((video.stats.likeCount ?? 0) + (video.stats.commentCount ?? 0)) /
+        (video.stats.viewCount / 1000)
+      : null;
+
+  // Video age from server-computed publicSignals
+  const ageDays = publicSignals?.videoAgeDays ?? 1;
+
+  // Generate comment-driven ways to outperform
+  const waysToOutperform = generateWaysToOutperform(comments);
 
   return (
     <main className={s.page}>
@@ -116,7 +118,7 @@ export default function VideoDetailShell({
         ← Back to Competitor Winners
       </Link>
 
-      {/* Video Header - Compact */}
+      {/* Video Header - Compact (no metrics here) */}
       <header className={s.videoHeader}>
         <a
           href={video.videoUrl}
@@ -178,60 +180,43 @@ export default function VideoDetailShell({
               {formatDate(video.publishedAt)}
             </span>
           </div>
-
-          {/* Tags/Keywords - Inline chips near top (interactive) */}
-          {hasTags && <TagsInline tags={allTags} />}
-
-          {/* Metrics Grid - Responsive */}
-          <div className={s.metricsGrid}>
-            <MetricCard
-              label="Views"
-              value={formatCompact(video.stats.viewCount)}
-            />
-            <MetricCard
-              label="Views/Day"
-              value={formatCompactFloored(video.derived.viewsPerDay)}
-              highlight
-            />
-            {video.derived.velocity24h !== undefined && (
-              <MetricCard
-                label="24h Velocity"
-                value={`+${formatCompact(video.derived.velocity24h)}`}
-                highlight
-              />
-            )}
-            {video.derived.velocity7d !== undefined && (
-              <MetricCard
-                label="7d Velocity"
-                value={`+${formatCompact(video.derived.velocity7d)}`}
-              />
-            )}
-            {/* Show Like Rate instead of generic "Engagement" - more accurate */}
-            {video.stats.likeCount !== undefined &&
-              video.stats.viewCount > 0 && (
-                <MetricCard
-                  label="Like Rate"
-                  value={`${(
-                    (video.stats.likeCount / video.stats.viewCount) *
-                    100
-                  ).toFixed(1)}%`}
-                />
-              )}
-            {video.derived.outlierScore !== undefined &&
-              video.derived.outlierScore > 1 && (
-                <MetricCard
-                  label="Outlier"
-                  value={`+${video.derived.outlierScore.toFixed(1)}σ`}
-                  highlight
-                />
-              )}
-          </div>
         </div>
       </header>
 
       {/* Analysis Sections */}
       <div className={s.sections}>
-        {/* What It's About */}
+        {/* 1. Performance Snapshot - Top priority */}
+        <PerformanceSnapshot
+          views={video.stats.viewCount}
+          viewsPerDay={video.derived.viewsPerDay}
+          likes={video.stats.likeCount ?? 0}
+          comments={video.stats.commentCount ?? 0}
+          ageDays={ageDays}
+          engagementPer1k={engagementPer1k}
+          outlier={outlier}
+        />
+
+        {/* 2. Tags Section - Copyable */}
+        {allTags.length > 0 && <TagsSection tags={allTags} />}
+
+        {/* 3. Top Comments & Sentiment - High signal, near top */}
+        {comments && !comments.commentsDisabled && (
+          <CommentsSection comments={comments} />
+        )}
+
+        {/* Comments Disabled Notice */}
+        {comments?.commentsDisabled && (
+          <div className={s.commentsDisabled}>
+            <p>Comments are disabled for this video.</p>
+          </div>
+        )}
+
+        {/* 4. Ways to Outperform - Comment-driven */}
+        {waysToOutperform.length > 0 && (
+          <WaysToOutperform recommendations={waysToOutperform} />
+        )}
+
+        {/* 5. What It's About */}
         <section className={s.section}>
           <h2 className={s.sectionTitle}>What It's About</h2>
           <p className={s.aboutText}>
@@ -239,365 +224,7 @@ export default function VideoDetailShell({
           </p>
         </section>
 
-        {/* Data Limitations - Honest disclosure about what we can/can't know */}
-        {dataLimitations && (
-          <DataLimitations
-            whatWeCanKnow={dataLimitations.whatWeCanKnow}
-            whatWeCantKnow={dataLimitations.whatWeCantKnow}
-          />
-        )}
-
-        {/* Public Scorecard - All measured metrics in one place */}
-        {publicSignals && (
-          <PublicScorecard
-            signals={publicSignals}
-            viewCount={video.stats.viewCount}
-          />
-        )}
-
-        {/* Quick Stats Bar - Strategic Overview */}
-        {strategicInsights && (
-          <section className={s.quickStatsSection}>
-            <div className={s.quickStatsGrid}>
-              {/* Title Score */}
-              {titleAnalysis && (
-                <div className={s.quickStat}>
-                  <div className={s.quickStatValue}>
-                    <span
-                      className={s.scoreCircle}
-                      data-score={
-                        titleAnalysis.score >= 7
-                          ? "good"
-                          : titleAnalysis.score >= 5
-                          ? "ok"
-                          : "poor"
-                      }
-                    >
-                      {titleAnalysis.score}/10
-                    </span>
-                  </div>
-                  <div className={s.quickStatLabel}>Title Score</div>
-                </div>
-              )}
-
-              {/* Competition Difficulty */}
-              {competitionDifficulty && (
-                <div className={s.quickStat}>
-                  <div className={s.quickStatValue}>
-                    <span
-                      className={s.difficultyBadge}
-                      data-difficulty={competitionDifficulty.score
-                        .toLowerCase()
-                        .replace(" ", "-")}
-                    >
-                      {competitionDifficulty.score}
-                    </span>
-                  </div>
-                  <div className={s.quickStatLabel}>Competition</div>
-                </div>
-              )}
-
-              {/* Opportunity Score */}
-              {opportunityScore && (
-                <div className={s.quickStat}>
-                  <div className={s.quickStatValue}>
-                    <span
-                      className={s.scoreCircle}
-                      data-score={
-                        opportunityScore.score >= 7
-                          ? "good"
-                          : opportunityScore.score >= 5
-                          ? "ok"
-                          : "poor"
-                      }
-                    >
-                      {opportunityScore.score}/10
-                    </span>
-                  </div>
-                  <div className={s.quickStatLabel}>Opportunity</div>
-                </div>
-              )}
-
-              {/* Like Rate - standardized label (not "Engagement" which is imprecise) */}
-              {engagementBenchmarks && (
-                <div className={s.quickStat}>
-                  <div className={s.quickStatValue}>
-                    <span
-                      className={s.engagementBadge}
-                      data-verdict={engagementBenchmarks.likeRateVerdict
-                        .toLowerCase()
-                        .replace(" ", "-")}
-                    >
-                      {engagementBenchmarks.likeRateVerdict}
-                    </span>
-                  </div>
-                  <div className={s.quickStatLabel}>Like Rate</div>
-                </div>
-              )}
-
-              {/* Format */}
-              {formatSignals && (
-                <div className={s.quickStat}>
-                  <div className={s.quickStatValue}>
-                    <span className={s.formatBadge}>
-                      {formatSignals.likelyFormat}
-                    </span>
-                  </div>
-                  <div className={s.quickStatLabel}>Format</div>
-                </div>
-              )}
-
-              {/* Length */}
-              {lengthAnalysis && (
-                <div className={s.quickStat}>
-                  <div className={s.quickStatValue}>
-                    <span className={s.lengthValue}>
-                      {lengthAnalysis.durationFormatted ||
-                        (lengthAnalysis.minutes != null
-                          ? `${lengthAnalysis.minutes}m`
-                          : "—")}
-                    </span>
-                  </div>
-                  <div className={s.quickStatLabel}>
-                    {lengthAnalysis.bucket || lengthAnalysis.category || "—"}
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* Title Analysis */}
-        {titleAnalysis && (
-          <section className={s.section}>
-            <h2 className={s.sectionTitle}>Title Breakdown</h2>
-            <div className={s.titleAnalysisGrid}>
-              <div className={s.titleScoreCard}>
-                <div
-                  className={s.titleScoreCircle}
-                  data-score={
-                    titleAnalysis.score >= 7
-                      ? "good"
-                      : titleAnalysis.score >= 5
-                      ? "ok"
-                      : "poor"
-                  }
-                >
-                  <span className={s.titleScoreNumber}>
-                    {titleAnalysis.score}
-                  </span>
-                  <span className={s.titleScoreMax}>/10</span>
-                </div>
-                <div className={s.titleMeta}>
-                  <span>{titleAnalysis.characterCount} chars</span>
-                  {/* Use improved number analysis with tooltip */}
-                  {titleAnalysis.numberAnalysis ? (
-                    <NumberBadge analysis={titleAnalysis.numberAnalysis} />
-                  ) : titleAnalysis.hasNumber ? (
-                    <span className={s.titleCheck}>✓ Quantifier</span>
-                  ) : null}
-                  {titleAnalysis.hasPowerWord && (
-                    <span className={s.titleCheck}>✓ Power Word</span>
-                  )}
-                  {titleAnalysis.hasCuriosityGap && (
-                    <span className={s.titleCheck}>✓ Curiosity Gap</span>
-                  )}
-                </div>
-              </div>
-              <div className={s.titleFeedback}>
-                {titleAnalysis.strengths.length > 0 && (
-                  <div className={s.titleStrengths}>
-                    <h4 className={s.feedbackTitle}>✓ Strengths</h4>
-                    <ul>
-                      {titleAnalysis.strengths.map((str, i) => (
-                        <li key={i}>{str}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {titleAnalysis.weaknesses.length > 0 && (
-                  <div className={s.titleWeaknesses}>
-                    <h4 className={s.feedbackTitle}>⚠ Could Improve</h4>
-                    <ul>
-                      {titleAnalysis.weaknesses.map((w, i) => (
-                        <li key={i}>{w}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Opportunity Assessment */}
-        {opportunityScore && (
-          <section className={s.section}>
-            <h2 className={s.sectionTitle}>Opportunity Assessment</h2>
-            <div className={s.opportunityHeader}>
-              <div
-                className={s.opportunityScoreBig}
-                data-score={
-                  opportunityScore.score >= 7
-                    ? "good"
-                    : opportunityScore.score >= 5
-                    ? "ok"
-                    : "poor"
-                }
-              >
-                {opportunityScore.score}/10
-              </div>
-              <p className={s.opportunityVerdict}>{opportunityScore.verdict}</p>
-            </div>
-
-            {opportunityScore.gaps.length > 0 && (
-              <div className={s.opportunityBlock}>
-                <h4 className={s.opportunityBlockTitle}>Gaps to Exploit</h4>
-                <ul className={s.opportunityList}>
-                  {opportunityScore.gaps.map((gap, i) => (
-                    <li key={i}>{gap}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {opportunityScore.angles.length > 0 && (
-              <div className={s.opportunityBlock}>
-                <h4 className={s.opportunityBlockTitle}>Fresh Angles</h4>
-                <ul className={s.opportunityList}>
-                  {opportunityScore.angles.map((angle, i) => (
-                    <li key={i}>{angle}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* Ways to Outperform */}
-        {beatChecklist.length > 0 && (
-          <section className={s.section}>
-            <h2 className={s.sectionTitle}>
-              Ways to Outperform
-              <span className={s.sectionBadge} data-type="generated">
-                Generated
-              </span>
-            </h2>
-            <p className={s.sectionSubtitle}>Ideas for differentiation</p>
-            <div className={s.checklistGrid}>
-              {beatChecklist.slice(0, 5).map((item, i) => (
-                <div key={i} className={s.checklistItem}>
-                  <div className={s.checklistAction}>{item.action}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Video Intelligence */}
-        {(postingTiming || lengthAnalysis || descriptionAnalysis) && (
-          <section className={s.section}>
-            <h2 className={s.sectionTitle}>Video Intelligence</h2>
-            <div className={s.intelligenceGrid}>
-              {postingTiming && (
-                <div className={s.intelCard}>
-                  <h4 className={s.intelTitle}>
-                    Posting
-                    {postingTiming.confidence && (
-                      <span
-                        className={s.confidenceBadge}
-                        data-level={postingTiming.confidence.toLowerCase()}
-                      >
-                        {postingTiming.measurement || "Inferred"}
-                      </span>
-                    )}
-                  </h4>
-                  <p className={s.intelValue}>
-                    {postingTiming.localTimeFormatted
-                      ? `${postingTiming.dayOfWeek} ${postingTiming.localTimeFormatted}`
-                      : `${postingTiming.dayOfWeek} at ${postingTiming.hourOfDay}:00`}
-                  </p>
-                  <p className={s.intelNote}>{postingTiming.timingInsight}</p>
-                </div>
-              )}
-              {lengthAnalysis && (
-                <div className={s.intelCard}>
-                  <h4 className={s.intelTitle}>
-                    Length
-                    <span className={s.confidenceBadge} data-level="high">
-                      Measured
-                    </span>
-                  </h4>
-                  <p className={s.intelValue}>
-                    {/* Use improved formatting - never shows "0 minutes" */}
-                    {lengthAnalysis.durationFormatted ||
-                      (lengthAnalysis.minutes != null
-                        ? `${lengthAnalysis.minutes}m`
-                        : "—")}{" "}
-                    ({lengthAnalysis.bucket || lengthAnalysis.category || "—"})
-                  </p>
-                  <p className={s.intelNote}>{lengthAnalysis.insight}</p>
-                </div>
-              )}
-              {engagementBenchmarks && (
-                <div className={s.intelCard}>
-                  <h4 className={s.intelTitle}>
-                    Like Rate &amp; Comments
-                    <span className={s.confidenceBadge} data-level="high">
-                      Measured
-                    </span>
-                  </h4>
-                  <p className={s.intelValue}>
-                    {typeof engagementBenchmarks.likeRate === "number"
-                      ? engagementBenchmarks.likeRate.toFixed(1)
-                      : "—"}
-                    % like rate ·{" "}
-                    {typeof engagementBenchmarks.commentRate === "number"
-                      ? engagementBenchmarks.commentRate.toFixed(1)
-                      : "—"}{" "}
-                    comments/1K
-                  </p>
-                  <p className={s.intelNote}>
-                    {engagementBenchmarks.channelMedianAvailable ? (
-                      <>
-                        Likes: {engagementBenchmarks.likeRateVerdict} (vs
-                        channel median) · Comments:{" "}
-                        {engagementBenchmarks.commentRateVerdict}
-                      </>
-                    ) : (
-                      <>
-                        Likes: {engagementBenchmarks.likeRateVerdict} ·
-                        Comments: {engagementBenchmarks.commentRateVerdict}{" "}
-                        (baseline: platform avg)
-                      </>
-                    )}
-                  </p>
-                </div>
-              )}
-              {descriptionAnalysis && (
-                <div className={s.intelCard}>
-                  <h4 className={s.intelTitle}>Description</h4>
-                  <p className={s.intelValue}>
-                    {descriptionAnalysis.estimatedWordCount} words
-                  </p>
-                  <div className={s.intelTags}>
-                    {descriptionAnalysis.hasTimestamps && (
-                      <span className={s.intelTag}>Timestamps</span>
-                    )}
-                    {descriptionAnalysis.hasLinks && (
-                      <span className={s.intelTag}>Links</span>
-                    )}
-                    {descriptionAnalysis.hasCTA && (
-                      <span className={s.intelTag}>CTA</span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* Why It's Working - now labeled as hypotheses */}
+        {/* 6. What's Driving Performance */}
         {whyCards.length > 0 && (
           <section className={s.section}>
             <h2 className={s.sectionTitle}>
@@ -620,7 +247,7 @@ export default function VideoDetailShell({
           </section>
         )}
 
-        {/* Themes to Remix - now with Generated label */}
+        {/* 7. Portable Patterns */}
         {themeCards.length > 0 && (
           <section className={s.section}>
             <h2 className={s.sectionTitle}>
@@ -643,13 +270,10 @@ export default function VideoDetailShell({
           </section>
         )}
 
-        {/* Title Patterns - more focused, with label */}
+        {/* 8. Title Patterns - Always visible section (not dropdown, no emoji) */}
         {patternCards.length > 0 && (
-          <CollapsiblePanel
-            title="Title Patterns"
-            icon="📝"
-            defaultExpanded={false}
-          >
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Title Patterns</h2>
             <p className={s.sectionSubtitle}>
               Structural patterns observed in this title
             </p>
@@ -662,10 +286,10 @@ export default function VideoDetailShell({
                 </div>
               ))}
             </div>
-          </CollapsiblePanel>
+          </section>
         )}
 
-        {/* Make Your Better Version (renamed from "Steal This") */}
+        {/* 9. Make Your Better Version */}
         {remixCards.length > 0 && (
           <section className={s.section}>
             <h2 className={s.sectionTitle}>
@@ -695,154 +319,139 @@ export default function VideoDetailShell({
                     <span className={s.overlayLabel}>Thumbnail Text:</span>
                     <span className={s.overlayText}>{remix.overlayText}</span>
                   </div>
-
-                  <RemixCardCopy remix={remix} />
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* Top comments & sentiment */}
-        {comments && !comments.commentsDisabled && (
-          <section className={s.section}>
-            <h2 className={s.sectionTitle}>Top comments &amp; sentiment</h2>
-            {comments.error ? (
-              <p className={s.commentsError}>{comments.error}</p>
-            ) : comments.sentiment.positive === 0 &&
-              comments.sentiment.neutral === 0 &&
-              comments.sentiment.negative === 0 ? (
-              <div className={s.commentsAnalysis}>
-                <p className={s.commentsNote}>
-                  Comment analysis is processing. Showing raw top comments
-                  below.
-                </p>
-                {comments.topComments && comments.topComments.length > 0 && (
-                  <div className={s.topCommentsList}>
-                    {comments.topComments.slice(0, 8).map((comment, i) => (
-                      <div key={i} className={s.topComment}>
-                        <div className={s.topCommentHeader}>
-                          <span className={s.topCommentAuthor}>
-                            {comment.authorName}
-                          </span>
-                          <span className={s.topCommentLikes}>
-                            ♥ {comment.likeCount}
-                          </span>
-                        </div>
-                        <p className={s.topCommentText}>{comment.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className={s.commentsAnalysis}>
-                <div className={s.sentimentSection}>
-                  <h4 className={s.subSectionTitle}>Viewer sentiment</h4>
-                  <div className={s.sentimentBar}>
-                    <div
-                      className={s.sentimentPositive}
-                      style={{ width: `${comments.sentiment.positive}%` }}
-                    />
-                    <div
-                      className={s.sentimentNeutral}
-                      style={{ width: `${comments.sentiment.neutral}%` }}
-                    />
-                    <div
-                      className={s.sentimentNegative}
-                      style={{ width: `${comments.sentiment.negative}%` }}
-                    />
-                  </div>
-                  <div className={s.sentimentLabels}>
-                    <span className={s.sentimentLabelPos}>
-                      Positive {comments.sentiment.positive}%
-                    </span>
-                    <span className={s.sentimentLabelNeu}>
-                      Neutral {comments.sentiment.neutral}%
-                    </span>
-                    <span className={s.sentimentLabelNeg}>
-                      Negative {comments.sentiment.negative}%
-                    </span>
-                  </div>
-                </div>
-
-                <div className={s.commentSummaryGrid}>
-                  {comments.viewerLoved && comments.viewerLoved.length > 0 && (
-                    <div className={s.commentThemeBlock}>
-                      <h4 className={s.subSectionTitle}>What viewers loved</h4>
-                      <ul className={s.commentThemeList}>
-                        {comments.viewerLoved.slice(0, 5).map((item, i) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {comments.viewerAskedFor &&
-                    comments.viewerAskedFor.length > 0 && (
-                      <div className={s.commentThemeBlock}>
-                        <h4 className={s.subSectionTitle}>
-                          What viewers asked for next
-                        </h4>
-                        <ul className={s.commentThemeList}>
-                          {comments.viewerAskedFor
-                            .slice(0, 5)
-                            .map((item, i) => (
-                              <li key={i}>{item}</li>
-                            ))}
-                        </ul>
-                      </div>
-                    )}
-                </div>
-
-                {comments.themes && comments.themes.length > 0 && (
-                  <div className={s.commentThemeBlock}>
-                    <h4 className={s.subSectionTitle}>Themes</h4>
-                    <div className={s.themeChips}>
-                      {comments.themes.slice(0, 10).map((theme, i) => (
-                        <span key={i} className={s.themeChip}>
-                          {theme.theme}{" "}
-                          <span className={s.themeCount}>({theme.count})</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {comments.hookInspiration &&
-                  comments.hookInspiration.length > 0 && (
-                    <div className={s.commentThemeBlock}>
-                      <h4 className={s.subSectionTitle}>
-                        Hook lines (inspired by comments)
-                      </h4>
-                      <p className={s.subSectionHint}>
-                        Short openers you can adapt for your first 5–10 seconds.
-                        These are generated based on patterns in top comments
-                        (not direct viewer quotes).
-                      </p>
-                      <div className={s.hookQuotes}>
-                        {comments.hookInspiration
-                          .slice(0, 6)
-                          .map((quote, i) => (
-                            <HookQuoteCopy key={i} quote={quote} />
-                          ))}
-                      </div>
-                    </div>
-                  )}
-              </div>
-            )}
-          </section>
+        {/* 10. Data Limitations - Honest disclosure */}
+        {dataLimitations && (
+          <DataLimitations
+            whatWeCanKnow={dataLimitations.whatWeCanKnow}
+            whatWeCantKnow={dataLimitations.whatWeCantKnow}
+          />
         )}
 
-        {/* Comments Disabled Notice */}
-        {comments?.commentsDisabled && (
-          <div className={s.commentsDisabled}>
-            <p>Comments are disabled for this video.</p>
-          </div>
-        )}
-
-        {/* More from This Channel - via Suspense slot */}
+        {/* 11. More from This Channel - via Suspense slot */}
         {moreFromChannelSlot}
       </div>
     </main>
   );
+}
+
+/* ---------- Helpers for Ways to Outperform ---------- */
+
+type OutperformRecommendation = {
+  category: "content" | "hook" | "clarity" | "follow-up";
+  action: string;
+  supportingTheme: string;
+  exampleSnippets: string[];
+};
+
+function generateWaysToOutperform(
+  comments: CompetitorVideoAnalysis["comments"]
+): OutperformRecommendation[] {
+  const recommendations: OutperformRecommendation[] = [];
+
+  if (!comments || comments.commentsDisabled) {
+    return recommendations;
+  }
+
+  // Content improvements from viewerAskedFor
+  if (comments.viewerAskedFor && comments.viewerAskedFor.length > 0) {
+    comments.viewerAskedFor.slice(0, 2).forEach((ask) => {
+      recommendations.push({
+        category: "follow-up",
+        action: `Create a follow-up video addressing: "${ask}"`,
+        supportingTheme: "Viewer requests",
+        exampleSnippets: comments.topComments
+          ?.filter((c) =>
+            c.text.toLowerCase().includes(ask.toLowerCase().slice(0, 20))
+          )
+          .slice(0, 2)
+          .map((c) => truncate(c.text, 80)) ?? [],
+      });
+    });
+  }
+
+  // Content improvements from viewerLoved (amplify what works)
+  if (comments.viewerLoved && comments.viewerLoved.length > 0) {
+    const loved = comments.viewerLoved[0];
+    recommendations.push({
+      category: "content",
+      action: `Double down on: "${loved}" - viewers clearly resonated with this`,
+      supportingTheme: "What viewers loved",
+      exampleSnippets: comments.topComments
+        ?.filter((c) =>
+          c.text.toLowerCase().includes(loved.toLowerCase().slice(0, 15))
+        )
+        .slice(0, 2)
+        .map((c) => truncate(c.text, 80)) ?? [],
+    });
+  }
+
+  // Themes-based recommendations
+  if (comments.themes && comments.themes.length > 0) {
+    const topTheme = comments.themes[0];
+    if (topTheme.count >= 3) {
+      recommendations.push({
+        category: "content",
+        action: `Address the recurring "${topTheme.theme}" theme directly in your version`,
+        supportingTheme: `${topTheme.count} comments mention this`,
+        exampleSnippets: topTheme.examples?.slice(0, 2).map((e) => truncate(e, 80)) ?? [],
+      });
+    }
+  }
+
+  // Hook improvement from sentiment
+  if (comments.sentiment) {
+    const { negative, positive } = comments.sentiment;
+    if (negative > 15) {
+      recommendations.push({
+        category: "clarity",
+        action: `${negative}% of comments are negative - find and address the common complaints`,
+        supportingTheme: "Sentiment analysis",
+        exampleSnippets: comments.topComments
+          ?.slice(0, 5)
+          .filter((c) => c.likeCount < 10)
+          .slice(0, 2)
+          .map((c) => truncate(c.text, 80)) ?? [],
+      });
+    }
+    if (positive > 70) {
+      recommendations.push({
+        category: "hook",
+        action: "Study the opening - high positive sentiment suggests the hook delivers on the promise",
+        supportingTheme: `${positive}% positive sentiment`,
+        exampleSnippets: [],
+      });
+    }
+  }
+
+  // Add a general hook recommendation if we have hookInspiration
+  if (comments.hookInspiration && comments.hookInspiration.length > 0) {
+    recommendations.push({
+      category: "hook",
+      action: `Use viewer language in your hook: "${comments.hookInspiration[0]}"`,
+      supportingTheme: "Hook inspiration",
+      exampleSnippets: [],
+    });
+  }
+
+  // Deduplicate and limit
+  const seen = new Set<string>();
+  return recommendations
+    .filter((r) => {
+      const key = r.action.slice(0, 50);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 8);
+}
+
+function truncate(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen - 3) + "...";
 }
