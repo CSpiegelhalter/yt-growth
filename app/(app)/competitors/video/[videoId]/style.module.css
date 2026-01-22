@@ -199,6 +199,123 @@
 }
 
 /* ================================
+   Inline Metrics Row
+   ================================ */
+
+.metricsRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+@media (min-width: 480px) {
+  .metricsRow {
+    gap: 4px 8px;
+    font-size: 0.875rem;
+  }
+}
+
+.metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.metricIcon {
+  width: 14px;
+  height: 14px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+@media (min-width: 480px) {
+  .metricIcon {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.metricSep {
+  color: #cbd5e1;
+  font-size: 0.625rem;
+}
+
+/* Engagement Level Badge (inline) */
+.engagementBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  margin-left: 4px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border-radius: 4px;
+  cursor: help;
+  position: relative;
+}
+
+.engagementBadge[data-level="high"] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.engagementBadge[data-level="above-avg"] {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.engagementBadge[data-level="average"] {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.engagementBadge[data-level="low"] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.engagementTooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 180px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: #1e293b;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  line-height: 1.3;
+}
+
+.engagementTooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: white;
+}
+
+/* ================================
    Tags/Keywords - Inline at top
    ================================ */
 

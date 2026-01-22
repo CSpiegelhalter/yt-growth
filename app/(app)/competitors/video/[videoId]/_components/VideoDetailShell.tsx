@@ -23,15 +23,12 @@ import { type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { CompetitorVideoAnalysis } from "@/types/api";
-import { detectEngagementOutlier } from "@/lib/competitor-utils";
-import {
-  DataLimitations,
-  PerformanceSnapshot,
-} from "../components";
+import { DataLimitations } from "../components";
 import {
   TagsSection,
   CommentsSection,
   WaysToOutperform,
+  EngagementBadge,
 } from "./InteractiveHeaderClient";
 import s from "../style.module.css";
 
@@ -61,6 +58,18 @@ function formatDuration(seconds: number): string {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
+function formatCompact(num: number): string {
+  if (num >= 1_000_000) {
+    const m = num / 1_000_000;
+    return m >= 10 ? `${Math.round(m)}M` : `${m.toFixed(1)}M`;
+  }
+  if (num >= 1_000) {
+    const k = num / 1_000;
+    return k >= 10 ? `${Math.round(k)}K` : `${k.toFixed(1)}K`;
+  }
+  return String(Math.round(num));
+}
+
 /* ---------- Main Shell Component ---------- */
 export default function VideoDetailShell({
   analysis: data,
@@ -79,7 +88,8 @@ export default function VideoDetailShell({
 
   const allTags = tags ?? derivedKeywords ?? [];
 
-  const whyCards = (insights.whyItsWorking ?? []).slice(0, 6);
+  // Filter out obvious/low-value insights that just restate metrics
+  const whyCards = filterObviousInsights(insights.whyItsWorking ?? []).slice(0, 4);
   const themeCards = (insights.themesToRemix ?? []).slice(0, 6);
   const remixCards = (insights.remixIdeasForYou ?? []).slice(0, 6);
   const patternCards = (insights.titlePatterns ?? []).slice(0, 6).map((p) => ({
@@ -87,20 +97,6 @@ export default function VideoDetailShell({
     evidence: "Observed in this video's title and topic framing",
     howToUse: "Write 2 variants using this pattern with your main keyword.",
   }));
-
-  // Compute engagement outlier
-  const outlier = detectEngagementOutlier({
-    views: video.stats.viewCount,
-    likes: video.stats.likeCount ?? 0,
-    comments: video.stats.commentCount ?? 0,
-  });
-
-  // Compute engagement per 1K views
-  const engagementPer1k =
-    video.stats.viewCount > 0
-      ? ((video.stats.likeCount ?? 0) + (video.stats.commentCount ?? 0)) /
-        (video.stats.viewCount / 1000)
-      : null;
 
   // Video age from server-computed publicSignals
   const ageDays = publicSignals?.videoAgeDays ?? 1;
@@ -180,21 +176,41 @@ export default function VideoDetailShell({
               {formatDate(video.publishedAt)}
             </span>
           </div>
+
+          {/* Inline Metrics */}
+          <div className={s.metricsRow}>
+            <span className={s.metric}>
+              {formatCompact(video.stats.viewCount)} views
+            </span>
+            <span className={s.metricSep}>·</span>
+            <span className={s.metric}>
+              {formatCompact(video.derived.viewsPerDay)}/day
+            </span>
+            <span className={s.metricSep}>·</span>
+            <span className={s.metric}>
+              <svg className={s.metricIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+              </svg>
+              {formatCompact(video.stats.likeCount ?? 0)}
+            </span>
+            <span className={s.metricSep}>·</span>
+            <span className={s.metric}>
+              <svg className={s.metricIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              {formatCompact(video.stats.commentCount ?? 0)}
+              <EngagementBadge views={video.stats.viewCount} comments={video.stats.commentCount ?? 0} />
+            </span>
+            <span className={s.metricSep}>·</span>
+            <span className={s.metric}>
+              {ageDays}d old
+            </span>
+          </div>
         </div>
       </header>
 
       {/* Analysis Sections */}
       <div className={s.sections}>
-        {/* 1. Performance Snapshot - Top priority */}
-        <PerformanceSnapshot
-          views={video.stats.viewCount}
-          viewsPerDay={video.derived.viewsPerDay}
-          likes={video.stats.likeCount ?? 0}
-          comments={video.stats.commentCount ?? 0}
-          ageDays={ageDays}
-          engagementPer1k={engagementPer1k}
-          outlier={outlier}
-        />
 
         {/* 2. Tags Section - Copyable */}
         {allTags.length > 0 && <TagsSection tags={allTags} />}
@@ -454,4 +470,47 @@ function generateWaysToOutperform(
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
   return text.slice(0, maxLen - 3) + "...";
+}
+
+/**
+ * Filter out obvious/low-value insights that just restate metrics.
+ * 
+ * Removes patterns like:
+ * - "Strong view count of X indicates..."
+ * - "High daily views at X suggest..."
+ * - "Short duration of X (YouTube Shorts format)..."
+ * - Generic statements about views/likes being high/low
+ */
+function filterObviousInsights(insights: string[]): string[] {
+  const obviousPatterns = [
+    // View count statements
+    /strong view count/i,
+    /high (daily )?views/i,
+    /view count of [\d,]+/i,
+    /\d+[,\d]* views (indicates?|suggests?|shows?)/i,
+    /views at [\d,]+/i,
+    
+    // Duration statements
+    /short duration of/i,
+    /duration of \d+s?/i,
+    /youtube shorts format/i,
+    /\d+ seconds? (is|aligns|fits)/i,
+    
+    // Generic engagement statements
+    /consistent engagement/i,
+    /broad appeal/i,
+    /interest in the content/i,
+    /relevance to viewers/i,
+    /viewer preferences for/i,
+    
+    // Like/comment count restating
+    /high like (count|rate)/i,
+    /strong engagement metrics/i,
+    /\d+[kKmM]?\+ (likes|comments)/i,
+  ];
+
+  return insights.filter((insight) => {
+    const isObvious = obviousPatterns.some((pattern) => pattern.test(insight));
+    return !isObvious;
+  });
 }

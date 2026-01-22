@@ -515,36 +515,25 @@ export default function CompetitorResultsStream({
         ))}
       </div>
 
-      {/* Summary and Load More when done */}
-      {state === "done" && summary && (
-        <div className={s.searchSummary}>
-          <p>
-            Found {videos.length} videos
-            {summary.cacheHit ? " (cached)" : ` from ${summary.scannedCount} scanned`}
-            {summary.exhausted && !nextCursor && videos.length < 24 && (
-              <span className={s.exhaustedNote}>
-                {" "}· Searched all available sources
-              </span>
+      {/* Load More button - always visible when done */}
+      {state === "done" && (
+        <div className={s.loadMoreContainer}>
+          <button
+            onClick={handleLoadMore}
+            className={s.loadMoreButton}
+            disabled={isLoadingMore || !nextCursor || summary?.exhausted}
+          >
+            {isLoadingMore ? (
+              <>
+                <span className={s.spinnerSmall} />
+                Loading...
+              </>
+            ) : !nextCursor || summary?.exhausted ? (
+              "No more results"
+            ) : (
+              "Load More"
             )}
-          </p>
-          
-          {/* Load More button */}
-          {nextCursor && !summary.exhausted && (
-            <button
-              onClick={handleLoadMore}
-              className={s.loadMoreButton}
-              disabled={isLoadingMore}
-            >
-              {isLoadingMore ? (
-                <>
-                  <span className={s.spinnerSmall} />
-                  Loading...
-                </>
-              ) : (
-                "Load More"
-              )}
-            </button>
-          )}
+          </button>
         </div>
       )}
       

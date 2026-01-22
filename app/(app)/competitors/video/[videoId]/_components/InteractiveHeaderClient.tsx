@@ -6,6 +6,76 @@ import type { CompetitorCommentsAnalysis } from "@/types/api";
 import s from "../style.module.css";
 
 /* ============================================
+   ENGAGEMENT BADGE
+   ============================================ */
+
+type EngagementLevel = "High" | "Above Avg" | "Average" | "Low";
+
+type EngagementBadgeProps = {
+  views: number;
+  comments: number;
+};
+
+/**
+ * EngagementBadge - Shows engagement level based on comment-to-view ratio.
+ * Displayed inline with the comments metric.
+ */
+export const EngagementBadge = memo(function EngagementBadge({
+  views,
+  comments,
+}: EngagementBadgeProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  const { level, explanation } = getEngagementLevel(views, comments);
+
+  return (
+    <span
+      className={s.engagementBadge}
+      data-level={level.toLowerCase().replace(" ", "-")}
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      {level}
+      {showTooltip && <span className={s.engagementTooltip}>{explanation}</span>}
+    </span>
+  );
+});
+
+function getEngagementLevel(
+  views: number,
+  comments: number
+): { level: EngagementLevel; explanation: string } {
+  if (views === 0) {
+    return { level: "Average", explanation: "No views yet" };
+  }
+
+  const commentsPer1k = (comments / views) * 1000;
+
+  if (commentsPer1k >= 5) {
+    return {
+      level: "High",
+      explanation: `${commentsPer1k.toFixed(1)} comments per 1K views`,
+    };
+  }
+  if (commentsPer1k >= 2.5) {
+    return {
+      level: "Above Avg",
+      explanation: `${commentsPer1k.toFixed(1)} comments per 1K views`,
+    };
+  }
+  if (commentsPer1k >= 1) {
+    return {
+      level: "Average",
+      explanation: `${commentsPer1k.toFixed(1)} comments per 1K views`,
+    };
+  }
+  return {
+    level: "Low",
+    explanation: `${commentsPer1k.toFixed(1)} comments per 1K views`,
+  };
+}
+
+/* ============================================
    TAGS SECTION
    ============================================ */
 
@@ -91,15 +161,19 @@ export const CommentsSection = memo(function CommentsSection({
     comments.sentiment.neutral > 0 ||
     comments.sentiment.negative > 0;
 
-  // Filter comments based on selected filter
-  // Note: We don't have per-comment sentiment, so we show all for sentiment filters
-  // Questions filter looks for "?" in comments
+  // Sort comments by likes (most liked first) and filter
   const filteredComments = useMemo(() => {
     if (!comments.topComments) return [];
+    
+    // Sort by likes descending to surface what people agree with
+    const sorted = [...comments.topComments].sort(
+      (a, b) => b.likeCount - a.likeCount
+    );
+    
     if (filter === "questions") {
-      return comments.topComments.filter((c) => c.text.includes("?"));
+      return sorted.filter((c) => c.text.includes("?"));
     }
-    return comments.topComments;
+    return sorted;
   }, [comments.topComments, filter]);
 
   const displayComments = showAllComments
