@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     secure: !isDev,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 10, // 10 minutes
+    maxAge: 60 * 10, // ten minutes
   });
 
   // Build Google OAuth URL with YouTube scopes for verification

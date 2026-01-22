@@ -93,7 +93,7 @@ export function Body({ s }: BodyProps) {
         <p className={s.sectionText}>
           What will the viewer get from watching? This should be specific and
           valuable. Not just learn about cameras but choose the right camera
-          for your budget in under 10 minutes. The promise answers why someone
+          for your budget without wasting money. The promise answers why someone
           should spend their time on your video.
         </p>
         <h3 className={s.subheading}>2. Stakes</h3>

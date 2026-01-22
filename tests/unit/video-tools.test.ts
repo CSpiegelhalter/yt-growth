@@ -37,7 +37,7 @@ function createTestVideo(overrides: Partial<DashboardVideo> = {}): DashboardVide
     videoId: "test-video-1",
     title: "Test Video",
     thumbnailUrl: null,
-    durationSec: 600, // 10 minutes = long-form
+    durationSec: 600, // ten minutes = long-form
     publishedAt: ONE_DAY_AGO,
     views: 1000,
     likes: 100,

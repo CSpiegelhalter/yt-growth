@@ -253,7 +253,7 @@ describe("computeStrategicInsights", () => {
       videoDetails: baseVideoDetails,
     });
 
-    // 600 seconds = 10 minutes
+    // 600 seconds = ten minutes
     expect(insights?.lengthAnalysis.durationSec).toBe(600);
     expect(insights?.lengthAnalysis.durationFormatted).toBe("10m");
     expect(insights?.lengthAnalysis.bucket).toBe("Medium");

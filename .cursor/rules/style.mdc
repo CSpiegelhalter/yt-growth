@@ -1,0 +1,228 @@
+---
+name: style
+description: Enforce consistent spacing, typography, hierarchy, accessibility, and maintainable UI code (mobile-first).
+---
+
+# UI Style + Code Quality Rule (Must Follow)
+
+This rule applies to **every UI change**: pages, layouts, components, modals, forms, tables, lists, empty states, loading states, and refactors.
+
+If you touch UI code, you must satisfy **all** sections below.
+
+---
+
+## 0) Golden Rules (non-negotiable)
+- **Mobile-first**: design and implement for small screens first, then enhance at `md+`.
+- **Consistency > novelty**: reuse existing patterns/components before inventing new ones.
+- **No one-off styling**: avoid arbitrary values and bespoke variants unless promoted to shared tokens/variants.
+- **Complete experiences**: every interactive feature must include loading/empty/error/success/disabled states.
+- **Accessible by default**: semantic HTML + keyboard support + focus management are required.
+
+---
+
+## 1) Spacing System (4pt grid only)
+### 1.1 Allowed values
+- **All spacing must be multiples of 4**: `4, 8, 12, 16, 20, 24, 32, 40, 48, 64…`
+- No random spacing values. If you need “in-between”, adjust layout/typography—do not invent spacing.
+
+### 1.2 Default spacing scale (recommended)
+- `4`  = micro (icon gaps, tight inline groups)
+- `8`  = small (label → input, small stacks)
+- `12` = compact (dense UIs, secondary stacks)
+- `16` = default (most vertical rhythm)
+- `24` = section break (card content blocks)
+- `32` = major section break (page-level groups)
+- `48+` = hero / marketing separation
+
+### 1.3 Layout defaults
+- **Page padding**: `px-16` (mobile), `px-24` (desktop)
+- **Card padding**: `p-16` or `p-24`
+- **Stacks**:
+  - tight: `gap-8`
+  - default: `gap-12` or `gap-16`
+  - sections: `gap-24`+
+- **Forms**:
+  - label → input: `gap-8`
+  - input → help/error: `mt-4` or `mt-8`
+  - group → group: `gap-16`
+  - sections: `gap-24`+
+
+---
+
+## 2) Typography (readable + consistent)
+### 2.1 Font families
+- Use **1–2 font families max** across the product.
+- Prefer a clean sans-serif for UI.
+
+### 2.2 Hierarchy defaults
+- **H1**: page title (largest)
+- **H2**: section titles
+- **H3**: sub-sections / card titles
+- **Body**: primary reading text
+- **Muted/Meta**: captions, helper text
+- **Label**: form labels
+
+### 2.3 Line height & readability
+- Body text must be comfortably readable on mobile.
+- Do not rely on color alone to signal hierarchy; use size/weight and spacing.
+- Keep line-height choices consistent across components.
+
+---
+
+## 3) Visual Hierarchy (scan-first UX)
+Every screen must make these obvious:
+1) **What is this?** (clear title; optional one-line description)
+2) **What can I do next?** (primary action)
+3) **What matters most?** (layout + spacing guide attention)
+
+Rules:
+- Important elements get **more space around them**, not just bigger fonts.
+- Related items stay close; unrelated items have a clear break.
+- Prefer consistent section structure:
+  - title → description (optional) → content → action
+
+---
+
+## 4) Alignment & Layout (no “almost aligned”)
+- Align to a clear grid; avoid drifting edges.
+- Prefer left alignment for dense content.
+- Center alignment is acceptable for small hero blocks/empty states—not dense forms or long text.
+- Avoid fixed widths; use max-width containers and responsive layouts.
+
+---
+
+## 5) Components & Design System (tokens/variants first)
+### 5.1 Reuse policy
+Before creating a new component:
+- Search for an existing component/pattern and reuse it.
+- If a new pattern is needed, build it as a **reusable component**, not page-specific markup.
+
+### 5.2 No arbitrary styling
+- Prefer design tokens or utility scale values.
+- Do not introduce new one-off spacing/typography/radius/shadow values.
+- If you truly need a new size/value:
+  - add it to shared theme/tokens (or Tailwind config) and reuse it,
+  - do not inline magic numbers.
+
+### 5.3 Variants, not one-offs
+- Components must support common differences via **variants** (e.g., intent/size/tone) rather than copy/paste class piles.
+- Keep variants small and meaningful.
+- Document variants in code (comments or a short usage example).
+
+### 5.4 Component API quality
+Reusable components must have:
+- clear props (names that match product vocabulary)
+- sane defaults
+- predictable composition
+- minimal prop surface area (avoid “kitchen sink” props)
+
+---
+
+## 6) Accessibility (required acceptance criteria)
+All UI must meet these requirements:
+
+### 6.1 Semantic structure
+- Use semantic elements first: `button`, `a`, `nav`, `main`, `header`, `section`, `label`, etc.
+- Buttons are for actions; links are for navigation.
+
+### 6.2 Keyboard & focus
+- All interactive elements must be reachable by keyboard (Tab).
+- Focus must be visible.
+- Tab order must follow the visual order.
+
+### 6.3 Forms
+- Every input has an associated label (`label` + `htmlFor`, or an equivalent accessible pattern).
+- Validation:
+  - field errors appear near the field
+  - use `aria-invalid` and `aria-describedby` for error/help text
+- Do not clear user input on validation failure.
+
+### 6.4 Dialogs / modals / popovers
+- Must have:
+  - accessible title/label
+  - focus trap (focus stays inside while open)
+  - ESC closes (unless explicitly unsafe)
+  - return focus to the triggering element on close
+
+### 6.5 Color/contrast & non-color cues
+- Don’t rely on color alone for meaning (include icon/text/shape).
+- Ensure sufficient contrast for readable text and key UI controls.
+
+---
+
+## 7) Interaction Design: states & feedback (must implement)
+For every interactive or async surface (search, save, create, load list, submit form, etc.), implement:
+
+- **Loading**: skeleton/spinner + disable appropriate actions
+- **Empty**: explain why it’s empty + provide a next step
+- **Error**: actionable message + retry path (when possible)
+- **Success**: confirmation via toast/banner/inline message when meaningful
+- **Disabled**: clear reason when disabling (tooltip/help text if needed)
+
+Rules:
+- Don’t leave users guessing whether an action happened.
+- Prefer optimistic UI only when you can reliably reconcile failure.
+
+---
+
+## 8) Mobile-first responsiveness (explicit)
+- Start with **single-column** layouts.
+- Only introduce columns or dense side-by-side layouts at `md+`.
+- Ensure comfortable tap targets on mobile.
+- Avoid tiny hit areas (icons must be padded and tappable).
+- Avoid horizontal scrolling in normal layouts.
+
+---
+
+## 9) Performance guardrails (UI code quality)
+- Prefer Server Components by default; only use Client Components when needed.
+- Avoid unnecessary re-renders:
+  - don’t lift state unless required
+  - avoid prop-drilling volatile state through large trees
+- Lists:
+  - keep rendering cheap
+  - consider virtualization for large lists
+- Images:
+  - use optimized image handling
+  - prevent layout shift (provide dimensions/sizes)
+- Avoid heavy client-only libraries unless necessary and justified.
+
+---
+
+## 10) Content & microcopy consistency (product polish)
+- Use one term per concept (avoid “Logout” in one place and “Sign out” in another).
+- Button labels should be verbs that describe the action (“Save changes”, “Create idea”).
+- Errors must tell the user:
+  - what happened
+  - what to do next
+- Keep tone consistent across the product.
+
+---
+
+## 11) Definition of Done (UI changes must pass)
+Before considering UI work complete, confirm:
+
+- [ ] All margins/padding/gaps are multiples of 4
+- [ ] Clear hierarchy (title → sections → actions)
+- [ ] Section spacing > within-section spacing
+- [ ] Typography is consistent and readable on mobile
+- [ ] Alignment is clean; no misaligned edges
+- [ ] Tap targets are comfortable on mobile
+- [ ] Forms have labels, inline errors, and accessible attributes
+- [ ] Dialogs/popovers handle focus + ESC + return focus
+- [ ] Loading/empty/error/success/disabled states exist where applicable
+- [ ] No one-off styling values; variants/tokens used instead
+- [ ] Minimal client-side code; performance considerations addressed
+- [ ] Copy is consistent and action-oriented
+- [ ] No emojis, ever. None.
+
+---
+
+## 12) Exception Policy (rare)
+Breaking any rule above is only allowed when:
+- required by an existing design token/system constraint, or
+- matching a platform-native behavior that cannot be achieved otherwise.
+
+If you break a rule:
+- leave a short inline comment explaining why,
+- and prefer promoting the requirement into a shared token/component later.

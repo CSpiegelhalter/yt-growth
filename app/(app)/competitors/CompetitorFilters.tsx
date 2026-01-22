@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, type ChangeEvent } from "react";
+import { useCallback, useState, type ChangeEvent } from "react";
+import FilterDrawer from "./FilterDrawer";
 import s from "./style.module.css";
 
 export type ContentType = "shorts" | "long" | "both";
@@ -17,13 +18,14 @@ export type FilterState = {
 type Props = {
   filters: FilterState;
   onChange: (filters: FilterState) => void;
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
   disabled?: boolean;
 };
 
 /**
- * CompetitorFilters - Collapsible filters panel
+ * CompetitorFilters - Responsive filters panel
+ *
+ * - Mobile: Opens as a bottom sheet drawer
+ * - Desktop: Inline compact row
  *
  * Provides:
  * - Content type: Shorts only / Long-form only / Both
@@ -34,10 +36,10 @@ type Props = {
 export default function CompetitorFilters({
   filters,
   onChange,
-  isCollapsed,
-  onToggleCollapse,
   disabled = false,
 }: Props) {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
   const handleContentTypeChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       onChange({ ...filters, contentType: e.target.value as ContentType });
@@ -73,15 +75,96 @@ export default function CompetitorFilters({
     filters.minViewsPerDay !== 10,
   ].filter(Boolean).length;
 
+  // Filter form (shared between drawer and inline)
+  const filterForm = (
+    <>
+      {/* Sort */}
+      <div className={s.filterGroup}>
+        <label className={s.filterLabel} htmlFor="filter-sort">
+          Sort By
+        </label>
+        <select
+          id="filter-sort"
+          className={s.select}
+          value={filters.sortBy}
+          onChange={handleSortChange}
+          disabled={disabled}
+        >
+          <option value="viewsPerDay">Views/Day (Trending)</option>
+          <option value="totalViews">Total Views</option>
+          <option value="newest">Recently Posted</option>
+          <option value="engagement">High Engagement</option>
+        </select>
+      </div>
+
+      {/* Content Type */}
+      <div className={s.filterGroup}>
+        <label className={s.filterLabel} htmlFor="filter-content">
+          Content Type
+        </label>
+        <select
+          id="filter-content"
+          className={s.select}
+          value={filters.contentType}
+          onChange={handleContentTypeChange}
+          disabled={disabled}
+        >
+          <option value="both">All Videos</option>
+          <option value="shorts">Shorts Only</option>
+          <option value="long">Long-form Only</option>
+        </select>
+      </div>
+
+      {/* Date Range */}
+      <div className={s.filterGroup}>
+        <label className={s.filterLabel} htmlFor="filter-range">
+          Posted Within
+        </label>
+        <select
+          id="filter-range"
+          className={s.select}
+          value={filters.dateRange}
+          onChange={handleDateRangeChange}
+          disabled={disabled}
+        >
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="90d">Last 90 days</option>
+          <option value="365d">Last year</option>
+        </select>
+      </div>
+
+      {/* Min Views/Day */}
+      <div className={s.filterGroup}>
+        <label className={s.filterLabel} htmlFor="filter-minvpd">
+          Min Views/Day
+        </label>
+        <select
+          id="filter-minvpd"
+          className={s.select}
+          value={filters.minViewsPerDay}
+          onChange={handleMinViewsChange}
+          disabled={disabled}
+        >
+          <option value="0">No minimum</option>
+          <option value="10">10+ views/day</option>
+          <option value="50">50+ views/day</option>
+          <option value="100">100+ views/day</option>
+          <option value="500">500+ views/day</option>
+          <option value="1000">1K+ views/day</option>
+        </select>
+      </div>
+    </>
+  );
+
   return (
     <div className={s.filtersContainer}>
-      {/* Collapse toggle - mobile */}
+      {/* Mobile: Toggle button */}
       <button
         type="button"
         className={s.filtersToggle}
-        onClick={onToggleCollapse}
-        aria-expanded={!isCollapsed}
-        aria-controls="filters-panel"
+        onClick={() => setIsDrawerOpen(true)}
+        aria-label="Open filters"
       >
         <svg
           width="18"
@@ -97,90 +180,21 @@ export default function CompetitorFilters({
         {activeFilterCount > 0 && (
           <span className={s.filtersBadge}>{activeFilterCount}</span>
         )}
-        <svg
-          className={`${s.filtersChevron} ${isCollapsed ? "" : s.filtersChevronOpen}`}
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
       </button>
 
-      {/* Filters panel */}
-      <div
-        id="filters-panel"
-        className={`${s.filtersPanel} ${isCollapsed ? s.filtersPanelCollapsed : ""}`}
-        aria-hidden={isCollapsed}
+      {/* Mobile: Drawer */}
+      <FilterDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        title="Filters"
+        actionLabel="Apply Filters"
+        onAction={() => setIsDrawerOpen(false)}
       >
-        {/* Sort */}
-        <div className={s.filterGroup}>
-          <label className={s.filterLabel}>Sort By</label>
-          <select
-            className={s.select}
-            value={filters.sortBy}
-            onChange={handleSortChange}
-            disabled={disabled}
-          >
-            <option value="viewsPerDay">Views/Day (Trending)</option>
-            <option value="totalViews">Total Views</option>
-            <option value="newest">Recently Posted</option>
-            <option value="engagement">High Engagement</option>
-          </select>
-        </div>
+        <div className={s.filterDrawerFilters}>{filterForm}</div>
+      </FilterDrawer>
 
-        {/* Content Type */}
-        <div className={s.filterGroup}>
-          <label className={s.filterLabel}>Content Type</label>
-          <select
-            className={s.select}
-            value={filters.contentType}
-            onChange={handleContentTypeChange}
-            disabled={disabled}
-          >
-            <option value="both">All Videos</option>
-            <option value="shorts">Shorts Only</option>
-            <option value="long">Long-form Only</option>
-          </select>
-        </div>
-
-        {/* Date Range */}
-        <div className={s.filterGroup}>
-          <label className={s.filterLabel}>Posted Within</label>
-          <select
-            className={s.select}
-            value={filters.dateRange}
-            onChange={handleDateRangeChange}
-            disabled={disabled}
-          >
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="90d">Last 90 days</option>
-            <option value="365d">Last year</option>
-          </select>
-        </div>
-
-        {/* Min Views/Day */}
-        <div className={s.filterGroup}>
-          <label className={s.filterLabel}>Min Views/Day</label>
-          <select
-            className={s.select}
-            value={filters.minViewsPerDay}
-            onChange={handleMinViewsChange}
-            disabled={disabled}
-          >
-            <option value="0">No minimum</option>
-            <option value="10">10+ views/day</option>
-            <option value="50">50+ views/day</option>
-            <option value="100">100+ views/day</option>
-            <option value="500">500+ views/day</option>
-            <option value="1000">1K+ views/day</option>
-          </select>
-        </div>
-      </div>
+      {/* Desktop: Inline filters */}
+      <div className={s.filtersInline}>{filterForm}</div>
     </div>
   );
 }

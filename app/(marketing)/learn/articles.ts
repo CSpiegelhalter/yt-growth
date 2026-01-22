@@ -130,17 +130,14 @@ export const LEARN_ARTICLES = {
       "youtube analytics",
     ],
     toc: [
-      { id: "why-retention-matters", title: "Why Retention Matters" },
-      { id: "reading-curves", title: "Reading Retention Curves" },
-      { id: "drop-off-patterns", title: "Common Drop-Off Patterns" },
-      { id: "hook-frameworks", title: "Hook Frameworks" },
-      { id: "pacing-structure", title: "Pacing and Structure" },
-      { id: "pattern-interrupts", title: "Pattern Interrupts" },
-      { id: "retention-audit", title: "Retention Audit Workflow" },
-      { id: "improvement-strategies", title: "Strategies to Improve" },
+      { id: "what-is-retention", title: "What Is Audience Retention" },
+      { id: "where-to-find", title: "Where to Find Retention Data" },
+      { id: "reading-the-graph", title: "How to Read the Graph" },
       { id: "benchmarks", title: "Retention Benchmarks" },
-      { id: "common-mistakes", title: "Common Mistakes" },
-      { id: "tools", title: "Tools and Resources" },
+      { id: "playbook", title: "9 Ways to Improve Retention" },
+      { id: "pacing-and-editing", title: "Pacing and Editing" },
+      { id: "hook-deliver-cycle", title: "The Hook-Deliver Cycle" },
+      { id: "fix-it-fast", title: "Quick Retention Audit" },
       { id: "faq", title: "FAQ" },
     ],
     faqs: [
@@ -177,7 +174,7 @@ export const LEARN_ARTICLES = {
       {
         question: "What's the difference between average view duration and average percentage viewed?",
         answer:
-          "Average view duration is the total time in minutes/seconds that viewers watch. Average percentage viewed is that time as a percentage of total video length. A 10-minute video with 4 minutes average view duration has 40% average percentage viewed. Both metrics matter for different reasons.",
+          "Average view duration is the total time in minutes/seconds that viewers watch. Average percentage viewed is that time as a percentage of total video length. A 12-minute video with 4 minutes average view duration has about 33% average percentage viewed. Both metrics matter for different reasons.",
       },
       {
         question: "Should I use chapters in my videos?",
@@ -196,98 +193,18 @@ export const LEARN_ARTICLES = {
       },
     ],
   },
-  "how-to-increase-audience-retention": {
-    slug: "how-to-increase-audience-retention",
-    title: "How to Increase Audience Retention on YouTube (2026)",
-    shortTitle: "Increase Retention",
-    navLabel: "Increase Retention",
-    description:
-      "Practical strategies to increase audience retention on YouTube. Learn hook techniques, pacing strategies, pattern interrupts, and editing tips that keep viewers watching longer.",
-    metaDescription:
-      "How to increase audience retention on YouTube in 2026. Actionable tips for hooks, pacing, pattern interrupts, and editing that keep viewers watching to the end.",
-    datePublished: "2026-01-20",
-    dateModified: "2026-01-20",
-    readingTime: "14 min read",
-    category: "Content",
-    keywords: [
-      "how to increase audience retention",
-      "increase youtube retention",
-      "improve audience retention youtube",
-      "youtube retention tips",
-      "keep viewers watching",
-      "youtube watch time",
-      "video retention strategies",
-      "youtube engagement",
-      "viewer retention",
-      "average view duration",
-    ],
-    toc: [
-      { id: "why-retention-matters", title: "Why Retention Matters" },
-      { id: "retention-checklist", title: "Retention Improvement Checklist" },
-      { id: "hook-techniques", title: "Hook Techniques That Work" },
-      { id: "pacing-strategies", title: "Pacing Strategies" },
-      { id: "pattern-interrupts", title: "Pattern Interrupts" },
-      { id: "editing-tips", title: "Editing Tips for Retention" },
-      { id: "content-structure", title: "Content Structure" },
-      { id: "common-mistakes", title: "Common Mistakes" },
-      { id: "measure-progress", title: "Measure Your Progress" },
-      { id: "faq", title: "FAQ" },
-    ],
-    faqs: [
-      {
-        question: "How do I increase audience retention on YouTube?",
-        answer:
-          "Start with a strong hook in the first 5 to 10 seconds, deliver on your title promise quickly, use pattern interrupts every 30 to 60 seconds, cut all filler content, and structure your video to build toward a payoff. Analyze your retention graphs to find where viewers leave and fix those specific moments.",
-      },
-      {
-        question: "What is a good audience retention rate?",
-        answer:
-          "For short videos under 5 minutes, aim for 50 to 70 percent. For medium videos 8 to 15 minutes, 40 to 60 percent is good. For long videos over 20 minutes, 30 to 50 percent is solid. Focus on improving your own baseline rather than hitting specific numbers.",
-      },
-      {
-        question: "Why do viewers leave my videos early?",
-        answer:
-          "The most common reasons are weak hooks that do not grab attention, content that does not match the title and thumbnail promise, too much setup before delivering value, slow pacing or filler content, and lack of variety in visuals or delivery. Check your retention graph to see exactly where viewers drop off.",
-      },
-      {
-        question: "What is a pattern interrupt?",
-        answer:
-          "A pattern interrupt is any change that resets viewer attention: camera angle changes, b-roll footage, graphics, music shifts, pacing changes, or topic transitions. The brain notices change, so interrupts prevent viewers from zoning out. Aim for some form of change every 30 to 90 seconds.",
-      },
-      {
-        question: "How do I hook viewers in the first 10 seconds?",
-        answer:
-          "Use one of these techniques: tease the result or payoff, ask a question that creates curiosity, make a bold or surprising statement, show the end result before explaining how, or jump straight into action. Avoid generic intros like hey guys welcome back.",
-      },
-      {
-        question: "Does video length affect retention?",
-        answer:
-          "Yes. Longer videos typically have lower percentage retention but can have higher absolute watch time. Make your video as long as it needs to be and no longer. A tight 8 minute video often outperforms a padded 15 minute video because viewers watch more of it.",
-      },
-      {
-        question: "How often should I check my retention data?",
-        answer:
-          "Review retention for every video about 48 to 72 hours after publishing when you have meaningful data. Do a deeper comparison across multiple videos monthly to identify patterns. Your audience behavior is usually consistent across videos.",
-      },
-      {
-        question: "Can I improve retention with editing alone?",
-        answer:
-          "Editing helps significantly but content matters most. Good editing adds pattern interrupts, removes dead air, improves pacing, and enhances visuals. But if the core content is not valuable or engaging, no amount of editing will save retention. Start with good content, then use editing to make it better.",
-      },
-    ],
-  },
   "youtube-thumbnail-best-practices": {
     slug: "youtube-thumbnail-best-practices",
-    title: "YouTube Thumbnail Best Practices: Get More Clicks (2026)",
+    title: "YouTube Thumbnail Best Practices (2026): Thumbnails Are Packaging",
     shortTitle: "Thumbnail Best Practices",
     navLabel: "Thumbnails",
     description:
-      "Learn YouTube thumbnail best practices that increase CTR. This guide covers design principles, text usage, faces, colors, testing strategies, and common mistakes to avoid.",
+      "A premium, mobile-first guide to YouTube thumbnails: a simple formula, good vs bad mock examples, text rules, composition, and A/B testing to increase CTR.",
     metaDescription:
-      "YouTube thumbnail best practices for 2026. Learn design principles, text tips, face expressions, color choices, and A/B testing strategies to get more clicks on your videos.",
+      "A premium, mobile-first guide to YouTube thumbnails for 2026: a simple formula, good vs bad mock examples, text rules, composition tips, and A/B testing to increase CTR.",
     datePublished: "2026-01-20",
-    dateModified: "2026-01-20",
-    readingTime: "15 min read",
+    dateModified: "2026-01-22",
+    readingTime: "18 min read",
     category: "Content",
     keywords: [
       "youtube thumbnail best practices",
@@ -302,68 +219,62 @@ export const LEARN_ARTICLES = {
       "custom thumbnails youtube",
     ],
     toc: [
-      { id: "why-thumbnails-matter", title: "Why Thumbnails Matter" },
-      { id: "thumbnail-checklist", title: "Thumbnail Checklist" },
-      { id: "design-principles", title: "Design Principles" },
-      { id: "text-best-practices", title: "Text Best Practices" },
-      { id: "faces-and-emotions", title: "Faces and Emotions" },
-      { id: "colors-and-contrast", title: "Colors and Contrast" },
-      { id: "thumbnail-title-combo", title: "Thumbnail and Title Combo" },
-      { id: "testing-thumbnails", title: "Testing Thumbnails" },
-      { id: "tools-and-specs", title: "Tools and Specs" },
-      { id: "common-mistakes", title: "Common Mistakes" },
+      { id: "thumbnails-are-packaging", title: "Thumbnails are packaging" },
+      { id: "thumbnail-formula", title: "The thumbnail formula" },
+      { id: "great-thumbnails-principles", title: "What great thumbnails have in common" },
+      { id: "good-vs-bad-examples", title: "Examples: good vs bad" },
+      { id: "playful-visuals", title: "Two quick visuals" },
+      { id: "thumbnail-text", title: "Thumbnail text: when to use it" },
+      { id: "color-and-composition", title: "Color & composition" },
+      { id: "ab-testing-and-iteration", title: "A/B testing & iteration" },
+      { id: "common-mistakes-that-kill-ctr", title: "Common mistakes that kill CTR" },
       { id: "faq", title: "FAQ" },
     ],
     faqs: [
       {
-        question: "What makes a good YouTube thumbnail?",
+        question: "What makes a YouTube thumbnail get clicks?",
         answer:
-          "A good thumbnail is readable at small sizes, has high contrast, communicates the video topic in a split second, creates curiosity or promises value, and stands out from other videos in search results or suggested feeds. It should complement the title, not repeat it.",
+          "A clickable thumbnail communicates one clear idea in one second: one focal subject, strong contrast/separation, and a promise that feels worth the click. It should complement the title, not repeat it.",
       },
       {
         question: "What is the best YouTube thumbnail size?",
         answer:
-          "YouTube recommends 1280 by 720 pixels with a 16:9 aspect ratio. The minimum width is 640 pixels. Keep file size under 2MB. Use JPG, GIF, or PNG format. Always test how your thumbnail looks at small sizes since most viewers see it on mobile.",
+          "1280 × 720 pixels (16:9). Minimum width is 640 pixels. Keep file size under 2MB and use JPG, GIF, or PNG. Always check readability at mobile size before publishing.",
       },
       {
-        question: "Should I use text on my thumbnails?",
+        question: "How many words should I put on a thumbnail?",
         answer:
-          "Text can be effective but use it sparingly. Limit to 3 to 4 words maximum. Make text large enough to read on mobile. Use high contrast colors. The text should add information the title does not provide, not repeat the title exactly.",
+          "Use zero words if the image communicates the idea. If you need text, keep it to 2–4 words max, make it huge, and make sure it adds meaning (not a copy of your title).",
       },
       {
-        question: "Do faces in thumbnails get more clicks?",
+        question: "When should I use text vs no text?",
         answer:
-          "Faces with clear emotions often perform well because humans are naturally drawn to faces. Expressive faces showing surprise, excitement, concern, or curiosity tend to outperform neutral expressions. However, this varies by niche. Test what works for your audience.",
+          "If the image alone clearly communicates the idea, skip text. If the image needs context, add 2–4 words that supply the missing angle. Then test both approaches in your niche.",
       },
       {
-        question: "How do I increase my YouTube CTR?",
+        question: "When should I change a thumbnail after publishing?",
         answer:
-          "Improve your thumbnails by making them more readable, adding contrast, using expressive faces, and testing different styles. Write clearer titles that create curiosity. Make sure your thumbnail and title work together and deliver on the promise in your content.",
+          "Change it when impressions are stable but CTR is underperforming relative to your baseline. Give each version enough time and impressions to be meaningful, and test one variable at a time.",
       },
       {
         question: "What is a good CTR on YouTube?",
         answer:
-          "CTR varies by niche and traffic source. For browse and suggested traffic, 4 to 6 percent is common. For search traffic, 5 to 10 percent is typical. More important than hitting a number is tracking your trend over time. Rising CTR means your packaging is improving.",
+          "It varies by niche and traffic source. Many channels see roughly 4–10%, but the most useful metric is your trend over time. If CTR rises after a packaging change, you learned something.",
       },
       {
-        question: "How do I test different thumbnails?",
+        question: "Do faces in thumbnails increase CTR?",
         answer:
-          "YouTube offers built-in A/B testing for some creators called Test and Compare. Alternatively, upload a thumbnail, wait a few days to gather CTR data, then change it and compare. Give each test at least 48 to 72 hours with meaningful impressions before judging.",
+          "Often, yes—faces are attention magnets when the emotion is clear and large enough to read on mobile. But faces are not required; test what works for your audience.",
       },
       {
-        question: "What colors work best for thumbnails?",
+        question: "Should my thumbnail text match my title?",
         answer:
-          "High contrast colors that stand out from YouTube's white and red interface work well. Yellow, blue, and green often pop. Avoid colors that blend with YouTube's UI. Bright, saturated colors typically outperform muted tones. Test what works for your specific niche.",
+          "No. The title is already visible in the feed. If you use text, use it for the missing context or the angle, not a duplicate sentence.",
       },
       {
-        question: "Should my thumbnails have a consistent style?",
+        question: "How do I avoid clickbait that hurts retention?",
         answer:
-          "Consistency helps returning viewers recognize your videos instantly. Use similar fonts, color palettes, or layouts. However, do not be so consistent that every thumbnail looks identical. Each video should still communicate its unique value proposition.",
-      },
-      {
-        question: "What thumbnail mistakes should I avoid?",
-        answer:
-          "Common mistakes include text too small to read on mobile, low contrast that blends together, cluttered designs with too many elements, misleading images that do not match content, inconsistent branding, and copying your title exactly instead of complementing it.",
+          "Make sure the video delivers the thumbnail promise quickly, especially in the first 30 seconds. Packaging should create curiosity, but it must stay honest about what the viewer gets.",
       },
     ],
   },
@@ -827,7 +738,7 @@ export const LEARN_ARTICLES = {
     ],
     toc: [
       { id: "why-inspiration-matters", title: "Why Inspiration Matters" },
-      { id: "inspiration-checklist", title: "10 Minute Inspiration Checklist" },
+      { id: "inspiration-checklist", title: "Quick Inspiration Checklist" },
       { id: "study-competitors", title: "Study What's Working for Others" },
       { id: "spot-patterns", title: "Spot Patterns in Successful Videos" },
       { id: "use-analytics", title: "Use Your Own Analytics" },
@@ -918,7 +829,7 @@ export const LEARN_ARTICLES = {
       {
         question: "How do I make a YouTube channel?",
         answer:
-          "Sign in to YouTube with a Google account, click your profile icon, select Create a channel, choose a channel name, and customize your profile picture and banner. The whole process takes about 10 minutes. You can start uploading videos immediately after setup.",
+          "Sign in to YouTube with a Google account, click your profile icon, select Create a channel, choose a channel name, and customize your profile picture and banner. The whole process takes about ten minutes. You can start uploading videos immediately after setup.",
       },
       {
         question: "How do I create a YouTube channel for my business?",

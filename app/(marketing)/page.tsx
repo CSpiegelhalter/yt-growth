@@ -475,7 +475,6 @@ const POPULAR_GUIDE_SLUGS = [
   "find-video-inspiration",
   "how-to-find-video-ideas",
   "youtube-thumbnail-best-practices",
-  "how-to-increase-audience-retention",
   // Growth & promotion
   "how-to-promote-youtube-videos",
   "find-similar-youtube-channels",

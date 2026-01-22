@@ -6,12 +6,16 @@ import s from "./style.module.css";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 import type { Me, Channel, CompetitorVideo } from "@/types/api";
 import { SUBSCRIPTION, formatUsd } from "@/lib/product";
-import CompetitorSearchPanel, { type SearchMode } from "./CompetitorSearchPanel";
+import ModeToggle, { type TopLevelMode } from "./ModeToggle";
+import CompetitorSearchPanel from "./CompetitorSearchPanel";
+import NicheDiscoveryPanel from "./NicheDiscoveryPanel";
 import CompetitorFilters, {
   type FilterState,
   DEFAULT_FILTER_STATE,
 } from "./CompetitorFilters";
 import CompetitorResultsStream from "./CompetitorResultsStream";
+import type { DiscoveredNiche, DiscoveryFilters } from "./types";
+import { DEFAULT_DISCOVERY_FILTERS } from "./types";
 
 type Props = {
   initialMe: Me;
@@ -35,10 +39,11 @@ type SearchCursor = {
 };
 
 type SavedState = {
-  mode: SearchMode;
+  topLevelMode: TopLevelMode;
   nicheText: string;
   referenceVideoUrl: string;
   filters: FilterState;
+  discoveryFilters: DiscoveryFilters;
   videos: CompetitorVideo[];
   nextCursor: SearchCursor | null;
   hasSearched: boolean;
@@ -102,6 +107,10 @@ function getAndClearClickedVideo(): string | null {
 /**
  * CompetitorsClient - Unified competitor search experience
  *
+ * Two top-level modes:
+ * - Search: Manual niche search or "Search My Niche"
+ * - Discover: Explore trending niches
+ *
  * State is preserved in sessionStorage so back button works properly.
  */
 export default function CompetitorsClient({
@@ -126,21 +135,21 @@ export default function CompetitorsClient({
     [initialMe]
   );
 
-  // Default mode based on whether user has a channel
-  const defaultMode: SearchMode = activeChannel ? "search_my_niche" : "competitor_search";
-
-  // Initialize all state with server-safe defaults (no sessionStorage access during SSR)
-  const [mode, setMode] = useState<SearchMode>(defaultMode);
+  // Initialize all state with server-safe defaults (Search is default)
+  const [topLevelMode, setTopLevelMode] = useState<TopLevelMode>("search");
   const [nicheText, setNicheText] = useState("");
   const [referenceVideoUrl, setReferenceVideoUrl] = useState("");
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTER_STATE);
-  const [filtersCollapsed, setFiltersCollapsed] = useState(true);
+  const [discoveryFilters, setDiscoveryFilters] = useState<DiscoveryFilters>(
+    DEFAULT_DISCOVERY_FILTERS
+  );
 
   // Search state
   const [hasSearched, setHasSearched] = useState(false);
   const [searchKey, setSearchKey] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchMode, setSearchMode] = useState<"competitor_search" | "search_my_niche">("competitor_search");
 
   // Cached videos and cursor (populated after hydration)
   const [cachedVideos, setCachedVideos] = useState<CompetitorVideo[] | null>(null);
@@ -148,15 +157,15 @@ export default function CompetitorsClient({
   const [currentVideos, setCurrentVideos] = useState<CompetitorVideo[]>([]);
   const [currentNextCursor, setCurrentNextCursor] = useState<SearchCursor | null>(null);
   
-  // Track whether we've restored from sessionStorage (to avoid saving during restore)
+  // Track whether we've restored from sessionStorage
   const hasRestoredRef = useRef(false);
   
-  // Track clicked video ID for scroll restoration (passed to results stream)
+  // Track clicked video ID for scroll restoration
   const [scrollToVideoId, setScrollToVideoId] = useState<string | null>(null);
 
   useSyncActiveChannelIdToLocalStorage(activeChannelId);
 
-  // Restore state from sessionStorage AFTER hydration (client-only)
+  // Restore state from sessionStorage AFTER hydration
   useEffect(() => {
     const savedState = loadState();
     const clickedVideoId = getAndClearClickedVideo();
@@ -165,10 +174,11 @@ export default function CompetitorsClient({
       hasRestoredRef.current = true;
       
       // Restore all state
-      setMode(savedState.mode);
+      setTopLevelMode(savedState.topLevelMode);
       setNicheText(savedState.nicheText);
       setReferenceVideoUrl(savedState.referenceVideoUrl);
       setFilters(savedState.filters);
+      setDiscoveryFilters(savedState.discoveryFilters);
       setHasSearched(savedState.hasSearched);
       setCurrentVideos(savedState.videos);
       setCurrentNextCursor(savedState.nextCursor);
@@ -179,7 +189,7 @@ export default function CompetitorsClient({
         setSearchKey(`restored:${Date.now()}`);
       }
 
-      // Set the video ID to scroll to (CompetitorResultsStream handles the actual scroll)
+      // Set scroll target
       if (clickedVideoId && savedState.videos.length > 0) {
         setScrollToVideoId(clickedVideoId);
       }
@@ -189,54 +199,65 @@ export default function CompetitorsClient({
         hasRestoredRef.current = false;
       }, 0);
     }
-  }, []); // Only run once on mount
+  }, []);
 
   // Save state to sessionStorage whenever it changes
   useEffect(() => {
-    // Don't save if no search has happened or we're in the middle of restoring
     if (!hasSearched || hasRestoredRef.current) return;
 
     saveState({
-      mode,
+      topLevelMode,
       nicheText,
       referenceVideoUrl,
       filters,
+      discoveryFilters,
       videos: currentVideos,
       nextCursor: currentNextCursor,
       hasSearched,
     });
-  }, [mode, nicheText, referenceVideoUrl, filters, currentVideos, currentNextCursor, hasSearched]);
+  }, [topLevelMode, nicheText, referenceVideoUrl, filters, discoveryFilters, currentVideos, currentNextCursor, hasSearched]);
 
-  // Handle mode change
-  const handleModeChange = useCallback((newMode: SearchMode) => {
-    setMode(newMode);
-    // Don't clear results when switching modes
+  // Handle top-level mode change
+  const handleModeChange = useCallback((newMode: TopLevelMode) => {
+    setTopLevelMode(newMode);
+    // Don't clear results when switching modes - allows returning to see previous results
   }, []);
 
-  // Handle search initiation
+  // Handle search initiation (manual niche)
   const handleSearch = useCallback(
     (text: string, url: string) => {
       setNicheText(text);
       setReferenceVideoUrl(url);
+      setSearchMode("competitor_search");
       setError(null);
       setIsSearching(true);
       setHasSearched(true);
-      setCurrentVideos([]); // Clear old results
-      setSearchKey(`${mode}:${Date.now()}`);
+      setCurrentVideos([]);
+      setSearchKey(`competitor_search:${Date.now()}`);
     },
-    [mode]
+    []
   );
+
+  // Handle "Search My Niche" shortcut
+  const handleSearchMyNiche = useCallback(() => {
+    setSearchMode("search_my_niche");
+    setError(null);
+    setIsSearching(true);
+    setHasSearched(true);
+    setCurrentVideos([]);
+    setSearchKey(`search_my_niche:${Date.now()}`);
+  }, []);
 
   // Handle filter changes
   const handleFiltersChange = useCallback(
     (newFilters: FilterState) => {
       setFilters(newFilters);
       if (hasSearched) {
-        setCurrentVideos([]); // Clear old results
-        setSearchKey(`${mode}:${Date.now()}`);
+        setCurrentVideos([]);
+        setSearchKey(`${searchMode}:${Date.now()}`);
       }
     },
-    [mode, hasSearched]
+    [searchMode, hasSearched]
   );
 
   // Handle search complete
@@ -249,7 +270,7 @@ export default function CompetitorsClient({
     setCurrentVideos(videos);
   }, []);
 
-  // Handle cursor update (for Load More)
+  // Handle cursor update
   const handleCursorUpdate = useCallback((cursor: SearchCursor | null) => {
     setCurrentNextCursor(cursor);
   }, []);
@@ -263,6 +284,19 @@ export default function CompetitorsClient({
   const handleError = useCallback((errorMessage: string) => {
     setError(errorMessage);
     setIsSearching(false);
+  }, []);
+
+  // Handle "Search this niche" from discovery
+  const handleSearchDiscoveredNiche = useCallback((niche: DiscoveredNiche) => {
+    setTopLevelMode("search");
+    setNicheText(niche.nicheLabel);
+    setReferenceVideoUrl("");
+    setSearchMode("competitor_search");
+    setError(null);
+    setIsSearching(true);
+    setHasSearched(true);
+    setCurrentVideos([]);
+    setSearchKey(`competitor_search:${Date.now()}`);
   }, []);
 
   // Show locked state if subscription is required
@@ -298,82 +332,98 @@ export default function CompetitorsClient({
 
   return (
     <main className={s.page}>
+      {/* Header - appears once */}
       <div className={s.header}>
         <div>
           <h1 className={s.title}>Competitor Search</h1>
-          <p className={s.subtitle}>Find winning videos in any niche or your own</p>
+          <p className={s.subtitle}>Find winning videos in any niche or discover trending opportunities</p>
         </div>
       </div>
 
-      {/* Search Panel */}
-      <CompetitorSearchPanel
-        mode={mode}
-        onModeChange={handleModeChange}
-        onSearch={handleSearch}
-        isSearching={isSearching}
-        hasChannel={!!activeChannel}
-        initialNicheText={nicheText}
-        initialReferenceUrl={referenceVideoUrl}
-      />
+      {/* Mode Toggle: Search | Discover */}
+      <ModeToggle mode={topLevelMode} onModeChange={handleModeChange} />
 
-      {/* Filters */}
-      <CompetitorFilters
-        filters={filters}
-        onChange={handleFiltersChange}
-        isCollapsed={filtersCollapsed}
-        onToggleCollapse={() => setFiltersCollapsed((prev) => !prev)}
-        disabled={isSearching}
-      />
+      {/* Search Mode */}
+      {topLevelMode === "search" && (
+        <>
+          <CompetitorSearchPanel
+            mode={topLevelMode}
+            onSearch={handleSearch}
+            onSearchMyNiche={handleSearchMyNiche}
+            isSearching={isSearching}
+            hasChannel={!!activeChannel}
+            initialNicheText={nicheText}
+            initialReferenceUrl={referenceVideoUrl}
+          />
 
-      {/* Error Banner */}
-      {error && (
-        <div className={s.errorBanner}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v4M12 16h.01" />
-          </svg>
-          <p className={s.errorMessage}>{error}</p>
-          <button className={s.errorDismiss} onClick={() => setError(null)} aria-label="Dismiss">
-            ×
-          </button>
-        </div>
+          {/* Filters - only show after first search */}
+          {hasSearched && (
+            <CompetitorFilters
+              filters={filters}
+              onChange={handleFiltersChange}
+              disabled={isSearching}
+            />
+          )}
+
+          {/* Error Banner */}
+          {error && (
+            <div className={s.errorBanner}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v4M12 16h.01" />
+              </svg>
+              <p className={s.errorMessage}>{error}</p>
+              <button className={s.errorDismiss} onClick={() => setError(null)} aria-label="Dismiss">
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* Results Stream */}
+          {(searchKey || hasSearched) && (
+            <CompetitorResultsStream
+              searchKey={searchKey}
+              mode={searchMode}
+              nicheText={nicheText}
+              referenceVideoUrl={referenceVideoUrl}
+              channelId={activeChannelId}
+              filters={filters}
+              onSearchComplete={handleSearchComplete}
+              onResultsUpdate={handleResultsUpdate}
+              onCursorUpdate={handleCursorUpdate}
+              onVideoClick={handleVideoClick}
+              onError={handleError}
+              initialVideos={cachedVideos}
+              initialNextCursor={cachedNextCursor}
+              scrollToVideoId={scrollToVideoId}
+            />
+          )}
+
+          {/* Initial state - no search yet */}
+          {!hasSearched && (
+            <div className={s.emptyState}>
+              <div className={s.emptyIcon}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+              </div>
+              <h2 className={s.emptyTitle}>Search Any Niche</h2>
+              <p className={s.emptyDesc}>
+                Describe a niche or paste a reference video URL to find competitors
+                and winning content ideas.
+              </p>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Results Stream */}
-      {(searchKey || hasSearched) && (
-        <CompetitorResultsStream
-          searchKey={searchKey}
-          mode={mode}
-          nicheText={nicheText}
-          referenceVideoUrl={referenceVideoUrl}
-          channelId={activeChannelId}
-          filters={filters}
-          onSearchComplete={handleSearchComplete}
-          onResultsUpdate={handleResultsUpdate}
-          onCursorUpdate={handleCursorUpdate}
-          onVideoClick={handleVideoClick}
-          onError={handleError}
-          initialVideos={cachedVideos}
-          initialNextCursor={cachedNextCursor}
-          scrollToVideoId={scrollToVideoId}
+      {/* Discover Mode */}
+      {topLevelMode === "discover" && (
+        <NicheDiscoveryPanel
+          onSearchNiche={handleSearchDiscoveredNiche}
+          initialFilters={discoveryFilters}
         />
-      )}
-
-      {/* Initial state - no search yet */}
-      {!hasSearched && mode === "competitor_search" && (
-        <div className={s.emptyState}>
-          <div className={s.emptyIcon}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
-          </div>
-          <h2 className={s.emptyTitle}>Search Any Niche</h2>
-          <p className={s.emptyDesc}>
-            Describe a niche or paste a reference video URL to find competitors
-            and winning content ideas.
-          </p>
-        </div>
       )}
     </main>
   );

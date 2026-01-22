@@ -365,7 +365,7 @@ export function Body({ s }: BodyProps) {
           Ready to improve? Learn{" "}
           <Link href="/learn/how-to-get-more-subscribers">how to get more subscribers organically</Link>,
           explore{" "}
-          <Link href="/learn/how-to-increase-audience-retention">retention strategies that work</Link>,
+          <Link href="/learn/youtube-retention-analysis">retention strategies that work</Link>,
           or start with{" "}
           <Link href="/learn/how-to-find-video-ideas">finding better video ideas</Link>.
         </p>

@@ -938,13 +938,15 @@ export function detectEngagementOutlier(input: {
     const q3 = channelScores[q3Idx];
     const iqr = q3 - q1;
     
-    // Outlier thresholds
-    const highThreshold = median + iqr * 1.0; // Above upper quartile
-    const exceptionalThreshold = median + iqr * 1.5; // 1.5x IQR above Q3
+    // Outlier thresholds (standard IQR rule, anchored to Q3)
+    // Use strict ">" comparisons below so "at median" is never an outlier,
+    // especially when IQR is 0 (many channels have flat engagement rates).
+    const highThreshold = q3 + iqr * 1.0;
+    const exceptionalThreshold = q3 + iqr * 1.5;
     
     const medianPct = (median * 100).toFixed(2);
     
-    if (engagementScore >= exceptionalThreshold) {
+    if (engagementScore > exceptionalThreshold) {
       return {
         engagementScore,
         isOutlier: true,
@@ -954,7 +956,7 @@ export function detectEngagementOutlier(input: {
       };
     }
     
-    if (engagementScore >= highThreshold) {
+    if (engagementScore > highThreshold) {
       return {
         engagementScore,
         isOutlier: true,

@@ -45,7 +45,7 @@ export function Body({ s }: BodyProps) {
         </p>
       </section>
 
-      {/* 10 Minute Inspiration Checklist */}
+      {/* Quick Inspiration Checklist */}
       <section id="inspiration-checklist" className={s.section}>
         <h2 className={s.sectionTitle}>
           <span className={s.sectionIcon}>
@@ -60,30 +60,30 @@ export function Body({ s }: BodyProps) {
               <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
           </span>
-          10 Minute Inspiration Checklist
+          Quick Inspiration Checklist
         </h2>
         <p className={s.sectionText}>
-          Use this checklist whenever you need fresh ideas. Set a timer for 10
-          minutes and work through each step.
+          Use this checklist whenever you need fresh ideas. Work through each
+          step and write down what you find.
         </p>
         <ol className={s.numberedList}>
           <li>
-            <strong>Check 3 competitor channels (4 min):</strong> Go to their
+            <strong>Check competitor channels:</strong> Go to their
             Videos tab, sort by Popular, and note any topics that got unusually
             high views. Write down 3 to 5 ideas.
           </li>
           <li>
-            <strong>Scan YouTube search suggestions (2 min):</strong> Type 3
+            <strong>Scan YouTube search suggestions:</strong> Type 3
             seed topics into YouTube search without hitting enter. Note the
             autocomplete suggestions. These are real queries.
           </li>
           <li>
-            <strong>Check your own analytics (2 min):</strong> Look at your top
+            <strong>Check your own analytics:</strong> Look at your top
             5 videos by views in the last 90 days. What topics or formats worked
             best? Can you make related content?
           </li>
           <li>
-            <strong>Read 5 comments (2 min):</strong> Open a popular video in
+            <strong>Read the comments:</strong> Open a popular video in
             your niche and read the top comments. Look for questions or requests
             from viewers.
           </li>

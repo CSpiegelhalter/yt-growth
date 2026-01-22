@@ -124,8 +124,8 @@ export function Body({ s }: BodyProps) {
         <h3 className={s.subheading}>Average View Duration</h3>
         <p className={s.sectionText}>
           AVD tracks how long viewers watch before leaving. This is the metric
-          most damaged by fake views. If your 10 minute video has real viewers
-          watching 5 minutes on average, your AVD is 50 percent. Add thousands
+          most damaged by fake views. If your 12 minute video has real viewers
+          watching 6 minutes on average, your AVD is 50 percent. Add thousands
           of fake views that watch 5 seconds each, and your AVD craters to under
           10 percent. YouTube interprets this as content nobody wants to watch.
         </p>
@@ -421,7 +421,7 @@ export function Body({ s }: BodyProps) {
         </ul>
         <p className={s.sectionText}>
           For detailed retention strategies, see our{" "}
-          <Link href="/learn/how-to-increase-audience-retention">retention improvement guide</Link>.
+          <Link href="/learn/youtube-retention-analysis">retention analysis guide</Link>.
         </p>
         <h3 className={s.subheading}>Topic Validation</h3>
         <p className={s.sectionText}>

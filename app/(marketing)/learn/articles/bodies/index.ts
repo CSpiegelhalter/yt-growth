@@ -33,7 +33,6 @@ import { Body as YouTubeChannelAuditBody } from "./youtube-channel-audit";
 import { Body as YouTubeCompetitorAnalysisBody } from "./youtube-competitor-analysis";
 import { Body as YouTubeMonetizationRequirementsBody } from "./youtube-monetization-requirements";
 import { Body as YouTubeRetentionAnalysisBody } from "./youtube-retention-analysis";
-import { Body as HowToIncreaseAudienceRetentionBody } from "./how-to-increase-audience-retention";
 import { Body as YouTubeThumbnailBestPracticesBody } from "./youtube-thumbnail-best-practices";
 import { Body as YouTubeVideoIdeasBody } from "./youtube-video-ideas";
 import { Body as HowToFindVideoIdeasBody } from "./how-to-find-video-ideas";
@@ -65,7 +64,6 @@ export const BODY_COMPONENTS: Record<string, React.ComponentType<BodyProps>> = {
   "youtube-competitor-analysis": YouTubeCompetitorAnalysisBody,
   "youtube-monetization-requirements": YouTubeMonetizationRequirementsBody,
   "youtube-retention-analysis": YouTubeRetentionAnalysisBody,
-  "how-to-increase-audience-retention": HowToIncreaseAudienceRetentionBody,
   "youtube-thumbnail-best-practices": YouTubeThumbnailBestPracticesBody,
   "youtube-video-ideas": YouTubeVideoIdeasBody,
   "how-to-find-video-ideas": HowToFindVideoIdeasBody,

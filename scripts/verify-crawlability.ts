@@ -35,11 +35,10 @@ const RESET = "\x1b[0m";
 const _REQUIRED_PAGES = ["/", "/learn", "/privacy", "/terms", "/contact"];
 void _REQUIRED_PAGES; // Document the expected pages
 
-// Required learn article slugs (26 total)
+// Required learn article slugs (25 total)
 const REQUIRED_LEARN_SLUGS = [
   "youtube-channel-audit",
   "youtube-retention-analysis",
-  "how-to-increase-audience-retention",
   "youtube-thumbnail-best-practices",
   "how-to-get-more-subscribers",
   "youtube-competitor-analysis",

@@ -107,6 +107,12 @@ const nextConfig = {
         destination: "https://www.getchannelboost.com/:path*",
         permanent: true,
       },
+      // Consolidated Learn article redirect
+      {
+        source: "/learn/how-to-increase-audience-retention",
+        destination: "/learn/youtube-retention-analysis",
+        permanent: true,
+      },
       // Legacy route -> Subscriber Insights
       { source: "/converters", destination: "/subscriber-insights", permanent: true },
       { source: "/converters/:path*", destination: "/subscriber-insights", permanent: true },

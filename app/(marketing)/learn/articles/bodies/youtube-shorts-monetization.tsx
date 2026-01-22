@@ -201,7 +201,7 @@ export function Body({ s }: BodyProps) {
         <p className={s.sectionText}>
           This doesn't mean Shorts are a waste of time. Think of them as serving
           different purposes: Shorts excel at discovery and audience building—they
-          reach people who might never click on a 10-minute video. Long-form is
+          reach people who might never click on a longer video. Long-form is
           where you convert that attention into meaningful ad revenue. The creators
           who do best often use both: Shorts to grow, long-form to earn.
         </p>

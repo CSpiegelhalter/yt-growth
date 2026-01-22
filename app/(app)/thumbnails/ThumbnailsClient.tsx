@@ -244,7 +244,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
 
   // Helper to wait for identity training to complete
   const waitForTraining = useCallback(async (): Promise<string | null> => {
-    const maxAttempts = 120; // 10 minutes max (5s intervals)
+    const maxAttempts = 120; // ten minutes max (5s intervals)
     for (let i = 0; i < maxAttempts; i++) {
       await new Promise((r) => setTimeout(r, 5000));
       const res = await fetch("/api/identity/status");

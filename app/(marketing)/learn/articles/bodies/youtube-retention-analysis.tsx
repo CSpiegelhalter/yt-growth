@@ -1,7 +1,9 @@
 /**
  * Body content for YouTube Retention Analysis article.
  * Server component - no "use client" directive.
- * Significantly expanded for better text-to-HTML ratio and SEO.
+ * 
+ * Magazine-style layout with visual variety and proper spacing.
+ * Follows the channel-audit design patterns for consistency.
  */
 
 import Link from "next/link";
@@ -11,356 +13,734 @@ import type { BodyProps } from "./index";
 export function Body({ s }: BodyProps) {
   return (
     <>
-      {/* Why Retention Matters */}
-      <section id="why-retention-matters" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          </span>
-          Why Retention Matters for YouTube Growth
-        </h2>
-        <p className={s.sectionText}>
-          Audience retention is arguably the single most important metric for YouTube growth in 2026. It directly affects how the algorithm promotes your videos. When viewers watch a large percentage of your video, YouTube interprets this as a strong signal that your content is valuable. The result: more impressions, better placement in suggested videos, and ultimately more views and subscribers.
+      {/* INTRO / HERO */}
+      <section id="what-is-retention" className="sectionOpen">
+        <p className={s.sectionText} style={{ fontSize: '1.125rem' }}>
+          Audience retention measures how much of your video people actually watch. It&apos;s the percentage of your video that viewers see before clicking away.
         </p>
+
         <p className={s.sectionText}>
-          YouTube&apos;s recommendation system is designed to keep people on the platform. If your videos consistently keep viewers watching, YouTube will show your content to more people. This creates a compounding effect: better retention leads to more reach, which leads to more potential viewers, which leads to more subscribers. The opposite is also true—low retention means YouTube will stop promoting your videos.
+          If you have a 12-minute video and viewers watch an average of 4 minutes, your retention is about 33%. Simple, but incredibly powerful. This single metric tells YouTube more about your content quality than almost anything else.
         </p>
+
+        <div className="pullQuote">
+          Retention is the metric that controls how far your video travels.
+        </div>
+
+        <p className={s.sectionText}>
+          When viewers watch longer, YouTube shows your video to more people. When they leave quickly, YouTube stops recommending it. Every other metric — views, subscribers, revenue — flows downstream from retention.
+        </p>
+
+        <div className="funCallout">
+          <p className="funCallout__text">
+            By the end of this guide, you&apos;ll know how to find your retention data, read the graph like a pro, diagnose problems, and fix them with proven techniques.
+          </p>
+        </div>
+
         <div className={s.statsGrid}>
           <div className={s.stat}>
             <div className={s.statValue}>50%+</div>
-            <div className={s.statLabel}>Good Retention Target</div>
+            <div className={s.statLabel}>Healthy target (most formats)</div>
           </div>
           <div className={s.stat}>
-            <div className={s.statValue}>30 sec</div>
-            <div className={s.statLabel}>Critical Hook Window</div>
+            <div className={s.statValue}>5–10s</div>
+            <div className={s.statLabel}>Critical hook window</div>
           </div>
           <div className={s.stat}>
-            <div className={s.statValue}>2-3×</div>
-            <div className={s.statLabel}>More Views with Better Retention</div>
+            <div className={s.statValue}>30–90s</div>
+            <div className={s.statLabel}>Attention reset cadence</div>
           </div>
         </div>
+
+        <h3 className={s.subheading}>Why Small Differences Matter</h3>
         <p className={s.sectionText}>
-          Many creators obsess over subscriber counts and view counts, but retention is the metric that actually determines whether those numbers grow. A video with 1,000 views and 60% retention will often outperform a video with 10,000 views and 20% retention in the long run—because YouTube will continue promoting the first video while suppressing the second.
+          The difference between 60% and 72% retention might seem small, but it&apos;s not. That 12-point gap can mean the difference between a video that fizzles after 1,000 views and one that gets pushed to 100,000.
+        </p>
+
+        <p className={s.sectionText}>
+          Think about it this way: if 100 people click on two different videos, and one keeps viewers for 7 minutes while the other only holds them for 4 minutes, YouTube will favor the first video every time. It&apos;s not complicated — YouTube wants to recommend content that keeps people on the platform.
         </p>
       </section>
 
-      {/* Reading Retention Curves */}
-      <section id="reading-curves" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          </span>
-          How to Read Retention Curves
-        </h2>
+      {/* WHERE TO FIND RETENTION */}
+      <section id="where-to-find" className="sectionOpen">
+        <h2 className={s.sectionTitle}>Where to Find Retention Data</h2>
+        
         <p className={s.sectionText}>
-          YouTube Studio shows your retention graph as a line that starts at 100% and decreases over time. Understanding how to interpret this graph is the first step to improving your videos. Here&apos;s what different patterns mean and what they tell you about your content:
+          YouTube gives you retention data at two levels: channel-wide trends and video-specific graphs. Here&apos;s how to access both in <a href="https://studio.youtube.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 600 }}>YouTube Studio</a>.
         </p>
-        <ul className={s.list}>
-          <li><strong>Steep initial drop (0 to 30 seconds):</strong> Your hook isn&apos;t compelling enough, or your content doesn&apos;t match the promise in your title and thumbnail. Viewers clicked expecting one thing and got something different. This is the most common and most damaging retention problem.</li>
-          <li><strong>Gradual, steady decline:</strong> This is actually normal and healthy behavior. All videos lose viewers over time. A slow, consistent decline means your content is engaging. Don&apos;t panic if your line goes down—it&apos;s only a problem if it drops too fast or too steeply.</li>
-          <li><strong>Sharp mid-video drops (cliffs):</strong> A sudden drop at a specific timestamp indicates a specific section that&apos;s boring, confusing, or off-topic. Viewers are consciously deciding to leave. You need to review that exact section and restructure or remove it.</li>
-          <li><strong>Spikes above 100%:</strong> When your retention goes above 100%, it means viewers are rewatching that section. This is valuable data—whatever you did there resonated strongly. Study these moments and replicate them in future videos.</li>
-          <li><strong>Cliff at the end:</strong> A steep drop in the last 10-20% of your video is completely normal. Viewers leave before end screens and outros. Don&apos;t try to fix this—it&apos;s expected behavior.</li>
-        </ul>
-        <h3 className={s.subheading}>Finding Your Retention Graph in YouTube Studio</h3>
-        <p className={s.sectionText}>
-          To access your retention data, open YouTube Studio, click on a specific video, then go to Analytics. Select the Engagement tab, and you&apos;ll see your audience retention graph. You can also access this from the main Analytics section by clicking on any video. Compare retention across multiple videos to identify patterns in what keeps your specific audience engaged.
-        </p>
+
+        <div className="metricRow">
+          <h4 className="metricRow__name">Channel-Level Overview</h4>
+          <div className="metricRow__path">
+            <span className="studioPath">
+              <span className="studioPath__chip">Analytics</span>
+              <span className="studioPath__arrow">›</span>
+              <span className="studioPath__chip">Engagement</span>
+            </span>
+          </div>
+          <p className="metricRow__why">See average view duration and watch time trends across all your videos.</p>
+        </div>
+
+        <div className="metricRow">
+          <h4 className="metricRow__name">Video-Level Retention Graph</h4>
+          <div className="metricRow__path">
+            <span className="studioPath">
+              <span className="studioPath__chip">Content</span>
+              <span className="studioPath__arrow">›</span>
+              <span className="studioPath__chip">Select Video</span>
+              <span className="studioPath__arrow">›</span>
+              <span className="studioPath__chip">Analytics</span>
+              <span className="studioPath__arrow">›</span>
+              <span className="studioPath__chip">Engagement</span>
+            </span>
+          </div>
+          <p className="metricRow__why">This is where the magic happens. You&apos;ll see a curve showing exactly when viewers leave.</p>
+          <span className="metricRow__tip">Click anywhere on the curve to jump to that exact moment in your video.</span>
+        </div>
+
+        <div className="realTalk">
+          <p className="realTalk__label">Key moments YouTube highlights</p>
+          <p className="realTalk__text">
+            YouTube Studio automatically identifies &quot;key moments&quot; in your retention graph: intro effectiveness, spikes where people rewatch, and dips where they leave. It also shows how your retention compares to typical videos of similar length.
+          </p>
+        </div>
+
+        {/* Visual: 3-step flow for finding retention */}
+        <div className="inlineIllustration">
+          <svg width="340" height="100" viewBox="0 0 340 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three steps to find retention data: Content, Video, Engagement tab">
+            <rect x="10" y="30" width="90" height="40" rx="8" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="2"/>
+            <text x="55" y="55" textAnchor="middle" fontSize="12" fontWeight="600" fill="#475569">1. Content</text>
+            <path d="M105 50 L125 50" stroke="#cbd5e1" strokeWidth="2" markerEnd="url(#arrowhead)"/>
+            <rect x="130" y="30" width="90" height="40" rx="8" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="2"/>
+            <text x="175" y="55" textAnchor="middle" fontSize="12" fontWeight="600" fill="#475569">2. Video</text>
+            <path d="M225 50 L245 50" stroke="#cbd5e1" strokeWidth="2"/>
+            <rect x="250" y="30" width="80" height="40" rx="8" fill="#6366f1" stroke="#4f46e5" strokeWidth="2"/>
+            <text x="290" y="55" textAnchor="middle" fontSize="12" fontWeight="600" fill="white">3. Engage</text>
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#cbd5e1"/>
+              </marker>
+            </defs>
+          </svg>
+        </div>
       </section>
 
-      {/* Drop-Off Patterns */}
-      <section id="drop-off-patterns" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </span>
-          Common Drop-Off Patterns and How to Fix Them
-        </h2>
+      {/* HOW TO READ THE GRAPH */}
+      <section id="reading-the-graph" className="sectionTinted">
+        <h2 className={s.sectionTitle}>How to Read the Retention Graph</h2>
+        
         <p className={s.sectionText}>
-          After analyzing thousands of retention curves, certain patterns emerge repeatedly. Each pattern has specific causes and specific fixes. Here are the most common drop-off patterns and exactly how to address them:
+          The retention graph starts at 100% and shows how many viewers remain at each point in your video. Learning to read this graph is the single most valuable skill for improving your content.
         </p>
-        <ol className={s.numberedList}>
-          <li>
-            <strong>The Early Exit (0 to 30 seconds)</strong><br />
-            Viewers click away immediately after the video starts. This usually means your hook doesn&apos;t grab attention, your intro is too slow, or your content doesn&apos;t match what viewers expected from the title and thumbnail. Fix: Start with your strongest hook in the first 5 seconds. State what viewers will learn or experience. Cut any &quot;hey guys, welcome back to my channel&quot; type intros—they kill retention.
-          </li>
-          <li>
-            <strong>The Intro Death (30 to 60 seconds)</strong><br />
-            Viewers make it past the initial hook but leave during a long intro or background explanation. This happens when creators spend too much time on setup before delivering value. Fix: Get to the main content within 30 seconds. If you need context, weave it into the content rather than front-loading it. Use &quot;just-in-time&quot; explanations—give information right before it becomes relevant.
-          </li>
-          <li>
-            <strong>The Mid-Video Cliff</strong><br />
-            A sharp, sudden drop at a specific timestamp indicates a particular segment is causing viewers to leave. Common causes: tangential content, confusing explanations, drop in energy, or a section that doesn&apos;t match the video&apos;s promise. Fix: Review the exact timestamp where the drop occurs. Watch 30 seconds before and after. Ask: what changed? Then either cut that section, restructure it, or replace it with more engaging content.
-          </li>
-          <li>
-            <strong>The Slow Bleed</strong><br />
-            Gradual but consistent decline throughout the video, with no specific drop-off point. This often indicates the video lacks variety or the pacing is too monotonous. Viewers aren&apos;t leaving at any particular moment—they&apos;re just gradually losing interest. Fix: Add pattern interrupts every 30-60 seconds (more on this below). Vary your pacing, visuals, and energy. Give viewers micro-reasons to keep watching throughout.
-          </li>
-          <li>
-            <strong>The Premature End</strong><br />
-            A significant portion of viewers leave before the video ends, often missing the main payoff or conclusion. This happens when videos are too long for their content, or when viewers believe they&apos;ve gotten what they came for. Fix: Deliver your main value earlier in the video. Use open loops to tease what&apos;s coming. If the best part of your video is at the end, consider restructuring to move it earlier or create anticipation throughout.
-          </li>
-        </ol>
-      </section>
 
-      {/* Hook Frameworks */}
-      <section id="hook-frameworks" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 0112.728 0" />
-            </svg>
-          </span>
-          Hook Frameworks That Keep Viewers Watching
-        </h2>
-        <p className={s.sectionText}>
-          The first 30 seconds of your video determine whether viewers stay or leave. A strong hook creates curiosity, establishes relevance, and gives viewers a reason to invest their time. Here are proven hook frameworks you can adapt for any niche:
-        </p>
-        <ul className={s.twoColList}>
-          <li>
-            <strong>The Problem-Solution Hook</strong>
-            Start by articulating a problem your viewer has, then promise to solve it. Example: &quot;If your YouTube videos aren&apos;t getting views, you&apos;re probably making one of these three mistakes. Let me show you how to fix them.&quot;
-          </li>
-          <li>
-            <strong>The Curiosity Gap</strong>
-            Open with an intriguing statement or question that viewers can&apos;t answer without watching. Example: &quot;I increased my retention by 40% with one simple change that took 5 minutes.&quot; Then deliver the answer.
-          </li>
-          <li>
-            <strong>The Result Tease</strong>
-            Show the end result upfront, then explain how you got there. Works especially well for tutorials and transformations. Example: &quot;This video went viral with 500K views. Here&apos;s exactly what I did differently.&quot;
-          </li>
-          <li>
-            <strong>The Contrarian Statement</strong>
-            Challenge a commonly held belief to grab attention. Example: &quot;Everything you&apos;ve been told about YouTube SEO is wrong. Here&apos;s what actually matters.&quot; Make sure you can back up the claim.
-          </li>
-          <li>
-            <strong>The Stakes Setup</strong>
-            Explain what viewers will gain by watching or lose by not watching. Example: &quot;If you don&apos;t understand retention analysis, you&apos;re leaving thousands of views on the table.&quot;
-          </li>
-          <li>
-            <strong>The Direct Promise</strong>
-            Sometimes simple works best. Tell viewers exactly what they&apos;ll learn. Example: &quot;By the end of this video, you&apos;ll know exactly where viewers drop off and how to fix it.&quot;
-          </li>
-        </ul>
-        <p className={s.sectionText}>
-          The best hooks combine multiple frameworks. A strong hook might create a curiosity gap while also establishing stakes and promising a specific outcome. Test different approaches and check your retention curves to see which hooks work best for your audience.
-        </p>
-      </section>
+        {/* Retention Curve Illustration */}
+        <div className="inlineIllustration">
+          <svg width="360" height="220" viewBox="0 0 360 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Retention curve showing key zones: hook window, mid-video engagement, and natural end drop">
+            {/* Background grid */}
+            <rect x="40" y="20" width="300" height="150" fill="#f8fafc" rx="4"/>
+            <line x1="40" y1="57" x2="340" y2="57" stroke="#e2e8f0" strokeWidth="1"/>
+            <line x1="40" y1="95" x2="340" y2="95" stroke="#e2e8f0" strokeWidth="1"/>
+            <line x1="40" y1="132" x2="340" y2="132" stroke="#e2e8f0" strokeWidth="1"/>
+            
+            {/* Y-axis labels */}
+            <text x="30" y="28" textAnchor="end" fontSize="10" fill="#94a3b8">100%</text>
+            <text x="30" y="60" textAnchor="end" fontSize="10" fill="#94a3b8">75%</text>
+            <text x="30" y="98" textAnchor="end" fontSize="10" fill="#94a3b8">50%</text>
+            <text x="30" y="135" textAnchor="end" fontSize="10" fill="#94a3b8">25%</text>
+            
+            {/* Good retention curve */}
+            <path d="M40 25 Q80 30, 100 45 Q150 60, 200 75 Q260 90, 300 100 Q330 108, 340 120" stroke="#10b981" strokeWidth="3" fill="none"/>
+            
+            {/* Problem curve - steep early drop */}
+            <path d="M40 25 Q55 60, 70 100 Q90 125, 130 135 Q200 145, 340 155" stroke="#ef4444" strokeWidth="2" fill="none" strokeDasharray="6"/>
+            
+            {/* Zone highlights */}
+            <rect x="40" y="20" width="60" height="150" fill="#fef3c7" opacity="0.3"/>
+            <rect x="280" y="20" width="60" height="150" fill="#e0f2fe" opacity="0.3"/>
+            
+            {/* Zone labels */}
+            <text x="70" y="185" textAnchor="middle" fontSize="10" fill="#92400e" fontWeight="600">Hook Zone</text>
+            <text x="70" y="197" textAnchor="middle" fontSize="9" fill="#a16207">0-30 sec</text>
+            <text x="190" y="185" textAnchor="middle" fontSize="10" fill="#475569" fontWeight="500">Mid-Video</text>
+            <text x="310" y="185" textAnchor="middle" fontSize="10" fill="#0369a1" fontWeight="500">Natural Drop</text>
+            
+            {/* X-axis */}
+            <text x="40" y="210" fontSize="10" fill="#64748b">Start</text>
+            <text x="340" y="210" textAnchor="end" fontSize="10" fill="#64748b">End</text>
+            
+            {/* Legend */}
+            <circle cx="50" cy="218" r="4" fill="#10b981"/>
+            <text x="60" y="220" fontSize="9" fill="#64748b">Good retention</text>
+            <line x1="140" y1="218" x2="158" y2="218" stroke="#ef4444" strokeWidth="2" strokeDasharray="4"/>
+            <text x="165" y="220" fontSize="9" fill="#64748b">Early drop-off problem</text>
+          </svg>
+        </div>
 
-      {/* Pacing and Structure */}
-      <section id="pacing-structure" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M4 6h16M4 12h16m-7 6h7" />
-            </svg>
-          </span>
-          Video Pacing and Structure for Maximum Retention
-        </h2>
+        <h3 className={s.subheading}>Pattern Diagnosis Guide</h3>
         <p className={s.sectionText}>
-          Even with a great hook, poor pacing will cause viewers to leave. Retention isn&apos;t just about the beginning—it&apos;s about maintaining engagement throughout the entire video. Here&apos;s how to structure your content for sustained attention:
+          Different patterns in your retention curve point to different problems. Here&apos;s how to diagnose what you&apos;re seeing:
         </p>
-        <h3 className={s.subheading}>The Retention-Optimized Video Structure</h3>
-        <ol className={s.numberedList}>
-          <li><strong>Hook (0-30 seconds):</strong> Grab attention and establish relevance. Create a reason to keep watching.</li>
-          <li><strong>Context (30-60 seconds):</strong> Brief background—only what&apos;s necessary. Don&apos;t overexplain.</li>
-          <li><strong>Core Value (1-3 minutes for short videos, longer for tutorials):</strong> Deliver your main content. Break into digestible segments.</li>
-          <li><strong>Pattern Interrupts (every 30-90 seconds):</strong> Change something to reset viewer attention.</li>
-          <li><strong>Secondary Value (optional):</strong> Bonus tips, examples, or related content. Signal that this is extra value.</li>
-          <li><strong>Call to Action (final 30 seconds):</strong> Subscribe prompt, related video recommendation, or engagement request.</li>
-        </ol>
-        <h3 className={s.subheading}>Open Loops for Sustained Engagement</h3>
-        <p className={s.sectionText}>
-          Open loops are promises of future content that keep viewers watching. The human brain naturally wants closure, so when you create an open loop, viewers feel compelled to keep watching until it&apos;s resolved. Examples: &quot;In a minute, I&apos;ll show you the one change that doubled my watch time.&quot; Or: &quot;I&apos;ll share my biggest mistake at the end—it&apos;s something most creators never realize.&quot;
-        </p>
-        <p className={s.sectionText}>
-          Place open loops strategically: one in your hook, one at each potential drop-off point, and one before any section that might feel slow. But always close your loops—viewers who feel tricked won&apos;t come back.
-        </p>
-      </section>
 
-      {/* Pattern Interrupts */}
-      <section id="pattern-interrupts" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-          </span>
-          Pattern Interrupts: The Secret to Holding Attention
-        </h2>
-        <p className={s.sectionText}>
-          The human brain is wired to notice change. When something in your video changes—the visual, the audio, the pacing, the topic—viewer attention resets. These changes are called pattern interrupts, and they&apos;re one of the most powerful tools for maintaining retention. Here are specific pattern interrupts you can use:
-        </p>
-        <ul className={s.list}>
-          <li><strong>Visual changes:</strong> Cut to a different camera angle, add b-roll footage, show a screen recording, display text on screen, or zoom in/out. Even small visual changes reset attention.</li>
-          <li><strong>Audio changes:</strong> Add music, change background music, use sound effects, vary your speaking pace or volume, or pause for emphasis. Silence can be a powerful pattern interrupt.</li>
-          <li><strong>Topic shifts:</strong> Move from explanation to example, from problem to solution, or from theory to application. Signpost these transitions: &quot;Now let&apos;s look at a real example.&quot;</li>
-          <li><strong>Energy shifts:</strong> Alternate between high-energy and calm delivery. Build toward key points, then slow down to let them land. Monotone delivery kills retention.</li>
-          <li><strong>Questions:</strong> Ask your viewer a question, even if they can&apos;t respond. &quot;Have you ever wondered why some videos just feel more engaging?&quot; This creates mental engagement.</li>
-          <li><strong>Humor and personality:</strong> A well-placed joke, self-deprecating comment, or moment of genuine personality resets attention and builds connection.</li>
-        </ul>
-        <p className={s.sectionText}>
-          Aim for some form of pattern interrupt every 30-90 seconds, depending on your content style. Study your favorite creators and notice how often they change something. You&apos;ll find the most engaging videos are constantly shifting while still feeling cohesive.
-        </p>
-      </section>
+        {/* Diagnosis Table */}
+        <div className="diagnosisTable">
+          <div className="diagnosisTable__row">
+            <div className="diagnosisTable__pattern">
+              <strong>Steep drop in first 30 seconds</strong>
+            </div>
+            <div className="diagnosisTable__cause">
+              Hook isn&apos;t working. Content doesn&apos;t match title/thumbnail promise. Too much setup before value.
+            </div>
+            <div className="diagnosisTable__fix">
+              Rewrite your opening. Lead with your strongest point. Cut the intro.
+            </div>
+          </div>
+          
+          <div className="diagnosisTable__row">
+            <div className="diagnosisTable__pattern">
+              <strong>Gradual, steady decline</strong>
+            </div>
+            <div className="diagnosisTable__cause">
+              This is normal and healthy. All videos lose viewers over time.
+            </div>
+            <div className="diagnosisTable__fix">
+              No fix needed. Focus on other patterns instead.
+            </div>
+          </div>
+          
+          <div className="diagnosisTable__row">
+            <div className="diagnosisTable__pattern">
+              <strong>Sharp cliff mid-video</strong>
+            </div>
+            <div className="diagnosisTable__cause">
+              Something at that timestamp is causing viewers to leave: a tangent, boring section, or confusing explanation.
+            </div>
+            <div className="diagnosisTable__fix">
+              Watch the 30 seconds before the drop. Cut or restructure that section.
+            </div>
+          </div>
+          
+          <div className="diagnosisTable__row">
+            <div className="diagnosisTable__pattern">
+              <strong>Spike above 100%</strong>
+            </div>
+            <div className="diagnosisTable__cause">
+              Viewers are rewatching this section. Something valuable or entertaining happened.
+            </div>
+            <div className="diagnosisTable__fix">
+              Study what you did there. Replicate it in future videos.
+            </div>
+          </div>
+          
+          <div className="diagnosisTable__row">
+            <div className="diagnosisTable__pattern">
+              <strong>Flat line (no decline)</strong>
+            </div>
+            <div className="diagnosisTable__cause">
+              Excellent engagement. Your structure and pacing are working.
+            </div>
+            <div className="diagnosisTable__fix">
+              Document what you did. This is your template.
+            </div>
+          </div>
+          
+          <div className="diagnosisTable__row">
+            <div className="diagnosisTable__pattern">
+              <strong>Steep drop at the end</strong>
+            </div>
+            <div className="diagnosisTable__cause">
+              Viewers leaving before end screens. Completely normal.
+            </div>
+            <div className="diagnosisTable__fix">
+              Don&apos;t worry about this. Put important content earlier.
+            </div>
+          </div>
+        </div>
 
-      {/* Retention Audit Workflow */}
-      <section id="retention-audit" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
-              <rect x="9" y="3" width="6" height="4" rx="1" />
-              <path d="M9 12l2 2 4-4" />
-            </svg>
-          </span>
-          15-Minute Retention Audit Workflow
-        </h2>
-        <p className={s.sectionText}>
-          Use this checklist to systematically analyze and improve retention for any video. Run this audit on your last 5-10 videos to identify patterns across your content.
-        </p>
-        <ol className={s.numberedList}>
-          <li><strong>Open YouTube Studio Analytics:</strong> Go to your video&apos;s Engagement tab. Note the average view duration and average percentage viewed.</li>
-          <li><strong>Identify the first major drop:</strong> Look at where your retention curve first dips significantly. This is usually in the first 30 seconds. Note the exact timestamp.</li>
-          <li><strong>Watch that section:</strong> Rewatch from 15 seconds before the drop to 15 seconds after. Ask: what might have caused viewers to leave?</li>
-          <li><strong>Find additional drop points:</strong> Scan the entire curve for other steep drops. Note each timestamp.</li>
-          <li><strong>Identify retention peaks:</strong> Look for moments where retention holds steady or spikes. What were you doing during those moments?</li>
-          <li><strong>Compare to your best videos:</strong> Open your highest-retention video. Compare the curve shape. What&apos;s different about the first 30 seconds?</li>
-          <li><strong>List specific fixes:</strong> For each drop point, write down one concrete change you could make. For peaks, note what to replicate.</li>
-          <li><strong>Plan your next video:</strong> Incorporate at least 3 retention improvements into your next script or outline.</li>
-        </ol>
-
-        {/* CTA for tool */}
-        <div className={s.highlight}>
-          <p>
-            <strong>{BRAND.name} automates this analysis</strong> and shows you exactly where viewers drop off across all your videos. Get specific, actionable insights without manual spreadsheet work.
+        <div className="realTalk">
+          <p className="realTalk__label">The first 30 seconds are everything</p>
+          <p className="realTalk__text">
+            If you&apos;re only going to fix one thing, fix your opening. A strong hook can carry an average video. A weak hook will kill a great one. Most retention problems start here.
           </p>
         </div>
       </section>
 
-      {/* Strategies to Improve */}
-      <section id="improvement-strategies" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          </span>
-          Proven Strategies to Improve Retention
-        </h2>
+      {/* BENCHMARKS */}
+      <section id="benchmarks" className="sectionOpen">
+        <h2 className={s.sectionTitle}>Retention Benchmarks</h2>
+        
+        <div className="realTalk">
+          <p className="realTalk__label">Keep in mind</p>
+          <p className="realTalk__text">
+            These are rough ranges that vary by niche, video length, traffic source, and audience. Don&apos;t obsess over hitting specific numbers. What matters more is your trend over time.
+          </p>
+        </div>
+
+        <div className="statRow">
+          <div className="statRow__item">
+            <div className="statRow__value">50 to 70%</div>
+            <div className="statRow__label">Short Videos (2-5 min)</div>
+          </div>
+          <div className="statRow__item">
+            <div className="statRow__value">40 to 60%</div>
+            <div className="statRow__label">Medium Videos (8-15 min)</div>
+          </div>
+          <div className="statRow__item">
+            <div className="statRow__value">30 to 50%</div>
+            <div className="statRow__label">Long Videos (20+ min)</div>
+          </div>
+        </div>
+
         <p className={s.sectionText}>
-          Here are the most effective strategies for improving audience retention, based on what works for top-performing channels across niches:
+          The most useful benchmark is <strong>your own past performance</strong>. Compare your latest video against your average. Are you improving? That&apos;s what matters.
         </p>
-        <ul className={s.list}>
-          <li><strong>Open with a hook:</strong> State what viewers will learn or experience in the first 5 seconds. Don&apos;t waste time with greetings or channel intros.</li>
-          <li><strong>Match your title and thumbnail:</strong> Deliver exactly what you promised in your packaging. Mismatches cause immediate drop-offs.</li>
-          <li><strong>Use pattern interrupts:</strong> Change something every 30-60 seconds: visuals, audio, pacing, or topic angle.</li>
-          <li><strong>Create open loops:</strong> Tease upcoming content to keep viewers watching. &quot;Later I&apos;ll show you the one thing that changed everything.&quot;</li>
-          <li><strong>Deliver value fast:</strong> Don&apos;t make viewers wait for the main content. Front-load value, then go deeper.</li>
-          <li><strong>Cut ruthlessly:</strong> Every second that doesn&apos;t add value should be removed. Watch your video at 2x speed—if you&apos;re bored, your viewers are too.</li>
-          <li><strong>Use chapters:</strong> Break your video into clear sections with timestamps. This helps viewers find what they want and often improves total watch time.</li>
-          <li><strong>Script your first 30 seconds:</strong> Even if you improvise the rest, have your opening word-for-word planned. It&apos;s too important to wing.</li>
-          <li><strong>Study your best videos:</strong> Your highest-retention videos contain clues about what your audience wants. Analyze them and replicate the patterns.</li>
-        </ul>
+
         <p className={s.sectionText}>
-          For more on improving your content strategy, see our <Link href="/learn/youtube-video-ideas">video ideas guide</Link> and <Link href="/learn/youtube-channel-audit">channel audit guide</Link>.
+          YouTube Studio also shows how your retention compares to &quot;typical&quot; videos of similar length. If you&apos;re above that line, you&apos;re doing better than average. If you&apos;re below, there&apos;s room to improve.
         </p>
+
+        <h3 className={s.subheading}>How to Measure Whether Your Fixes Work</h3>
+        <p className={s.sectionText}>
+          Treat retention like an experiment. You don&apos;t need to change everything at once — you need to learn what moves the curve for your audience.
+        </p>
+        <ol className={s.numberedList}>
+          <li>
+            <strong>Check each video after it has real data:</strong> usually 48–72 hours after publishing.
+          </li>
+          <li>
+            <strong>Track the first big drop:</strong> note the timestamp and what you did in that segment.
+          </li>
+          <li>
+            <strong>Compare like with like:</strong> evaluate retention against similar videos (format, length, topic).
+          </li>
+          <li>
+            <strong>Change one thing at a time:</strong> new hook, new pacing, more visuals, tighter edit — then measure.
+          </li>
+        </ol>
       </section>
 
-      {/* Retention Benchmarks */}
-      <section id="benchmarks" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M3 3v18h18" />
-              <path d="M18 9l-5 5-4-4-3 3" />
-            </svg>
-          </span>
-          Retention Benchmarks by Video Length
-        </h2>
+      {/* THE PLAYBOOK: 9 WAYS TO IMPROVE */}
+      <section id="playbook" className="sectionOpen">
+        <h2 className={s.sectionTitle}>9 Ways to Improve Retention</h2>
+        
         <p className={s.sectionText}>
-          What counts as &quot;good&quot; retention depends on your video length. Longer videos naturally have lower percentage retention but can still have excellent absolute watch time. Here are general benchmarks:
+          These aren&apos;t theories. They&apos;re proven techniques used by creators who consistently hold audience attention. Pick one or two to focus on for your next video.
+        </p>
+
+        <div className="tacticsGrid">
+          <div className="tacticCard">
+            <h4 className="tacticCard__title">Add Chapters</h4>
+            <p className="tacticCard__what">Break your video into labeled sections with timestamps in the description.</p>
+            <p className="tacticCard__why"><strong>Why it works:</strong> Helps viewers find what they need. Reduces abandonment from people scanning for specific info.</p>
+            <div className="tacticCard__do">
+              <strong>Do this:</strong>
+              <ul>
+                <li>Add 4-8 chapters per video over 5 minutes</li>
+                <li>Use descriptive titles (not just &quot;Part 1&quot;)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="tacticCard">
+            <h4 className="tacticCard__title">Tease the Payoff Early</h4>
+            <p className="tacticCard__what">Show or mention what viewers will get in the first 10 seconds.</p>
+            <p className="tacticCard__why"><strong>Why it works:</strong> Creates anticipation. Viewers stay to see the promised result.</p>
+            <div className="tacticCard__do">
+              <strong>Do this:</strong>
+              <ul>
+                <li>Open with the end result or transformation</li>
+                <li>&quot;By the end of this video, you&apos;ll know exactly how to...&quot;</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="tacticCard">
+            <h4 className="tacticCard__title">Choose Topics Strategically</h4>
+            <p className="tacticCard__what">Make videos about topics your audience actually searches for.</p>
+            <p className="tacticCard__why"><strong>Why it works:</strong> Relevance drives retention. People watch longer when the content matches their intent.</p>
+            <div className="tacticCard__do">
+              <strong>Do this:</strong>
+              <ul>
+                <li>Research what your audience searches for using <Link href="/learn/youtube-seo">keyword research</Link></li>
+                <li>Study <Link href="/competitors">competitor videos</Link> with high engagement</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="tacticCard">
+            <h4 className="tacticCard__title">Script Your Structure</h4>
+            <p className="tacticCard__what">Plan your video flow before recording, even if you don&apos;t read from a script.</p>
+            <p className="tacticCard__why"><strong>Why it works:</strong> Reduces rambling. Keeps content tight and focused.</p>
+            <div className="tacticCard__do">
+              <strong>Do this:</strong>
+              <ul>
+                <li>Outline key points before recording</li>
+                <li>Script your first 30 seconds word-for-word</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="tacticCard">
+            <h4 className="tacticCard__title">Publish Consistently</h4>
+            <p className="tacticCard__what">Show up regularly so your audience knows what to expect.</p>
+            <p className="tacticCard__why"><strong>Why it works:</strong> Builds habits. Returning viewers watch longer than new ones.</p>
+            <div className="tacticCard__do">
+              <strong>Do this:</strong>
+              <ul>
+                <li>Pick a realistic schedule you can maintain</li>
+                <li>Consistency beats frequency</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="tacticCard">
+            <h4 className="tacticCard__title">Be Concise</h4>
+            <p className="tacticCard__what">Make your video exactly as long as it needs to be. No padding.</p>
+            <p className="tacticCard__why"><strong>Why it works:</strong> Every second of filler is a chance for viewers to leave. Tight content keeps attention.</p>
+            <div className="tacticCard__do">
+              <strong>Do this:</strong>
+              <ul>
+                <li>Watch your video at 2x speed. Cut anything you&apos;d skip.</li>
+                <li>Remove &quot;filler phrases&quot; in editing</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="tacticCard">
+            <h4 className="tacticCard__title">Deliver Value Fast</h4>
+            <p className="tacticCard__what">Get to the main content within 30 seconds. Skip lengthy intros.</p>
+            <p className="tacticCard__why"><strong>Why it works:</strong> Viewers clicked for a reason. Give them what they came for.</p>
+            <div className="tacticCard__do">
+              <strong>Do this:</strong>
+              <ul>
+                <li>Cut &quot;hey guys, welcome back&quot; style intros</li>
+                <li>Lead with your strongest point</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="tacticCard">
+            <h4 className="tacticCard__title">Use On-Screen Graphics</h4>
+            <p className="tacticCard__what">Add text, images, or animations that support what you&apos;re saying.</p>
+            <p className="tacticCard__why"><strong>Why it works:</strong> Visual variety holds attention. Reinforces key points.</p>
+            <div className="tacticCard__do">
+              <strong>Do this:</strong>
+              <ul>
+                <li>Add lower-thirds for key takeaways</li>
+                <li>Use b-roll or screen recordings to illustrate points</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="tacticCard">
+            <h4 className="tacticCard__title">Add Pattern Interrupts</h4>
+            <p className="tacticCard__what">Change something every 30-60 seconds: camera angle, music, energy, or topic.</p>
+            <p className="tacticCard__why"><strong>Why it works:</strong> The brain notices change. Resets attention before viewers zone out.</p>
+            <div className="tacticCard__do">
+              <strong>Do this:</strong>
+              <ul>
+                <li>Vary your delivery: pause, speed up, get louder</li>
+                <li>Cut to a different visual or angle</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <h3 className={s.subheading}>Retention Checklist (Before You Publish)</h3>
+        <p className={s.sectionText}>
+          Use this as a quick pre-flight check. It catches the most common retention killers before they ship.
+        </p>
+        <ol className={s.numberedList}>
+          <li>
+            <strong>Hook immediately:</strong> tease the payoff, ask a question, or make a bold statement — skip generic intros.
+          </li>
+          <li>
+            <strong>Deliver on the title promise early:</strong> viewers should get a win in the first minute.
+          </li>
+          <li>
+            <strong>Cut setup that doesn&apos;t earn its keep:</strong> if it doesn&apos;t build tension or deliver value, it&apos;s filler.
+          </li>
+          <li>
+            <strong>Add resets:</strong> change something (visual, pace, energy, topic) regularly so attention doesn&apos;t drift.
+          </li>
+          <li>
+            <strong>Remove dead air:</strong> watch at faster speed; cut anything you&apos;d skip as a viewer.
+          </li>
+          <li>
+            <strong>Build toward a payoff:</strong> structure the video so there&apos;s a reason to see what happens next.
+          </li>
+          <li>
+            <strong>End before it drags:</strong> finish while energy is high; don&apos;t trail off.
+          </li>
+        </ol>
+
+        <h3 className={s.subheading}>Common Retention Killers (And the Fix)</h3>
+        <ul className={s.list}>
+          <li>
+            <strong>Slow intros:</strong> lead with the strongest moment, then add context later.
+          </li>
+          <li>
+            <strong>Title/thumbnail mismatch:</strong> prove the promise quickly so viewers feel &quot;I clicked the right video.&quot;
+          </li>
+          <li>
+            <strong>Talking head with no variety:</strong> add b-roll, screenshots, on-screen text, or a camera change.
+          </li>
+          <li>
+            <strong>Padding for length:</strong> make the video as long as it needs to be — no longer.
+          </li>
+          <li>
+            <strong>Saving the best for last:</strong> distribute value throughout; most viewers won&apos;t make it to the end.
+          </li>
+          <li>
+            <strong>Monotone delivery:</strong> vary pace, volume, and energy; the mic picks up enthusiasm (and boredom).
+          </li>
+        </ul>
+      </section>
+
+      {/* PACING + EDITING */}
+      <section id="pacing-and-editing" className="sectionTinted">
+        <h2 className={s.sectionTitle}>Pacing and Editing That Keep the Middle Strong</h2>
+
+        <p className={s.sectionText}>
+          Most retention losses don&apos;t happen because the topic is bad — they happen because the video feels slow, repetitive, or visually static. The goal is not hyper editing. It&apos;s momentum.
+        </p>
+
+        <h3 className={s.subheading}>Pacing Principles</h3>
+        <ul className={s.list}>
+          <li>
+            <strong>Vary your speed:</strong> go fast for easy points, slow down for key ideas.
+          </li>
+          <li>
+            <strong>Use progress markers:</strong> tell viewers where they are (&quot;Next, we&apos;ll fix...&quot;) so the structure feels inevitable.
+          </li>
+          <li>
+            <strong>Open loops (and close them):</strong> tease something valuable later, then pay it off.
+          </li>
+        </ul>
+
+        <h3 className={s.subheading}>Pattern Interrupt Ideas</h3>
+        <p className={s.sectionText}>
+          Pattern interrupts reset attention by changing something on screen or in your delivery. They don&apos;t need to be fancy.
         </p>
         <ul className={s.twoColList}>
           <li>
-            <strong>Shorts (under 60 seconds)</strong>
-            Target: 80-100% retention. Shorts need to hook instantly and maintain attention throughout. Any significant drop is problematic.
+            <strong>Visual</strong>
+            Cut to b-roll, add on-screen text, zoom, switch camera, show the result.
           </li>
           <li>
-            <strong>Short videos (2-5 minutes)</strong>
-            Target: 50-70% average view duration. These videos should be tight and focused. Cut anything that doesn&apos;t serve the main topic.
+            <strong>Audio</strong>
+            Drop music, add a sound hit, shift tone/energy, use a pause for emphasis.
           </li>
           <li>
-            <strong>Medium videos (8-15 minutes)</strong>
-            Target: 40-60% average view duration. Strong structure and pattern interrupts are essential. Use chapters to help navigation.
+            <strong>Content</strong>
+            Tell a quick story, ask a question, introduce a constraint, add a concrete example.
           </li>
           <li>
-            <strong>Long videos (20+ minutes)</strong>
-            Target: 30-50% average view duration. High retention on long videos is rare but valuable. Break content into clear segments.
+            <strong>Structure</strong>
+            Move into a new segment, recap a takeaway, or show a checklist before continuing.
           </li>
         </ul>
-        <p className={s.sectionText}>
-          Remember: compare your retention to your own past videos, not to arbitrary benchmarks. If your retention is improving over time, you&apos;re on the right track regardless of the absolute numbers.
-        </p>
-      </section>
 
-      {/* Common Mistakes */}
-      <section id="common-mistakes" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </span>
-          Common Retention Mistakes to Avoid
-        </h2>
-        <p className={s.sectionText}>
-          Even creators who understand retention concepts often make these mistakes. Check your videos for these common issues:
-        </p>
+        <h3 className={s.subheading}>Editing Pass (The &quot;Tighten&quot; Checklist)</h3>
         <ul className={s.list}>
-          <li><strong>Starting with &quot;Hey guys, welcome back&quot;:</strong> Generic channel intros kill retention. Start with your hook, not a greeting.</li>
-          <li><strong>Overexplaining context:</strong> Most viewers need less background than you think. Get to the point faster.</li>
-          <li><strong>Monotone delivery:</strong> Vocal variety keeps people engaged. Record yourself and listen for flat sections.</li>
-          <li><strong>No visual variety:</strong> A static talking head for 10 minutes straight loses viewers. Add b-roll, graphics, or camera changes.</li>
-          <li><strong>Burying the lead:</strong> If your best content is at the end, most viewers will never see it. Front-load value or tease it upfront.</li>
-          <li><strong>Clickbait without payoff:</strong> Promising something in your title/thumbnail that you don&apos;t deliver destroys trust and retention.</li>
-          <li><strong>Ignoring your own data:</strong> Your analytics tell you exactly what works and what doesn&apos;t. Stop guessing and start analyzing.</li>
+          <li>Cut repeated explanations and &quot;filler phrases&quot;.</li>
+          <li>Trim pauses, ums, dead air, and &quot;thinking&quot; time.</li>
+          <li>Add a visual every time you introduce a new idea.</li>
+          <li>If a section feels slow, shorten it or add a reset — don&apos;t just talk harder.</li>
         </ul>
       </section>
 
-      {/* Tools and Resources */}
-      <section id="tools" className={s.section}>
-        <h2 className={s.sectionTitle}>
-          <span className={s.sectionIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
-            </svg>
-          </span>
-          Tools for Analyzing Retention
-        </h2>
+      {/* HOOK-DELIVER CYCLE */}
+      <section id="hook-deliver-cycle" className="sectionTinted">
+        <h2 className={s.sectionTitle}>The Hook-Deliver-Hook Cycle</h2>
+        
         <p className={s.sectionText}>
-          Several tools can help you analyze and improve retention:
+          The best creators don&apos;t just hook viewers once at the beginning. They use a continuous cycle throughout the entire video: hook, deliver, hook again.
         </p>
-        <ul className={s.list}>
-          <li><strong>YouTube Studio:</strong> The primary source for retention data. Free and built into YouTube. Check the Engagement tab for any video.</li>
-          <li><strong>{BRAND.name}:</strong> Automates retention analysis across your entire channel, identifies patterns, and provides specific recommendations for improvement.</li>
-          <li><strong>VidIQ / TubeBuddy:</strong> Browser extensions that add additional analytics overlays and comparisons to YouTube Studio.</li>
-          <li><strong>Spreadsheets:</strong> Track your retention over time by logging average view duration and percentage viewed for each video.</li>
-        </ul>
 
-        {/* Final CTA */}
-        <div className={s.highlight}>
-          <p>
-            <strong>Ready to improve your retention?</strong> <Link href="/dashboard">{BRAND.name}</Link> analyzes your retention curves automatically and shows you exactly what to fix. Get personalized insights for every video on your channel.
+        <div className="funCallout">
+          <p className="funCallout__text">
+            Every time you close a loop, immediately open a new one. Resolve the previous promise, then give viewers a reason to stick around for what&apos;s next.
           </p>
         </div>
+
+        {/* Hook-Deliver Cycle Diagram */}
+        <div className="inlineIllustration">
+          <svg width="340" height="140" viewBox="0 0 340 140" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cycle diagram showing Hook leads to Deliver leads to Hook again">
+            {/* Step 1: Hook */}
+            <rect x="20" y="45" width="80" height="50" rx="8" fill="#6366f1"/>
+            <text x="60" y="75" textAnchor="middle" fontSize="14" fontWeight="600" fill="white">Hook</text>
+            
+            {/* Arrow 1 */}
+            <path d="M105 70 L125 70" stroke="#cbd5e1" strokeWidth="2"/>
+            <polygon points="125,65 135,70 125,75" fill="#cbd5e1"/>
+            
+            {/* Step 2: Deliver */}
+            <rect x="140" y="45" width="80" height="50" rx="8" fill="#10b981"/>
+            <text x="180" y="75" textAnchor="middle" fontSize="14" fontWeight="600" fill="white">Deliver</text>
+            
+            {/* Arrow 2 */}
+            <path d="M225 70 L245 70" stroke="#cbd5e1" strokeWidth="2"/>
+            <polygon points="245,65 255,70 245,75" fill="#cbd5e1"/>
+            
+            {/* Step 3: Hook Again */}
+            <rect x="260" y="45" width="60" height="50" rx="8" fill="#6366f1"/>
+            <text x="290" y="68" textAnchor="middle" fontSize="12" fontWeight="600" fill="white">Hook</text>
+            <text x="290" y="82" textAnchor="middle" fontSize="12" fontWeight="600" fill="white">Again</text>
+            
+            {/* Cycle arrow back */}
+            <path d="M290 100 Q290 125, 180 125 Q60 125, 60 100" stroke="#cbd5e1" strokeWidth="2" fill="none" strokeDasharray="4"/>
+            <polygon points="55,100 60,110 65,100" fill="#cbd5e1"/>
+            
+            {/* Labels */}
+            <text x="60" y="28" textAnchor="middle" fontSize="10" fill="#64748b">Create curiosity</text>
+            <text x="180" y="28" textAnchor="middle" fontSize="10" fill="#64748b">Satisfy it</text>
+            <text x="290" y="28" textAnchor="middle" fontSize="10" fill="#64748b">Re-open a loop</text>
+          </svg>
+        </div>
+
+        <h3 className={s.subheading}>The Template</h3>
+        <p className={s.sectionText}>
+          Here&apos;s the formula you can use throughout your video:
+        </p>
+
+        <div className="templateBox">
+          <p className="templateBox__line"><span className="templateBox__label">Hook:</span> &quot;I&apos;m going to show you [promise]...&quot;</p>
+          <p className="templateBox__line"><span className="templateBox__label">Deliver:</span> [Give them exactly what you promised]</p>
+          <p className="templateBox__line"><span className="templateBox__label">Re-hook:</span> &quot;But there&apos;s one more thing that makes this even better...&quot;</p>
+        </div>
+
+        <h3 className={s.subheading}>Example: Tutorial Style</h3>
+        <div className="exampleBox">
+          <p><strong>Hook:</strong> &quot;This simple edit will save you hours every week.&quot;</p>
+          <p><strong>Deliver:</strong> Show the technique step by step.</p>
+          <p><strong>Re-hook:</strong> &quot;Now let me show you the shortcut that makes this 10x faster.&quot;</p>
+        </div>
+
+        <h3 className={s.subheading}>Example: Story Style</h3>
+        <div className="exampleBox">
+          <p><strong>Hook:</strong> &quot;I made a mistake that nearly cost me everything.&quot;</p>
+          <p><strong>Deliver:</strong> Tell the story, reveal what happened.</p>
+          <p><strong>Re-hook:</strong> &quot;What I learned from this changed how I approach everything. Here&apos;s the lesson...&quot;</p>
+        </div>
+
+        <h3 className={s.subheading}>Hook Frameworks That Reliably Work</h3>
+        <ul className={s.twoColList}>
+          <li>
+            <strong>Result tease</strong>
+            Show the outcome first, then explain how to get there.
+          </li>
+          <li>
+            <strong>Curiosity gap</strong>
+            Open a question viewers need answered (&quot;Most creators miss this one thing...&quot;).
+          </li>
+          <li>
+            <strong>Bold statement</strong>
+            Challenge a common belief and promise proof.
+          </li>
+          <li>
+            <strong>Jump-in</strong>
+            Start mid-action (analytics on screen, a mistake in progress, a surprising result).
+          </li>
+        </ul>
+
+        <h3 className={s.subheading}>What to Avoid in Your Opening</h3>
+        <ul className={s.list}>
+          <li>&quot;Hey guys, welcome back to my channel&quot; style intros.</li>
+          <li>Long branded intro sequences.</li>
+          <li>Explaining what you&apos;ll cover instead of showing something useful.</li>
+          <li>Asking for a like/subscribe before the viewer has gotten value.</li>
+        </ul>
       </section>
+
+      {/* FIX IT FAST */}
+      <section id="fix-it-fast" className="sectionOpen">
+        <h2 className={s.sectionTitle}>Quick Retention Audit (One Video)</h2>
+        
+        <p className={s.sectionText}>
+          Don&apos;t overthink it. Here&apos;s a simple workflow you can run to find one clear retention issue and make a specific change for your next upload.
+        </p>
+
+        <div className="diagnosticStep">
+          <h3 className="diagnosticStep__title">Step 1: Pick a Video</h3>
+          <div className="diagnosticStep__content">
+            <p>Choose your most recent upload or a video that underperformed. Don&apos;t pick your best video — you want to find problems.</p>
+          </div>
+        </div>
+
+        <div className="diagnosticStep">
+          <h3 className="diagnosticStep__title">Step 2: Find the First Big Drop</h3>
+          <div className="diagnosticStep__content">
+            <p>Open the video&apos;s retention graph. Look for the first steep decline. Note the timestamp.</p>
+          </div>
+        </div>
+
+        <div className="diagnosticStep">
+          <h3 className="diagnosticStep__title">Step 3: Watch That Section</h3>
+          <div className="diagnosticStep__content">
+            <p>Watch 30 seconds before the drop. Ask yourself: What might have caused viewers to leave here?</p>
+          </div>
+        </div>
+
+        <div className="diagnosticStep">
+          <h3 className="diagnosticStep__title">Step 4: Identify One Friction Point</h3>
+          <div className="diagnosticStep__content">
+            <p>Common culprits: slow explanation, tangent, missing hook, repetition, or low energy. Pick the most obvious issue.</p>
+          </div>
+        </div>
+
+        <div className="diagnosticStep">
+          <h3 className="diagnosticStep__title">Step 5: Choose Your Fix</h3>
+          <div className="diagnosticStep__content">
+            <p>For your <strong>next video</strong>, commit to one change:</p>
+            
+            <div className="comparisonGrid">
+              <div className="comparisonItem comparisonItem--good">
+                <p className="comparisonItem__label">Hook problem?</p>
+                <p className="comparisonItem__content">Script and rehearse your first 30 seconds</p>
+              </div>
+              <div className="comparisonItem comparisonItem--good">
+                <p className="comparisonItem__label">Pacing problem?</p>
+                <p className="comparisonItem__content">Add pattern interrupts every 45 seconds</p>
+              </div>
+              <div className="comparisonItem comparisonItem--good">
+                <p className="comparisonItem__label">Structure problem?</p>
+                <p className="comparisonItem__content">Add chapters and plan your flow</p>
+              </div>
+              <div className="comparisonItem comparisonItem--good">
+                <p className="comparisonItem__label">Visual problem?</p>
+                <p className="comparisonItem__content">Add b-roll or graphics to break it up</p>
+              </div>
+            </div>
+            
+            <div className="diagnosticStep__tip">
+              <strong>Sprint rule:</strong> Fix one thing at a time. Test it. Measure. Then move to the next.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <div className="sectionAccent">
+        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Ready to analyze your retention?</h3>
+        <p style={{ fontSize: '1.125rem', marginBottom: '1.5rem', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto' }}>
+          {BRAND.name} connects to your YouTube analytics and shows you exactly where viewers drop off across all your videos.
+        </p>
+        <Link 
+          href="/dashboard" 
+          style={{ 
+            display: 'inline-block',
+            padding: '0.875rem 2rem',
+            background: 'white',
+            color: '#6366f1',
+            fontWeight: 600,
+            borderRadius: '0.5rem',
+            textDecoration: 'none'
+          }}
+        >
+          Try {BRAND.name} Free
+        </Link>
+      </div>
     </>
   );
 }
