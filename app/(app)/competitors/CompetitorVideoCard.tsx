@@ -11,9 +11,11 @@ import s from "./style.module.css";
 type Props = {
   video: CompetitorVideo;
   channelId: string;
+  /** Called when the card is clicked, before navigation */
+  onClick?: () => void;
 };
 
-export default function CompetitorVideoCard({ video, channelId }: Props) {
+export default function CompetitorVideoCard({ video, channelId, onClick }: Props) {
   const hasVelocity = video.derived.velocity24h !== undefined;
   const [thumbOk, setThumbOk] = useState(true);
   const [avatarOk, setAvatarOk] = useState(true);
@@ -22,6 +24,7 @@ export default function CompetitorVideoCard({ video, channelId }: Props) {
     <Link
       href={`/competitors/video/${video.videoId}?channelId=${channelId}`}
       className={s.videoCard}
+      onClick={onClick}
     >
       <div className={s.videoThumbWrap}>
         {video.thumbnailUrl && thumbOk ? (
