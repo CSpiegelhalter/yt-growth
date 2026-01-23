@@ -23,7 +23,9 @@ type AppShellServerProps = {
   children: React.ReactNode;
   channels: Channel[];
   activeChannelId: string | null;
-  userEmail: string;
+  /** User email - null for unauthenticated users */
+  userEmail: string | null;
+  /** User name - null for unauthenticated users */
   userName: string | null;
   plan: Plan;
   channelLimit: number;

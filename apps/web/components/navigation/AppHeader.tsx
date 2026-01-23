@@ -22,7 +22,8 @@ type Plan = "FREE" | "PRO" | "ENTERPRISE";
 type AppHeaderProps = {
   channels: Channel[];
   activeChannelId: string | null;
-  userEmail: string;
+  /** User email - null for unauthenticated users (shows sign-in button) */
+  userEmail: string | null;
   userName: string | null;
   plan: Plan;
   channelLimit: number;
@@ -64,7 +65,7 @@ export function AppHeader({
 
   const pageTitle = getPageTitle(pathname);
   const activeChannel = channels.find((c) => c.channel_id === activeChannelId);
-  const userInitials = getInitials(userName || userEmail);
+  const userInitials = userEmail ? getInitials(userName || userEmail) : "?";
   const canAddChannel = channels.length < channelLimit;
 
   // Close dropdowns on outside click
@@ -266,69 +267,75 @@ export function AppHeader({
             )}
           </div>
 
-          {/* Right: User menu */}
+          {/* Right: User menu or Sign in button */}
           <div className={s.rightSection}>
-            <div ref={menuRef} className={s.userMenuWrapper}>
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className={s.userMenuBtn}
-                aria-label="Account menu"
-                aria-expanded={menuOpen}
-                type="button"
-              >
-                <div className={s.avatar}>{userInitials}</div>
-                <span className={s.userName}>
-                  {userName || truncateEmail(userEmail)}
-                </span>
-                <span className={s.menuChevron}>{menuOpen ? "▲" : "▼"}</span>
-              </button>
+            {userEmail ? (
+              <div ref={menuRef} className={s.userMenuWrapper}>
+                <button
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  className={s.userMenuBtn}
+                  aria-label="Account menu"
+                  aria-expanded={menuOpen}
+                  type="button"
+                >
+                  <div className={s.avatar}>{userInitials}</div>
+                  <span className={s.userName}>
+                    {userName || truncateEmail(userEmail)}
+                  </span>
+                  <span className={s.menuChevron}>{menuOpen ? "▲" : "▼"}</span>
+                </button>
 
-              {menuOpen && (
-                <>
-                  <div className={s.backdrop} onClick={() => setMenuOpen(false)} />
-                  <div className={s.dropdown}>
-                    <div className={s.dropdownEmail}>{userEmail}</div>
+                {menuOpen && (
+                  <>
+                    <div className={s.backdrop} onClick={() => setMenuOpen(false)} />
+                    <div className={s.dropdown}>
+                      <div className={s.dropdownEmail}>{userEmail}</div>
 
-                    {accountNavItems.map((item) => (
-                      <Link
-                        key={item.id}
-                        href={item.href}
-                        className={s.dropdownItem}
-                        onClick={() => setMenuOpen(false)}
+                      {accountNavItems.map((item) => (
+                        <Link
+                          key={item.id}
+                          href={item.href}
+                          className={s.dropdownItem}
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <NavIcon type={item.icon} size={16} />
+                          {item.label}
+                        </Link>
+                      ))}
+
+                      {isAdmin && (
+                        <Link
+                          href="/admin/youtube-usage"
+                          className={s.dropdownItem}
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <NavIcon type="settings" size={16} />
+                          Admin: API Usage
+                        </Link>
+                      )}
+
+                      <div className={s.dropdownDivider} />
+
+                      <button
+                        className={`${s.dropdownItem} ${s.dropdownSignout}`}
+                        onClick={() => {
+                          setMenuOpen(false);
+                          void signOut({ callbackUrl: "/" });
+                        }}
+                        type="button"
                       >
-                        <NavIcon type={item.icon} size={16} />
-                        {item.label}
-                      </Link>
-                    ))}
-
-                    {isAdmin && (
-                      <Link
-                        href="/admin/youtube-usage"
-                        className={s.dropdownItem}
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        <NavIcon type="settings" size={16} />
-                        Admin: API Usage
-                      </Link>
-                    )}
-
-                    <div className={s.dropdownDivider} />
-
-                    <button
-                      className={`${s.dropdownItem} ${s.dropdownSignout}`}
-                      onClick={() => {
-                        setMenuOpen(false);
-                        void signOut({ callbackUrl: "/" });
-                      }}
-                      type="button"
-                    >
-                      <NavIcon type="logout" size={16} />
-                      Sign out
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+                        <NavIcon type="logout" size={16} />
+                        Sign out
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <Link href="/auth/login?redirect=/dashboard" className={s.signInBtn}>
+                Sign in
+              </Link>
+            )}
           </div>
         </div>
       </header>

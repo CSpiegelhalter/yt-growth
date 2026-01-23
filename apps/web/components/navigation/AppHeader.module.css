@@ -306,6 +306,34 @@
   color: var(--text-tertiary);
 }
 
+/* Sign In Button (for unauthenticated users) */
+.signInBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-inverse);
+  background: var(--primary);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: all var(--transition-base);
+  min-height: 40px;
+}
+
+.signInBtn:hover {
+  background: var(--primary-hover);
+  color: var(--text-inverse);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.signInBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 /* Dropdown Menu */
 .dropdown {
   position: absolute;

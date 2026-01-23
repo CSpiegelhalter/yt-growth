@@ -6,8 +6,6 @@ import {
 } from "@/lib/server/bootstrap";
 import { AppShellServer } from "@/components/navigation/AppShellServer";
 import { getFilteredNavItems } from "@/lib/nav-config.server";
-import { MarketingHeader } from "@/components/marketing";
-import { Footer } from "@/components/Footer";
 
 // Plan type mapping from Me.plan to AppShell Plan type
 type AppPlan = "FREE" | "PRO" | "ENTERPRISE";
@@ -22,10 +20,12 @@ function normalizePlan(plan: string): AppPlan {
 /**
  * Dashboard layout that handles both authenticated and unauthenticated states.
  *
- * - Authenticated: Renders the full AppShell with navigation
- * - Unauthenticated: Renders marketing layout (header + footer)
+ * Always renders the AppShell with navigation sidebar for consistent UX.
+ * - Authenticated: Full dashboard with user data
+ * - Unauthenticated: Navigation visible, "Sign in" button in header
  *
- * This allows /dashboard to be accessible without redirects for SEO.
+ * This allows /dashboard to be accessible without redirects for SEO,
+ * while keeping navigation consistent so users can explore the app.
  */
 export default async function DashboardLayout({
   children,
@@ -33,23 +33,31 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await getCurrentUserServer();
+  const navItems = await getFilteredNavItems();
 
-  // Unauthenticated: Use marketing layout
+  // Unauthenticated: Use AppShell with guest mode (null user data)
   if (!user) {
     return (
-      <div className="appShell">
-        <MarketingHeader user={null} />
-        <div className="appMain">{children}</div>
-        <Footer />
-      </div>
+      <AppShellServer
+        channels={[]}
+        activeChannelId={null}
+        userEmail={null}
+        userName={null}
+        plan="FREE"
+        channelLimit={1}
+        isAdmin={false}
+        primaryNavItems={navItems.primary}
+        secondaryNavItems={navItems.secondary}
+      >
+        {children}
+      </AppShellServer>
     );
   }
 
-  // Authenticated: Use full AppShell
-  const [me, channels, navItems] = await Promise.all([
+  // Authenticated: Use full AppShell with user data
+  const [me, channels] = await Promise.all([
     getMeServer(user),
     getChannelsServer(user.id),
-    getFilteredNavItems(),
   ]);
 
   const activeChannelId = resolveActiveChannelId(channels, null);
