@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: yt-growth-postgres
     restart: unless-stopped
     environment:
@@ -13,6 +13,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Note: Discovery tables are created via `make db-discovery` after Prisma migrations
+      # Don't auto-run SQL files here - it conflicts with Prisma migrate
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U yt_growth -d yt_growth"]
       interval: 10s
