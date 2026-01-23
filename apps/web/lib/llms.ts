@@ -61,12 +61,6 @@ export const LLMS_TOOLS = [
     requiresLogin: true,
   },
   {
-    name: "Tag Generator",
-    path: "/tag-generator",
-    description: "Generate relevant tags for YouTube videos based on topic and competitor research.",
-    requiresLogin: true,
-  },
-  {
     name: "Thumbnail Generator",
     path: "/thumbnails",
     description: "Create eye-catching YouTube thumbnails using AI with style training on your brand.",
@@ -93,6 +87,16 @@ export const LLMS_PUBLIC_PAGES = [
     name: "Learn Hub",
     path: "/learn",
     description: "Collection of in-depth YouTube growth guides and tutorials.",
+  },
+  {
+    name: "YouTube Tag Finder",
+    path: "/tags/extractor",
+    description: "Free tool to extract and view tags from any YouTube video URL. Useful for competitive research.",
+  },
+  {
+    name: "YouTube Tag Generator",
+    path: "/tags/generator",
+    description: "Free tool to generate optimized YouTube tags based on video title and description.",
   },
   {
     name: "Contact",

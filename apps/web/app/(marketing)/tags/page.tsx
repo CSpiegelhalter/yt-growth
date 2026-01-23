@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 
 /**
  * Tags hub index page.
- * Redirects to /tags/generator as the default tool.
+ * Redirects to /tags/extractor (Tag Finder) as the default tool.
  */
 export default function TagsPage() {
-  redirect("/tags/generator");
+  redirect("/tags/extractor");
 }

@@ -4,8 +4,11 @@
  * Generate YouTube tags using LLM based on video title, description,
  * and optional reference video.
  *
- * Auth: Required
- * Rate Limited: 5/day free, 200/day pro
+ * Auth: Optional (works for both authenticated and anonymous users)
+ * Rate Limited: 
+ *   - Anonymous: 5/day (basic IP tracking)
+ *   - Free users: 5/day
+ *   - Pro users: 200/day
  */
 import { z } from "zod";
 import { createApiRoute } from "@/lib/api/route";
@@ -18,6 +21,39 @@ import { getLimit, type Plan } from "@/lib/entitlements";
 import { checkAndIncrement } from "@/lib/usage";
 import { hasActiveSubscription } from "@/lib/user";
 import { logger } from "@/lib/logger";
+
+// Simple in-memory rate limiting for anonymous users
+// In production, consider using Redis or a proper rate limiter
+const anonymousUsage = new Map<string, { count: number; date: string }>();
+const ANONYMOUS_DAILY_LIMIT = 5;
+
+function getAnonymousRateLimit(ip: string): { allowed: boolean; remaining: number } {
+  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const usage = anonymousUsage.get(ip);
+  
+  // Reset if it's a new day
+  if (!usage || usage.date !== today) {
+    anonymousUsage.set(ip, { count: 1, date: today });
+    return { allowed: true, remaining: ANONYMOUS_DAILY_LIMIT - 1 };
+  }
+  
+  if (usage.count >= ANONYMOUS_DAILY_LIMIT) {
+    return { allowed: false, remaining: 0 };
+  }
+  
+  usage.count++;
+  return { allowed: true, remaining: ANONYMOUS_DAILY_LIMIT - usage.count };
+}
+
+// Cleanup old entries periodically (runs on each request, but cheap)
+function cleanupOldEntries() {
+  const today = new Date().toISOString().split("T")[0];
+  for (const [ip, usage] of anonymousUsage.entries()) {
+    if (usage.date !== today) {
+      anonymousUsage.delete(ip);
+    }
+  }
+}
 
 // ============================================
 // VALIDATION SCHEMA
@@ -255,8 +291,8 @@ Channel: ${input.referenceVideo.channelTitle}`;
 
 export const POST = createApiRoute(
   { route: "/api/youtube-tag-generator" },
-  withAuth({ mode: "required" }, async (req, _ctx, api: ApiAuthContext) => {
-    const user = api.user!;
+  withAuth({ mode: "optional" }, async (req, _ctx, api: ApiAuthContext) => {
+    const user = api.user;
 
     // Parse and validate request body
     let body: unknown;
@@ -292,35 +328,71 @@ export const POST = createApiRoute(
 
     const { title, description, referenceYoutubeUrl } = parsed.data;
 
-    // Determine plan and limits
-    const isPro = hasActiveSubscription(user.subscription);
-    const plan: Plan = isPro ? "PRO" : "FREE";
-    const limit = getLimit(plan, "tag_generate");
+    // Rate limiting
+    let remaining: number;
+    let resetAt: string;
+    let isPro = false;
 
-    // Check rate limit
-    const usageResult = await checkAndIncrement({
-      userId: user.id,
-      featureKey: "tag_generate",
-      limit,
-    });
+    if (user) {
+      // Authenticated user: use database-backed rate limiting
+      isPro = hasActiveSubscription(user.subscription);
+      const plan: Plan = isPro ? "PRO" : "FREE";
+      const limit = getLimit(plan, "tag_generate");
 
-    if (!usageResult.allowed) {
-      logger.info("youtube-tag-generator.rate_limited", {
+      const usageResult = await checkAndIncrement({
         userId: user.id,
-        plan,
+        featureKey: "tag_generate",
+        limit,
       });
 
-      return jsonError({
-        status: 429,
-        code: "LIMIT_REACHED",
-        message: `You have used all ${limit} tag generations for today.`,
-        requestId: api.requestId,
-        details: {
-          remaining: 0,
-          resetAt: usageResult.resetAt,
-          isPro,
-        },
-      });
+      if (!usageResult.allowed) {
+        logger.info("youtube-tag-generator.rate_limited", {
+          userId: user.id,
+          plan,
+        });
+
+        return jsonError({
+          status: 429,
+          code: "LIMIT_REACHED",
+          message: `You have used all ${limit} tag generations for today.`,
+          requestId: api.requestId,
+          details: {
+            remaining: 0,
+            resetAt: usageResult.resetAt,
+            isPro,
+          },
+        });
+      }
+
+      remaining = usageResult.remaining;
+      resetAt = usageResult.resetAt;
+    } else {
+      // Anonymous user: use simple IP-based rate limiting
+      cleanupOldEntries();
+      
+      // Get IP from headers (works with most reverse proxies)
+      const forwardedFor = req.headers.get("x-forwarded-for");
+      const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
+      
+      const anonLimit = getAnonymousRateLimit(ip);
+      
+      if (!anonLimit.allowed) {
+        logger.info("youtube-tag-generator.rate_limited_anonymous", { ip });
+
+        return jsonError({
+          status: 429,
+          code: "LIMIT_REACHED",
+          message: `You've reached the free limit. Sign up for more generations.`,
+          requestId: api.requestId,
+          details: {
+            remaining: 0,
+            resetAt: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+          },
+        });
+      }
+
+      remaining = anonLimit.remaining;
+      resetAt = new Date(new Date().setHours(24, 0, 0, 0)).toISOString();
     }
 
     // Fetch reference video if URL provided
@@ -356,10 +428,10 @@ export const POST = createApiRoute(
 
     // Log success (no sensitive data)
     logger.info("youtube-tag-generator.success", {
-      userId: user.id,
+      userId: user?.id ?? "anonymous",
       tagCount: result.tags.length,
       hadReference: !!referenceVideo,
-      plan,
+      plan: user ? (isPro ? "PRO" : "FREE") : "ANONYMOUS",
     });
 
     return jsonOk(
@@ -368,8 +440,8 @@ export const POST = createApiRoute(
         copyComma,
         copyLines,
         notes: result.notes,
-        remaining: usageResult.remaining,
-        resetAt: usageResult.resetAt,
+        remaining,
+        resetAt,
       },
       { requestId: api.requestId }
     );

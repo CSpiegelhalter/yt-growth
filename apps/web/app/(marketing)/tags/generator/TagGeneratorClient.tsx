@@ -2,23 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import s from "../tags.module.css";
 import { useToast } from "@/components/ui/Toast";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
-import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 
 // ============================================
 // TYPES
 // ============================================
-
-type UsageInfo = {
-  remaining: number;
-  used: number;
-  limit: number;
-  resetAt: string;
-  isPro: boolean;
-};
 
 type GenerateResponse = {
   tags: string[];
@@ -44,16 +34,12 @@ export function TagGeneratorClient() {
 
   // UI state
   const [loading, setLoading] = useState(false);
-  const [usageLoading, setUsageLoading] = useState(true);
 
   // Result state
   const [tags, setTags] = useState<string[]>([]);
   const [notes, setNotes] = useState<string[]>([]);
   const [copyComma, setCopyComma] = useState("");
   const [copyLines, setCopyLines] = useState("");
-
-  // Usage state
-  const [usage, setUsage] = useState<UsageInfo | null>(null);
 
   // Validation state
   const [errors, setErrors] = useState<{
@@ -67,12 +53,12 @@ export function TagGeneratorClient() {
     const prefillTags = searchParams.get("prefill");
     if (prefillTags) {
       try {
-        // Tags are passed as comma-separated list
         const decodedTags = decodeURIComponent(prefillTags);
-        // If it's a comma-separated list, use first few as title suggestion
-        const tagList = decodedTags.split(",").map((t) => t.trim()).filter(Boolean);
+        const tagList = decodedTags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean);
         if (tagList.length > 0) {
-          // Pre-populate the tags as result for user to modify/regenerate
           setTags(tagList);
           setCopyComma(tagList.join(", "));
           setCopyLines(tagList.join("\n"));
@@ -85,38 +71,6 @@ export function TagGeneratorClient() {
       }
     }
   }, [searchParams]);
-
-  // Fetch usage on mount
-  useEffect(() => {
-    let cancelled = false;
-
-    async function fetchUsage() {
-      try {
-        const data = await apiFetchJson<UsageInfo>(
-          "/api/youtube-tag-generator/usage",
-          { cache: "no-store" }
-        );
-        if (!cancelled) {
-          setUsage(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch usage:", err);
-        if (!cancelled) {
-          setUsage(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setUsageLoading(false);
-        }
-      }
-    }
-
-    fetchUsage();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Validate form
   const validate = useCallback(() => {
@@ -136,7 +90,6 @@ export function TagGeneratorClient() {
     }
 
     if (referenceUrl.trim()) {
-      // Basic URL validation
       try {
         const url = new URL(referenceUrl.trim());
         const hostname = url.hostname.toLowerCase();
@@ -164,12 +117,6 @@ export function TagGeneratorClient() {
 
       if (!validate()) return;
 
-      // Check if limit reached
-      if (usage && usage.remaining <= 0) {
-        toast("Daily limit reached. Please upgrade or wait for reset.", "error");
-        return;
-      }
-
       setLoading(true);
       setTags([]);
       setNotes([]);
@@ -193,44 +140,16 @@ export function TagGeneratorClient() {
         setCopyComma(data.copyComma);
         setCopyLines(data.copyLines);
 
-        // Update usage
-        setUsage((prev) =>
-          prev
-            ? {
-                ...prev,
-                remaining: data.remaining,
-                used: prev.limit - data.remaining,
-                resetAt: data.resetAt,
-              }
-            : null
-        );
-
         toast(`Generated ${data.tags.length} tags!`, "success");
       } catch (err) {
         console.error("Generate error:", err);
 
         if (isApiClientError(err)) {
           if (err.status === 429 || err.code === "LIMIT_REACHED") {
-            // Update usage to show 0 remaining
-            const details = err.details as Record<string, unknown>;
-            if (details?.resetAt) {
-              setUsage((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      remaining: 0,
-                      used: prev.limit,
-                      resetAt: details.resetAt as string,
-                    }
-                  : null
-              );
-            }
-            toast("Daily limit reached. Please upgrade or wait for reset.", "error");
-            return;
-          }
-
-          if (err.status === 401) {
-            toast("Session expired. Please log in again.", "error");
+            toast(
+              err.message || "You've reached the daily limit. Sign up for more.",
+              "error"
+            );
             return;
           }
 
@@ -243,7 +162,7 @@ export function TagGeneratorClient() {
         setLoading(false);
       }
     },
-    [title, description, referenceUrl, usage, validate, toast]
+    [title, description, referenceUrl, validate, toast]
   );
 
   // Copy to clipboard
@@ -264,126 +183,18 @@ export function TagGeneratorClient() {
     [toast]
   );
 
-  // Format reset time
-  const formatResetTime = (resetAt: string) => {
-    const date = new Date(resetAt);
-    const now = new Date();
-    const diffMs = date.getTime() - now.getTime();
-    const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
-
-    if (diffHours <= 0) return "soon";
-    if (diffHours === 1) return "in 1 hour";
-    return `in ${diffHours} hours`;
-  };
-
-  const isLimitReached = usage !== null && usage.remaining <= 0;
-
   return (
     <div role="tabpanel" id="panel-generator" aria-labelledby="tab-generator">
       {/* Header */}
-      <div className={s.header}>
+      <header className={s.header}>
         <h1 className={s.title}>YouTube Tag Generator</h1>
         <p className={s.subtitle}>
           Generate optimized tags to improve your video&apos;s discoverability
         </p>
-      </div>
-
-      {/* Info Box */}
-      <div className={s.infoBox}>
-        <div className={s.infoIcon}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4" />
-            <path d="M12 8h.01" />
-          </svg>
-        </div>
-        <div className={s.infoContent}>
-          <p className={s.infoTitle}>What YouTube tags do (and don&apos;t do)</p>
-          <ul className={s.infoList}>
-            <li>
-              Tags help YouTube understand your video content and can improve
-              discoverability for misspelled searches
-            </li>
-            <li>
-              Tags have a <strong>minor impact</strong> on rankings compared to
-              title, description, and watch time
-            </li>
-            <li>
-              Focus on your most important keywords in the title and description
-              first
-            </li>
-          </ul>
-          <p className={s.infoWarning}>
-            <strong>⚠️ Warning:</strong> Never use misleading or spam tags.
-            YouTube may penalize videos with irrelevant tags.
-          </p>
-        </div>
-      </div>
-
-      {/* Usage Display */}
-      {!usageLoading && usage && (
-        <div className={s.usageBox}>
-          <div className={s.usageInfo}>
-            <span className={s.usageLabel}>
-              {usage.isPro ? "Pro" : "Free"} Plan
-            </span>
-            <span className={s.usageCount}>
-              {usage.remaining} / {usage.limit} generations remaining
-            </span>
-            {usage.remaining < usage.limit && (
-              <span className={s.usageReset}>
-                Resets {formatResetTime(usage.resetAt)}
-              </span>
-            )}
-          </div>
-          {!usage.isPro && (
-            <Link href="/api/integrations/stripe/checkout" className={s.upgradeBtn}>
-              Upgrade to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/
-              {SUBSCRIPTION.PRO_INTERVAL}
-            </Link>
-          )}
-        </div>
-      )}
-
-      {/* Limit Reached Banner */}
-      {isLimitReached && (
-        <div className={s.limitBanner}>
-          <div className={s.limitIcon}>
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <div className={s.limitContent}>
-            <p className={s.limitTitle}>Daily Limit Reached</p>
-            <p className={s.limitText}>
-              You&apos;ve used all {usage?.limit} free tag generations for today.
-              {usage?.resetAt && ` Resets ${formatResetTime(usage.resetAt)}.`}
-            </p>
-          </div>
-          {!usage?.isPro && (
-            <Link href="/api/integrations/stripe/checkout" className={s.limitUpgradeBtn}>
-              Upgrade to Pro
-            </Link>
-          )}
-        </div>
-      )}
+      </header>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className={s.form}>
+      <form onSubmit={handleSubmit} className={s.formCard}>
         {/* Title Input */}
         <div className={s.field}>
           <label htmlFor="title" className={s.label}>
@@ -398,10 +209,19 @@ export function TagGeneratorClient() {
             placeholder="Enter your video title"
             className={`${s.input} ${errors.title ? s.inputError : ""}`}
             maxLength={120}
-            disabled={loading || isLimitReached}
+            disabled={loading}
+            aria-invalid={!!errors.title}
+            aria-describedby={errors.title ? "title-error" : "title-hint"}
           />
-          {errors.title && <p className={s.errorText}>{errors.title}</p>}
-          <p className={s.fieldHint}>{title.length}/120 characters</p>
+          {errors.title ? (
+            <p id="title-error" className={s.errorText}>
+              {errors.title}
+            </p>
+          ) : (
+            <p id="title-hint" className={s.fieldHint}>
+              {title.length}/120 characters
+            </p>
+          )}
         </div>
 
         {/* Description Input */}
@@ -414,16 +234,25 @@ export function TagGeneratorClient() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             onBlur={validate}
-            placeholder="Enter your video description for more accurate tag suggestions"
+            placeholder="Add your video description for more accurate tag suggestions"
             className={`${s.textarea} ${errors.description ? s.inputError : ""}`}
             rows={4}
             maxLength={4000}
-            disabled={loading || isLimitReached}
+            disabled={loading}
+            aria-invalid={!!errors.description}
+            aria-describedby={
+              errors.description ? "desc-error" : "desc-hint"
+            }
           />
-          {errors.description && (
-            <p className={s.errorText}>{errors.description}</p>
+          {errors.description ? (
+            <p id="desc-error" className={s.errorText}>
+              {errors.description}
+            </p>
+          ) : (
+            <p id="desc-hint" className={s.fieldHint}>
+              {description.length}/4000 characters
+            </p>
           )}
-          <p className={s.fieldHint}>{description.length}/4000 characters</p>
         </div>
 
         {/* Reference URL Input */}
@@ -439,25 +268,30 @@ export function TagGeneratorClient() {
             onBlur={validate}
             placeholder="https://youtube.com/watch?v=..."
             className={`${s.input} ${errors.referenceUrl ? s.inputError : ""}`}
-            disabled={loading || isLimitReached}
+            disabled={loading}
+            aria-invalid={!!errors.referenceUrl}
+            aria-describedby={errors.referenceUrl ? "ref-error" : "ref-hint"}
           />
-          {errors.referenceUrl && (
-            <p className={s.errorText}>{errors.referenceUrl}</p>
+          {errors.referenceUrl ? (
+            <p id="ref-error" className={s.errorText}>
+              {errors.referenceUrl}
+            </p>
+          ) : (
+            <p id="ref-hint" className={s.fieldHint}>
+              We&apos;ll analyze this video&apos;s tags for inspiration
+            </p>
           )}
-          <p className={s.fieldHint}>
-            We&apos;ll analyze this video&apos;s tags for inspiration
-          </p>
         </div>
 
         {/* Submit Button */}
         <button
           type="submit"
           className={s.submitBtn}
-          disabled={loading || isLimitReached || !title.trim()}
+          disabled={loading || !title.trim()}
         >
           {loading ? (
             <>
-              <span className={s.spinner} />
+              <span className={s.spinner} aria-hidden="true" />
               Generating...
             </>
           ) : (
@@ -469,6 +303,7 @@ export function TagGeneratorClient() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
+                aria-hidden="true"
               >
                 <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
                 <circle cx="12" cy="12" r="4" />
@@ -479,29 +314,12 @@ export function TagGeneratorClient() {
         </button>
       </form>
 
-      {/* Cross-link to Finder */}
-      <Link href="/tags/extractor" className={s.crossLinkCta}>
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
-        Find competitor tags from a YouTube video
-      </Link>
 
       {/* Results */}
       {tags.length > 0 && (
-        <div className={s.results} style={{ marginTop: "var(--space-lg)" }}>
+        <div className={s.resultsCard}>
           <div className={s.resultsHeader}>
-            <div>
-              <h2 className={s.resultsTitle}>Generated Tags ({tags.length})</h2>
-            </div>
+            <h2 className={s.resultsTitle}>Generated Tags ({tags.length})</h2>
             <div className={s.copyButtons}>
               <button
                 type="button"
@@ -515,11 +333,12 @@ export function TagGeneratorClient() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
+                  aria-hidden="true"
                 >
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                   <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                 </svg>
-                Copy (comma separated)
+                Copy (comma)
               </button>
               <button
                 type="button"
@@ -533,11 +352,12 @@ export function TagGeneratorClient() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
+                  aria-hidden="true"
                 >
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                   <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                 </svg>
-                Copy (one per line)
+                Copy (lines)
               </button>
             </div>
           </div>
@@ -566,6 +386,47 @@ export function TagGeneratorClient() {
           )}
         </div>
       )}
+
+      {/* SEO Content Section */}
+      <section className={s.seoSection}>
+        <h2 className={s.seoTitle}>Free YouTube Tag Generator for Creators</h2>
+        <p className={s.seoText}>
+          Our <strong>YouTube tag generator</strong> helps creators optimize their video 
+          metadata in seconds. Simply enter your video title and description, and get 
+          AI-powered tag suggestions tailored to your content and niche.
+        </p>
+        <p className={s.seoText}>
+          YouTube tags are keywords that help the algorithm understand what your video 
+          is about. While tags have less impact than titles and descriptions, they still 
+          play a role in helping YouTube categorize your content and surface it for 
+          relevant searches—especially for commonly misspelled terms.
+        </p>
+        <h3 className={s.seoSubtitle}>How to Use YouTube Tags Effectively</h3>
+        <ul className={s.seoList}>
+          <li>
+            <strong>Start with your primary keyword</strong> — Your main topic should 
+            be your first tag to signal the core subject of your video.
+          </li>
+          <li>
+            <strong>Include variations and long-tail keywords</strong> — Add related 
+            phrases and specific variations that viewers might search for.
+          </li>
+          <li>
+            <strong>Keep tags relevant</strong> — Only use tags that accurately 
+            describe your content. Misleading tags can hurt your channel.
+          </li>
+          <li>
+            <strong>Use 5-15 focused tags</strong> — Quality matters more than 
+            quantity. YouTube allows up to 500 characters, but fewer relevant tags 
+            outperform a wall of keywords.
+          </li>
+        </ul>
+        <p className={s.seoText}>
+          This free tag generator analyzes your input and suggests optimized tags 
+          based on your topic, helping you save time while improving your video&apos;s 
+          discoverability on YouTube search and suggested videos.
+        </p>
+      </section>
     </div>
   );
 }

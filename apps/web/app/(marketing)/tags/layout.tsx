@@ -21,6 +21,8 @@ export const metadata: Metadata = {
 /**
  * Shared layout for Tags hub pages.
  * Provides consistent header and tab navigation across /tags, /tags/generator, /tags/extractor.
+ * 
+ * This layout is public (no auth required) and renders within the marketing shell.
  */
 export default function TagsLayout({
   children,
@@ -28,9 +30,11 @@ export default function TagsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={s.container}>
+    <div className={s.pageWrapper}>
       <TagsTabsNav />
-      {children}
+      <div className={s.pageContent}>
+        {children}
+      </div>
     </div>
   );
 }

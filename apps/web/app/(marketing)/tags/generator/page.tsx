@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 /**
  * Tag Generator page.
  * Generates optimized tags based on video title, description, and optional reference video.
+ * Public page - no auth required.
  */
 export default function TagGeneratorPage() {
   return <TagGeneratorClient />;

@@ -68,11 +68,11 @@ const faqSchema = {
 /**
  * Tag Finder (Extractor) page.
  * Allows users to paste a YouTube URL and extract the tags used by that video.
+ * Public page - no auth required.
  */
 export default function TagExtractorPage() {
   return (
     <>
-      {/* FAQ Schema JSON-LD */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}

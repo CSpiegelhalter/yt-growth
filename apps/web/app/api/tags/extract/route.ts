@@ -4,8 +4,8 @@
  * Extract tags from a YouTube video URL.
  * Uses the YouTube Data API to fetch video metadata including tags.
  *
- * Auth: Required
- * Rate Limited: Simple rate limit to prevent abuse
+ * Auth: Optional (works for both authenticated and anonymous users)
+ * Rate Limited: By IP for anonymous users, by user ID for authenticated users
  */
 import { z } from "zod";
 import { createApiRoute } from "@/lib/api/route";
@@ -150,9 +150,7 @@ async function fetchYouTubeVideoData(
 
 export const POST = createApiRoute(
   { route: "/api/tags/extract" },
-  withAuth({ mode: "required" }, async (req, _ctx, api: ApiAuthContext) => {
-    const user = api.user!;
-
+  withAuth({ mode: "optional" }, async (req, _ctx, api: ApiAuthContext) => {
     // Parse and validate request body
     let body: unknown;
     try {
@@ -202,7 +200,7 @@ export const POST = createApiRoute(
 
     // Log success (no sensitive data)
     logger.info("tags-extract.success", {
-      userId: user.id,
+      userId: api.user?.id ?? "anonymous",
       videoId,
       tagCount: videoData.tags.length,
       hasTags: videoData.tags.length > 0,

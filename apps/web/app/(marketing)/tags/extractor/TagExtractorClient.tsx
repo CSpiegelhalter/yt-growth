@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 import s from "../tags.module.css";
 import { useToast } from "@/components/ui/Toast";
@@ -27,7 +25,6 @@ type ExtractResponse = {
 
 export function TagExtractorClient() {
   const { toast } = useToast();
-  const router = useRouter();
 
   // Form state
   const [url, setUrl] = useState("");
@@ -96,10 +93,6 @@ export function TagExtractorClient() {
         console.error("Extract error:", err);
 
         if (isApiClientError(err)) {
-          if (err.status === 401) {
-            toast("Session expired. Please log in again.", "error");
-            return;
-          }
           setError(err.message || "Failed to extract tags");
           return;
         }
@@ -124,62 +117,18 @@ export function TagExtractorClient() {
     }
   }, [result, toast]);
 
-  // Navigate to generator with prefilled tags
-  const handleGenerateFromTags = useCallback(() => {
-    if (!result?.tags.length) return;
-
-    // Encode tags as comma-separated list
-    const prefill = encodeURIComponent(result.tags.slice(0, 30).join(","));
-    router.push(`/tags/generator?prefill=${prefill}`);
-  }, [result, router]);
-
   return (
     <div role="tabpanel" id="panel-extractor" aria-labelledby="tab-extractor">
       {/* Header */}
-      <div className={s.header}>
+      <header className={s.header}>
         <h1 className={s.title}>YouTube Tag Finder</h1>
         <p className={s.subtitle}>
           Paste a YouTube video URL to discover the tags used by that video
         </p>
-      </div>
-
-      {/* Info Box */}
-      <div className={s.infoBox}>
-        <div className={s.infoIcon}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-        </div>
-        <div className={s.infoContent}>
-          <p className={s.infoTitle}>Competitive research made easy</p>
-          <ul className={s.infoList}>
-            <li>
-              See exactly which tags successful videos in your niche are using
-            </li>
-            <li>
-              Discover keyword opportunities you might have missed
-            </li>
-            <li>
-              Use insights to improve your own video SEO strategy
-            </li>
-          </ul>
-          <p className={s.infoWarning}>
-            <strong>Note:</strong> Some videos may not have tags, or tags may be
-            hidden by the creator.
-          </p>
-        </div>
-      </div>
+      </header>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className={s.form}>
+      <form onSubmit={handleSubmit} className={s.formCard}>
         <div className={s.field}>
           <label htmlFor="videoUrl" className={s.label}>
             YouTube Video URL <span className={s.required}>*</span>
@@ -196,11 +145,18 @@ export function TagExtractorClient() {
             className={`${s.input} ${error ? s.inputError : ""}`}
             disabled={loading}
             autoComplete="off"
+            aria-invalid={!!error}
+            aria-describedby={error ? "url-error" : "url-hint"}
           />
-          {error && <p className={s.errorText}>{error}</p>}
-          <p className={s.fieldHint}>
-            Supports youtube.com, youtu.be, and YouTube Shorts URLs
-          </p>
+          {error ? (
+            <p id="url-error" className={s.errorText}>
+              {error}
+            </p>
+          ) : (
+            <p id="url-hint" className={s.fieldHint}>
+              Supports youtube.com, youtu.be, and YouTube Shorts URLs
+            </p>
+          )}
         </div>
 
         {/* Submit Button */}
@@ -211,7 +167,7 @@ export function TagExtractorClient() {
         >
           {loading ? (
             <>
-              <span className={s.spinner} />
+              <span className={s.spinner} aria-hidden="true" />
               Finding tags...
             </>
           ) : (
@@ -223,6 +179,7 @@ export function TagExtractorClient() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
+                aria-hidden="true"
               >
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.35-4.35" />
@@ -233,25 +190,10 @@ export function TagExtractorClient() {
         </button>
       </form>
 
-      {/* Cross-link to Generator */}
-      <Link href="/tags/generator" className={s.crossLinkCta}>
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
-          <circle cx="12" cy="12" r="4" />
-        </svg>
-        Generate custom tags for your video
-      </Link>
 
       {/* Results */}
       {result && (
-        <div className={s.results} style={{ marginTop: "var(--space-lg)" }}>
+        <div className={s.resultsCard}>
           {/* Video Info */}
           <div className={s.videoInfo}>
             {result.thumbnailUrl && (
@@ -273,17 +215,11 @@ export function TagExtractorClient() {
           {result.hasTags ? (
             <>
               <div className={s.resultsHeader}>
-                <div>
-                  <h3 className={s.resultsTitle}>
-                    Tags Found ({result.tags.length})
-                  </h3>
-                </div>
+                <h3 className={s.resultsTitle}>
+                  Tags Found ({result.tags.length})
+                </h3>
                 <div className={s.copyButtons}>
-                  <button
-                    type="button"
-                    className={s.copyBtn}
-                    onClick={handleCopy}
-                  >
+                  <button type="button" className={s.copyBtn} onClick={handleCopy}>
                     <svg
                       width="16"
                       height="16"
@@ -291,6 +227,7 @@ export function TagExtractorClient() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
+                      aria-hidden="true"
                     >
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                       <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
@@ -309,28 +246,6 @@ export function TagExtractorClient() {
                 ))}
               </div>
 
-              {/* Generate CTA */}
-              <div className={s.notesSection}>
-                <button
-                  type="button"
-                  onClick={handleGenerateFromTags}
-                  className={s.crossLinkCta}
-                  style={{ marginTop: 0 }}
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
-                    <circle cx="12" cy="12" r="4" />
-                  </svg>
-                  Generate tags based on these
-                </button>
-              </div>
             </>
           ) : (
             <div className={s.noTagsState}>
@@ -340,6 +255,7 @@ export function TagExtractorClient() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
+                aria-hidden="true"
               >
                 <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
                 <line x1="7" y1="7" x2="7.01" y2="7" />
@@ -354,56 +270,95 @@ export function TagExtractorClient() {
         </div>
       )}
 
+      {/* SEO Content Section - Competitive Research */}
+      <section className={s.seoSection}>
+        <h2 className={s.seoTitle}>YouTube Tag Finder: Competitive Research Made Easy</h2>
+        <p className={s.seoText}>
+          Our <strong>YouTube tag finder</strong> (also known as a tag extractor) lets you 
+          discover the exact tags that any YouTube video is using. Simply paste a video URL 
+          and instantly see the keywords that creators in your niche are targeting.
+        </p>
+        <p className={s.seoText}>
+          Since YouTube removed public tag visibility in 2018, tags are no longer visible 
+          on video pages or in page source code. Our tool uses the official YouTube Data API 
+          to retrieve this hidden metadata, giving you insights that aren&apos;t available 
+          through normal browsing.
+        </p>
+        
+        <h3 className={s.seoSubtitle}>Why Analyze Competitor Tags?</h3>
+        <ul className={s.seoList}>
+          <li>
+            <strong>Discover keyword opportunities</strong> — Find relevant search terms 
+            and phrases you might have missed in your own tag strategy.
+          </li>
+          <li>
+            <strong>Understand niche terminology</strong> — See how successful creators 
+            describe content in your space and the specific language they use.
+          </li>
+          <li>
+            <strong>Identify content gaps</strong> — Spot topics and sub-niches that 
+            competitors are targeting that you could explore.
+          </li>
+          <li>
+            <strong>Improve your video SEO</strong> — Use competitor insights to 
+            optimize your own tags and improve discoverability.
+          </li>
+        </ul>
+
+        <h3 className={s.seoSubtitle}>How to Use This Tool Effectively</h3>
+        <p className={s.seoText}>
+          Start by finding top-performing videos in your niche—look for videos with high 
+          view counts relative to the channel size. Extract their tags to see what keywords 
+          they&apos;re targeting. Use these insights as inspiration, but only apply tags 
+          that genuinely describe your content. Copying irrelevant tags can hurt your 
+          channel&apos;s performance.
+        </p>
+      </section>
+
       {/* FAQ Section for SEO */}
-      <section style={{ marginTop: "var(--space-xl, 3rem)" }}>
-        <h2 className={s.infoTitle} style={{ marginBottom: "var(--space-4)" }}>
-          Frequently Asked Questions
-        </h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <details className={s.infoBox} style={{ cursor: "pointer" }}>
-            <summary className={s.infoTitle} style={{ marginBottom: 0 }}>
-              How do I find tags on a YouTube video?
-            </summary>
-            <p style={{ marginTop: "var(--space-3)", fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-              YouTube doesn&apos;t publicly display video tags in the interface. However, you
-              can use our Tag Finder tool to extract tags from any YouTube video by simply
-              pasting the video URL. We use the YouTube Data API to retrieve the tags that
-              creators have added to their videos.
+      <section className={s.faqSection}>
+        <h2 className={s.faqTitle}>Frequently Asked Questions</h2>
+        <div className={s.faqList}>
+          <details className={s.faqItem}>
+            <summary>How do I find tags on a YouTube video?</summary>
+            <p className={s.faqAnswer}>
+              YouTube doesn&apos;t publicly display video tags in the interface.
+              However, you can use our Tag Finder tool to extract tags from any
+              YouTube video by simply pasting the video URL. We use the YouTube
+              Data API to retrieve the tags that creators have added to their
+              videos.
             </p>
           </details>
 
-          <details className={s.infoBox} style={{ cursor: "pointer" }}>
-            <summary className={s.infoTitle} style={{ marginBottom: 0 }}>
-              Does YouTube show tags publicly?
-            </summary>
-            <p style={{ marginTop: "var(--space-3)", fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-              No, YouTube removed public tag visibility in 2018. Tags are no longer visible
-              on the video page or in the page source. To see a video&apos;s tags, you need to
-              use external tools like our Tag Finder that access the YouTube Data API.
+          <details className={s.faqItem}>
+            <summary>Does YouTube show tags publicly?</summary>
+            <p className={s.faqAnswer}>
+              No, YouTube removed public tag visibility in 2018. Tags are no
+              longer visible on the video page or in the page source. To see a
+              video&apos;s tags, you need to use external tools like our Tag
+              Finder that access the YouTube Data API.
             </p>
           </details>
 
-          <details className={s.infoBox} style={{ cursor: "pointer" }}>
-            <summary className={s.infoTitle} style={{ marginBottom: 0 }}>
-              Can I use competitor tags on my videos?
-            </summary>
-            <p style={{ marginTop: "var(--space-3)", fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-              Yes, you can use similar tags to your competitors, but only if they&apos;re
-              genuinely relevant to your content. Never copy tags that don&apos;t accurately
-              describe your video—YouTube may penalize misleading tags. Use competitor tags
-              as inspiration to identify keywords you might have missed.
+          <details className={s.faqItem}>
+            <summary>Can I use competitor tags on my videos?</summary>
+            <p className={s.faqAnswer}>
+              Yes, you can use similar tags to your competitors, but only if
+              they&apos;re genuinely relevant to your content. Never copy tags
+              that don&apos;t accurately describe your video—YouTube may
+              penalize misleading tags. Use competitor tags as inspiration to
+              identify keywords you might have missed.
             </p>
           </details>
 
-          <details className={s.infoBox} style={{ cursor: "pointer" }}>
-            <summary className={s.infoTitle} style={{ marginBottom: 0 }}>
-              Why do tags matter on YouTube?
-            </summary>
-            <p style={{ marginTop: "var(--space-3)", fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-              YouTube tags help the algorithm understand your video&apos;s content and can
-              improve discoverability, especially for misspelled searches. However, tags
-              have a minor impact compared to title, description, and watch time. Focus on
-              those first, then use tags to reinforce your main keywords.
+          <details className={s.faqItem}>
+            <summary>Why do tags matter on YouTube?</summary>
+            <p className={s.faqAnswer}>
+              YouTube tags help the algorithm understand your video&apos;s
+              content and can improve discoverability, especially for misspelled
+              searches. However, tags have a minor impact compared to title,
+              description, and watch time. Focus on those first, then use tags
+              to reinforce your main keywords.
             </p>
           </details>
         </div>
