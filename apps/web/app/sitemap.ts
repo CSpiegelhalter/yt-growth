@@ -47,6 +47,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     // Learn articles
     ...learnArticleEntries,
+    // Tags hub - high priority SEO tool pages
+    {
+      url: `${baseUrl}/tags`,
+      lastModified: new Date("2026-01-23"),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/tags/generator`,
+      lastModified: new Date("2026-01-23"),
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/tags/extractor`,
+      lastModified: new Date("2026-01-23"),
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
     // Contact page
     {
       url: `${baseUrl}/contact`,

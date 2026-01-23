@@ -41,7 +41,6 @@ export default function robots(): MetadataRoute.Robots {
           "/video/",
           "/thumbnails/",
           "/channel-profile/",
-          "/tag-generator/",
           // Admin routes
           "/admin/",
           // Internal integrations

@@ -180,14 +180,12 @@ export function Body({ s }: BodyProps) {
           parts={["1,000,000 views", "x", "($4 / 1,000)", "=", "$4,000"]}
         />
 
-        <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", flexWrap: "wrap", marginTop: "24px" }}>
-          <div style={{ flex: 1, minWidth: "200px" }}>
-            <p className={s.sectionText}>
-              Actual earnings depend on which videos got the views, audience
-              demographics, and the time of year. Q4 (October through December)
-              typically pays more due to holiday advertising.
-            </p>
-          </div>
+        <div className="seasonalityRow">
+          <p className={s.sectionText}>
+            Actual earnings depend on which videos got the views, audience
+            demographics, and the time of year. Q4 (October through December)
+            typically pays more due to holiday advertising.
+          </p>
           <WeatherCard />
         </div>
       </section>

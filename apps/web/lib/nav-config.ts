@@ -102,11 +102,14 @@ export const primaryNavItems: NavItem[] = [
     featureFlag: "thumbnail_generation", // Gated behind feature flag
   },
   {
-    id: "tag-generator",
+    id: "tags",
     label: "Tags",
-    href: "/tag-generator",
+    href: "/tags",
     icon: "tag",
     channelScoped: false,
+    match: (pathname) =>
+      pathname === "/tags" ||
+      pathname.startsWith("/tags/"),
   },
 ];
 
@@ -202,6 +205,15 @@ export function getPageTitle(pathname: string): string {
   }
   if (pathname.startsWith("/admin/")) {
     return "Admin";
+  }
+  if (pathname === "/tags/generator") {
+    return "Tag Generator";
+  }
+  if (pathname === "/tags/extractor") {
+    return "Tag Finder";
+  }
+  if (pathname.startsWith("/tags")) {
+    return "Tags";
   }
   
   return "Dashboard";

@@ -5366,3 +5366,441 @@
   line-height: 1.6;
   margin: 0;
 }
+
+/* Seasonality Row (How Much YouTube Pay) */
+.seasonalityRow {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+@media (min-width: 768px) {
+  .seasonalityRow {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 32px;
+  }
+
+  .seasonalityRow > p {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .seasonalityRow > svg {
+    flex-shrink: 0;
+  }
+}
+
+/* =================================
+   How to Go Live on YouTube Page
+   ================================= */
+
+/* Card Grid (2 columns) */
+.cardGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+@media (min-width: 640px) {
+  .cardGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+/* Live Card */
+.liveCard {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+@media (min-width: 768px) {
+  .liveCard {
+    padding: 24px;
+  }
+}
+
+.liveCard__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 16px;
+}
+
+@media (min-width: 768px) {
+  .liveCard__title {
+    font-size: 17px;
+  }
+}
+
+.liveCard__content {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Rows (stacked key-value pairs) */
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.row__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.row__desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Breadcrumb Path */
+.breadcrumbPath {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  background: var(--surface-alt);
+  border-radius: 8px;
+}
+
+.breadcrumbPath__chip {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+  background: white;
+  padding: 4px 10px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.breadcrumbPath__arrow {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  margin: 0 2px;
+}
+
+/* Settings Table (stream settings) */
+.settingsTable {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin: 24px 0;
+}
+
+.settingsTable__header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border-light);
+}
+
+@media (min-width: 640px) {
+  .settingsTable__header {
+    padding: 14px 20px;
+  }
+}
+
+.settingsTable__header span {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+}
+
+.settingsTable__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-light);
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .settingsTable__row {
+    padding: 16px 20px;
+  }
+}
+
+.settingsTable__row:last-child {
+  border-bottom: none;
+}
+
+.settingsTable__row span {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.settingsTable__res {
+  font-weight: 600;
+  color: var(--text) !important;
+}
+
+/* Storyboard Panels (Before/During/After) */
+.storyboardPanels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+@media (min-width: 640px) {
+  .storyboardPanels {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+}
+
+.storyboardPanel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.storyboardPanel__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--primary);
+}
+
+.storyboardPanel__phase {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.storyboardPanel__items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.storyboardPanel__item {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.storyboardPanel__item::before {
+  content: "›";
+  position: absolute;
+  left: 0;
+  color: #10b981;
+  font-weight: bold;
+}
+
+/* Feature Cards Grid (monetization) */
+.featureCardsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+@media (min-width: 500px) {
+  .featureCardsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (min-width: 900px) {
+  .featureCardsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.featureCard {
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.featureCard__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 6px;
+}
+
+.featureCard__desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Mistake Grid (live streaming) */
+.mistakeGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+@media (min-width: 640px) {
+  .mistakeGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+.liveMistakeCard {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+@media (min-width: 768px) {
+  .liveMistakeCard {
+    padding: 24px;
+  }
+}
+
+.liveMistakeCard__icon {
+  flex-shrink: 0;
+}
+
+.liveMistakeCard__content {
+  flex: 1;
+}
+
+.liveMistakeCard__mistake {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+
+@media (min-width: 768px) {
+  .liveMistakeCard__mistake {
+    font-size: 16px;
+  }
+}
+
+.liveMistakeCard__symptom {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.liveMistakeCard__fix {
+  font-size: 13px;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.liveMistakeCard__fix strong {
+  color: #047857;
+}
+
+/* Diagnostic Cards (troubleshooting) */
+.diagnosticCards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+@media (min-width: 640px) {
+  .diagnosticCards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+.diagnosticCard {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-top: 4px solid var(--primary);
+}
+
+@media (min-width: 768px) {
+  .diagnosticCard {
+    padding: 24px;
+  }
+}
+
+.diagnosticCard__symptom {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 16px;
+}
+
+@media (min-width: 768px) {
+  .diagnosticCard__symptom {
+    font-size: 16px;
+  }
+}
+
+.diagnosticCard__tries {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diagnosticCard__try {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.diagnosticCard__try::before {
+  content: "›";
+  position: absolute;
+  left: 0;
+  color: #10b981;
+  font-weight: bold;
+}
