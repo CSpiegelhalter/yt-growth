@@ -127,24 +127,6 @@ function MusicTaxSvg() {
    HELPER COMPONENTS
    ================================================ */
 
-type StepCardProps = {
-  step: number;
-  title: string;
-  description: string;
-};
-
-function _StepCard({ step, title, description }: StepCardProps) {
-  return (
-    <div className="conveyorStation">
-      <span className="conveyorStation__num">{step}</span>
-      <div>
-        <h4 className="conveyorStation__title">{title}</h4>
-        <p className="conveyorStation__desc">{description}</p>
-      </div>
-    </div>
-  );
-}
-
 type IncomeStreamCardProps = {
   title: string;
   description: string;
