@@ -141,54 +141,6 @@ function IncomeStreamCard({ title, description }: IncomeStreamCardProps) {
   );
 }
 
-type QuickLaneCardProps = {
-  lane: string;
-  title: string;
-  description: string;
-  color: "green" | "amber" | "blue";
-};
-
-function _QuickLaneCard({ lane, title, description, color }: QuickLaneCardProps) {
-  const colors = {
-    green: { bg: "#dcfce7", border: "#22c55e", label: "#166534", text: "#15803d" },
-    amber: { bg: "#fef3c7", border: "#f59e0b", label: "#92400e", text: "#a16207" },
-    blue: { bg: "#dbeafe", border: "#3b82f6", label: "#1e40af", text: "#1d4ed8" },
-  };
-  const c = colors[color];
-  
-  return (
-    <div
-      className="quickLaneCard"
-      style={{
-        background: c.bg,
-        borderColor: c.border,
-        borderWidth: "2px",
-        borderStyle: "solid",
-        borderRadius: "0.75rem",
-        padding: "1rem",
-      }}
-    >
-      <span
-        style={{
-          fontSize: "0.75rem",
-          fontWeight: 700,
-          color: c.label,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-        }}
-      >
-        {lane}
-      </span>
-      <h4 style={{ fontSize: "1rem", fontWeight: 700, color: c.label, margin: "0.5rem 0 0.25rem" }}>
-        {title}
-      </h4>
-      <p style={{ fontSize: "0.875rem", color: c.text, margin: 0, lineHeight: 1.5 }}>
-        {description}
-      </p>
-    </div>
-  );
-}
-
 type BlockerCardProps = {
   title: string;
   description: string;
