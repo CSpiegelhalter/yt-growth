@@ -3,23 +3,19 @@
    Premium design matching IdeaBoard aesthetic
    ================================================ */
 
-.container {
-  min-height: 100vh;
-  background: var(--color-bg);
+/* Page Container - matches baseline pages (competitors, subscriber-insights) */
+.page {
+  max-width: var(--page-max-width);
+  margin: 0 auto;
   padding: var(--page-padding-mobile);
   padding-bottom: var(--space-xl);
 }
 
 @media (min-width: 768px) {
-  .container {
+  .page {
     padding: var(--page-padding-desktop);
     padding-bottom: var(--space-2xl);
   }
-}
-
-.inner {
-  max-width: var(--page-max-width);
-  margin: 0 auto;
 }
 
 /* ================================================

@@ -365,20 +365,21 @@
    CONTENT SECTIONS (SEO)
    ================================================ */
 .page {
-  min-height: 100vh;
-  background: var(--color-bg);
-  padding: var(--space-lg) var(--space-md) var(--space-2xl);
+  max-width: var(--page-max-width-narrow);
+  margin: 0 auto;
+  padding: var(--page-padding-mobile);
+  padding-bottom: var(--space-2xl);
 }
 
 @media (min-width: 768px) {
   .page {
-    padding: var(--space-xl) var(--space-lg) var(--space-2xl);
+    padding: var(--page-padding-desktop);
+    padding-bottom: var(--space-2xl);
   }
 }
 
 .pageInner {
-  max-width: 800px;
-  margin: 0 auto;
+  /* Inner wrapper for content - no longer needs max-width since .page handles it */
 }
 
 .pageHeader {

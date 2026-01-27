@@ -244,20 +244,17 @@ export default function SavedIdeasClient() {
 
   if (loading) {
     return (
-      <div className={s.container}>
-        <div className={s.inner}>
-          <div className={s.loadingContainer}>
-            <div className={s.spinner} />
-            <p className={s.loadingText}>Loading your saved ideas...</p>
-          </div>
+      <main className={s.page}>
+        <div className={s.loadingContainer}>
+          <div className={s.spinner} />
+          <p className={s.loadingText}>Loading your saved ideas...</p>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className={s.container}>
-      <div className={s.inner}>
+    <main className={s.page}>
         {/* Header */}
         <header className={s.header}>
           <div className={s.headerTop}>
@@ -471,8 +468,7 @@ export default function SavedIdeasClient() {
 
         {/* Toast */}
         {toast && <div className={s.toast}>{toast}</div>}
-      </div>
-    </div>
+    </main>
   );
 }
 
