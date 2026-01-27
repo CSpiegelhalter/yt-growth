@@ -365,7 +365,7 @@
    CONTENT SECTIONS (SEO)
    ================================================ */
 .page {
-  max-width: var(--page-max-width-narrow);
+  max-width: var(--page-max-width);
   margin: 0 auto;
   padding: var(--page-padding-mobile);
   padding-bottom: var(--space-2xl);
