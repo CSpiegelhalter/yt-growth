@@ -1,7 +1,5 @@
 ---
-name: rule
-description: Core project mission + architecture/quality rules (always apply)
-globs: ["**/*"]
+description: 
 alwaysApply: true
 ---
 

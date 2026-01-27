@@ -121,7 +121,6 @@ export default async function LearnArticlePage({ params }: LearnArticlePageProps
         breadcrumb={breadcrumb}
         title={article.title}
         subtitle={article.metaDescription}
-        dateModified={article.dateModified}
         readingTime={article.readingTime}
         styles={heroStyles}
       />

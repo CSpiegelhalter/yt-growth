@@ -15,7 +15,6 @@ interface LearnHeroProps {
   breadcrumb: BreadcrumbItem[];
   title: string;
   subtitle: string;
-  dateModified: string;
   readingTime: string;
   styles: {
     hero: string;
@@ -31,7 +30,6 @@ export function LearnHero({
   breadcrumb,
   title,
   subtitle,
-  dateModified,
   readingTime,
   styles: s,
   children,
@@ -48,7 +46,7 @@ export function LearnHero({
       </nav>
       <h1 className={s.title}>{title}</h1>
       <p className={s.subtitle}>{subtitle}</p>
-      <ArticleMeta dateModified={dateModified} readingTime={readingTime} />
+      <ArticleMeta readingTime={readingTime} />
       {children}
     </header>
   );

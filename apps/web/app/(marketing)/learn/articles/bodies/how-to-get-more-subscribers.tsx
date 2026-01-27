@@ -1,815 +1,567 @@
 /**
- * Body content for How to Get More Subscribers article.
+ * Body content for How to Get More YouTube Subscribers article.
  * Server component - no "use client" directive.
  *
- * Refactored: Magazine-style layout with visual variety, narrative flow,
- * and no "list hell". Uses SVG diagrams, card grids, and alternating sections.
+ * Source of truth: docs/get_subs/subs_1.md ... subs_7.md
+ * Do not introduce tactics outside that knowledge base.
  */
 
 import Link from "next/link";
-import { BRAND } from "@/lib/brand";
 import type { BodyProps } from "./index";
+import { Callout } from "../../_components/Callout";
 
 export function Body({ s }: BodyProps) {
   return (
     <>
-      {/* HERO SECTION - Subscribers are a byproduct */}
+      {/* =========================================================
+          Intro
+         ========================================================= */}
       <section id="subscribers-byproduct" className="sectionOpen">
         <p className={s.sectionText} style={{ fontSize: "1.125rem" }}>
-          Every creator wants more subscribers. But here is the truth nobody
-          tells you: subscribers are not a goal you chase. They are a byproduct
-          of something else.
-        </p>
-
-        <p className="standaloneLine">
-          Subscribers happen when viewers consistently get value.
+          If you want to <strong>get more subscribers on YouTube</strong>, you'll grow faster when
+          you stop treating "subscribe" like a button you need to push and start treating it like a
+          decision a viewer makes after you've earned it. Most people don't subscribe because you
+          asked. They subscribe because they watched, felt understood, got the result they came for,
+          and then thought: "I want more of this."
         </p>
 
         <p className={s.sectionText}>
-          When someone subscribes, they are making a bet on your future content.
-          They are saying: "I trust that what you post next will be worth my
-          time." Your job is not to convince people to subscribe. Your job is to
-          be worth subscribing to.
+          That decision usually happens after a viewer watches more than one video. So this guide is
+          built around one practical goal: make it easy for the right viewer to enjoy the first
+          video, and then give them a clear reason to watch the next one. When that happens,
+          subscriptions follow naturally.
         </p>
 
-        <div className="funCallout">
-          <p className="funCallout__text">
-            This guide is not about tricks or hacks. It is about understanding
-            why people subscribe and building a channel that earns their
-            commitment.
+        <div className={s.highlight}>
+          <p>
+            <strong>The core idea:</strong> repeated viewers create subscribers. Your job is to
+            attract the same type of viewer again and again, then guide them to a second video that
+            feels like the obvious next step.
           </p>
         </div>
 
-        {/* What you'll learn - 3 item mini row */}
-        <div className="whatYoullLearn">
-          <div className="whatYoullLearn__item">
-            <WhatYoullLearnIcon />
-            <span>The psychology behind why viewers become subscribers</span>
-          </div>
-          <div className="whatYoullLearn__item">
-            <WhatYoullLearnIcon />
-            <span>Five levers you can pull to increase conversions</span>
-          </div>
-          <div className="whatYoullLearn__item">
-            <WhatYoullLearnIcon />
-            <span>A quick checklist to improve your next video</span>
-          </div>
-        </div>
+        <p className={s.sectionText}>
+          Everything below comes only from the subscriber growth notes in our docs. No generic
+          "guru" advice - just the patterns the docs emphasize: consistent viewer targeting, stronger
+          first minutes, better end-of-video routing, a channel page that passes the confidence
+          check, and a publish process that doesn't weaken your early performance signals.
+        </p>
+
+        <p className={s.sectionText}>
+          Want the broader library? Browse <Link href="/learn">all Learn guides</Link>.
+        </p>
       </section>
 
-      {/* THE SUBSCRIBER ENGINE - Visual model */}
-      <section id="subscriber-engine" className="sectionTinted">
-        <h2 className={s.sectionTitle}>The Subscriber Engine</h2>
-        <p className={s.sectionText}>
-          Subscriber growth follows a predictable path. Miss any step and the
-          engine stalls. Here is how viewers become subscribers:
-        </p>
-
-        {/* Trust Meter Visual */}
-        <div className="inlineIllustration">
-          <svg
-            width="340"
-            height="70"
-            viewBox="0 0 340 70"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            role="img"
-            aria-label="Trust meter showing viewer progression to subscriber"
-          >
-            {/* Meter background */}
-            <rect x="10" y="15" width="320" height="20" rx="10" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth="2" />
-            
-            {/* Meter fill - gradient */}
-            <defs>
-              <linearGradient id="trustGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#cbd5e1" />
-                <stop offset="50%" stopColor="#8b5cf6" />
-                <stop offset="100%" stopColor="#22c55e" />
-              </linearGradient>
-            </defs>
-            <rect x="12" y="17" width="316" height="16" rx="8" fill="url(#trustGradient)" />
-            
-            {/* Stage markers */}
-            <line x1="90" y1="12" x2="90" y2="38" stroke="#64748b" strokeWidth="1" />
-            <line x1="170" y1="12" x2="170" y2="38" stroke="#64748b" strokeWidth="1" />
-            <line x1="250" y1="12" x2="250" y2="38" stroke="#64748b" strokeWidth="1" />
-            
-            {/* Labels - well spaced */}
-            <text x="10" y="55" fontSize="10" fill="#64748b">Click</text>
-            <text x="90" y="55" textAnchor="middle" fontSize="10" fill="#64748b">Watch</text>
-            <text x="170" y="55" textAnchor="middle" fontSize="10" fill="#64748b">Return</text>
-            <text x="250" y="55" textAnchor="middle" fontSize="10" fill="#64748b">Trust</text>
-            <text x="330" y="55" textAnchor="end" fontSize="10" fontWeight="600" fill="#16a34a">Subscribe</text>
-          </svg>
-        </div>
+      {/* =========================================================
+          Audience match
+         ========================================================= */}
+      <section id="audience-match" className="sectionTinted">
+        <h2 className={s.sectionTitle}>Make every upload feel like it's for the same person</h2>
 
         <p className={s.sectionText}>
-          <strong>Click:</strong> They saw your thumbnail and title and decided
-          it was worth their time. This is packaging.
+          One of the biggest reasons channels stall is that YouTube can't confidently answer a
+          simple question: "Who is this video for?" When you consistently make videos for the same
+          type of viewer, YouTube gets better at finding that viewer and testing your next upload
+          with them. When you rotate who you're serving, the system has less confidence, and it
+          becomes harder for your videos to get momentum.
         </p>
+
         <p className={s.sectionText}>
-          <strong>Watch:</strong> They stayed because you delivered on the
-          promise. This is retention.
+          This is what our docs call audience matching. You're not matching "a niche." You're
+          matching a specific viewer: their identity, what they want, and what they struggle with.
+          When you do it well, your uploads start stacking on top of each other—because the same
+          people who liked the last one are the same people who are likely to like the next one.
         </p>
+
+        <h3 className={s.subheading}>Write an "audience sentence" you can repeat for months</h3>
+
         <p className={s.sectionText}>
-          <strong>Trust:</strong> They came back for another video, then
-          another. This is the relationship forming.
-        </p>
-        <p className={s.sectionText}>
-          <strong>Subscribe:</strong> They decided your future content is worth
-          a notification slot. This is commitment.
+          Use this format and make it concrete: "I make videos for [type of person] who wants
+          [outcome] but struggles with [problem]."
         </p>
 
-        <div className="realTalk">
-          <p className="realTalk__label">Key insight</p>
-          <p className="realTalk__text">
-            Most creators obsess over the last step (asking for subscribers)
-            while ignoring the first three. Fix the engine, and subscriptions
-            follow naturally.
-          </p>
-        </div>
-      </section>
-
-      {/* 5 REASONS PEOPLE SUBSCRIBE - Card grid */}
-      <section id="why-people-subscribe" className="sectionOpen">
-        <h2 className={s.sectionTitle}>5 Reasons People Subscribe</h2>
-        <p className={s.sectionText}>
-          Understanding why people subscribe helps you create content that
-          converts. Each reason suggests a different content strategy.
-        </p>
-
-        <div className="reasonsGrid">
-          {/* Reason 1 */}
-          <div className="reasonCard">
-            <div className="reasonCard__header">
-              <span className="reasonCard__number">1</span>
-              <h3 className="reasonCard__title">They got a win</h3>
-            </div>
-            <p className="reasonCard__looks">
-              <strong>Looks like:</strong> "This fixed my problem" or "I learned
-              something I needed"
-            </p>
-            <div className="reasonCard__action">
-              <strong>Do this:</strong>
-              <ul>
-                <li>Solve specific, searchable problems</li>
-                <li>Deliver the answer early in the video</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Reason 2 */}
-          <div className="reasonCard">
-            <div className="reasonCard__header">
-              <span className="reasonCard__number">2</span>
-              <h3 className="reasonCard__title">They trust your taste</h3>
-            </div>
-            <p className="reasonCard__looks">
-              <strong>Looks like:</strong> "I always agree with their takes" or
-              "They find the best stuff"
-            </p>
-            <div className="reasonCard__action">
-              <strong>Do this:</strong>
-              <ul>
-                <li>Share opinions, not just information</li>
-                <li>Curate, filter, and recommend</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Reason 3 */}
-          <div className="reasonCard">
-            <div className="reasonCard__header">
-              <span className="reasonCard__number">3</span>
-              <h3 className="reasonCard__title">They want the next episode</h3>
-            </div>
-            <p className="reasonCard__looks">
-              <strong>Looks like:</strong> "I need to know what happens" or
-              "This is like a show I follow"
-            </p>
-            <div className="reasonCard__action">
-              <strong>Do this:</strong>
-              <ul>
-                <li>Create series with continuity</li>
-                <li>End with open loops and teasers</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Reason 4 */}
-          <div className="reasonCard">
-            <div className="reasonCard__header">
-              <span className="reasonCard__number">4</span>
-              <h3 className="reasonCard__title">They identify with you</h3>
-            </div>
-            <p className="reasonCard__looks">
-              <strong>Looks like:</strong> "They get people like me" or "I feel
-              like I belong here"
-            </p>
-            <div className="reasonCard__action">
-              <strong>Do this:</strong>
-              <ul>
-                <li>Speak to a specific type of viewer</li>
-                <li>Build community through comments and posts</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Reason 5 */}
-          <div className="reasonCard">
-            <div className="reasonCard__header">
-              <span className="reasonCard__number">5</span>
-              <h3 className="reasonCard__title">
-                They do not want to miss updates
-              </h3>
-            </div>
-            <p className="reasonCard__looks">
-              <strong>Looks like:</strong> "They post great stuff regularly" or
-              "I check for their videos"
-            </p>
-            <div className="reasonCard__action">
-              <strong>Do this:</strong>
-              <ul>
-                <li>Post on a predictable schedule</li>
-                <li>Build expectation with series and formats</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* THE PLAYBOOK - Grouped into levers */}
-      <section id="the-playbook" className="sectionOpen">
-        <h2 className={s.sectionTitle}>The Playbook</h2>
-        <p className={s.sectionText}>
-          Instead of 25 scattered tips, here are the five levers that actually
-          move subscriber growth. Pull the one that matches your biggest
-          bottleneck.
-        </p>
-
-        {/* LEVER A: Packaging */}
-        <div className="playbookLever">
-          <h3 className="playbookLever__title" id="playbook-packaging">
-            <span className="playbookLever__letter">A</span>
-            Packaging (Get the Click)
-          </h3>
-          <p className="playbookLever__text">
-            Your thumbnail and title compete against polished creators who have
-            tested hundreds of variations. If nobody clicks, nothing else
-            matters.
-          </p>
-
-          {/* Good vs Bad Thumbnail - Visual comparison */}
-          <div className="thumbnailGallery">
-            <div className="thumbnailGallery__item thumbnailGallery__item--bad">
-              <div className="thumbnailMock thumbnailMock--bad">
-                <svg width="100%" height="100%" viewBox="0 0 80 45" fill="none">
-                  {/* Multiple small faces - cluttered */}
-                  <circle cx="15" cy="18" r="8" fill="#e2e8f0" stroke="#cbd5e1" />
-                  <circle cx="40" cy="15" r="6" fill="#e2e8f0" stroke="#cbd5e1" />
-                  <circle cx="60" cy="20" r="7" fill="#e2e8f0" stroke="#cbd5e1" />
-                  <circle cx="28" cy="30" r="5" fill="#e2e8f0" stroke="#cbd5e1" />
-                  {/* Tiny unreadable text */}
-                  <text x="40" y="40" textAnchor="middle" fontSize="4" fill="#94a3b8">tiny text nobody can read</text>
-                </svg>
-              </div>
-              <span className="thumbnailGallery__label thumbnailGallery__label--bad">
-                Cluttered, no focal point
-              </span>
-            </div>
-            <div className="thumbnailGallery__item thumbnailGallery__item--good">
-              <div className="thumbnailMock thumbnailMock--good">
-                <svg width="100%" height="100%" viewBox="0 0 80 45" fill="none">
-                  {/* Single large expressive face */}
-                  <circle cx="40" cy="20" r="14" fill="#dcfce7" stroke="#22c55e" strokeWidth="2" />
-                  {/* Eyes showing expression */}
-                  <ellipse cx="35" cy="17" rx="3" ry="4" fill="#166534" />
-                  <ellipse cx="45" cy="17" rx="3" ry="4" fill="#166534" />
-                  {/* Open mouth - surprised */}
-                  <ellipse cx="40" cy="26" rx="4" ry="3" fill="#166534" />
-                  {/* Bold readable text */}
-                  <text x="40" y="42" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#166534">CLEAR PROMISE</text>
-                </svg>
-              </div>
-              <span className="thumbnailGallery__label thumbnailGallery__label--good">
-                One face, one message
-              </span>
-            </div>
-          </div>
-
-          <p className="playbookLever__text">
-            Learn the full system in our{" "}
-            <Link href="/learn/youtube-thumbnail-best-practices">
-              thumbnail best practices guide
-            </Link>
-            .
-          </p>
-        </div>
-
-        {/* LEVER B: Retention */}
-        <div className="playbookLever">
-          <h3 className="playbookLever__title" id="playbook-retention">
-            <span className="playbookLever__letter">B</span>
-            Retention (Earn the Next Minute)
-          </h3>
-          <p className="playbookLever__text">
-            Getting a click means nothing if viewers leave in the first 30
-            seconds. The retention curve tells you exactly where you are losing
-            people.
-          </p>
-
-          {/* Retention curve illustration */}
-          <div className="inlineIllustration">
-            <svg
-              width="320"
-              height="140"
-              viewBox="0 0 320 140"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              role="img"
-              aria-label="Retention curve highlighting the critical first 30 seconds"
-            >
-              {/* Background */}
-              <rect x="40" y="20" width="260" height="80" fill="#f8fafc" rx="4" />
-
-              {/* Grid lines */}
-              <line x1="40" y1="40" x2="300" y2="40" stroke="#e2e8f0" strokeWidth="1" />
-              <line x1="40" y1="60" x2="300" y2="60" stroke="#e2e8f0" strokeWidth="1" />
-              <line x1="40" y1="80" x2="300" y2="80" stroke="#e2e8f0" strokeWidth="1" />
-
-              {/* Good retention curve */}
-              <path
-                d="M40 30 Q100 35, 160 45 Q220 55, 260 65 Q280 70, 300 75"
-                stroke="#10b981"
-                strokeWidth="3"
-                fill="none"
-              />
-
-              {/* Critical zone highlight */}
-              <rect
-                x="40"
-                y="20"
-                width="80"
-                height="80"
-                fill="#fef3c7"
-                opacity="0.3"
-              />
-              <line x1="120" y1="20" x2="120" y2="100" stroke="#f59e0b" strokeWidth="2" strokeDasharray="4" />
-
-              {/* Labels */}
-              <text x="40" y="115" fontSize="10" fill="#64748b">0:00</text>
-              <text x="120" y="115" fontSize="10" fill="#f59e0b" fontWeight="600">0:30</text>
-              <text x="290" y="115" fontSize="10" fill="#64748b">End</text>
-
-              {/* Annotation */}
-              <circle cx="80" cy="125" r="4" fill="#f59e0b" />
-              <text x="90" y="129" fontSize="9" fill="#92400e">
-                First 30 sec = make or break
-              </text>
-            </svg>
-          </div>
-
-          <div className="playbookLever__actions">
-            <strong>Do this next:</strong>
-            <ul>
-              <li>Open with the payoff or a curiosity hook, not setup</li>
-              <li>Cut anything you would skip at 2x speed</li>
-              <li>Use pattern interrupts (b-roll, graphics) to reset attention</li>
-            </ul>
-          </div>
-
-          <p className="playbookLever__text">
-            Deep dive:{" "}
-            <Link href="/learn/youtube-retention-analysis">
-              YouTube retention analysis guide
-            </Link>
-            .
-          </p>
-        </div>
-
-        {/* LEVER C: Value & Positioning */}
-        <div className="playbookLever">
-          <h3 className="playbookLever__title" id="playbook-positioning">
-            <span className="playbookLever__letter">C</span>
-            Value and Positioning (Nail Your Niche)
-          </h3>
-          <p className="playbookLever__text">
-            If your channel tries to appeal to everyone, it appeals to no one.
-            YouTube&apos;s algorithm needs to know exactly who to show your
-            videos to.
-          </p>
-
-          <div className="pullQuote" style={{ fontSize: "18px", padding: "24px 0" }}>
-            One viewer, one problem, one promise.
-          </div>
-
-          <div className="playbookLever__actions">
-            <strong>Do this next:</strong>
-            <ul>
-              <li>Write one sentence describing who your channel is for</li>
-              <li>Commit to 20 videos in a focused topic before pivoting</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* LEVER D: Community */}
-        <div className="playbookLever">
-          <h3 className="playbookLever__title" id="playbook-community">
-            <span className="playbookLever__letter">D</span>
-            Community and Belonging (Comments to Subscribers)
-          </h3>
-          <p className="playbookLever__text">
-            Comments are not just engagement metrics. They are the start of a
-            relationship. Viewers who feel part of something are more likely to
-            subscribe.
-          </p>
-
-          <div className="playbookLever__actions">
-            <strong>The flywheel:</strong>
-            <ul>
-              <li>Ask a question in your video or pinned comment</li>
-              <li>Reply to comments in the first hour</li>
-              <li>Recognize returning viewers by name</li>
-              <li>Use Community posts to keep the conversation going</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* LEVER E: Momentum */}
-        <div className="playbookLever">
-          <h3 className="playbookLever__title" id="playbook-momentum">
-            <span className="playbookLever__letter">E</span>
-            Momentum (Consistency Without Burnout)
-          </h3>
-          <p className="playbookLever__text">
-            Consistency is not about posting every day. It is about showing up
-            predictably so viewers know what to expect.
-          </p>
-
-          {/* Calendar visual */}
-          <div className="inlineIllustration">
-            <svg
-              width="280"
-              height="100"
-              viewBox="0 0 280 100"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              role="img"
-              aria-label="Calendar showing flexible but consistent posting"
-            >
-              {/* Week boxes */}
-              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-                <g key={i}>
-                  <rect
-                    x={20 + i * 36}
-                    y="30"
-                    width="32"
-                    height="32"
-                    fill={i === 1 || i === 4 ? "#dcfce7" : "#f8fafc"}
-                    stroke={i === 1 || i === 4 ? "#22c55e" : "#e2e8f0"}
-                    strokeWidth="1.5"
-                    rx="4"
-                  />
-                  <text
-                    x={36 + i * 36}
-                    y="50"
-                    textAnchor="middle"
-                    fontSize="11"
-                    fill={i === 1 || i === 4 ? "#16a34a" : "#94a3b8"}
-                  >
-                    {["M", "T", "W", "T", "F", "S", "S"][i]}
-                  </text>
-                  {(i === 1 || i === 4) && (
-                    <text
-                      x={36 + i * 36}
-                      y="72"
-                      textAnchor="middle"
-                      fontSize="16"
-                      fill="#22c55e"
-                    >
-                      ✓
-                    </text>
-                  )}
-                </g>
-              ))}
-              <text x="140" y="95" textAnchor="middle" fontSize="10" fill="#64748b">
-                Sustainable beats daily
-              </text>
-            </svg>
-          </div>
-
-          <div className="realTalk">
-            <p className="realTalk__label">Reality check</p>
-            <p className="realTalk__text">
-              One video every Tuesday beats three videos one week and nothing
-              for a month. Pick a pace you can maintain for a year.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* DECISION TREE - Tactics that move subscribers */}
-      <section id="tactics-decision-tree" className="sectionTinted">
-        <h2 className={s.sectionTitle}>What to Fix First</h2>
-        <p className={s.sectionText}>
-          Not sure where to focus? Use this decision tree to find your biggest
-          lever. Check your YouTube Analytics and follow the path that matches
-          your data.
-        </p>
-
-        <div className="diagnosisFlow">
-          <div className="diagnosisFlow__branch">
-            <h4 className="diagnosisFlow__condition">
-              <ConditionIcon />
-              If impressions are low
-            </h4>
-            <p className="diagnosisFlow__why">
-              YouTube is not showing your videos. This is a topic, niche, or SEO
-              problem.
-            </p>
-            <ul className="diagnosisFlow__actions">
-              <li>Pick a clearer niche and commit to it</li>
-              <li>Research what your audience actually searches for</li>
-            </ul>
-            <Link href="/learn/youtube-seo" className="diagnosisFlow__link">
-              Learn YouTube SEO strategies
-              <ArrowIcon />
-            </Link>
-          </div>
-
-          <div className="diagnosisFlow__branch">
-            <h4 className="diagnosisFlow__condition">
-              <ConditionIcon />
-              If CTR is below 4%
-            </h4>
-            <p className="diagnosisFlow__why">
-              People see your video but do not click. This is a packaging
-              problem.
-            </p>
-            <ul className="diagnosisFlow__actions">
-              <li>Test a completely different thumbnail style</li>
-              <li>Rewrite titles to add curiosity or clarity</li>
-            </ul>
-            <Link href="/learn/youtube-thumbnail-best-practices" className="diagnosisFlow__link">
-              Master thumbnail design
-              <ArrowIcon />
-            </Link>
-          </div>
-
-          <div className="diagnosisFlow__branch">
-            <h4 className="diagnosisFlow__condition">
-              <ConditionIcon />
-              If retention drops in the first 30 seconds
-            </h4>
-            <p className="diagnosisFlow__why">
-              Your hook is not working. Viewers click but leave immediately.
-            </p>
-            <ul className="diagnosisFlow__actions">
-              <li>Cut the intro and start with the payoff</li>
-              <li>Deliver on the thumbnail promise faster</li>
-            </ul>
-            <Link href="/learn/youtube-retention-analysis" className="diagnosisFlow__link">
-              Fix retention problems
-              <ArrowIcon />
-            </Link>
-          </div>
-
-          <div className="diagnosisFlow__branch">
-            <h4 className="diagnosisFlow__condition">
-              <ConditionIcon />
-              If returning viewers are low
-            </h4>
-            <p className="diagnosisFlow__why">
-              People watch once but do not come back. You need to build habit
-              and community.
-            </p>
-            <ul className="diagnosisFlow__actions">
-              <li>Create series content with continuity</li>
-              <li>Use end screens to direct to your next video</li>
-              <li>Engage with comments to build relationships</li>
-            </ul>
-            <Link href="/learn/youtube-channel-audit" className="diagnosisFlow__link">
-              Audit your channel for growth bottlenecks
-              <ArrowIcon />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* THE SUBSCRIBER ASK - Good vs Bad CTAs */}
-      <section id="subscriber-ask" className="sectionOpen">
-        <h2 className={s.sectionTitle}>The Subscriber Ask</h2>
-        <p className={s.sectionText}>
-          Yes, you should ask for subscribers. But there is a right way and a
-          cringe way. The difference is timing and framing.
-        </p>
-
-        <div className="comparisonGrid">
-          <div className="comparisonItem comparisonItem--bad">
-            <p className="comparisonItem__label">Weak ask (too early)</p>
-            <p className="comparisonItem__content">
-              "Before we start, make sure to smash that subscribe button..."
-            </p>
-            <p className="comparisonItem__content" style={{ marginTop: "8px", fontStyle: "italic", fontSize: "13px" }}>
-              You have not earned it yet. Viewers are skeptical before receiving
-              value.
-            </p>
-          </div>
-          <div className="comparisonItem comparisonItem--good">
-            <p className="comparisonItem__label">Strong ask (after value)</p>
-            <p className="comparisonItem__content">
-              "If this helped you understand [topic], subscribe for more
-              breakdowns like this every Tuesday."
-            </p>
-            <p className="comparisonItem__content" style={{ marginTop: "8px", fontStyle: "italic", fontSize: "13px" }}>
-              Comes after a win. Promises specific future value.
-            </p>
-          </div>
-        </div>
-
-        <h3 className={s.subheading}>When to ask</h3>
         <ul className={s.list}>
           <li>
-            <strong>After a key insight:</strong> Right after you delivered
-            something valuable, the viewer is thinking "that was useful."
+            "I make videos for new creators who want to grow a YouTube channel but struggle to
+            choose topics that people actually click."
           </li>
           <li>
-            <strong>Near the end:</strong> Viewers who made it this far are
-            engaged and more likely to convert.
+            "I make videos for busy professionals who want to get in shape but struggle to stay
+            consistent when life gets chaotic."
           </li>
           <li>
-            <strong>With a promise:</strong> Tell them what they will get by
-            subscribing, not just that they should.
+            "I make videos for beginner home cooks who want to make great dinners but struggle with
+            timing, confidence, and planning."
           </li>
         </ul>
 
-        <div className="funCallout">
-          <p className="funCallout__text">
-            The best subscribe ask does not feel like an ask. It feels like a
-            helpful reminder for viewers who already decided they want more.
-          </p>
-        </div>
-      </section>
-
-      {/* QUICK WINS CHECKLIST */}
-      <section id="subscriber-sprint" className="sectionOpen">
-        <h2 className={s.sectionTitle}>Quick Wins Checklist</h2>
         <p className={s.sectionText}>
-          Take one of your recent videos and run through this checklist. Small
-          improvements compound across your catalog.
+          The important part isn't the wording. The important part is that the same viewer should
+          happily watch your next 30 videos. If you can't imagine making 50 videos for that sentence
+          without drifting, the sentence is too broad or too vague.
         </p>
 
-        <div className="sprintSteps">
-          <div className="sprintStep">
-            <span className="sprintStep__time">1</span>
-            <div className="sprintStep__content">
-              <h4 className="sprintStep__title">Pick a recent video</h4>
-              <p className="sprintStep__why">
-                Choose something from the last 2 weeks. Fresh enough to still
-                get views, recent enough to optimize.
-              </p>
-            </div>
-          </div>
+        <h3 className={s.subheading}>Keep the viewer constant even when you change the format</h3>
 
-          <div className="sprintStep">
-            <span className="sprintStep__time">2</span>
-            <div className="sprintStep__content">
-              <h4 className="sprintStep__title">Check the thumbnail</h4>
-              <p className="sprintStep__why">
-                Does it have one clear focal point? Can you read it on mobile?
-                If not, swap it with a cleaner version.
-              </p>
-            </div>
-          </div>
+        <p className={s.sectionText}>
+          The docs frame this as "same dartboard, different darts." That means: keep the same viewer
+          and their needs constant, but change angles and formats to stay fresh. You can do a
+          tutorial one week, a breakdown the next, and a reaction the next—while still serving the
+          same person.
+        </p>
 
-          <div className="sprintStep">
-            <span className="sprintStep__time">3</span>
-            <div className="sprintStep__content">
-              <h4 className="sprintStep__title">Watch your first 30 seconds</h4>
-              <p className="sprintStep__why">
-                Does it deliver on the thumbnail promise? Is there dead time?
-                Consider using YouTube Editor to tighten it.
-              </p>
-            </div>
-          </div>
-
-          <div className="sprintStep">
-            <span className="sprintStep__time">4</span>
-            <div className="sprintStep__content">
-              <h4 className="sprintStep__title">Add an end screen</h4>
-              <p className="sprintStep__why">
-                Link to your best converting video. Verbally mention it: "If you
-                liked this, you will love this one."
-              </p>
-            </div>
-          </div>
-
-          <div className="sprintStep">
-            <span className="sprintStep__time">5</span>
-            <div className="sprintStep__content">
-              <h4 className="sprintStep__title">Pin a comment</h4>
-              <p className="sprintStep__why">
-                Ask a question that invites a reply. Engaged commenters are more
-                likely to subscribe.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="realTalk">
-          <p className="realTalk__label">Pro tip</p>
-          <p className="realTalk__text">
-            Run this sprint on your top 5 videos. The compounding effect of
-            small improvements across multiple videos adds up quickly.
+        <Callout variant="warning" title="A small topic change to you can be a big viewer change to YouTube">
+          <p>
+            A topic shift can feel minor when you're the creator—especially if the videos are "in
+            the same general niche." But if the last few uploads are aimed at different viewer
+            identities, YouTube has less confidence about who to test your next video with. And when
+            a viewer clicks your channel page, mixed audiences make it harder for them to think,
+            "This channel is for me."
           </p>
-        </div>
+        </Callout>
       </section>
 
-      {/* CTA */}
-      <div className="sectionAccent">
-        <h3 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>
-          Ready to grow your subscribers?
-        </h3>
-        <p
-          style={{
-            fontSize: "1.125rem",
-            marginBottom: "1.5rem",
-            maxWidth: "500px",
-            marginLeft: "auto",
-            marginRight: "auto",
-          }}
-        >
-          {BRAND.name} connects to your YouTube analytics and shows you exactly
-          which videos convert viewers to subscribers and why.
+      {/* =========================================================
+          Subscriber rate
+         ========================================================= */}
+      <section id="subscriber-rate" className="sectionOpen">
+        <h2 className={s.sectionTitle}>Understand what "good growth" actually looks like</h2>
+
+        <p className={s.sectionText}>
+          Subscriber growth isn't mysterious. It's math. You need enough views from the right
+          people, and you need enough of those people to decide they want to come back. That's why
+          the docs emphasize subscriber rate: it helps you see whether your videos are building an
+          audience or just collecting one-off views.
         </p>
-        <Link
-          href="/dashboard"
-          style={{
-            display: "inline-block",
-            padding: "0.875rem 2rem",
-            background: "white",
-            color: "#6366f1",
-            fontWeight: 600,
-            borderRadius: "0.5rem",
-            textDecoration: "none",
-          }}
-        >
-          Try {BRAND.name} Free
-        </Link>
-      </div>
+
+        <h3 className={s.subheading}>The number to track: subscriber rate</h3>
+
+        <div className={s.highlight}>
+          <p>
+            <strong>Subscriber rate</strong> = (subscribers gained ÷ views) × 100.
+            <br />
+            Example: 100,000 views/month at a 3% subscriber rate = 3,000 subscribers/month
+            (~100/day).
+          </p>
+        </div>
+
+        <p className={s.sectionText}>
+          The docs frame a 3% subscriber rate as "amazing," and many channels live closer to ~1% or
+          even less. The point isn't to worship a benchmark—it's to compare your own videos. Two
+          videos can get the same views and produce totally different subscriber outcomes. That
+          difference is your map.
+        </p>
+
+        <h3 className={s.subheading}>How to use it without overthinking</h3>
+
+        <ul className={s.list}>
+          <li>
+            <strong>Find your top converters:</strong> sort recent videos by subscriber rate and
+            identify the ones that turn viewers into subscribers most efficiently.
+          </li>
+          <li>
+            <strong>Ask "what promise did I keep?":</strong> look at the title/thumbnail promise and
+            the first minute. High converters usually make the right viewer feel understood quickly.
+          </li>
+          <li>
+            <strong>Repeat the win for the same viewer:</strong> don't chase a new audience because
+            one video did well. Make the next video for the same person, with a closely related
+            promise.
+          </li>
+        </ul>
+
+        <p className={s.sectionText}>
+          Subscriber rate also keeps you honest about "hot topics." A trendy upload might spike
+          views but convert poorly if it attracts people who won't care about your next video. The
+          docs warn about subscriber quality: not all subscribers help your channel equally. The
+          best subscribers are the ones who want what you plan to publish next.
+        </p>
+      </section>
+
+      {/* =========================================================
+          Title + thumbnail
+         ========================================================= */}
+      <section id="title-thumbnail" className="sectionTinted">
+        <h2 className={s.sectionTitle}>Your title and thumbnail decide whether you get a chance</h2>
+
+        <p className={s.sectionText}>
+          Before retention, before comments, before anything else—someone has to choose your video.
+          The docs repeatedly treat your title and thumbnail as the gate that decides whether
+          YouTube can even test your content properly. If you don't earn the click from the right
+          viewer, the rest of the video doesn't matter.
+        </p>
+
+        <p className={s.sectionText}>
+          This is also why "sloppy uploads" are so costly. If you publish and then "fix" the title
+          or thumbnail later, you may already have burned your earliest test with weaker signals.
+          The docs emphasize going public only when your title and thumbnail are locked.
+        </p>
+
+        <h3 className={s.subheading}>What "good" looks like in practice</h3>
+
+        <p className={s.sectionText}>
+          Good doesn't mean fancy. Good means clear and compelling at small sizes, and aligned with
+          what the video delivers. The fastest way to lose trust is to promise one thing in the
+          title/thumbnail and deliver something else in the first minute.
+        </p>
+
+        <h3 className={s.subheading}>Make one promise, then keep it</h3>
+
+        <p className={s.sectionText}>
+          Write your title and thumbnail so a viewer can answer, "What will I get from this?" in one
+          second. Then make sure the opening of the video confirms that exact promise. When the
+          promise and payoff match, you keep the right people watching—and the people who watch more
+          are the people who subscribe.
+        </p>
+
+        <Callout variant="tip" title="Lock the title and thumbnail before you go public">
+          <p>
+            The docs emphasize that YouTube starts measuring immediately. Publish after your title
+            and thumbnail are final so your first test isn't working against you.
+          </p>
+        </Callout>
+      </section>
+
+      {/* =========================================================
+          First 30 seconds
+         ========================================================= */}
+      <section id="first-30-seconds" className="sectionOpen">
+        <h2 className={s.sectionTitle}>
+          The first 30 seconds answer one question: "Did I click the right thing?"
+        </h2>
+
+        <p className={s.sectionText}>
+          A viewer clicks and immediately looks for confirmation. The docs describe this as click
+          confirmation: the viewer is checking whether the video is actually going to deliver what
+          was promised. If they feel misled—or if the intro takes too long to get to the point—they
+          leave. And early exits teach YouTube to stop pushing the video.
+        </p>
+
+        <p className={s.sectionText}>
+          This is why subscriber growth often improves when your openings improve. People don't
+          subscribe to videos they barely watched. They subscribe after they've seen enough to trust
+          you.
+        </p>
+
+        <h3 className={s.subheading}>A simple opening pattern the docs emphasize</h3>
+
+        <p className={s.sectionText}>
+          Start by naming the belief or problem your viewer already has. Then contrast it with the
+          truth your video will prove. That contrast creates curiosity and keeps the right people
+          watching long enough to get value.
+        </p>
+
+        <p className={s.sectionText}>
+          Example: "So there's an upload sequence that YouTube rewards, and there's also one that
+          kills your videos before anybody gets a chance to watch them. I wish I was joking…"
+        </p>
+
+        <h3 className={s.subheading}>Don't delay the payoff</h3>
+
+        <p className={s.sectionText}>
+          If your video promises a result, show the viewer quickly that you're actually going to
+          deliver it. You can still tell a story, but the viewer needs to feel "I'm in the right
+          place" early.
+        </p>
+
+        <Callout variant="warning" title="Long intros don't just feel annoying—they change your data">
+          <p>
+            The docs repeatedly criticize slow openings. If viewers leave early, your retention
+            drops, YouTube tests the video less, and fewer qualified viewers ever reach the
+            subscribe decision.
+          </p>
+        </Callout>
+      </section>
+
+      {/* =========================================================
+          Session depth
+         ========================================================= */}
+      <section id="session-depth" className="sectionTinted">
+        <h2 className={s.sectionTitle}>Subscriptions usually happen after video #2</h2>
+
+        <p className={s.sectionText}>
+          A viewer can enjoy a single video and still never subscribe. The docs emphasize a more
+          reliable pattern: subscriptions tend to happen after a viewer watches multiple videos and
+          decides they want your perspective again. That means your real conversion job isn't only
+          "get the subscribe." It's "earn the next view."
+        </p>
+
+        <p className={s.sectionText}>
+          When someone watches 2–3 videos, they've basically pre-qualified themselves. In their head
+          they're thinking, "I like this. I want more." Subscribing becomes the natural next step.
+        </p>
+
+        <h3 className={s.subheading}>Put "watch this next" where people actually use it</h3>
+
+        <ul className={s.list}>
+          <li>
+            <strong>End screen + a spoken pointer to one specific next video:</strong> say what the
+            next video will help them do, and tell them exactly where to click.
+          </li>
+          <li>
+            <strong>Description:</strong> link one tightly related playlist (or two max) so bingeing
+            is effortless.
+          </li>
+          <li>
+            <strong>Pinned comment:</strong> people scroll comments even when they don't
+            comment—give them a reason to click deeper.
+          </li>
+        </ul>
+
+        <Callout variant="example" title='A clean "watch next" line that does not feel pushy'>
+          <p>
+            "Now that you've got the basics, go watch the advanced version next. Click the video
+            right here—this is where most people mess it up after they learn this part."
+          </p>
+        </Callout>
+
+        <Callout variant="tip" title="Pick the best next step, not the newest upload">
+          <p>
+            The docs point out that the end screen should continue the viewer's journey. If the
+            newest upload isn't the logical next step, don't force it.
+          </p>
+        </Callout>
+      </section>
+
+      {/* =========================================================
+          Subscribe ask
+         ========================================================= */}
+      <section id="subscribe-ask" className="sectionOpen">
+        <h2 className={s.sectionTitle}>Ask after you've earned it</h2>
+
+        <p className={s.sectionText}>
+          The docs are clear: asking can help, but timing matters. If you ask before you've
+          delivered value, it feels like a stranger asking for a favor. If you ask after you've
+          helped, it feels like an invitation.
+        </p>
+
+        <h3 className={s.subheading}>Say what they'll get from future videos</h3>
+
+        <p className={s.sectionText}>
+          A good subscribe ask is specific: who it's for and what they'll gain. That clarity also
+          reinforces audience matching—because you're reminding the right viewer that this channel
+          is made for them.
+        </p>
+
+        <Callout variant="example" title="A strong subscribe ask (simple and direct)">
+          <p>
+            "If this helped you with [topic], subscribe. This channel helps [your viewer] get
+            [result] with practical breakdowns like this."
+          </p>
+        </Callout>
+
+        <p className={s.sectionText}>
+          Don't worry about placing the ask perfectly. The docs note most viewers won't notice every
+          call-to-action. Using end screens, pinned comments, and descriptions makes it more likely
+          the viewer sees at least one prompt to continue watching or subscribe.
+        </p>
+      </section>
+
+      {/* =========================================================
+          Channel page conversion
+         ========================================================= */}
+      <section id="channel-page" className="sectionTinted">
+        <h2 className={s.sectionTitle}>Your channel page is a confidence check</h2>
+
+        <p className={s.sectionText}>
+          The docs highlight something most creators underestimate: subscribers don't only come from
+          the watch page. They also come from your channel page. When a viewer likes a video, they
+          often click your profile and ask a simple question: "Do they make more videos like this?"
+          If your page answers "yes" quickly, subscriptions rise.
+        </p>
+
+        <h3 className={s.subheading}>Make the promise obvious</h3>
+
+        <p className={s.sectionText}>
+          Your banner should communicate a clear promise. The docs give a simple pattern: "If you
+          want [outcome], subscribe." That sentence should match the viewer you're targeting in your
+          videos.
+        </p>
+
+        <h3 className={s.subheading}>Use a trailer that earns the next click</h3>
+
+        <p className={s.sectionText}>
+          The docs recommend a short channel trailer for new visitors (30–60 seconds). Keep it
+          tight: who the channel is for, what they can expect, and what they'll get by subscribing.
+          No long intro. It should feel like, "You're in the right place."
+        </p>
+
+        <h3 className={s.subheading}>Organize the page so bingeing is easy</h3>
+
+        <p className={s.sectionText}>
+          Homepage playlists prove depth and reduce friction. If your channel has a clear set of
+          related videos, a viewer can watch a second video without searching.
+        </p>
+
+        <Callout variant="tip" title="Don't let settings quietly block your growth">
+          <p>
+            The docs mention verifying key channel setup items in YouTube Studio (country, phone
+            verification, feature eligibility) and turning on newer features where available (like
+            Hype). Small setup gaps can quietly limit your reach.
+          </p>
+        </Callout>
+      </section>
+
+      {/* =========================================================
+          Clean publishing
+         ========================================================= */}
+      <section id="publish-clean" className="sectionOpen">
+        <h2 className={s.sectionTitle}>Go public when everything is ready</h2>
+
+        <p className={s.sectionText}>
+          When you publish a video, YouTube starts learning immediately. The docs are blunt about
+          this: going public before your title, thumbnail, and description are ready can weaken your
+          earliest signals—and you don't always get a clean second chance later.
+        </p>
+
+        <h3 className={s.subheading}>Upload early, publish later</h3>
+
+        <p className={s.sectionText}>
+          The docs recommend uploading while the video is processing (private or unlisted), and
+          using that time to finalize the public-facing parts. Treat "publish" as the final step,
+          not the first one.
+        </p>
+
+        <h3 className={s.subheading}>The parts that must be finished before you publish</h3>
+
+        <ol className={s.numberedList}>
+          <li>
+            <strong>Title and thumbnail are final.</strong> Your earliest test depends on them.
+          </li>
+          <li>
+            <strong>The first lines of the description explain what the viewer will get.</strong>{" "}
+            YouTube uses those lines for context and search previews.
+          </li>
+          <li>
+            <strong>The video is placed into the right playlist(s) before it goes public</strong> so
+            YouTube and viewers can find related videos easily.
+          </li>
+          <li>
+            <strong>Your end screen points to the most logical next video,</strong> not
+            automatically the newest one.
+          </li>
+        </ol>
+
+        <h3 className={s.subheading}>Be present right after you publish</h3>
+
+        <p className={s.sectionText}>
+          The docs emphasize the first hour. Reply early, pin a comment that encourages replies, and
+          route people toward the next video when it makes sense. Early engagement helps the video
+          feel alive and gives viewers a reason to stick around.
+        </p>
+
+        <Callout variant="warning" title="Be careful with external promotion early">
+          <p>
+            The docs warn that posting a direct YouTube link on fast-scrolling platforms can bring
+            low-intent viewers who bounce quickly, and clicks may not get credited the way they do
+            inside YouTube. If you promote, the docs mention a safer approach: share the thumbnail
+            and tell people to search the video on YouTube. Email can be different because
+            consumption speed is slower.
+          </p>
+        </Callout>
+      </section>
+
+      {/* =========================================================
+          Topic opportunity
+         ========================================================= */}
+      <section id="topic-opportunities" className="sectionTinted">
+        <h2 className={s.sectionTitle}>Choose topics where viewers are already hungry</h2>
+
+        <p className={s.sectionText}>
+          The docs describe a practical way to grow: stop guessing what people want and start
+          looking for proof. There are topics that consistently pull big views because the demand is
+          real. Your job is to find those opportunities and make a version that serves the viewer
+          better.
+        </p>
+
+        <h3 className={s.subheading}>Use outlier videos to find demand</h3>
+
+        <p className={s.sectionText}>
+          Look for videos that perform far beyond what you'd expect based on the channel size. The
+          docs describe a "5:1" kind of signal for smaller channels: a video getting multiples more
+          views than the channel's subscribers. When you see that pattern, it often means viewers
+          want that topic badly.
+        </p>
+
+        <h3 className={s.subheading}>"Better" means clearer and more satisfying</h3>
+
+        <p className={s.sectionText}>
+          The goal is not copying. It's choosing a proven topic and executing it with a clearer
+          promise, a stronger opening, and a video that actually delivers. If you attract the right
+          viewer and keep them watching, you've created the conditions where they'll watch another
+          video—and that's where subscribers come from.
+        </p>
+
+        <Callout variant="warning" title="Don't trade long-term subscribers for a one-time spike">
+          <p>
+            The docs warn about audience drift. If a topic brings in viewers who don't care about
+            your next video, it can inflate one upload while making your next ten harder to
+            recommend. Stay aligned with the same viewer.
+          </p>
+        </Callout>
+
+        <p className={s.sectionText}>
+          Related: <Link href="/learn/youtube-competitor-analysis">competitor analysis</Link> and{" "}
+          <Link href="/learn/youtube-algorithm">how the algorithm thinks about viewers</Link>.
+        </p>
+      </section>
+
+      {/* =========================================================
+          How subscriber growth compounds
+         ========================================================= */}
+      <section id="three-this-week" className="sectionOpen">
+        <h2 className={s.sectionTitle}>How subscriber growth actually compounds</h2>
+
+        <p className={s.sectionText}>
+          The docs point to a simple reality: subscriber growth is the result of repeated good
+          experiences with the same viewer. When the same person clicks your videos, stays, watches
+          a second one, and sees a channel page that clearly fits them, subscribing becomes a
+          logical move—not something you have to force.
+        </p>
+
+        <p className={s.sectionText}>
+          If you want to diagnose why subscribers aren't rising, don't start by blaming the
+          algorithm. Start by asking where the viewer is getting lost:
+        </p>
+
+        <ul className={s.list}>
+          <li>
+            Are you attracting the right person consistently, or does each upload target a different
+            viewer?
+          </li>
+          <li>
+            Do your title and thumbnail promise something your opening actually confirms?
+          </li>
+          <li>
+            Are viewers still watching past the first 30 seconds, or are they leaving before they
+            get value?
+          </li>
+          <li>
+            When the video ends, do you give them a clear next step, or do you make them decide what
+            to do?
+          </li>
+          <li>
+            If they click your channel page, does it immediately look like "more of what I just
+            liked"?
+          </li>
+        </ul>
+
+        <p className={s.sectionText}>
+          Fixing any one of those areas can improve subscriber growth. Fixing them together is where
+          the docs suggest the biggest change happens—because each improvement makes the others more
+          effective. Better targeting brings better viewers. Better openings keep them watching.
+          Better "watch next" paths create multi-video sessions. And multi-video sessions are where
+          subscriptions become the obvious choice.
+        </p>
+
+        <p className={s.sectionText}>
+          If you want to go deeper, browse the rest of the{" "}
+          <Link href="/learn">Learn library</Link>. Next steps:{" "}
+          <Link href="/learn/youtube-thumbnail-best-practices">thumbnail best practices</Link>,{" "}
+          <Link href="/learn/youtube-seo">YouTube SEO</Link>, and{" "}
+          <Link href="/learn/youtube-channel-audit">a channel audit</Link>.
+        </p>
+      </section>
     </>
-  );
-}
-
-// Icon components
-function WhatYoullLearnIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#6366f1"
-      strokeWidth="2"
-      aria-hidden="true"
-    >
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-function ConditionIcon() {
-  return (
-    <svg
-      className="diagnosisFlow__conditionIcon"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      aria-hidden="true"
-    >
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-function ArrowIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      aria-hidden="true"
-    >
-      <line x1="5" y1="12" x2="19" y2="12" />
-      <polyline points="12 5 19 12 12 19" />
-    </svg>
   );
 }

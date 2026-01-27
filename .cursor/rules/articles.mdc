@@ -1,0 +1,159 @@
+---
+alwaysApply: true
+---
+
+# Cursor Rule: YouTube Blog Articles (Human, Specific, SEO-Strong)
+
+## Purpose
+When generating blog articles for this site, write **high-signal, human-sounding** educational content about YouTube growth (subscribers, views, retention, ideas, titles/thumbnails, analytics, strategy). The goal is: a real creator reads it and immediately knows what to do next.
+
+These articles must:
+- Teach concrete, actionable ideas (not generic motivation)
+- Be easy to scan and understand (good UX/UI writing)
+- Be SEO-friendly without keyword stuffing
+- Avoid “obvious AI” framing, filler, and jargon
+
+---
+
+## Hard Bans (Do Not Output)
+Never create headings/sections or phrases like:
+- “Levers”, “XYZ levers”, “framework”, “pillars”, “flywheel”
+- “Packaging”, “Engine”, “Checklist”
+- “Unlock”, “secret hack”, “game-changer”, “ultimate guide” (unless truly justified)
+- “In today’s digital landscape…”
+- “As an AI…”
+- Long preambles about why YouTube is important
+- Vague claims without a mechanism (“do X to grow faster” with no explanation why)
+
+If a draft contains any banned items, rewrite those sections into **plain-English, specific** headings and paragraphs.
+
+---
+
+## Voice & Tone
+- Sound like a **practicing YouTube strategist** explaining what actually works.
+- Use short sentences where possible.
+- Be direct. Prefer “Do this because…” over “Consider…”.
+- Avoid hype. Prefer measurable outcomes and tradeoffs.
+- Write for creators who want results and hate fluff.
+
+---
+
+## Article Structure Requirements (Use This Shape)
+Every article must include these parts in this order:
+
+### 1) Title (Clear benefit + specific topic)
+- Not clickbait.
+- Example pattern: “How to Increase YouTube Subscriber Rate (With Examples You Can Copy)”
+
+### 2) Opening (2–5 short paragraphs)
+Must include:
+- The problem stated plainly
+- Who the advice is for (new channel vs established)
+- What the reader will be able to do by the end
+No long stories. No rambling.
+
+### 3) Quick Definitions (Only if needed)
+If the topic uses technical terms (CTR, AVD, retention, session time), define them in 1–2 lines each. If not needed, skip.
+
+### 4) The Core Teaching (Mechanisms + Actions)
+- Use **specific subheadings** that describe real actions, not abstract categories.
+- Each section must include:
+  - What to do
+  - Why it works (the mechanism)
+  - A concrete example (title, hook script, thumbnail concept, analytics interpretation, etc.)
+  - Common mistake + how to avoid it
+
+### 5) “Do This Next” (Short action plan)
+Give a short, practical plan the reader can execute today:
+- 3–7 steps
+- Steps should be specific (e.g., “Open Analytics → Reach → sort videos by CTR and compare thumb/title pairs”)
+
+### 6) FAQ (Optional but preferred for SEO)
+- Only include questions people actually search
+- Each answer: 2–6 sentences, no fluff
+- Don’t repeat the article—add clarity or edge cases
+
+### 7) Conclusion (Short)
+- Summarize the key idea in 3–6 bullets
+- End with a single simple next action (not a generic CTA)
+
+---
+
+## UX / Readability Rules
+- Prefer scannable formatting:
+  - Short paragraphs (1–4 lines)
+  - Bullets for lists
+  - Tables only when they clarify choices (and keep them small)
+- Headings must be descriptive and non-generic.
+  - Bad: “Optimize your strategy”
+  - Good: “Rewrite your first 15 seconds to answer one question fast”
+- Add micro-examples often:
+  - Hook lines
+  - Title variations
+  - Thumbnail text options
+  - Analytics “if you see X, do Y”
+
+---
+
+## SEO Rules (Without Being Spammy)
+- Choose one primary keyword and 3–8 close variants.
+- Use the primary keyword in:
+  - Title
+  - H1
+  - First ~100 words (naturally)
+  - 1–2 subheadings if it fits
+- Add internal link placeholders like:
+  - `[Internal link: Subscriber rate calculator]`
+  - `[Internal link: How to write better hooks]`
+- Use FAQ with question-style headings (people also ask).
+- Never keyword-stuff.
+
+---
+
+## Evidence & Specificity Requirements
+- Every claim must explain a causal mechanism.
+  - Bad: “Shorter intros improve retention.”
+  - Good: “Shorter intros reduce early drop-off because viewers decide in the first 10–20 seconds whether the video matches the title/thumbnail promise.”
+- Whenever giving advice, include at least one:
+  - Example script line
+  - Example title
+  - Example thumbnail concept
+  - Example analytics interpretation
+- If mentioning metrics, include typical ranges and what they mean (with caveats).
+
+---
+
+## YouTube-Specific Guidance (Use When Relevant)
+We prioritize tactics that affect:
+- Click decision (title/thumbnail)
+- First 30 seconds retention (promise + pacing)
+- Satisfaction signals (watching another video, comments with intent, saves/shares)
+- Subscriber conversion (end screens, series, expectation-setting)
+
+Include tactical guidance on:
+- End screen strategy (specific next video selection)
+- Series positioning (“If you liked X, watch Y next”)
+- Upload consistency as quality consistency (not “post every day”)
+
+Avoid outdated myths unless debunking them with reasoning.
+
+---
+
+## Quality Gate (Must Pass Before Final Output)
+Before finishing, verify:
+- No banned headings/phrases appear
+- No section reads like generic “creator motivation”
+- Each major section has an example + mistake + fix
+- The reader can implement the advice in under 60 minutes
+- Headings are concrete and descriptive
+- The article teaches something non-obvious or at least unusually clear
+
+If any check fails, revise until it passes.
+
+---
+
+## Output Format
+- Output clean Markdown.
+- Use one H1.
+- Use H2/H3 for structure.
+- No front-matter unless explicitly requested.
