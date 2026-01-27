@@ -172,7 +172,8 @@ export const LEARN_ARTICLES = {
           "The most common causes are: weak or missing hook, content that doesn't match the title/thumbnail promise, slow or generic intros ('hey guys, welcome back'), and too much setup before delivering value. Fix these by scripting your opening and getting to the main content faster.",
       },
       {
-        question: "What's the difference between average view duration and average percentage viewed?",
+        question:
+          "What's the difference between average view duration and average percentage viewed?",
         answer:
           "Average view duration is the total time in minutes/seconds that viewers watch. Average percentage viewed is that time as a percentage of total video length. A 12-minute video with 4 minutes average view duration has about 33% average percentage viewed. Both metrics matter for different reasons.",
       },
@@ -221,13 +222,19 @@ export const LEARN_ARTICLES = {
     toc: [
       { id: "thumbnails-are-packaging", title: "Thumbnails are packaging" },
       { id: "thumbnail-formula", title: "The thumbnail formula" },
-      { id: "great-thumbnails-principles", title: "What great thumbnails have in common" },
+      {
+        id: "great-thumbnails-principles",
+        title: "What great thumbnails have in common",
+      },
       { id: "good-vs-bad-examples", title: "Examples: good vs bad" },
       { id: "playful-visuals", title: "Two quick visuals" },
       { id: "thumbnail-text", title: "Thumbnail text: when to use it" },
       { id: "color-and-composition", title: "Color strategy & composition" },
       { id: "ab-testing-and-iteration", title: "A/B testing & iteration" },
-      { id: "common-mistakes-that-kill-ctr", title: "Common mistakes that kill CTR" },
+      {
+        id: "common-mistakes-that-kill-ctr",
+        title: "Common mistakes that kill CTR",
+      },
       { id: "faq", title: "FAQ" },
     ],
     faqs: [
@@ -1001,7 +1008,7 @@ export const LEARN_ARTICLES = {
    * ==========================================================================
    * NEW SEO PAGES - Added to target additional keyword clusters
    * ==========================================================================
-   * 
+   *
    * HOW TO ADD A NEW SEO PAGE:
    * 1. Add the article config below with all required fields
    * 2. Create a body component at articles/bodies/{slug}.tsx
@@ -1065,7 +1072,8 @@ export const LEARN_ARTICLES = {
           "Optimize your title with target keywords, write detailed descriptions with relevant terms, use clear thumbnails that encourage clicks, and most importantly create content that viewers watch through to the end. High retention is the strongest ranking signal.",
       },
       {
-        question: "How long does it take to see results from YouTube promotion?",
+        question:
+          "How long does it take to see results from YouTube promotion?",
         answer:
           "Organic promotion typically shows results over weeks and months, not days. Search traffic builds as YouTube learns what your content is about. Social media spikes are fast but temporary. Focus on compounding growth from multiple sources rather than expecting overnight success.",
       },
@@ -1290,7 +1298,8 @@ export const LEARN_ARTICLES = {
           "No. Purchased subscribers are fake accounts or bots. They never watch your content, like, comment, or share. This destroys your engagement rate, which signals to YouTube that your content is not worth recommending. Fake subscribers make real growth harder.",
       },
       {
-        question: "Why do some channels seem to succeed after buying subscribers?",
+        question:
+          "Why do some channels seem to succeed after buying subscribers?",
         answer:
           "They do not. Channels with real success have genuine engagement. Some channels buy subscribers and also create good content, succeeding despite the fake subscribers, not because of them. The purchased subscribers are dead weight that hurts their recommendation potential.",
       },
@@ -1343,7 +1352,10 @@ export const LEARN_ARTICLES = {
       { id: "common-scenarios", title: "Common Scenarios and Outcomes" },
       { id: "legitimate-alternatives", title: "Legitimate Alternatives" },
       { id: "recovery-checklist", title: "Recovery Checklist" },
-      { id: "before-after-example", title: "Example: Packaging Fix vs Buying Views" },
+      {
+        id: "before-after-example",
+        title: "Example: Packaging Fix vs Buying Views",
+      },
       { id: "first-30-seconds", title: "Quick Win: Fix Your First 30 Seconds" },
       { id: "faq", title: "FAQ" },
     ],
@@ -1591,7 +1603,8 @@ export const LEARN_ARTICLES = {
           "Tags have minimal impact on YouTube ranking. YouTube's own documentation says tags are most useful for commonly misspelled words. Your title, thumbnail, and retention matter far more for discovery. Spend 30 seconds on tags and focus your optimization effort elsewhere.",
       },
       {
-        question: "What is the difference between tags and hashtags on YouTube?",
+        question:
+          "What is the difference between tags and hashtags on YouTube?",
         answer:
           "Tags are hidden metadata that help YouTube categorize your video. Hashtags appear visibly above your video title and in the description. Hashtags are clickable and link to a results page. Both have limited SEO impact; focus on content quality instead.",
       },
@@ -1697,71 +1710,158 @@ export const LEARN_ARTICLES = {
     shortTitle: "Shorts Monetization",
     navLabel: "Shorts Money",
     description:
-      "Learn how YouTube Shorts monetization works in 2026. Covers the Shorts revenue model, eligibility requirements, earning potential, and strategies to maximize income.",
+      "Learn how YouTube Shorts monetization works in 2026. Covers eligibility requirements, the revenue model, earning before full ads eligibility, and how to create Shorts that perform.",
     metaDescription:
-      "YouTube Shorts monetization guide for 2026. Understand the revenue model, eligibility requirements, earning potential, and how to maximize your Shorts income.",
+      "YouTube Shorts monetization guide for 2026. Understand eligibility tiers, the pooled revenue model, how music affects earnings, and actionable strategies to earn from Shorts.",
     datePublished: "2026-01-20",
-    dateModified: "2026-01-20",
-    readingTime: "10 min read",
+    dateModified: "2026-01-26",
+    readingTime: "14 min read",
     category: "Monetization",
     keywords: [
       "youtube shorts monetization",
       "shorts revenue",
       "make money from shorts",
       "youtube shorts earnings",
-      "shorts fund",
       "shorts partner program",
+      "shorts eligibility",
+      "youtube shorts tips",
     ],
     toc: [
       { id: "overview", title: "How Shorts Monetization Works" },
       { id: "eligibility", title: "Eligibility Requirements" },
       { id: "revenue-model", title: "The Shorts Revenue Model" },
-      { id: "earning-potential", title: "Realistic Earning Potential" },
-      { id: "maximizing-earnings", title: "Maximizing Your Earnings" },
-      { id: "shorts-vs-long", title: "Shorts vs Long-Form Revenue" },
-      { id: "strategy", title: "Shorts Monetization Strategy" },
+      { id: "music-impact", title: "How Music Affects Earnings" },
+      { id: "original-content", title: "Original and Transformative Content" },
+      { id: "fastest-to-earn", title: "Earning While You Grow" },
+      { id: "how-to-start", title: "How to Start Monetizing" },
+      { id: "ineligible-views", title: "Views That Don't Count" },
+      { id: "next-steps", title: "Next Steps" },
       { id: "faq", title: "FAQ" },
     ],
     faqs: [
       {
         question: "How does YouTube Shorts monetization work?",
         answer:
-          "Shorts earn from ads shown between videos in the Shorts feed. Revenue is pooled and distributed based on your share of total Shorts views and the music used in your videos. This differs from long-form videos where ads play on your specific content.",
+          "Shorts earn from ads shown between videos in the Shorts feed. Revenue is pooled monthly and distributed based on your share of total eligible engaged views and the music used in your videos. After the music split, you receive 45% of your allocated amount. This differs from long-form videos where ads play on your specific content.",
       },
       {
         question: "What are the requirements to monetize YouTube Shorts?",
         answer:
-          "Join the YouTube Partner Program with either 1,000 subscribers plus 10 million Shorts views in 90 days, or 1,000 subscribers plus 4,000 watch hours on long-form content. Once in the program, Shorts monetization is automatically enabled.",
+          "Join the YouTube Partner Program with either 1,000 subscribers plus 10 million public Shorts views in 90 days, or 1,000 subscribers plus 4,000 public watch hours in 12 months. After approval, you must separately accept the Shorts Monetization Module. Revenue sharing starts from the acceptance date.",
       },
       {
-        question: "How much do YouTube Shorts pay per 1,000 views?",
+        question: "Can I earn from Shorts before full YPP eligibility?",
         answer:
-          "Shorts typically pay $0.01 to $0.05 per 1,000 views, much lower than long-form content. Rates vary based on viewer location, time of year, and music usage. High volume is needed to generate meaningful Shorts revenue.",
+          "Not from ad revenue, but yes through other income streams. You can use affiliate links, sell digital products, offer services, or do UGC work for brands from day one. At 500 subscribers plus 3,000 watch hours or 3 million Shorts views, some regions unlock Super Thanks, memberships, and Shopping features.",
       },
       {
         question: "Why do Shorts pay less than regular videos?",
         answer:
-          "Shorts are short, so there is less ad inventory per video. Ads appear between Shorts rather than during them. Revenue is shared across all Shorts creators. The format is designed for volume and discovery rather than per-video monetization.",
-      },
-      {
-        question: "Can I make money from Shorts without the Partner Program?",
-        answer:
-          "Not directly through YouTube ad revenue. However, you can use Shorts to drive traffic to monetized long-form content, grow your audience for sponsorships, or promote products and services. Shorts work best as a growth tool rather than a primary income source.",
+          "Shorts have less ad inventory since ads appear between videos rather than during them. Revenue is pooled across all creators and split based on view share. The format emphasizes volume and discovery over per-video monetization. Music usage also reduces the portion that goes to the Creator Pool.",
       },
       {
         question: "Does using music affect my Shorts earnings?",
         answer:
-          "Yes. If your Short uses licensed music from YouTube's library, a portion of revenue goes to music rights holders. Original audio Shorts keep more of the revenue. Consider using original audio or royalty-free music for better earnings.",
+          "Yes. If your Short uses licensed music from YouTube's library, the revenue associated with that Short splits between the Creator Pool and music rights holders. One track means 50% goes to music licensing. Two tracks means 67% goes to music. Original audio keeps 100% in the Creator Pool.",
       },
       {
-        question: "How do I maximize my YouTube Shorts earnings?",
+        question: "What views are excluded from Shorts revenue?",
         answer:
-          "Create high-volume, engaging content that gets views. Use original audio when possible. Post consistently to build momentum. Drive viewers to longer monetized content. Think of Shorts as part of a broader strategy rather than a standalone income source.",
+          "Non-original content, artificial or fake views, content that is not advertiser-friendly, and Shorts over one minute with claimed music are all excluded from revenue calculations. Views must be eligible engaged views to count toward your share of the pool.",
+      },
+      {
+        question: "How do I maximize my YouTube Shorts performance?",
+        answer:
+          "Focus on strong hooks in the first 1-2 seconds, use pattern interrupts to maintain attention, cut all dead air, and create loop-friendly endings. Build recognizable series formats and post consistently. Test original audio versus trending sounds to see what works for your niche.",
       },
       {
         question: "Should I focus on Shorts or long-form videos for income?",
         answer:
-          "Long-form videos typically generate more revenue per view. Shorts excel at discovery and audience growth. The best strategy combines both: use Shorts to attract new viewers, then convert them to long-form content where you earn more per view.",
+          "Long-form videos typically generate more revenue per view. Shorts excel at discovery and audience growth. Many creators use Shorts to attract new viewers and build an audience, then drive those viewers to long-form content or their own products and services.",
+      },
+    ],
+  },
+  "youtube-shorts-strategy": {
+    slug: "youtube-shorts-strategy",
+    title:
+      "YouTube Shorts Strategy: Find Niches, Study Competitors, Ship Better Shorts (2026)",
+    shortTitle: "Shorts Strategy",
+    navLabel: "Shorts Strategy",
+    description:
+      "A practical playbook for YouTube Shorts creators. Learn how to discover promising niches, mine competitor patterns, generate ideas from real data, and create Shorts with stronger hooks and better retention.",
+    metaDescription:
+      "YouTube Shorts strategy guide for 2026. Discover niches, study competitor patterns, generate video ideas, and create Shorts with better hooks and retention using data-driven workflows.",
+    datePublished: "2026-01-26",
+    dateModified: "2026-01-26",
+    readingTime: "24 min read",
+    category: "Strategy",
+    keywords: [
+      "youtube shorts strategy",
+      "shorts niche discovery",
+      "youtube shorts ideas",
+      "shorts competitor analysis",
+      "youtube shorts hooks",
+      "shorts retention",
+      "youtube shorts growth",
+      "how to make youtube shorts",
+      "youtube trending topics",
+      "shorts trend strategy",
+      "find trending youtube topics",
+    ],
+    toc: [
+      { id: "overview", title: "The Shorts Strategy Playbook" },
+      { id: "niche-discovery", title: "Module 1: Niche Discovery" },
+      { id: "trend-driven-shorts", title: "Module 2: Trend-Driven Shorts" },
+      {
+        id: "competitor-patterns",
+        title: "Module 3: Competitor Pattern Mining",
+      },
+      { id: "idea-generation", title: "Module 4: Idea Generation" },
+      { id: "packaging", title: "Module 5: Packaging for Shorts" },
+      { id: "metadata", title: "Module 6: Titles, Tags, and Metadata" },
+      { id: "publishing", title: "Sustainable Publishing" },
+      { id: "faq", title: "FAQ" },
+    ],
+    faqs: [
+      {
+        question: "How do I find a good niche for YouTube Shorts?",
+        answer:
+          "Start by scrolling Shorts in incognito mode and noticing which formats consistently get engagement. Look for patterns you could replicate with your own angle. Good niches have repeatable content formats, clear audience, manageable production effort, and room for a unique perspective.",
+      },
+      {
+        question: "How do I study competitors without copying them?",
+        answer:
+          "Analyze what patterns work (hook styles, pacing, topics, series formats) rather than copying specific videos. Identify one element you could adopt and one you could improve. The goal is to understand why content performs, not to recreate it exactly.",
+      },
+      {
+        question: "What makes a good Shorts hook?",
+        answer:
+          "A good hook grabs attention in the first 1-2 seconds, creates curiosity or stakes, and promises value. Skip intros and get straight to the point. Show movement, make a bold claim, or create visual intrigue immediately.",
+      },
+      {
+        question: "How often should I post YouTube Shorts?",
+        answer:
+          "Consistency matters more than volume. 3-5 Shorts per week is a sustainable baseline for most creators. Batch filming and editing helps maintain quality while staying consistent. Focus on improving each Short rather than posting more.",
+      },
+      {
+        question: "Do tags really matter for YouTube Shorts?",
+        answer:
+          "Tags are a minor ranking signal compared to retention and engagement. They help YouTube understand your content context but are not a magic growth lever. Focus on strong hooks and retention first, then optimize tags as a supporting element.",
+      },
+      {
+        question: "How do I improve retention on my Shorts?",
+        answer:
+          "Use pattern interrupts every 1-2 seconds (cuts, zooms, text changes), cut all dead air, deliver value quickly, and create loop-friendly endings. Script your opening carefully since most drop-offs happen in the first few seconds.",
+      },
+      {
+        question: "Should I use trending sounds or original audio?",
+        answer:
+          "Test both and let your data decide. Trending sounds can boost reach during the growth phase. Original audio (voiceover, talking head) keeps more revenue in your pocket once monetized and builds recognizable brand voice.",
+      },
+      {
+        question: "How do I generate video ideas consistently?",
+        answer:
+          "Mine comments for questions your audience asks repeatedly. Remix working formats with new topics. Think in series of 10 episodes from one premise. Study competitor videos that overperform and identify the underlying audience demand.",
       },
     ],
   },
@@ -1843,7 +1943,7 @@ export const LEARN_ARTICLES = {
 
 /**
  * Array version for iteration (nav, sitemap, card grids)
- * 
+ *
  * ctaLabel is generated from shortTitle to ensure descriptive anchor text
  * for SEO and AI search indexability. Pattern: "Read {topic} guide"
  */
@@ -1925,18 +2025,23 @@ export function generateLearnArticleSchema(article: LearnArticle) {
  */
 export function getRelatedArticles(
   currentSlug: string,
-  options: { limit?: number } = {}
+  options: { limit?: number } = {},
 ) {
   const { limit = 6 } = options;
-  const currentArticle = LEARN_ARTICLES[currentSlug as keyof typeof LEARN_ARTICLES];
+  const currentArticle =
+    LEARN_ARTICLES[currentSlug as keyof typeof LEARN_ARTICLES];
   const currentCategory = currentArticle?.category;
 
   // Filter out current article
   const otherArticles = learnArticles.filter((a) => a.slug !== currentSlug);
 
   // Split into same category and different category
-  const sameCategory = otherArticles.filter((a) => a.category === currentCategory);
-  const differentCategory = otherArticles.filter((a) => a.category !== currentCategory);
+  const sameCategory = otherArticles.filter(
+    (a) => a.category === currentCategory,
+  );
+  const differentCategory = otherArticles.filter(
+    (a) => a.category !== currentCategory,
+  );
 
   // Popular guides to fill remaining slots (high-value, cross-category appeal)
   // Ordered by general usefulness/traffic potential
@@ -1961,8 +2066,7 @@ export function getRelatedArticles(
   const popularPicks = popularSlugs
     .filter(
       (slug) =>
-        slug !== currentSlug &&
-        !sameCategoryPicks.some((a) => a.slug === slug)
+        slug !== currentSlug && !sameCategoryPicks.some((a) => a.slug === slug),
     )
     .slice(0, remainingSlots)
     .map((slug) => differentCategory.find((a) => a.slug === slug))
@@ -1976,7 +2080,7 @@ export function getRelatedArticles(
           .filter(
             (a) =>
               !popularPicks.some((p) => p.slug === a.slug) &&
-              !sameCategoryPicks.some((s) => s.slug === a.slug)
+              !sameCategoryPicks.some((s) => s.slug === a.slug),
           )
           .slice(0, stillNeeded)
       : [];

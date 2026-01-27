@@ -139,6 +139,13 @@ export function NavIcon({ type, size = 20, className }: NavIconProps) {
           <polyline points="21 15 16 10 5 21" />
         </svg>
       );
+    case "search":
+      return (
+        <svg {...props}>
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+      );
     default:
       return null;
   }

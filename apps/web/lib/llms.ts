@@ -37,12 +37,6 @@ export const LLMS_TOOLS = [
     requiresLogin: true,
   },
   {
-    name: "Video Ideas Generator",
-    path: "/ideas",
-    description: "Get data-driven video ideas based on trending topics in your niche and what's working for similar channels.",
-    requiresLogin: true,
-  },
-  {
     name: "Competitor Analysis",
     path: "/competitors",
     description: "Analyze competitor channels to find outlier videos, trending topics, and successful title/thumbnail patterns.",
@@ -87,6 +81,21 @@ export const LLMS_PUBLIC_PAGES = [
     name: "Learn Hub",
     path: "/learn",
     description: "Collection of in-depth YouTube growth guides and tutorials.",
+  },
+  {
+    name: "YouTube Video Ideas Generator",
+    path: "/ideas",
+    description: "Free tool to generate data-driven YouTube video ideas based on trending topics, search demand, and what's working in your niche.",
+  },
+  {
+    name: "YouTube Keyword Research Tool",
+    path: "/keywords",
+    description: "Free keyword research tool to find high-volume, low-competition YouTube keywords with search volume and competition data.",
+  },
+  {
+    name: "YouTube Tags Hub",
+    path: "/tags",
+    description: "Collection of free YouTube tag tools including tag generator and tag extractor.",
   },
   {
     name: "YouTube Tag Finder",

@@ -1,0 +1,1094 @@
+/**
+ * Thumbnail Editor Styles
+ * 
+ * Photoshop-inspired layout:
+ * - Top bar: undo/redo, zoom, export
+ * - Left toolbar: tools
+ * - Center: canvas
+ * - Right: properties panel
+ */
+
+/* ============================================================================
+   LAYOUT
+   ============================================================================ */
+
+.editorLayout {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 56px 1fr 300px;
+  grid-template-areas:
+    "topbar topbar topbar"
+    "toolbar canvas properties";
+  height: 100vh;
+  height: 100dvh;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .editorLayout {
+    grid-template-columns: 48px 1fr 260px;
+  }
+}
+
+@media (max-width: 768px) {
+  .editorLayout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      "topbar"
+      "canvas"
+      "toolbar";
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+/* ============================================================================
+   TOP BAR
+   ============================================================================ */
+
+.topBar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  min-height: 48px;
+}
+
+.topBarLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.topBarCenter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  justify-content: center;
+}
+
+.topBarRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: all 0.15s ease;
+}
+
+.backButton:hover {
+  color: var(--text);
+  background: var(--surface-alt);
+}
+
+.backButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.topBarDivider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
+
+.title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text);
+  margin: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .topBar {
+    padding: var(--space-2) var(--space-3);
+  }
+  
+  .backButton span,
+  .topBarDivider {
+    display: none;
+  }
+  
+  .title {
+    font-size: var(--text-sm);
+  }
+  
+  .topBarCenter {
+    display: none;
+  }
+}
+
+/* Button group */
+.buttonGroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface-alt);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+/* Icon button */
+.iconButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.iconButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.iconButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Text button */
+.textButton {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.textButton:hover {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.textButton.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary);
+}
+
+/* Zoom slider */
+.zoomSliderWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.zoomSlider {
+  width: 80px;
+  height: 4px;
+  appearance: none;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.zoomSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.zoomLabel {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Export button */
+.exportButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--primary-contrast);
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.exportButton:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.exportButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.exportButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.exportButtonSecondary {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.exportButtonSecondary:hover:not(:disabled) {
+  border-color: var(--border-hover);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+   LEFT TOOLBAR
+   ============================================================================ */
+
+.toolbar {
+  grid-area: toolbar;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: row;
+    justify-content: center;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    padding: var(--space-2) var(--space-3);
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+}
+
+.toolButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 44px;
+  min-height: 44px;
+  padding: var(--space-1);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toolButton:hover:not(:disabled) {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.toolButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toolButtonActive {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary);
+}
+
+.toolButtonActive:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--primary);
+}
+
+.toolButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.toolLabel {
+  font-size: 9px;
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.toolDivider {
+  width: 32px;
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-1) 0;
+}
+
+@media (max-width: 768px) {
+  .toolDivider {
+    width: 1px;
+    height: 32px;
+    margin: 0 var(--space-1);
+  }
+  
+  .toolLabel {
+    display: none;
+  }
+  
+  .toolButton {
+    width: 40px;
+    min-height: 40px;
+  }
+}
+
+/* ============================================================================
+   CANVAS AREA
+   ============================================================================ */
+
+.canvasArea {
+  grid-area: canvas;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  overflow: hidden;
+  position: relative;
+}
+
+.canvasContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: var(--space-4);
+  position: relative;
+}
+
+.canvasWrapper {
+  background: #2a2a2a;
+  border-radius: var(--radius-lg);
+  box-shadow: 
+    0 0 0 1px rgba(255,255,255,0.05),
+    0 20px 60px rgba(0,0,0,0.5);
+  overflow: hidden;
+  position: relative;
+}
+
+.canvasLoading,
+.canvasError {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: rgba(26, 26, 26, 0.9);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  z-index: 10;
+}
+
+.canvasError {
+  color: var(--danger);
+}
+
+.canvasError small {
+  font-size: var(--text-xs);
+  opacity: 0.7;
+  max-width: 80%;
+  text-align: center;
+  word-break: break-all;
+}
+
+.canvasSpinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.canvasInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* ============================================================================
+   PROPERTIES PANEL
+   ============================================================================ */
+
+.propertiesPanel {
+  grid-area: properties;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  padding: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .propertiesPanel {
+    display: none;
+  }
+}
+
+.propSection {
+  margin-bottom: var(--space-4);
+}
+
+.propSectionTitle {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.propRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  min-height: 32px;
+}
+
+.propLabel {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.propControl {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* Inputs */
+.numberInput {
+  width: 64px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-align: right;
+}
+
+.numberInput:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.textArea {
+  width: 100%;
+  padding: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+.textArea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.select {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.slider {
+  width: 100%;
+  height: 4px;
+  appearance: none;
+  background: var(--border);
+  border-radius: var(--radius-full);
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.readOnly {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* Color input */
+.colorInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.colorInput {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.colorInput::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.colorInput::-webkit-color-swatch {
+  border: none;
+}
+
+.colorPresets {
+  display: flex;
+  gap: 4px;
+}
+
+.colorPreset {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.colorPreset:hover {
+  transform: scale(1.1);
+}
+
+/* Toggle */
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.toggle input {
+  display: none;
+}
+
+.toggleTrack {
+  width: 36px;
+  height: 20px;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.toggleTrack::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.toggle input:checked + .toggleTrack {
+  background: var(--primary);
+}
+
+.toggle input:checked + .toggleTrack::after {
+  transform: translateX(16px);
+}
+
+.toggleLabel {
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+/* Inline controls */
+.inlineControls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+}
+
+.presetButtons {
+  display: flex;
+  gap: 2px;
+}
+
+.presetBtn {
+  padding: 2px 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.presetBtn:hover {
+  color: var(--text);
+  border-color: var(--border-hover);
+}
+
+.presetBtn.active {
+  color: var(--primary);
+  background: rgba(59, 130, 246, 0.1);
+  border-color: var(--primary);
+}
+
+/* Style presets */
+.stylePresets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.stylePresetBtn {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stylePresetBtn:hover {
+  color: var(--text);
+  border-color: var(--border-hover);
+}
+
+.stylePresetBtn.active {
+  color: var(--primary);
+  background: rgba(59, 130, 246, 0.1);
+  border-color: var(--primary);
+}
+
+/* Fit buttons */
+.fitButtons {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.fitBtn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fitBtn:hover {
+  color: var(--text);
+  border-color: var(--border-hover);
+}
+
+.fitBtn svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Layer list */
+.layerList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.layerItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface-alt);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.layerItem:hover {
+  background: var(--bg);
+}
+
+.layerItemActive {
+  border-color: var(--primary);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.layerIcon {
+  font-size: var(--text-sm);
+  opacity: 0.6;
+}
+
+.layerName {
+  font-size: var(--text-xs);
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layerEmpty {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-align: center;
+  padding: var(--space-3);
+}
+
+/* Layer actions */
+.layerActions {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.layerActionBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.layerActionBtn:hover {
+  color: var(--text);
+  border-color: var(--border-hover);
+}
+
+.layerActionBtn.danger:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ============================================================================
+   MOBILE BOTTOM SHEET (for properties on mobile)
+   ============================================================================ */
+
+.mobilePropertiesSheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--surface);
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.3);
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--space-4);
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0));
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.mobilePropertiesSheet.open {
+  transform: translateY(0);
+}
+
+.mobileSheetOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.mobileSheetOverlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (min-width: 769px) {
+  .mobilePropertiesSheet,
+  .mobileSheetOverlay {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   IMPROVED SLIDER INPUT
+   ============================================================================ */
+
+.sliderWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 120px;
+}
+
+.sliderInput {
+  flex: 1;
+  height: 6px;
+  appearance: none;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.sliderInput::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.sliderInput::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.sliderValue {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  min-width: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================================
+   IMPROVED COLOR PICKER
+   ============================================================================ */
+
+.colorPickerTrigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.colorSwatch {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+}
+
+.hexInput {
+  width: 80px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-family: monospace;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.hexInput:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.colorPickerDropdown {
+  position: absolute;
+  right: var(--space-3);
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  z-index: 100;
+}
+
+.colorInputLarge {
+  width: 200px;
+  height: 150px;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+}
+
+.colorInputLarge::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.colorInputLarge::-webkit-color-swatch {
+  border: none;
+  border-radius: var(--radius-md);
+}
+
+.colorPresetsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-1);
+}
+
+.colorPresetLarge {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.colorPresetLarge:hover {
+  transform: scale(1.1);
+  z-index: 1;
+}
+
+/* ============================================================================
+   TEXT ALIGNMENT BUTTONS
+   ============================================================================ */
+
+.alignButtons {
+  display: flex;
+  gap: 2px;
+  background: var(--surface-alt);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.alignBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.alignBtn:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.alignBtn.active {
+  color: var(--primary);
+  background: var(--surface);
+}
+
+.alignBtn svg {
+  width: 16px;
+  height: 16px;
+}

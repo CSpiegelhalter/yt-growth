@@ -8,7 +8,9 @@ import { CANONICAL_ORIGIN } from "@/lib/brand";
  * for routes that should not be crawled:
  * - /api/ - API endpoints
  * - /auth/ - Login, signup, password reset flows
- * - All logged-in app routes (dashboard, profile, ideas, etc.)
+ * - Private app routes that require login (dashboard, profile, competitors, etc.)
+ *
+ * Public SEO tool pages (/ideas, /keywords, /tags/*) are intentionally ALLOWED.
  *
  * Note: All disallowed routes also have noindex metadata as a defense-in-depth.
  * Sitemap URL uses the canonical www origin for consistency.
@@ -33,7 +35,6 @@ export default function robots(): MetadataRoute.Robots {
           // Private app pages (require login, noindex set on pages)
           "/dashboard/",
           "/profile/",
-          "/ideas/",
           "/goals/",
           "/subscriber-insights/",
           "/competitors/",
@@ -45,6 +46,7 @@ export default function robots(): MetadataRoute.Robots {
           "/admin/",
           // Internal integrations
           "/integrations/",
+          // Note: /ideas, /keywords, and /tags/* are PUBLIC SEO pages - intentionally NOT disallowed
         ],
       },
     ],

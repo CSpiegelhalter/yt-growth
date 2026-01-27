@@ -1,26 +1,74 @@
+/**
+ * YouTube Thumbnail Editor
+ * 
+ * A Photoshop-inspired canvas editor for creating YouTube thumbnails.
+ * 
+ * Architecture:
+ * - Built with Konva.js (react-konva) for canvas rendering
+ * - Fixed 16:9 aspect ratio (1280x720 export size)
+ * - Modular component structure:
+ *   - TopBar: undo/redo, zoom controls, export
+ *   - Toolbar: tool selection (select, pan, text, arrow, shapes, image)
+ *   - EditorCanvas: main canvas with pan/zoom
+ *   - PropertiesPanel: context-sensitive property editing
+ *   - layers/*: individual layer type renderers
+ * 
+ * Key features:
+ * - Smooth pan (spacebar) and zoom (mouse wheel)
+ * - Text with font, stroke, shadow, background pill options
+ * - Arrows with style presets, outline, shadow/glow
+ * - Images with cover/contain fit options
+ * - Shapes (ellipse, rectangle, triangle)
+ * - Undo/redo with command stack
+ * - Export to PNG/JPG at exact 1280x720
+ * 
+ * State management:
+ * - EditorDocument: persisted document state (settings + objects)
+ * - EditorUIState: transient UI state (selection, zoom, pan, tool)
+ * - History: undo/redo stack with max 50 entries
+ */
+
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Stage,
-  Layer,
-  Image as KonvaImage,
-  Text,
-  Line,
-  Arrow,
-  Ellipse,
-  Circle,
-  RegularPolygon,
-  Transformer,
-} from "react-konva";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type Konva from "konva";
-import s from "./ThumbnailEditorClient.module.css";
 import { useToast } from "@/components/ui/Toast";
 import {
-  defaultEditorState,
-  editorStateV1Schema,
-  type EditorStateV1,
-} from "@/lib/thumbnails-v2/editorState";
+  TopBar,
+  Toolbar,
+  EditorCanvas,
+  exportCanvas,
+  PropertiesPanel,
+  useEditorHistory,
+  migrateFromV1,
+  convertToV1,
+  generateId,
+  getNextZIndex,
+  fitImageContain,
+  centerInCanvas,
+  DEFAULT_TEXT,
+  DEFAULT_ARROW,
+  DEFAULT_SHAPE,
+  DEFAULT_IMAGE,
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  ALLOWED_IMAGE_TYPES,
+  MAX_IMAGE_SIZE_MB,
+  GOOGLE_FONTS,
+} from "./components";
+import type {
+  EditorDocument,
+  EditorObject,
+  TextObject,
+  ArrowObject,
+  ShapeObject,
+  ImageObject,
+  ToolMode,
+  DocumentSettings,
+} from "./components/types";
+import s from "./components/editor.module.css";
 
 type Props = {
   projectId: string;
@@ -29,237 +77,55 @@ type Props = {
   initialExports: unknown;
 };
 
-type ObjBase = {
-  id: string;
-  type: "text" | "arrow" | "ellipse" | "image";
-  x: number;
-  y: number;
-  rotation: number;
-  zIndex: number;
-};
-
-type TextObj = ObjBase & {
-  type: "text";
-  text: string;
-  fontFamily: string;
-  fontSize: number;
-  fontWeight: string;
-  fill: string;
-  stroke: string;
-  strokeWidth: number;
-  shadowColor?: string;
-  shadowBlur?: number;
-  shadowOffsetX?: number;
-  shadowOffsetY?: number;
-};
-
-type ArrowObj = ObjBase & {
-  type: "arrow";
-  mode: "straight" | "curved" | "path";
-  points: number[]; // straight: [x1,y1,x2,y2], curved: [x1,y1,cx,cy,x2,y2], path: [x1,y1,x2,y2,...]
-  color: string;
-  thickness: number;
-  dashed?: boolean;
-};
-
-type EllipseObj = ObjBase & {
-  type: "ellipse";
-  radiusX: number;
-  radiusY: number;
-  stroke: string;
-  strokeWidth: number;
-  fill?: string;
-  dashed?: boolean;
-};
-
-type ImageObj = ObjBase & {
-  type: "image";
-  width: number;
-  height: number;
-  srcUrl: string;
-  opacity?: number;
-};
-
-type AnyObj = TextObj | ArrowObj | EllipseObj | ImageObj;
-
-function normalizeInitialState(raw: unknown): EditorStateV1 {
-  const parsed = editorStateV1Schema.safeParse(raw);
-  return parsed.success ? parsed.data : defaultEditorState();
-}
-
-function objLabel(o: AnyObj): string {
-  if (o.type === "text") return `Text: ${(o.text || "").slice(0, 18) || "…"}`;
-  if (o.type === "arrow") return `Arrow (${o.mode})`;
-  if (o.type === "ellipse") return "Ellipse";
-  return "Image";
-}
-
-function useHtmlImage(src: string) {
-  const [img, setImg] = useState<HTMLImageElement | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  
-  useEffect(() => {
-    if (!src) {
-      setError("No image URL provided");
-      return;
-    }
-    setImg(null);
-    setError(null);
-    
-    const i = new window.Image();
-    i.crossOrigin = "anonymous";
-    i.onload = () => {
-      setImg(i);
-      setError(null);
-    };
-    i.onerror = () => {
-      // Retry without crossOrigin for external URLs that don't support CORS
-      const retry = new window.Image();
-      retry.onload = () => {
-        setImg(retry);
-        setError(null);
-      };
-      retry.onerror = () => {
-        setError(`Failed to load image: ${src.slice(0, 50)}...`);
-      };
-      retry.src = src;
-    };
-    i.src = src;
-  }, [src]);
-  
-  return { img, error };
-}
-
-function EditorImageNode(props: {
-  obj: ImageObj;
-  isSelected: boolean;
-  onSelect: () => void;
-  onChange: (patch: Partial<ImageObj>) => void;
-}) {
-  const { img: overlay } = useHtmlImage(props.obj.srcUrl);
-  return (
-    <KonvaImage
-      id={props.obj.id}
-      image={overlay ?? undefined}
-      x={props.obj.x}
-      y={props.obj.y}
-      width={props.obj.width}
-      height={props.obj.height}
-      rotation={props.obj.rotation}
-      opacity={props.obj.opacity ?? 1}
-      draggable
-      onClick={props.onSelect}
-      onTap={props.onSelect}
-      onDragEnd={(e) => props.onChange({ x: e.target.x(), y: e.target.y() })}
-      onTransformEnd={(e) => {
-        const node = e.target as any;
-        const scaleX = node.scaleX();
-        const scaleY = node.scaleY();
-        node.scaleX(1);
-        node.scaleY(1);
-        props.onChange({
-          x: node.x(),
-          y: node.y(),
-          rotation: node.rotation(),
-          width: Math.max(8, node.width() * scaleX),
-          height: Math.max(8, node.height() * scaleY),
-        });
-      }}
-    />
-  );
-}
-
-function snapTo(value: number, target: number, threshold = 8): number {
-  return Math.abs(value - target) <= threshold ? target : value;
-}
-
-function arrowHeadRotationDeg(dx: number, dy: number): number {
-  // Konva rotations are degrees
-  return (Math.atan2(dy, dx) * 180) / Math.PI;
-}
-
 export default function ThumbnailEditorClient(props: Props) {
   const { toast } = useToast();
+  
+  // Refs
   const stageRef = useRef<Konva.Stage | null>(null);
-  const trRef = useRef<Konva.Transformer | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const { img: baseImg, error: baseImgError } = useHtmlImage(props.baseImageUrl);
+  // Document state with history
+  const initialDoc = migrateFromV1(props.initialEditorState);
+  const { document, setDocument, undo, redo, canUndo, canRedo } = useEditorHistory(initialDoc);
 
-  const [state, setState] = useState<EditorStateV1>(() =>
-    normalizeInitialState(props.initialEditorState)
-  );
+  // UI state
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [exportsList, setExportsList] = useState<any[]>(
+  const [tool, setTool] = useState<ToolMode>("select");
+  const [zoom, setZoom] = useState(1);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [isPanning, setIsPanning] = useState(false);
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [showSafeArea, setShowSafeArea] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const [_exportsList, setExportsList] = useState<any[]>(
     Array.isArray(props.initialExports) ? props.initialExports : []
   );
 
-  // Zoom/pan
-  const [scale, setScale] = useState(1);
-  const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
-  
-  // Mobile bottom sheet state
-  const [mobileSheet, setMobileSheet] = useState<string | null>(null);
-  
-  // Show toast on base image error
-  useEffect(() => {
-    if (baseImgError) {
-      toast(baseImgError, "error");
-    }
-  }, [baseImgError, toast]);
+  // Get selected object
+  const selectedObject = document.objects.find((o) => o.id === selectedId) ?? null;
 
-  // Undo/redo
-  const historyRef = useRef<EditorStateV1[]>([]);
-  const redoRef = useRef<EditorStateV1[]>([]);
-  const lastCommittedRef = useRef<string>("");
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
-  const updateUndoRedoAvailability = useCallback(() => {
-    setCanUndo(historyRef.current.length > 0);
-    setCanRedo(redoRef.current.length > 0);
+  // ============================================================================
+  // LOAD GOOGLE FONTS
+  // ============================================================================
+  
+  useEffect(() => {
+    // Build Google Fonts URL with all fonts
+    const fontFamilies = GOOGLE_FONTS.map((f) => f.replace(/ /g, "+") + ":wght@400;500;600;700;800;900").join("&family=");
+    const link = window.document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?family=${fontFamilies}&display=swap`;
+    window.document.head.appendChild(link);
+    
+    return () => {
+      window.document.head.removeChild(link);
+    };
   }, []);
 
-  const sortedObjects = useMemo(() => {
-    const objs = (state.objects as AnyObj[]).slice();
-    objs.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
-    return objs;
-  }, [state.objects]);
-
-  const selectedObj = useMemo(
-    () => sortedObjects.find((o) => o.id === selectedId) ?? null,
-    [sortedObjects, selectedId]
-  );
-
-  const commit = useCallback(
-    (next: EditorStateV1) => {
-      const serialized = JSON.stringify(next);
-      if (serialized === lastCommittedRef.current) return;
-      historyRef.current.push(state);
-      if (historyRef.current.length > 50) historyRef.current.shift();
-      redoRef.current = [];
-      updateUndoRedoAvailability();
-      lastCommittedRef.current = serialized;
-      setState(next);
-    },
-    [state, updateUndoRedoAvailability]
-  );
-
-  // Transformer attachment
-  useEffect(() => {
-    const tr = trRef.current;
-    const stage = stageRef.current;
-    if (!tr || !stage) return;
-    if (!selectedId) {
-      tr.nodes([]);
-      tr.getLayer()?.batchDraw();
-      return;
-    }
-    const node = stage.findOne(`#${selectedId}`);
-    if (!node) return;
-    tr.nodes([node as any]);
-    tr.getLayer()?.batchDraw();
-  }, [selectedId, sortedObjects]);
-
-  // Autosave (debounced)
+  // ============================================================================
+  // AUTO-SAVE
+  // ============================================================================
+  
   const saveTimer = useRef<number | null>(null);
   useEffect(() => {
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
@@ -268,1047 +134,471 @@ export default function ThumbnailEditorClient(props: Props) {
         await fetch(`/api/thumbnails/projects/${props.projectId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ editorState: state }),
+          body: JSON.stringify({ editorState: convertToV1(document) }),
         });
       } catch {
-        // ignore
+        // Silently fail - user can manually save
       }
-    }, 1200);
+    }, 1500);
     return () => {
       if (saveTimer.current) window.clearTimeout(saveTimer.current);
     };
-  }, [state, props.projectId]);
+  }, [document, props.projectId]);
 
-  const addText = useCallback(() => {
-    const id = globalThis.crypto.randomUUID();
-    const maxZ = Math.max(0, ...sortedObjects.map((o) => o.zIndex ?? 0));
-    const next: EditorStateV1 = {
-      ...state,
-      objects: [
-        ...(state.objects as any),
-        {
-          id,
-          type: "text",
-          x: 80,
-          y: 80,
-          rotation: 0,
-          zIndex: maxZ + 1,
-          text: "Add text",
-          fontFamily:
-            "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial",
-          fontSize: 96,
-          fontWeight: "800",
-          fill: "#FFFFFF",
-          stroke: "#000000",
-          strokeWidth: 10,
-          shadowColor: "rgba(0,0,0,0.6)",
-          shadowBlur: 12,
-          shadowOffsetX: 6,
-          shadowOffsetY: 6,
-        } satisfies TextObj,
-      ],
-    };
-    commit(next);
-    setSelectedId(id);
-  }, [commit, sortedObjects, state]);
+  // ============================================================================
+  // KEYBOARD SHORTCUTS
+  // ============================================================================
 
-  const addArrow = useCallback(
-    (mode: ArrowObj["mode"]) => {
-      const id = globalThis.crypto.randomUUID();
-      const maxZ = Math.max(0, ...sortedObjects.map((o) => o.zIndex ?? 0));
-      const points =
-        mode === "curved"
-          ? [300, 360, 640, 220, 980, 360]
-          : [300, 360, 980, 360];
-      const next: EditorStateV1 = {
-        ...state,
-        objects: [
-          ...(state.objects as any),
-          {
-            id,
-            type: "arrow",
-            x: 0,
-            y: 0,
-            rotation: 0,
-            zIndex: maxZ + 1,
-            mode,
-            points,
-            color: "#FFCC00",
-            thickness: 18,
-            dashed: false,
-          } satisfies ArrowObj,
-        ],
-      };
-      commit(next);
-      setSelectedId(id);
-    },
-    [commit, sortedObjects, state]
-  );
-
-  const addEllipse = useCallback(() => {
-    const id = globalThis.crypto.randomUUID();
-    const maxZ = Math.max(0, ...sortedObjects.map((o) => o.zIndex ?? 0));
-    const next: EditorStateV1 = {
-      ...state,
-      objects: [
-        ...(state.objects as any),
-        {
-          id,
-          type: "ellipse",
-          x: 640,
-          y: 360,
-          rotation: 0,
-          zIndex: maxZ + 1,
-          radiusX: 220,
-          radiusY: 140,
-          stroke: "#FFCC00",
-          strokeWidth: 14,
-          fill: "rgba(0,0,0,0)",
-          dashed: false,
-        } satisfies EllipseObj,
-      ],
-    };
-    commit(next);
-    setSelectedId(id);
-  }, [commit, sortedObjects, state]);
-
-  const uploadOverlayImage = useCallback(
-    async (file: File) => {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch(
-        `/api/thumbnails/projects/${props.projectId}/upload-overlay`,
-        { method: "POST", body: form }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.message || "Upload failed");
-      }
-      return data.url as string;
-    },
-    [props.projectId]
-  );
-
-  const addImage = useCallback(
-    async (files: FileList | null) => {
-      if (!files || files.length === 0) return;
-      const file = files[0];
-      try {
-        const url = await uploadOverlayImage(file);
-        const id = globalThis.crypto.randomUUID();
-        const maxZ = Math.max(0, ...sortedObjects.map((o) => o.zIndex ?? 0));
-        const next: EditorStateV1 = {
-          ...state,
-          objects: [
-            ...(state.objects as any),
-            {
-              id,
-              type: "image",
-              x: 200,
-              y: 200,
-              width: 300,
-              height: 300,
-              rotation: 0,
-              zIndex: maxZ + 1,
-              srcUrl: url,
-              opacity: 1,
-            } satisfies ImageObj,
-          ],
-        };
-        commit(next);
-        setSelectedId(id);
-      } catch (err) {
-        toast(err instanceof Error ? err.message : "Upload failed", "error");
-      }
-    },
-    [commit, sortedObjects, state, toast, uploadOverlayImage]
-  );
-
-  const updateSelected = useCallback(
-    (patch: Partial<AnyObj>) => {
-      if (!selectedId) return;
-      const objs = (state.objects as AnyObj[]).map((o) => {
-        if (o.id !== selectedId) return o;
-        const merged = { ...o, ...patch } as AnyObj;
-        // Basic center snapping (fast + low-risk)
-        merged.x = snapTo(merged.x, 640);
-        merged.y = snapTo(merged.y, 360);
-        merged.rotation = Number.isFinite(merged.rotation)
-          ? merged.rotation
-          : 0;
-        return merged;
-      });
-      commit({ ...state, objects: objs });
-    },
-    [commit, selectedId, state]
-  );
-
-  const deleteSelected = useCallback(() => {
-    if (!selectedId) return;
-    const next = {
-      ...state,
-      objects: (state.objects as AnyObj[]).filter((o) => o.id !== selectedId),
-    };
-    commit(next);
-    setSelectedId(null);
-  }, [commit, selectedId, state]);
-
-  const moveLayer = useCallback(
-    (id: string, dir: -1 | 1) => {
-      const objs = (state.objects as AnyObj[]).slice();
-      objs.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
-      const idx = objs.findIndex((o) => o.id === id);
-      const j = idx + dir;
-      if (idx < 0 || j < 0 || j >= objs.length) return;
-      const a = objs[idx];
-      const b = objs[j];
-      const tmp = a.zIndex;
-      a.zIndex = b.zIndex;
-      b.zIndex = tmp;
-      commit({ ...state, objects: objs });
-    },
-    [commit, state]
-  );
-
-  const undo = useCallback(() => {
-    const prev = historyRef.current.pop();
-    if (!prev) return;
-    redoRef.current.push(state);
-    setState(prev);
-    updateUndoRedoAvailability();
-  }, [state, updateUndoRedoAvailability]);
-
-  const redo = useCallback(() => {
-    const next = redoRef.current.pop();
-    if (!next) return;
-    historyRef.current.push(state);
-    setState(next);
-    updateUndoRedoAvailability();
-  }, [state, updateUndoRedoAvailability]);
-
-  // Keyboard shortcuts
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
-      if (e.key === "Delete" || e.key === "Backspace") {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+
+      // Spacebar for pan (but not when typing)
+      if (e.code === "Space" && !isInput) {
+        e.preventDefault();
+        setIsSpacePressed(true);
+        setIsPanning(true);
+        return;
+      }
+
+      // Escape to deselect
+      if (e.key === "Escape") {
+        setSelectedId(null);
+        return;
+      }
+
+      // Don't handle other shortcuts when typing
+      if (isInput) return;
+
+      // Delete/Backspace to delete selected
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
         e.preventDefault();
         deleteSelected();
+        return;
       }
+
+      // Undo/Redo
       if (mod && e.key.toLowerCase() === "z" && !e.shiftKey) {
         e.preventDefault();
         undo();
+        return;
       }
       if (mod && e.key.toLowerCase() === "z" && e.shiftKey) {
         e.preventDefault();
         redo();
+        return;
       }
-      if (!mod && selectedObj) {
-        const step = e.shiftKey ? 10 : 2;
-        if (e.key === "ArrowLeft")
-          updateSelected({ x: selectedObj.x - step } as any);
-        if (e.key === "ArrowRight")
-          updateSelected({ x: selectedObj.x + step } as any);
-        if (e.key === "ArrowUp")
-          updateSelected({ y: selectedObj.y - step } as any);
-        if (e.key === "ArrowDown")
-          updateSelected({ y: selectedObj.y + step } as any);
+
+      // Arrow keys to nudge
+      if (selectedObject && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+        const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+        updateObject(selectedId!, { x: selectedObject.x + dx, y: selectedObject.y + dy });
+        return;
+      }
+
+      // Tool shortcuts
+      if (e.key.toLowerCase() === "v") setTool("select");
+      if (e.key.toLowerCase() === "h") setTool("pan");
+      if (e.key.toLowerCase() === "t") addText();
+      if (e.key.toLowerCase() === "a") addArrow(false);
+      if (e.key.toLowerCase() === "o") addShape("ellipse");
+      if (e.key.toLowerCase() === "r") addShape("rectangle");
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        setIsSpacePressed(false);
+        if (tool !== "pan") {
+          setIsPanning(false);
+        }
       }
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [deleteSelected, redo, selectedObj, undo, updateSelected]);
 
-  const onWheel = useCallback(
-    (e: any) => {
-      e.evt.preventDefault();
-      const stage = stageRef.current;
-      if (!stage) return;
-      const oldScale = scale;
-      const pointer = stage.getPointerPosition();
-      if (!pointer) return;
-      const mousePointTo = {
-        x: (pointer.x - stagePos.x) / oldScale,
-        y: (pointer.y - stagePos.y) / oldScale,
-      };
-      const direction = e.evt.deltaY > 0 ? -1 : 1;
-      const factor = 1.06;
-      const newScale = Math.max(
-        0.3,
-        Math.min(2.5, direction > 0 ? oldScale * factor : oldScale / factor)
-      );
-      setScale(newScale);
-      setStagePos({
-        x: pointer.x - mousePointTo.x * newScale,
-        y: pointer.y - mousePointTo.y * newScale,
-      });
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [selectedId, selectedObject, tool, undo, redo]);
+
+  // ============================================================================
+  // DOCUMENT OPERATIONS
+  // ============================================================================
+
+  const updateDocument = useCallback(
+    (updater: (doc: EditorDocument) => EditorDocument, description?: string) => {
+      setDocument(updater(document), description);
     },
-    [scale, stagePos.x, stagePos.y]
+    [document, setDocument]
   );
 
-  const exportImage = useCallback(
-    async (format: "png" | "jpg") => {
-      const stage = stageRef.current;
-      if (!stage) return;
-      const mimeType = format === "png" ? "image/png" : "image/jpeg";
-      const dataUrl = stage.toDataURL({
-        pixelRatio: 1,
-        mimeType,
-        quality: format === "jpg" ? 0.92 : undefined,
-      });
-      const res = await fetch(
-        `/api/thumbnails/projects/${props.projectId}/export`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dataUrl, format }),
-        }
+  const updateObject = useCallback(
+    (id: string, patch: Partial<EditorObject>) => {
+      updateDocument(
+        (doc) => ({
+          ...doc,
+          objects: doc.objects.map((o) =>
+            o.id === id ? ({ ...o, ...patch } as EditorObject) : o
+          ),
+        }),
+        `Update ${patch}`
       );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.message || "Export failed");
+    },
+    [updateDocument]
+  );
+
+  const updateSettings = useCallback(
+    (patch: Partial<DocumentSettings>) => {
+      updateDocument((doc) => ({
+        ...doc,
+        settings: { ...doc.settings, ...patch },
+      }));
+    },
+    [updateDocument]
+  );
+
+  const addObject = useCallback(
+    (obj: EditorObject) => {
+      updateDocument((doc) => ({
+        ...doc,
+        objects: [...doc.objects, obj],
+      }));
+      setSelectedId(obj.id);
+      setTool("select");
+    },
+    [updateDocument]
+  );
+
+  const deleteSelected = useCallback(() => {
+    if (!selectedId) return;
+    updateDocument((doc) => ({
+      ...doc,
+      objects: doc.objects.filter((o) => o.id !== selectedId),
+    }));
+    setSelectedId(null);
+  }, [selectedId, updateDocument]);
+
+  const duplicateSelected = useCallback(() => {
+    if (!selectedObject) return;
+    const newId = generateId();
+    const newObj = {
+      ...selectedObject,
+      id: newId,
+      x: selectedObject.x + 20,
+      y: selectedObject.y + 20,
+      zIndex: getNextZIndex(document.objects),
+    } as EditorObject;
+    addObject(newObj);
+  }, [selectedObject, document.objects, addObject]);
+
+  const moveLayer = useCallback(
+    (direction: "up" | "down") => {
+      if (!selectedId) return;
+      
+      const sorted = [...document.objects].sort((a, b) => a.zIndex - b.zIndex);
+      const idx = sorted.findIndex((o) => o.id === selectedId);
+      const swapIdx = direction === "up" ? idx + 1 : idx - 1;
+      
+      if (swapIdx < 0 || swapIdx >= sorted.length) return;
+      
+      const current = sorted[idx];
+      const swap = sorted[swapIdx];
+      
+      updateDocument((doc) => ({
+        ...doc,
+        objects: doc.objects.map((o) => {
+          if (o.id === current.id) return { ...o, zIndex: swap.zIndex } as EditorObject;
+          if (o.id === swap.id) return { ...o, zIndex: current.zIndex } as EditorObject;
+          return o;
+        }),
+      }));
+    },
+    [selectedId, document.objects, updateDocument]
+  );
+
+  // ============================================================================
+  // ADD OBJECTS
+  // ============================================================================
+
+  const addText = useCallback(() => {
+    const obj: TextObject = {
+      ...DEFAULT_TEXT,
+      id: generateId(),
+      x: CANVAS_WIDTH / 2 - 150,
+      y: CANVAS_HEIGHT / 2 - 50,
+      zIndex: getNextZIndex(document.objects),
+    };
+    addObject(obj);
+  }, [document.objects, addObject]);
+
+  const addArrow = useCallback(
+    (curved: boolean) => {
+      const basePoints = curved
+        ? [200, 400, 640, 200, 1080, 400] // Control point in middle
+        : [200, 360, 1080, 360];
+      
+      const obj: ArrowObject = {
+        ...DEFAULT_ARROW,
+        id: generateId(),
+        x: 0,
+        y: 0,
+        zIndex: getNextZIndex(document.objects),
+        points: basePoints,
+        isCurved: curved,
+      };
+      addObject(obj);
+    },
+    [document.objects, addObject]
+  );
+
+  const addLine = useCallback(() => {
+    const obj: ArrowObject = {
+      ...DEFAULT_ARROW,
+      id: generateId(),
+      x: 0,
+      y: 0,
+      zIndex: getNextZIndex(document.objects),
+      points: [200, 360, 1080, 360],
+      isCurved: false,
+      arrowheadAtEnd: false, // No arrowhead = just a line
+      arrowheadAtStart: false,
+    };
+    addObject(obj);
+  }, [document.objects, addObject]);
+
+  const addShape = useCallback(
+    (type: "ellipse" | "rectangle") => {
+      const obj: ShapeObject = {
+        ...DEFAULT_SHAPE,
+        id: generateId(),
+        x: CANVAS_WIDTH / 2,
+        y: CANVAS_HEIGHT / 2,
+        zIndex: getNextZIndex(document.objects),
+        shapeType: type,
+        width: type === "ellipse" ? 300 : 200,
+        height: type === "ellipse" ? 200 : 150,
+      };
+      addObject(obj);
+    },
+    [document.objects, addObject]
+  );
+
+  // ============================================================================
+  // IMAGE UPLOAD
+  // ============================================================================
+
+  const handleImageUpload = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      const file = files[0];
+
+      // Validate type
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        toast("Please upload a PNG, JPEG, or WebP image", "error");
+        return;
       }
-      setExportsList((prev) => [
-        ...prev,
-        {
-          url: data.url,
-          format,
-          width: 1280,
-          height: 720,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
-      toast("Export saved", "success");
+
+      // Validate size
+      if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+        toast(`Image must be under ${MAX_IMAGE_SIZE_MB}MB`, "error");
+        return;
+      }
+
+      try {
+        // Upload to server
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(
+          `/api/thumbnails/projects/${props.projectId}/upload-overlay`,
+          { method: "POST", body: form }
+        );
+        const data = await res.json().catch(() => ({}));
+        
+        if (!res.ok) {
+          throw new Error(data.message || "Upload failed");
+        }
+
+        // Load image to get dimensions
+        const img = new window.Image();
+        img.crossOrigin = "anonymous";
+        
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error("Failed to load image"));
+          img.src = data.url;
+        });
+
+        // Calculate dimensions to fit in canvas
+        const dims = fitImageContain(img.naturalWidth, img.naturalHeight);
+        const pos = centerInCanvas(dims.width, dims.height);
+
+        const obj: ImageObject = {
+          ...DEFAULT_IMAGE,
+          id: generateId(),
+          x: pos.x,
+          y: pos.y,
+          zIndex: getNextZIndex(document.objects),
+          srcUrl: data.url,
+          originalWidth: img.naturalWidth,
+          originalHeight: img.naturalHeight,
+          width: dims.width,
+          height: dims.height,
+        };
+        
+        addObject(obj);
+        toast("Image added", "success");
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Upload failed", "error");
+      }
+    },
+    [props.projectId, document.objects, addObject, toast]
+  );
+
+  // ============================================================================
+  // ZOOM/PAN CONTROLS
+  // ============================================================================
+
+  const handleZoomChange = useCallback((newZoom: number) => {
+    setZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom)));
+  }, []);
+
+  const handlePanChange = useCallback((x: number, y: number) => {
+    setPanX(x);
+    setPanY(y);
+  }, []);
+
+  const fitToScreen = useCallback(() => {
+    setZoom(1);
+    setPanX(0);
+    setPanY(0);
+  }, []);
+
+  // ============================================================================
+  // EXPORT
+  // ============================================================================
+
+  const handleExport = useCallback(
+    async (format: "png" | "jpg") => {
+      setIsExporting(true);
+
+      try {
+        const dataUrl = await exportCanvas(stageRef, format);
+
+        // Upload to server for storage
+        const res = await fetch(
+          `/api/thumbnails/projects/${props.projectId}/export`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataUrl, format }),
+          }
+        );
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data.message || "Export failed");
+        }
+
+        setExportsList((prev) => [
+          ...prev,
+          {
+            url: data.url,
+            format,
+            width: 1280,
+            height: 720,
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+
+        // Trigger browser download
+        const link = window.document.createElement("a");
+        link.href = dataUrl;
+        link.download = `thumbnail-${Date.now()}.${format === "jpg" ? "jpg" : "png"}`;
+        window.document.body.appendChild(link);
+        link.click();
+        window.document.body.removeChild(link);
+        
+        toast(`Exported ${format.toUpperCase()} successfully`, "success");
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Export failed", "error");
+      } finally {
+        setIsExporting(false);
+      }
     },
     [props.projectId, toast]
   );
 
-  const canvasWidth = 1280;
-  const canvasHeight = 720;
-  const displayWidth = 1000;
-  const displayHeight = (displayWidth * 9) / 16;
-
-  // Handle mobile file input
-  const mobileFileInputRef = useRef<HTMLInputElement>(null);
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
-    <div className={s.page}>
-      <div className={s.header}>
-        <h1 className={s.title}>Editor</h1>
-        <div className={s.toolbar}>
-          <button className={s.btn} onClick={() => void addText()}>
-            Add text
-          </button>
-          <button className={s.btn} onClick={() => void addArrow("straight")}>
-            Arrow
-          </button>
-          <button className={s.btn} onClick={() => void addArrow("curved")}>
-            Curved arrow
-          </button>
-          <button className={s.btn} onClick={() => void addEllipse()}>
-            Ellipse
-          </button>
-          <label className={s.btn}>
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={(e) => void addImage(e.target.files)}
-              style={{ display: "none" }}
-            />
-            Import image
-          </label>
-          <button className={s.btn} onClick={undo} disabled={!canUndo}>
-            Undo
-          </button>
-          <button className={s.btn} onClick={redo} disabled={!canRedo}>
-            Redo
-          </button>
-          <button
-            className={`${s.btn} ${s.btnPrimary}`}
-            onClick={() => void exportImage("png")}
-          >
-            Export PNG
-          </button>
-          <button className={s.btn} onClick={() => void exportImage("jpg")}>
-            Export JPG
-          </button>
-        </div>
-      </div>
-
-      {/* Hidden file input for mobile */}
-      <input
-        ref={mobileFileInputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        onChange={(e) => {
-          void addImage(e.target.files);
-          if (mobileFileInputRef.current) mobileFileInputRef.current.value = "";
-        }}
-        style={{ display: "none" }}
+    <div className={s.editorLayout}>
+      <TopBar
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={undo}
+        onRedo={redo}
+        zoom={zoom}
+        onZoomChange={handleZoomChange}
+        onFitToScreen={fitToScreen}
+        onExport={handleExport}
+        showSafeArea={showSafeArea}
+        onToggleSafeArea={() => setShowSafeArea(!showSafeArea)}
+        isExporting={isExporting}
       />
 
-      <div className={s.layout}>
-        <div className={s.canvasCard}>
-          {/* Loading state when base image is loading */}
-          {!baseImg && !baseImgError && (
-            <div className={s.canvasLoading}>
-              <div className={s.canvasSpinner} />
-              <span>Loading image...</span>
-            </div>
-          )}
-          {baseImgError && (
-            <div className={s.canvasError}>
-              <span>Failed to load thumbnail</span>
-              <small>{props.baseImageUrl.slice(0, 60)}...</small>
-            </div>
-          )}
-          <Stage
-            ref={(n) => {
-              stageRef.current = n;
-            }}
-            width={displayWidth}
-            height={displayHeight}
-            scaleX={(displayWidth / canvasWidth) * scale}
-            scaleY={(displayHeight / canvasHeight) * scale}
-            x={stagePos.x}
-            y={stagePos.y}
-            onWheel={onWheel}
-            onMouseDown={(e) => {
-              const clickedOnEmpty = e.target === e.target.getStage();
-              if (clickedOnEmpty) setSelectedId(null);
-            }}
-          >
-            <Layer>
-              {baseImg && (
-                <KonvaImage
-                  image={baseImg}
-                  x={0}
-                  y={0}
-                  width={canvasWidth}
-                  height={canvasHeight}
-                  listening={false}
-                />
-              )}
-
-              {sortedObjects.map((o) => {
-                if (o.type === "text") {
-                  const t = o as TextObj;
-                  return (
-                    <Text
-                      key={t.id}
-                      id={t.id}
-                      x={t.x}
-                      y={t.y}
-                      text={t.text}
-                      fontFamily={t.fontFamily}
-                      fontSize={t.fontSize}
-                      fontStyle="bold"
-                      fill={t.fill}
-                      stroke={t.stroke}
-                      strokeWidth={t.strokeWidth}
-                      shadowColor={t.shadowColor}
-                      shadowBlur={t.shadowBlur}
-                      shadowOffsetX={t.shadowOffsetX}
-                      shadowOffsetY={t.shadowOffsetY}
-                      draggable
-                      onClick={() => setSelectedId(t.id)}
-                      onTap={() => setSelectedId(t.id)}
-                      onDragEnd={(e) =>
-                        updateSelected({
-                          x: e.target.x(),
-                          y: e.target.y(),
-                        } as any)
-                      }
-                      onTransformEnd={(e) => {
-                        const node = e.target;
-                        node.scaleX(1);
-                        node.scaleY(1);
-                        updateSelected({
-                          x: node.x(),
-                          y: node.y(),
-                          rotation: node.rotation(),
-                        } as any);
-                      }}
-                    />
-                  );
-                }
-
-                if (o.type === "arrow") {
-                  const a = o as ArrowObj;
-                  const dash = a.dashed ? [14, 10] : undefined;
-                  const color = a.color;
-                  const points = a.points;
-                  const isSelected = a.id === selectedId;
-
-                  // Straight arrows use Konva's native Arrow (includes head)
-                  if (a.mode === "straight" && points.length >= 4) {
-                    return (
-                      <React.Fragment key={a.id}>
-                        <Arrow
-                          id={a.id}
-                          points={points.slice(0, 4)}
-                          stroke={color}
-                          fill={color}
-                          strokeWidth={a.thickness}
-                          pointerLength={Math.max(14, a.thickness * 1.2)}
-                          pointerWidth={Math.max(14, a.thickness * 1.2)}
-                          lineCap="round"
-                          lineJoin="round"
-                          dash={dash}
-                          draggable
-                          onClick={() => setSelectedId(a.id)}
-                          onTap={() => setSelectedId(a.id)}
-                          onDragEnd={(e) => {
-                            const dx = e.target.x();
-                            const dy = e.target.y();
-                            const newPts = points
-                              .slice(0, 4)
-                              .map((v, i) => (i % 2 === 0 ? v + dx : v + dy));
-                            e.target.x(0);
-                            e.target.y(0);
-                            updateSelected({ points: newPts } as any);
-                          }}
-                        />
-                        {isSelected && (
-                          <>
-                            <Circle
-                              x={points[0]}
-                              y={points[1]}
-                              radius={10}
-                              fill="#fff"
-                              stroke="#3b82f6"
-                              strokeWidth={2}
-                              draggable
-                              onDragMove={(e) => {
-                                const nx = e.target.x();
-                                const ny = e.target.y();
-                                updateSelected({
-                                  points: [nx, ny, points[2], points[3]],
-                                } as any);
-                              }}
-                            />
-                            <Circle
-                              x={points[2]}
-                              y={points[3]}
-                              radius={10}
-                              fill="#fff"
-                              stroke="#3b82f6"
-                              strokeWidth={2}
-                              draggable
-                              onDragMove={(e) => {
-                                const nx = e.target.x();
-                                const ny = e.target.y();
-                                updateSelected({
-                                  points: [points[0], points[1], nx, ny],
-                                } as any);
-                              }}
-                            />
-                          </>
-                        )}
-                      </React.Fragment>
-                    );
-                  }
-
-                  // Curved/path arrows: draw a bezier/path line + explicit arrow head triangle
-                  const pts = points;
-                  const endX = pts[pts.length - 2] ?? 0;
-                  const endY = pts[pts.length - 1] ?? 0;
-                  const prevX = pts[pts.length - 4] ?? endX - 1;
-                  const prevY = pts[pts.length - 3] ?? endY - 1;
-                  const rot = arrowHeadRotationDeg(endX - prevX, endY - prevY);
-
-                  const isCurved = a.mode === "curved";
-                  return (
-                    <React.Fragment key={a.id}>
-                      <Line
-                        id={a.id}
-                        x={0}
-                        y={0}
-                        stroke={color}
-                        strokeWidth={a.thickness}
-                        lineCap="round"
-                        lineJoin="round"
-                        dash={dash}
-                        points={pts}
-                        bezier={isCurved}
-                        draggable
-                        onClick={() => setSelectedId(a.id)}
-                        onTap={() => setSelectedId(a.id)}
-                        onDragEnd={(e) => {
-                          const dx = e.target.x();
-                          const dy = e.target.y();
-                          const newPts = pts.map((v, i) =>
-                            i % 2 === 0 ? v + dx : v + dy
-                          );
-                          e.target.x(0);
-                          e.target.y(0);
-                          updateSelected({ points: newPts } as any);
-                        }}
-                      />
-                      <RegularPolygon
-                        x={endX}
-                        y={endY}
-                        sides={3}
-                        radius={Math.max(14, a.thickness * 1.1)}
-                        fill={color}
-                        rotation={rot + 90}
-                        listening={false}
-                      />
-                      {isSelected && (
-                        <>
-                          {pts.map((_, i) =>
-                            i % 2 === 0 ? null : (
-                              <Circle
-                                key={`${a.id}-pt-${i}`}
-                                x={pts[i - 1]}
-                                y={pts[i]}
-                                radius={9}
-                                fill="#fff"
-                                stroke="#3b82f6"
-                                strokeWidth={2}
-                                draggable
-                                onDragMove={(e) => {
-                                  const nx = e.target.x();
-                                  const ny = e.target.y();
-                                  const newPts = pts.slice();
-                                  newPts[i - 1] = nx;
-                                  newPts[i] = ny;
-                                  updateSelected({ points: newPts } as any);
-                                }}
-                              />
-                            )
-                          )}
-                        </>
-                      )}
-                    </React.Fragment>
-                  );
-                }
-
-                if (o.type === "ellipse") {
-                  const el = o as EllipseObj;
-                  const dash = el.dashed ? [14, 10] : undefined;
-                  return (
-                    <Ellipse
-                      key={el.id}
-                      id={el.id}
-                      x={el.x}
-                      y={el.y}
-                      radiusX={el.radiusX}
-                      radiusY={el.radiusY}
-                      stroke={el.stroke}
-                      strokeWidth={el.strokeWidth}
-                      fill={el.fill}
-                      dash={dash}
-                      draggable
-                      onClick={() => setSelectedId(el.id)}
-                      onTap={() => setSelectedId(el.id)}
-                      onDragEnd={(e) =>
-                        updateSelected({
-                          x: e.target.x(),
-                          y: e.target.y(),
-                        } as any)
-                      }
-                      onTransformEnd={(e) => {
-                        const node = e.target as any;
-                        const scaleX = node.scaleX();
-                        const scaleY = node.scaleY();
-                        node.scaleX(1);
-                        node.scaleY(1);
-                        updateSelected({
-                          x: node.x(),
-                          y: node.y(),
-                          rotation: node.rotation(),
-                          radiusX: Math.max(2, node.radiusX() * scaleX),
-                          radiusY: Math.max(2, node.radiusY() * scaleY),
-                        } as any);
-                      }}
-                    />
-                  );
-                }
-
-                const im = o as ImageObj;
-                return (
-                  <EditorImageNode
-                    key={im.id}
-                    obj={im}
-                    isSelected={im.id === selectedId}
-                    onSelect={() => setSelectedId(im.id)}
-                    onChange={(patch) => updateSelected(patch as any)}
-                  />
-                );
-              })}
-
-              <Transformer
-                ref={(n) => {
-                  trRef.current = n;
-                }}
-                rotateEnabled
-                keepRatio={false}
-                enabledAnchors={[
-                  "top-left",
-                  "top-right",
-                  "bottom-left",
-                  "bottom-right",
-                  "middle-left",
-                  "middle-right",
-                  "top-center",
-                  "bottom-center",
-                ]}
-              />
-            </Layer>
-          </Stage>
-          <div className={s.small}>
-            Tip: mouse wheel zooms, Delete removes selection, Cmd/Ctrl+Z undo.
-          </div>
-        </div>
-
-        <div className={s.sideCard}>
-          <div className={s.panelSection}>
-            <h3 className={s.panelTitle}>Layers</h3>
-            <div className={s.layers}>
-              {sortedObjects
-                .slice()
-                .sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0))
-                .map((o) => (
-                  <div
-                    key={o.id}
-                    className={`${s.layerItem} ${
-                      o.id === selectedId ? s.layerItemActive : ""
-                    }`}
-                    onClick={() => setSelectedId(o.id)}
-                  >
-                    <div className={s.layerLabel}>{objLabel(o)}</div>
-                    <div className={s.layerButtons}>
-                      <button
-                        className={s.iconBtn}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          moveLayer(o.id, 1);
-                        }}
-                        title="Move up"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        className={s.iconBtn}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          moveLayer(o.id, -1);
-                        }}
-                        title="Move down"
-                      >
-                        ↓
-                      </button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-
-          <div className={s.panelSection}>
-            <h3 className={s.panelTitle}>Selected</h3>
-            {!selectedObj && (
-              <div className={s.small}>Click an object to edit it.</div>
-            )}
-
-            {selectedObj?.type === "text" && (
-              <>
-                <div className={s.row}>
-                  <span className={s.small}>Text</span>
-                </div>
-                <input
-                  className={s.input}
-                  value={(selectedObj as TextObj).text}
-                  onChange={(e) =>
-                    updateSelected({ text: e.target.value } as any)
-                  }
-                />
-                <div className={s.row}>
-                  <span className={s.small}>Font size</span>
-                  <input
-                    type="number"
-                    className={s.input}
-                    value={(selectedObj as TextObj).fontSize}
-                    onChange={(e) =>
-                      updateSelected({
-                        fontSize: Number(e.target.value),
-                      } as any)
-                    }
-                  />
-                </div>
-                <div className={s.row}>
-                  <span className={s.small}>Fill</span>
-                  <input
-                    type="color"
-                    value={(selectedObj as TextObj).fill}
-                    onChange={(e) =>
-                      updateSelected({ fill: e.target.value } as any)
-                    }
-                  />
-                </div>
-                <div className={s.row}>
-                  <span className={s.small}>Stroke</span>
-                  <input
-                    type="color"
-                    value={(selectedObj as TextObj).stroke}
-                    onChange={(e) =>
-                      updateSelected({ stroke: e.target.value } as any)
-                    }
-                  />
-                </div>
-                <div className={s.row}>
-                  <span className={s.small}>Stroke width</span>
-                  <input
-                    type="number"
-                    className={s.input}
-                    value={(selectedObj as TextObj).strokeWidth}
-                    onChange={(e) =>
-                      updateSelected({
-                        strokeWidth: Number(e.target.value),
-                      } as any)
-                    }
-                  />
-                </div>
-              </>
-            )}
-
-            {selectedObj?.type === "arrow" && (
-              <>
-                <div className={s.row}>
-                  <span className={s.small}>Color</span>
-                  <input
-                    type="color"
-                    value={(selectedObj as ArrowObj).color}
-                    onChange={(e) =>
-                      updateSelected({ color: e.target.value } as any)
-                    }
-                  />
-                </div>
-                <div className={s.row}>
-                  <span className={s.small}>Thickness</span>
-                  <input
-                    type="number"
-                    className={s.input}
-                    value={(selectedObj as ArrowObj).thickness}
-                    onChange={(e) =>
-                      updateSelected({
-                        thickness: Number(e.target.value),
-                      } as any)
-                    }
-                  />
-                </div>
-              </>
-            )}
-
-            {selectedObj?.type === "ellipse" && (
-              <>
-                <div className={s.row}>
-                  <span className={s.small}>Stroke</span>
-                  <input
-                    type="color"
-                    value={(selectedObj as EllipseObj).stroke}
-                    onChange={(e) =>
-                      updateSelected({ stroke: e.target.value } as any)
-                    }
-                  />
-                </div>
-                <div className={s.row}>
-                  <span className={s.small}>Stroke width</span>
-                  <input
-                    type="number"
-                    className={s.input}
-                    value={(selectedObj as EllipseObj).strokeWidth}
-                    onChange={(e) =>
-                      updateSelected({
-                        strokeWidth: Number(e.target.value),
-                      } as any)
-                    }
-                  />
-                </div>
-              </>
-            )}
-
-            {selectedObj && (
-              <button className={s.btn} onClick={deleteSelected}>
-                Delete
-              </button>
-            )}
-          </div>
-
-          <div className={s.panelSection}>
-            <h3 className={s.panelTitle}>Exports</h3>
-            <div className={s.exports}>
-              {exportsList.length === 0 && (
-                <div className={s.small}>
-                  No exports yet. Use Export PNG/JPG.
-                </div>
-              )}
-              {exportsList
-                .slice()
-                .reverse()
-                .slice(0, 6)
-                .map((x, i) => (
-                  <a
-                    key={`${x.url}-${i}`}
-                    className={s.exportLink}
-                    href={x.url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {x.format?.toUpperCase?.() ?? "FILE"} — {x.url}
-                  </a>
-                ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Bottom Toolbar */}
-      <div className={s.mobileToolbar}>
-        <div className={s.mobileToolbarRow}>
-          <button
-            className={s.mobileToolBtn}
-            onClick={() => { addText(); setMobileSheet(null); }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 7V4h16v3M9 20h6M12 4v16" />
-            </svg>
-            Text
-          </button>
-          <button
-            className={s.mobileToolBtn}
-            onClick={() => { addArrow("straight"); setMobileSheet(null); }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-            Arrow
-          </button>
-          <button
-            className={s.mobileToolBtn}
-            onClick={() => { addEllipse(); setMobileSheet(null); }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <ellipse cx="12" cy="12" rx="10" ry="6" />
-            </svg>
-            Shape
-          </button>
-          <button
-            className={s.mobileToolBtn}
-            onClick={() => mobileFileInputRef.current?.click()}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
-            </svg>
-            Image
-          </button>
-          <button
-            className={s.mobileToolBtn}
-            onClick={() => setMobileSheet(mobileSheet === "layers" ? null : "layers")}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="12 2 2 7 12 12 22 7 12 2" />
-              <polyline points="2 17 12 22 22 17" />
-              <polyline points="2 12 12 17 22 12" />
-            </svg>
-            Layers
-          </button>
-          <button
-            className={s.mobileToolBtn}
-            onClick={undo}
-            disabled={!canUndo}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="1 4 1 10 7 10" />
-              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-            </svg>
-            Undo
-          </button>
-          <button
-            className={s.mobileToolBtn}
-            onClick={redo}
-            disabled={!canRedo}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="23 4 23 10 17 10" />
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-            </svg>
-            Redo
-          </button>
-          <button
-            className={`${s.mobileToolBtn} ${s.mobileToolBtnPrimary}`}
-            onClick={() => void exportImage("png")}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Export
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Bottom Sheet Overlay */}
-      <div 
-        className={`${s.bottomSheetOverlay} ${mobileSheet ? s.visible : ""}`}
-        onClick={() => setMobileSheet(null)}
+      <Toolbar
+        activeTool={tool}
+        onToolChange={setTool}
+        onAddText={addText}
+        onAddArrow={addArrow}
+        onAddLine={addLine}
+        onAddShape={addShape}
+        onImageUpload={handleImageUpload}
+        onDelete={deleteSelected}
+        hasSelection={!!selectedId}
+        isPanning={isPanning || isSpacePressed}
       />
 
-      {/* Mobile Bottom Sheet - Layers */}
-      <div className={`${s.bottomSheet} ${mobileSheet === "layers" ? s.open : ""}`}>
-        <div className={s.bottomSheetHandle} />
-        <div className={s.bottomSheetHeader}>
-          <h3 className={s.bottomSheetTitle}>Layers</h3>
-          <button className={s.bottomSheetClose} onClick={() => setMobileSheet(null)}>
-            ×
-          </button>
-        </div>
-        <div className={s.bottomSheetContent}>
-          <div className={s.layers}>
-            {sortedObjects
-              .slice()
-              .sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0))
-              .map((o) => (
-                <div
-                  key={o.id}
-                  className={`${s.layerItem} ${o.id === selectedId ? s.layerItemActive : ""}`}
-                  onClick={() => { setSelectedId(o.id); setMobileSheet(null); }}
-                >
-                  <div className={s.layerLabel}>{objLabel(o)}</div>
-                  <div className={s.layerButtons}>
-                    <button
-                      className={s.iconBtn}
-                      onClick={(e) => { e.stopPropagation(); moveLayer(o.id, 1); }}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      className={s.iconBtn}
-                      onClick={(e) => { e.stopPropagation(); moveLayer(o.id, -1); }}
-                    >
-                      ↓
-                    </button>
-                  </div>
-                </div>
-              ))}
-            {sortedObjects.length === 0 && (
-              <div className={s.small}>No objects yet. Add text, arrows, or images.</div>
-            )}
-          </div>
-          {selectedObj && (
-            <button 
-              className={s.btn} 
-              onClick={() => { deleteSelected(); setMobileSheet(null); }}
-              style={{ marginTop: "var(--space-4)", width: "100%" }}
-            >
-              Delete Selected
-            </button>
-          )}
-        </div>
+      <div className={s.canvasArea}>
+        <EditorCanvas
+          document={document}
+          selectedId={selectedId}
+          tool={tool}
+          zoom={zoom}
+          panX={panX}
+          panY={panY}
+          showSafeArea={showSafeArea}
+          baseImageUrl={props.baseImageUrl}
+          onSelect={setSelectedId}
+          onObjectChange={updateObject}
+          onZoomChange={handleZoomChange}
+          onPanChange={handlePanChange}
+          isPanning={isPanning || isSpacePressed}
+          setIsPanning={setIsPanning}
+          containerRef={containerRef as any}
+          stageRef={stageRef as any}
+        />
       </div>
+
+      <PropertiesPanel
+        selectedObject={selectedObject}
+        documentSettings={document.settings}
+        onObjectChange={(patch) => selectedId && updateObject(selectedId, patch)}
+        onSettingsChange={updateSettings}
+        onMoveLayer={moveLayer}
+        onDuplicate={duplicateSelected}
+        onDelete={deleteSelected}
+        onSelect={setSelectedId}
+        objects={document.objects}
+      />
     </div>
   );
 }

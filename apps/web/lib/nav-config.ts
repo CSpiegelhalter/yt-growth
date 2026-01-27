@@ -37,7 +37,8 @@ export type NavIconType =
   | "logout"
   | "home"
   | "channel"
-  | "image";
+  | "image"
+  | "search";
 
 /**
  * Primary navigation items - shown prominently in sidebar/top nav
@@ -110,6 +111,16 @@ export const primaryNavItems: NavItem[] = [
     match: (pathname) =>
       pathname === "/tags" ||
       pathname.startsWith("/tags/"),
+  },
+  {
+    id: "keywords",
+    label: "Keywords",
+    href: "/keywords",
+    icon: "search",
+    channelScoped: false,
+    match: (pathname) =>
+      pathname === "/keywords" ||
+      pathname.startsWith("/keywords/"),
   },
 ];
 
@@ -214,6 +225,15 @@ export function getPageTitle(pathname: string): string {
   }
   if (pathname.startsWith("/tags")) {
     return "Tags";
+  }
+  if (pathname === "/keywords/overview") {
+    return "Keyword Overview";
+  }
+  if (pathname === "/keywords/ideas") {
+    return "Keyword Ideas";
+  }
+  if (pathname.startsWith("/keywords")) {
+    return "Keywords";
   }
   
   return "Dashboard";

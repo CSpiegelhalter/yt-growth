@@ -3,17 +3,17 @@
    Mobile First, 4pt Grid System
    ================================ */
 
-/* Page Layout */
+/* Page Layout - Uses standard page tokens */
 .pageWrapper {
   width: 100%;
-  max-width: 720px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 24px 16px 48px;
+  padding: var(--page-padding-mobile);
 }
 
 @media (min-width: 768px) {
   .pageWrapper {
-    padding: 32px 24px 64px;
+    padding: var(--page-padding-desktop);
   }
 }
 

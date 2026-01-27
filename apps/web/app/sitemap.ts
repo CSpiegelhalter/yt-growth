@@ -5,11 +5,13 @@ import { LEARN_ARTICLES } from "./(marketing)/learn/articles";
 /**
  * Generate sitemap.xml for SEO
  *
- * Only includes public, indexable pages that are NOT blocked by robots.txt.
+ * Includes all public, indexable pages.
  * Excludes:
  * - /auth/* (noindex, disallowed in robots.txt)
  * - /api/* (not pages)
- * - All logged-in app routes (dashboard, profile, ideas, etc.)
+ * - Private app routes that require login (dashboard, profile, competitors, etc.)
+ *
+ * Public SEO tool pages (/ideas, /keywords, /tags/*) ARE included here.
  *
  * URLs use consistent format: no trailing slash for pages.
  * All URLs use the canonical www origin to avoid redirect warnings in SEO audits.
@@ -47,22 +49,34 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     // Learn articles
     ...learnArticleEntries,
-    // Tags hub - high priority SEO tool pages
+    // SEO tool pages - high priority public pages
+    {
+      url: `${baseUrl}/ideas`,
+      lastModified: new Date("2026-01-26"),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/keywords`,
+      lastModified: new Date("2026-01-26"),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
     {
       url: `${baseUrl}/tags`,
-      lastModified: new Date("2026-01-23"),
+      lastModified: new Date("2026-01-26"),
       changeFrequency: "monthly",
       priority: 0.9,
     },
     {
       url: `${baseUrl}/tags/generator`,
-      lastModified: new Date("2026-01-23"),
+      lastModified: new Date("2026-01-26"),
       changeFrequency: "monthly",
       priority: 0.85,
     },
     {
       url: `${baseUrl}/tags/extractor`,
-      lastModified: new Date("2026-01-23"),
+      lastModified: new Date("2026-01-26"),
       changeFrequency: "monthly",
       priority: 0.85,
     },

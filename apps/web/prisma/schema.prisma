@@ -653,3 +653,25 @@ model UserFaceReference {
   @@index([userId], map: "idx_user_face_ref_user")
   @@index([userId, isDefault], map: "idx_user_face_ref_default")
 }
+
+// ============================================
+// KEYWORD RESEARCH CACHE (Semrush API responses)
+// ============================================
+
+model KeywordCache {
+  id           String   @id @default(uuid()) @db.Uuid
+  provider     String   @default("dataforseo") @db.VarChar(32) // Provider name (dataforseo, etc.)
+  mode         String   @db.VarChar(32) // "overview" | "related"
+  phrase       String   @db.VarChar(255) // The keyword/phrase searched
+  database     String   @db.VarChar(8) // Semrush database (us, uk, de, etc.)
+  requestHash  String   @db.VarChar(64) // SHA256 hash of normalized request params
+  responseJson Json // Cached API response (parsed from CSV)
+  fetchedAt    DateTime @default(now()) @db.Timestamptz(6)
+  expiresAt    DateTime @db.Timestamptz(6) // TTL expiration (e.g., 7 days)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([provider, mode, requestHash], map: "uq_keyword_cache_request")
+  @@index([expiresAt], map: "idx_keyword_cache_expires")
+  @@index([phrase, database], map: "idx_keyword_cache_phrase")
+}

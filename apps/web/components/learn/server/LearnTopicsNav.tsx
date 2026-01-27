@@ -1,19 +1,12 @@
 /**
- * Server component that renders the article topics navigation.
- * Uses native details/summary for a compact dropdown without JS.
+ * Server component that renders compact article navigation.
+ * Shows a simple "All guides" link instead of a dropdown for cleaner mobile UX.
  * Must remain a server component - no "use client" directive.
  */
 
 import Link from "next/link";
 
-interface NavItem {
-  slug: string;
-  label: string;
-}
-
 interface LearnTopicsNavProps {
-  items: NavItem[];
-  activeSlug: string;
   styles: {
     articleNav: string;
     articleNavLabel: string;
@@ -22,47 +15,23 @@ interface LearnTopicsNavProps {
   };
 }
 
-export function LearnTopicsNav({
-  items,
-  activeSlug,
-  styles: s,
-}: LearnTopicsNavProps) {
-  const activeItem = items.find((item) => item.slug === activeSlug);
-  const currentLabel = activeItem?.label || "Select topic";
-
+export function LearnTopicsNav({ styles: s }: LearnTopicsNavProps) {
   return (
-    <nav className={s.articleNav} aria-label="Learn topics">
-      <details className="topicsDropdown">
-        <summary className="topicsDropdown__trigger">
-          <span className="topicsDropdown__label">More guides</span>
-          <span className="topicsDropdown__current">{currentLabel}</span>
-          <svg 
-            className="topicsDropdown__chevron" 
-            width="16" 
-            height="16" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2"
-            aria-hidden="true"
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </summary>
-        <div className="topicsDropdown__menu">
-          {items.map((article) => (
-            <Link
-              key={article.slug}
-              href={`/learn/${article.slug}`}
-              className={`topicsDropdown__item ${
-                article.slug === activeSlug ? "topicsDropdown__item--active" : ""
-              }`}
-            >
-              {article.label}
-            </Link>
-          ))}
-        </div>
-      </details>
+    <nav className={s.articleNav} aria-label="Learn navigation">
+      <Link href="/learn" className="allGuidesLink">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        All guides
+      </Link>
     </nav>
   );
 }

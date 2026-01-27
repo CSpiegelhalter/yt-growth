@@ -9,6 +9,17 @@
  * 3) server uses LLM -> deterministic model prompt (no text)
  * 4) server runs Replicate style models (3 variants)
  * 5) click a result to open the pro editor
+ *
+ * STATE MANAGEMENT NOTES:
+ * - `photos` is the canonical source of truth for uploaded identity photos.
+ *   The "photos uploaded" counter is DERIVED from photos.length, not stored separately.
+ *   This prevents the counter from drifting out of sync.
+ *
+ * - `generatedThumbnails` persists to localStorage so users can navigate away
+ *   and return to see their previously generated thumbnails.
+ *
+ * - The `handleGenerate` function NEVER clears the photos array. It only resets
+ *   the current generation job state, not the upload state.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -16,6 +27,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import s from "./style.module.css";
 import { useToast } from "@/components/ui/Toast";
+import { usePersistentState } from "@/lib/hooks/usePersistentState";
+import { STORAGE_KEYS } from "@/lib/storage/safeLocalStorage";
 
 // ============================================
 // TYPES
@@ -75,6 +88,55 @@ type ThumbnailJobV2 = {
     contentType?: string;
   }>;
 };
+
+/**
+ * Persisted generated thumbnail - stored in localStorage to survive
+ * navigation and page refreshes.
+ */
+type PersistedThumbnail = {
+  id: string;
+  url: string;
+  createdAt: number;
+  jobId: string;
+  style: StyleV2;
+  source?: "txt2img" | "img2img";
+};
+
+/**
+ * Type guard to validate persisted thumbnails loaded from localStorage.
+ * Protects against corrupted or outdated data structures.
+ */
+function isPersistedThumbnailArray(
+  value: unknown,
+): value is PersistedThumbnail[] {
+  if (!Array.isArray(value)) return false;
+  return value.every(
+    (item) =>
+      typeof item === "object" &&
+      item !== null &&
+      typeof item.id === "string" &&
+      typeof item.url === "string" &&
+      typeof item.createdAt === "number" &&
+      typeof item.jobId === "string",
+  );
+}
+
+/**
+ * Type guard to validate uploaded photos loaded from localStorage.
+ * These are the identity photos used for face training.
+ */
+function isUploadedPhotoArray(value: unknown): value is UploadedPhoto[] {
+  if (!Array.isArray(value)) return false;
+  return value.every(
+    (item) =>
+      typeof item === "object" &&
+      item !== null &&
+      typeof item.id === "string" &&
+      (item.url === null || typeof item.url === "string") &&
+      typeof item.width === "number" &&
+      typeof item.height === "number",
+  );
+}
 
 const STYLE_CARDS: Array<{
   id: StyleV2;
@@ -137,18 +199,50 @@ export default function ThumbnailsClient({ initialUser }: Props) {
   const [prompt, setPrompt] = useState("");
   const [includeIdentity, setIncludeIdentity] = useState(false);
 
-  const [identity, setIdentity] = useState<IdentityStatus>({ status: "none", photoCount: 0 });
+  const [identity, setIdentity] = useState<IdentityStatus>({
+    status: "none",
+    photoCount: 0,
+  });
   const [uploading, setUploading] = useState(false);
-  const [photoCount, setPhotoCount] = useState(0);
-  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+
+  // PERSISTED: Uploaded identity photos are stored in localStorage so they
+  // appear immediately on page load while we fetch the latest from the server.
+  // This also provides resilience if the server is slow to respond.
+  const { value: photos, setValue: setPhotos } = usePersistentState<
+    UploadedPhoto[]
+  >({
+    key: STORAGE_KEYS.UPLOADED_PHOTOS,
+    initialValue: [],
+    validator: isUploadedPhotoArray,
+  });
+
   const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null);
   const [resettingModel, setResettingModel] = useState(false);
+
+  // DERIVED: photoCount comes from photos array length, not separate state
+  const photoCount = photos.length;
 
   const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<ThumbnailJobV2 | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [generationPhase, setGenerationPhase] = useState<"training" | "generating" | null>(null);
+  const [generationPhase, setGenerationPhase] = useState<
+    "training" | "generating" | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
+
+  // ============================================
+  // PERSISTED GENERATED THUMBNAILS
+  // Stored in localStorage so they survive navigation/refresh.
+  // ============================================
+  const {
+    value: persistedThumbnails,
+    setValue: setPersistedThumbnails,
+    isHydrated: thumbnailsHydrated,
+  } = usePersistentState<PersistedThumbnail[]>({
+    key: STORAGE_KEYS.GENERATED_THUMBNAILS,
+    initialValue: [],
+    validator: isPersistedThumbnailArray,
+  });
 
   // ============================================
   // IDENTITY STATUS
@@ -161,14 +255,15 @@ export default function ThumbnailsClient({ initialUser }: Props) {
     try {
       const res = await fetch("/api/identity/status");
       if (!res.ok) return;
-      const data = (await res.json()) as IdentityStatus & { 
+      const data = (await res.json()) as IdentityStatus & {
         photoCount?: number;
         photos?: UploadedPhoto[];
       };
       setIdentity(data);
-      if (typeof data.photoCount === "number") {
-        setPhotoCount(data.photoCount);
-      }
+      // BUG FIX: Only update photos if the server returns a photos array.
+      // This prevents clearing the photos state when the server returns
+      // identity status without photo data (e.g., during training polling).
+      // The photoCount is now DERIVED from photos.length, so we don't set it separately.
       if (Array.isArray(data.photos)) {
         setPhotos(data.photos);
       }
@@ -185,7 +280,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
   // Only poll when training is in progress
   useEffect(() => {
     if (identity.status !== "training" && identity.status !== "pending") return;
-    
+
     const t = setInterval(() => void loadIdentityStatus(), 5000);
     return () => clearInterval(t);
   }, [identity.status, loadIdentityStatus]);
@@ -207,12 +302,35 @@ export default function ThumbnailsClient({ initialUser }: Props) {
           pollRef.current = null;
           setGenerating(false);
           setGenerationPhase(null);
+
+          // PERSIST: When job succeeds, save generated thumbnails to localStorage
+          // so they survive navigation and page refresh.
+          if (data.status === "succeeded" && data.outputImages.length > 0) {
+            const newThumbnails: PersistedThumbnail[] = data.outputImages.map(
+              (img, idx) => ({
+                id: `${data.jobId}-${idx}`,
+                url: img.url,
+                createdAt: Date.now(),
+                jobId: data.jobId,
+                style: data.style,
+                source: data.source,
+              }),
+            );
+            // Merge with existing, avoiding duplicates by id
+            setPersistedThumbnails((prev) => {
+              const existingIds = new Set(prev.map((t) => t.id));
+              const toAdd = newThumbnails.filter((t) => !existingIds.has(t.id));
+              // Keep most recent 50 thumbnails to prevent unbounded growth
+              const merged = [...toAdd, ...prev].slice(0, 50);
+              return merged;
+            });
+          }
         }
       } catch {
         // ignore transient errors
       }
     },
-    []
+    [setPersistedThumbnails],
   );
 
   useEffect(() => {
@@ -226,8 +344,44 @@ export default function ThumbnailsClient({ initialUser }: Props) {
     };
   }, [jobId, pollJob]);
 
-  // Can use identity if user has 7+ photos AND is using a style that supports it
-  const canUseIdentity = hasEnoughPhotos && (style === "subject" || style === "hold");
+  // RESTORE: When page loads with no active job but we have persisted thumbnails,
+  // create a synthetic job to display them. This ensures thumbnails persist
+  // across navigation and page refresh.
+  useEffect(() => {
+    // Only run after localStorage has been loaded and if we don't already have a job
+    if (!thumbnailsHydrated || job || jobId || generating) return;
+
+    if (persistedThumbnails.length > 0) {
+      // Group by most recent jobId to create a synthetic job for display
+      const mostRecentJobId = persistedThumbnails[0]?.jobId;
+      const mostRecentThumbnails = persistedThumbnails.filter(
+        (t) => t.jobId === mostRecentJobId,
+      );
+
+      if (mostRecentThumbnails.length > 0) {
+        const syntheticJob: ThumbnailJobV2 = {
+          jobId: mostRecentJobId,
+          status: "succeeded",
+          style: mostRecentThumbnails[0]?.style ?? "subject",
+          source: mostRecentThumbnails[0]?.source,
+          outputImages: mostRecentThumbnails.map((t) => ({ url: t.url })),
+        };
+        // BUG FIX: Also set jobId so that openEditor() works correctly.
+        // Previously only set job, but openEditor uses jobId as fallback.
+        setJobId(mostRecentJobId);
+        setJob(syntheticJob);
+      }
+    }
+  }, [thumbnailsHydrated, persistedThumbnails, job, jobId, generating]);
+
+  // Can use identity if:
+  // 1. Using a compatible style (subject or hold), AND
+  // 2. EITHER the model is already trained (identityReady) OR user has enough photos to train
+  // BUG FIX: Previously required hasEnoughPhotos even when model was already ready,
+  // which caused the toggle to be disabled when photos weren't cached locally.
+  const isCompatibleStyle = style === "subject" || style === "hold";
+  const canUseIdentity =
+    isCompatibleStyle && (identityReady || hasEnoughPhotos);
 
   // Auto-enable toggle when user first gets 7+ photos with a compatible style
   useEffect(() => {
@@ -239,7 +393,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
 
   const examples = useMemo(
     () => STYLE_CARDS.find((c) => c.id === style)?.examples ?? [],
-    [style]
+    [style],
   );
 
   // Helper to wait for identity training to complete
@@ -250,7 +404,14 @@ export default function ThumbnailsClient({ initialUser }: Props) {
       const res = await fetch("/api/identity/status");
       if (!res.ok) continue;
       const data = await res.json();
+      // BUG FIX: Only update identity status, not photos. The photos state
+      // is managed separately and should not be cleared during training polling.
+      // This prevents the "photos uploaded" counter from resetting to 0.
       setIdentity(data);
+      // If the server returns photos, update them (but don't clear if missing)
+      if (Array.isArray(data.photos)) {
+        setPhotos(data.photos);
+      }
       if (data.status === "ready") {
         return data.identityModelId;
       }
@@ -262,10 +423,16 @@ export default function ThumbnailsClient({ initialUser }: Props) {
   }, []);
 
   const handleGenerate = useCallback(async () => {
+    // BUG FIX: Only reset JOB-related state here, NOT the photos/uploads state.
+    // Previously, this function (or something it triggered) was clearing the
+    // uploaded photos, causing the "photos uploaded" counter to reset.
+    // The photos state is intentionally NOT touched here.
     setError(null);
     setJob(null);
     setJobId(null);
     setGenerationPhase(null);
+    // NOTE: We do NOT call setPhotos([]) or clear any upload-related state here.
+    // The uploaded photos must persist across generation attempts.
 
     const p = prompt.trim();
     if (p.length < 3) {
@@ -281,23 +448,32 @@ export default function ThumbnailsClient({ initialUser }: Props) {
       // If user wants identity but model isn't ready, train first
       if (includeIdentity && !identityReady) {
         setGenerationPhase("training");
-        toast("Training your identity model first… this may take a few minutes.", "info");
-        
+        toast(
+          "Training your identity model first… this may take a few minutes.",
+          "info",
+        );
+
         // Start training
-        const trainRes = await fetch("/api/identity/commit", { method: "POST" });
+        const trainRes = await fetch("/api/identity/commit", {
+          method: "POST",
+        });
         const trainData = await trainRes.json().catch(() => ({}));
-        
+
         if (!trainRes.ok) {
           // If already training, just wait for it
           if (trainRes.status !== 409) {
             throw new Error(trainData.message || "Failed to start training");
           }
         }
-        
+
         // Wait for training to complete
         identityModelId = (await waitForTraining()) ?? undefined;
         toast("Identity trained! Now generating thumbnails…", "success");
-      } else if (includeIdentity && identity.status !== "none" && "identityModelId" in identity) {
+      } else if (
+        includeIdentity &&
+        identity.status !== "none" &&
+        "identityModelId" in identity
+      ) {
         identityModelId = identity.identityModelId;
       }
 
@@ -316,7 +492,9 @@ export default function ThumbnailsClient({ initialUser }: Props) {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.message || data.error || "Failed to start generation");
+        throw new Error(
+          data.message || data.error || "Failed to start generation",
+        );
       }
       setJobId(data.jobId);
       toast("Generating variants…", "success");
@@ -326,7 +504,15 @@ export default function ThumbnailsClient({ initialUser }: Props) {
       setError(err instanceof Error ? err.message : "Generation failed");
       toast(err instanceof Error ? err.message : "Generation failed", "error");
     }
-  }, [prompt, style, includeIdentity, identityReady, identity, toast, waitForTraining]);
+  }, [
+    prompt,
+    style,
+    includeIdentity,
+    identityReady,
+    identity,
+    toast,
+    waitForTraining,
+  ]);
 
   const openEditor = useCallback(
     async (baseImageUrl: string, targetJobId?: string) => {
@@ -344,10 +530,13 @@ export default function ThumbnailsClient({ initialUser }: Props) {
         }
         router.push(`/thumbnails/editor/${data.projectId}`);
       } catch (err) {
-        toast(err instanceof Error ? err.message : "Failed to open editor", "error");
+        toast(
+          err instanceof Error ? err.message : "Failed to open editor",
+          "error",
+        );
       }
     },
-    [jobId, router, toast]
+    [jobId, router, toast],
   );
 
   const [regenerating, setRegenerating] = useState<string | null>(null);
@@ -376,113 +565,134 @@ export default function ThumbnailsClient({ initialUser }: Props) {
         setGenerationPhase("generating");
         toast("Creating variation...", "success");
       } catch (err) {
-        toast(err instanceof Error ? err.message : "Failed to create variation", "error");
+        toast(
+          err instanceof Error ? err.message : "Failed to create variation",
+          "error",
+        );
       } finally {
         setRegenerating(null);
       }
     },
-    [regenerating, toast]
+    [regenerating, toast],
   );
 
-  const handleUploadPhotos = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    // Reset input immediately so user can re-select same files
-    const inputEl = e.target;
-    
-    setUploading(true);
-    try {
-      const form = new FormData();
-      for (const f of Array.from(files)) form.append("file", f);
-      const res = await fetch("/api/identity/upload", { method: "POST", body: form });
-      const data = await res.json().catch(() => ({}));
-      
-      if (!res.ok) {
-        throw new Error(data.error?.message || data.message || "Upload failed");
-      }
-      
-      const succeeded = data.counts?.uploaded ?? 0;
-      const failed = data.counts?.failed ?? 0;
-      
-      // Show appropriate toast with failed file details
-      if (failed > 0) {
-        const failedFiles = (data.results as UploadResult[] || [])
-          .filter((r) => r.status === "error")
-          .map((r) => `${r.filename}: ${r.error}`)
-          .join("\n");
-        
-        if (succeeded > 0) {
-          toast(`${succeeded} uploaded, ${failed} failed:\n${failedFiles}`, "info");
-        } else {
-          toast(`All ${failed} failed:\n${failedFiles}`, "error");
+  const handleUploadPhotos = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+
+      // Reset input immediately so user can re-select same files
+      const inputEl = e.target;
+
+      setUploading(true);
+      try {
+        const form = new FormData();
+        for (const f of Array.from(files)) form.append("file", f);
+        const res = await fetch("/api/identity/upload", {
+          method: "POST",
+          body: form,
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(
+            data.error?.message || data.message || "Upload failed",
+          );
         }
-      } else if (succeeded > 0) {
-        toast(`${succeeded} photo(s) uploaded`, "success");
+
+        const succeeded = data.counts?.uploaded ?? 0;
+        const failed = data.counts?.failed ?? 0;
+
+        // Show appropriate toast with failed file details
+        if (failed > 0) {
+          const failedFiles = ((data.results as UploadResult[]) || [])
+            .filter((r) => r.status === "error")
+            .map((r) => `${r.filename}: ${r.error}`)
+            .join("\n");
+
+          if (succeeded > 0) {
+            toast(
+              `${succeeded} uploaded, ${failed} failed:\n${failedFiles}`,
+              "info",
+            );
+          } else {
+            toast(`All ${failed} failed:\n${failedFiles}`, "error");
+          }
+        } else if (succeeded > 0) {
+          toast(`${succeeded} photo(s) uploaded`, "success");
+        }
+
+        // Reload photos to show the new ones
+        await loadIdentityStatus();
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Upload failed", "error");
+      } finally {
+        setUploading(false);
+        // Reset file input so user can select same files again
+        inputEl.value = "";
       }
-      
-      // Reload photos to show the new ones
-      await loadIdentityStatus();
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "Upload failed", "error");
-    } finally {
-      setUploading(false);
-      // Reset file input so user can select same files again
-      inputEl.value = "";
-    }
-  }, [toast, loadIdentityStatus]);
+    },
+    [toast, loadIdentityStatus],
+  );
 
-  const handleDeletePhoto = useCallback(async (photoId: string) => {
-    setDeletingPhotoId(photoId);
-    try {
-      const res = await fetch(`/api/identity/upload/${photoId}`, { method: "DELETE" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || "Failed to delete");
-      
-      // Update local state
-      setPhotos((prev) => prev.filter((p) => p.id !== photoId));
-      if (data.counts?.total !== undefined) {
-        setPhotoCount(data.counts.total);
-      } else {
-        setPhotoCount((c) => Math.max(0, c - 1));
+  const handleDeletePhoto = useCallback(
+    async (photoId: string) => {
+      setDeletingPhotoId(photoId);
+      try {
+        const res = await fetch(`/api/identity/upload/${photoId}`, {
+          method: "DELETE",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || "Failed to delete");
+
+        // BUG FIX: Only update the photos array. The photoCount is now derived
+        // from photos.length, so we don't need to update it separately.
+        // This prevents the count from drifting out of sync with the actual photos.
+        setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+        toast("Photo deleted", "success");
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Failed to delete", "error");
+      } finally {
+        setDeletingPhotoId(null);
       }
-      toast("Photo deleted", "success");
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "Failed to delete", "error");
-    } finally {
-      setDeletingPhotoId(null);
-    }
-  }, [toast]);
+    },
+    [toast],
+  );
 
-  const handleResetModel = useCallback(async (deletePhotos = false) => {
-    if (!confirm(
-      deletePhotos
-        ? "This will delete your trained model AND all uploaded photos. You'll need to upload new photos to retrain. Continue?"
-        : "This will delete your trained model. Your photos will remain so you can retrain after making changes. Continue?"
-    )) {
-      return;
-    }
+  const handleResetModel = useCallback(
+    async (deletePhotos = false) => {
+      if (
+        !confirm(
+          deletePhotos
+            ? "This will delete your trained model AND all uploaded photos. You'll need to upload new photos to retrain. Continue?"
+            : "This will delete your trained model. Your photos will remain so you can retrain after making changes. Continue?",
+        )
+      ) {
+        return;
+      }
 
-    setResettingModel(true);
-    try {
-      const res = await fetch("/api/identity/reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deletePhotos }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || "Failed to reset model");
+      setResettingModel(true);
+      try {
+        const res = await fetch("/api/identity/reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deletePhotos }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || "Failed to reset model");
 
-      toast(data.message || "Model reset successfully", "success");
-      
-      // Reload identity status to reflect changes
-      await loadIdentityStatus();
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "Failed to reset", "error");
-    } finally {
-      setResettingModel(false);
-    }
-  }, [toast, loadIdentityStatus]);
+        toast(data.message || "Model reset successfully", "success");
+
+        // Reload identity status to reflect changes
+        await loadIdentityStatus();
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Failed to reset", "error");
+      } finally {
+        setResettingModel(false);
+      }
+    },
+    [toast, loadIdentityStatus],
+  );
 
   // ============================================
   // RENDER
@@ -547,7 +757,9 @@ export default function ThumbnailsClient({ initialUser }: Props) {
               id="prompt"
               className={s.textarea}
               placeholder={
-                examples.length > 0 ? `Example: ${examples[0]}` : "Describe the thumbnail..."
+                examples.length > 0
+                  ? `Example: ${examples[0]}`
+                  : "Describe the thumbnail..."
               }
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -571,26 +783,40 @@ export default function ThumbnailsClient({ initialUser }: Props) {
               </div>
             )}
             <span className={s.inputHint}>
-              Tip: mention the subject, the prop, and the vibe. We’ll keep the image text-free.
+              Tip: mention the subject, the prop, and the vibe. We’ll keep the
+              image text-free.
             </span>
           </div>
 
           <div className={`${s.formGroup} ${s.fullWidth}`}>
-            <label className={s.label}>Put yourself in the thumbnail (optional)</label>
+            <label className={s.label}>
+              Put yourself in the thumbnail (optional)
+            </label>
             <div className={s.identityRow}>
               <div className={s.identityStatus}>
-                <span>{photoCount} photo{photoCount !== 1 ? "s" : ""} uploaded</span>
+                <span>
+                  {photoCount} photo{photoCount !== 1 ? "s" : ""} uploaded
+                </span>
                 {photoCount < 7 && !identityReady && (
-                  <span className={s.identityHint}> — need {7 - photoCount} more to enable</span>
+                  <span className={s.identityHint}>
+                    {" "}
+                    — need {7 - photoCount} more to enable
+                  </span>
                 )}
                 {identityReady && (
                   <span className={s.identityReady}> ✓ Ready to use</span>
                 )}
                 {identity.status === "training" && (
-                  <span className={s.identityTraining}> — Training in progress…</span>
+                  <span className={s.identityTraining}>
+                    {" "}
+                    — Training in progress…
+                  </span>
                 )}
                 {identity.status !== "none" && identity.errorMessage && (
-                  <span className={s.identityError}> — {identity.errorMessage}</span>
+                  <span className={s.identityError}>
+                    {" "}
+                    — {identity.errorMessage}
+                  </span>
                 )}
               </div>
               <div className={s.identityActions}>
@@ -618,11 +844,12 @@ export default function ThumbnailsClient({ initialUser }: Props) {
                 </label>
               </div>
             </div>
-            
+
             {/* Help text when model is ready */}
             {identityReady && (
               <p className={s.identityHelp}>
-                Your identity model is trained and ready. To update your photos, click "Reset Model" first.
+                Your identity model is trained and ready. To update your photos,
+                click "Reset Model" first.
               </p>
             )}
 
@@ -671,7 +898,9 @@ export default function ThumbnailsClient({ initialUser }: Props) {
                 title={
                   canUseIdentity
                     ? "Include your face in the thumbnail"
-                    : `Upload ${7 - photoCount} more photo${7 - photoCount !== 1 ? "s" : ""} to enable (works with Subject/Hold styles)`
+                    : !isCompatibleStyle
+                      ? "Identity works with Subject and Hold styles only"
+                      : `Upload ${7 - photoCount} more photo${7 - photoCount !== 1 ? "s" : ""} to enable`
                 }
               >
                 <span className={s.toggleKnob} />
@@ -679,7 +908,10 @@ export default function ThumbnailsClient({ initialUser }: Props) {
               <span className={s.toggleLabel}>
                 Include my face
                 {!identityReady && hasEnoughPhotos && (
-                  <span className={s.toggleHint}> (will train automatically)</span>
+                  <span className={s.toggleHint}>
+                    {" "}
+                    (will train automatically)
+                  </span>
                 )}
               </span>
             </div>
@@ -695,8 +927,8 @@ export default function ThumbnailsClient({ initialUser }: Props) {
           {generating ? (
             <>
               <span className={s.spinner} />
-              {generationPhase === "training" 
-                ? "Training identity…" 
+              {generationPhase === "training"
+                ? "Training identity…"
                 : "Generating…"}
             </>
           ) : (
@@ -711,8 +943,8 @@ export default function ThumbnailsClient({ initialUser }: Props) {
               >
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
               </svg>
-              {includeIdentity && !identityReady 
-                ? "Train & Generate" 
+              {includeIdentity && !identityReady
+                ? "Train & Generate"
                 : "Generate 3 Variants"}
             </>
           )}
@@ -729,9 +961,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
           {generating ? (
             <>
               <span className={s.spinner} />
-              {generationPhase === "training" 
-                ? "Training…" 
-                : "Generating…"}
+              {generationPhase === "training" ? "Training…" : "Generating…"}
             </>
           ) : (
             <>
@@ -745,8 +975,8 @@ export default function ThumbnailsClient({ initialUser }: Props) {
               >
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
               </svg>
-              {includeIdentity && !identityReady 
-                ? "Train & Generate" 
+              {includeIdentity && !identityReady
+                ? "Train & Generate"
                 : "Generate"}
             </>
           )}
@@ -893,7 +1123,9 @@ export default function ThumbnailsClient({ initialUser }: Props) {
                 </div>
                 <div className={s.variantInfo}>
                   <p className={s.variantHook}>
-                    {job.source === "img2img" ? "Image variation" : "Text-free base"}
+                    {job.source === "img2img"
+                      ? "Image variation"
+                      : "Text-free base"}
                   </p>
                 </div>
               </div>

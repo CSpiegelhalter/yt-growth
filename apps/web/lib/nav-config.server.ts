@@ -20,7 +20,7 @@ import {
  */
 export type SerializableNavItem = Omit<NavItem, "match" | "featureFlag"> & {
   /** If item has a custom match pattern, encode it as a string identifier */
-  matchPattern?: "dashboard" | "competitors" | "trending" | "tags";
+  matchPattern?: "dashboard" | "competitors" | "trending" | "tags" | "keywords";
 };
 
 /**
@@ -79,6 +79,8 @@ export async function getFilteredNavItems(): Promise<{
           serializable.matchPattern = "trending";
         } else if (item.id === "tags") {
           serializable.matchPattern = "tags";
+        } else if (item.id === "keywords") {
+          serializable.matchPattern = "keywords";
         }
 
         return serializable;
@@ -106,6 +108,8 @@ export function matchNavItemPattern(
       return pathname === "/trending";
     case "tags":
       return pathname === "/tags" || pathname.startsWith("/tags/");
+    case "keywords":
+      return pathname === "/keywords" || pathname.startsWith("/keywords/");
     default:
       return pathname === item.href;
   }

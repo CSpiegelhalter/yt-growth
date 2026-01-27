@@ -75,7 +75,7 @@ describe("Entitlements Unit Tests", () => {
         competitor_video_analysis: 5,
         idea_generate: 10,
         channel_sync: 3,
-        keyword_research: 0,
+        keyword_research: 5,
         tag_generate: 5,
       });
     });
@@ -88,7 +88,7 @@ describe("Entitlements Unit Tests", () => {
         competitor_video_analysis: 100,
         idea_generate: 200,
         channel_sync: 50,
-        keyword_research: 0,
+        keyword_research: 100,
         tag_generate: 200,
       });
     });
@@ -106,18 +106,14 @@ describe("Entitlements Unit Tests", () => {
   });
 
   describe("featureLocked", () => {
-    it("keyword_research is locked for both plans", () => {
-      expect(featureLocked("FREE", "keyword_research")).toBe(true);
-      expect(featureLocked("PRO", "keyword_research")).toBe(true);
-    });
-
-    it("other features are not locked", () => {
+    it("no features are locked (all use usage limits instead)", () => {
       const features = [
         "channels_connected",
         "owned_video_analysis",
         "competitor_video_analysis",
         "idea_generate",
         "channel_sync",
+        "keyword_research",
         "tag_generate",
       ] as const;
 

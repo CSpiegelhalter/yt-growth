@@ -34,7 +34,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://*.ytimg.com https://*.ggpht.com",
+    "img-src 'self' data: blob: https://*.ytimg.com https://*.ggpht.com https://replicate.delivery",
     "connect-src 'self' https://api.stripe.com https://www.googleapis.com https://youtubeanalytics.googleapis.com https://oauth2.googleapis.com https://va.vercel-scripts.com",
     "frame-src https://js.stripe.com https://checkout.stripe.com",
     "font-src 'self'",
@@ -65,9 +65,6 @@ function getOrCreateRequestId(req: NextRequest) {
 }
 
 function isProtectedPath(pathname: string) {
-  // NOTE: /dashboard is NOT protected at the middleware level.
-  // The dashboard page handles auth itself and renders a preview for logged-out users.
-  // This allows /dashboard to return 200 OK for SEO instead of redirecting.
   const prefixes = [
     "/channels",
     "/audit",
@@ -77,7 +74,6 @@ function isProtectedPath(pathname: string) {
     "/competitors",
     "/video",
     "/admin",
-    "/ideas",
     "/api/private",
     "/api/me",
   ];

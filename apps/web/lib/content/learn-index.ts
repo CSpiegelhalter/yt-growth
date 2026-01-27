@@ -40,7 +40,7 @@ export const LEARN_INDEX_CONTENT = {
       id: "content",
       title: "Content Strategy & Ideas",
       description: `The best YouTubers don't run out of ideas—they have systems for generating them consistently. Running out of video ideas is one of the main reasons creators burn out or abandon their channels. Discover how to research your niche effectively, find trending topics before they become saturated, and develop a content strategy that keeps your audience engaged video after video. Good ideas validated by data perform better than random uploads every time.`,
-      relatedSlugs: ["youtube-video-ideas", "how-to-be-a-youtuber", "how-to-make-a-youtube-channel"],
+      relatedSlugs: ["youtube-video-ideas", "youtube-shorts-strategy", "how-to-be-a-youtuber", "how-to-make-a-youtube-channel"],
     },
     {
       id: "seo",
@@ -64,7 +64,7 @@ export const LEARN_INDEX_CONTENT = {
       id: "formats",
       title: "Video Formats & Shorts",
       description: `Different video formats serve different purposes in your content strategy. Long-form videos build watch time and deeper engagement, YouTube Shorts drive discovery and reach new audiences quickly, and live streams build real-time community connection. Understanding when to use each format and how to optimize for their specific requirements—from aspect ratios to pacing to optimal length—helps you build a well-rounded channel that grows from multiple traffic sources.`,
-      relatedSlugs: ["youtube-shorts-length", "how-to-go-live-on-youtube", "how-to-promote-youtube-videos"],
+      relatedSlugs: ["youtube-shorts-strategy", "youtube-shorts-length", "how-to-go-live-on-youtube", "how-to-promote-youtube-videos"],
     },
   ],
 

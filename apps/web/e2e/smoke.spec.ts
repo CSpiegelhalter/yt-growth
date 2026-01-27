@@ -67,6 +67,33 @@ test.describe("Smoke Tests - Public Pages", () => {
       page.locator("text=/error|something went wrong/i")
     ).not.toBeVisible();
   });
+
+  test("ideas page is publicly accessible (no auth required)", async ({
+    page,
+  }) => {
+    // Navigate to ideas page without being logged in
+    const response = await page.goto("/ideas");
+
+    // Should return 200 OK, not a redirect
+    expect(response?.status()).toBe(200);
+
+    // URL should remain /ideas
+    await expect(page).toHaveURL(/\/ideas/);
+
+    // Should show the page content
+    await expect(page.locator("h1")).toContainText(/video ideas/i);
+
+    // Should show the generate button
+    await expect(page.locator("button")).toContainText(/generate/i);
+
+    // Should show sign-in hint for anonymous users
+    await expect(page.locator("text=/sign in/i")).toBeVisible();
+
+    // Should NOT show any error states
+    await expect(
+      page.locator("text=/error|something went wrong/i")
+    ).not.toBeVisible();
+  });
 });
 
 test.describe("Smoke Tests - Protected Pages", () => {
@@ -95,12 +122,15 @@ test.describe("Smoke Tests - Protected Pages", () => {
     await expect(page.locator(`text=${TEST_USER.email}`)).toBeVisible();
   });
 
-  test("ideas page loads without error", async ({ page }) => {
+  test("ideas page loads with full experience when authenticated", async ({ page }) => {
     await page.goto("/ideas");
     await page.waitForLoadState("networkidle");
 
     await expect(page.locator("main").first()).toBeVisible();
     await expect(page).toHaveURL(/ideas/);
+    
+    // Should show generate button without sign-in hint
+    await expect(page.locator("button")).toContainText(/generate/i);
   });
 
   test("competitors page loads without error", async ({ page }) => {

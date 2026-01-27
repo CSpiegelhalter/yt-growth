@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { LEARN_ARTICLES, learnArticles, getRelatedArticles } from "../articles";
+import { LEARN_ARTICLES, getRelatedArticles } from "../articles";
 import { buildLearnMetadata, buildLearnSchemas } from "../articles/seo";
 import {
   StructuredData,
@@ -68,11 +68,6 @@ export default async function LearnArticlePage({ params }: LearnArticlePageProps
     notFound();
   }
 
-  const navItems = learnArticles.map((a) => ({
-    slug: a.slug,
-    label: a.label,
-  }));
-
   const breadcrumb = [
     { label: "Home", href: "/" },
     { label: "Learn", href: "/learn" },
@@ -119,11 +114,7 @@ export default async function LearnArticlePage({ params }: LearnArticlePageProps
       />
 
       {/* Article Navigation */}
-      <LearnTopicsNav
-        items={navItems}
-        activeSlug={article.slug}
-        styles={navStyles}
-      />
+      <LearnTopicsNav styles={navStyles} />
 
       {/* Hero */}
       <LearnHero

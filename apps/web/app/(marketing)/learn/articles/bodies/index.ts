@@ -49,6 +49,7 @@ import { Body as HowToBeAYouTuberBody } from "./how-to-be-a-youtuber";
 import { Body as YouTubeTagGeneratorBody } from "./youtube-tag-generator";
 import { Body as YouTubeShortsLengthBody } from "./youtube-shorts-length";
 import { Body as YouTubeShortsMonetizationBody } from "./youtube-shorts-monetization";
+import { Body as YouTubeShortsStrategyBody } from "./youtube-shorts-strategy";
 import { Body as YouTubeAlgorithmBody } from "./youtube-algorithm";
 
 // Map of slug to body component
@@ -77,5 +78,6 @@ export const BODY_COMPONENTS: Record<string, React.ComponentType<BodyProps>> = {
   "youtube-tag-generator": YouTubeTagGeneratorBody,
   "youtube-shorts-length": YouTubeShortsLengthBody,
   "youtube-shorts-monetization": YouTubeShortsMonetizationBody,
+  "youtube-shorts-strategy": YouTubeShortsStrategyBody,
   "youtube-algorithm": YouTubeAlgorithmBody,
 };

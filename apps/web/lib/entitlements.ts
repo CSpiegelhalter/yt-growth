@@ -35,7 +35,7 @@ const FREE_LIMITS: PlanLimits = {
   competitor_video_analysis: 5,
   idea_generate: 10,
   channel_sync: 3,
-  keyword_research: 0, // Locked
+  keyword_research: 5, // Free tier: 5 keyword research runs per day
   tag_generate: 5,
 };
 
@@ -45,14 +45,14 @@ const PRO_LIMITS: PlanLimits = {
   competitor_video_analysis: 100,
   idea_generate: 200,
   channel_sync: 50,
-  keyword_research: 0, // Still locked until implemented
+  keyword_research: 100, // Pro tier: 100 keyword research runs per day
   tag_generate: 200,
 };
 
 // Features that are completely locked (not just usage-limited)
 const LOCKED_FEATURES: Record<Plan, FeatureKey[]> = {
-  FREE: ["keyword_research"],
-  PRO: ["keyword_research"], // Still locked for now
+  FREE: [], // keyword_research now has usage limits instead of being locked
+  PRO: [],
 };
 
 /**

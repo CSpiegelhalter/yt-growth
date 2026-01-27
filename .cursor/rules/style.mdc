@@ -47,6 +47,40 @@ If you touch UI code, you must satisfy **all** sections below.
   - group → group: `gap-16`
   - sections: `gap-24`+
 
+### 1.4 Page Container Rules (MANDATORY)
+All primary app pages MUST use the standard page container pattern for consistent margins.
+
+**Required CSS pattern for page content:**
+```css
+.page {
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--page-padding-mobile);
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: var(--page-padding-desktop);
+  }
+}
+```
+
+**CSS Variables (defined in `globals.css`):**
+- `--page-max-width: 1200px` — standard content width
+- `--page-max-width-narrow: 800px` — narrow variant for article/detail pages
+- `--page-padding-mobile: 16px` — horizontal padding on mobile
+- `--page-padding-desktop: 24px` — horizontal padding on desktop
+
+**Rules:**
+1. **Never hardcode max-width or padding values** — always use the CSS variables
+2. **One container per page** — avoid nesting containers (no double-padding)
+3. **Existing component:** Use `PageContainer` from `@/components/ui/PageContainer` for RSC pages
+4. **CSS modules:** Apply the standard `.page` pattern shown above
+5. **Exceptions:** If a page needs different width (e.g., article pages), use `--page-max-width-narrow` instead
+
+**Source of truth pages:** `/subscriber-insights`, `/dashboard`, `/competitors`
+**These pages demonstrate correct margin implementation.**
+
 ---
 
 ## 2) Typography (readable + consistent)

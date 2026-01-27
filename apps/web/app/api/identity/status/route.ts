@@ -18,9 +18,20 @@ export const GET = createApiRoute(
       void ctx;
       const userId = api.userId!;
 
-      // Get uploaded photos (uncommitted assets that can be used for training)
+      // First check if user has a trained model
+      let model = await prisma.userModel.findUnique({
+        where: { userId },
+      });
+
+      // Get photos based on model status:
+      // - If model exists and is ready/training: get photos associated with that model
+      // - Otherwise: get uncommitted photos available for training
       const photos = await prisma.userTrainingAsset.findMany({
-        where: { userId, identityModelId: null },
+        where: {
+          userId,
+          // If model exists, get photos for that model; otherwise get uncommitted photos
+          identityModelId: model ? model.id : null,
+        },
         select: {
           id: true,
           s3KeyOriginal: true,
@@ -53,13 +64,9 @@ export const GET = createApiRoute(
 
       const photoCount = photos.length;
 
-      let model = await prisma.userModel.findUnique({
-        where: { userId },
-      });
-
       if (!model) {
-        return NextResponse.json({ 
-          status: "none", 
+        return NextResponse.json({
+          status: "none",
           photoCount,
           photos: photosWithUrls,
         });
@@ -69,9 +76,9 @@ export const GET = createApiRoute(
       if (model.status === "training" && model.trainingId) {
         try {
           const training = await getTraining(model.trainingId);
-          log.info("Polled Replicate training status", { 
-            trainingId: model.trainingId, 
-            replicateStatus: training.status 
+          log.info("Polled Replicate training status", {
+            trainingId: model.trainingId,
+            replicateStatus: training.status,
           });
 
           // Update our DB if Replicate status has changed
@@ -84,16 +91,16 @@ export const GET = createApiRoute(
               outputKeys: training.output ? Object.keys(training.output) : [],
               output: training.output,
             });
-            
+
             const version = training.output?.version;
             // Try multiple possible field names for weights URL
-            const weightsUrl = 
+            const weightsUrl =
               training.output?.weights ??
               training.output?.lora_weights ??
               training.output?.lora ??
               training.output?.model_weights ??
               null;
-              
+
             model = await prisma.userModel.update({
               where: { id: model.id },
               data: {
@@ -103,13 +110,16 @@ export const GET = createApiRoute(
                 trainingCompletedAt: new Date(),
               },
             });
-            log.info("Training completed, model ready", { 
-              modelId: model.id, 
-              version, 
+            log.info("Training completed, model ready", {
+              modelId: model.id,
+              version,
               weightsUrl,
               hasWeights: !!weightsUrl,
             });
-          } else if (training.status === "failed" || training.status === "canceled") {
+          } else if (
+            training.status === "failed" ||
+            training.status === "canceled"
+          ) {
             model = await prisma.userModel.update({
               where: { id: model.id },
               data: {
@@ -118,13 +128,16 @@ export const GET = createApiRoute(
                 trainingCompletedAt: new Date(),
               },
             });
-            log.warn("Training failed/canceled", { modelId: model.id, error: training.error });
+            log.warn("Training failed/canceled", {
+              modelId: model.id,
+              error: training.error,
+            });
           }
           // If still processing/starting, keep status as "training"
         } catch (err) {
-          log.warn("Failed to poll Replicate training", { 
-            trainingId: model.trainingId, 
-            error: err instanceof Error ? err.message : String(err) 
+          log.warn("Failed to poll Replicate training", {
+            trainingId: model.trainingId,
+            error: err instanceof Error ? err.message : String(err),
           });
           // Continue with DB status if Replicate poll fails
         }
@@ -140,13 +153,13 @@ export const GET = createApiRoute(
         },
         triggerWord: model.status === "ready" ? model.triggerWord : undefined,
         // Include loraWeightsUrl so we can verify it's being captured
-        loraWeightsUrl: model.status === "ready" ? model.loraWeightsUrl : undefined,
+        loraWeightsUrl:
+          model.status === "ready" ? model.loraWeightsUrl : undefined,
         hasLoraWeights: !!model.loraWeightsUrl,
         errorMessage: model.errorMessage ?? undefined,
         photoCount,
         photos: photosWithUrls,
       });
-    }
-  )
+    },
+  ),
 );
-
