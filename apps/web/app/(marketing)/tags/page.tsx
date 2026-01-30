@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 
 /**
  * Tags hub index page.
- * Redirects to /tags/extractor (Tag Finder) as the default tool.
+ * 301 permanent redirect to /tags/extractor (Tag Finder) as the default tool.
  */
 export default function TagsPage() {
-  redirect("/tags/extractor");
+  permanentRedirect("/tags/extractor");
 }
