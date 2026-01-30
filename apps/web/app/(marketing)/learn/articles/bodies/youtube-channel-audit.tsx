@@ -1,421 +1,481 @@
 /**
  * Body content for YouTube Channel Audit article.
  * Server component - no "use client" directive.
- * 
- * Magazine-style layout with visual variety and proper spacing.
+ *
+ * Full blog-style article: comfortable spacing, readable typography,
+ * strong hierarchy, scannable sections, tasteful callouts, and clear CTAs.
  */
 
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import type { BodyProps } from "./index";
-import { MetricCardGrid, AUDIT_METRICS, DiagnosisFlow, DIAGNOSIS_BRANCHES } from "../../_components";
+import { Callout } from "../../_components";
+
 
 export function Body({ s }: BodyProps) {
   return (
     <>
       {/* INTRO */}
-      <section id="what-is-audit" className="sectionOpen">
-        <p className={s.sectionText} style={{ fontSize: '1.125rem' }}>
-          You&apos;re posting consistently, your content is good, but your views are flat and subscribers aren&apos;t growing.
+      <section id="intro" className="sectionOpen">
+        <p className={s.sectionText} style={{ fontSize: "1.125rem" }}>
+          If YouTube analytics have ever made you feel like you&apos;re staring
+          at a cockpit full of blinking lights—welcome to the club. One tab says
+          your video is a &quot;10/10,&quot; another says your click-through
+          rate is &quot;too low,&quot; and your brain starts doing cartwheels:
+          Do I change my thumbnail? Upload more? Shorten the intro? Switch
+          niches?
         </p>
-        
-        <p className="standaloneLine">Sound familiar?</p>
-        
+
         <p className={s.sectionText}>
-          A channel audit is how you figure out what you can improve in order to get more viewers on YouTube.
+          Here&apos;s the problem: most creators get stuck optimizing the wrong
+          numbers, or optimizing the right numbers in the wrong order. A channel
+          audit isn&apos;t about obsessing over one metric (like CTR) in
+          isolation. It&apos;s about understanding how your channel moves people
+          through a simple story:
         </p>
-        
+
+        <p
+          className={s.sectionText}
+          style={{ fontWeight: 500, color: "var(--text)" }}
+        >
+          YouTube shows your video → people choose to click → they keep watching
+          → they watch something else → you get momentum (and ideally,
+          outcomes).
+        </p>
+
+        <p className={s.sectionText}>
+          In this post, you&apos;ll learn a practical, no-drama way to audit
+          your videos using the metrics that matter most—CTR, audience
+          retention, and post-watch behavior—plus the supporting context that
+          helps you decide what to do next.
+        </p>
+
         <div className="funCallout">
           <p className="funCallout__text">
-            Think of an audit like being a detective for your own channel. The clues are in your analytics. This guide shows you where to look.
+            If you want the faster version: {BRAND.name} connects to your
+            YouTube analytics and surfaces these same signals inside your{" "}
+            <Link
+              href="/dashboard"
+              style={{ color: "var(--primary)", fontWeight: 600 }}
+            >
+              dashboard
+            </Link>{" "}
+            and per-video pages—so you can spot the bottleneck in minutes
+            instead of digging through tabs.
           </p>
         </div>
-        
+      </section>
+
+      {/* THE ONE-METRIC MISTAKE */}
+      <section id="one-metric-mistake" className="sectionOpen">
+        <h2 className={s.sectionTitle}>
+          The biggest mistake: judging a video by one metric
+        </h2>
+
         <p className={s.sectionText}>
-          An audit is a systematic review of your YouTube analytics to find the specific bottleneck holding you back. Maybe your thumbnails aren&apos;t getting clicks. Maybe viewers are leaving in the first 30 seconds. Maybe YouTube isn&apos;t showing your videos to anyone.
+          A lot of people open Studio, see &quot;CTR is 3%,&quot; and
+          immediately decide the whole upload is a failure. But one metric
+          rarely tells the truth by itself—especially if you&apos;re using
+          YouTube for business outcomes (clients, calls booked, leads, sales).
         </p>
-        
+
         <p className={s.sectionText}>
-          Each problem has a different fix, and the only way to know which one applies to you is to look at the data.
+          A video can have a &quot;low CTR&quot; and still produce meaningful
+          results if it generated enough watch time, subscribers, or downstream
+          conversions. That&apos;s why the first step in any real audit is
+          context: <strong>What did this video actually produce?</strong>
+        </p>
+
+        <p className={s.sectionText}>
+          Start every audit with a bigger picture snapshot: views, watch time or
+          watch hours, subscribers gained (plus a simple viewer-to-subscriber
+          ratio), traffic sources showing where viewers came from, and any
+          downstream outcomes you care about—email signups, booked calls, or
+          sales.
         </p>
       </section>
 
-      {/* Visual: The YouTube Funnel */}
-      <div className="inlineIllustration">
-        <svg width="320" height="200" viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="YouTube growth funnel showing impressions, clicks, watch time, and subscribers">
-          <path d="M40 20 L280 20 L220 180 L100 180 Z" fill="url(#funnelGradient)" opacity="0.1"/>
-          <path d="M40 20 L280 20 L220 180 L100 180 Z" stroke="url(#funnelGradient)" strokeWidth="2" fill="none"/>
-          <line x1="60" y1="60" x2="260" y2="60" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4"/>
-          <line x1="80" y1="100" x2="240" y2="100" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4"/>
-          <line x1="95" y1="140" x2="225" y2="140" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4"/>
-          <text x="160" y="45" textAnchor="middle" fontSize="12" fontWeight="600" fill="#6366f1">Impressions</text>
-          <text x="160" y="82" textAnchor="middle" fontSize="12" fontWeight="600" fill="#8b5cf6">Clicks (CTR)</text>
-          <text x="160" y="122" textAnchor="middle" fontSize="12" fontWeight="600" fill="#a855f7">Watch Time</text>
-          <text x="160" y="165" textAnchor="middle" fontSize="12" fontWeight="600" fill="#c026d3">Subscribers</text>
-          <defs>
-            <linearGradient id="funnelGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#6366f1"/>
-              <stop offset="100%" stopColor="#c026d3"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
+      {/* THE CORE GROWTH LOOP */}
+      <section id="growth-loop" className="sectionTinted">
+        <h2 className={s.sectionTitle}>
+          The core YouTube growth loop (and why it works)
+        </h2>
 
-      <div className="pullQuote">
-        By the end of this guide, you&apos;ll know exactly what&apos;s broken and what to fix first.
-      </div>
-
-      {/* THE 6 METRICS */}
-      <section id="key-metrics" className="sectionTinted">
-        <h2 className={s.sectionTitle}>The 6 Metrics That Actually Matter</h2>
         <p className={s.sectionText}>
-          YouTube tracks dozens of numbers, but only these six tell you what&apos;s actually happening. Each card shows what to look for and what to do if it&apos;s not working.
+          Most small channels grow when three things work together.{" "}
+          <strong>CTR</strong>: people click when YouTube shows the impression.{" "}
+          <strong>Retention</strong>: people stay once they click.{" "}
+          <strong>Post-watch behavior</strong>: people continue watching instead
+          of bouncing.
         </p>
-        <MetricCardGrid metrics={AUDIT_METRICS} />
+
+        <p className={s.sectionText}>
+          When CTR and retention are strong, you often get a positive feedback
+          loop: more impressions → more views → more watch time → more
+          distribution.
+        </p>
+
+        <p className={s.sectionText}>
+          Your audit shouldn&apos;t feel like an endless list of tips. It should
+          feel like a diagnosis: <em>Which part of this loop is breaking?</em>
+        </p>
+
       </section>
 
-      {/* WHERE TO FIND */}
-      <section id="youtube-studio-guide" className="sectionOpen">
-        <h2 className={s.sectionTitle}>Where to Find Each Metric</h2>
+      {/* DIAGNOSE CTR */}
+      <section id="diagnose-ctr" className="sectionOpen">
+        <h2 className={s.sectionTitle}>
+          Diagnose click-through rate the right way (CTR + impressions)
+        </h2>
+
+        <h3 className={s.subheading}>What CTR means</h3>
         <p className={s.sectionText}>
-          Here&apos;s your quick reference map. All paths start at <a href="https://studio.youtube.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 600 }}>studio.youtube.com</a>
+          CTR is how often people click after they see your title and thumbnail.
+          No click means no view, and no chance to earn watch time.
         </p>
-        
-        <div className="metricRow">
-          <h4 className="metricRow__name">Impressions and CTR</h4>
-          <div className="metricRow__path">
-            <span className="studioPath">
-              <span className="studioPath__chip">Analytics</span>
-              <span className="studioPath__arrow">›</span>
-              <span className="studioPath__chip">Reach</span>
-            </span>
-          </div>
-          <p className="metricRow__why">See how often YouTube shows your thumbnails and what percentage click.</p>
-        </div>
-        
-        <div className="metricRow">
-          <h4 className="metricRow__name">Average View Duration</h4>
-          <div className="metricRow__path">
-            <span className="studioPath">
-              <span className="studioPath__chip">Analytics</span>
-              <span className="studioPath__arrow">›</span>
-              <span className="studioPath__chip">Engagement</span>
-            </span>
-          </div>
-          <p className="metricRow__why">Check how long people watch. Aim for 40% or more of video length.</p>
-        </div>
-        
-        <div className="metricRow">
-          <h4 className="metricRow__name">Retention Curves</h4>
-          <div className="metricRow__path">
-            <span className="studioPath">
-              <span className="studioPath__chip">Content</span>
-              <span className="studioPath__arrow">›</span>
-              <span className="studioPath__chip">Video</span>
-              <span className="studioPath__arrow">›</span>
-              <span className="studioPath__chip">Analytics</span>
-              <span className="studioPath__arrow">›</span>
-              <span className="studioPath__chip">Engagement</span>
-            </span>
-          </div>
-          <p className="metricRow__why">Find exact moments viewers leave. Cliffs indicate weak hooks.</p>
-          <span className="metricRow__tip">Focus on the first 30 seconds. A steep drop there means your hook isn&apos;t working.</span>
-        </div>
-        
-        <div className="metricRow">
-          <h4 className="metricRow__name">Traffic Sources</h4>
-          <div className="metricRow__path">
-            <span className="studioPath">
-              <span className="studioPath__chip">Analytics</span>
-              <span className="studioPath__arrow">›</span>
-              <span className="studioPath__chip">Reach</span>
-              <span className="studioPath__arrow">›</span>
-              <span className="studioPath__chip">Traffic source types</span>
-            </span>
-          </div>
-          <p className="metricRow__why">Browse means recommendations. Search means you rank for keywords.</p>
-        </div>
-        
-        <div className="metricRow">
-          <h4 className="metricRow__name">Returning Viewers</h4>
-          <div className="metricRow__path">
-            <span className="studioPath">
-              <span className="studioPath__chip">Analytics</span>
-              <span className="studioPath__arrow">›</span>
-              <span className="studioPath__chip">Audience</span>
-            </span>
-          </div>
-          <p className="metricRow__why">Growing returning viewers means you&apos;re building loyalty.</p>
-        </div>
+
+        <h3 className={s.subheading}>Benchmarks (with nuance)</h3>
+        <p className={s.sectionText}>
+          A common target is 5%+ CTR, with 7% being better, and 2–4% often
+          signaling weak interest. But CTR often drops as impressions scale to a
+          broader audience. A tiny video can show 10–20% CTR because it&apos;s
+          only being shown to the warmest audience first. High CTR at low
+          impressions isn&apos;t automatically a win.
+        </p>
+
+        <p className={s.sectionText}>
+          So don&apos;t ask &quot;Is my CTR good?&quot; Ask:{" "}
+          <strong>
+            Is my CTR good relative to my impressions volume and traffic source?
+          </strong>
+        </p>
+
+        <h3 className={s.subheading}>What to change when CTR is low</h3>
+        <p className={s.sectionText}>
+          If CTR is underperforming, your highest-leverage change is usually
+          title + thumbnail alignment. Keep thumbnails simple—two or three words
+          maximum, with one clear idea. Make title and thumbnail express the
+          same promise from two angles: clarity plus curiosity. And change one
+          thing at a time so you can tell what moved CTR.
+        </p>
+
+        <Callout variant="tip" title="Test one change at a time">
+          <p>
+            Change thumbnail OR title—not both at once. That way you actually
+            learn what helped.
+          </p>
+        </Callout>
+
+        <p className={s.sectionText}>
+          If you don&apos;t want to interpret CTR in a vacuum, {BRAND.name}{" "}
+          surfaces CTR alongside context—traffic source mix, retention
+          stability, and whether the video is spreading beyond your core
+          audience.{" "}
+          <Link
+            href="/dashboard"
+            style={{ color: "var(--primary)", fontWeight: 600 }}
+          >
+            Try it in your dashboard
+          </Link>
+          .
+        </p>
       </section>
 
-      {/* BENCHMARKS */}
-      <section id="what-good-looks-like" className="sectionOpen">
-        <h2 className={s.sectionTitle}>What Good Looks Like</h2>
-        
+      {/* DIAGNOSE RETENTION */}
+      <section id="diagnose-retention" className="sectionTinted">
+        <h2 className={s.sectionTitle}>
+          Diagnose retention (and stop &quot;fixing&quot; the wrong part of the
+          video)
+        </h2>
+
+        <p className={s.sectionText}>
+          CTR gets the click. Retention decides whether YouTube should keep
+          showing the video.
+        </p>
+
+        <h3 className={s.subheading}>How to read the retention graph</h3>
+        <p className={s.sectionText}>
+          A drop early is normal. What matters is how severe it is, and whether
+          the line stabilizes or keeps sliding.
+        </p>
+
+        <p className={s.sectionText}>
+          Useful starting targets by video length: for 4–6 minute videos, aim
+          for 50–60% retention. For 8–12 minute videos, 45–47% is solid and 50%
+          is excellent. For 12+ minute videos, 38–45% is a reasonable range.
+        </p>
+
+        <h3 className={s.subheading}>What to fix based on the curve</h3>
+        <p className={s.sectionText}>
+          A big drop in the first 15–30 seconds means your hook or value starts
+          too late. Mid-video cliffs suggest pacing drift, unnecessary setup, or
+          unclear structure. A slow steady decline usually means the content is
+          okay—you just need to improve momentum and clarity.
+        </p>
+
+        <h3 className={s.subheading}>Fast fix for published videos</h3>
+        <p className={s.sectionText}>
+          If your first 10 seconds are killing retention, you can sometimes trim
+          them in Studio. Go to Video Details → Editor → Trim. You can remove
+          sections, but you can&apos;t add new footage—so it&apos;s best for
+          cutting dead air and getting to value faster.
+        </p>
+
+        <Callout variant="tip" title="Use key moments">
+          <p>
+            YouTube Studio&apos;s &quot;key moments for audience retention&quot;
+            view highlights spikes and dips. Spikes show what to repeat; dips
+            show what to remove or compress next time.
+          </p>
+        </Callout>
+      </section>
+
+      {/* DIAGNOSE POST-WATCH */}
+      <section id="diagnose-post-watch" className="sectionOpen">
+        <h2 className={s.sectionTitle}>
+          Diagnose post-watch behavior (the multiplier most people ignore)
+        </h2>
+
+        <p className={s.sectionText}>
+          Watch time matters—but not in the way creators usually think. YouTube
+          appears to care about the viewing session: what starts it, what
+          continues it, and how long it lasts.
+        </p>
+
+        <p className={s.sectionText}>
+          If viewers continue watching after your video, YouTube interprets that
+          as satisfaction. Your content created momentum instead of a dead end.
+        </p>
+
+        <h3 className={s.subheading}>How to improve post-watch behavior</h3>
+        <p className={s.sectionText}>
+          Use end screens intentionally, and verbally pitch the next best video.
+          Link a playlist that matches the viewer&apos;s next step. Consider a
+          mid-video playlist card, not only end screens—many viewers leave
+          before the final seconds.
+        </p>
+
+
         <div className="realTalk">
-          <p className="realTalk__label">Keep in mind</p>
+          <p className="realTalk__label">Metric to track</p>
           <p className="realTalk__text">
-            These aren&apos;t magic numbers. What matters more is your trend over time. Are these improving month over month?
+            Add end screen clicks to your tracking. It often correlates with
+            average percentage viewed: if people don&apos;t reach the end, they
+            can&apos;t click. {BRAND.name} shows end screen CTR in expanded
+            metrics.
           </p>
         </div>
-        
-        <div className="statRow">
-          <div className="statRow__item">
-            <div className="statRow__value">4 to 10%</div>
-            <div className="statRow__label">Click Through Rate</div>
-          </div>
-          <div className="statRow__item">
-            <div className="statRow__value">40 to 60%</div>
-            <div className="statRow__label">Avg View Duration</div>
-          </div>
-          <div className="statRow__item">
-            <div className="statRow__value">10 to 30</div>
-            <div className="statRow__label">Subs per 1K Views</div>
-          </div>
-        </div>
       </section>
 
-      {/* Retention curve illustration */}
-      <div className="inlineIllustration">
-        <svg width="340" height="180" viewBox="0 0 340 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Example retention curve showing viewer drop-off">
-          <rect x="40" y="20" width="280" height="120" fill="#f8fafc" rx="4"/>
-          <line x1="40" y1="50" x2="320" y2="50" stroke="#e2e8f0" strokeWidth="1"/>
-          <line x1="40" y1="80" x2="320" y2="80" stroke="#e2e8f0" strokeWidth="1"/>
-          <line x1="40" y1="110" x2="320" y2="110" stroke="#e2e8f0" strokeWidth="1"/>
-          <path d="M40 30 Q100 35, 160 50 Q220 65, 280 80 Q300 88, 320 95" stroke="#10b981" strokeWidth="3" fill="none"/>
-          <path d="M40 30 Q60 80, 80 110 Q120 125, 200 130 Q280 132, 320 135" stroke="#ef4444" strokeWidth="2" fill="none" strokeDasharray="6"/>
-          <text x="40" y="160" fontSize="10" fill="#64748b">0:00</text>
-          <text x="176" y="160" fontSize="10" fill="#64748b">Middle</text>
-          <text x="305" y="160" fontSize="10" fill="#64748b">End</text>
-          <circle cx="60" cy="170" r="4" fill="#10b981"/>
-          <text x="70" y="174" fontSize="10" fill="#64748b">Good retention</text>
-          <circle cx="180" cy="170" r="4" fill="#ef4444"/>
-          <text x="190" y="174" fontSize="10" fill="#64748b">Problem: Early drop-off</text>
-          <circle cx="70" cy="65" r="12" fill="#fef3c7" stroke="#f59e0b" strokeWidth="2"/>
-          <text x="70" y="69" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#92400e">!</text>
-          <text x="90" y="60" fontSize="9" fill="#92400e">First 30 sec</text>
-          <text x="90" y="72" fontSize="9" fill="#92400e">drop = fix hook</text>
-        </svg>
-      </div>
+      {/* SUPPORTING CONTEXT */}
+      <section id="supporting-context" className="sectionTinted">
+        <h2 className={s.sectionTitle}>
+          Supporting context that makes your audit smarter
+        </h2>
 
-      {/* QUICK DIAGNOSTIC */}
-      <section id="diagnostic-sprint" className="sectionOpen">
-        <h2 className={s.sectionTitle}>Quick Diagnostic</h2>
-        
         <p className={s.sectionText}>
-          Follow these steps to identify exactly what&apos;s holding your channel back.
-        </p>
-        
-        <div className="diagnosticStep">
-          <h3 className="diagnosticStep__title">Pick Your Video</h3>
-          <div className="diagnosticStep__content">
-            <p>Choose one of these:</p>
-            <p><strong>Your most recent upload</strong> to see if your current approach is working.</p>
-            <p><strong>A video that should have performed</strong> where the topic was good but results disappointed.</p>
-            <p>Don&apos;t pick your best video. You want to understand what&apos;s broken, not what&apos;s working.</p>
-          </div>
-        </div>
-        
-        <div className="diagnosticStep">
-          <h3 className="diagnosticStep__title">Check Packaging</h3>
-          <div className="diagnosticStep__content">
-            <p>Go to the video&apos;s Analytics, then Reach. Look at impressions and CTR.</p>
-            
-            <div className="comparisonGrid">
-              <div className="comparisonItem comparisonItem--bad">
-                <p className="comparisonItem__label">Low impressions?</p>
-                <p className="comparisonItem__content">YouTube isn&apos;t showing your video. Topic or title doesn&apos;t match what people search for, or your channel hasn&apos;t built trust in a niche.</p>
-              </div>
-              <div className="comparisonItem comparisonItem--bad">
-                <p className="comparisonItem__label">Low CTR (under 4%)?</p>
-                <p className="comparisonItem__content">People see your thumbnail but don&apos;t click. Pull up 3 to 5 top videos in your niche and compare thumbnails.</p>
-              </div>
-            </div>
-            
-            <div className="diagnosticStep__tip">
-              <strong>Action:</strong> If CTR is low, test a completely different thumbnail style. You can swap thumbnails without re-uploading.
-            </div>
-          </div>
-        </div>
-        
-        <div className="diagnosticStep">
-          <h3 className="diagnosticStep__title">Check Retention</h3>
-          <div className="diagnosticStep__content">
-            <p>Go to Analytics, then Engagement. Look at the retention graph.</p>
-            
-            <p><strong>The first 30 seconds are everything.</strong> Steep drop here means your hook isn&apos;t working. Either you&apos;re not delivering on the thumbnail promise fast enough, or there&apos;s too much setup before value.</p>
-            
-            <p><strong>Find the dud moments</strong> where the graph dips. These are friction points: slow explanations, tangents, repetition.</p>
-            
-            <div className="diagnosticStep__tip">
-              <strong>Pro tip:</strong> Use YouTube Studio&apos;s built-in editor to trim or cut friction points. No re-upload needed.
-            </div>
-          </div>
-        </div>
-        
-        <div className="diagnosticStep">
-          <h3 className="diagnosticStep__title">Check Niche Alignment</h3>
-          <div className="diagnosticStep__content">
-            <p>Go to Analytics, then Audience. Look at who&apos;s watching.</p>
-            
-            <p><strong>Are you speaking to one clear viewer type?</strong> Channels that try to appeal to everyone appeal to no one. YouTube&apos;s algorithm works best when it knows exactly who to show your content to.</p>
-            
-            <p><strong>Compare against competitors.</strong> Find 2 to 3 channels making similar content. What topics do they cover? How do they structure hooks? What thumbnail patterns work?</p>
-          </div>
-        </div>
-        
-        <div className="diagnosticStep">
-          <h3 className="diagnosticStep__title">Choose One Thing to Fix</h3>
-          <div className="diagnosticStep__content">
-            <p>Based on what you found, pick exactly one focus:</p>
-            <p><strong>Packaging problem?</strong> Create 3 thumbnail variations for your next video.</p>
-            <p><strong>Retention problem?</strong> Rewrite your hook to deliver the promise faster.</p>
-            <p><strong>Niche problem?</strong> Research what your audience actually searches for.</p>
-            <p style={{ fontWeight: 600, color: 'var(--text)' }}>Don&apos;t try to fix everything. Pick one thing, fix it, test.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* WHY NOT GROWING */}
-      <section id="why-not-growing" className="sectionOpen">
-        <h2 className={s.sectionTitle}>Why Your Channel Isn&apos;t Growing</h2>
-        <p className={s.sectionText}>
-          Most stuck channels share one of three root problems. Here&apos;s how to identify and fix each one.
+          Once you&apos;ve diagnosed CTR, retention, and post-watch, use
+          secondary metrics to sharpen decisions.
         </p>
 
-        <div className="rootCause">
-          <span className="rootCause__number">1</span>
-          <h3 className="rootCause__title">You Haven&apos;t Nailed Your Niche</h3>
-          <div className="rootCause__content">
-            <p>
-              <span className="rootCause__label">Symptom:</span> Low impressions, inconsistent viewership, subscribers don&apos;t watch new videos.
-            </p>
-            <p>
-              <span className="rootCause__label">Why it happens:</span> You&apos;re making content for everyone or jumping between topics. YouTube&apos;s algorithm needs to know who to show your videos to. Scattered content means a confused algorithm.
-            </p>
-            <p className="rootCause__quote">
-              Become the channel that owns one topic, not the channel that dabbles in many.
-            </p>
-            <p>
-              <span className="rootCause__label">Fix:</span> Pick a niche and commit to 20 or more videos in it. Study the top 3 channels in that space. Your goal isn&apos;t to copy; it&apos;s to become a recognized voice in the same conversation.
-            </p>
-          </div>
-        </div>
-
-        <div className="rootCause">
-          <span className="rootCause__number">2</span>
-          <h3 className="rootCause__title">Your Packaging Doesn&apos;t Compete</h3>
-          <div className="rootCause__content">
-            <p>
-              <span className="rootCause__label">Symptom:</span> Decent impressions, low CTR (under 4%), videos don&apos;t get clicked.
-            </p>
-            <p>
-              <span className="rootCause__label">Why it happens:</span> Your thumbnail and title compete against polished creators who&apos;ve tested hundreds of variations. In the same feed, viewers unconsciously compare and click the most compelling option.
-            </p>
-            <p className="rootCause__quote">
-              Your thumbnail is a billboard driving past at 60mph. If it doesn&apos;t grab attention instantly, it&apos;s invisible.
-            </p>
-            <p>
-              <span className="rootCause__label">Fix:</span> Research what&apos;s working. Screenshot the top 5 thumbnails for your target keyword. What do they have in common? The gap between them and yours is your opportunity. See our <Link href="/learn/youtube-thumbnail-best-practices">thumbnail guide</Link>.
-            </p>
-          </div>
-        </div>
-
-        <div className="rootCause">
-          <span className="rootCause__number">3</span>
-          <h3 className="rootCause__title">Your Content Doesn&apos;t Hold Attention</h3>
-          <div className="rootCause__content">
-            <p>
-              <span className="rootCause__label">Symptom:</span> Good CTR, but retention drops sharply, especially in the first 30 seconds.
-            </p>
-            <p>
-              <span className="rootCause__label">Why it happens:</span> Viewers clicked expecting one thing and got another. Or too much friction: slow intros, tangents, not delivering on the promise fast enough.
-            </p>
-            <p className="rootCause__quote">
-              Every second of your video is a chance for the viewer to leave. Earn every second.
-            </p>
-            <p>
-              <span className="rootCause__label">Fix:</span> Watch your video at 2x speed. Every moment you&apos;d skip? Your viewers already left there. Cut those sections. Lead with value, not setup. See our <Link href="/learn/youtube-retention-analysis">retention guide</Link>.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* WHAT TO FIX FIRST */}
-      <section id="diagnosis-flow" className="sectionTinted">
-        <h2 className={s.sectionTitle}>What to Fix First</h2>
+        <h3 className={s.subheading}>Traffic sources</h3>
         <p className={s.sectionText}>
-          Use this decision tree to find your most impactful next step. Start from the top and follow the path that matches your data.
+          Traffic sources tell you how the video is being found: browse,
+          suggested, search, external. That changes what you should fix next. If
+          browse is low, your thumbnail/title aren&apos;t winning on the home
+          feed. If suggested is low across many videos, YouTube doesn&apos;t
+          strongly associate your content with neighboring topics.
         </p>
-        <DiagnosisFlow branches={DIAGNOSIS_BRANCHES} />
+
+        <h3 className={s.subheading}>Demographics</h3>
+        <p className={s.sectionText}>
+          Use demographics as steering, not a verdict. If your audience differs
+          from your target, decide whether it&apos;s a mismatch to correct—or an
+          opportunity to explore.
+        </p>
+
+        <h3 className={s.subheading}>Posting time</h3>
+        <p className={s.sectionText}>
+          Posting time may affect the speed of early views, but it&apos;s not a
+          reliable lever for long-term performance. Consistency and quality beat
+          chasing the perfect hour.
+        </p>
       </section>
 
-      {/* COMMON MISTAKES */}
-      <section id="common-mistakes" className="sectionOpen">
-        <h2 className={s.sectionTitle}>Common Audit Mistakes</h2>
-        
-        <div className="funCallout" style={{ background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', borderColor: '#f87171' }}>
-          <p className="funCallout__text" style={{ color: '#991b1b' }}>
-            Avoid these traps that keep creators stuck in audit paralysis
+      {/* THE EMOTIONAL TRAP */}
+      <section id="emotional-trap" className="sectionOpen">
+        <h2 className={s.sectionTitle}>
+          The emotional trap: treating the first 48 hours as &quot;make or
+          break&quot;
+        </h2>
+
+        <p className={s.sectionText}>
+          The first 24–48 hours are mainly a thumbnail/title test window, not a
+          final verdict. Some videos take off days, weeks, or months
+          later—especially after a title/thumbnail update.
+        </p>
+
+        <p className={s.sectionText}>
+          A calmer process: Early on, check CTR + impression flow. If there's a
+          mismatch, swap thumbnail (have a backup ready). Otherwise, review at
+          day 7 and day 28 before drawing conclusions.
+        </p>
+
+     
+
+        <Callout variant="warning" title="Don't panic-edit">
+          <p>
+            If you&apos;re going to change anything in the first day or two,
+            change thumbnail or title first—those affect whether YouTube keeps
+            testing the video with new audiences. Use longer windows to judge
+            overall performance.
           </p>
-        </div>
-        
-        <ul className={s.list}>
-          <li><strong>Looking at too short a time period.</strong> Compare 28 or 90 day trends, not last week.</li>
-          <li><strong>Focusing on views instead of leading indicators.</strong> CTR, retention, and impressions predict future views.</li>
-          <li><strong>Making multiple changes at once.</strong> Test one variable at a time so you know what worked.</li>
-          <li><strong>Ignoring your successful videos.</strong> Study your top 10%. They show what your audience wants.</li>
-          <li><strong>Expecting immediate results.</strong> Give changes 2 weeks and 2 to 3 videos to show impact.</li>
-        </ul>
+        </Callout>
       </section>
 
-      {/* YOUTUBE SEO */}
-      <section id="youtube-seo" className="sectionOpen">
-        <h2 className={s.sectionTitle}>YouTube SEO Basics</h2>
-        
+      {/* PATTERN DETECTION */}
+      <section id="pattern-detection" className="sectionTinted">
+        <h2 className={s.sectionTitle}>
+          How to spot patterns that improve your next uploads
+        </h2>
+
+        <p className={s.sectionText}>
+          One-off audits help. Pattern-finding helps more.
+        </p>
+
+        <p className={s.sectionText}>
+          Use Advanced Mode in YouTube Analytics and group videos by format or
+          topic. Compare lifetime performance and look for your channel&apos;s
+          typical &quot;lift-off window.&quot; When do your videos tend to take
+          off? Day 2? Day 7? Week 2? Month 1? Once you know, you stop making
+          emotional decisions from day-two noise.
+        </p>
+
         <div className="realTalk">
-          <p className="realTalk__label">Key insight</p>
+          <p className="realTalk__label">{BRAND.name} tie-in</p>
           <p className="realTalk__text">
-            YouTube SEO isn&apos;t like website SEO. While keywords matter, engagement signals matter more.
+            Ideally, {BRAND.name} would support pattern detection by letting you
+            group videos by format/topic, compare lifetime curves, and recommend
+            review checkpoints based on your channel&apos;s history. That&apos;s
+            on our roadmap.
           </p>
         </div>
-        
+      </section>
+
+      {/* AUDIT OUTPUT */}
+      <section id="audit-output" className="sectionOpen">
+        <h2 className={s.sectionTitle}>
+          What a high-quality channel audit output looks like
+        </h2>
+
+        <p className={s.sectionText}>A good audit output does three things:</p>
+
         <p className={s.sectionText}>
-          <strong>The hierarchy that actually matters:</strong>
+          <strong>First</strong>, it identifies the biggest bottleneck—CTR vs
+          retention vs post-watch. <strong>Second</strong>, it gives 1–3
+          specific fixes tied to that bottleneck. <strong>Third</strong>, it
+          recommends a simple experiment for the next upload.
         </p>
-        
-        <ol className={s.numberedList}>
-          <li><strong>Retention and watch time.</strong> Most important. YouTube wants to recommend videos that keep people watching.</li>
-          <li><strong>Click through rate.</strong> Higher CTR signals relevance, which earns more impressions.</li>
-          <li><strong>Title and description.</strong> Include keywords naturally, but write for humans first.</li>
-        </ol>
-        
+
         <p className={s.sectionText}>
-          For the complete strategy including keyword research and description optimization, see our <Link href="/learn/youtube-seo">YouTube SEO guide</Link>.
+          That&apos;s how you turn analytics into momentum.
         </p>
       </section>
 
-      {/* CTA */}
+      {/* CONCLUSION */}
+      <section id="conclusion" className="sectionTinted">
+        <h2 className={s.sectionTitle}>
+          The audit mindset that makes growth feel inevitable
+        </h2>
+
+        <p className={s.sectionText}>
+          YouTube analytics don&apos;t have to be overwhelming. Growth is
+          usually a systems issue, not a motivation issue.
+        </p>
+
+        <p className={s.sectionText}>
+          Audit in order: <strong>CTR</strong>—are people choosing the video
+          when it&apos;s shown? <strong>Retention</strong>—are they staying once
+          they click? <strong>Post-watch</strong>—are they continuing afterward?
+          Then use traffic sources and patterns to decide what to double down on
+          next.
+        </p>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="sectionOpen">
+        <h2 className={s.sectionTitle}>Frequently asked questions</h2>
+
+        <h3 className={s.subheading}>How often should I audit my channel?</h3>
+        <p className={s.sectionText}>
+          Run a full audit every 3–6 months, or immediately when growth stalls
+          for 4+ weeks. Between full audits, do a quick weekly check of your
+          last video&apos;s retention curve and CTR. This takes 5 minutes and
+          catches problems early.
+        </p>
+
+        <h3 className={s.subheading}>What&apos;s a good CTR for YouTube?</h3>
+        <p className={s.sectionText}>
+          Most channels see CTR between 2% and 10%. For browse and suggested
+          traffic, 4–6% is common. For search traffic, 5–10% is typical. More
+          important than hitting a number is watching your trend over time. If
+          CTR is dropping month over month, your thumbnails or titles need work.
+        </p>
+
+        <h3 className={s.subheading}>
+          Why do viewers drop off in the first 30 seconds?
+        </h3>
+        <p className={s.sectionText}>
+          The most common causes are slow intros (too much setup before value),
+          a mismatch between the thumbnail promise and the actual content, or
+          weak hooks that don&apos;t create curiosity. Check your retention
+          graph. If there&apos;s a cliff in the first 30 seconds, rewatch that
+          segment and ask what would make you click away.
+        </p>
+      </section>
+
+      {/* FINAL CTA */}
       <div className="sectionAccent">
-        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Ready to audit your channel?</h3>
-        <p style={{ fontSize: '1.125rem', marginBottom: '1.5rem', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto' }}>
-          {BRAND.name} connects to your YouTube analytics and automatically surfaces what&apos;s working and what needs attention.
-        </p>
-        <Link 
-          href="/dashboard" 
-          style={{ 
-            display: 'inline-block',
-            padding: '0.875rem 2rem',
-            background: 'white',
-            color: '#6366f1',
-            fontWeight: 600,
-            borderRadius: '0.5rem',
-            textDecoration: 'none'
+        <h3
+          style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}
+        >
+          If you want the audit without tab-hopping
+        </h3>
+        <p
+          style={{
+            fontSize: "1.125rem",
+            marginBottom: "1.5rem",
+            maxWidth: "500px",
+            marginLeft: "auto",
+            marginRight: "auto",
           }}
         >
-          Try {BRAND.name} Free
+          {BRAND.name} connects to your YouTube analytics and surfaces
+          what&apos;s working—and what needs attention—in one place.
+        </p>
+        <Link
+          href="/dashboard"
+          style={{
+            display: "inline-block",
+            padding: "0.875rem 2rem",
+            background: "white",
+            color: "#6366f1",
+            fontWeight: 600,
+            borderRadius: "0.5rem",
+            textDecoration: "none",
+          }}
+        >
+          Run your audit in {BRAND.name}
         </Link>
+        <p
+          style={{
+            fontSize: "0.875rem",
+            marginTop: "1rem",
+            opacity: 0.9,
+          }}
+        >
+          See what&apos;s working, what&apos;s not, and what to do next.
+        </p>
       </div>
     </>
   );

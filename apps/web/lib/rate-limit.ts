@@ -40,7 +40,7 @@ export type RateLimitResult = {
  */
 export function checkRateLimit(
   key: string,
-  config: RateLimitConfig
+  config: RateLimitConfig,
 ): RateLimitResult {
   const now = Date.now();
   const windowMs = config.windowSec * 1000;
@@ -91,8 +91,8 @@ export const RATE_LIMITS = {
   competitorDetail: { limit: 60, windowSec: 3600 },
   // Competitor comments fetch: 20 per hour per user
   competitorComments: { limit: 20, windowSec: 3600 },
-  // Owned video insights: 30 per hour per user
-  videoInsights: { limit: 30, windowSec: 3600 },
+  // Owned video insights: 150 per hour per user
+  videoInsights: { limit: 150, windowSec: 3600 },
   // Owned video remixes generation: 20 per hour per user
   videoRemixes: { limit: 20, windowSec: 3600 },
   // Contact form: 5 per hour per IP
@@ -118,7 +118,7 @@ export const RATE_LIMITS = {
  */
 export function rateLimitKey(
   operation: keyof typeof RATE_LIMITS,
-  identifier: string | number
+  identifier: string | number,
 ): string {
   return `${operation}:${identifier}`;
 }

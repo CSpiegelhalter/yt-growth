@@ -2,7 +2,7 @@
 
 import styles from "./panels.module.css";
 import { InsightCard, TwoColumnInsight, NextSteps } from "../ui";
-import { MetricsPanel } from "../MetricsPanel";
+import { DiscoveryChart } from "./DiscoveryChart";
 import type { BottleneckResult } from "@/types/api";
 
 type Win = {
@@ -23,11 +23,41 @@ type TopAction = {
   effort: "low" | "medium" | "high";
 };
 
+// Viewer Journey types (new format)
+type ViewerJourney = {
+  discovery_phase: string;
+  consumption_phase: string;
+  conversion_phase: string;
+};
+
+type StrategicPivot = {
+  what: string;
+  why: string;
+  impact_forecast: string;
+};
+
 type Summary = {
   headline?: string;
   wins?: Win[];
   improvements?: Improvement[];
   topAction?: TopAction;
+  // New format fields
+  insight_headline?: string;
+  the_viewer_journey?: ViewerJourney;
+  dimensional_nuance?: string;
+  strategic_pivot?: StrategicPivot;
+};
+
+type DailySeries = {
+  date: string;
+  views: number;
+  [key: string]: unknown;
+};
+
+type DiscoveryStats = {
+  impressions?: number | null;
+  ctr?: number | null;
+  dailySeries: DailySeries[];
 };
 
 type OverviewPanelProps = {
@@ -35,7 +65,8 @@ type OverviewPanelProps = {
   summaryLoading?: boolean;
   bottleneck?: BottleneckResult | null;
   metrics: Array<{ label: string; value: string | number; detail?: string }>;
-  isLowDataMode?: boolean;
+  discoveryStats?: DiscoveryStats;
+  publishedAt?: string | null;
 };
 
 /**
@@ -47,11 +78,18 @@ export function OverviewPanel({
   summaryLoading,
   bottleneck,
   metrics,
-  isLowDataMode,
+  discoveryStats,
+  publishedAt,
 }: OverviewPanelProps) {
   const wins = summary?.wins ?? [];
   const improvements = summary?.improvements ?? [];
   const topAction = summary?.topAction;
+
+  // Check if we have the new format
+  const hasNewFormat =
+    summary?.insight_headline &&
+    summary?.the_viewer_journey &&
+    summary?.strategic_pivot;
 
   // Convert wins/improvements to bullet format
   const workingBullets = wins.map((w) => ({
@@ -70,26 +108,13 @@ export function OverviewPanel({
     // Not enough data means neutral
     if (bottleneck.bottleneck === "NOT_ENOUGH_DATA") return "neutral";
     // Major issues with discovery or retention
-    if (bottleneck.bottleneck === "DISCOVERY_IMPRESSIONS" || bottleneck.bottleneck === "RETENTION") return "needs-work";
+    if (
+      bottleneck.bottleneck === "DISCOVERY_IMPRESSIONS" ||
+      bottleneck.bottleneck === "RETENTION"
+    )
+      return "needs-work";
     return "mixed";
   };
-
-  if (isLowDataMode) {
-    return (
-      <div className={styles.panelStack}>
-        <InsightCard title="Limited data available">
-          <div className={styles.emptyState}>
-            <p className={styles.emptyTitle}>Not enough data yet</p>
-            <p className={styles.emptyDesc}>
-              This video needs more views before we can provide detailed analysis.
-              Check back once you have at least 100 views.
-            </p>
-          </div>
-        </InsightCard>
-        <MetricsPanel metrics={metrics} />
-      </div>
-    );
-  }
 
   return (
     <div className={styles.panelStack}>
@@ -103,26 +128,108 @@ export function OverviewPanel({
         </InsightCard>
       )}
 
-      {/* Summary Card */}
-      {summary && !summaryLoading && (
+      {/* New Format Summary Card */}
+      {hasNewFormat && !summaryLoading && (
+        <InsightCard
+          title="Performance summary"
+          subtitle={summary.insight_headline}
+          status={getStatus()}
+        >
+          <div className={styles.viewerJourneyContainer}>
+            {/* Viewer Journey Section */}
+            <div className={styles.journeySection}>
+              <h4 className={styles.journeySectionTitle}>The viewer journey</h4>
+              <div className={styles.journeySteps}>
+                <div className={styles.journeyStep}>
+                  <div className={styles.journeyStepHeader}>
+                    <div className={styles.journeyStepNumber}>1</div>
+                    <h5 className={styles.journeyStepTitle}>Discovery</h5>
+                  </div>
+                  <p className={styles.journeyStepText}>
+                    {summary.the_viewer_journey!.discovery_phase}
+                  </p>
+                </div>
+
+                <div className={styles.journeyStep}>
+                  <div className={styles.journeyStepHeader}>
+                    <div className={styles.journeyStepNumber}>2</div>
+                    <h5 className={styles.journeyStepTitle}>Consumption</h5>
+                  </div>
+                  <p className={styles.journeyStepText}>
+                    {summary.the_viewer_journey!.consumption_phase}
+                  </p>
+                </div>
+
+                <div className={styles.journeyStep}>
+                  <div className={styles.journeyStepHeader}>
+                    <div className={styles.journeyStepNumber}>3</div>
+                    <h5 className={styles.journeyStepTitle}>Conversion</h5>
+                  </div>
+                  <p className={styles.journeyStepText}>
+                    {summary.the_viewer_journey!.conversion_phase}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Dimensional Nuance */}
+            {summary.dimensional_nuance && (
+              <div className={styles.nuanceSection}>
+                <div className={styles.nuanceLabel}>Key context</div>
+                <p className={styles.nuanceText}>
+                  {summary.dimensional_nuance}
+                </p>
+              </div>
+            )}
+
+            {/* Strategic Pivot */}
+            {summary.strategic_pivot && (
+              <div className={styles.pivotSection}>
+                <h4 className={styles.pivotTitle}>Recommended action</h4>
+                <div className={styles.pivotContent}>
+                  <div className={styles.pivotRow}>
+                    <div className={styles.pivotLabel}>What to do</div>
+                    <p className={styles.pivotText}>
+                      {summary.strategic_pivot.what}
+                    </p>
+                  </div>
+                  <div className={styles.pivotRow}>
+                    <div className={styles.pivotLabel}>Why it matters</div>
+                    <p className={styles.pivotText}>
+                      {summary.strategic_pivot.why}
+                    </p>
+                  </div>
+                  <div className={styles.pivotRow}>
+                    <div className={styles.pivotLabel}>Expected impact</div>
+                    <p className={styles.pivotText}>
+                      {summary.strategic_pivot.impact_forecast}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </InsightCard>
+      )}
+
+      {/* Old Format Summary Card */}
+      {!hasNewFormat && summary && !summaryLoading && (
         <InsightCard
           title="Performance summary"
           subtitle={summary.headline}
           status={getStatus()}
         >
-          <TwoColumnInsight
-            working={workingBullets}
-            improve={improveBullets}
-          />
+          <TwoColumnInsight working={workingBullets} improve={improveBullets} />
           {topAction && (
             <NextSteps
               title="Priority action"
               description={topAction.why}
               actions={[
                 {
-                  label: topAction.what.length > 50 
-                    ? topAction.what.substring(0, 50) + "..." 
-                    : topAction.what,
+                  label:
+                    topAction.what.length > 50
+                      ? topAction.what.substring(0, 50) + "..."
+                      : topAction.what,
                   variant: "primary",
                 },
               ]}
@@ -132,31 +239,50 @@ export function OverviewPanel({
       )}
 
       {/* Bottleneck diagnosis */}
-      {bottleneck && bottleneck.bottleneck !== "NOT_ENOUGH_DATA" && !summaryLoading && (
-        <InsightCard
-          title="Primary bottleneck"
-          subtitle={getBottleneckDescription(bottleneck)}
-          status={bottleneck.bottleneck === "RETENTION" || bottleneck.bottleneck === "DISCOVERY_IMPRESSIONS" ? "needs-work" : "mixed"}
-        >
-          <div className={styles.bottleneckContent}>
-            <p className={styles.bottleneckMessage}>{bottleneck.evidence}</p>
-            {bottleneck.metrics && bottleneck.metrics.length > 0 && (
-              <div className={styles.bottleneckMetrics}>
-                {bottleneck.metrics.map((m, i) => (
-                  <div key={i} className={styles.bottleneckMetric}>
-                    <span className={styles.metricLabel}>{m.label}</span>
-                    <span className={styles.metricValue}>{m.value}</span>
-                    {m.comparison && <span className={styles.metricComparison}>{m.comparison}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </InsightCard>
-      )}
+      {bottleneck &&
+        bottleneck.bottleneck !== "NOT_ENOUGH_DATA" &&
+        !summaryLoading && (
+          <InsightCard
+            title="Primary bottleneck"
+            subtitle={getBottleneckDescription(bottleneck)}
+            status={
+              bottleneck.bottleneck === "RETENTION" ||
+              bottleneck.bottleneck === "DISCOVERY_IMPRESSIONS"
+                ? "needs-work"
+                : "mixed"
+            }
+          >
+            <div className={styles.bottleneckContent}>
+              <p className={styles.bottleneckMessage}>{bottleneck.evidence}</p>
+              {bottleneck.metrics && bottleneck.metrics.length > 0 && (
+                <div className={styles.bottleneckMetrics}>
+                  {bottleneck.metrics.map((m, i) => (
+                    <div key={i} className={styles.bottleneckMetric}>
+                      <span className={styles.metricLabel}>{m.label}</span>
+                      <span className={styles.metricValue}>{m.value}</span>
+                      {m.comparison && (
+                        <span className={styles.metricComparison}>
+                          {m.comparison}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </InsightCard>
+        )}
 
-      {/* Metrics Panel */}
-      <MetricsPanel metrics={metrics} title="Key metrics" />
+      {/* Discovery Chart - Views trend with all metrics */}
+      {(discoveryStats || metrics.length > 0) && (
+        <DiscoveryChart
+          dailySeries={discoveryStats?.dailySeries ?? []}
+          impressions={discoveryStats?.impressions}
+          ctr={discoveryStats?.ctr}
+          metrics={metrics}
+          publishedAt={publishedAt}
+        />
+      )}
     </div>
   );
 }

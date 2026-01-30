@@ -54,7 +54,8 @@ export const primaryNavItems: NavItem[] = [
     href: "/dashboard",
     icon: "video",
     channelScoped: true,
-    match: (pathname) => pathname === "/dashboard" || pathname.startsWith("/video/"),
+    match: (pathname) =>
+      pathname === "/dashboard" || pathname.startsWith("/video/"),
   },
   {
     id: "ideas",
@@ -68,13 +69,6 @@ export const primaryNavItems: NavItem[] = [
     label: "Goals",
     href: "/goals",
     icon: "target",
-    channelScoped: true,
-  },
-  {
-    id: "subscriber-insights",
-    label: "Subscribers",
-    href: "/subscriber-insights",
-    icon: "trending",
     channelScoped: true,
   },
   {
@@ -108,9 +102,7 @@ export const primaryNavItems: NavItem[] = [
     href: "/tags",
     icon: "tag",
     channelScoped: false,
-    match: (pathname) =>
-      pathname === "/tags" ||
-      pathname.startsWith("/tags/"),
+    match: (pathname) => pathname === "/tags" || pathname.startsWith("/tags/"),
   },
   {
     id: "keywords",
@@ -119,8 +111,7 @@ export const primaryNavItems: NavItem[] = [
     icon: "search",
     channelScoped: false,
     match: (pathname) =>
-      pathname === "/keywords" ||
-      pathname.startsWith("/keywords/"),
+      pathname === "/keywords" || pathname.startsWith("/keywords/"),
   },
 ];
 
@@ -184,7 +175,10 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
 /**
  * Get the href with optional channelId query param
  */
-export function getNavHref(item: NavItem, activeChannelId: string | null): string {
+export function getNavHref(
+  item: NavItem,
+  activeChannelId: string | null,
+): string {
   if (!item.channelScoped || !activeChannelId) {
     return item.href;
   }
@@ -195,15 +189,19 @@ export function getNavHref(item: NavItem, activeChannelId: string | null): strin
  * Get page title from current pathname
  */
 export function getPageTitle(pathname: string): string {
-  const allItems = [...primaryNavItems, ...secondaryNavItems, ...accountNavItems];
-  
+  const allItems = [
+    ...primaryNavItems,
+    ...secondaryNavItems,
+    ...accountNavItems,
+  ];
+
   // Check for exact or custom match
   for (const item of allItems) {
     if (isNavItemActive(item, pathname)) {
       return item.label;
     }
   }
-  
+
   // Fallback titles for nested routes
   if (pathname.startsWith("/video/")) {
     return "Video Insights";
@@ -235,6 +233,6 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/keywords")) {
     return "Keywords";
   }
-  
+
   return "Dashboard";
 }

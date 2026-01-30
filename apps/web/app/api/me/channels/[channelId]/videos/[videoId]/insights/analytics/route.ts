@@ -14,6 +14,10 @@ import {
   fetchOwnedVideoMetadata,
   getDateRange,
   fetchVideoDiscoveryMetrics,
+  fetchSubscriberBreakdown,
+  fetchGeographicBreakdown,
+  fetchTrafficSourceDetail,
+  fetchDemographicBreakdown,
   type DailyAnalyticsRow,
 } from "@/lib/youtube-analytics";
 import {
@@ -53,7 +57,7 @@ class YouTubePermissionDeniedError extends Error {
  */
 async function GETHandler(
   req: NextRequest,
-  { params }: { params: Promise<{ channelId: string; videoId: string }> }
+  { params }: { params: Promise<{ channelId: string; videoId: string }> },
 ) {
   const resolvedParams = await params;
 
@@ -73,7 +77,7 @@ async function GETHandler(
   if (!queryResult.success) {
     return Response.json(
       { error: "Invalid query parameters" },
-      { status: 400 }
+      { status: 400 },
     );
   }
   const { range } = queryResult.data;
@@ -125,12 +129,12 @@ async function GETHandler(
     // Rate limit check
     const rateResult = checkRateLimit(
       rateLimitKey("videoInsights", user.id),
-      RATE_LIMITS.videoInsights
+      RATE_LIMITS.videoInsights,
     );
     if (!rateResult.success) {
       return Response.json(
         { error: "Rate limit exceeded", retryAfter: rateResult.resetAt },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -139,7 +143,7 @@ async function GETHandler(
     if (!ga) {
       return Response.json(
         { error: "Google account not connected" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -153,7 +157,7 @@ async function GETHandler(
       channelId,
       videoId,
       range,
-      user.id
+      user.id,
     );
 
     // Cache the analytics data
@@ -194,7 +198,7 @@ async function GETHandler(
     ) {
       return Response.json(
         { error: err.message, code: "youtube_permissions" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -202,14 +206,14 @@ async function GETHandler(
     console.error("Analytics fetch error:", err);
     return Response.json(
       { error: "Failed to fetch analytics", detail: message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export const GET = createApiRoute(
   { route: "/api/me/channels/[channelId]/videos/[videoId]/insights/analytics" },
-  async (req, ctx) => GETHandler(req, ctx as any)
+  async (req, ctx) => GETHandler(req, ctx as any),
 );
 
 /**
@@ -225,7 +229,7 @@ async function fetchAnalyticsData(
   youtubeChannelId: string,
   videoId: string,
   range: "7d" | "28d" | "90d",
-  userId: number
+  userId: number,
 ) {
   const { startDate, endDate } = getDateRange(range);
 
@@ -238,6 +242,9 @@ async function fetchAnalyticsData(
     baseline,
     retentionPoints,
     discoveryMetrics,
+    subscriberBreakdown,
+    geoBreakdown,
+    trafficDetail,
   ] = await Promise.all([
     fetchOwnedVideoMetadata(ga, videoId),
     fetchVideoAnalyticsTotalsWithStatus(
@@ -245,14 +252,14 @@ async function fetchAnalyticsData(
       youtubeChannelId,
       videoId,
       startDate,
-      endDate
+      endDate,
     ),
     fetchVideoAnalyticsDailyWithStatus(
       ga,
       youtubeChannelId,
       videoId,
       startDate,
-      endDate
+      endDate,
     ),
     getChannelBaselineFromDB(userId, dbChannelId, videoId, range),
     fetchRetentionCurve(ga, youtubeChannelId, videoId).catch(() => []),
@@ -262,13 +269,48 @@ async function fetchAnalyticsData(
       youtubeChannelId,
       videoId,
       startDate,
-      endDate
+      endDate,
     ).catch(() => ({
       impressions: null,
       impressionsCtr: null,
       trafficSources: null,
       hasData: false,
       reason: "connect_analytics" as const,
+    })),
+    // NEW: Subscriber breakdown
+    fetchSubscriberBreakdown(
+      ga,
+      youtubeChannelId,
+      videoId,
+      startDate,
+      endDate,
+    ).catch(() => ({
+      subscribers: null,
+      nonSubscribers: null,
+      subscriberViewPct: null,
+    })),
+    // NEW: Geographic breakdown
+    fetchGeographicBreakdown(
+      ga,
+      youtubeChannelId,
+      videoId,
+      startDate,
+      endDate,
+    ).catch(() => ({
+      topCountries: [],
+      primaryMarket: null,
+    })),
+    // NEW: Traffic source detail
+    fetchTrafficSourceDetail(
+      ga,
+      youtubeChannelId,
+      videoId,
+      startDate,
+      endDate,
+    ).catch(() => ({
+      searchTerms: null,
+      suggestedVideos: null,
+      browseFeatures: null,
     })),
   ]);
 
@@ -281,7 +323,7 @@ async function fetchAnalyticsData(
     totalsResult.permission.reason === "permission_denied"
   ) {
     throw new YouTubePermissionDeniedError(
-      "Missing YouTube Analytics permissions."
+      "Missing YouTube Analytics permissions.",
     );
   }
 
@@ -291,6 +333,18 @@ async function fetchAnalyticsData(
   if (!totals) {
     throw new Error("Could not fetch analytics totals");
   }
+
+  // Fetch demographics if enough views (conditional fetch)
+  const demographicBreakdown =
+    totals.views > 500
+      ? await fetchDemographicBreakdown(
+          ga,
+          youtubeChannelId,
+          videoId,
+          startDate,
+          endDate,
+        ).catch(() => null)
+      : null;
 
   // Compute derived metrics
   const derived = computeDerivedMetrics(
@@ -302,7 +356,7 @@ async function fetchAnalyticsData(
     },
     dailySeries,
     videoMeta.durationSec,
-    videoMeta.publishedAt
+    videoMeta.publishedAt,
   );
 
   // Use Data API viewCount for total views
@@ -312,7 +366,7 @@ async function fetchAnalyticsData(
   const comparison = compareToBaseline(
     derived,
     totals.averageViewPercentage,
-    baseline
+    baseline,
   );
 
   // Detect bottleneck and compute confidence
@@ -320,7 +374,7 @@ async function fetchAnalyticsData(
   const confidence = computeSectionConfidence(
     derived,
     discoveryMetrics.hasData,
-    discoveryMetrics.trafficSources != null
+    discoveryMetrics.trafficSources != null,
   );
   const lowDataMode = isLowDataMode(derived);
 
@@ -368,7 +422,7 @@ async function fetchAnalyticsData(
 
   // Store daily analytics in background
   storeDailyAnalytics(userId, dbChannelId, videoId, dailySeries).catch(
-    () => {}
+    () => {},
   );
 
   return {
@@ -383,6 +437,10 @@ async function fetchAnalyticsData(
     confidence,
     isLowDataMode: lowDataMode,
     analyticsAvailability,
+    subscriberBreakdown,
+    geoBreakdown,
+    trafficDetail,
+    demographicBreakdown,
   };
 }
 
@@ -391,7 +449,7 @@ async function getChannelBaselineFromDB(
   userId: number,
   channelId: number,
   excludeVideoId: string,
-  range: "7d" | "28d" | "90d"
+  range: "7d" | "28d" | "90d",
 ): Promise<ChannelBaseline> {
   const { startDate, endDate } = getDateRange(range);
 
@@ -498,7 +556,7 @@ async function storeDailyAnalytics(
   userId: number,
   channelId: number,
   videoId: string,
-  dailySeries: DailyAnalyticsRow[]
+  dailySeries: DailyAnalyticsRow[],
 ): Promise<void> {
   const chunkSize = 25;
   for (let i = 0; i < dailySeries.length; i += chunkSize) {
@@ -560,8 +618,8 @@ async function storeDailyAnalytics(
             adImpressions: day.adImpressions,
             cpm: day.cpm,
           },
-        })
-      )
+        }),
+      ),
     );
   }
 }

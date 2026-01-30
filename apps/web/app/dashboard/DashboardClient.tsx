@@ -9,10 +9,9 @@ import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/product";
 import { Me, Channel } from "@/types/api";
 import ChannelsSection from "@/components/dashboard/ChannelSection";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
-import ChannelGoals from "@/components/dashboard/ChannelGoals";
 import VideoToolbar from "@/components/dashboard/VideoToolbar";
-import { ProfileCard } from "@/components/channel-profile";
-import { useChannelProfile } from "@/lib/hooks/use-channel-profile";
+import { ChannelInsightsPanel } from "@/components/dashboard/ChannelInsightsPanel";
+import { Tabs } from "@/components/ui";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 import { formatCompact } from "@/lib/format";
 import {
@@ -65,7 +64,7 @@ export default function DashboardClient({
   const [me, setMe] = useState<Me>(initialMe);
   const [channels, setChannels] = useState<Channel[]>(initialChannels);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(
-    initialActiveChannelId
+    initialActiveChannelId,
   );
 
   // Keep client state in sync when server props / URL params change.
@@ -97,10 +96,6 @@ export default function DashboardClient({
     }
   }, [searchParams]);
 
-  // Channel profile hook
-  const { profile: channelProfile, loading: profileLoading } =
-    useChannelProfile(activeChannelId);
-
   // Video loading state
   const [videos, setVideos] = useState<Video[]>([]);
   const [videosLoading, setVideosLoading] = useState(false);
@@ -118,10 +113,11 @@ export default function DashboardClient({
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [filters, setFilters] = useState<VideoFilters>(DEFAULT_FILTERS);
 
-  // Page size options: 15, 25, 50, 100
-  const PAGE_SIZE_OPTIONS = [15, 25, 50, 100] as const;
-  type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
-  const [pageSize, setPageSize] = useState<PageSizeOption>(25);
+  // Fixed page size for consistent grid layout (divisible by 1,2,3,4,6,8,12,24)
+  const pageSize = 24;
+
+  // Dashboard tab state - Videos is default
+  const [activeTab, setActiveTab] = useState<"analytics" | "videos">("videos");
 
   // UI state
   const [err, setErr] = useState<string | null>(null);
@@ -130,7 +126,7 @@ export default function DashboardClient({
 
   const activeChannel = useMemo(
     () => channels.find((c) => c.channel_id === activeChannelId) ?? null,
-    [channels, activeChannelId]
+    [channels, activeChannelId],
   );
 
   const canAddAnother = useMemo(() => {
@@ -188,12 +184,6 @@ export default function DashboardClient({
     setSortKey("newest");
   }, []);
 
-  const handlePageSizeChange = useCallback((size: number) => {
-    setPageSize(size as PageSizeOption);
-    // Save preference to localStorage
-    localStorage.setItem("dashboardPageSize", String(size));
-  }, []);
-
   // Handle checkout success/cancel from URL
   useEffect(() => {
     if (checkoutStatus === "success") {
@@ -221,12 +211,12 @@ export default function DashboardClient({
 
     window.addEventListener(
       "channel-removed",
-      handleChannelRemoved as EventListener
+      handleChannelRemoved as EventListener,
     );
     return () => {
       window.removeEventListener(
         "channel-removed",
-        handleChannelRemoved as EventListener
+        handleChannelRemoved as EventListener,
       );
     };
   }, [activeChannelId]);
@@ -246,7 +236,7 @@ export default function DashboardClient({
             if (
               activeChannelId &&
               !freshChannels.some(
-                (c: Channel) => c.channel_id === activeChannelId
+                (c: Channel) => c.channel_id === activeChannelId,
               )
             ) {
               const newActiveId = freshChannels[0]?.channel_id ?? null;
@@ -288,44 +278,47 @@ export default function DashboardClient({
   }, [activeChannelId, channels]);
 
   // Load videos for a channel (initial load)
-  const loadVideos = useCallback(async (channelId: string) => {
-    setVideosLoading(true);
-    setPagination(null);
-    try {
-      const res = await fetch(
-        `/api/me/channels/${channelId}/videos?limit=${pageSize}&offset=0`,
-        { cache: "no-store" }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setVideos(data.videos || []);
-        if (data.pagination) {
-          setPagination({
-            offset: data.pagination.offset + (data.videos?.length ?? 0),
-            total: data.pagination.total,
-            hasMore: data.pagination.hasMore,
-          });
+  const loadVideos = useCallback(
+    async (channelId: string) => {
+      setVideosLoading(true);
+      setPagination(null);
+      try {
+        const res = await fetch(
+          `/api/me/channels/${channelId}/videos?limit=${pageSize}&offset=0`,
+          { cache: "no-store" },
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setVideos(data.videos || []);
+          if (data.pagination) {
+            setPagination({
+              offset: data.pagination.offset + (data.videos?.length ?? 0),
+              total: data.pagination.total,
+              hasMore: data.pagination.hasMore,
+            });
+          }
+          // Track background sync state
+          setSyncing(data.syncing ?? false);
+          setLastSyncedAt(data.lastSyncedAt ?? null);
         }
-        // Track background sync state
-        setSyncing(data.syncing ?? false);
-        setLastSyncedAt(data.lastSyncedAt ?? null);
+      } catch (error) {
+        console.error("Failed to load videos:", error);
+      } finally {
+        setVideosLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to load videos:", error);
-    } finally {
-      setVideosLoading(false);
-    }
-  }, [pageSize]);
+    },
+    [pageSize],
+  );
 
   // Load more videos (pagination)
   const loadMoreVideos = useCallback(async () => {
     if (!activeChannelId || !pagination?.hasMore || loadingMore) return;
-    
+
     setLoadingMore(true);
     try {
       const res = await fetch(
         `/api/me/channels/${activeChannelId}/videos?limit=${pageSize}&offset=${pagination.offset}`,
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
       if (res.ok) {
         const data = await res.json();
@@ -345,18 +338,7 @@ export default function DashboardClient({
     }
   }, [activeChannelId, pagination, loadingMore, pageSize]);
 
-  // Load saved page size from localStorage on mount
-  useEffect(() => {
-    const savedPageSize = localStorage.getItem("dashboardPageSize");
-    if (savedPageSize) {
-      const parsed = parseInt(savedPageSize, 10);
-      if (PAGE_SIZE_OPTIONS.includes(parsed as PageSizeOption)) {
-        setPageSize(parsed as PageSizeOption);
-      }
-    }
-  }, []);
-
-  // Load videos when active channel changes or page size changes
+  // Load videos when active channel changes
   useEffect(() => {
     if (!activeChannelId) {
       setVideos([]);
@@ -402,7 +384,7 @@ export default function DashboardClient({
       try {
         const res = await fetch(
           `/api/me/channels/${activeChannelId}/videos?limit=${pageSize}&offset=0`,
-          { cache: "no-store" }
+          { cache: "no-store" },
         );
         if (res.ok) {
           const data = await res.json();
@@ -501,52 +483,6 @@ export default function DashboardClient({
 
   return (
     <main className={s.page}>
-      {/* Header */}
-      <div className={s.header}>
-        <div>
-          <h1 className={s.title}>Your Videos</h1>
-          <p className={s.subtitle}>
-            {activeChannel ? (
-              <>
-                Showing videos from <strong>{activeChannel.title}</strong>
-              </>
-            ) : (
-              "Connect a channel to see your videos"
-            )}
-          </p>
-        </div>
-        {process.env.NODE_ENV === 'development' && activeChannel && (
-          <button
-            className={s.refreshBtn}
-            onClick={() => refreshChannel(activeChannel.channel_id)}
-            disabled={busy === activeChannel.channel_id}
-            title="Refresh channel data from YouTube"
-          >
-            {busy === activeChannel.channel_id ? (
-              <>
-                <span className={s.spinner} />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M23 4v6h-6M1 20v-6h6" />
-                  <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-                </svg>
-                Sync
-              </>
-            )}
-          </button>
-        )}
-      </div>
-
       {/* Syncing indicator - shows when background sync is running */}
       {syncing && (
         <div className={s.syncingBanner}>
@@ -591,27 +527,62 @@ export default function DashboardClient({
           </section>
         )}
 
-        {/* Channel Profile Card */}
-        {activeChannel && (
-          <ProfileCard
-            profile={channelProfile}
-            channelId={activeChannelId}
-            loading={profileLoading}
+        {/* Tab Navigation */}
+        {activeChannel && activeChannelId && (
+          <Tabs
+            items={[
+              {
+                id: "videos",
+                label: "Videos",
+                icon: (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="2" y="2" width="20" height="20" rx="2.18" />
+                    <path d="M10 8l6 4-6 4V8z" />
+                  </svg>
+                ),
+                badge:
+                  activeChannel?.totalVideoCount || videos.length || undefined,
+              },
+              {
+                id: "analytics",
+                label: "Analytics",
+                icon: (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M3 3v18h18" />
+                    <path d="M18 17V9" />
+                    <path d="M13 17V5" />
+                    <path d="M8 17v-3" />
+                  </svg>
+                ),
+              },
+            ]}
+            activeId={activeTab}
+            onTabChange={(id) => setActiveTab(id as "analytics" | "videos")}
+            ariaLabel="Dashboard content"
           />
         )}
 
-        {/* Channel Goals/Milestones */}
-        {activeChannel && videos.length > 0 && (
-          <ChannelGoals
-            videos={videos}
-            channelTitle={activeChannel.title ?? undefined}
-            totalVideoCount={activeChannel.totalVideoCount}
-            subscriberCount={activeChannel.subscriberCount}
-          />
+        {/* Analytics Tab Content */}
+        {activeChannel && activeChannelId && activeTab === "analytics" && (
+          <ChannelInsightsPanel channelId={activeChannelId} />
         )}
 
-        {/* Video Grid */}
-        {activeChannel && (
+        {/* Videos Tab Content */}
+        {activeChannel && activeTab === "videos" && (
           <section className={s.videosSection}>
             {videosLoading ? (
               <div className={s.videoList}>
@@ -636,9 +607,9 @@ export default function DashboardClient({
                   onSortChange={handleSortChange}
                   onFiltersChange={handleFiltersChange}
                   onReset={handleResetFilters}
-                  pageSize={pageSize}
-                  pageSizeOptions={PAGE_SIZE_OPTIONS}
-                  onPageSizeChange={handlePageSizeChange}
+                  totalVideoCount={
+                    activeChannel?.totalVideoCount ?? videos.length
+                  }
                 />
 
                 {/* Video List */}
@@ -667,10 +638,7 @@ export default function DashboardClient({
                       <path d="M21 21l-4.35-4.35" />
                     </svg>
                     <p>No videos match these filters</p>
-                    <button
-                      className={s.resetBtn}
-                      onClick={handleResetFilters}
-                    >
+                    <button className={s.resetBtn} onClick={handleResetFilters}>
                       Reset filters
                     </button>
                   </div>
@@ -736,7 +704,9 @@ export default function DashboardClient({
                 <ul className={s.ctaFeatures}>
                   <li>Unlimited idea generation</li>
                   <li>Video analysis with fixes</li>
-                  <li>Up to {LIMITS.PRO_MAX_CONNECTED_CHANNELS} connected channels</li>
+                  <li>
+                    Up to {LIMITS.PRO_MAX_CONNECTED_CHANNELS} connected channels
+                  </li>
                 </ul>
               </div>
               <div className={s.ctaAction}>
@@ -744,7 +714,9 @@ export default function DashboardClient({
                   <span className={s.ctaPriceAmount}>
                     {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}
                   </span>
-                  <span className={s.ctaPricePeriod}>/{SUBSCRIPTION.PRO_INTERVAL}</span>
+                  <span className={s.ctaPricePeriod}>
+                    /{SUBSCRIPTION.PRO_INTERVAL}
+                  </span>
                 </div>
                 <a
                   href="/api/integrations/stripe/checkout"

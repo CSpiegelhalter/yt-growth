@@ -1,12 +1,8 @@
-/**
- * UI Components - Reusable primitives
- * 
- * Import from '@/components/ui' for consistent styling
- */
-
-export { PageContainer } from './PageContainer';
-export { PageHeader } from './PageHeader';
-export { EmptyState } from './EmptyState';
-export { ErrorState, type ApiErrorInfo } from './ErrorState';
-export { Skeleton, VideoCardSkeleton } from './Skeleton';
-
+export { Tabs } from "./Tabs";
+export type { TabItem } from "./Tabs";
+export { PageContainer } from "./PageContainer";
+export { PageHeader } from "./PageHeader";
+export { EmptyState } from "./EmptyState";
+export { ErrorState } from "./ErrorState";
+export { Skeleton } from "./Skeleton";
+export { Toast } from "./Toast";

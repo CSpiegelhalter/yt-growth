@@ -25,5 +25,8 @@
     "worker:score": "cd apps/worker && python -m worker score",
     "worker:rank": "cd apps/worker && python -m worker rank",
     "worker:run": "cd apps/worker && python -m worker run"
+  },
+  "dependencies": {
+    "critters": "^0.0.25"
   }
 }

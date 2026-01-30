@@ -1,24 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import s from "./tags.module.css";
+import { Tabs } from "@/components/ui";
 
-type TabItem = {
-  id: string;
-  label: string;
-  href: string;
-  icon: React.ReactNode;
-};
-
-const TABS: TabItem[] = [
+const TABS = [
   {
     id: "extractor",
     label: "Tag Finder",
     href: "/tags/extractor",
     icon: (
       <svg
-        className={s.tabIcon}
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -38,7 +29,6 @@ const TABS: TabItem[] = [
     href: "/tags/generator",
     icon: (
       <svg
-        className={s.tabIcon}
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -56,10 +46,7 @@ const TABS: TabItem[] = [
 
 /**
  * Tab navigation for the Tags tools hub.
- * 
- * Design: Large, pill-style segmented control with clear active states.
- * Each tab navigates to its own URL for SEO and shareability.
- * Fully accessible with proper ARIA roles and keyboard navigation.
+ * Uses the unified Tabs component for consistent styling.
  */
 export function TagsTabsNav() {
   const pathname = usePathname();
@@ -72,33 +59,6 @@ export function TagsTabsNav() {
   const activeTab = getActiveTab();
 
   return (
-    <nav className={s.tabsContainer} aria-label="Tags tools navigation">
-      <div className={s.tabsWrapper} role="tablist">
-        {TABS.map((tab) => {
-          const isActive = tab.id === activeTab;
-          return (
-            <Link
-              key={tab.id}
-              href={tab.href}
-              className={`${s.tabItem} ${isActive ? s.tabItemActive : ""}`}
-              role="tab"
-              aria-selected={isActive}
-              aria-controls={`panel-${tab.id}`}
-              tabIndex={isActive ? 0 : -1}
-            >
-              {tab.icon}
-              <span className={s.tabLabel}>{tab.label}</span>
-            </Link>
-          );
-        })}
-        <div
-          className={s.tabIndicator}
-          style={{
-            transform: `translateX(${activeTab === "generator" ? "0" : "100%"})`,
-          }}
-          aria-hidden="true"
-        />
-      </div>
-    </nav>
+    <Tabs items={TABS} activeId={activeTab} ariaLabel="Tags tools navigation" />
   );
 }

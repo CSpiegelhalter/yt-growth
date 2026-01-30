@@ -12,6 +12,7 @@ import CompetitorFilters, {
   DEFAULT_FILTER_STATE,
 } from "./CompetitorFilters";
 import CompetitorResultsStream from "./CompetitorResultsStream";
+import { ProfileTip } from "@/components/dashboard/ProfileTip";
 
 type Props = {
   initialMe: Me;
@@ -59,7 +60,7 @@ function loadState(): SavedState | null {
     if (!raw) return null;
 
     const state = JSON.parse(raw) as SavedState;
-    
+
     // Expire after TTL
     if (Date.now() - state.timestamp > CACHE_TTL_MS) {
       sessionStorage.removeItem(STORAGE_KEY);
@@ -121,13 +122,13 @@ export default function CompetitorsClient({
   const activeChannelId = urlChannelId ?? initialActiveChannelId ?? null;
   const activeChannel = useMemo(
     () => channels.find((c) => c.channel_id === activeChannelId) ?? null,
-    [channels, activeChannelId]
+    [channels, activeChannelId],
   );
 
   // Subscription check
   const isSubscribed = useMemo(
     () => initialMe.subscription?.isActive ?? false,
-    [initialMe]
+    [initialMe],
   );
 
   // Initialize all state with server-safe defaults
@@ -140,17 +141,24 @@ export default function CompetitorsClient({
   const [searchKey, setSearchKey] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchMode, setSearchMode] = useState<"competitor_search" | "search_my_niche">("competitor_search");
+  const [searchMode, setSearchMode] = useState<
+    "competitor_search" | "search_my_niche"
+  >("competitor_search");
 
   // Cached videos and cursor (populated after hydration)
-  const [cachedVideos, setCachedVideos] = useState<CompetitorVideo[] | null>(null);
-  const [cachedNextCursor, setCachedNextCursor] = useState<SearchCursor | null>(null);
+  const [cachedVideos, setCachedVideos] = useState<CompetitorVideo[] | null>(
+    null,
+  );
+  const [cachedNextCursor, setCachedNextCursor] = useState<SearchCursor | null>(
+    null,
+  );
   const [currentVideos, setCurrentVideos] = useState<CompetitorVideo[]>([]);
-  const [currentNextCursor, setCurrentNextCursor] = useState<SearchCursor | null>(null);
-  
+  const [currentNextCursor, setCurrentNextCursor] =
+    useState<SearchCursor | null>(null);
+
   // Track whether we've restored from sessionStorage
   const hasRestoredRef = useRef(false);
-  
+
   // Track clicked video ID for scroll restoration
   const [scrollToVideoId, setScrollToVideoId] = useState<string | null>(null);
 
@@ -180,7 +188,7 @@ export default function CompetitorsClient({
 
     if (savedState) {
       hasRestoredRef.current = true;
-      
+
       // Restore all state
       setNicheText(savedState.nicheText);
       setReferenceVideoUrl(savedState.referenceVideoUrl);
@@ -190,7 +198,7 @@ export default function CompetitorsClient({
       setCurrentNextCursor(savedState.nextCursor);
       setCachedVideos(savedState.videos);
       setCachedNextCursor(savedState.nextCursor);
-      
+
       if (savedState.hasSearched) {
         setSearchKey(`restored:${Date.now()}`);
       }
@@ -199,7 +207,7 @@ export default function CompetitorsClient({
       if (clickedVideoId && savedState.videos.length > 0) {
         setScrollToVideoId(clickedVideoId);
       }
-      
+
       // Allow saving again after a tick
       setTimeout(() => {
         hasRestoredRef.current = false;
@@ -219,22 +227,26 @@ export default function CompetitorsClient({
       nextCursor: currentNextCursor,
       hasSearched,
     });
-  }, [nicheText, referenceVideoUrl, filters, currentVideos, currentNextCursor, hasSearched]);
+  }, [
+    nicheText,
+    referenceVideoUrl,
+    filters,
+    currentVideos,
+    currentNextCursor,
+    hasSearched,
+  ]);
 
   // Handle search initiation (manual niche)
-  const handleSearch = useCallback(
-    (text: string, url: string) => {
-      setNicheText(text);
-      setReferenceVideoUrl(url);
-      setSearchMode("competitor_search");
-      setError(null);
-      setIsSearching(true);
-      setHasSearched(true);
-      setCurrentVideos([]);
-      setSearchKey(`competitor_search:${Date.now()}`);
-    },
-    []
-  );
+  const handleSearch = useCallback((text: string, url: string) => {
+    setNicheText(text);
+    setReferenceVideoUrl(url);
+    setSearchMode("competitor_search");
+    setError(null);
+    setIsSearching(true);
+    setHasSearched(true);
+    setCurrentVideos([]);
+    setSearchKey(`competitor_search:${Date.now()}`);
+  }, []);
 
   // Handle "Search My Niche" shortcut
   const handleSearchMyNiche = useCallback(() => {
@@ -255,7 +267,7 @@ export default function CompetitorsClient({
         setSearchKey(`${searchMode}:${Date.now()}`);
       }
     },
-    [searchMode, hasSearched]
+    [searchMode, hasSearched],
   );
 
   // Handle search complete
@@ -296,7 +308,14 @@ export default function CompetitorsClient({
         </div>
         <div className={s.lockedState}>
           <div className={s.lockedIcon}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <circle cx="11" cy="11" r="8" />
               <path d="M21 21l-4.35-4.35" />
             </svg>
@@ -325,6 +344,9 @@ export default function CompetitorsClient({
         </div>
       </div>
 
+      {/* Profile Tip */}
+      <ProfileTip channelId={activeChannelId} />
+
       {/* Search Panel */}
       <CompetitorSearchPanel
         mode="search"
@@ -348,12 +370,23 @@ export default function CompetitorsClient({
       {/* Error Banner */}
       {error && (
         <div className={s.errorBanner}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <circle cx="12" cy="12" r="10" />
             <path d="M12 8v4M12 16h.01" />
           </svg>
           <p className={s.errorMessage}>{error}</p>
-          <button className={s.errorDismiss} onClick={() => setError(null)} aria-label="Dismiss">
+          <button
+            className={s.errorDismiss}
+            onClick={() => setError(null)}
+            aria-label="Dismiss"
+          >
             ×
           </button>
         </div>
@@ -383,7 +416,14 @@ export default function CompetitorsClient({
       {!hasSearched && (
         <div className={s.emptyState}>
           <div className={s.emptyIcon}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <circle cx="11" cy="11" r="8" />
               <path d="M21 21l-4.35-4.35" />
             </svg>

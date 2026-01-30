@@ -4,6 +4,7 @@
    ================================ */
 
 .page {
+  width: 100%;
   max-width: var(--page-max-width);
   margin: 0 auto;
   padding: var(--page-padding-mobile);

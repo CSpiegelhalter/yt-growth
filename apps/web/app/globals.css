@@ -364,6 +364,16 @@
   --focus-ring-danger: 0 0 0 3px rgba(220, 38, 38, 0.15);
   --focus-ring-success: 0 0 0 3px rgba(5, 150, 105, 0.15);
   
+  /* Tab Navigation */
+  --tab-container-bg: #f1f5f9;         /* Container background for tabs */
+  --tab-bg: transparent;                /* Default tab background */
+  --tab-bg-hover: #ffffff;              /* Hover tab background */
+  --tab-bg-active: #ffffff;             /* Active tab background */
+  --tab-text: #64748b;                  /* Default tab text color */
+  --tab-text-hover: #6366f1;            /* Hover tab text color (purple) */
+  --tab-text-active: #0f172a;           /* Active tab text color */
+  --tab-shadow-active: 0 1px 3px rgba(0, 0, 0, 0.08);  /* Active tab shadow */
+  
   /* ===========================================
      LEGACY COLOR TOKENS (for backwards compat)
      Prefer semantic tokens above
@@ -455,6 +465,21 @@
   --section-title-size: 1.125rem;
   --section-title-weight: 600;
   --section-subtitle-size: 0.875rem;
+  
+  /* ===========================================
+     METRIC CARD TOKENS
+     Consistent styling for metric displays
+     =========================================== */
+  --metric-value-size-mobile: 1.125rem;    /* 18px on mobile */
+  --metric-value-size-desktop: 1.25rem;    /* 20px on desktop */
+  --metric-value-weight: 700;
+  --metric-label-size: 0.6875rem;          /* 11px */
+  --metric-label-weight: 500;
+  --metric-label-spacing: 0.02em;
+  --metric-gap: 4px;
+  --metric-padding: 12px 16px;
+  --metric-border-radius: 8px;
+  --metric-background: var(--color-surface-2);
   
   /* Control typography */
   --control-font-size: 0.875rem;

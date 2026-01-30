@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import s from "./ProfileCard.module.css";
 import { ChannelProfile } from "@/lib/channel-profile/types";
@@ -15,6 +16,7 @@ export default function ProfileCard({
   channelId,
   loading = false,
 }: Props) {
+  const [expanded, setExpanded] = useState(false);
   const aiProfile = profile?.aiProfile;
   const hasProfile = !!profile;
   const hasAI = !!aiProfile;
@@ -95,10 +97,15 @@ export default function ProfileCard({
           </svg>
           <h4 className={s.emptyTitle}>Create Your Channel Profile</h4>
           <p className={s.emptyDesc}>
-            Help us understand your niche to improve video ideas, competitor suggestions, and insights.
+            Help us understand your niche to improve video ideas, competitor
+            suggestions, and insights.
           </p>
           <Link
-            href={channelId ? `/channel-profile?channelId=${channelId}` : "/channel-profile"}
+            href={
+              channelId
+                ? `/channel-profile?channelId=${channelId}`
+                : "/channel-profile"
+            }
             className={s.ctaBtn}
           >
             Create Profile
@@ -108,74 +115,91 @@ export default function ProfileCard({
     );
   }
 
-  // Has profile - show summary
+  // Has profile - show compact summary with expand option
   return (
-    <div className={s.card}>
-      <div className={s.cardHeader}>
-        <div>
-          <h3 className={s.cardTitle}>
-            <svg
-              className={s.cardTitleIcon}
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            Channel Profile
-          </h3>
-          {!hasAI && (
-            <p className={s.cardSubtitle}>AI summary pending</p>
+    <div className={`${s.card} ${s.compact}`}>
+      <button
+        className={s.compactHeader}
+        onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+      >
+        <div className={s.compactInfo}>
+          <svg
+            className={s.compactIcon}
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <span className={s.compactLabel}>Channel Profile</span>
+          {hasAI && (
+            <span className={s.compactNiche}>{aiProfile.nicheLabel}</span>
           )}
         </div>
-        <Link
-          href={channelId ? `/channel-profile?channelId=${channelId}` : "/channel-profile"}
-          className={s.editBtn}
-          aria-label="Edit channel profile"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+        <div className={s.compactActions}>
+          <Link
+            href={
+              channelId
+                ? `/channel-profile?channelId=${channelId}`
+                : "/channel-profile"
+            }
+            className={s.editBtnCompact}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Edit channel profile"
+          >
+            Edit
+          </Link>
+          <svg
+            className={`${s.expandIcon} ${expanded ? s.expanded : ""}`}
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M6 9l6 6 6-6" />
           </svg>
-          Edit
-        </Link>
-      </div>
+        </div>
+      </button>
 
-      <div className={s.profileSummary}>
-        {hasAI ? (
-          <>
-            <h4 className={s.nicheLabel}>{aiProfile.nicheLabel}</h4>
-            <p className={s.nicheDesc}>{aiProfile.nicheDescription}</p>
-            {aiProfile.contentPillars.length > 0 && (
-              <div className={s.pillars}>
-                {aiProfile.contentPillars.slice(0, 4).map((pillar, i) => (
-                  <span key={i} className={s.pillar}>
-                    {pillar.name}
+      {expanded && (
+        <div className={s.expandedContent}>
+          {hasAI ? (
+            <>
+              <p className={s.nicheDescCompact}>{aiProfile.nicheDescription}</p>
+              {aiProfile.contentPillars.length > 0 && (
+                <div className={s.pillarsCompact}>
+                  {aiProfile.contentPillars.slice(0, 4).map((pillar, i) => (
+                    <span key={i} className={s.pillarCompact}>
+                      {pillar.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <p className={s.nicheDescCompact}>
+                {profile.input.description.slice(0, 150)}
+                {profile.input.description.length > 150 ? "..." : ""}
+              </p>
+              <div className={s.pillarsCompact}>
+                {profile.input.categories.slice(0, 3).map((cat, i) => (
+                  <span key={i} className={s.pillarCompact}>
+                    {cat}
                   </span>
                 ))}
               </div>
-            )}
-          </>
-        ) : (
-          <>
-            <p className={s.nicheDesc}>
-              {profile.input.description.slice(0, 150)}
-              {profile.input.description.length > 150 ? "..." : ""}
-            </p>
-            <div className={s.pillars}>
-              {profile.input.categories.slice(0, 3).map((cat, i) => (
-                <span key={i} className={s.pillar}>
-                  {cat}
-                </span>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

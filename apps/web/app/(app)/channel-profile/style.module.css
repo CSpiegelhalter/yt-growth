@@ -14,10 +14,7 @@
   }
 }
 
-.container {
-  max-width: 720px;
-  margin: 0 auto;
-}
+/* Removed narrow container - now uses standard page width */
 
 /* Header */
 .header {

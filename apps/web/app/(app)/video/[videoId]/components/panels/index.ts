@@ -3,3 +3,7 @@ export { RetentionPanel } from "./RetentionPanel";
 export { SeoPanel } from "./SeoPanel";
 export { CommentsPanel } from "./CommentsPanel";
 export { IdeasPanel } from "./IdeasPanel";
+export { TrafficSourcePanel } from "./TrafficSourcePanel";
+export { PostWatchPanel } from "./PostWatchPanel";
+export { ShortsMetricsPanel } from "./ShortsMetricsPanel";
+export { DimensionalInsightsPanel } from "./DimensionalInsightsPanel";

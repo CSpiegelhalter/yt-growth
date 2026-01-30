@@ -623,7 +623,12 @@ export type CompetitorVideoBrief = {
 // Differentiation angle
 export type CompetitorDifferentiationAngle = {
   angleName: string;
-  angleType: "same_desire_different_vehicle" | "myth_busting" | "roadmap" | "challenge" | "tooling";
+  angleType:
+    | "same_desire_different_vehicle"
+    | "myth_busting"
+    | "roadmap"
+    | "challenge"
+    | "tooling";
   whyItWorks: string;
   howItDiffers: string;
 };
@@ -929,24 +934,84 @@ export type TrafficSourceBreakdown = {
 
 export type ChannelBaseline = {
   sampleSize: number;
-  viewsPerDay: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  avgViewPercentage: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  watchTimePerViewSec: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  subsPer1k: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  engagementPerView: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  sharesPer1k: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  viewsPerDay: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  avgViewPercentage: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  watchTimePerViewSec: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  subsPer1k: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  engagementPerView: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  sharesPer1k: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
   // NEW: Additional baseline metrics
-  impressionsCtr?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  avgViewDuration?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  first24hViews?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  endScreenCtr?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  impressionsCtr?: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  avgViewDuration?: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  first24hViews?: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  endScreenCtr?: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
   // Length-bucketed baselines (optional)
   byLength?: {
-    short?: ChannelBaselineMetrics;      // < 2min
-    medium?: ChannelBaselineMetrics;     // 2-8min
-    long?: ChannelBaselineMetrics;       // 8-20min
-    veryLong?: ChannelBaselineMetrics;   // 20-60min
-    extraLong?: ChannelBaselineMetrics;  // 60min+
+    short?: ChannelBaselineMetrics; // < 2min
+    medium?: ChannelBaselineMetrics; // 2-8min
+    long?: ChannelBaselineMetrics; // 8-20min
+    veryLong?: ChannelBaselineMetrics; // 20-60min
+    extraLong?: ChannelBaselineMetrics; // 60min+
   };
 };
 
@@ -999,13 +1064,6 @@ export type BaselineComparison = {
   subsPer1k: ZScoreResult;
   engagementPerView: ZScoreResult;
   sharesPer1k: ZScoreResult;
-  healthScore: number;
-  healthLabel:
-    | "Excellent"
-    | "Good"
-    | "Average"
-    | "Below Average"
-    | "Needs Work";
 };
 
 // Title variant with rationale and source type

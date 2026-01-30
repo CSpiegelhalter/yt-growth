@@ -1,0 +1,536 @@
+/* Channel Audit Panel - Clean audit dashboard */
+
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.range {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 20px;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-text-muted);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error state */
+.error {
+  text-align: center;
+  padding: 20px;
+  color: var(--color-text-muted);
+}
+
+.error p {
+  margin: 0 0 12px;
+}
+
+.retryBtn {
+  padding: 8px 16px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.retryBtn:hover {
+  background: var(--color-border);
+}
+
+/* Bottleneck Section */
+.bottleneck {
+  padding: 16px;
+  background: var(--color-surface-2);
+  border-radius: 10px;
+  border-left: 4px solid var(--color-border);
+  margin-bottom: 20px;
+}
+
+.bottleneck.priority-high {
+  border-left-color: #ef4444;
+}
+
+.bottleneck.priority-medium {
+  border-left-color: #f59e0b;
+}
+
+.bottleneck.priority-low {
+  border-left-color: #22c55e;
+}
+
+.bottleneckHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.bottleneckLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.priorityBadge {
+  padding: 2px 8px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border-radius: 4px;
+}
+
+.priorityBadge.high {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.priorityBadge.medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.priorityBadge.low {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.bottleneckTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 6px;
+}
+
+.bottleneckDesc {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Actions Section */
+.actionsSection {
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin: 0 0 12px;
+}
+
+.actionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.actionCard {
+  padding: 12px;
+  background: var(--color-surface-2);
+  border-radius: 8px;
+}
+
+.actionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.actionNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-surface);
+  background: var(--color-text);
+  border-radius: 50%;
+}
+
+.effortBadge {
+  padding: 2px 8px;
+  font-size: 0.625rem;
+  font-weight: 500;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+
+.effortBadge.low {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.effortBadge.medium {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.effortBadge.high {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.actionTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 4px;
+}
+
+.actionDesc {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Expand Button */
+.expandBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.expandBtn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.expandBtn svg {
+  transition: transform 0.2s;
+}
+
+.expandBtn svg.rotated {
+  transform: rotate(180deg);
+}
+
+/* Expanded Content */
+.expandedContent {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Traffic Sources */
+.trafficSection {}
+
+.trafficBars {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trafficBar {}
+
+.trafficInfo {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.trafficLabel {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.trafficPercent {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.trafficTrack {
+  height: 8px;
+  background: var(--color-surface-2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.trafficFill {
+  height: 100%;
+  background: var(--color-text);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.trafficViews {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* Trends */
+.trendsSection {}
+
+.trendsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .trendsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trendCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  background: var(--color-surface-2);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.trendLabel {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.trendValue {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.trendCard.trend-up .trendValue {
+  color: #22c55e;
+}
+
+.trendCard.trend-down .trendValue {
+  color: #ef4444;
+}
+
+.trendCard.trend-flat .trendValue {
+  color: var(--color-text-muted);
+}
+
+/* Pattern Insights */
+.insightsSection {}
+
+.insightsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.insightCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--color-surface-2);
+  border-radius: 8px;
+  border-left: 3px solid var(--color-border);
+}
+
+.insightCard.positive {
+  border-left-color: #22c55e;
+}
+
+.insightCard.negative {
+  border-left-color: #ef4444;
+}
+
+.insightPattern {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.insightEvidence {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+/* Top Performers */
+.performersSection {}
+
+.performersList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.performerCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border-radius: 6px;
+}
+
+.performerTitle {
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.performerValue {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Subscriber Engagement Section */
+.engagementSection {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.engagementStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 480px) {
+  .engagementStats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.engagementStat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  background: var(--color-surface-2);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.engagementValue {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.engagementLabel {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.engagementDiagnosis {
+  padding: 12px;
+  background: var(--color-surface-2);
+  border-radius: 8px;
+  border-left: 3px solid var(--color-border);
+}
+
+.engagementDiagnosis.success {
+  border-left-color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.engagementDiagnosis.warning {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.engagementDiagnosis.info {
+  border-left-color: var(--color-text-muted);
+}
+
+.engagementDiagnosisTitle {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.engagementDiagnosisText {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}

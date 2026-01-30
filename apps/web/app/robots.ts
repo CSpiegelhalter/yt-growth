@@ -36,7 +36,6 @@ export default function robots(): MetadataRoute.Robots {
           "/dashboard/",
           "/profile/",
           "/goals/",
-          "/subscriber-insights/",
           "/competitors/",
           "/saved-ideas/",
           "/video/",

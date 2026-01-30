@@ -17,7 +17,7 @@ export async function fetchVideoMetrics(
   channelId: string,
   videoIds: string[],
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Promise<VideoMetricsData[]> {
   const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
   url.searchParams.set("ids", `channel==${channelId}`);
@@ -25,7 +25,7 @@ export async function fetchVideoMetrics(
   url.searchParams.set("endDate", endDate);
   url.searchParams.set(
     "metrics",
-    "views,likes,comments,shares,subscribersGained,subscribersLost,estimatedMinutesWatched,averageViewDuration,averageViewPercentage"
+    "views,likes,comments,shares,subscribersGained,subscribersLost,estimatedMinutesWatched,averageViewDuration,averageViewPercentage",
   );
   url.searchParams.set("dimensions", "video");
   url.searchParams.set("filters", `video==${videoIds.join(",")}`);
@@ -61,15 +61,26 @@ export async function fetchVideoMetrics(
 
 /**
  * Fetch retention curve (audience watch ratio) for a video.
+ *
+ * @param startDate - Optional start date. Defaults to 90 days ago.
+ *                    Pass the video's publishedAt for precise range.
  */
 export async function fetchRetentionCurve(
   ga: GoogleAccount,
   channelId: string,
-  videoId: string
+  videoId: string,
+  startDate?: Date | string,
 ): Promise<RetentionPoint[]> {
+  // Default to 90 days ago if no start date provided
+  const start = startDate
+    ? typeof startDate === "string"
+      ? startDate
+      : yyyyMmDd(startDate)
+    : yyyyMmDd(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000));
+
   const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
   url.searchParams.set("ids", `channel==${channelId}`);
-  url.searchParams.set("startDate", "2020-01-01");
+  url.searchParams.set("startDate", start);
   url.searchParams.set("endDate", yyyyMmDd(new Date()));
   url.searchParams.set("metrics", "audienceWatchRatio");
   url.searchParams.set("dimensions", "elapsedVideoTimeRatio");

@@ -17,7 +17,7 @@ export const BRAND = {
   twitterHandle: "@channelboost",
   ogImagePath: "/og/channelboost.png",
   themeColor: "#2563eb",
-  email: "hello@getchannelboost.com",
+  email: "curt@getchannelboost.com",
 } as const;
 
 /**

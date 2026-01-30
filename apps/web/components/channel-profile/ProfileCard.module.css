@@ -218,3 +218,113 @@
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ================================
+   Compact Mode (collapsed by default)
+   ================================ */
+
+.card.compact {
+  padding: 0;
+}
+
+.compactHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.compactHeader:hover {
+  background: var(--surface-alt, rgba(0,0,0,0.02));
+}
+
+.compactInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.compactIcon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.compactLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+}
+
+.compactNiche {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--primary);
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--border);
+}
+
+.compactActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.editBtnCompact {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+}
+
+.editBtnCompact:hover {
+  color: var(--primary);
+  background: var(--accent-light, rgba(59, 130, 246, 0.1));
+}
+
+.expandIcon {
+  color: var(--text-tertiary);
+  transition: transform 0.2s;
+}
+
+.expandIcon.expanded {
+  transform: rotate(180deg);
+}
+
+.expandedContent {
+  padding: 0 var(--space-4) var(--space-4);
+  border-top: 1px solid var(--border);
+  margin-top: -1px;
+}
+
+.nicheDescCompact {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: var(--space-3) 0 0;
+  line-height: var(--leading-normal);
+}
+
+.pillarsCompact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.pillarCompact {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.6875rem;
+  font-weight: var(--font-medium);
+  color: var(--primary);
+  background: var(--accent-light, #eff6ff);
+  border-radius: var(--radius-full);
+}

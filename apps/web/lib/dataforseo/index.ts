@@ -36,6 +36,12 @@ export {
   type YouTubeSerpResponse,
 } from "./youtube-serp";
 
+// Re-export competitive context (server-only)
+export {
+  fetchCompetitiveContext,
+  type CompetitiveContext,
+} from "./competitive-context";
+
 // Re-export utilities (can be used in tests)
 export {
   validatePhrase,

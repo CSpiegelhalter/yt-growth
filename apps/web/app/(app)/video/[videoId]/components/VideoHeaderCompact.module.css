@@ -32,6 +32,30 @@
   flex-shrink: 0;
 }
 
+.engagementStat {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--color-text-muted);
+}
+
+.engagementStat svg {
+  opacity: 0.7;
+}
+
+.engagementStatLarge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.engagementStatLarge svg {
+  opacity: 0.7;
+}
+
 .thumbnail {
   position: relative;
   width: 100px;
@@ -199,4 +223,71 @@
     flex: 1 1 calc(50% - 0.5px);
     border-radius: 0 0 10px 0;
   }
+}
+
+/* KPI Rating Indicator */
+.kpiRating {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 260px;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  text-align: left;
+}
+
+.tooltipTitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.tooltipDesc {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+  margin: 0 0 10px;
+}
+
+.tooltipBenchmarks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--color-surface-2);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.tooltipBenchmark {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+}
+
+.tooltipBenchmark span {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.tooltipNote {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  margin: 0;
+  font-style: italic;
 }

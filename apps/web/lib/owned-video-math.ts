@@ -1,7 +1,7 @@
 /**
  * Derived metrics and baseline calculations for owned videos
  *
- * Computes normalized metrics, z-scores, percentiles, and a "Video Health Score"
+ * Computes normalized metrics, z-scores, and percentiles
  * by comparing a video's performance against the channel's baseline.
  *
  * Also includes bottleneck detection and confidence scoring.
@@ -80,17 +80,77 @@ export type DerivedMetrics = {
  */
 export type ChannelBaseline = {
   sampleSize: number;
-  viewsPerDay: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  avgViewPercentage: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  watchTimePerViewSec: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  subsPer1k: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  engagementPerView: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  sharesPer1k: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  viewsPerDay: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  avgViewPercentage: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  watchTimePerViewSec: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  subsPer1k: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  engagementPerView: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  sharesPer1k: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
   // Optional extended metrics
-  impressionsCtr?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  avgViewDuration?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  first24hViews?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
-  endScreenCtr?: { mean: number; std: number; median?: number; p25?: number; p75?: number };
+  impressionsCtr?: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  avgViewDuration?: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  first24hViews?: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
+  endScreenCtr?: {
+    mean: number;
+    std: number;
+    median?: number;
+    p25?: number;
+    p75?: number;
+  };
 };
 
 /**
@@ -103,13 +163,6 @@ export type BaselineComparison = {
   subsPer1k: ZScoreResult;
   engagementPerView: ZScoreResult;
   sharesPer1k: ZScoreResult;
-  healthScore: number; // 0-100
-  healthLabel:
-    | "Excellent"
-    | "Good"
-    | "Average"
-    | "Below Average"
-    | "Needs Work";
 };
 
 export type ZScoreResult = {
@@ -136,7 +189,7 @@ export function computeDerivedMetrics(
   totals: AnalyticsTotals | ExtendedAnalyticsTotals,
   dailySeries: DailyAnalyticsRow[],
   videoDurationSec: number,
-  publishedAt?: string | null
+  publishedAt?: string | null,
 ): DerivedMetrics {
   const views = totals.views || 1; // Avoid division by zero
   const viewsPer1k = views / 1000;
@@ -267,7 +320,7 @@ export function computeDerivedMetrics(
   // Compute first 24h/48h views from daily series if available
   const { first24hViews, first48hViews } = computeEarlyViews(
     dailySeries,
-    publishedAt
+    publishedAt,
   );
 
   return {
@@ -314,7 +367,7 @@ export function computeDerivedMetrics(
  */
 function computeEarlyViews(
   dailySeries: DailyAnalyticsRow[],
-  publishedAt?: string | null
+  publishedAt?: string | null,
 ): { first24hViews: number | null; first48hViews: number | null } {
   if (!publishedAt || dailySeries.length === 0) {
     return { first24hViews: null, first48hViews: null };
@@ -325,7 +378,7 @@ function computeEarlyViews(
 
     // Sort by date ascending
     const sorted = [...dailySeries].sort((a, b) =>
-      a.date.localeCompare(b.date)
+      a.date.localeCompare(b.date),
     );
 
     let first24hViews: number | null = null;
@@ -334,7 +387,7 @@ function computeEarlyViews(
     for (const row of sorted) {
       const rowDate = new Date(row.date);
       const dayDiff = Math.floor(
-        (rowDate.getTime() - pubDate.getTime()) / (1000 * 60 * 60 * 24)
+        (rowDate.getTime() - pubDate.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       if (dayDiff === 0) {
@@ -395,7 +448,7 @@ function computeTrendMetrics(dailySeries: DailyAnalyticsRow[]): {
  * Compute channel baseline from multiple videos' derived metrics
  */
 export function computeChannelBaseline(
-  videoMetrics: DerivedMetrics[]
+  videoMetrics: DerivedMetrics[],
 ): ChannelBaseline {
   const sampleSize = videoMetrics.length;
   if (sampleSize === 0) {
@@ -414,25 +467,27 @@ export function computeChannelBaseline(
     sampleSize,
     viewsPerDay: computeMeanStd(videoMetrics.map((m) => m.viewsPerDay)),
     avgViewPercentage: computeMeanStd(
-      videoMetrics.map((m) => m.avdRatio).filter((v): v is number => v != null)
+      videoMetrics.map((m) => m.avdRatio).filter((v): v is number => v != null),
     ),
     watchTimePerViewSec: computeMeanStd(
       videoMetrics
         .map((m) => m.watchTimePerViewSec)
-        .filter((v): v is number => v != null)
+        .filter((v): v is number => v != null),
     ),
     subsPer1k: computeMeanStd(
-      videoMetrics.map((m) => m.subsPer1k).filter((v): v is number => v != null)
+      videoMetrics
+        .map((m) => m.subsPer1k)
+        .filter((v): v is number => v != null),
     ),
     engagementPerView: computeMeanStd(
       videoMetrics
         .map((m) => m.engagementPerView)
-        .filter((v): v is number => v != null)
+        .filter((v): v is number => v != null),
     ),
     sharesPer1k: computeMeanStd(
       videoMetrics
         .map((m) => m.sharesPer1k)
-        .filter((v): v is number => v != null)
+        .filter((v): v is number => v != null),
     ),
   };
 }
@@ -443,51 +498,25 @@ export function computeChannelBaseline(
 export function compareToBaseline(
   metrics: DerivedMetrics,
   avgViewPercentage: number | null,
-  baseline: ChannelBaseline
+  baseline: ChannelBaseline,
 ): BaselineComparison {
   const comparison: BaselineComparison = {
     viewsPerDay: computeZScore(metrics.viewsPerDay, baseline.viewsPerDay),
     avgViewPercentage: computeZScore(
       avgViewPercentage,
-      baseline.avgViewPercentage
+      baseline.avgViewPercentage,
     ),
     watchTimePerViewSec: computeZScore(
       metrics.watchTimePerViewSec,
-      baseline.watchTimePerViewSec
+      baseline.watchTimePerViewSec,
     ),
     subsPer1k: computeZScore(metrics.subsPer1k, baseline.subsPer1k),
     engagementPerView: computeZScore(
       metrics.engagementPerView,
-      baseline.engagementPerView
+      baseline.engagementPerView,
     ),
     sharesPer1k: computeZScore(metrics.sharesPer1k, baseline.sharesPer1k),
-    healthScore: 0,
-    healthLabel: "Average",
   };
-
-  // Compute Health Score: 50 + 15 * weighted sum of z-scores
-  // Weights: viewsPerDay=0.30, avgViewPercentage=0.25, subsPer1k=0.20, engagementPerView=0.15, sharesPer1k=0.10
-  const weightedZ =
-    0.3 * (comparison.viewsPerDay.zScore ?? 0) +
-    0.25 * (comparison.avgViewPercentage.zScore ?? 0) +
-    0.2 * (comparison.subsPer1k.zScore ?? 0) +
-    0.15 * (comparison.engagementPerView.zScore ?? 0) +
-    0.1 * (comparison.sharesPer1k.zScore ?? 0);
-
-  comparison.healthScore = Math.min(100, Math.max(0, 50 + 15 * weightedZ));
-
-  // Assign health label
-  if (comparison.healthScore >= 75) {
-    comparison.healthLabel = "Excellent";
-  } else if (comparison.healthScore >= 60) {
-    comparison.healthLabel = "Good";
-  } else if (comparison.healthScore >= 40) {
-    comparison.healthLabel = "Average";
-  } else if (comparison.healthScore >= 25) {
-    comparison.healthLabel = "Below Average";
-  } else {
-    comparison.healthLabel = "Needs Work";
-  }
 
   return comparison;
 }
@@ -515,7 +544,7 @@ function computeMeanStd(values: number[]): { mean: number; std: number } {
  */
 function computeZScore(
   value: number | null,
-  baseline: { mean: number; std: number }
+  baseline: { mean: number; std: number },
 ): ZScoreResult {
   if (value == null || (baseline.mean === 0 && baseline.std === 0)) {
     return {
@@ -538,8 +567,8 @@ function computeZScore(
         value > baseline.mean
           ? "above"
           : value < baseline.mean
-          ? "below"
-          : "at",
+            ? "below"
+            : "at",
       delta:
         baseline.mean !== 0
           ? ((value - baseline.mean) / baseline.mean) * 100
@@ -662,7 +691,7 @@ export { formatCompact } from "@/lib/format";
  */
 export function formatPercent(
   value: number | null,
-  decimals: number = 1
+  decimals: number = 1,
 ): string {
   if (value == null) return "-";
   return `${(value * 100).toFixed(decimals)}%`;
@@ -679,7 +708,7 @@ export function formatPercent(
 export function detectBottleneck(
   derived: DerivedMetrics,
   comparison: BaselineComparison,
-  baseline: ChannelBaseline
+  baseline: ChannelBaseline,
 ): BottleneckResult {
   const metrics: Array<{ label: string; value: string; comparison?: string }> =
     [];
@@ -832,7 +861,7 @@ export function detectBottleneck(
 /**
  * Compute confidence levels for each insight section
  * Based on sample size, availability of metrics, and data quality
- * 
+ *
  * DETERMINISTIC RULES:
  * - views < 10 OR impressions unavailable -> Low confidence
  * - Only allow Medium when impressions exist and exceed minimum threshold (200-500)
@@ -840,20 +869,30 @@ export function detectBottleneck(
 export function computeSectionConfidence(
   derived: DerivedMetrics,
   hasImpressions: boolean,
-  hasTrafficSources: boolean
+  hasTrafficSources: boolean,
 ): SectionConfidence {
   const views = derived.totalViews;
   const impressions = derived.impressions ?? 0;
-  const hasRetention = derived.avgViewPercentage != null || derived.avdRatio != null;
+  const hasRetention =
+    derived.avgViewPercentage != null || derived.avdRatio != null;
   const hasConversion = derived.subsPer1k != null;
   const hasEndScreen = derived.endScreenClickRate != null;
 
   return {
-    discovery: getDiscoveryConfidence(views, impressions, hasImpressions, hasTrafficSources),
+    discovery: getDiscoveryConfidence(
+      views,
+      impressions,
+      hasImpressions,
+      hasTrafficSources,
+    ),
     retention: getRetentionConfidenceLevel(views, hasRetention),
-    conversion: getConversionConfidenceLevel(views, hasConversion, hasEndScreen),
+    conversion: getConversionConfidenceLevel(
+      views,
+      hasConversion,
+      hasEndScreen,
+    ),
     packaging: getPackagingConfidence(views, impressions, hasImpressions),
-    promotion: views < 10 ? "Low" : "Medium" as ConfidenceLevel,
+    promotion: views < 10 ? "Low" : ("Medium" as ConfidenceLevel),
   };
 }
 
@@ -861,7 +900,7 @@ function getDiscoveryConfidence(
   views: number,
   impressions: number,
   hasImpressions: boolean,
-  hasTrafficSources: boolean
+  hasTrafficSources: boolean,
 ): ConfidenceLevel {
   // No impressions data at all -> always Low
   if (!hasImpressions) return "Low";
@@ -876,7 +915,7 @@ function getDiscoveryConfidence(
 
 function getRetentionConfidenceLevel(
   views: number,
-  hasRetention: boolean
+  hasRetention: boolean,
 ): ConfidenceLevel {
   // No retention data -> Low
   if (!hasRetention) return "Low";
@@ -892,7 +931,7 @@ function getRetentionConfidenceLevel(
 function getConversionConfidenceLevel(
   views: number,
   hasConversion: boolean,
-  hasEndScreen: boolean
+  hasEndScreen: boolean,
 ): ConfidenceLevel {
   // No conversion data -> Low
   if (!hasConversion) return "Low";
@@ -906,9 +945,9 @@ function getConversionConfidenceLevel(
 }
 
 function getPackagingConfidence(
-  views: number, 
+  views: number,
   impressions: number,
-  hasImpressions: boolean
+  hasImpressions: boolean,
 ): ConfidenceLevel {
   // CTR-based confidence requires impressions
   // Without impressions, packaging analysis is based on content only -> Low

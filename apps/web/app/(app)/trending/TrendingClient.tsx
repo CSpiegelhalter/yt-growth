@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, type FormEvent } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  type FormEvent,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import NicheDiscoveryCard from "./NicheDiscoveryCard";
 import FilterDrawer from "./FilterDrawer";
@@ -34,6 +40,7 @@ import s from "./style.module.css";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 import type { Me } from "@/types/api";
 import { SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { ProfileTip } from "@/components/dashboard/ProfileTip";
 
 type Props = {
   initialMe: Me;
@@ -65,8 +72,11 @@ export default function TrendingClient({
 
   useSyncActiveChannelIdToLocalStorage(activeChannelId);
 
-  const [listType, setListType] = useState<DiscoveryListType>(DEFAULT_LIST_TYPE);
-  const [filters, setFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
+  const [listType, setListType] =
+    useState<DiscoveryListType>(DEFAULT_LIST_TYPE);
+  const [filters, setFilters] = useState<DiscoveryFilters>(
+    DEFAULT_DISCOVERY_FILTERS,
+  );
   const [queryText, setQueryText] = useState("");
   const [niches, setNiches] = useState<DiscoveredNiche[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -74,7 +84,9 @@ export default function TrendingClient({
   const [hasMore, setHasMore] = useState(false);
   const [totalFound, setTotalFound] = useState(0);
   const [savedNiches, setSavedNiches] = useState<Set<string>>(new Set());
-  const [dismissedNiches, setDismissedNiches] = useState<Set<string>>(new Set());
+  const [dismissedNiches, setDismissedNiches] = useState<Set<string>>(
+    new Set(),
+  );
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -98,7 +110,12 @@ export default function TrendingClient({
   }, []);
 
   const fetchNiches = useCallback(
-    async (currentListType: DiscoveryListType, currentFilters: DiscoveryFilters, currentQueryText: string, append = false) => {
+    async (
+      currentListType: DiscoveryListType,
+      currentFilters: DiscoveryFilters,
+      currentQueryText: string,
+      append = false,
+    ) => {
       if (abortRef.current) abortRef.current.abort();
 
       const controller = new AbortController();
@@ -141,12 +158,14 @@ export default function TrendingClient({
         setNextCursor(data.nextCursor ?? null);
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
-        setError(err instanceof Error ? err.message : "Failed to discover niches");
+        setError(
+          err instanceof Error ? err.message : "Failed to discover niches",
+        );
       } finally {
         setIsLoading(false);
       }
     },
-    [dismissedNiches, nextCursor]
+    [dismissedNiches, nextCursor],
   );
 
   const handleDiscover = useCallback(() => {
@@ -158,11 +177,14 @@ export default function TrendingClient({
     fetchNiches(listType, filters, queryText, true);
   }, [listType, filters, queryText, fetchNiches]);
 
-  const handleListTypeChange = useCallback((newListType: DiscoveryListType) => {
-    setListType(newListType);
-    setNextCursor(null);
-    fetchNiches(newListType, filters, queryText, false);
-  }, [filters, queryText, fetchNiches]);
+  const handleListTypeChange = useCallback(
+    (newListType: DiscoveryListType) => {
+      setListType(newListType);
+      setNextCursor(null);
+      fetchNiches(newListType, filters, queryText, false);
+    },
+    [filters, queryText, fetchNiches],
+  );
 
   const handleSave = useCallback((niche: DiscoveredNiche) => {
     setSavedNiches((prev) => {
@@ -173,8 +195,13 @@ export default function TrendingClient({
         next.add(niche.id);
       }
       try {
-        localStorage.setItem("discovery-saved-niches", JSON.stringify([...next]));
-      } catch { /* ignore */ }
+        localStorage.setItem(
+          "discovery-saved-niches",
+          JSON.stringify([...next]),
+        );
+      } catch {
+        /* ignore */
+      }
       return next;
     });
   }, []);
@@ -184,31 +211,39 @@ export default function TrendingClient({
       const next = new Set(prev);
       next.add(niche.id);
       try {
-        localStorage.setItem("discovery-dismissed-niches", JSON.stringify([...next]));
-      } catch { /* ignore */ }
+        localStorage.setItem(
+          "discovery-dismissed-niches",
+          JSON.stringify([...next]),
+        );
+      } catch {
+        /* ignore */
+      }
       return next;
     });
     setNiches((prev) => prev.filter((n) => n.id !== niche.id));
   }, []);
 
   // Navigate to competitors page with niche pre-filled
-  const handleSearchNiche = useCallback((niche: DiscoveredNiche) => {
-    // Build URL with niche as query param for competitor search
-    const params = new URLSearchParams();
-    if (activeChannelId) params.set("channelId", activeChannelId);
-    params.set("niche", niche.nicheLabel);
-    window.location.href = `/competitors?${params.toString()}`;
-  }, [activeChannelId]);
+  const handleSearchNiche = useCallback(
+    (niche: DiscoveredNiche) => {
+      // Build URL with niche as query param for competitor search
+      const params = new URLSearchParams();
+      if (activeChannelId) params.set("channelId", activeChannelId);
+      params.set("niche", niche.nicheLabel);
+      window.location.href = `/competitors?${params.toString()}`;
+    },
+    [activeChannelId],
+  );
 
   const activeFilterCount = getActiveDiscoveryFilterCount(
     filters,
     DEFAULT_DISCOVERY_FILTERS,
-    queryText
+    queryText,
   );
   const activeAdvancedKeys = getActiveAdvancedFilterKeys(
     filters,
     DEFAULT_DISCOVERY_FILTERS,
-    queryText
+    queryText,
   );
   const showActiveFiltersRow = activeAdvancedKeys.length > 0;
 
@@ -235,7 +270,8 @@ export default function TrendingClient({
         >
           {(Object.keys(CHANNEL_SIZE_LABELS) as ChannelSize[]).map((key) => (
             <option key={key} value={key}>
-              {CHANNEL_SIZE_LABELS[key].label} ({CHANNEL_SIZE_LABELS[key].range})
+              {CHANNEL_SIZE_LABELS[key].label} ({CHANNEL_SIZE_LABELS[key].range}
+              )
             </option>
           ))}
         </select>
@@ -322,13 +358,17 @@ export default function TrendingClient({
 
   const handleQuickChip = useCallback(
     (chipId: QuickChipId) => {
-      setFilters((prev) => toggleQuickChip(prev, DEFAULT_DISCOVERY_FILTERS, chipId));
+      setFilters((prev) =>
+        toggleQuickChip(prev, DEFAULT_DISCOVERY_FILTERS, chipId),
+      );
       // If drawer is open, keep draft in sync so UI reflects chip changes.
       if (isFilterDrawerOpen) {
-        setDraftFilters((prev) => toggleQuickChip(prev, DEFAULT_DISCOVERY_FILTERS, chipId));
+        setDraftFilters((prev) =>
+          toggleQuickChip(prev, DEFAULT_DISCOVERY_FILTERS, chipId),
+        );
       }
     },
-    [isFilterDrawerOpen]
+    [isFilterDrawerOpen],
   );
 
   const handleSearchSubmit = useCallback(
@@ -336,7 +376,7 @@ export default function TrendingClient({
       e.preventDefault();
       handleDiscover();
     },
-    [handleDiscover]
+    [handleDiscover],
   );
 
   const removeActiveFilter = useCallback(
@@ -346,29 +386,50 @@ export default function TrendingClient({
           setQueryText("");
           return;
         case "category":
-          setFilters((p) => ({ ...p, category: DEFAULT_DISCOVERY_FILTERS.category }));
+          setFilters((p) => ({
+            ...p,
+            category: DEFAULT_DISCOVERY_FILTERS.category,
+          }));
           return;
         case "timeWindow":
-          setFilters((p) => ({ ...p, timeWindow: DEFAULT_DISCOVERY_FILTERS.timeWindow }));
+          setFilters((p) => ({
+            ...p,
+            timeWindow: DEFAULT_DISCOVERY_FILTERS.timeWindow,
+          }));
           return;
         case "minViewsPerDay":
-          setFilters((p) => ({ ...p, minViewsPerDay: DEFAULT_DISCOVERY_FILTERS.minViewsPerDay }));
+          setFilters((p) => ({
+            ...p,
+            minViewsPerDay: DEFAULT_DISCOVERY_FILTERS.minViewsPerDay,
+          }));
           return;
         case "channelSize":
-          setFilters((p) => ({ ...p, channelSize: DEFAULT_DISCOVERY_FILTERS.channelSize }));
+          setFilters((p) => ({
+            ...p,
+            channelSize: DEFAULT_DISCOVERY_FILTERS.channelSize,
+          }));
           return;
         case "channelAge":
-          setFilters((p) => ({ ...p, channelAge: DEFAULT_DISCOVERY_FILTERS.channelAge }));
+          setFilters((p) => ({
+            ...p,
+            channelAge: DEFAULT_DISCOVERY_FILTERS.channelAge,
+          }));
           return;
         case "contentType":
-          setFilters((p) => ({ ...p, contentType: DEFAULT_DISCOVERY_FILTERS.contentType }));
+          setFilters((p) => ({
+            ...p,
+            contentType: DEFAULT_DISCOVERY_FILTERS.contentType,
+          }));
           return;
         case "sortBy":
-          setFilters((p) => ({ ...p, sortBy: DEFAULT_DISCOVERY_FILTERS.sortBy }));
+          setFilters((p) => ({
+            ...p,
+            sortBy: DEFAULT_DISCOVERY_FILTERS.sortBy,
+          }));
           return;
       }
     },
-    [setFilters]
+    [setFilters],
   );
 
   // Show locked state if subscription is required
@@ -378,12 +439,21 @@ export default function TrendingClient({
         <div className={s.header}>
           <div>
             <h1 className={s.title}>Trending Search</h1>
-            <p className={s.subtitle}>Discover trending niches and rising videos</p>
+            <p className={s.subtitle}>
+              Discover trending niches and rising videos
+            </p>
           </div>
         </div>
         <div className={s.lockedState}>
           <div className={s.lockedIcon}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <circle cx="12" cy="12" r="10" />
               <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
             </svg>
@@ -391,7 +461,8 @@ export default function TrendingClient({
           <h2 className={s.lockedTitle}>Unlock Trending Search</h2>
           <p className={s.lockedDesc}>
             Discover rising niches, breakout videos, and emerging opportunities.
-            Filter by channel size, content type, and more to find your next hit.
+            Filter by channel size, content type, and more to find your next
+            hit.
           </p>
           <a href="/api/integrations/stripe/checkout" className={s.lockedBtn}>
             Subscribe to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/
@@ -414,18 +485,25 @@ export default function TrendingClient({
         </div>
       </div>
 
+      {/* Profile Tip */}
+      <ProfileTip channelId={activeChannelId} />
+
       {/* Intro text */}
       <div className={s.discoveryHeader}>
         <div className={s.discoveryHeaderText}>
           <p className={s.discoveryIntroText}>
-            Discover trending niches and rising videos. Filter by channel size, age, category,
-            and more to find opportunities that match your goals.
+            Discover trending niches and rising videos. Filter by channel size,
+            age, category, and more to find opportunities that match your goals.
           </p>
         </div>
       </div>
 
       {/* List Type Tabs */}
-      <div className={s.listTypeTabs} role="tablist" aria-label="Discovery type">
+      <div
+        className={s.listTypeTabs}
+        role="tablist"
+        aria-label="Discovery type"
+      >
         {(Object.keys(LIST_TYPE_OPTIONS) as DiscoveryListType[]).map((type) => (
           <button
             key={type}
@@ -437,32 +515,62 @@ export default function TrendingClient({
           >
             <span className={s.listTypeTabIcon}>
               {type === "fastest_growing" && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
                   <polyline points="17 6 23 6 23 12" />
                 </svg>
               )}
               {type === "breakouts" && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M12 2L2 7l10 5 10-5-10-5z" />
                   <path d="M2 17l10 5 10-5" />
                   <path d="M2 12l10 5 10-5" />
                 </svg>
               )}
               {type === "emerging_niches" && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
               )}
               {type === "low_competition" && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <circle cx="12" cy="12" r="10" />
                   <circle cx="12" cy="12" r="6" />
                   <circle cx="12" cy="12" r="2" />
                 </svg>
               )}
             </span>
-            <span className={s.listTypeTabLabel}>{LIST_TYPE_OPTIONS[type].label}</span>
+            <span className={s.listTypeTabLabel}>
+              {LIST_TYPE_OPTIONS[type].label}
+            </span>
           </button>
         ))}
       </div>
@@ -479,7 +587,9 @@ export default function TrendingClient({
             type="text"
             value={queryText}
             onChange={(e) => setQueryText(e.target.value)}
-            placeholder={'Optional: search around a niche (e.g., "budget travel", "espresso", "react")'}
+            placeholder={
+              'Optional: search around a niche (e.g., "budget travel", "espresso", "react")'
+            }
             autoComplete="off"
           />
         </div>
@@ -651,7 +761,10 @@ export default function TrendingClient({
               className={s.select}
               value={draftFilters.sortBy}
               onChange={(e) =>
-                setDraftFilters((p) => ({ ...p, sortBy: e.target.value as DiscoverySort }))
+                setDraftFilters((p) => ({
+                  ...p,
+                  sortBy: e.target.value as DiscoverySort,
+                }))
               }
             >
               {(Object.keys(SORT_OPTIONS) as DiscoverySort[]).map((key) => (
@@ -671,14 +784,19 @@ export default function TrendingClient({
               className={s.select}
               value={draftFilters.category}
               onChange={(e) =>
-                setDraftFilters((p) => ({ ...p, category: e.target.value as ContentCategory }))
+                setDraftFilters((p) => ({
+                  ...p,
+                  category: e.target.value as ContentCategory,
+                }))
               }
             >
-              {(Object.keys(CATEGORY_OPTIONS) as ContentCategory[]).map((key) => (
-                <option key={key} value={key}>
-                  {CATEGORY_OPTIONS[key].label}
-                </option>
-              ))}
+              {(Object.keys(CATEGORY_OPTIONS) as ContentCategory[]).map(
+                (key) => (
+                  <option key={key} value={key}>
+                    {CATEGORY_OPTIONS[key].label}
+                  </option>
+                ),
+              )}
             </select>
           </div>
 
@@ -733,7 +851,14 @@ export default function TrendingClient({
       {/* Error State */}
       {error && (
         <div className={s.discoveryError}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <circle cx="12" cy="12" r="10" />
             <path d="M12 8v4M12 16h.01" />
           </svg>
@@ -756,15 +881,23 @@ export default function TrendingClient({
       {!isLoading && !error && !hasSearched && (
         <div className={s.discoveryEmpty}>
           <div className={s.discoveryEmptyIcon}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <circle cx="12" cy="12" r="10" />
               <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
             </svg>
           </div>
           <h3 className={s.discoveryEmptyTitle}>Discover Rising Niches</h3>
           <p className={s.discoveryEmptyDesc}>
-            Use the filters to discover niches that match your channel goals. When you find
-            something interesting, click "Search this niche" to explore competitors.
+            Use the filters to discover niches that match your channel goals.
+            When you find something interesting, click "Search this niche" to
+            explore competitors.
           </p>
         </div>
       )}
@@ -773,17 +906,28 @@ export default function TrendingClient({
       {!isLoading && !error && hasSearched && visibleNiches.length === 0 && (
         <div className={s.discoveryEmpty}>
           <div className={s.discoveryEmptyIcon}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <circle cx="11" cy="11" r="8" />
               <path d="M21 21l-4.35-4.35" />
             </svg>
           </div>
           <h3 className={s.discoveryEmptyTitle}>No Niches Found</h3>
           <p className={s.discoveryEmptyDesc}>
-            Try broadening your filters — increase the time window, lower the minimum 
-            views/day, or select "Any Size" for channels.
+            Try broadening your filters — increase the time window, lower the
+            minimum views/day, or select "Any Size" for channels.
           </p>
-          <button type="button" className={s.resetFiltersBtnLarge} onClick={clearAll}>
+          <button
+            type="button"
+            className={s.resetFiltersBtnLarge}
+            onClick={clearAll}
+          >
             Clear all
           </button>
         </div>
@@ -794,7 +938,8 @@ export default function TrendingClient({
         <div className={s.discoveryResultsHeader}>
           <p className={s.discoveryResultsCount}>
             Found <strong>{totalFound}</strong> niches
-            {totalFound > visibleNiches.length && ` (showing ${visibleNiches.length})`}
+            {totalFound > visibleNiches.length &&
+              ` (showing ${visibleNiches.length})`}
           </p>
         </div>
       )}

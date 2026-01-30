@@ -5,7 +5,10 @@ import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUserWithSubscription } from "@/lib/user";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { callLLM } from "@/lib/llm";
-import type { DerivedMetrics, BaselineComparison } from "@/lib/owned-video-math";
+import type {
+  DerivedMetrics,
+  BaselineComparison,
+} from "@/lib/owned-video-math";
 import type { VideoMetadata } from "@/lib/youtube-analytics";
 import type { ChannelProfileAI } from "@/lib/channel-profile/types";
 
@@ -35,7 +38,7 @@ export type IdeasAnalysis = {
  */
 async function GETHandler(
   req: NextRequest,
-  { params }: { params: Promise<{ channelId: string; videoId: string }> }
+  { params }: { params: Promise<{ channelId: string; videoId: string }> },
 ) {
   const resolvedParams = await params;
 
@@ -51,7 +54,10 @@ async function GETHandler(
     range: url.searchParams.get("range") ?? "28d",
   });
   if (!queryResult.success) {
-    return Response.json({ error: "Invalid query parameters" }, { status: 400 });
+    return Response.json(
+      { error: "Invalid query parameters" },
+      { status: 400 },
+    );
   }
   const { range } = queryResult.data;
 
@@ -81,7 +87,7 @@ async function GETHandler(
     if (!cached?.derivedJson) {
       return Response.json(
         { error: "Analytics not loaded. Call /analytics first." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -90,23 +96,27 @@ async function GETHandler(
     // Rate limit (uses same limit as main insights)
     const rateResult = checkRateLimit(
       rateLimitKey("videoInsights", user.id),
-      RATE_LIMITS.videoInsights
+      RATE_LIMITS.videoInsights,
     );
     if (!rateResult.success) {
       return Response.json(
         { error: "Rate limit exceeded", retryAfter: rateResult.resetAt },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
     // Fetch channel profile for better idea context
     let channelProfile: ChannelProfileAI | null = null;
     try {
-      const profiles = await prisma.$queryRaw<{ aiProfileJson: string | null }[]>`
+      const profiles = await prisma.$queryRaw<
+        { aiProfileJson: string | null }[]
+      >`
         SELECT "aiProfileJson" FROM "ChannelProfile" WHERE "channelId" = ${channel.id} LIMIT 1
       `;
       if (profiles[0]?.aiProfileJson) {
-        channelProfile = JSON.parse(profiles[0].aiProfileJson) as ChannelProfileAI;
+        channelProfile = JSON.parse(
+          profiles[0].aiProfileJson,
+        ) as ChannelProfileAI;
       }
     } catch {
       // Profile table may not exist or no profile set - continue without it
@@ -116,13 +126,13 @@ async function GETHandler(
       derivedData.video,
       derivedData.derived,
       derivedData.comparison,
-      channelProfile
+      channelProfile,
     );
 
     if (!ideas) {
       return Response.json(
         { error: "Failed to generate content ideas" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -133,27 +143,27 @@ async function GETHandler(
         headers: {
           "Cache-Control": "private, max-age=43200", // 12 hours
         },
-      }
+      },
     );
   } catch (err) {
     console.error("Ideas analysis error:", err);
     return Response.json(
       { error: "Failed to generate content ideas" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export const GET = createApiRoute(
   { route: "/api/me/channels/[channelId]/videos/[videoId]/insights/ideas" },
-  async (req, ctx) => GETHandler(req, ctx as any)
+  async (req, ctx) => GETHandler(req, ctx as any),
 );
 
 async function generateIdeasAnalysis(
   video: VideoMetadata,
   derived: DerivedMetrics,
-  comparison: BaselineComparison,
-  channelProfile: ChannelProfileAI | null
+  _comparison: BaselineComparison,
+  channelProfile: ChannelProfileAI | null,
 ): Promise<IdeasAnalysis | null> {
   // Build channel profile context if available
   const profileContext = channelProfile
@@ -162,7 +172,7 @@ CHANNEL PROFILE (use as PRIMARY context for idea generation):
 - Channel Niche: ${channelProfile.nicheLabel}
 - Description: ${channelProfile.nicheDescription}
 - Target Audience: ${channelProfile.targetAudience}
-- Content Pillars: ${channelProfile.contentPillars.map(p => p.name).join(", ")}
+- Content Pillars: ${channelProfile.contentPillars.map((p) => p.name).join(", ")}
 - Value Proposition: ${channelProfile.channelValueProposition}
 - Tone/Style: ${channelProfile.toneAndStyle.join(", ")}
 
@@ -197,8 +207,11 @@ RULES:
   const videoContext = `ORIGINAL VIDEO:
 TITLE: "${video.title}"
 DESCRIPTION: "${video.description?.slice(0, 300) || "No description"}"
-TAGS: [${video.tags.slice(0, 10).map((t) => `"${t}"`).join(", ")}]
-PERFORMANCE: ${derived.totalViews.toLocaleString()} views, ${comparison.healthLabel} health score`;
+TAGS: [${video.tags
+    .slice(0, 10)
+    .map((t) => `"${t}"`)
+    .join(", ")}]
+PERFORMANCE: ${derived.totalViews.toLocaleString()} views`;
 
   try {
     const result = await callLLM(
@@ -206,7 +219,7 @@ PERFORMANCE: ${derived.totalViews.toLocaleString()} views, ${comparison.healthLa
         { role: "system", content: systemPrompt },
         { role: "user", content: videoContext },
       ],
-      { maxTokens: 800, temperature: 0.4, responseFormat: "json_object" }
+      { maxTokens: 800, temperature: 0.4, responseFormat: "json_object" },
     );
     return JSON.parse(result.content);
   } catch (err) {
@@ -214,4 +227,3 @@ PERFORMANCE: ${derived.totalViews.toLocaleString()} views, ${comparison.healthLa
     return null;
   }
 }
-

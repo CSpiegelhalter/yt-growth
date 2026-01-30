@@ -117,7 +117,7 @@ export async function fetchVideoAnalyticsDailyWithStatus(
   channelId: string,
   videoId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Promise<{
   rows: DailyAnalyticsRow[];
   permission: AnalyticsPermissionStatus;
@@ -138,7 +138,7 @@ export async function fetchVideoAnalyticsDailyWithStatus(
       startDate,
       endDate,
       metrics,
-      "day"
+      "day",
     );
     if (result.ok) {
       return { rows: result.rows, permission: { ok: true } };
@@ -159,42 +159,6 @@ export async function fetchVideoAnalyticsDailyWithStatus(
 }
 
 /**
- * Fetch totals for a single video (no dimension, aggregated over range)
- */
-export async function fetchVideoAnalyticsTotals(
-  ga: GoogleAccount,
-  channelId: string,
-  videoId: string,
-  startDate: string,
-  endDate: string
-): Promise<AnalyticsTotals | null> {
-  const { totals } = await fetchVideoAnalyticsTotalsWithStatus(
-    ga,
-    channelId,
-    videoId,
-    startDate,
-    endDate
-  );
-  if (!totals) return null;
-
-  // Calculate days in range
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const daysInRange = Math.max(
-    1,
-    Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
-  );
-
-  return {
-    ...totals,
-    startDate,
-    endDate,
-    daysInRange,
-    date: startDate, // Use startDate as the "date" for type compatibility
-  };
-}
-
-/**
  * Fetch totals for a single video + permission status
  */
 export async function fetchVideoAnalyticsTotalsWithStatus(
@@ -202,7 +166,7 @@ export async function fetchVideoAnalyticsTotalsWithStatus(
   channelId: string,
   videoId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Promise<{
   totals: AnalyticsTotals | null;
   permission: AnalyticsPermissionStatus;
@@ -222,7 +186,7 @@ export async function fetchVideoAnalyticsTotalsWithStatus(
       videoId,
       startDate,
       endDate,
-      metrics
+      metrics,
     );
     if (result.ok) {
       if (!result.totals) continue;
@@ -232,7 +196,8 @@ export async function fetchVideoAnalyticsTotalsWithStatus(
       const end = new Date(endDate);
       const daysInRange = Math.max(
         1,
-        Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+        Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) +
+          1,
       );
 
       return {
@@ -271,7 +236,7 @@ async function tryFetchAnalyticsWithStatus(
   startDate: string,
   endDate: string,
   metrics: string[],
-  dimension: "day" | null
+  dimension: "day" | null,
 ): Promise<
   | { ok: true; rows: DailyAnalyticsRow[] }
   | { ok: false; reason: "permission_denied" | "other"; message?: string }
@@ -393,13 +358,13 @@ async function tryFetchAnalyticsWithStatus(
     // Clean error message for scope/permission issues
     if (err?.isScopeError || err?.message?.includes("SCOPE_ERROR")) {
       console.warn(
-        `[Analytics] Permission denied - user may have declined required scopes`
+        `[Analytics] Permission denied - user may have declined required scopes`,
       );
       return { ok: false, reason: "permission_denied", message: err?.message };
     } else {
       console.error(
         `[Analytics] Fetch failed for metrics ${metrics.join(",")}:`,
-        err?.message || err
+        err?.message || err,
       );
       return { ok: false, reason: "other", message: err?.message };
     }
@@ -415,7 +380,7 @@ async function tryFetchAnalyticsTotalsWithStatus(
   videoId: string,
   startDate: string,
   endDate: string,
-  metrics: string[]
+  metrics: string[],
 ): Promise<
   | { ok: true; totals: Omit<DailyAnalyticsRow, "date"> | null }
   | { ok: false; reason: "permission_denied" | "other"; message?: string }
@@ -427,7 +392,7 @@ async function tryFetchAnalyticsTotalsWithStatus(
     startDate,
     endDate,
     metrics,
-    null
+    null,
   );
   if (!result.ok) return result;
   if (!result.rows || result.rows.length === 0)
@@ -440,13 +405,13 @@ async function tryFetchAnalyticsTotalsWithStatus(
  */
 export async function fetchOwnedVideoMetadata(
   ga: GoogleAccount,
-  videoId: string
+  videoId: string,
 ): Promise<VideoMetadata | null> {
   try {
     const url = new URL(`${YOUTUBE_DATA_API}/videos`);
     url.searchParams.set(
       "part",
-      "snippet,contentDetails,statistics,topicDetails"
+      "snippet,contentDetails,statistics,topicDetails",
     );
     url.searchParams.set("id", videoId);
 
@@ -531,7 +496,7 @@ export type VideoMetadata = {
 export async function fetchOwnedVideoComments(
   ga: GoogleAccount,
   videoId: string,
-  maxResults: number = 30
+  maxResults: number = 30,
 ): Promise<VideoComment[]> {
   try {
     const url = new URL(`${YOUTUBE_DATA_API}/commentThreads`);
@@ -573,7 +538,7 @@ export async function fetchOwnedVideoComments(
     // Clean error message for scope/permission issues
     if (err?.isScopeError || err?.message?.includes("SCOPE_ERROR")) {
       console.warn(
-        `[Comments] Permission denied - user may have declined youtube.force-ssl scope`
+        `[Comments] Permission denied - user may have declined youtube.force-ssl scope`,
       );
       return [];
     }
@@ -582,7 +547,7 @@ export async function fetchOwnedVideoComments(
     // YouTube returns 403 with reason "commentsDisabled"
     if (msg.includes("commentsDisabled") || msg.includes("disabled comments")) {
       console.info(
-        `[Comments] Disabled for this video (${videoId}); skipping comments fetch`
+        `[Comments] Disabled for this video (${videoId}); skipping comments fetch`,
       );
       return [];
     }
@@ -598,7 +563,7 @@ export async function fetchOwnedVideoComments(
             .filter(Boolean) ?? [];
         if (reasons.includes("commentsDisabled")) {
           console.info(
-            `[Comments] Disabled for this video (${videoId}); skipping comments fetch`
+            `[Comments] Disabled for this video (${videoId}); skipping comments fetch`,
           );
           return [];
         }
@@ -674,6 +639,78 @@ export type TrafficSourceBreakdown = {
   total: number | null;
 };
 
+// ============================================
+// TRAFFIC SOURCE CTR (for audit)
+// ============================================
+
+export type TrafficSourceCTR = {
+  browse: { views: number; ctr: number | null } | null;
+  suggested: { views: number; ctr: number | null } | null;
+  search: { views: number; ctr: number | null } | null;
+  external: { views: number; ctr: number | null } | null;
+  total: { views: number; ctr: number | null };
+};
+
+// ============================================
+// VIEWER TYPE METRICS (Returning vs New)
+// ============================================
+
+export type ViewerTypeMetrics = {
+  returning: {
+    views: number;
+    percentage: number;
+    avgViewDuration: number | null;
+  } | null;
+  new: {
+    views: number;
+    percentage: number;
+    avgViewDuration: number | null;
+  } | null;
+  subscribers: {
+    views: number;
+    percentage: number;
+  } | null;
+};
+
+// ============================================
+// CHANNEL-LEVEL AUDIT METRICS
+// ============================================
+
+export type ChannelAuditMetrics = {
+  // Aggregate metrics (last 28 days)
+  totalViews: number;
+  totalWatchTimeMin: number;
+  avgViewPercentage: number | null;
+  subscribersGained: number;
+  subscribersLost: number;
+  netSubscribers: number;
+
+  // Discovery
+  estimatedImpressions: number | null;
+  estimatedCtr: number | null;
+
+  // Traffic sources
+  trafficSources: TrafficSourceBreakdown | null;
+  trafficSourceCtr: TrafficSourceCTR | null;
+
+  // Viewer types
+  viewerTypes: ViewerTypeMetrics | null;
+
+  // End screen performance
+  endScreenClicks: number | null;
+  endScreenImpressions: number | null;
+  endScreenCtr: number | null;
+
+  // Trends (comparing recent 7d to previous 7d)
+  viewsTrend: number | null; // % change
+  watchTimeTrend: number | null;
+  subsTrend: number | null;
+
+  // Video count
+  videoCount: number;
+  videosInRange: number;
+};
+
 export type DiscoveryMetrics = {
   impressions: number | null;
   impressionsCtr: number | null;
@@ -682,16 +719,93 @@ export type DiscoveryMetrics = {
   reason?: string;
 };
 
+export type SubscriberBreakdown = {
+  subscribers: { views: number; avgViewPct: number; ctr: number | null } | null;
+  nonSubscribers: {
+    views: number;
+    avgViewPct: number;
+    ctr: number | null;
+  } | null;
+  subscriberViewPct: number | null; // % of views from subs
+};
+
+export type GeographicBreakdown = {
+  topCountries: Array<{
+    country: string;
+    countryName: string;
+    views: number;
+    viewsPct: number;
+    avgViewPct: number | null;
+  }>;
+  primaryMarket: string | null; // Top country if >40% of views
+};
+
+export type TrafficSourceDetail = {
+  searchTerms: Array<{ term: string; views: number }> | null;
+  suggestedVideos: Array<{ videoId: string; views: number }> | null;
+  browseFeatures: Array<{ feature: string; views: number }> | null;
+};
+
+export type DemographicBreakdown = {
+  hasData: boolean;
+  byAge: Array<{ ageGroup: string; views: number; viewsPct: number }>;
+  byGender: Array<{ gender: string; views: number; viewsPct: number }>;
+} | null;
+
 /**
- * Fetch discovery metrics (impressions, CTR, traffic sources) for a video
- * These require yt-analytics.readonly scope
+ * Map insightTrafficSourceType values to our TrafficSourceBreakdown keys.
+ * Returns the key to increment, or "other" for unrecognized sources.
+ */
+const TRAFFIC_SOURCE_MAP: Record<
+  string,
+  keyof Omit<TrafficSourceBreakdown, "total">
+> = {
+  BROWSE: "browse",
+  YT_BROWSE: "browse",
+  HOME: "browse",
+  SUGGESTED: "suggested",
+  RELATED_VIDEO: "suggested",
+  YT_RELATED: "suggested",
+  SEARCH: "search",
+  YT_SEARCH: "search",
+  EXTERNAL: "external",
+  EXT_URL: "external",
+  NOTIFICATION: "notifications",
+  SUBSCRIBER: "notifications",
+  PLAYLIST: "other",
+  CHANNEL: "other",
+  OTHER: "other",
+};
+
+function mapTrafficSource(
+  sourceType: string,
+): keyof Omit<TrafficSourceBreakdown, "total"> {
+  const normalized = sourceType.toUpperCase().replace(/-/g, "_");
+  // Check exact match first
+  if (normalized in TRAFFIC_SOURCE_MAP) {
+    return TRAFFIC_SOURCE_MAP[normalized];
+  }
+  // Fallback: check if the normalized string contains a known key
+  for (const [key, bucket] of Object.entries(TRAFFIC_SOURCE_MAP)) {
+    if (normalized.includes(key)) {
+      return bucket;
+    }
+  }
+  return "other";
+}
+
+/**
+ * Fetch discovery metrics (impressions, CTR, traffic sources) for a video.
+ * Uses official YouTube Reach metrics: videoThumbnailImpressions and
+ * videoThumbnailImpressionsClickRate.
+ * Requires yt-analytics.readonly scope.
  */
 export async function fetchVideoDiscoveryMetrics(
   ga: GoogleAccount,
   channelId: string,
   videoId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Promise<DiscoveryMetrics> {
   const noData: DiscoveryMetrics = {
     impressions: null,
@@ -702,13 +816,16 @@ export async function fetchVideoDiscoveryMetrics(
   };
 
   try {
-    // Fetch impressions and CTR
-    const impressionsUrl = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
-    impressionsUrl.searchParams.set("ids", `channel==${channelId}`);
-    impressionsUrl.searchParams.set("startDate", startDate);
-    impressionsUrl.searchParams.set("endDate", endDate);
-    impressionsUrl.searchParams.set("metrics", "views,annotationImpressions");
-    impressionsUrl.searchParams.set("filters", `video==${videoId}`);
+    // Fetch official Reach metrics: thumbnail impressions and CTR
+    const reachUrl = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+    reachUrl.searchParams.set("ids", `channel==${channelId}`);
+    reachUrl.searchParams.set("startDate", startDate);
+    reachUrl.searchParams.set("endDate", endDate);
+    reachUrl.searchParams.set(
+      "metrics",
+      "videoThumbnailImpressions,videoThumbnailImpressionsClickRate",
+    );
+    reachUrl.searchParams.set("filters", `video==${videoId}`);
 
     // Fetch traffic sources by insightTrafficSourceType
     const trafficUrl = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
@@ -719,11 +836,11 @@ export async function fetchVideoDiscoveryMetrics(
     trafficUrl.searchParams.set("dimensions", "insightTrafficSourceType");
     trafficUrl.searchParams.set("filters", `video==${videoId}`);
 
-    const [impressionsData, trafficData] = await Promise.all([
+    const [reachData, trafficData] = await Promise.all([
       googleFetchWithAutoRefresh<{
         columnHeaders: Array<{ name: string }>;
         rows?: Array<Array<string | number>>;
-      }>(ga, impressionsUrl.toString()).catch(() => null),
+      }>(ga, reachUrl.toString()).catch(() => null),
       googleFetchWithAutoRefresh<{
         columnHeaders: Array<{ name: string }>;
         rows?: Array<Array<string | number>>;
@@ -733,33 +850,26 @@ export async function fetchVideoDiscoveryMetrics(
     let impressions: number | null = null;
     let impressionsCtr: number | null = null;
 
-    // Parse impressions data
-    // Note: YouTube Analytics doesn't directly provide "impressions" for videos
-    // We use annotationImpressions as a proxy (end screen impressions)
-    // True impressions would require the YouTube Studio API (not public)
-    if (impressionsData?.rows && impressionsData.rows.length > 0) {
-      const headers = impressionsData.columnHeaders.map((h) => h.name);
-      const row = impressionsData.rows[0];
-      const viewsIdx = headers.indexOf("views");
-      const impIdx = headers.indexOf("annotationImpressions");
+    // Parse official Reach metrics
+    if (reachData?.rows && reachData.rows.length > 0) {
+      const headers = reachData.columnHeaders.map((h) => h.name);
+      const row = reachData.rows[0];
 
-      if (viewsIdx >= 0) {
-        const views = Number(row[viewsIdx] ?? 0);
-        // Estimate impressions from views (typical CTR is 2-10%)
-        // This is an approximation; real impressions require YouTube Studio access
-        impressions = views > 0 ? Math.round(views / 0.05) : null; // Assume ~5% CTR
+      const impIdx = headers.indexOf("videoThumbnailImpressions");
+      const ctrIdx = headers.indexOf("videoThumbnailImpressionsClickRate");
+
+      if (impIdx >= 0) {
+        const rawImp = Number(row[impIdx] ?? 0);
+        impressions = rawImp > 0 ? rawImp : null;
       }
-      if (impIdx >= 0 && viewsIdx >= 0) {
-        const annImp = Number(row[impIdx] ?? 0);
-        const views = Number(row[viewsIdx] ?? 0);
-        if (annImp > 0 && views > 0) {
-          // This is actually end screen impressions, but we can derive a rough CTR
-          impressionsCtr = (views / annImp) * 100;
-        }
+      if (ctrIdx >= 0) {
+        const rawCtr = Number(row[ctrIdx] ?? 0);
+        // API returns CTR as a decimal (e.g., 0.05 for 5%); convert to percentage
+        impressionsCtr = rawCtr > 0 ? rawCtr * 100 : null;
       }
     }
 
-    // Parse traffic sources
+    // Parse traffic sources using lookup
     let trafficSources: TrafficSourceBreakdown | null = null;
     if (trafficData?.rows && trafficData.rows.length > 0) {
       const sources: TrafficSourceBreakdown = {
@@ -773,11 +883,249 @@ export async function fetchVideoDiscoveryMetrics(
       };
 
       for (const row of trafficData.rows) {
+        const sourceType = String(row[0] ?? "");
+        const views = Number(row[1] ?? 0);
+        sources.total = (sources.total ?? 0) + views;
+
+        const bucket = mapTrafficSource(sourceType);
+        sources[bucket] = (sources[bucket] ?? 0) + views;
+      }
+
+      trafficSources = sources;
+    }
+
+    return {
+      impressions,
+      impressionsCtr,
+      trafficSources,
+      hasData: impressions != null || trafficSources != null,
+    };
+  } catch (err: any) {
+    // Re-throw auth errors
+    if (err instanceof GoogleTokenRefreshError) {
+      throw err;
+    }
+
+    // Permission denied - user needs to connect analytics
+    if (err?.isScopeError || err?.message?.includes("permission")) {
+      return { ...noData, reason: "connect_analytics" };
+    }
+
+    console.warn(
+      "[Discovery] Failed to fetch discovery metrics:",
+      err?.message,
+    );
+    return noData;
+  }
+}
+
+// ============================================
+// CHANNEL-LEVEL AUDIT METRICS
+// ============================================
+
+/**
+ * Fetch channel-level audit metrics (aggregated across all videos)
+ * Used for bottleneck detection
+ */
+export async function fetchChannelAuditMetrics(
+  ga: GoogleAccount,
+  channelId: string,
+  range: "7d" | "28d" | "90d" = "28d",
+): Promise<ChannelAuditMetrics | null> {
+  try {
+    const { startDate, endDate } = getDateRange(range);
+
+    // Also get previous period for trend comparison
+    const daysInRange = range === "7d" ? 7 : range === "28d" ? 28 : 90;
+    const prevEndDate = new Date(startDate);
+    prevEndDate.setDate(prevEndDate.getDate() - 1);
+    const prevStartDate = new Date(prevEndDate);
+    prevStartDate.setDate(prevStartDate.getDate() - daysInRange);
+
+    const prevStartStr = prevStartDate.toISOString().split("T")[0];
+    const prevEndStr = prevEndDate.toISOString().split("T")[0];
+
+    // Fetch all metrics in parallel
+    const [currentTotals, prevTotals, trafficData, endScreenData] =
+      await Promise.all([
+        // Current period totals (channel-wide, no video filter)
+        fetchChannelTotals(ga, channelId, startDate, endDate),
+        // Previous period totals for trend comparison
+        fetchChannelTotals(ga, channelId, prevStartStr, prevEndStr),
+        // Traffic source breakdown
+        fetchChannelTrafficSources(ga, channelId, startDate, endDate),
+        // End screen performance
+        fetchChannelEndScreenMetrics(ga, channelId, startDate, endDate),
+      ]);
+
+    if (!currentTotals) return null;
+
+    // Calculate trends (% change from previous period)
+    const viewsTrend =
+      prevTotals && prevTotals.views > 0
+        ? ((currentTotals.views - prevTotals.views) / prevTotals.views) * 100
+        : null;
+    const watchTimeTrend =
+      prevTotals && prevTotals.watchTimeMin > 0
+        ? ((currentTotals.watchTimeMin - prevTotals.watchTimeMin) /
+            prevTotals.watchTimeMin) *
+          100
+        : null;
+    const subsTrend =
+      prevTotals && prevTotals.netSubscribers !== 0
+        ? ((currentTotals.netSubscribers - prevTotals.netSubscribers) /
+            Math.abs(prevTotals.netSubscribers)) *
+          100
+        : null;
+
+    return {
+      totalViews: currentTotals.views,
+      totalWatchTimeMin: currentTotals.watchTimeMin,
+      avgViewPercentage: currentTotals.avgViewPercentage,
+      subscribersGained: currentTotals.subscribersGained,
+      subscribersLost: currentTotals.subscribersLost,
+      netSubscribers: currentTotals.netSubscribers,
+
+      estimatedImpressions:
+        currentTotals.views > 0 ? Math.round(currentTotals.views / 0.05) : null,
+      estimatedCtr: 5, // Default estimate; real CTR requires YouTube Studio API
+
+      trafficSources: trafficData?.sources ?? null,
+      trafficSourceCtr: trafficData?.ctr ?? null,
+
+      viewerTypes: null, // Requires additional API calls; can be added later
+
+      endScreenClicks: endScreenData?.clicks ?? null,
+      endScreenImpressions: endScreenData?.impressions ?? null,
+      endScreenCtr: endScreenData?.ctr ?? null,
+
+      viewsTrend,
+      watchTimeTrend,
+      subsTrend,
+
+      videoCount: 0, // Will be populated from DB
+      videosInRange: 0,
+    };
+  } catch (err: any) {
+    if (err instanceof GoogleTokenRefreshError) {
+      throw err;
+    }
+    console.error(
+      "[ChannelAudit] Failed to fetch audit metrics:",
+      err?.message,
+    );
+    return null;
+  }
+}
+
+/**
+ * Fetch channel totals (no video filter)
+ */
+async function fetchChannelTotals(
+  ga: GoogleAccount,
+  channelId: string,
+  startDate: string,
+  endDate: string,
+): Promise<{
+  views: number;
+  watchTimeMin: number;
+  avgViewPercentage: number | null;
+  subscribersGained: number;
+  subscribersLost: number;
+  netSubscribers: number;
+} | null> {
+  try {
+    const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+    url.searchParams.set("ids", `channel==${channelId}`);
+    url.searchParams.set("startDate", startDate);
+    url.searchParams.set("endDate", endDate);
+    url.searchParams.set(
+      "metrics",
+      "views,estimatedMinutesWatched,averageViewPercentage,subscribersGained,subscribersLost",
+    );
+
+    const data = await googleFetchWithAutoRefresh<{
+      columnHeaders: Array<{ name: string }>;
+      rows?: Array<Array<string | number>>;
+    }>(ga, url.toString());
+
+    if (!data.rows || data.rows.length === 0) {
+      return {
+        views: 0,
+        watchTimeMin: 0,
+        avgViewPercentage: null,
+        subscribersGained: 0,
+        subscribersLost: 0,
+        netSubscribers: 0,
+      };
+    }
+
+    const headers = data.columnHeaders.map((h) => h.name);
+    const row = data.rows[0];
+
+    const getValue = (name: string) => {
+      const idx = headers.indexOf(name);
+      return idx >= 0 ? Number(row[idx] ?? 0) : 0;
+    };
+
+    const subscribersGained = getValue("subscribersGained");
+    const subscribersLost = getValue("subscribersLost");
+
+    return {
+      views: getValue("views"),
+      watchTimeMin: getValue("estimatedMinutesWatched"),
+      avgViewPercentage: getValue("averageViewPercentage") || null,
+      subscribersGained,
+      subscribersLost,
+      netSubscribers: subscribersGained - subscribersLost,
+    };
+  } catch (err) {
+    console.warn("[ChannelTotals] Failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetch channel traffic sources
+ */
+async function fetchChannelTrafficSources(
+  ga: GoogleAccount,
+  channelId: string,
+  startDate: string,
+  endDate: string,
+): Promise<{
+  sources: TrafficSourceBreakdown;
+  ctr: TrafficSourceCTR;
+} | null> {
+  try {
+    const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+    url.searchParams.set("ids", `channel==${channelId}`);
+    url.searchParams.set("startDate", startDate);
+    url.searchParams.set("endDate", endDate);
+    url.searchParams.set("metrics", "views");
+    url.searchParams.set("dimensions", "insightTrafficSourceType");
+
+    const data = await googleFetchWithAutoRefresh<{
+      columnHeaders: Array<{ name: string }>;
+      rows?: Array<Array<string | number>>;
+    }>(ga, url.toString());
+
+    const sources: TrafficSourceBreakdown = {
+      browse: null,
+      suggested: null,
+      search: null,
+      external: null,
+      notifications: null,
+      other: null,
+      total: 0,
+    };
+
+    if (data.rows) {
+      for (const row of data.rows) {
         const sourceType = String(row[0] ?? "").toUpperCase();
         const views = Number(row[1] ?? 0);
         sources.total = (sources.total ?? 0) + views;
 
-        // Map YouTube traffic source types
         if (sourceType.includes("BROWSE") || sourceType.includes("HOME")) {
           sources.browse = (sources.browse ?? 0) + views;
         } else if (
@@ -801,28 +1149,441 @@ export async function fetchVideoDiscoveryMetrics(
           sources.other = (sources.other ?? 0) + views;
         }
       }
-
-      trafficSources = sources;
     }
 
+    // CTR by source - we estimate since real CTR requires impressions data
+    const total = sources.total ?? 1;
+    const ctr: TrafficSourceCTR = {
+      browse: sources.browse ? { views: sources.browse, ctr: null } : null,
+      suggested: sources.suggested
+        ? { views: sources.suggested, ctr: null }
+        : null,
+      search: sources.search ? { views: sources.search, ctr: null } : null,
+      external: sources.external
+        ? { views: sources.external, ctr: null }
+        : null,
+      total: { views: total, ctr: null },
+    };
+
+    return { sources, ctr };
+  } catch (err) {
+    console.warn("[ChannelTrafficSources] Failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetch end screen performance
+ */
+async function fetchChannelEndScreenMetrics(
+  ga: GoogleAccount,
+  channelId: string,
+  startDate: string,
+  endDate: string,
+): Promise<{ clicks: number; impressions: number; ctr: number } | null> {
+  try {
+    const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+    url.searchParams.set("ids", `channel==${channelId}`);
+    url.searchParams.set("startDate", startDate);
+    url.searchParams.set("endDate", endDate);
+    url.searchParams.set(
+      "metrics",
+      "annotationClicks,annotationImpressions,annotationClickThroughRate",
+    );
+
+    const data = await googleFetchWithAutoRefresh<{
+      columnHeaders: Array<{ name: string }>;
+      rows?: Array<Array<string | number>>;
+    }>(ga, url.toString());
+
+    if (!data.rows || data.rows.length === 0) return null;
+
+    const headers = data.columnHeaders.map((h) => h.name);
+    const row = data.rows[0];
+
+    const clicks = Number(row[headers.indexOf("annotationClicks")] ?? 0);
+    const impressions = Number(
+      row[headers.indexOf("annotationImpressions")] ?? 0,
+    );
+    const ctr = Number(row[headers.indexOf("annotationClickThroughRate")] ?? 0);
+
+    return { clicks, impressions, ctr };
+  } catch (err) {
+    console.warn("[ChannelEndScreen] Failed:", err);
+    return null;
+  }
+}
+
+// ============================================
+// VIDEO-LEVEL DIMENSIONAL ANALYTICS
+// ============================================
+
+/**
+ * ISO 3166-1 alpha-2 country code to name mapping (top countries)
+ */
+const COUNTRY_NAMES: Record<string, string> = {
+  US: "United States",
+  IN: "India",
+  BR: "Brazil",
+  GB: "United Kingdom",
+  MX: "Mexico",
+  CA: "Canada",
+  PH: "Philippines",
+  AU: "Australia",
+  DE: "Germany",
+  FR: "France",
+  IT: "Italy",
+  ES: "Spain",
+  AR: "Argentina",
+  CO: "Colombia",
+  PL: "Poland",
+  NL: "Netherlands",
+  ID: "Indonesia",
+  TR: "Turkey",
+  SA: "Saudi Arabia",
+  EG: "Egypt",
+  TH: "Thailand",
+  VN: "Vietnam",
+  MY: "Malaysia",
+  PK: "Pakistan",
+  NG: "Nigeria",
+  BD: "Bangladesh",
+  JP: "Japan",
+  KR: "South Korea",
+  RU: "Russia",
+  UA: "Ukraine",
+};
+
+/**
+ * Fetch subscriber vs non-subscriber breakdown for a video
+ */
+export async function fetchSubscriberBreakdown(
+  ga: GoogleAccount,
+  channelId: string,
+  videoId: string,
+  startDate: string,
+  endDate: string,
+): Promise<SubscriberBreakdown> {
+  const noData: SubscriberBreakdown = {
+    subscribers: null,
+    nonSubscribers: null,
+    subscriberViewPct: null,
+  };
+
+  try {
+    // Fetch views and retention by subscribedStatus
+    const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+    url.searchParams.set("ids", `channel==${channelId}`);
+    url.searchParams.set("startDate", startDate);
+    url.searchParams.set("endDate", endDate);
+    url.searchParams.set("metrics", "views,averageViewPercentage,likes,shares");
+    url.searchParams.set("dimensions", "subscribedStatus");
+    url.searchParams.set("filters", `video==${videoId}`);
+
+    const data = await googleFetchWithAutoRefresh<{
+      columnHeaders: Array<{ name: string }>;
+      rows?: Array<Array<string | number>>;
+    }>(ga, url.toString());
+
+    if (!data.rows || data.rows.length === 0) {
+      return noData;
+    }
+
+    const headers = data.columnHeaders.map((h) => h.name);
+    const statusIdx = headers.indexOf("subscribedStatus");
+    const viewsIdx = headers.indexOf("views");
+    const avgViewPctIdx = headers.indexOf("averageViewPercentage");
+
+    let subViews = 0;
+    let subAvgViewPct: number | null = null;
+    let nonSubViews = 0;
+    let nonSubAvgViewPct: number | null = null;
+    let totalViews = 0;
+
+    for (const row of data.rows) {
+      const status = String(row[statusIdx] ?? "");
+      const views = Number(row[viewsIdx] ?? 0);
+      const avgViewPct = Number(row[avgViewPctIdx] ?? 0);
+
+      totalViews += views;
+
+      if (status === "SUBSCRIBED") {
+        subViews = views;
+        subAvgViewPct = avgViewPct;
+      } else if (status === "UNSUBSCRIBED") {
+        nonSubViews = views;
+        nonSubAvgViewPct = avgViewPct;
+      }
+    }
+
+    const subscriberViewPct =
+      totalViews > 0 ? (subViews / totalViews) * 100 : null;
+
     return {
-      impressions,
-      impressionsCtr,
-      trafficSources,
-      hasData: impressions != null || trafficSources != null,
+      subscribers:
+        subViews > 0
+          ? { views: subViews, avgViewPct: subAvgViewPct ?? 0, ctr: null }
+          : null,
+      nonSubscribers:
+        nonSubViews > 0
+          ? { views: nonSubViews, avgViewPct: nonSubAvgViewPct ?? 0, ctr: null }
+          : null,
+      subscriberViewPct,
     };
   } catch (err: any) {
-    // Re-throw auth errors
     if (err instanceof GoogleTokenRefreshError) {
       throw err;
     }
+    console.warn("[SubscriberBreakdown] Failed:", err?.message);
+    return noData;
+  }
+}
 
-    // Permission denied - user needs to connect analytics
-    if (err?.isScopeError || err?.message?.includes("permission")) {
-      return { ...noData, reason: "connect_analytics" };
+/**
+ * Fetch geographic breakdown for a video (top countries)
+ */
+export async function fetchGeographicBreakdown(
+  ga: GoogleAccount,
+  channelId: string,
+  videoId: string,
+  startDate: string,
+  endDate: string,
+): Promise<GeographicBreakdown> {
+  const noData: GeographicBreakdown = {
+    topCountries: [],
+    primaryMarket: null,
+  };
+
+  try {
+    const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+    url.searchParams.set("ids", `channel==${channelId}`);
+    url.searchParams.set("startDate", startDate);
+    url.searchParams.set("endDate", endDate);
+    url.searchParams.set("metrics", "views,averageViewPercentage");
+    url.searchParams.set("dimensions", "country");
+    url.searchParams.set("filters", `video==${videoId}`);
+    url.searchParams.set("sort", "-views");
+    url.searchParams.set("maxResults", "10");
+
+    const data = await googleFetchWithAutoRefresh<{
+      columnHeaders: Array<{ name: string }>;
+      rows?: Array<Array<string | number>>;
+    }>(ga, url.toString());
+
+    if (!data.rows || data.rows.length === 0) {
+      return noData;
     }
 
-    console.warn("[Discovery] Failed to fetch discovery metrics:", err?.message);
+    const headers = data.columnHeaders.map((h) => h.name);
+    const countryIdx = headers.indexOf("country");
+    const viewsIdx = headers.indexOf("views");
+    const avgViewPctIdx = headers.indexOf("averageViewPercentage");
+
+    const totalViews = data.rows.reduce(
+      (sum, row) => sum + Number(row[viewsIdx] ?? 0),
+      0,
+    );
+
+    const topCountries = data.rows.map((row) => {
+      const countryCode = String(row[countryIdx] ?? "");
+      const views = Number(row[viewsIdx] ?? 0);
+      const avgViewPct = Number(row[avgViewPctIdx] ?? 0);
+      const viewsPct = totalViews > 0 ? (views / totalViews) * 100 : 0;
+
+      return {
+        country: countryCode,
+        countryName: COUNTRY_NAMES[countryCode] || countryCode,
+        views,
+        viewsPct,
+        avgViewPct: avgViewPct > 0 ? avgViewPct : null,
+      };
+    });
+
+    // Determine primary market (country with >40% of views)
+    const primaryMarket =
+      topCountries[0]?.viewsPct > 40 ? topCountries[0].countryName : null;
+
+    return {
+      topCountries,
+      primaryMarket,
+    };
+  } catch (err: any) {
+    if (err instanceof GoogleTokenRefreshError) {
+      throw err;
+    }
+    console.warn("[GeographicBreakdown] Failed:", err?.message);
     return noData;
+  }
+}
+
+/**
+ * Fetch detailed traffic source breakdown (search terms, suggested videos, etc.)
+ */
+export async function fetchTrafficSourceDetail(
+  ga: GoogleAccount,
+  channelId: string,
+  videoId: string,
+  startDate: string,
+  endDate: string,
+): Promise<TrafficSourceDetail> {
+  const noData: TrafficSourceDetail = {
+    searchTerms: null,
+    suggestedVideos: null,
+    browseFeatures: null,
+  };
+
+  try {
+    // Fetch traffic by insightTrafficSourceDetail dimension
+    const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+    url.searchParams.set("ids", `channel==${channelId}`);
+    url.searchParams.set("startDate", startDate);
+    url.searchParams.set("endDate", endDate);
+    url.searchParams.set("metrics", "views");
+    url.searchParams.set(
+      "dimensions",
+      "insightTrafficSourceType,insightTrafficSourceDetail",
+    );
+    url.searchParams.set("filters", `video==${videoId}`);
+    url.searchParams.set("sort", "-views");
+    url.searchParams.set("maxResults", "50");
+
+    const data = await googleFetchWithAutoRefresh<{
+      columnHeaders: Array<{ name: string }>;
+      rows?: Array<Array<string | number>>;
+    }>(ga, url.toString());
+
+    if (!data.rows || data.rows.length === 0) {
+      return noData;
+    }
+
+    const headers = data.columnHeaders.map((h) => h.name);
+    const typeIdx = headers.indexOf("insightTrafficSourceType");
+    const detailIdx = headers.indexOf("insightTrafficSourceDetail");
+    const viewsIdx = headers.indexOf("views");
+
+    const searchTerms: Array<{ term: string; views: number }> = [];
+    const suggestedVideos: Array<{ videoId: string; views: number }> = [];
+    const browseFeatures: Array<{ feature: string; views: number }> = [];
+
+    for (const row of data.rows) {
+      const type = String(row[typeIdx] ?? "").toUpperCase();
+      const detail = String(row[detailIdx] ?? "");
+      const views = Number(row[viewsIdx] ?? 0);
+
+      if (!detail || views === 0) continue;
+
+      if (type.includes("SEARCH") || type === "YT_SEARCH") {
+        searchTerms.push({ term: detail, views });
+      } else if (type.includes("RELATED") || type.includes("SUGGESTED")) {
+        // Detail is usually a video ID or URL
+        const videoIdMatch = detail.match(/(?:v=|\/)([\w-]{11})/);
+        if (videoIdMatch) {
+          suggestedVideos.push({ videoId: videoIdMatch[1], views });
+        }
+      } else if (type.includes("BROWSE") || type.includes("HOME")) {
+        browseFeatures.push({ feature: detail, views });
+      }
+    }
+
+    return {
+      searchTerms: searchTerms.length > 0 ? searchTerms.slice(0, 10) : null,
+      suggestedVideos:
+        suggestedVideos.length > 0 ? suggestedVideos.slice(0, 5) : null,
+      browseFeatures:
+        browseFeatures.length > 0 ? browseFeatures.slice(0, 5) : null,
+    };
+  } catch (err: any) {
+    if (err instanceof GoogleTokenRefreshError) {
+      throw err;
+    }
+    console.warn("[TrafficSourceDetail] Failed:", err?.message);
+    return noData;
+  }
+}
+
+/**
+ * Fetch demographic breakdown for a video (age and gender)
+ * Only call if video has sufficient views (500+)
+ */
+export async function fetchDemographicBreakdown(
+  ga: GoogleAccount,
+  channelId: string,
+  videoId: string,
+  startDate: string,
+  endDate: string,
+): Promise<DemographicBreakdown> {
+  try {
+    // Fetch by ageGroup and gender
+    const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+    url.searchParams.set("ids", `channel==${channelId}`);
+    url.searchParams.set("startDate", startDate);
+    url.searchParams.set("endDate", endDate);
+    url.searchParams.set("metrics", "views");
+    url.searchParams.set("dimensions", "ageGroup,gender");
+    url.searchParams.set("filters", `video==${videoId}`);
+
+    const data = await googleFetchWithAutoRefresh<{
+      columnHeaders: Array<{ name: string }>;
+      rows?: Array<Array<string | number>>;
+    }>(ga, url.toString());
+
+    if (!data.rows || data.rows.length === 0) {
+      return null;
+    }
+
+    const headers = data.columnHeaders.map((h) => h.name);
+    const ageIdx = headers.indexOf("ageGroup");
+    const genderIdx = headers.indexOf("gender");
+    const viewsIdx = headers.indexOf("views");
+
+    const totalViews = data.rows.reduce(
+      (sum, row) => sum + Number(row[viewsIdx] ?? 0),
+      0,
+    );
+
+    // Aggregate by age and gender separately
+    const ageMap = new Map<string, number>();
+    const genderMap = new Map<string, number>();
+
+    for (const row of data.rows) {
+      const age = String(row[ageIdx] ?? "");
+      const gender = String(row[genderIdx] ?? "");
+      const views = Number(row[viewsIdx] ?? 0);
+
+      if (age) {
+        ageMap.set(age, (ageMap.get(age) || 0) + views);
+      }
+      if (gender) {
+        genderMap.set(gender, (genderMap.get(gender) || 0) + views);
+      }
+    }
+
+    const byAge = Array.from(ageMap.entries())
+      .map(([ageGroup, views]) => ({
+        ageGroup,
+        views,
+        viewsPct: totalViews > 0 ? (views / totalViews) * 100 : 0,
+      }))
+      .sort((a, b) => b.views - a.views);
+
+    const byGender = Array.from(genderMap.entries())
+      .map(([gender, views]) => ({
+        gender,
+        views,
+        viewsPct: totalViews > 0 ? (views / totalViews) * 100 : 0,
+      }))
+      .sort((a, b) => b.views - a.views);
+
+    return {
+      hasData: byAge.length > 0 || byGender.length > 0,
+      byAge,
+      byGender,
+    };
+  } catch (err: any) {
+    if (err instanceof GoogleTokenRefreshError) {
+      throw err;
+    }
+    console.warn("[DemographicBreakdown] Failed:", err?.message);
+    return null;
   }
 }

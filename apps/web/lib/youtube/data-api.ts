@@ -70,55 +70,6 @@ export async function getUploadsPlaylistId(
   return uploadsPlaylistId;
 }
 
-/**
- * Fetch basic channel details for a batch of channel IDs.
- * Used for discovery features (subscriber counts + channel age).
- *
- * Note: subscriberCount may be hidden by some channels; in that case it returns null.
- */
-export async function fetchChannelsDetailsBatch(
-  ga: GoogleAccount,
-  channelIds: string[]
-): Promise<
-  Array<{
-    channelId: string;
-    subscriberCount: number | null;
-    publishedAt: string | null;
-  }>
-> {
-  if (channelIds.length === 0) return [];
-
-  const batches = chunk(channelIds, VIDEO_BATCH_SIZE);
-
-  const batchResults = await mapLimit(
-    batches,
-    DEFAULT_CONCURRENCY_LIMIT,
-    async (batchIds) => {
-      const url = new URL(`${YOUTUBE_DATA_API}/channels`);
-      url.searchParams.set("part", "snippet,statistics");
-      url.searchParams.set("id", batchIds.join(","));
-
-      const data = await youtubeFetch<{
-        items?: Array<{
-          id: string;
-          snippet?: { publishedAt?: string };
-          statistics?: { subscriberCount?: string };
-        }>;
-      }>(ga, url.toString());
-
-      return (data.items ?? []).map((c) => ({
-        channelId: c.id,
-        subscriberCount: c.statistics?.subscriberCount
-          ? parseInt(c.statistics.subscriberCount, 10)
-          : null,
-        publishedAt: c.snippet?.publishedAt ?? null,
-      }));
-    }
-  );
-
-  return batchResults.flat();
-}
-
 // ============================================
 // Playlist Operations
 // ============================================

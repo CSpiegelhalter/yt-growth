@@ -16,7 +16,6 @@ const NAV_LINKS: { href: string; label: string; icon: IconType }[] = [
   { href: "/dashboard", label: "Videos", icon: "video" },
   { href: "/ideas", label: "Ideas", icon: "lightbulb" },
   { href: "/goals", label: "Goals", icon: "target" },
-  { href: "/subscriber-insights", label: "Subscriber Insights", icon: "trending" },
   { href: "/competitors", label: "Competitors", icon: "trophy" },
   { href: "/tag-generator", label: "Tag Generator", icon: "tag" },
 ];
@@ -59,14 +58,11 @@ export const UserMenu = memo(function UserMenu({
     setMenuOpen(false);
   }, []);
 
-  const handleSignOut = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      setMenuOpen(false);
-      void signOut({ callbackUrl: "/" });
-    },
-    []
-  );
+  const handleSignOut = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setMenuOpen(false);
+    void signOut({ callbackUrl: "/" });
+  }, []);
 
   const displayName = userName || truncateEmail(userEmail);
 

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { cookies, headers } from "next/headers";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/brand";
-import VideoInsightsClientNoSSR from "./VideoInsightsClientNoSSR";
+import VideoInsightsClientV2 from "./VideoInsightsClientV2";
+import { VideoInsightsError } from "./VideoInsightsError";
 
 export const metadata: Metadata = {
   title: `Video Insights | ${BRAND.name}`,
@@ -19,11 +21,11 @@ type Props = {
 
 /**
  * Video Insights Page - Server component
- * 
- * Renders immediately with skeleton, data is fetched client-side progressively:
- * - Phase 1: Analytics (fast, ~1-2s)
- * - Phase 2: AI Summary (single LLM, ~2-3s)
- * - Phase 3: Deep dives (lazy, on-demand)
+ *
+ * Server-side data fetching with Suspense loading:
+ * - Shows animated loading.tsx while fetching
+ * - Analytics fetched server-side (fast, ~1-2s)
+ * - AI Summary and deep dives fetched client-side progressively
  */
 export default async function VideoPage({ params, searchParams }: Props) {
   const [{ videoId }, search] = await Promise.all([params, searchParams]);
@@ -33,15 +35,117 @@ export default async function VideoPage({ params, searchParams }: Props) {
 
   // Get bootstrap data (user, channels, active channel) - fast DB lookup only
   const bootstrap = await getAppBootstrap({ channelId: search.channelId });
+  const channelId = bootstrap.activeChannelId ?? undefined;
 
-  // Client handles all data fetching progressively
-  return (
-    <VideoInsightsClientNoSSR
-      key={videoId}
-      videoId={videoId}
-      channelId={bootstrap.activeChannelId ?? undefined}
-      initialRange={range}
-      from={search.from}
-    />
-  );
+  // Build back link
+  const backLinkBase =
+    search.from === "subscriber-insights"
+      ? "/subscriber-insights"
+      : "/dashboard";
+  const backLink = {
+    href: channelId
+      ? `${backLinkBase}?channelId=${encodeURIComponent(channelId)}`
+      : backLinkBase,
+    label:
+      search.from === "subscriber-insights"
+        ? "Subscriber Insights"
+        : "Dashboard",
+  };
+
+  // No channel - show error
+  if (!channelId) {
+    return (
+      <VideoInsightsError
+        error={{
+          kind: "generic",
+          message: "Please select a channel to view video insights.",
+          status: 400,
+        }}
+        channelId={undefined}
+        backLink={backLink}
+      />
+    );
+  }
+
+  // Fetch analytics server-side
+  try {
+    const cookieStore = await cookies();
+    const headersList = await headers();
+    const host = headersList.get("host") || "localhost:3000";
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+
+    const analyticsUrl = `${protocol}://${host}/api/me/channels/${channelId}/videos/${videoId}/insights/analytics?range=${range}`;
+
+    const res = await fetch(analyticsUrl, {
+      headers: {
+        cookie: cookieStore.toString(),
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const errorObj = body?.error;
+      const unifiedCode = typeof errorObj === "object" ? errorObj?.code : null;
+      const detailsCode = body?.details?.code;
+      const legacyCode = body?.code;
+      const errorCode = detailsCode || legacyCode || unifiedCode;
+      const errorMessage =
+        typeof errorObj === "object"
+          ? errorObj?.message
+          : typeof errorObj === "string"
+            ? errorObj
+            : `Request failed (${res.status})`;
+
+      const isYouTubePermissionError =
+        errorCode === "youtube_permissions" ||
+        errorCode === "YOUTUBE_PERMISSIONS" ||
+        (typeof errorMessage === "string" &&
+          errorMessage.toLowerCase().includes("google access"));
+
+      if (isYouTubePermissionError) {
+        return (
+          <VideoInsightsError
+            error={{ kind: "youtube_permissions", message: errorMessage }}
+            channelId={channelId}
+            backLink={backLink}
+          />
+        );
+      }
+
+      return (
+        <VideoInsightsError
+          error={{ kind: "generic", message: errorMessage, status: res.status }}
+          channelId={channelId}
+          backLink={backLink}
+        />
+      );
+    }
+
+    const analytics = await res.json();
+
+    return (
+      <VideoInsightsClientV2
+        key={videoId}
+        videoId={videoId}
+        channelId={channelId}
+        initialRange={range}
+        from={search.from}
+        analytics={analytics}
+      />
+    );
+  } catch (err) {
+    console.error("Server-side analytics fetch failed:", err);
+    return (
+      <VideoInsightsError
+        error={{
+          kind: "generic",
+          message: "Failed to load video analytics. Please try again.",
+          status: 500,
+        }}
+        channelId={channelId}
+        backLink={backLink}
+      />
+    );
+  }
 }
