@@ -21,7 +21,7 @@ type Props = {
   onSortChange: (key: SortKey) => void;
   onFiltersChange: (filters: VideoFilters) => void;
   onReset: () => void;
-  totalVideoCount: number;
+  totalVideoCount?: number; // Optional - may not be available if only first page is synced
 };
 
 export default function VideoToolbar({
@@ -313,7 +313,7 @@ export default function VideoToolbar({
           <div className={s.videoCount}>
             <span className={s.videoCountNum}>{filteredVideos.length}</span>{" "}
             {filteredVideos.length === 1 ? "video" : "videos"}
-            {filteredVideos.length !== totalVideoCount && (
+            {totalVideoCount != null && filteredVideos.length !== totalVideoCount && (
               <span className={s.videoCountTotal}>
                 {" "}
                 of {totalVideoCount.toLocaleString()} total

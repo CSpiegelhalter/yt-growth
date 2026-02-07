@@ -32,22 +32,27 @@ const ParamsSchema = z.object({
 // Page size divisible by 6 for even grid layouts (1, 2, or 3 columns)
 const DEFAULT_PAGE_SIZE = 24;
 
-// Number of videos to sync (divisible by 6 for grid layout)
-const SYNC_VIDEO_COUNT = 96;
+// Initial sync count - just first page for very fast load
+const INITIAL_SYNC_VIDEO_COUNT = 24;
+
+// When user pages beyond what we have, fetch this many more
+const PAGINATION_SYNC_BATCH_SIZE = 48;
 
 /**
  * Sync channel videos from YouTube.
  * Runs synchronously - blocks until complete so serverless functions don't terminate early.
+ * @param minVideosNeeded - minimum number of videos needed to satisfy the request
  */
 async function syncChannelVideos(
   userId: number,
   youtubeChannelId: string,
-  channelDbId: number
-): Promise<{ success: boolean; videosCount: number }> {
+  channelDbId: number,
+  minVideosNeeded: number = INITIAL_SYNC_VIDEO_COUNT
+): Promise<{ success: boolean; videosCount: number; reachedEnd: boolean }> {
   const ga = await getGoogleAccount(userId, youtubeChannelId);
   if (!ga) {
     console.warn(`[videos] No Google account for sync: ${youtubeChannelId}`);
-    return { success: false, videosCount: 0 };
+    return { success: false, videosCount: 0, reachedEnd: false };
   }
 
   // Mark channel as syncing
@@ -57,11 +62,16 @@ async function syncChannelVideos(
   });
 
   try {
-    // Fetch videos from YouTube
+    // Fetch videos from YouTube - fetch at least minVideosNeeded, rounded up to next batch
+    const videosToFetch = Math.max(
+      minVideosNeeded,
+      INITIAL_SYNC_VIDEO_COUNT
+    );
+    
     const videos = await fetchChannelVideos(
       ga,
       youtubeChannelId,
-      SYNC_VIDEO_COUNT
+      videosToFetch
     );
 
     // Cache expiration for metrics (12 hours)
@@ -118,19 +128,24 @@ async function syncChannelVideos(
     }
 
     // Update channel sync status
+    // Check if we got fewer videos than requested - means we've reached the end
+    const reachedEnd = videos.length < videosToFetch;
+    
     await prisma.channel.update({
       where: { id: channelDbId },
       data: {
         lastSyncedAt: new Date(),
         syncStatus: "idle",
         syncError: null,
+        // Store total video count if we've reached the end
+        ...(reachedEnd && { totalVideoCount: videos.length }),
       },
     });
 
     console.log(
-      `[videos] Sync completed for ${youtubeChannelId}: ${videos.length} videos`
+      `[videos] Sync completed for ${youtubeChannelId}: ${videos.length} videos${reachedEnd ? ' (reached end)' : ''}`
     );
-    return { success: true, videosCount: videos.length };
+    return { success: true, videosCount: videos.length, reachedEnd };
   } catch (err: any) {
     console.error(`[videos] Sync error for ${youtubeChannelId}:`, err);
     await prisma.channel.update({
@@ -140,7 +155,7 @@ async function syncChannelVideos(
         syncError: err.message,
       },
     });
-    return { success: false, videosCount: 0 };
+    return { success: false, videosCount: 0, reachedEnd: false };
   }
 }
 
@@ -208,15 +223,6 @@ async function GETHandler(
             publishedAt: true,
           },
         },
-        _count: {
-          select: {
-            Video: {
-              where: {
-                OR: [{ privacyStatus: "public" }, { privacyStatus: null }],
-              },
-            },
-          },
-        },
       },
     });
 
@@ -224,7 +230,18 @@ async function GETHandler(
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    // Check if data is stale (>24h) or sync is stuck and needs to be re-run
+    // Count total synced videos (needed to check if we need to sync more)
+    const totalSyncedCount = await prisma.video.count({
+      where: {
+        channelId: channel.id,
+        OR: [
+          { privacyStatus: "public" },
+          { privacyStatus: null },
+        ],
+      },
+    });
+
+    // Check if data is stale (>12h) or sync is stuck and needs to be re-run
     const now = Date.now();
     const lastSyncTime = channel.lastSyncedAt?.getTime() ?? 0;
     const isStale = now - lastSyncTime > STALE_THRESHOLD_MS;
@@ -235,19 +252,33 @@ async function GETHandler(
     // If it's been "running" for more than 5 minutes without completing, it's stuck
     const isSyncStuck = isSyncRunning && now - lastSyncTime > SYNC_TIMEOUT_MS;
 
+    // Check if user is requesting videos beyond what we have synced
+    const needsMoreVideos = offset + limit > totalSyncedCount && !isStale;
+
     // Run sync synchronously if needed - this blocks until complete
     // so we can return fresh data. The client shows loading skeletons while waiting.
-    if (isStale || isSyncStuck) {
+    if (isStale || isSyncStuck || needsMoreVideos) {
       if (isSyncStuck) {
         console.log(
           `[videos] Sync stuck for ${channelId} (running for ${Math.round(
             (now - lastSyncTime) / 60000
           )}min), restarting...`
         );
+      } else if (needsMoreVideos) {
+        console.log(
+          `[videos] User requesting offset ${offset} but only ${totalSyncedCount} videos synced. Syncing more...`
+        );
       }
 
+      // Calculate how many videos we need
+      // If stale: just sync initial batch (fast refresh)
+      // If needs more: sync enough to cover the requested offset + a buffer
+      const videosNeeded = needsMoreVideos 
+        ? offset + limit + PAGINATION_SYNC_BATCH_SIZE // Fetch extra so next page is ready
+        : INITIAL_SYNC_VIDEO_COUNT;
+
       // Run sync and wait for it to complete
-      await syncChannelVideos(user.id, channelId, channel.id);
+      await syncChannelVideos(user.id, channelId, channel.id, videosNeeded);
 
       // Re-query channel with fresh video data
       channel = await prisma.channel.findFirst({
@@ -272,15 +303,6 @@ async function GETHandler(
               publishedAt: true,
             },
           },
-          _count: {
-            select: {
-              Video: {
-                where: {
-                  OR: [{ privacyStatus: "public" }, { privacyStatus: null }],
-                },
-              },
-            },
-          },
         },
       });
 
@@ -291,9 +313,6 @@ async function GETHandler(
         );
       }
     }
-
-    // Get total count for pagination
-    const totalSynced = channel._count?.Video ?? channel.Video.length;
 
     // Get video metrics from VideoMetrics table for additional data
     const videoIds = channel.Video.map((v) => v.id);
@@ -326,14 +345,18 @@ async function GETHandler(
       };
     });
 
+    // Determine hasMore using cursor-based pagination:
+    // If we got a full page of results, there might be more (either in DB or on YouTube)
+    // If we got fewer than requested, we've reached the end
+    const hasMore = videos.length === limit;
+
     return Response.json({
       channelId,
       videos,
       pagination: {
         offset,
         limit,
-        total: totalSynced,
-        hasMore: offset + limit < totalSynced,
+        hasMore,
       },
       // Sync always completes before response (no longer fire-and-forget)
       syncing: false,

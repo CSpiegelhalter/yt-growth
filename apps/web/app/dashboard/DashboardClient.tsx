@@ -102,7 +102,6 @@ export default function DashboardClient({
   const [loadingMore, setLoadingMore] = useState(false);
   const [pagination, setPagination] = useState<{
     offset: number;
-    total: number;
     hasMore: boolean;
   } | null>(null);
   // Background sync state - when channel data is stale (>24h), a sync runs in background
@@ -293,7 +292,6 @@ export default function DashboardClient({
           if (data.pagination) {
             setPagination({
               offset: data.pagination.offset + (data.videos?.length ?? 0),
-              total: data.pagination.total,
               hasMore: data.pagination.hasMore,
             });
           }
@@ -326,7 +324,6 @@ export default function DashboardClient({
         if (data.pagination) {
           setPagination({
             offset: data.pagination.offset + (data.videos?.length ?? 0),
-            total: data.pagination.total,
             hasMore: data.pagination.hasMore,
           });
         }
@@ -396,7 +393,6 @@ export default function DashboardClient({
             if (data.pagination) {
               setPagination({
                 offset: data.pagination.offset + (data.videos?.length ?? 0),
-                total: data.pagination.total,
                 hasMore: data.pagination.hasMore,
               });
             }
@@ -547,8 +543,7 @@ export default function DashboardClient({
                     <path d="M10 8l6 4-6 4V8z" />
                   </svg>
                 ),
-                badge:
-                  activeChannel?.totalVideoCount || videos.length || undefined,
+                // Don't show badge count - we don't have accurate total since we only sync on-demand
               },
               {
                 id: "analytics",
@@ -607,9 +602,7 @@ export default function DashboardClient({
                   onSortChange={handleSortChange}
                   onFiltersChange={handleFiltersChange}
                   onReset={handleResetFilters}
-                  totalVideoCount={
-                    activeChannel?.totalVideoCount ?? videos.length
-                  }
+                  // Don't pass totalVideoCount - we only sync first page for performance
                 />
 
                 {/* Video List */}
