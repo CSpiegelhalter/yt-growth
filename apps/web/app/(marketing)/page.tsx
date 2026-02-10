@@ -30,7 +30,7 @@ export default function HomePage() {
         <h1 className="landingTitle">
           YouTube Growth Analytics
           <br />
-          <span className="landingHighlight">and Video Ideas for Creators</span>
+          <span className="landingHighlight"> and Video Ideas for Creators</span>
         </h1>
         <p className="landingSubtitle">
           Stop guessing what to post. Get channel audits, retention analysis,

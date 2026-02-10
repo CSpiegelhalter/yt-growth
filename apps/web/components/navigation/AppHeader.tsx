@@ -133,7 +133,7 @@ export function AppHeader({
           {/* Left: Mobile nav + Page title */}
           <div className={s.leftSection}>
             {mobileNavSlot}
-            <h1 className={s.pageTitle}>{pageTitle}</h1>
+            <p className={s.pageTitle}>{pageTitle}</p>
           </div>
 
           {/* Center: Channel selector */}
