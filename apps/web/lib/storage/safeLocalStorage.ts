@@ -10,6 +10,11 @@
 
 const STORAGE_PREFIX = "cb_thumbnails_";
 
+type ExpiringStorageEnvelope<T> = {
+  value: T;
+  expiresAt: number; // unix ms
+};
+
 /**
  * Check if localStorage is available.
  * Returns false during SSR or if localStorage is blocked.
@@ -59,6 +64,41 @@ export function getJSON<T>(
 }
 
 /**
+ * Get a JSON value with TTL semantics.
+ * Returns null if missing, expired, invalid, or localStorage unavailable.
+ */
+export function getJSONWithExpiry<T>(
+  key: string,
+  validator?: (value: unknown) => value is T,
+): T | null {
+  const envelope = getJSON<ExpiringStorageEnvelope<unknown>>(
+    key,
+    (value): value is ExpiringStorageEnvelope<unknown> => {
+      if (!value || typeof value !== "object") return false;
+      const v = value as Record<string, unknown>;
+      return (
+        "value" in v &&
+        typeof v.expiresAt === "number" &&
+        Number.isFinite(v.expiresAt)
+      );
+    },
+  );
+
+  if (!envelope) return null;
+
+  // Expired - best effort cleanup and miss.
+  if (envelope.expiresAt <= Date.now()) {
+    removeJSON(key);
+    return null;
+  }
+
+  if (validator) {
+    return validator(envelope.value) ? (envelope.value as T) : null;
+  }
+  return envelope.value as T;
+}
+
+/**
  * Set a JSON value in localStorage.
  * Silently fails if:
  * - localStorage unavailable
@@ -89,6 +129,26 @@ export function setJSON<T>(key: string, value: T): boolean {
 }
 
 /**
+ * Set a JSON value with expiration.
+ * ttlMs must be > 0.
+ */
+export function setJSONWithExpiry<T>(
+  key: string,
+  value: T,
+  ttlMs: number,
+): boolean {
+  if (!Number.isFinite(ttlMs) || ttlMs <= 0) {
+    return false;
+  }
+
+  const envelope: ExpiringStorageEnvelope<T> = {
+    value,
+    expiresAt: Date.now() + ttlMs,
+  };
+  return setJSON(key, envelope);
+}
+
+/**
  * Remove a key from localStorage.
  * Silently fails if localStorage unavailable.
  *
@@ -114,4 +174,6 @@ export const STORAGE_KEYS = {
   GENERATED_THUMBNAILS: "generated_v1",
   /** Uploaded identity photos metadata (URLs from server, not raw files) */
   UPLOADED_PHOTOS: "uploaded_photos_v1",
+  /** Dashboard videos page cache (channel/page scoped) */
+  DASHBOARD_VIDEOS: "dashboard_videos_v1",
 } as const;

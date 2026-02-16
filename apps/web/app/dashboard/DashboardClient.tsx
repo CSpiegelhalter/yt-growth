@@ -28,6 +28,12 @@ import {
   formatContextMetric,
   formatDurationBadge,
 } from "@/lib/video-tools";
+import { apiFetchJson } from "@/lib/client/api";
+import {
+  STORAGE_KEYS,
+  getJSONWithExpiry,
+  setJSONWithExpiry,
+} from "@/lib/storage/safeLocalStorage";
 
 type Video = DashboardVideo & {
   id?: number;
@@ -47,6 +53,16 @@ type Props = {
   checkoutStatus?: string;
 };
 
+type VideosApiResponse = {
+  channelId: string;
+  videos: Video[];
+  pagination?: {
+    offset: number;
+    limit: number;
+    hasMore: boolean;
+  };
+};
+
 /**
  * DashboardClient - Video-centric dashboard
  * Receives bootstrap data from server, handles interactions client-side.
@@ -57,6 +73,8 @@ export default function DashboardClient({
   initialActiveChannelId,
   checkoutStatus,
 }: Props) {
+  const DASHBOARD_VIDEOS_TTL_MS = 2 * 60 * 60 * 1000;
+  const DASHBOARD_VIDEOS_CACHE_VERSION = "v2";
   const searchParams = useSearchParams();
   const urlChannelId = searchParams.get("channelId");
 
@@ -104,9 +122,6 @@ export default function DashboardClient({
     offset: number;
     hasMore: boolean;
   } | null>(null);
-  // Background sync state - when channel data is stale (>24h), a sync runs in background
-  const [syncing, setSyncing] = useState(false);
-  const [, setLastSyncedAt] = useState<string | null>(null);
 
   // Video Tools state (sorting, filtering)
   const [sortKey, setSortKey] = useState<SortKey>("newest");
@@ -281,24 +296,38 @@ export default function DashboardClient({
     async (channelId: string) => {
       setVideosLoading(true);
       setPagination(null);
+      const cacheKey = `${STORAGE_KEYS.DASHBOARD_VIDEOS}:${DASHBOARD_VIDEOS_CACHE_VERSION}:${channelId}:${pageSize}:0`;
       try {
-        const res = await fetch(
+        const cached = getJSONWithExpiry<VideosApiResponse>(cacheKey);
+        if (cached) {
+          const hasValidPagination =
+            !!cached.pagination &&
+            typeof cached.pagination.offset === "number" &&
+            typeof cached.pagination.hasMore === "boolean";
+          if (hasValidPagination) {
+            const cachedVideos = cached.videos || [];
+            setVideos(cachedVideos);
+            setPagination({
+              offset: cached.pagination!.offset + cachedVideos.length,
+              hasMore: cached.pagination!.hasMore,
+            });
+            return;
+          }
+        }
+
+        const data = await apiFetchJson<VideosApiResponse>(
           `/api/me/channels/${channelId}/videos?limit=${pageSize}&offset=0`,
           { cache: "no-store" },
         );
-        if (res.ok) {
-          const data = await res.json();
-          setVideos(data.videos || []);
-          if (data.pagination) {
-            setPagination({
-              offset: data.pagination.offset + (data.videos?.length ?? 0),
-              hasMore: data.pagination.hasMore,
-            });
-          }
-          // Track background sync state
-          setSyncing(data.syncing ?? false);
-          setLastSyncedAt(data.lastSyncedAt ?? null);
+        const fetchedVideos = data.videos || [];
+        setVideos(fetchedVideos);
+        if (data.pagination) {
+          setPagination({
+            offset: data.pagination.offset + fetchedVideos.length,
+            hasMore: data.pagination.hasMore,
+          });
         }
+        setJSONWithExpiry(cacheKey, data, DASHBOARD_VIDEOS_TTL_MS);
       } catch (error) {
         console.error("Failed to load videos:", error);
       } finally {
@@ -313,21 +342,39 @@ export default function DashboardClient({
     if (!activeChannelId || !pagination?.hasMore || loadingMore) return;
 
     setLoadingMore(true);
+    const offset = pagination.offset;
+    const cacheKey = `${STORAGE_KEYS.DASHBOARD_VIDEOS}:${DASHBOARD_VIDEOS_CACHE_VERSION}:${activeChannelId}:${pageSize}:${offset}`;
     try {
-      const res = await fetch(
-        `/api/me/channels/${activeChannelId}/videos?limit=${pageSize}&offset=${pagination.offset}`,
-        { cache: "no-store" },
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setVideos((prev) => [...prev, ...(data.videos || [])]);
-        if (data.pagination) {
+      const cached = getJSONWithExpiry<VideosApiResponse>(cacheKey);
+      if (cached) {
+        const hasValidPagination =
+          !!cached.pagination &&
+          typeof cached.pagination.offset === "number" &&
+          typeof cached.pagination.hasMore === "boolean";
+        if (hasValidPagination) {
+          const cachedVideos = cached.videos || [];
+          setVideos((prev) => [...prev, ...cachedVideos]);
           setPagination({
-            offset: data.pagination.offset + (data.videos?.length ?? 0),
-            hasMore: data.pagination.hasMore,
+            offset: cached.pagination!.offset + cachedVideos.length,
+            hasMore: cached.pagination!.hasMore,
           });
+          return;
         }
       }
+
+      const data = await apiFetchJson<VideosApiResponse>(
+        `/api/me/channels/${activeChannelId}/videos?limit=${pageSize}&offset=${offset}`,
+        { cache: "no-store" },
+      );
+      const fetchedVideos = data.videos || [];
+      setVideos((prev) => [...prev, ...fetchedVideos]);
+      if (data.pagination) {
+        setPagination({
+          offset: data.pagination.offset + fetchedVideos.length,
+          hasMore: data.pagination.hasMore,
+        });
+      }
+      setJSONWithExpiry(cacheKey, data, DASHBOARD_VIDEOS_TTL_MS);
     } catch (error) {
       console.error("Failed to load more videos:", error);
     } finally {
@@ -342,15 +389,7 @@ export default function DashboardClient({
       return;
     }
     loadVideos(activeChannelId);
-
-    // Pre-warm the niche cache in background (non-blocking)
-    // This ensures niche is ready when user navigates to competitors or ideas page
-    fetch(`/api/me/channels/${activeChannelId}/niche`, {
-      method: "POST",
-    }).catch(() => {
-      // Silently ignore errors - this is just a pre-warm optimization
-    });
-  }, [activeChannelId, loadVideos, pageSize]);
+  }, [activeChannelId, loadVideos]);
 
   // Load saved video tools state when channel changes
   useEffect(() => {
@@ -371,40 +410,6 @@ export default function DashboardClient({
     if (!activeChannelId) return;
     saveVideoToolsState(activeChannelId, { sortKey, filters });
   }, [activeChannelId, sortKey, filters]);
-
-  // Auto-reload videos when background sync completes
-  // Poll every 10 seconds while syncing, then stop once sync is done
-  useEffect(() => {
-    if (!syncing || !activeChannelId) return;
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const res = await fetch(
-          `/api/me/channels/${activeChannelId}/videos?limit=${pageSize}&offset=0`,
-          { cache: "no-store" },
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (!data.syncing) {
-            // Sync completed - update videos and stop polling
-            setVideos(data.videos || []);
-            setSyncing(false);
-            setLastSyncedAt(data.lastSyncedAt ?? null);
-            if (data.pagination) {
-              setPagination({
-                offset: data.pagination.offset + (data.videos?.length ?? 0),
-                hasMore: data.pagination.hasMore,
-              });
-            }
-          }
-        }
-      } catch {
-        // Ignore errors during polling
-      }
-    }, 10000); // Poll every 10 seconds
-
-    return () => clearInterval(pollInterval);
-  }, [syncing, activeChannelId, pageSize]);
 
   // Refresh data (re-fetch channels)
   const refreshData = useCallback(async () => {
@@ -479,14 +484,6 @@ export default function DashboardClient({
 
   return (
     <main className={s.page}>
-      {/* Syncing indicator - shows when background sync is running */}
-      {syncing && (
-        <div className={s.syncingBanner}>
-          <span className={s.spinner} />
-          <span>Refreshing your channel data...</span>
-        </div>
-      )}
-
       {/* Alerts */}
       {success && (
         <div className={s.successAlert} onClick={() => setSuccess(null)}>

@@ -5,6 +5,7 @@
  * This eliminates flicker and removes duplicate /api/me + /api/me/channels calls.
  */
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/prisma";
@@ -24,11 +25,7 @@ export type BootstrapData = {
   activeChannel: Channel | null;
 };
 
-/**
- * Get the current user from server session.
- * Returns null if not authenticated.
- */
-export async function getCurrentUserServer(): Promise<BootstrapUser | null> {
+const getCurrentUserServerCached = cache(async (): Promise<BootstrapUser | null> => {
   const session = await getServerSession(authOptions);
   const sessionUser = session?.user as {
     id?: string | number;
@@ -53,8 +50,8 @@ export async function getCurrentUserServer(): Promise<BootstrapUser | null> {
       typeof sessionUser.id === "string"
         ? Number(sessionUser.id)
         : typeof sessionUser.id === "number"
-        ? sessionUser.id
-        : undefined;
+          ? sessionUser.id
+          : undefined;
 
     // Only query by ID if it's within safe integer range for the database
     if (
@@ -71,47 +68,31 @@ export async function getCurrentUserServer(): Promise<BootstrapUser | null> {
   }
 
   return user;
-}
+});
 
-/**
- * Require authenticated user or redirect to login.
- * Use in server components where auth is required.
- */
-export async function requireUserServer(): Promise<BootstrapUser> {
-  const user = await getCurrentUserServer();
-  if (!user) {
-    redirect("/auth/login");
-  }
-  return user;
-}
+const getMeServerCached = cache(
+  async (userId: number, email: string, name: string | null): Promise<Me> => {
+    const subscription = await getSubscriptionStatus(userId);
 
-/**
- * Get user profile with subscription (Me type).
- */
-export async function getMeServer(user: BootstrapUser): Promise<Me> {
-  const subscription = await getSubscriptionStatus(user.id);
+    return {
+      id: userId,
+      email,
+      name,
+      plan: subscription.plan,
+      status: subscription.status,
+      channel_limit: subscription.channelLimit,
+      subscription: {
+        isActive: subscription.isActive,
+        currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd ?? false,
+        cancelAt: subscription.cancelAt?.toISOString() ?? null,
+        canceledAt: subscription.canceledAt?.toISOString() ?? null,
+      },
+    };
+  },
+);
 
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    plan: subscription.plan,
-    status: subscription.status,
-    channel_limit: subscription.channelLimit,
-    subscription: {
-      isActive: subscription.isActive,
-      currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd ?? false,
-      cancelAt: subscription.cancelAt?.toISOString() ?? null,
-      canceledAt: subscription.canceledAt?.toISOString() ?? null,
-    },
-  };
-}
-
-/**
- * Get all channels for user.
- */
-export async function getChannelsServer(userId: number): Promise<Channel[]> {
+const getChannelsServerCached = cache(async (userId: number): Promise<Channel[]> => {
   const channels = await prisma.channel.findMany({
     where: { userId },
     orderBy: [{ connectedAt: "desc" }],
@@ -150,6 +131,63 @@ export async function getChannelsServer(userId: number): Promise<Channel[]> {
     videoCount: ch._count.Video,
     planCount: ch._count.Plan,
   }));
+});
+
+const getAppBootstrapOptionalCached = cache(
+  async (channelIdParam: string | null): Promise<BootstrapData | null> => {
+    const user = await getCurrentUserServer();
+    if (!user) return null;
+
+    const [me, channels] = await Promise.all([
+      getMeServer(user),
+      getChannelsServer(user.id),
+    ]);
+
+    const activeChannelId = resolveActiveChannelId(channels, channelIdParam);
+    const activeChannel =
+      channels.find((c) => c.channel_id === activeChannelId) ?? null;
+
+    return {
+      me,
+      channels,
+      activeChannelId,
+      activeChannel,
+    };
+  },
+);
+
+/**
+ * Get the current user from server session.
+ * Returns null if not authenticated.
+ */
+export async function getCurrentUserServer(): Promise<BootstrapUser | null> {
+  return getCurrentUserServerCached();
+}
+
+/**
+ * Require authenticated user or redirect to login.
+ * Use in server components where auth is required.
+ */
+export async function requireUserServer(): Promise<BootstrapUser> {
+  const user = await getCurrentUserServer();
+  if (!user) {
+    redirect("/auth/login");
+  }
+  return user;
+}
+
+/**
+ * Get user profile with subscription (Me type).
+ */
+export async function getMeServer(user: BootstrapUser): Promise<Me> {
+  return getMeServerCached(user.id, user.email, user.name);
+}
+
+/**
+ * Get all channels for user.
+ */
+export async function getChannelsServer(userId: number): Promise<Channel[]> {
+  return getChannelsServerCached(userId);
 }
 
 /**
@@ -215,22 +253,5 @@ export async function getAppBootstrap(searchParams?: {
 export async function getAppBootstrapOptional(searchParams?: {
   channelId?: string;
 }): Promise<BootstrapData | null> {
-  const user = await getCurrentUserServer();
-  if (!user) return null;
-
-  const [me, channels] = await Promise.all([
-    getMeServer(user),
-    getChannelsServer(user.id),
-  ]);
-
-  const activeChannelId = resolveActiveChannelId(channels, searchParams);
-  const activeChannel =
-    channels.find((c) => c.channel_id === activeChannelId) ?? null;
-
-  return {
-    me,
-    channels,
-    activeChannelId,
-    activeChannel,
-  };
+  return getAppBootstrapOptionalCached(searchParams?.channelId ?? null);
 }

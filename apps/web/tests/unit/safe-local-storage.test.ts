@@ -1,7 +1,9 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import {
   getJSON,
+  getJSONWithExpiry,
   setJSON,
+  setJSONWithExpiry,
   removeJSON,
   STORAGE_KEYS,
 } from "@/lib/storage/safeLocalStorage";
@@ -142,6 +144,37 @@ describe("safeLocalStorage", () => {
     });
   });
 
+  describe("TTL helpers", () => {
+    test("setJSONWithExpiry stores envelope and getJSONWithExpiry reads value", () => {
+      const data = { foo: "bar" };
+      const ok = setJSONWithExpiry("ttl_key", data, 60_000);
+      expect(ok).toBe(true);
+
+      const result = getJSONWithExpiry<typeof data>("ttl_key");
+      expect(result).toEqual(data);
+    });
+
+    test("getJSONWithExpiry returns null and removes expired entries", () => {
+      const expiredEnvelope = {
+        value: { stale: true },
+        expiresAt: Date.now() - 1,
+      };
+      window.localStorage.setItem(
+        PREFIX + "expired_key",
+        JSON.stringify(expiredEnvelope),
+      );
+
+      const result = getJSONWithExpiry("expired_key");
+      expect(result).toBeNull();
+      expect(window.localStorage.getItem(PREFIX + "expired_key")).toBeNull();
+    });
+
+    test("setJSONWithExpiry returns false for invalid ttl", () => {
+      const result = setJSONWithExpiry("bad_ttl", { foo: "bar" }, 0);
+      expect(result).toBe(false);
+    });
+  });
+
   describe("removeJSON", () => {
     test("removes existing key", () => {
       window.localStorage.setItem(PREFIX + "to_remove", "some value");
@@ -162,6 +195,7 @@ describe("safeLocalStorage", () => {
     test("has expected keys", () => {
       expect(STORAGE_KEYS.GENERATED_THUMBNAILS).toBe("generated_v1");
       expect(STORAGE_KEYS.UPLOADED_PHOTOS).toBe("uploaded_photos_v1");
+      expect(STORAGE_KEYS.DASHBOARD_VIDEOS).toBe("dashboard_videos_v1");
     });
   });
 

@@ -1,8 +1,5 @@
 import {
-  getCurrentUserServer,
-  getMeServer,
-  getChannelsServer,
-  resolveActiveChannelId,
+  getAppBootstrapOptional,
 } from "@/lib/server/bootstrap";
 import { AppShellServer } from "@/components/navigation/AppShellServer";
 import { getFilteredNavItems } from "@/lib/nav-config.server";
@@ -32,11 +29,11 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUserServer();
+  const bootstrap = await getAppBootstrapOptional();
   const navItems = await getFilteredNavItems();
 
   // Unauthenticated: Use AppShell with guest mode (null user data)
-  if (!user) {
+  if (!bootstrap) {
     return (
       <AppShellServer
         channels={[]}
@@ -55,12 +52,7 @@ export default async function DashboardLayout({
   }
 
   // Authenticated: Use full AppShell with user data
-  const [me, channels] = await Promise.all([
-    getMeServer(user),
-    getChannelsServer(user.id),
-  ]);
-
-  const activeChannelId = resolveActiveChannelId(channels, null);
+  const { me, channels, activeChannelId } = bootstrap;
 
   // Check admin status
   const adminEmails = String(
@@ -70,7 +62,8 @@ export default async function DashboardLayout({
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
   const isAdmin =
-    adminEmails.length > 0 && adminEmails.includes(user.email.toLowerCase());
+    adminEmails.length > 0 &&
+    adminEmails.includes(bootstrap.me.email.toLowerCase());
 
   return (
     <AppShellServer

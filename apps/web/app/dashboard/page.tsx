@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import {
-  getCurrentUserServer,
-  getAppBootstrapOptional,
-} from "@/lib/server/bootstrap";
+import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
 import { BRAND, CANONICAL_ORIGIN } from "@/lib/brand";
 import { LoggedOutDashboardPreview } from "@/components/dashboard/LoggedOutDashboardPreview";
 import DashboardClient from "./DashboardClient";
@@ -45,19 +42,13 @@ type Props = {
 
 export default async function DashboardPage({ searchParams }: Props) {
   const params = await searchParams;
-  const user = await getCurrentUserServer();
 
-  // Unauthenticated: Show logged-out preview (200 OK, no redirect)
-  if (!user) {
-    return <LoggedOutDashboardPreview />;
-  }
-
-  // Authenticated: Fetch bootstrap data and render full dashboard
+  // Authenticated: fetch bootstrap once and render dashboard.
+  // Unauthenticated: show logged-out preview (200 OK, no redirect).
   const bootstrap = await getAppBootstrapOptional({
     channelId: params.channelId,
   });
 
-  // Safety check - should always have bootstrap for authenticated user
   if (!bootstrap) {
     return <LoggedOutDashboardPreview />;
   }
