@@ -1418,6 +1418,11 @@ export async function fetchGeographicBreakdown(
 
 /**
  * Fetch detailed traffic source breakdown (search terms, suggested videos, etc.)
+ *
+ * The YouTube Analytics API requires insightTrafficSourceDetail as the ONLY
+ * dimension, with insightTrafficSourceType as a required filter. Each traffic
+ * source type must be queried separately. maxResults must be <= 25.
+ * See: https://developers.google.com/youtube/analytics/v1/channel_reports
  */
 export async function fetchTrafficSourceDetail(
   ga: GoogleAccount,
@@ -1433,64 +1438,68 @@ export async function fetchTrafficSourceDetail(
   };
 
   try {
-    // Fetch traffic by insightTrafficSourceDetail dimension
-    const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
-    url.searchParams.set("ids", `channel==${channelId}`);
-    url.searchParams.set("startDate", startDate);
-    url.searchParams.set("endDate", endDate);
-    url.searchParams.set("metrics", "views");
-    url.searchParams.set(
-      "dimensions",
-      "insightTrafficSourceType,insightTrafficSourceDetail",
-    );
-    url.searchParams.set("filters", `video==${videoId}`);
-    url.searchParams.set("sort", "-views");
-    url.searchParams.set("maxResults", "50");
+    type DetailRow = { detail: string; views: number };
 
-    const data = await googleFetchWithAutoRefresh<{
-      columnHeaders: Array<{ name: string }>;
-      rows?: Array<Array<string | number>>;
-    }>(ga, url.toString());
+    async function fetchForSourceType(
+      sourceType: string,
+    ): Promise<DetailRow[]> {
+      const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+      url.searchParams.set("ids", `channel==${channelId}`);
+      url.searchParams.set("startDate", startDate);
+      url.searchParams.set("endDate", endDate);
+      url.searchParams.set("metrics", "views");
+      url.searchParams.set("dimensions", "insightTrafficSourceDetail");
+      url.searchParams.set(
+        "filters",
+        `video==${videoId};insightTrafficSourceType==${sourceType}`,
+      );
+      url.searchParams.set("sort", "-views");
+      url.searchParams.set("maxResults", "25");
 
-    if (!data.rows || data.rows.length === 0) {
-      return noData;
+      const data = await googleFetchWithAutoRefresh<{
+        columnHeaders: Array<{ name: string }>;
+        rows?: Array<Array<string | number>>;
+      }>(ga, url.toString());
+
+      if (!data.rows || data.rows.length === 0) return [];
+
+      const headers = data.columnHeaders.map((h) => h.name);
+      const detailIdx = headers.indexOf("insightTrafficSourceDetail");
+      const viewsIdx = headers.indexOf("views");
+
+      return data.rows
+        .map((row) => ({
+          detail: String(row[detailIdx] ?? ""),
+          views: Number(row[viewsIdx] ?? 0),
+        }))
+        .filter((r) => r.detail && r.views > 0);
     }
 
-    const headers = data.columnHeaders.map((h) => h.name);
-    const typeIdx = headers.indexOf("insightTrafficSourceType");
-    const detailIdx = headers.indexOf("insightTrafficSourceDetail");
-    const viewsIdx = headers.indexOf("views");
+    const [searchRows, relatedRows, browseRows] = await Promise.all([
+      fetchForSourceType("YT_SEARCH").catch(() => []),
+      fetchForSourceType("RELATED_VIDEO").catch(() => []),
+      fetchForSourceType("YT_OTHER_PAGE").catch(() => []),
+    ]);
 
-    const searchTerms: Array<{ term: string; views: number }> = [];
-    const suggestedVideos: Array<{ videoId: string; views: number }> = [];
-    const browseFeatures: Array<{ feature: string; views: number }> = [];
+    const searchTerms = searchRows
+      .slice(0, 10)
+      .map((r) => ({ term: r.detail, views: r.views }));
 
-    for (const row of data.rows) {
-      const type = String(row[typeIdx] ?? "").toUpperCase();
-      const detail = String(row[detailIdx] ?? "");
-      const views = Number(row[viewsIdx] ?? 0);
+    const suggestedVideos = relatedRows
+      .slice(0, 5)
+      .map((r) => {
+        const match = r.detail.match(/(?:v=|\/)([\w-]{11})/);
+        return { videoId: match ? match[1] : r.detail, views: r.views };
+      });
 
-      if (!detail || views === 0) continue;
-
-      if (type.includes("SEARCH") || type === "YT_SEARCH") {
-        searchTerms.push({ term: detail, views });
-      } else if (type.includes("RELATED") || type.includes("SUGGESTED")) {
-        // Detail is usually a video ID or URL
-        const videoIdMatch = detail.match(/(?:v=|\/)([\w-]{11})/);
-        if (videoIdMatch) {
-          suggestedVideos.push({ videoId: videoIdMatch[1], views });
-        }
-      } else if (type.includes("BROWSE") || type.includes("HOME")) {
-        browseFeatures.push({ feature: detail, views });
-      }
-    }
+    const browseFeatures = browseRows
+      .slice(0, 5)
+      .map((r) => ({ feature: r.detail, views: r.views }));
 
     return {
-      searchTerms: searchTerms.length > 0 ? searchTerms.slice(0, 10) : null,
-      suggestedVideos:
-        suggestedVideos.length > 0 ? suggestedVideos.slice(0, 5) : null,
-      browseFeatures:
-        browseFeatures.length > 0 ? browseFeatures.slice(0, 5) : null,
+      searchTerms: searchTerms.length > 0 ? searchTerms : null,
+      suggestedVideos: suggestedVideos.length > 0 ? suggestedVideos : null,
+      browseFeatures: browseFeatures.length > 0 ? browseFeatures : null,
     };
   } catch (err: any) {
     if (err instanceof GoogleTokenRefreshError) {
