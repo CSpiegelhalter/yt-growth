@@ -39,5 +39,3 @@ export function TwoColumnInsight({
     </div>
   );
 }
-
-export default TwoColumnInsight;

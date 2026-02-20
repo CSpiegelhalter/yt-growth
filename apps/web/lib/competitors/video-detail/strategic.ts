@@ -58,7 +58,7 @@ export function deriveKeywordsFromText(text: string): string[] {
 // FORMAT GUESSING
 // ============================================
 
-export type LikelyFormat =
+type LikelyFormat =
   | "General"
   | "Tutorial"
   | "Review"
@@ -71,7 +71,7 @@ export type LikelyFormat =
 /**
  * Guess the likely format of a video based on title and description.
  */
-export function guessLikelyFormat(title: string, description: string): LikelyFormat {
+function guessLikelyFormat(title: string, description: string): LikelyFormat {
   const haystack = `${title} ${description}`;
   if (/tutorial|how to|guide|step|learn/i.test(haystack)) return "Tutorial";
   if (/review|honest|vs |compared|worth/i.test(title)) return "Review";
@@ -86,7 +86,7 @@ export function guessLikelyFormat(title: string, description: string): LikelyFor
 /**
  * Guess production level based on duration and views.
  */
-export function guessProductionLevel(
+function guessProductionLevel(
   durationMin: number,
   views: number
 ): "Low" | "Medium" | "High" {
@@ -186,7 +186,7 @@ function pickTopicHint(input: {
  * Generate fresh angles for remixing a video.
  * Uses deterministic randomness based on videoId for stable output.
  */
-export function generateFreshAngles(input: {
+function generateFreshAngles(input: {
   seed: string;
   title: string;
   description: string;
@@ -336,7 +336,7 @@ export function generateFreshAngles(input: {
 /**
  * Generate a fallback beat-this-video checklist when LLM is unavailable.
  */
-export function generateFallbackBeatChecklist(input: {
+function generateFallbackBeatChecklist(input: {
   numberAnalysis: ReturnType<typeof analyzeNumberInTitle>;
   chapterDetection: ReturnType<typeof detectChapters>;
   durationMin: number;

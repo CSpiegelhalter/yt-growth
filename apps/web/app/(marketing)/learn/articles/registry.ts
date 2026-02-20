@@ -16,7 +16,7 @@
 
 import type { BodyProps, ArticleMeta, TocEntry } from "./bodies/_shared";
 
-export interface ArticleModule {
+interface ArticleModule {
   Body: React.ComponentType<BodyProps>;
   meta?: ArticleMeta;
   toc?: readonly TocEntry[];
@@ -49,5 +49,3 @@ export const ARTICLE_REGISTRY: Record<string, ArticleLoader> = {
   "youtube-shorts-strategy": () => import("./bodies/youtube-shorts-strategy"),
   "youtube-algorithm": () => import("./bodies/youtube-algorithm"),
 };
-
-export const ARTICLE_SLUGS = Object.keys(ARTICLE_REGISTRY);

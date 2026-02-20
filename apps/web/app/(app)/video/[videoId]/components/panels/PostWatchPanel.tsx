@@ -217,5 +217,3 @@ function getRecommendation(
 
   return null;
 }
-
-export default PostWatchPanel;

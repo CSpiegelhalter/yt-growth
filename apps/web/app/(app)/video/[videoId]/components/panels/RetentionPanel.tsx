@@ -528,5 +528,3 @@ function diagnoseDropAt(
 
   return null;
 }
-
-export default RetentionPanel;

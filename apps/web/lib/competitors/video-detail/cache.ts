@@ -24,7 +24,7 @@ const logger = createLogger({ module: "video-detail.cache" });
 /**
  * Result of parallel cache reads.
  */
-export type CacheReadResult = {
+type CacheReadResult = {
   cachedVideo: CachedCompetitorVideo | null;
   cachedComments: CachedComments | null;
   channelOwnership: { id: number; title: string | null } | null;

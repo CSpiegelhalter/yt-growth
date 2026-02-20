@@ -1,6 +1,6 @@
 type LogLevel = "debug" | "info" | "warn" | "error";
 
-export type LogFields = Record<string, unknown>;
+type LogFields = Record<string, unknown>;
 
 const REDACT_KEYS = new Set([
   "authorization",
@@ -51,7 +51,7 @@ function safeJson(value: unknown): string {
   }
 }
 
-export type Logger = {
+type Logger = {
   debug: (message: string, fields?: LogFields) => void;
   info: (message: string, fields?: LogFields) => void;
   warn: (message: string, fields?: LogFields) => void;
@@ -95,11 +95,4 @@ export function createLogger(baseFields?: LogFields): Logger {
 
 export const logger = createLogger();
 
-/**
- * Backwards-compatible helper. Prefer `logger.info(...)`.
- */
-export const log = (...args: any[]) => {
-  const msg = args.map((a) => (typeof a === "string" ? a : safeJson(a))).join(" ");
-  logger.info(msg);
-};
 

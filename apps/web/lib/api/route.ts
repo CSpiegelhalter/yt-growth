@@ -1,4 +1,4 @@
-import type { ApiHandler, NextRouteContext } from "./types";
+import type { ApiHandler } from "./types";
 import { withRequestContext } from "./withRequestContext";
 import { withLogging } from "./withLogging";
 import { withErrorHandling } from "./withErrorHandling";
@@ -16,10 +16,4 @@ export function createApiRoute<P>(
   handler: ApiHandler<P>
 ) {
   return withRequestContext<P>(opts, withLogging(withErrorHandling(handler)));
-}
-
-// For routes without params, Next passes no second arg in some cases.
-// This helper keeps typing sane.
-export function emptyParamsContext(): NextRouteContext<Record<string, never>> {
-  return { params: Promise.resolve({}) };
 }

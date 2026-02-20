@@ -1,6 +1,6 @@
 export type ThumbnailStyleV2 = "compare" | "subject" | "object" | "hold";
 
-export type StyleModelConfig = {
+type StyleModelConfig = {
   style: ThumbnailStyleV2;
   model: string; // "owner/name"
   version: string;

@@ -17,7 +17,7 @@ export { CANONICAL_ORIGIN };
 /**
  * Core product information for LLMs
  */
-export const LLMS_PRODUCT_INFO = {
+const LLMS_PRODUCT_INFO = {
   name: BRAND.name,
   tagline: BRAND.tagline,
   description: BRAND.description,
@@ -29,7 +29,7 @@ export const LLMS_PRODUCT_INFO = {
  * Curated list of product tools/features (app routes require login)
  * These are mentioned for context but require authentication.
  */
-export const LLMS_TOOLS = [
+const LLMS_TOOLS = [
   {
     name: "Video Analytics Dashboard",
     path: "/dashboard",
@@ -71,7 +71,7 @@ export const LLMS_TOOLS = [
 /**
  * Public marketing/info pages (no login required)
  */
-export const LLMS_PUBLIC_PAGES = [
+const LLMS_PUBLIC_PAGES = [
   {
     name: "Homepage",
     path: "/",
@@ -149,7 +149,7 @@ type LearnArticleSlug = keyof typeof LEARN_ARTICLES;
  * Curated selection of top Learn articles for LLMs.
  * Prioritizes SEO-focused guides that answer common YouTube creator questions.
  */
-export function getLlmsLearnPages(): Array<{
+function getLlmsLearnPages(): Array<{
   name: string;
   path: string;
   description: string;
@@ -171,7 +171,7 @@ export function getLlmsLearnPages(): Array<{
 /**
  * Structured data conventions used on the site
  */
-export const LLMS_STRUCTURED_DATA_NOTES = `
+const LLMS_STRUCTURED_DATA_NOTES = `
 ## Structured Data Conventions
 
 ChannelBoost uses Schema.org JSON-LD structured data on key pages:

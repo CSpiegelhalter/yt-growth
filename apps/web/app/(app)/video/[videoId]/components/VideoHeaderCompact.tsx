@@ -383,5 +383,3 @@ function SubRateKpi({
     </div>
   );
 }
-
-export default VideoHeaderCompact;

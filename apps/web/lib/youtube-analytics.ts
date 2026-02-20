@@ -711,7 +711,7 @@ export type ChannelAuditMetrics = {
   videosInRange: number;
 };
 
-export type DiscoveryMetrics = {
+type DiscoveryMetrics = {
   impressions: number | null;
   impressionsCtr: number | null;
   trafficSources: TrafficSourceBreakdown | null;

@@ -198,5 +198,3 @@ export function DiscoveryChart({
     </InsightCard>
   );
 }
-
-export default DiscoveryChart;

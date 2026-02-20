@@ -567,5 +567,3 @@ function StatusDot({ status }: { status: DescriptionCheckStatus }) {
     />
   );
 }
-
-export default SeoPanel;

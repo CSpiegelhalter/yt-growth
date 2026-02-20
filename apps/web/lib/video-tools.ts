@@ -62,7 +62,7 @@ export type SortKey =
   | "velocity_desc" // views per day
   | "sub_conversion_desc"; // subs gained per 1k views
 
-export type SortOption = {
+type SortOption = {
   key: SortKey;
   label: string;
   description: string;
@@ -70,7 +70,7 @@ export type SortOption = {
   supportsDirection?: boolean;
 };
 
-export const SORT_OPTIONS: SortOption[] = [
+const SORT_OPTIONS: SortOption[] = [
   {
     key: "views_desc",
     label: "Most views",
@@ -163,7 +163,7 @@ export const DEFAULT_FILTERS: VideoFilters = {
 };
 
 // Persistence
-export type VideoToolsState = {
+type VideoToolsState = {
   sortKey: SortKey;
   filters: VideoFilters;
 };
@@ -293,7 +293,7 @@ export function enhanceVideosWithMetrics(
 /**
  * Check if a specific metric is available in the video data
  */
-export function hasMetric(
+function hasMetric(
   videos: DashboardVideo[],
   metric: keyof DashboardVideo
 ): boolean {
@@ -362,7 +362,7 @@ export function filterBySearch(
 /**
  * Calculate channel baselines for presets
  */
-export function calcChannelBaselines(videos: VideoWithMetrics[]): {
+function calcChannelBaselines(videos: VideoWithMetrics[]): {
   medianViewsPerDay: number;
   medianLikeRate: number;
   medianRetention: number | null;
@@ -417,7 +417,7 @@ export function calcChannelBaselines(videos: VideoWithMetrics[]): {
  * Apply "Needs attention" preset
  * Low CTR OR low retention OR low engagement vs baseline
  */
-export function filterNeedsAttention(
+function filterNeedsAttention(
   videos: VideoWithMetrics[]
 ): VideoWithMetrics[] {
   const baselines = calcChannelBaselines(videos);
@@ -567,19 +567,6 @@ export function sortVideos(
 // NEXT ACTIONS / INSIGHTS
 // ============================================
 
-export type Insight = {
-  id: string;
-  type: "ctr" | "retention" | "trending" | "converter" | "engagement";
-  title: string;
-  description: string;
-  videoIds: string[];
-  severity: "high" | "medium" | "low";
-  action: {
-    label: string;
-    filterPreset?: Partial<VideoFilters>;
-    sortKey?: SortKey;
-  };
-};
 // ============================================
 // PERSISTENCE
 // ============================================
@@ -589,7 +576,7 @@ const STORAGE_KEY_PREFIX = "dashboardVideoTools:";
 /**
  * Get localStorage key for a channel
  */
-export function getStorageKey(channelId: string): string {
+function getStorageKey(channelId: string): string {
   return `${STORAGE_KEY_PREFIX}${channelId}`;
 }
 

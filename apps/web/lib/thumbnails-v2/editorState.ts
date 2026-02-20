@@ -50,7 +50,7 @@ export const editorStateV1Schema = z.object({
     .default([]),
 });
 
-export type EditorStateV1 = z.infer<typeof editorStateV1Schema>;
+type EditorStateV1 = z.infer<typeof editorStateV1Schema>;
 
 export function defaultEditorState(): EditorStateV1 {
   return {

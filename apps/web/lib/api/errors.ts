@@ -28,7 +28,7 @@ export class ApiError extends Error {
   }
 }
 
-export function isZodError(err: unknown): err is z.ZodError {
+function isZodError(err: unknown): err is z.ZodError {
   return err instanceof z.ZodError;
 }
 

@@ -1096,7 +1096,7 @@ const GOOGLE_SUGGESTIONS = [
 // Main Audit Function
 // ============================================
 
-export type DescriptionSeoOptions = {
+type DescriptionSeoOptions = {
   /** Override the auto-detected focus keyword with a specific keyword (e.g., from LLM) */
   focusKeywordOverride?: string | null;
 };

@@ -33,12 +33,3 @@ export function getStorage(): StorageAdapter {
   return getLocalStorage();
 }
 
-/**
- * Explicitly get local storage (for testing or dev).
- */
-export { getLocalStorage };
-
-/**
- * Explicitly get S3 storage (requires env vars).
- */
-export { getS3Storage };

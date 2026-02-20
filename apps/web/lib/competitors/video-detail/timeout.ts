@@ -62,26 +62,6 @@ export async function withTimeout<T>(
  * @param fallback - Value to return on timeout
  * @returns Promise that resolves to result or fallback
  */
-export async function withTimeoutFallback<T>(
-  promise: Promise<T>,
-  ms: number,
-  operation: string,
-  fallback: T
-): Promise<T> {
-  try {
-    return await withTimeout(promise, ms, operation);
-  } catch (err) {
-    if (err instanceof TimeoutError) {
-      logger.warn(`Using fallback after timeout`, {
-        operation,
-        timeoutMs: ms,
-      });
-      return fallback;
-    }
-    throw err;
-  }
-}
-
 /**
  * Execute a promise with timeout, logging the error but returning null on failure.
  * Useful for non-critical operations where we want to continue without the result.

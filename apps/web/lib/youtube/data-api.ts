@@ -30,7 +30,6 @@ import type {
   GoogleAccount,
   YouTubeVideo,
   VideoDetails,
-  SimilarChannelResult,
   RecentVideoResult,
   VideoDurationFilter,
   YouTubeComment,
@@ -46,7 +45,7 @@ import type {
  * Shape returned by YouTube Data API videos.list when requesting part=snippet.
  * All sub-fields are optional because callers use `fields=` to request subsets.
  */
-export type YouTubeVideoSnippetItem = {
+type YouTubeVideoSnippetItem = {
   snippet: {
     title?: string;
     description?: string;
@@ -400,47 +399,6 @@ export async function fetchVideosStatsBatch(
 // ============================================
 // Search Operations
 // ============================================
-
-/**
- * Search for channels by query.
- * This is an expensive operation (100 quota units).
- */
-export async function searchChannels(
-  ga: GoogleAccount,
-  query: string,
-  maxResults: number
-): Promise<SimilarChannelResult[]> {
-  const url = new URL(`${YOUTUBE_DATA_API}/search`);
-  url.searchParams.set("part", "snippet");
-  url.searchParams.set("type", "channel");
-  url.searchParams.set("q", query);
-  url.searchParams.set(
-    "maxResults",
-    String(Math.min(50, Math.max(1, maxResults)))
-  );
-  url.searchParams.set("relevanceLanguage", "en");
-
-  const data = await youtubeFetch<{
-    items?: Array<{
-      id: { channelId: string };
-      snippet: {
-        title: string;
-        description: string;
-        thumbnails: { medium?: { url: string }; default?: { url: string } };
-      };
-    }>;
-  }>(ga, url.toString());
-
-  return (data.items ?? []).map((i) => ({
-    channelId: i.id.channelId,
-    channelTitle: decodeHtmlEntities(i.snippet.title),
-    description: decodeHtmlEntities(i.snippet.description),
-    thumbnailUrl:
-      i.snippet.thumbnails?.medium?.url ??
-      i.snippet.thumbnails?.default?.url ??
-      null,
-  }));
-}
 
 /**
  * Search for videos by query.

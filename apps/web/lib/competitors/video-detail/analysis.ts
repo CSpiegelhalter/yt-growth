@@ -25,23 +25,6 @@ import type { CompetitorVideo, CompetitorCommentsAnalysis } from "@/types/api";
 const logger = createLogger({ module: "video-detail.analysis" });
 
 // ============================================
-// TYPES
-// ============================================
-
-export type AnalysisResult = {
-  analysis: NormalizedAnalysis;
-  beatChecklist: BeatChecklist | undefined;
-  llmFailed: boolean;
-  llmFailureReason: string | null;
-};
-
-export type CommentsAnalysisResult = {
-  commentsAnalysis: CompetitorCommentsAnalysis;
-  needsCaching: boolean;
-  contentHash: string | null;
-};
-
-// ============================================
 // NORMALIZE BEAT CHECKLIST
 // ============================================
 
@@ -167,7 +150,7 @@ export async function runCommentsAnalysis(
  * Run main video analysis LLM with timeout.
  * THROWS VideoDetailError on failure - NO FALLBACK.
  */
-export async function runMainAnalysis(
+async function runMainAnalysis(
   video: CompetitorVideo,
   videoDetails: VideoDetailsResult,
   channelTitle: string,

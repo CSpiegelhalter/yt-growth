@@ -12,13 +12,13 @@ import { prisma } from "@/prisma";
 import { getSubscriptionStatus } from "@/lib/stripe";
 import type { Me, Channel } from "@/types/api";
 
-export type BootstrapUser = {
+type BootstrapUser = {
   id: number;
   email: string;
   name: string | null;
 };
 
-export type BootstrapData = {
+type BootstrapData = {
   me: Me;
   channels: Channel[];
   activeChannelId: string | null;
@@ -168,7 +168,7 @@ export async function getCurrentUserServer(): Promise<BootstrapUser | null> {
  * Require authenticated user or redirect to login.
  * Use in server components where auth is required.
  */
-export async function requireUserServer(): Promise<BootstrapUser> {
+async function requireUserServer(): Promise<BootstrapUser> {
   const user = await getCurrentUserServer();
   if (!user) {
     redirect("/auth/login");

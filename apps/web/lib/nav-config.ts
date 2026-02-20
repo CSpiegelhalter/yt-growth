@@ -165,7 +165,7 @@ export const accountNavItems: NavItem[] = [
 /**
  * Check if a given pathname matches a nav item
  */
-export function isNavItemActive(item: NavItem, pathname: string): boolean {
+function isNavItemActive(item: NavItem, pathname: string): boolean {
   if (item.match) {
     return item.match(pathname);
   }

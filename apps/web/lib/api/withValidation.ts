@@ -5,7 +5,7 @@ import { ApiError } from "./errors";
 
 // ── parseBody ──────────────────────────────────────────────────
 
-export type ParseBodyResult<T> =
+type ParseBodyResult<T> =
   | { ok: true; data: T }
   | { ok: false; type: "json" }
   | { ok: false; type: "validation"; firstMessage: string; zodError: z.ZodError };
@@ -38,13 +38,13 @@ export async function parseBody<T>(
 
 // ── withValidation ─────────────────────────────────────────────
 
-export type ValidationSchemas<P, Q, B> = {
+type ValidationSchemas<P, Q, B> = {
   params?: z.ZodType<P, z.ZodTypeDef, unknown>;
   query?: z.ZodType<Q, z.ZodTypeDef, unknown>;
   body?: z.ZodType<B, z.ZodTypeDef, unknown>;
 };
 
-export type Validated<P, Q, B> = {
+type Validated<P, Q, B> = {
   params?: P;
   query?: Q;
   body?: B;

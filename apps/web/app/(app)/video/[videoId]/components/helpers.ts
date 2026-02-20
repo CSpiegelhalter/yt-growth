@@ -49,25 +49,5 @@ export function formatResetAt(resetAt: string): string {
   });
 }
 
-/**
- * Calculate performance level based on video metrics
- */
-export function getPerformanceLevel(
-  avgViewed: number,
-  engagementRate: number,
-  subsPer1k: number
-): { level: string; label: string } {
-  let score = 0;
-  if (avgViewed >= 50) score += 2;
-  else if (avgViewed >= 40) score += 1;
-  if (engagementRate >= 5) score += 2;
-  else if (engagementRate >= 3) score += 1;
-  if (subsPer1k >= 2.5) score += 2;
-  else if (subsPer1k >= 1.5) score += 1;
 
-  if (score >= 5) return { level: "excellent", label: "Performing Well" };
-  if (score >= 3) return { level: "good", label: "Solid Performance" };
-  if (score >= 1) return { level: "fair", label: "Room to Grow" };
-  return { level: "needs-work", label: "Needs Attention" };
-}
 

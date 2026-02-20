@@ -186,5 +186,3 @@ export function CommentsPanel({
     </div>
   );
 }
-
-export default CommentsPanel;

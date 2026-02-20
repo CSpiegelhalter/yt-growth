@@ -202,7 +202,7 @@ async function isValidStripeCustomer(customerId: string): Promise<boolean> {
 /**
  * Get or create a Stripe customer for a user
  */
-export async function getOrCreateStripeCustomer(
+async function getOrCreateStripeCustomer(
   userId: number,
   email: string
 ): Promise<string> {

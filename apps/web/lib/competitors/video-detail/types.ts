@@ -7,8 +7,6 @@
  */
 
 import type {
-  CompetitorVideo,
-  CompetitorCommentsAnalysis,
   CompetitorVideoAnalysis,
 } from "@/types/api";
 import type { VideoDetails, YouTubeComment } from "@/lib/youtube/types";
@@ -100,25 +98,6 @@ export type ChannelVideosResult = Array<{
 // LLM ANALYSIS TYPES
 // ============================================
 
-export type RawLLMAnalysis = {
-  whatItsAbout: string;
-  whyItsWorking: string[];
-  themesToRemix: Array<{ theme: string; why: string }>;
-  titlePatterns: string[];
-  packagingNotes: string[];
-  remixIdeasForYou: Array<{
-    title: string;
-    hook: string;
-    overlayText: string;
-    angle: string;
-  }>;
-  beatThisVideo?: Array<{
-    action: string;
-    difficulty: "Easy" | "Medium" | "Hard";
-    impact: "Low" | "Medium" | "High";
-  }>;
-};
-
 export type NormalizedAnalysis = CompetitorVideoAnalysis["analysis"];
 
 export type BeatChecklist = Array<{
@@ -152,50 +131,6 @@ export class VideoDetailError extends Error {
     this.name = "VideoDetailError";
   }
 }
-
-// ============================================
-// PIPELINE STATE
-// ============================================
-
-export type PipelineInput = {
-  videoId: string;
-  channelId: string;
-  includeMoreFromChannel: boolean;
-  userId: number;
-  channelDbId: number;
-  channelTitle: string;
-};
-
-export type PipelineState = {
-  // Inputs
-  input: PipelineInput;
-  context: RequestContext;
-
-  // YouTube data
-  videoDetails: VideoDetailsResult | null;
-  rawComments: CommentsResult | null;
-  moreFromChannel: ChannelVideosResult;
-
-  // Cache data
-  cachedVideo: CachedCompetitorVideo | null;
-  cachedComments: CachedComments | null;
-
-  // Derived data
-  video: CompetitorVideo | null;
-  commentsAnalysis: CompetitorCommentsAnalysis | null;
-  analysis: NormalizedAnalysis | null;
-  beatChecklist: BeatChecklist | null;
-
-  // Content hashes for cache invalidation
-  videoContentHash: string | null;
-  commentsContentHash: string | null;
-
-  // Flags
-  needsFreshAnalysis: boolean;
-  needsCommentsLLM: boolean;
-  llmFailed: boolean;
-  llmFailureReason: string | null;
-};
 
 // ============================================
 // TIMEOUT CONFIGURATION

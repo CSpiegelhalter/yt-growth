@@ -15,11 +15,9 @@ import {
   fetchVideosDetailsBatch,
   fetchVideoDetails as fetchVideoDetailsCore,
   fetchVideosStatsBatch as fetchVideosStatsBatchCore,
-  searchChannels,
   searchVideos,
   fetchRecentChannelVideosCore,
-  fetchVideoComments as fetchVideoCommentsCore,
-  fetchVideoSnippetByApiKey,
+  fetchVideoComments as   fetchVideoCommentsCore,
 } from "./data-api";
 import {
   fetchVideoMetrics as fetchVideoMetricsCore,
@@ -41,24 +39,6 @@ import type {
 // Re-export account lookup
 export { getGoogleAccount } from "./accounts";
 
-// Re-export API-key video snippet fetcher for public routes
-export { fetchVideoSnippetByApiKey };
-
-// Re-export types
-export type {
-  GoogleAccount,
-  YouTubeVideo,
-  VideoDetails,
-  VideoMetricsData,
-  RetentionPoint,
-  SimilarChannelResult,
-  RecentVideoResult,
-  VideoDurationFilter,
-  YouTubeComment,
-  FetchCommentsResult,
-  CompetitorVideo,
-} from "./types";
-export type { YouTubeVideoSnippetItem } from "./data-api";
 
 // ============================================
 // Channel Videos
@@ -110,42 +90,6 @@ export async function fetchRetentionCurve(
   videoId: string
 ): Promise<RetentionPoint[]> {
   return fetchRetentionCurveCore(ga, channelId, videoId);
-}
-
-// ============================================
-// Similar Channels Search
-// ============================================
-
-/**
- * Search for channels similar to the given channel based on keywords.
- * Caches results for 24h to save quota (search.list = 100 units).
- */
-export async function searchSimilarChannels(
-  ga: GoogleAccount,
-  keywords: string[],
-  maxResults: number = 10
-): Promise<SimilarChannelResult[]> {
-  const query = keywords.slice(0, 3).join(" ");
-  const normalizedQuery = query.trim().toLowerCase();
-
-  // Try cache first
-  if (normalizedQuery) {
-    const cached = await getCache("channel", normalizedQuery);
-    if (cached.hit) {
-      const items = (cached.value as SimilarChannelResult[]) ?? [];
-      return items.slice(0, maxResults);
-    }
-  }
-
-  // Fetch from API
-  const mapped = await searchChannels(ga, query, Math.min(50, maxResults));
-
-  // Cache result
-  if (normalizedQuery) {
-    await setCache("channel", normalizedQuery, mapped, CACHE_TTL_MS);
-  }
-
-  return mapped.slice(0, maxResults);
 }
 
 // ============================================

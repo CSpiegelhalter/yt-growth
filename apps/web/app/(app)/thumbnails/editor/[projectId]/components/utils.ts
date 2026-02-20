@@ -4,7 +4,7 @@
 
 import type { EditorObject, EditorDocument, ArrowObject, ImageObject } from "./types";
 import { DEFAULT_DOCUMENT } from "./types";
-import { CANVAS_WIDTH, CANVAS_HEIGHT, SNAP_THRESHOLD, ROTATION_SNAP_ANGLES, ROTATION_SNAP_THRESHOLD } from "./constants";
+import { CANVAS_WIDTH, CANVAS_HEIGHT, SNAP_THRESHOLD } from "./constants";
 
 // ============================================================================
 // ID GENERATION
@@ -27,26 +27,11 @@ export function sortByZIndex(objects: EditorObject[]): EditorObject[] {
   return [...objects].sort((a, b) => a.zIndex - b.zIndex);
 }
 
-export function getObjectLabel(obj: EditorObject): string {
-  switch (obj.type) {
-    case "text":
-      return `Text: ${obj.text.slice(0, 18) || "..."}`;
-    case "arrow":
-      return `Arrow${obj.isCurved ? " (curved)" : ""}`;
-    case "image":
-      return "Image";
-    case "shape":
-      return obj.shapeType.charAt(0).toUpperCase() + obj.shapeType.slice(1);
-    default:
-      return "Object";
-  }
-}
-
 // ============================================================================
 // SNAPPING
 // ============================================================================
 
-export function snapToValue(value: number, target: number, threshold = SNAP_THRESHOLD): number {
+function snapToValue(value: number, target: number, threshold = SNAP_THRESHOLD): number {
   return Math.abs(value - target) <= threshold ? target : value;
 }
 
@@ -59,43 +44,11 @@ export function snapToCenter(x: number, y: number): { x: number; y: number } {
   };
 }
 
-export function snapRotation(rotation: number): number {
-  for (const angle of ROTATION_SNAP_ANGLES) {
-    if (Math.abs(rotation - angle) <= ROTATION_SNAP_THRESHOLD) {
-      return angle;
-    }
-    // Handle wrap-around (360 = 0)
-    if (Math.abs(rotation - (angle - 360)) <= ROTATION_SNAP_THRESHOLD) {
-      return angle;
-    }
-    if (Math.abs(rotation - (angle + 360)) <= ROTATION_SNAP_THRESHOLD) {
-      return angle;
-    }
-  }
-  return rotation;
-}
-
-// ============================================================================
-// GEOMETRY
-// ============================================================================
-
-export function arrowHeadRotationDeg(dx: number, dy: number): number {
-  return (Math.atan2(dy, dx) * 180) / Math.PI;
-}
-
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
-export function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
-}
-
 // ============================================================================
 // IMAGE HELPERS
 // ============================================================================
 
-export interface ImageDimensions {
+interface ImageDimensions {
   width: number;
   height: number;
 }
@@ -167,14 +120,6 @@ export function centerInCanvas(width: number, height: number): { x: number; y: n
 // ============================================================================
 // VALIDATION
 // ============================================================================
-
-export function isValidImageType(mimeType: string): boolean {
-  return ["image/png", "image/jpeg", "image/webp"].includes(mimeType);
-}
-
-export function isValidImageSize(sizeBytes: number, maxMB: number = 10): boolean {
-  return sizeBytes <= maxMB * 1024 * 1024;
-}
 
 // ============================================================================
 // STATE MIGRATION

@@ -81,5 +81,3 @@ export function NextSteps({
     </div>
   );
 }
-
-export default NextSteps;

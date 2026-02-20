@@ -198,14 +198,6 @@ export type BadgeSortKey =
   | "alphabetical"
   | "category";
 
-/** Filter options for badge gallery */
-export type BadgeFilters = {
-  category: BadgeCategory | "all";
-  rarity: BadgeRarity | "all";
-  status: "all" | "unlocked" | "locked";
-  searchQuery: string;
-};
-
 /** API Response */
 export type BadgesApiResponse = {
   badges: BadgeWithProgress[];

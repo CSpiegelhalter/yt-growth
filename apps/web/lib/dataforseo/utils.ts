@@ -68,7 +68,7 @@ export const SUPPORTED_LOCATIONS = Object.keys(LOCATION_MAP) as LocationCode[];
 // ERROR HANDLING
 // ============================================
 
-export type DataForSEOErrorCode =
+type DataForSEOErrorCode =
   | "CONFIG_ERROR"
   | "VALIDATION_ERROR"
   | "RATE_LIMITED"
@@ -492,6 +492,3 @@ export class RateLimiter {
     this.timestamps = this.timestamps.filter((t) => t > cutoff);
   }
 }
-
-// Global rate limiter for tasks_ready endpoint (max 20/min per DataForSEO docs)
-export const tasksReadyRateLimiter = new RateLimiter(20, 60 * 1000);

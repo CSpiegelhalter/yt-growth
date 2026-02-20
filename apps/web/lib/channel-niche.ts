@@ -68,7 +68,7 @@ export type ChannelNicheData = {
 /**
  * Compute a stable hash from video titles for change detection
  */
-export function computeVideoTitlesHash(titles: string[]): string {
+function computeVideoTitlesHash(titles: string[]): string {
   // Sort and normalize titles for consistent hashing
   const normalized = titles
     .map((t) => t.toLowerCase().trim())
@@ -83,7 +83,7 @@ export function computeVideoTitlesHash(titles: string[]): string {
 /**
  * Get the cached niche for a channel, or null if not cached/expired
  */
-export async function getChannelNiche(
+async function getChannelNiche(
   channelId: number
 ): Promise<ChannelNicheData | null> {
   const cached = await prisma.channelNiche.findUnique({
@@ -110,7 +110,7 @@ export async function getChannelNiche(
  * Check if the niche should be regenerated based on video title changes
  * Returns true if the hash of current video titles differs from the cached hash
  */
-export async function shouldRegenerateNiche(
+async function shouldRegenerateNiche(
   channelId: number
 ): Promise<boolean> {
   // Get current video titles (last 15)
@@ -490,91 +490,5 @@ export async function getOrGenerateNiche(
   return generationPromise;
 }
 
-/**
- * Trigger niche generation in the background (non-blocking)
- * Called by dashboard to pre-warm the niche cache.
- *
- * Returns immediately with status info - does not wait for generation to complete.
- * If generation is already in progress or cache is valid, returns quickly.
- */
-export async function triggerNicheGenerationInBackground(
-  channelId: number
-): Promise<{
-  status: "cached" | "generating" | "already_in_progress" | "no_videos";
-}> {
-  // Check if we already have a valid cached niche
-  const cached = await getChannelNiche(channelId);
 
-  if (cached) {
-    const needsRegeneration = await shouldRegenerateNiche(channelId);
-    if (!needsRegeneration) {
-      return { status: "cached" };
-    }
-  }
 
-  // Check if generation is already in progress
-  if (inFlightGenerations.has(channelId)) {
-    return { status: "already_in_progress" };
-  }
-
-  // Check if channel has videos
-  const videoCount = await prisma.video.count({
-    where: { channelId },
-  });
-
-  if (videoCount < 3) {
-    return { status: "no_videos" };
-  }
-
-  // Start generation in background (fire and forget)
-  // Use getOrGenerateNiche to get deduplication benefits
-  getOrGenerateNiche(channelId).catch((err) => {
-    console.error(
-      `[ChannelNiche] Background generation failed for channel ${channelId}:`,
-      err
-    );
-  });
-
-  return { status: "generating" };
-}
-
-/**
- * Refresh niche for all channels that have outdated video title hashes
- * Called by daily cron job
- */
-export async function refreshStaleNiches(): Promise<{
-  checked: number;
-  regenerated: number;
-}> {
-  // Get all channels with cached niches
-  const channelsWithNiche = await prisma.channelNiche.findMany({
-    select: { channelId: true },
-  });
-
-  let checked = 0;
-  let regenerated = 0;
-
-  for (const { channelId } of channelsWithNiche) {
-    checked++;
-
-    const needsRegeneration = await shouldRegenerateNiche(channelId);
-
-    if (needsRegeneration) {
-      try {
-        await generateAndStoreNiche(channelId);
-        regenerated++;
-      } catch (err) {
-        console.error(
-          `[ChannelNiche] Failed to regenerate niche for channel ${channelId}:`,
-          err
-        );
-      }
-    }
-  }
-
-  console.log(
-    `[ChannelNiche] Refresh complete: checked ${checked}, regenerated ${regenerated}`
-  );
-
-  return { checked, regenerated };
-}

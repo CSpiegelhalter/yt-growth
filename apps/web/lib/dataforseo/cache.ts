@@ -278,60 +278,6 @@ export async function completePendingTask(
   return true;
 }
 
-/**
- * Delete expired cache entries (cleanup job)
- */
-export async function cleanupExpiredCache(): Promise<number> {
-  const result = await prisma.keywordCache.deleteMany({
-    where: {
-      expiresAt: { lt: new Date() },
-    },
-  });
-
-  return result.count;
-}
-
-/**
- * Get cache stats (for admin/debugging)
- */
-export async function getCacheStats(): Promise<{
-  totalEntries: number;
-  expiredEntries: number;
-  overviewEntries: number;
-  relatedEntries: number;
-  pendingEntries: number;
-  dataForSEOEntries: number;
-}> {
-  const now = new Date();
-
-  const [total, expired, overview, related, dataForSEO] = await Promise.all([
-    prisma.keywordCache.count(),
-    prisma.keywordCache.count({ where: { expiresAt: { lt: now } } }),
-    prisma.keywordCache.count({ where: { mode: "overview" } }),
-    prisma.keywordCache.count({ where: { mode: "related" } }),
-    prisma.keywordCache.count({ where: { provider: PROVIDER } }),
-  ]);
-
-  // Count pending entries separately (requires JSON query)
-  // For now, we'll estimate based on short expiry times
-  const recentPending = await prisma.keywordCache.count({
-    where: {
-      provider: PROVIDER,
-      fetchedAt: { gt: new Date(now.getTime() - PENDING_TTL_MS) },
-      expiresAt: { lt: new Date(now.getTime() + PENDING_TTL_MS) },
-    },
-  });
-
-  return {
-    totalEntries: total,
-    expiredEntries: expired,
-    overviewEntries: overview,
-    relatedEntries: related,
-    pendingEntries: recentPending,
-    dataForSEOEntries: dataForSEO,
-  };
-}
-
 // ============================================
 // VIDEO IDEAS CACHE OPERATIONS
 // ============================================

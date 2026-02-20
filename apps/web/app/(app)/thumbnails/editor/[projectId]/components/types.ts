@@ -22,7 +22,7 @@ export type ToolMode =
 // BASE OBJECT TYPES
 // ============================================================================
 
-export interface BaseObject {
+interface BaseObject {
   id: string;
   type: "text" | "arrow" | "image" | "shape";
   x: number;
@@ -272,32 +272,6 @@ export const DEFAULT_DOCUMENT: EditorDocument = {
     safeAreaMargin: 5,
   },
   objects: [],
-};
-
-// ============================================================================
-// EDITOR STATE (UI STATE)
-// ============================================================================
-
-export interface EditorUIState {
-  selectedId: string | null;
-  tool: ToolMode;
-  zoom: number;
-  panX: number;
-  panY: number;
-  isSpacePressed: boolean; // for spacebar pan
-  isPanning: boolean;
-  showSafeArea: boolean;
-}
-
-export const DEFAULT_UI_STATE: EditorUIState = {
-  selectedId: null,
-  tool: "select",
-  zoom: 1,
-  panX: 0,
-  panY: 0,
-  isSpacePressed: false,
-  isPanning: false,
-  showSafeArea: true,
 };
 
 // ============================================================================

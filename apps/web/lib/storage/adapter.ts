@@ -81,25 +81,6 @@ export interface StorageAdapter {
 // ============================================
 
 /**
- * Generate a unique storage key for thumbnail images.
- */
-export function thumbnailKey(
-  type: "base" | "final",
-  jobId: string,
-  variantId: string,
-  ext: string = "png"
-): string {
-  return `thumbnails/${jobId}/${type}-${variantId}.${ext}`;
-}
-
-/**
- * Generate a storage key for uploaded assets.
- */
-export function assetKey(assetId: string, ext: string): string {
-  return `assets/${assetId}.${ext}`;
-}
-
-/**
  * Extract extension from MIME type.
  */
 export function mimeToExt(mime: string): string {

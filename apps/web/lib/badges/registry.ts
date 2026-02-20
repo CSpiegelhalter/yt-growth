@@ -682,28 +682,8 @@ export const DEFAULT_GOALS: DefaultGoal[] = [
 ];
 
 /** Get badge by ID */
-export function getBadge(id: string): BadgeDef | undefined {
+function getBadge(id: string): BadgeDef | undefined {
   return BADGES.find((b) => b.id === id);
-}
-
-/** Get badges by category */
-export function getBadgesByCategory(category: BadgeCategory): BadgeDef[] {
-  return BADGES.filter((b) => b.category === category).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-}
-
-/** Get badges by rarity */
-export function getBadgesByRarity(rarity: string): BadgeDef[] {
-  return BADGES.filter((b) => b.rarity === rarity);
-}
-
-/** Get goal by ID */
-export function getGoal(id: string): DefaultGoal | undefined {
-  return DEFAULT_GOALS.find((g) => g.id === id);
-}
-
-/** Get goals by category */
-export function getGoalsByCategory(category: BadgeCategory): DefaultGoal[] {
-  return DEFAULT_GOALS.filter((g) => g.category === category);
 }
 
 /** Get goals that contribute to a badge */

@@ -137,7 +137,7 @@ export function resetGoogleApiUsageStats() {
   googleApiStats.quotaExceededSeen = false;
 }
 
-export async function getAccessToken(
+async function getAccessToken(
   ga: GA,
   forceRefresh = false
 ): Promise<string> {
@@ -167,7 +167,7 @@ export async function getAccessToken(
   }
 }
 
-export async function refreshAccessToken(ga: GA): Promise<string> {
+async function refreshAccessToken(ga: GA): Promise<string> {
   if (!ga.refreshTokenEnc) throw new Error("No refresh token saved");
 
   const params = new URLSearchParams({

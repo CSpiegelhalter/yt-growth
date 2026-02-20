@@ -241,5 +241,3 @@ function getDiagnosis(
 
   return null;
 }
-
-export default TrafficSourcePanel;

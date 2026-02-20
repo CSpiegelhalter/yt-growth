@@ -176,7 +176,7 @@ export type ZScoreResult = {
 /**
  * Extended totals that may include impression/CTR data
  */
-export type ExtendedAnalyticsTotals = AnalyticsTotals & {
+type ExtendedAnalyticsTotals = AnalyticsTotals & {
   impressions?: number | null;
   impressionsCtr?: number | null;
   trafficSources?: TrafficSourceBreakdown | null;
@@ -666,36 +666,6 @@ export function getEngagementGrade(engagementPerView: number | null): {
   return { grade: "Needs Work", color: "red" };
 }
 
-/**
- * Format duration in seconds to human readable
- */
-export function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  }
-  return `${secs}s`;
-}
-
-// Re-export formatCompact from lib/format for backwards compat
-export { formatCompact } from "@/lib/format";
-
-/**
- * Format percentage
- */
-export function formatPercent(
-  value: number | null,
-  decimals: number = 1,
-): string {
-  if (value == null) return "-";
-  return `${(value * 100).toFixed(decimals)}%`;
-}
 
 // ============================================
 // BOTTLENECK DETECTION

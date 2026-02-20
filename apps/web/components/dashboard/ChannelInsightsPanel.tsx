@@ -748,5 +748,3 @@ function generateCombinedTrendData(
 
   return points;
 }
-
-export default ChannelInsightsPanel;

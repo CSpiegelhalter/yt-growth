@@ -11,7 +11,7 @@ import { useCallback, useRef, useState } from "react";
 import type { EditorDocument, HistoryEntry, HistoryState } from "../types";
 import { MAX_HISTORY_SIZE } from "../constants";
 
-export interface UseEditorHistoryReturn {
+interface UseEditorHistoryReturn {
   document: EditorDocument;
   setDocument: (doc: EditorDocument, description?: string) => void;
   undo: () => void;
@@ -127,7 +127,7 @@ export function useEditorHistory(initialDocument: EditorDocument): UseEditorHist
 // REDUCER VERSION (for testing and more complex scenarios)
 // ============================================================================
 
-export type HistoryAction =
+type HistoryAction =
   | { type: "SET"; document: EditorDocument; description?: string }
   | { type: "UNDO" }
   | { type: "REDO" }

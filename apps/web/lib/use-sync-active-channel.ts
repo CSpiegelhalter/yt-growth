@@ -11,14 +11,14 @@ const ACTIVE_CHANNEL_STORAGE_KEY = "activeChannelId";
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-export type UseSyncActiveChannelOptions = {
+type UseSyncActiveChannelOptions = {
   channels: Array<{ channel_id: string }>;
   initialActiveChannelId?: string | null;
   urlChannelId?: string | null;
   onChange?: (id: string | null) => void;
 };
 
-export type UseSyncActiveChannelReturn = {
+type UseSyncActiveChannelReturn = {
   activeChannelId: string | null;
   setActiveChannelId: (id: string | null) => void;
   isHydrated: boolean;

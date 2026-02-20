@@ -104,10 +104,6 @@ export function sumSubsGainedInWindow(videos: VideoForBadges[], window: string):
   return getVideosInWindow(videos, window).reduce((sum, v) => sum + (v.subscribersGained ?? 0), 0);
 }
 
-export function sumCommentsInWindow(videos: VideoForBadges[], window: string): number {
-  return getVideosInWindow(videos, window).reduce((sum, v) => sum + (v.comments ?? 0), 0);
-}
-
 // ============================================
 // STREAK CALCULATIONS
 // ============================================
@@ -202,7 +198,7 @@ function getViewsPerDay(video: VideoForBadges): number {
 }
 
 /** Check if video is in top X% of views/day */
-export function isInTopPercentViewsPerDay(
+function isInTopPercentViewsPerDay(
   videos: VideoForBadges[],
   targetPercentile: number
 ): boolean {
@@ -217,7 +213,7 @@ export function isInTopPercentViewsPerDay(
 }
 
 /** Check if latest video has 2x median views/day */
-export function hasBreakoutVideo(videos: VideoForBadges[]): boolean {
+function hasBreakoutVideo(videos: VideoForBadges[]): boolean {
   const sorted = getLastNUploads(videos, 10);
   if (sorted.length < 5) return false;
   
@@ -229,7 +225,7 @@ export function hasBreakoutVideo(videos: VideoForBadges[]): boolean {
 }
 
 /** Check if a video is still getting views 30+ days later */
-export function hasEvergreenVideo(videos: VideoForBadges[]): boolean {
+function hasEvergreenVideo(videos: VideoForBadges[]): boolean {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
@@ -244,7 +240,7 @@ export function hasEvergreenVideo(videos: VideoForBadges[]): boolean {
 }
 
 /** Check if last 5 videos average more views than previous 5 */
-export function hasUpwardTrend(videos: VideoForBadges[]): boolean {
+function hasUpwardTrend(videos: VideoForBadges[]): boolean {
   const sorted = getLastNUploads(videos, 10);
   if (sorted.length < 10) return false;
   
@@ -255,17 +251,17 @@ export function hasUpwardTrend(videos: VideoForBadges[]): boolean {
 }
 
 /** Get max views on any single video */
-export function getMaxVideoViews(videos: VideoForBadges[]): number {
+function getMaxVideoViews(videos: VideoForBadges[]): number {
   return Math.max(0, ...videos.map((v) => v.views ?? 0));
 }
 
 /** Get max comments on any single video */
-export function getMaxVideoComments(videos: VideoForBadges[]): number {
+function getMaxVideoComments(videos: VideoForBadges[]): number {
   return Math.max(0, ...videos.map((v) => v.comments ?? 0));
 }
 
 /** Get max like rate on any single video */
-export function getMaxLikeRate(videos: VideoForBadges[]): number {
+function getMaxLikeRate(videos: VideoForBadges[]): number {
   let max = 0;
   for (const v of videos) {
     if (v.views && v.views >= 500 && v.likes) {
@@ -285,7 +281,7 @@ export function avgLikeRateLastN(videos: VideoForBadges[], n: number): number {
 }
 
 /** Get average CTR across last N uploads */
-export function avgCtrLastN(videos: VideoForBadges[], n: number): number {
+function avgCtrLastN(videos: VideoForBadges[], n: number): number {
   const lastN = getLastNUploads(videos, n).filter((v) => v.ctr != null);
   if (lastN.length < n) return 0;
   const total = lastN.reduce((sum, v) => sum + (v.ctr ?? 0), 0);
@@ -301,7 +297,7 @@ export function avgRetentionLastN(videos: VideoForBadges[], n: number): number {
 }
 
 /** Check for net positive subs for N consecutive weeks */
-export function hasNetPositiveSubsWeeks(videos: VideoForBadges[], weeks: number): boolean {
+function hasNetPositiveSubsWeeks(videos: VideoForBadges[], weeks: number): boolean {
   // Group videos by week
   const now = new Date();
   for (let w = 0; w < weeks; w++) {
@@ -325,7 +321,7 @@ export function hasNetPositiveSubsWeeks(videos: VideoForBadges[], weeks: number)
 }
 
 /** Check if came back after 30+ day break */
-export function hasReturnedAfterBreak(videos: VideoForBadges[]): boolean {
+function hasReturnedAfterBreak(videos: VideoForBadges[]): boolean {
   const sorted = [...videos]
     .filter((v) => v.publishedAt)
     .sort((a, b) => new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime());
@@ -343,7 +339,7 @@ export function hasReturnedAfterBreak(videos: VideoForBadges[]): boolean {
 }
 
 /** Check for 2+ uploads per week for N weeks */
-export function hasDoubleUploadWeeks(videos: VideoForBadges[], weeks: number): boolean {
+function hasDoubleUploadWeeks(videos: VideoForBadges[], weeks: number): boolean {
   const now = new Date();
   let consecutiveWeeks = 0;
   
@@ -464,7 +460,7 @@ function formatValue(value: number, unit?: string): string {
   return value.toString();
 }
 
-export function computeBadgeProgress(
+function computeBadgeProgress(
   badge: BadgeDef,
   videos: VideoForBadges[],
   channelStats: ChannelStatsForBadges | undefined,
@@ -672,7 +668,7 @@ export function computeAllBadgesProgress(
 // GOAL PROGRESS
 // ============================================
 
-export function computeGoalProgress(
+function computeGoalProgress(
   goal: DefaultGoal,
   videos: VideoForBadges[],
   channelStats: ChannelStatsForBadges | undefined,

@@ -11,13 +11,18 @@ import {
   cleanupUsageCounters,
 } from "./setup";
 import {
-  getUsage,
   getUsageInfo,
   checkAndIncrement,
   checkUsage,
   resetUserUsage,
   getAllUsage,
 } from "@/lib/usage";
+import type { FeatureKey } from "@/lib/entitlements";
+
+async function getUsage(userId: number, featureKey: FeatureKey): Promise<number> {
+  const info = await getUsageInfo(userId, featureKey, 999999);
+  return info.used;
+}
 
 const TEST_EMAIL = "usage-test@example.com";
 

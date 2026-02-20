@@ -50,5 +50,3 @@ export function InsightCard({
     </div>
   );
 }
-
-export default InsightCard;

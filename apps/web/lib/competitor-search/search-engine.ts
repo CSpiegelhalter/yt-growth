@@ -47,7 +47,7 @@ import { searchNicheVideos, fetchVideosStatsBatch } from "@/lib/youtube";
  * @param signal - AbortSignal for cancellation
  * @param cursor - Optional cursor to resume from previous search
  */
-export async function* searchCompetitors(
+async function* searchCompetitors(
   ga: GoogleAccount,
   niche: InferredNiche,
   filters: CompetitorSearchFilters,

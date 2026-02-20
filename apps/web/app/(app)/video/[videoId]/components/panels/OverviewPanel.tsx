@@ -297,5 +297,3 @@ function getBottleneckDescription(bottleneck: BottleneckResult): string {
   };
   return typeLabels[bottleneck.bottleneck] ?? "Performance issue detected";
 }
-
-export default OverviewPanel;

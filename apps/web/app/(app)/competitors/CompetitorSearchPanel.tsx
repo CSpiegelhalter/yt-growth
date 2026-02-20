@@ -4,8 +4,6 @@ import { useState, useCallback, useEffect, type FormEvent } from "react";
 import { validateYouTubeUrl, validateNicheText } from "./utils";
 import s from "./style.module.css";
 
-export type SearchMode = "competitor_search" | "search_my_niche";
-
 type Props = {
   onSearch: (nicheText: string, referenceVideoUrl: string) => void;
   onSearchMyNiche: () => void;

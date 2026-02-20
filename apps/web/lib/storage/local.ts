@@ -16,7 +16,7 @@ import type {
 } from "./adapter";
 import { extToMime } from "./adapter";
 
-export type LocalStorageConfig = {
+type LocalStorageConfig = {
   basePath: string; // Absolute path to storage directory
   publicUrlPrefix: string; // URL prefix for public URLs (e.g., "/api/thumbnails/image")
 };
@@ -26,7 +26,7 @@ const DEFAULT_CONFIG: LocalStorageConfig = {
   publicUrlPrefix: "/api/thumbnails/image",
 };
 
-export class LocalStorageAdapter implements StorageAdapter {
+class LocalStorageAdapter implements StorageAdapter {
   private config: LocalStorageConfig;
 
   constructor(config?: Partial<LocalStorageConfig>) {

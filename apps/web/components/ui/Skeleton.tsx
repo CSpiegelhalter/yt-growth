@@ -34,18 +34,3 @@ export function Skeleton({
     />
   );
 }
-
-/**
- * VideoCardSkeleton - Complete video card loading state
- */
-export function VideoCardSkeleton({ className = "" }: { className?: string }) {
-  return (
-    <div className={`${styles.videoCard} ${className}`.trim()}>
-      <Skeleton variant="thumbnail" />
-      <div className={styles.videoCardContent}>
-        <Skeleton variant="text" width="90%" />
-        <Skeleton variant="text" width="50%" height="14px" />
-      </div>
-    </div>
-  );
-}

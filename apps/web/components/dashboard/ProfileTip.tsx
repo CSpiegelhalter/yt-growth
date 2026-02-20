@@ -118,5 +118,3 @@ export function ProfileTip({ channelId }: Props) {
     </div>
   );
 }
-
-export default ProfileTip;

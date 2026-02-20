@@ -123,7 +123,7 @@ export function buildMoreFromChannel(
 // BUILD FINAL RESPONSE
 // ============================================
 
-export type BuildResponseInput = {
+type BuildResponseInput = {
   video: CompetitorVideo;
   videoDetails: VideoDetailsResult;
   analysis: NormalizedAnalysis;

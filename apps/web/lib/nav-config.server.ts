@@ -92,25 +92,3 @@ export async function getFilteredNavItems(): Promise<{
   };
 }
 
-/**
- * Check if a path matches a nav item based on its match pattern.
- */
-export function matchNavItemPattern(
-  item: SerializableNavItem,
-  pathname: string
-): boolean {
-  switch (item.matchPattern) {
-    case "dashboard":
-      return pathname === "/dashboard" || pathname.startsWith("/video/");
-    case "competitors":
-      return pathname === "/competitors" || pathname.startsWith("/competitors/");
-    case "trending":
-      return pathname === "/trending";
-    case "tags":
-      return pathname === "/tags" || pathname.startsWith("/tags/");
-    case "keywords":
-      return pathname === "/keywords" || pathname.startsWith("/keywords/");
-    default:
-      return pathname === item.href;
-  }
-}

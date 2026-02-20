@@ -168,5 +168,3 @@ function MetricIndicator({
     </span>
   );
 }
-
-export default ShortsMetricsPanel;

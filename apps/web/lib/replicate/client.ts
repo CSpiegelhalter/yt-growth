@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import Replicate from "replicate";
 import { createLogger } from "@/lib/logger";
 
@@ -73,7 +72,7 @@ async function replicateFetch<T>(
   return json;
 }
 
-export type ReplicatePrediction = {
+type ReplicatePrediction = {
   id: string;
   status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
   input?: Record<string, unknown>;
@@ -133,7 +132,7 @@ export async function verifyModelVersion(
   }
 }
 
-export type ReplicateModel = {
+type ReplicateModel = {
   owner: string;
   name: string;
   visibility?: "public" | "private";
@@ -162,7 +161,7 @@ export async function createModel(input: {
   });
 }
 
-export type ReplicateFile = {
+type ReplicateFile = {
   id: string;
   urls: { get: string };
 };
@@ -208,7 +207,7 @@ export async function uploadFileToReplicate(input: {
   };
 }
 
-export type ReplicateTraining = {
+type ReplicateTraining = {
   id: string;
   status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
   error?: string | null;
@@ -331,11 +330,4 @@ export async function deleteModel(owner: string, name: string): Promise<void> {
       error: err instanceof Error ? err.message : String(err),
     });
   }
-}
-
-export function hmacSha256Hex(secret: string, payload: string): string {
-  return crypto
-    .createHmac("sha256", secret)
-    .update(payload, "utf8")
-    .digest("hex");
 }

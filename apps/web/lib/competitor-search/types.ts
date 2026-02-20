@@ -127,32 +127,6 @@ export type InferredNiche = {
 };
 
 // ============================================
-// SEARCH MODE TYPES
-// ============================================
-
-/**
- * Search mode determines the source of niche data.
- */
-export type SearchMode = "competitor_search" | "search_my_niche";
-
-/**
- * Complete search request combining mode, niche input, and filters.
- */
-export type CompetitorSearchRequest = {
-  mode: SearchMode;
-
-  // For "competitor_search" mode
-  nicheText?: string;
-  referenceVideoUrl?: string;
-
-  // For "search_my_niche" mode
-  channelId?: string;
-
-  // Filters apply to both modes
-  filters: CompetitorSearchFilters;
-};
-
-// ============================================
 // SEARCH RESULT TYPES
 // ============================================
 
@@ -296,16 +270,6 @@ export type SearchCursor = {
 // ============================================
 // CACHE TYPES
 // ============================================
-
-/**
- * Cache key components for stable key generation.
- */
-export type CacheKeyComponents = {
-  mode: SearchMode;
-  niche: string;
-  queryTerms: string[];
-  filters: CompetitorSearchFilters;
-};
 
 /**
  * Cached search results.

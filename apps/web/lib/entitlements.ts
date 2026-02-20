@@ -15,7 +15,7 @@ export type FeatureKey =
   | "keyword_research"
   | "tag_generate";
 
-export type PlanLimits = {
+type PlanLimits = {
   channels_connected: number;
   owned_video_analysis: number;
   competitor_video_analysis: number;

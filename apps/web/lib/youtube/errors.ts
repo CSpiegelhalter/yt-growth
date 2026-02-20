@@ -5,53 +5,6 @@
  */
 
 /**
- * Normalized YouTube API error for consistent handling.
- */
-export class YouTubeApiError extends Error {
-  code?: string;
-  status?: number;
-
-  constructor(message: string, code?: string, status?: number) {
-    super(message);
-    this.name = "YouTubeApiError";
-    this.code = code;
-    this.status = status;
-  }
-}
-
-/**
- * Normalize any error to a consistent shape.
- */
-export function normalizeYouTubeError(err: unknown): {
-  message: string;
-  code?: string;
-  status?: number;
-} {
-  if (err instanceof YouTubeApiError) {
-    return {
-      message: err.message,
-      code: err.code,
-      status: err.status,
-    };
-  }
-
-  if (err instanceof Error) {
-    // Try to extract status from error message pattern: "google_api_error_XXX: ..."
-    const statusMatch = err.message.match(/google_api_error_(\d+):/);
-    const status = statusMatch ? parseInt(statusMatch[1], 10) : undefined;
-
-    return {
-      message: err.message,
-      status,
-    };
-  }
-
-  return {
-    message: String(err),
-  };
-}
-
-/**
  * Check if error indicates comments are disabled on a video.
  */
 export function isCommentsDisabled(err: unknown): boolean {

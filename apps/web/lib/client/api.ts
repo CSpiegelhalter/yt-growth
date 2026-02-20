@@ -1,13 +1,4 @@
-export type ApiErrorResponse = {
-  error: {
-    code: string;
-    message: string;
-    requestId: string;
-  };
-  details?: unknown;
-};
-
-export class ApiClientError extends Error {
+class ApiClientError extends Error {
   status: number;
   code: string;
   requestId?: string;
@@ -108,11 +99,6 @@ export async function apiFetchJson<T>(
   }
 
   return body as T;
-}
-
-export function formatRequestId(err: unknown): string | null {
-  if (!isApiClientError(err)) return null;
-  return err.requestId ?? null;
 }
 
 

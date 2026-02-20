@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./ErrorState.module.css";
 
-export type ApiErrorInfo = {
+type ApiErrorInfo = {
   message: string;
   code?: string;
   status?: number;

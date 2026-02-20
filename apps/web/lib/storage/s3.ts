@@ -16,7 +16,7 @@ import type {
   GetOptions,
 } from "./adapter";
 
-export type S3StorageConfig = {
+type S3StorageConfig = {
   bucket: string;
   region: string;
   accessKeyId: string;
@@ -71,7 +71,7 @@ function arrayBufferToHex(buffer: ArrayBuffer): string {
     .join("");
 }
 
-export class S3StorageAdapter implements StorageAdapter {
+class S3StorageAdapter implements StorageAdapter {
   private config: S3StorageConfig;
 
   constructor(config: S3StorageConfig) {

@@ -9,7 +9,7 @@ import type { CompetitorVideoAnalysis, CompetitorVideo } from "@/types/api";
  * Get the base URL for internal API calls.
  * Prefers env vars, falls back to request headers.
  */
-export async function getBaseUrl(): Promise<string> {
+async function getBaseUrl(): Promise<string> {
   // Check environment variables first
   if (process.env.SITE_URL) {
     return process.env.SITE_URL;
@@ -35,7 +35,7 @@ export async function getBaseUrl(): Promise<string> {
  * Parse error from API response.
  * Supports { error: { message } }, { error: "string" }, and fallback.
  */
-export function parseErrorMessage(data: unknown): string {
+function parseErrorMessage(data: unknown): string {
   if (!data || typeof data !== "object") {
     return "Failed to load analysis";
   }
@@ -63,7 +63,7 @@ export function parseErrorMessage(data: unknown): string {
   return "Failed to load analysis";
 }
 
-export type FetchAnalysisResult =
+type FetchAnalysisResult =
   | { ok: true; data: CompetitorVideoAnalysis }
   | { ok: false; error: string };
 
@@ -112,7 +112,7 @@ export async function fetchCompetitorVideoAnalysis(
   }
 }
 
-export type FetchMoreResult =
+type FetchMoreResult =
   | { ok: true; data: CompetitorVideo[] }
   | { ok: false; error: string };
 

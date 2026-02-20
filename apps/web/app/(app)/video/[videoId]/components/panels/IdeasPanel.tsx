@@ -118,5 +118,3 @@ export function IdeasPanel({
     </div>
   );
 }
-
-export default IdeasPanel;

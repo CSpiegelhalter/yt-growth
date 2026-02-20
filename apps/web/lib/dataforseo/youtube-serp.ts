@@ -180,20 +180,6 @@ function parseYouTubeItem(item: YouTubeOrganicItem): YouTubeRankingResult {
   };
 }
 
-/**
- * Format view count for display (e.g., 1200000 -> "1.2M")
- */
-export function formatViews(views: number | null): string {
-  if (views === null || views === undefined) return "—";
-  if (views >= 1_000_000) {
-    return `${(views / 1_000_000).toFixed(1)}M`;
-  }
-  if (views >= 1_000) {
-    return `${(views / 1_000).toFixed(1)}K`;
-  }
-  return views.toString();
-}
-
 // ============================================
 // MAIN API FUNCTION
 // ============================================

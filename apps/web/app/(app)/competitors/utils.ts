@@ -8,7 +8,7 @@
 // URL VALIDATION
 // ============================================
 
-export type UrlValidationResult = {
+type UrlValidationResult = {
   isValid: boolean;
   videoId: string | null;
   error: string | null;

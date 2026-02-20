@@ -97,30 +97,6 @@ export const CANONICAL_ORIGIN = normalizeCanonicalOrigin(
 );
 
 /**
- * SEO-focused keywords and phrases
- */
-export const SEO = {
-  primary: [
-    "youtube growth tool",
-    "youtube analytics tool",
-    "youtube channel audit",
-    "youtube retention analysis",
-    "youtube competitor analysis",
-    "youtube video ideas generator",
-  ],
-  secondary: [
-    "get more subscribers on youtube",
-    "get more views on youtube",
-    "improve youtube watch time",
-    "youtube content strategy",
-    "youtube trending videos in niche",
-    "youtube outlier videos",
-    "youtube video performance insights",
-    "youtube creator dashboard",
-  ],
-} as const;
-
-/**
  * Feature pillars for landing page and marketing
  */
 export const FEATURES = {

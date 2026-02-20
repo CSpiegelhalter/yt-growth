@@ -14,7 +14,7 @@ import {
   ChannelProfileAI,
 } from "@/lib/channel-profile/types";
 
-export type UseChannelProfileResult = {
+type UseChannelProfileResult = {
   // State
   profile: ChannelProfile | null;
   loading: boolean;

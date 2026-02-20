@@ -3,7 +3,7 @@ import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
 import { ApiError } from "./errors";
 import { getCurrentUserWithSubscription, type AuthUserWithSubscription } from "@/lib/user";
 
-export type AuthMode = "required" | "optional";
+type AuthMode = "required" | "optional";
 
 export type ApiAuthContext = ApiRequestContext & {
   user?: AuthUserWithSubscription;

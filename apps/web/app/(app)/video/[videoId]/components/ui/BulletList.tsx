@@ -43,5 +43,3 @@ export function BulletList({ type, items, title }: BulletListProps) {
     </div>
   );
 }
-
-export default BulletList;

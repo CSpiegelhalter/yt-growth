@@ -12,7 +12,7 @@
 // DURATION FORMATTING
 // ============================================
 
-export type DurationBucket = "Shorts" | "Short" | "Medium" | "Long" | "Very Long";
+type DurationBucket = "Shorts" | "Short" | "Medium" | "Long" | "Very Long";
 
 /**
  * Format duration consistently across the app.
@@ -69,7 +69,7 @@ export function getDurationBucket(seconds: number): DurationBucket {
 /**
  * Get a human-readable duration with bucket label
  */
-export function formatDurationWithBucket(seconds: number): {
+function formatDurationWithBucket(seconds: number): {
   formatted: string;
   bucket: DurationBucket;
   bucketLabel: string;
@@ -96,7 +96,7 @@ export function formatDurationWithBucket(seconds: number): {
 // NUMBER/QUANTIFIER DETECTION
 // ============================================
 
-export type NumberType =
+type NumberType =
   | "ranking" // #1, Ranked #5, Top 10
   | "list_count" // 5 tips, 10 ways, 7 mistakes
   | "episode" // Part 2, Episode 51, Day 30
@@ -107,7 +107,7 @@ export type NumberType =
   | "year" // 2024, 2025
   | "none";
 
-export type NumberAnalysis = {
+type NumberAnalysis = {
   hasNumber: boolean;
   type: NumberType;
   value: string | null;
@@ -287,7 +287,7 @@ export function analyzeNumberInTitle(title: string): NumberAnalysis {
 // TITLE TRUNCATION ANALYSIS
 // ============================================
 
-export type TruncationAnalysis = {
+type TruncationAnalysis = {
   totalChars: number;
   mobileLimit: number;
   desktopLimit: number;
@@ -364,7 +364,7 @@ export function detectChapters(description: string): {
 // EXTERNAL LINKS DETECTION
 // ============================================
 
-export type ExternalLinkAnalysis = {
+type ExternalLinkAnalysis = {
   hasLinks: boolean;
   linkCount: number;
   domains: string[];
@@ -441,7 +441,7 @@ export function analyzeExternalLinks(description: string): ExternalLinkAnalysis 
 // HASHTAG ANALYSIS
 // ============================================
 
-export type HashtagAnalysis = {
+type HashtagAnalysis = {
   count: number;
   hashtags: string[];
   inTitle: string[];
@@ -470,155 +470,10 @@ export function analyzeHashtags(title: string, description: string): HashtagAnal
 }
 
 // ============================================
-// POSTING TIME ANALYSIS
-// ============================================
-
-export type PostingTimeAnalysis = {
-  dayOfWeek: string;
-  hourOfDay: number;
-  localTimeFormatted: string;
-  daysAgo: number;
-  isWeekend: boolean;
-  // We can only say "off-peak" if we have channel history
-  peakLabel: string | null;
-  hasChannelHistory: boolean;
-  confidence: "Measured" | "Inferred";
-};
-
-/**
- * Analyze posting time.
- *
- * IMPORTANT: We cannot label times as "off-peak" without channel upload history.
- * This function only provides the measured data; peak labeling requires
- * the competitor channel's upload pattern data.
- */
-export function analyzePostingTime(
-  publishedAt: string,
-  channelUploadHistory?: Array<{ publishedAt: string }>
-): PostingTimeAnalysis {
-  const date = new Date(publishedAt);
-  const now = new Date();
-
-  const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
-  const hourOfDay = date.getHours();
-  const daysAgo = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-
-  const localTimeFormatted = date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-
-  // Only compute peak label if we have channel history
-  let peakLabel: string | null = null;
-  let hasChannelHistory = false;
-
-  if (channelUploadHistory && channelUploadHistory.length >= 10) {
-    hasChannelHistory = true;
-
-    // Compute typical upload hours for this channel
-    const uploadHours = channelUploadHistory.map((v) => new Date(v.publishedAt).getHours());
-    const hourCounts = new Map<number, number>();
-    uploadHours.forEach((h) => hourCounts.set(h, (hourCounts.get(h) || 0) + 1));
-
-    // Find peak hours (hours with above-average uploads)
-    const avgUploads = uploadHours.length / 24;
-    const peakHours = [...hourCounts.entries()]
-      .filter(([, count]) => count > avgUploads * 1.5)
-      .map(([hour]) => hour);
-
-    if (peakHours.length > 0) {
-      const isPeakHour = peakHours.includes(hourOfDay);
-      peakLabel = isPeakHour
-        ? "Posted during this channel's typical upload window"
-        : "Posted outside this channel's typical upload window";
-    }
-  }
-
-  return {
-    dayOfWeek,
-    hourOfDay,
-    localTimeFormatted,
-    daysAgo,
-    isWeekend,
-    peakLabel,
-    hasChannelHistory,
-    confidence: hasChannelHistory ? "Measured" : "Inferred",
-  };
-}
-
-// ============================================
-// CONFIDENCE LABELS
-// ============================================
-
-export type ConfidenceLevel = "High" | "Medium" | "Low";
-export type MeasurementType = "Measured" | "Inferred";
-
-/**
- * Get confidence level for competitor insights.
- *
- * For competitor videos, we have limited data:
- * - HIGH: Direct public metrics (views, likes, comments, description content)
- * - MEDIUM: Computed from public data (like rate, views/day, patterns)
- * - LOW: Inferred/guessed (posting time effectiveness, "optimized for retention")
- */
-export function getInsightConfidence(insightType: string): {
-  level: ConfidenceLevel;
-  measurement: MeasurementType;
-  tooltip: string;
-} {
-  const highConfidenceInsights = [
-    "views",
-    "likes",
-    "comments",
-    "description_length",
-    "title_length",
-    "hashtag_count",
-    "chapter_count",
-    "link_count",
-    "video_age",
-    "duration",
-  ];
-
-  const mediumConfidenceInsights = [
-    "views_per_day",
-    "like_rate",
-    "comment_rate",
-    "engagement_per_view",
-    "title_patterns",
-    "number_analysis",
-    "truncation",
-  ];
-
-  if (highConfidenceInsights.includes(insightType)) {
-    return {
-      level: "High",
-      measurement: "Measured",
-      tooltip: "Directly measured from public YouTube data",
-    };
-  }
-
-  if (mediumConfidenceInsights.includes(insightType)) {
-    return {
-      level: "Medium",
-      measurement: "Measured",
-      tooltip: "Computed from public metrics (views, likes, comments)",
-    };
-  }
-
-  return {
-    level: "Low",
-    measurement: "Inferred",
-    tooltip: "Inferred pattern - CTR and retention not available for competitor videos",
-  };
-}
-
-// ============================================
 // PUBLIC SIGNALS COMPUTATION
 // ============================================
 
-export type CompetitorPublicSignals = {
+type CompetitorPublicSignals = {
   // Core metrics
   videoAgeDays: number;
   viewsPerDay: number;
@@ -734,146 +589,10 @@ export function computePublicSignals(input: {
 }
 
 // ============================================
-// SAFE NUMERIC FORMATTING
-// ============================================
-
-/**
- * Safely format a numeric value, handling undefined/null/NaN
- */
-export function safeNumber(value: number | null | undefined, fallback = 0): number {
-  if (value == null || !Number.isFinite(value)) return fallback;
-  return value;
-}
-
-/**
- * Format a rate as percentage string
- */
-export function formatRate(value: number | null | undefined, decimals = 1): string {
-  if (value == null || !Number.isFinite(value)) return "—";
-  return `${value.toFixed(decimals)}%`;
-}
-
-/**
- * Format a per-1K metric
- */
-export function formatPer1k(value: number | null | undefined, decimals = 1): string {
-  if (value == null || !Number.isFinite(value)) return "—";
-  return value.toFixed(decimals);
-}
-
-// ============================================
-// CHANNEL BASELINES (from last N uploads)
-// ============================================
-
-export type ChannelBaselines = {
-  available: boolean;
-  videoCount: number;
-  medianLikeRate: number | null;
-  medianCommentsPer1k: number | null;
-  medianViewsPerDay: number | null;
-  medianDurationSec: number | null;
-  // Length distribution
-  lengthDistribution: {
-    shorts: number;
-    short: number;
-    medium: number;
-    long: number;
-    veryLong: number;
-  };
-  // Computed at
-  computedAt: string;
-};
-
-/**
- * Compute channel baselines from a list of recent videos.
- * 
- * This enables "Below Average" labels to be relative to the competitor's
- * channel performance, not just platform averages.
- * 
- * @param videos Array of video stats from the competitor channel
- * @returns Channel baselines with medians
- */
-export function computeChannelBaselines(
-  videos: Array<{
-    viewCount: number;
-    likeCount?: number | null;
-    commentCount?: number | null;
-    durationSec?: number | null;
-    publishedAt: string;
-  }>
-): ChannelBaselines {
-  if (!videos || videos.length < 3) {
-    return {
-      available: false,
-      videoCount: videos?.length ?? 0,
-      medianLikeRate: null,
-      medianCommentsPer1k: null,
-      medianViewsPerDay: null,
-      medianDurationSec: null,
-      lengthDistribution: { shorts: 0, short: 0, medium: 0, long: 0, veryLong: 0 },
-      computedAt: new Date().toISOString(),
-    };
-  }
-
-  const now = Date.now();
-
-  // Compute metrics for each video
-  const metrics = videos.map((v) => {
-    const publishedMs = new Date(v.publishedAt).getTime();
-    const ageDays = Math.max(1, (now - publishedMs) / (1000 * 60 * 60 * 24));
-    const viewsPerDay = v.viewCount / ageDays;
-
-    const likeRate = v.viewCount > 0 && v.likeCount
-      ? (v.likeCount / v.viewCount) * 100
-      : null;
-
-    const commentsPer1k = v.viewCount > 0 && v.commentCount
-      ? (v.commentCount / v.viewCount) * 1000
-      : null;
-
-    const durationSec = v.durationSec ?? null;
-    const bucket = durationSec ? getDurationBucket(durationSec) : null;
-
-    return { viewsPerDay, likeRate, commentsPer1k, durationSec, bucket };
-  });
-
-  // Helper to compute median
-  function median(values: number[]): number | null {
-    const filtered = values.filter((v) => v != null && Number.isFinite(v));
-    if (filtered.length === 0) return null;
-    filtered.sort((a, b) => a - b);
-    const mid = Math.floor(filtered.length / 2);
-    return filtered.length % 2 !== 0
-      ? filtered[mid]
-      : (filtered[mid - 1] + filtered[mid]) / 2;
-  }
-
-  // Compute length distribution
-  const lengthDistribution = {
-    shorts: metrics.filter((m) => m.bucket === "Shorts").length,
-    short: metrics.filter((m) => m.bucket === "Short").length,
-    medium: metrics.filter((m) => m.bucket === "Medium").length,
-    long: metrics.filter((m) => m.bucket === "Long").length,
-    veryLong: metrics.filter((m) => m.bucket === "Very Long").length,
-  };
-
-  return {
-    available: true,
-    videoCount: videos.length,
-    medianLikeRate: median(metrics.map((m) => m.likeRate).filter((v): v is number => v !== null)),
-    medianCommentsPer1k: median(metrics.map((m) => m.commentsPer1k).filter((v): v is number => v !== null)),
-    medianViewsPerDay: median(metrics.map((m) => m.viewsPerDay)),
-    medianDurationSec: median(metrics.map((m) => m.durationSec).filter((v): v is number => v !== null)),
-    lengthDistribution,
-    computedAt: new Date().toISOString(),
-  };
-}
-
-// ============================================
 // ENGAGEMENT OUTLIER DETECTION
 // ============================================
 
-export type EngagementOutlierResult = {
+type EngagementOutlierResult = {
   /** The computed engagement score: (likes + comments) / views */
   engagementScore: number;
   /** Whether this video has exceptional engagement */
@@ -1048,45 +767,4 @@ export function detectEngagementOutlier(input: {
     explanation: `${engagementPct.toFixed(1)}% engagement rate. Lower than typical.`,
     method: "heuristic_threshold",
   };
-}
-
-/**
- * Compare a video's metrics to channel baselines and return verdict
- */
-export function compareToBaseline(
-  value: number | null,
-  baseline: number | null,
-  metric: "likeRate" | "commentsPer1k" | "viewsPerDay"
-): {
-  verdict: "Below Average" | "Average" | "Above Average" | "Exceptional" | "Unknown";
-  delta: number | null;
-  baselineAvailable: boolean;
-} {
-  if (value == null || !Number.isFinite(value)) {
-    return { verdict: "Unknown", delta: null, baselineAvailable: false };
-  }
-
-  if (baseline == null || !Number.isFinite(baseline)) {
-    // Fall back to platform averages
-    const platformAvg: Record<string, number> = {
-      likeRate: 3.0, // ~3% is typical
-      commentsPer1k: 2.0, // ~2 comments per 1K views
-      viewsPerDay: 1000, // varies widely
-    };
-    const avg = platformAvg[metric] ?? 0;
-    const ratio = value / avg;
-
-    if (ratio < 0.5) return { verdict: "Below Average", delta: null, baselineAvailable: false };
-    if (ratio < 1.5) return { verdict: "Average", delta: null, baselineAvailable: false };
-    if (ratio < 3) return { verdict: "Above Average", delta: null, baselineAvailable: false };
-    return { verdict: "Exceptional", delta: null, baselineAvailable: false };
-  }
-
-  const ratio = value / baseline;
-  const delta = value - baseline;
-
-  if (ratio < 0.5) return { verdict: "Below Average", delta, baselineAvailable: true };
-  if (ratio < 1.5) return { verdict: "Average", delta, baselineAvailable: true };
-  if (ratio < 2.5) return { verdict: "Above Average", delta, baselineAvailable: true };
-  return { verdict: "Exceptional", delta, baselineAvailable: true };
 }

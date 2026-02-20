@@ -129,16 +129,6 @@ export type FetchCommentsResult = {
 };
 
 /**
- * Competitor video (minimal info from search).
- */
-export type CompetitorVideo = {
-  videoId: string;
-  title: string;
-  channelTitle: string;
-  publishedAt: string;
-};
-
-/**
  * Video statistics batch result.
  */
 export type VideoStats = {

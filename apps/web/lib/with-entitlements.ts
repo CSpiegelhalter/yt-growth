@@ -31,13 +31,13 @@ import {
 // TYPES
 // ============================================
 
-export type EntitlementContext = {
+type EntitlementContext = {
   user: AuthUserWithSubscription;
   plan: Plan;
   usage: UsageCheckResult | null;
 };
 
-export type EntitlementError =
+type EntitlementError =
   | {
       type: "unauthorized";
       status: 401;
@@ -66,7 +66,7 @@ export type EntitlementError =
       };
     };
 
-export type EntitlementCheckResult =
+type EntitlementCheckResult =
   | { ok: true; context: EntitlementContext }
   | { ok: false; error: EntitlementError };
 

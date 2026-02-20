@@ -10,8 +10,8 @@ import { z } from "zod";
 // Shared channel + video param schemas (used by owned-video insights routes)
 // ---------------------------------------------------------------------------
 
-export const channelIdSchema = z.string().min(1);
-export const videoIdSchema = z.string().min(1);
+const channelIdSchema = z.string().min(1);
+const videoIdSchema = z.string().min(1);
 
 export const channelParamsSchema = z.object({
   channelId: channelIdSchema,
@@ -26,11 +26,11 @@ export const channelVideoParamsSchema = z.object({
 // Competitor video-detail schemas (existing – do not modify)
 // ---------------------------------------------------------------------------
 
-export const ParamsSchema = z.object({
+const ParamsSchema = z.object({
   videoId: z.string().min(1, "Video ID is required"),
 });
 
-export const QuerySchema = z.object({
+const QuerySchema = z.object({
   channelId: z.string().min(1, "Channel ID is required"),
   includeMoreFromChannel: z
     .union([z.literal("0"), z.literal("1")])
@@ -38,8 +38,8 @@ export const QuerySchema = z.object({
     .default("1"),
 });
 
-export type ValidatedParams = z.infer<typeof ParamsSchema>;
-export type ValidatedQuery = z.infer<typeof QuerySchema>;
+type ValidatedParams = z.infer<typeof ParamsSchema>;
+type ValidatedQuery = z.infer<typeof QuerySchema>;
 
 /**
  * Parse and validate route params.

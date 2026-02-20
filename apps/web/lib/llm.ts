@@ -1,10 +1,10 @@
 
-export type LLMMessage = {
+type LLMMessage = {
   role: "system" | "user" | "assistant";
   content: string;
 };
 
-export type LLMResponse = {
+type LLMResponse = {
   content: string;
   tokensUsed: number;
   model: string;
@@ -92,33 +92,7 @@ export async function callLLM(
   };
 }
 
-export type PlanTopicJson = {
-  id: string;
-  title: string;
-  why: string;
-  confidence: "high" | "medium" | "exploratory";
-  angles: string[];
-  hooks: string[];
-  titles: Array<{ text: string; tags?: string[] }>;
-  keywords: string[];
-  thumbnail: {
-    overlayText?: string;
-    layout?: string;
-    notes: string[];
-    avoid: string[];
-  };
-};
-
-export type PlanOutputJson = {
-  topics: PlanTopicJson[];
-  nicheInsights: {
-    whatIsWorkingNow: string[];
-    formatsToCopy: string[];
-    doDont: { do: string[]; dont: string[] };
-  };
-};
-
-export type PatternAnalysisJson = {
+type PatternAnalysisJson = {
   summary: string;
   commonPatterns: string[];
   ctaPatterns: string[];
@@ -1058,7 +1032,7 @@ Keep it niche-specific and actionable. The systemPrompt should be detailed enoug
 
 IMPORTANT: Return ONLY valid JSON, no markdown, no explanation.`;
 
-export type NichePersona = {
+type NichePersona = {
   niche: string;
   systemPrompt: string;
 };
@@ -1068,7 +1042,7 @@ export type NichePersona = {
  * This function calls the LLM to analyze the channel's content and create
  * a custom system prompt tailored to their specific niche.
  */
-export async function generateNichePersona(
+async function generateNichePersona(
   titles: string[],
   tags: string[],
   category?: string | null

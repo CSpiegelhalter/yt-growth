@@ -1,6 +1,6 @@
 import sharp from "sharp";
 
-export type NormalizedImage = {
+type NormalizedImage = {
   bytes: Buffer;
   width: number;
   height: number;

@@ -22,30 +22,14 @@ import {
   validatePhrase,
   validateLocation,
   validateKeywords,
-  generateRequestHash,
   calculateDifficultyHeuristic,
   parseNumeric,
   parseInteger,
   parseMonthlyTrend,
   isRestrictedCategoryError,
   DataForSEOError,
-  SUPPORTED_LOCATIONS,
-  type LocationCode,
-  type DataForSEOErrorCode,
 } from "./utils";
 
-// Re-export utilities for external use
-export {
-  validatePhrase,
-  validateLocation,
-  validateKeywords,
-  generateRequestHash,
-  calculateDifficultyHeuristic,
-  DataForSEOError,
-  SUPPORTED_LOCATIONS,
-  type LocationCode,
-  type DataForSEOErrorCode,
-};
 
 // ============================================
 // CONFIGURATION
@@ -181,7 +165,7 @@ export type GoogleTrendsResponse = {
 /**
  * Result of a task_post request.
  */
-export type TaskPostResult = {
+type TaskPostResult = {
   taskId: string;
   status: "queued" | "in_queue";
 };
@@ -189,7 +173,7 @@ export type TaskPostResult = {
 /**
  * Result of a task_get request.
  */
-export type TaskGetResult<T> = {
+type TaskGetResult<T> = {
   status: "completed" | "pending" | "error";
   data?: T;
   error?: string;
@@ -1135,7 +1119,7 @@ type GoogleTrendsResult = {
  * 
  * Endpoint: POST /v3/keywords_data/google_trends/explore/task_post
  */
-export async function postGoogleTrendsTask(options: {
+async function postGoogleTrendsTask(options: {
   keywords: string[];
   location?: string;
   dateFrom?: string;

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { callLLM } from "@/lib/llm";
 import type { ThumbnailStyleV2 } from "@/lib/thumbnails-v2/styleModels";
 
-export type BuildThumbnailPromptInput = {
+type BuildThumbnailPromptInput = {
   style: ThumbnailStyleV2;
   styleTriggerWord: string;
   userText: string;
@@ -10,14 +10,14 @@ export type BuildThumbnailPromptInput = {
   variants: number; // 1-4
 };
 
-export type BuiltVariant = {
+type BuiltVariant = {
   finalPrompt: string;
   negativePrompt: string;
   replicateInput: Record<string, unknown>;
   variationNote: string;
 };
 
-export type BuildThumbnailPromptOutput = {
+type BuildThumbnailPromptOutput = {
   variants: BuiltVariant[];
 };
 

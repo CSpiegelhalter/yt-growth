@@ -1,7 +1,7 @@
 import Link from "next/link";
 import s from "./Tabs.module.css";
 
-export type TabItem = {
+type TabItem = {
   id: string;
   label: string;
   href?: string;

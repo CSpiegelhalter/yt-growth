@@ -20,7 +20,7 @@ import type { StaticImageData } from "next/image";
 import { ActiveToc } from "./ActiveToc";
 import styles from "../../style.module.css";
 
-export interface TocItem {
+interface TocItem {
   readonly id: string;
   readonly label: string;
   readonly level?: number;

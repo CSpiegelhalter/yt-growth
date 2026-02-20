@@ -29,7 +29,7 @@ export type RateLimitConfig = {
   windowSec: number;
 };
 
-export type RateLimitResult = {
+type RateLimitResult = {
   success: boolean;
   remaining: number;
   resetAt: number;

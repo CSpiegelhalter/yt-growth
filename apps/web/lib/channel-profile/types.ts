@@ -45,27 +45,6 @@ export const CONTENT_FORMATS = [
   "Documentaries",
 ] as const;
 
-export const TONE_STYLES = [
-  "Funny",
-  "Serious",
-  "High-energy",
-  "Calm",
-  "Analytical",
-  "Storytelling",
-  "Inspirational",
-  "Opinionated",
-] as const;
-
-export const CHANNEL_GOALS = [
-  "Subscribers",
-  "Views",
-  "Watch time",
-  "Revenue",
-  "Community",
-  "Sponsorships",
-  "Course sales",
-  "Brand building",
-] as const;
 
 // Cache duration: 3 days
 export const PROFILE_CACHE_DAYS = 3;
@@ -127,32 +106,6 @@ export type ChannelProfile = {
   updatedAt: string;
 };
 
-// ============================================
-// API REQUEST/RESPONSE TYPES
-// ============================================
-
-export type GetChannelProfileResponse = {
-  profile: ChannelProfile | null;
-};
-
-export type SaveChannelProfileRequest = {
-  input: ChannelProfileInput;
-};
-
-export type SaveChannelProfileResponse = {
-  profile: ChannelProfile;
-  message: string;
-};
-
-export type GenerateProfileAIRequest = {
-  force?: boolean; // Force regeneration even if cache is valid
-};
-
-export type GenerateProfileAIResponse = {
-  aiProfile: ChannelProfileAI;
-  cached: boolean;
-  message: string;
-};
 
 // ============================================
 // DEFAULT/EMPTY PROFILE INPUT

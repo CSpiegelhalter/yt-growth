@@ -135,26 +135,6 @@ function parseYouTubeRanking(data: unknown): YouTubeRanking | null {
 // TYPES
 // ============================================
 
-/**
- * Keyword metrics from DataForSEO.
- * Note: keywordDifficulty is an ESTIMATE (heuristic-based, not DataForSEO's actual KD API).
- */
-export type KeywordMetrics = {
-  keyword: string;
-  searchVolume: number;
-  keywordDifficulty: number; // 0-100 difficulty estimate
-  trend: number[];
-  monthlySearches?: Array<{ year: number; month: number; searchVolume: number }>;
-  intent: string | null;
-  // Additional fields from DataForSEO
-  cpc?: number | null;
-  competition?: number | null; // 0-1 normalized
-  competitionIndex?: number | null; // 0-100
-  competitionLevel?: string | null; // "HIGH" | "MEDIUM" | "LOW"
-  lowTopOfPageBid?: number | null;
-  highTopOfPageBid?: number | null;
-  difficultyIsEstimate?: boolean;
-};
 
 /**
  * Related keyword row with extended metrics.
@@ -185,21 +165,6 @@ export type YouTubeRanking = {
   publishedDate: string | null;
   thumbnailUrl: string | null;
   duration: string | null;
-};
-
-// VideoIdea type kept for potential reuse (VideoIdeasTab component)
-export type VideoIdea = {
-  id: string;
-  title: string;
-  hook: string;
-  format: "shorts" | "longform";
-  targetKeyword: string;
-  whyItWins: string;
-  outline: string[];
-  seoNotes: {
-    primaryKeyword: string;
-    supportingKeywords: string[];
-  };
 };
 
 export type GoogleTrendsTimePoint = {

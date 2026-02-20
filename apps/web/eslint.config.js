@@ -1,8 +1,9 @@
-const unusedImports = require("eslint-plugin-unused-imports");
-const nextCoreWebVitals = require("eslint-config-next/core-web-vitals");
+import unusedImports from "eslint-plugin-unused-imports";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import sonarjs from "eslint-plugin-sonarjs";
 
 /** @type {import("eslint").Linter.FlatConfig[]} */
-module.exports = [
+export default [
   // Keep Next's recommended ruleset.
   ...nextCoreWebVitals,
   {
@@ -48,5 +49,12 @@ module.exports = [
       },
     },
   },
+  {
+    plugins: { sonarjs },
+    rules: {
+      "sonarjs/no-duplicated-branches": "warn",
+      // "sonarjs/cognitive-complexity": ["warn", 15]
+    }
+  }
 ];
 

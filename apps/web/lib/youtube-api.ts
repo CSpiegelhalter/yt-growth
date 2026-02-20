@@ -19,38 +19,12 @@ export {
   fetchVideoMetrics,
   fetchRetentionCurve,
 
-  // Search
-  searchSimilarChannels,
-  searchNicheVideos,
-
   // Recent videos
   fetchRecentChannelVideos,
 
   // Single video (OAuth)
   fetchVideoDetails,
 
-  // Single video snippet (API key)
-  fetchVideoSnippetByApiKey,
-
   // Comments
   fetchVideoComments,
-
-  // Stats batch
-  fetchVideosStatsBatch,
 } from "./youtube/index";
-
-// Re-export all types
-export type {
-  GoogleAccount,
-  YouTubeVideo,
-  VideoDetails,
-  VideoMetricsData,
-  RetentionPoint,
-  SimilarChannelResult,
-  RecentVideoResult,
-  VideoDurationFilter,
-  YouTubeComment,
-  FetchCommentsResult,
-  CompetitorVideo,
-} from "./youtube/types";
-export type { YouTubeVideoSnippetItem } from "./youtube/data-api";

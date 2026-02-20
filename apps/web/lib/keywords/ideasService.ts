@@ -13,7 +13,7 @@
 
 import "server-only";
 import { z } from "zod";
-import crypto from "crypto";
+
 import { callLLM } from "@/lib/llm";
 import { logger } from "@/lib/logger";
 import {
@@ -21,10 +21,10 @@ import {
   getKeywordsForKeywordsTask,
   postSearchVolumeTask,
   getSearchVolumeTask,
-  validateLocation,
   type RelatedKeywordRow,
   type KeywordMetrics,
 } from "@/lib/dataforseo/client";
+import { validateLocation } from "@/lib/dataforseo/utils";
 
 // ============================================
 // TYPES
@@ -33,7 +33,7 @@ import {
 export type AudienceLevel = "beginner" | "intermediate" | "advanced" | "all";
 export type FormatPreference = "shorts" | "longform" | "mixed";
 
-export type GenerateIdeasInput = {
+type GenerateIdeasInput = {
   topicDescription: string;
   locationCode?: string;
   languageCode?: string;
@@ -41,7 +41,7 @@ export type GenerateIdeasInput = {
   formatPreference?: FormatPreference;
 };
 
-export type VideoIdea = {
+type VideoIdea = {
   id: string;
   title: string;
   hook: string;
@@ -55,7 +55,7 @@ export type VideoIdea = {
   };
 };
 
-export type EnrichedKeyword = {
+type EnrichedKeyword = {
   keyword: string;
   searchVolume: number;
   competitionIndex: number;
@@ -65,7 +65,7 @@ export type EnrichedKeyword = {
   intent: string | null;
 };
 
-export type GenerateIdeasResult = {
+type GenerateIdeasResult = {
   ideas: VideoIdea[];
   keywords: EnrichedKeyword[];
   seedKeywords: string[];
@@ -206,25 +206,6 @@ function generateFallbackSeeds(topic: string): string[] {
   return normalizeKeywords(seeds).slice(0, SEED_KEYWORD_COUNT_MIN);
 }
 
-/**
- * Generate a cache key hash
- */
-export function generateIdeasCacheKey(params: {
-  topicDescription: string;
-  location: string;
-  audienceLevel?: string;
-  formatPreference?: string;
-}): string {
-  const normalized = {
-    topic: params.topicDescription.toLowerCase().trim(),
-    location: params.location.toLowerCase(),
-    audience: params.audienceLevel || "all",
-    format: params.formatPreference || "mixed",
-  };
-  const str = JSON.stringify(normalized);
-  return crypto.createHash("sha256").update(str).digest("hex").slice(0, 32);
-}
-
 // ============================================
 // LLM #1: GENERATE SEED KEYWORDS FROM TOPIC
 // ============================================
@@ -236,7 +217,7 @@ const SeedKeywordsSchema = z.object({
 /**
  * Generate 10-20 seed keywords from a topic description using LLM
  */
-export async function generateSeedKeywordsFromTopic(input: {
+async function generateSeedKeywordsFromTopic(input: {
   topicDescription: string;
   audienceLevel?: AudienceLevel;
   formatPreference?: FormatPreference;
@@ -556,7 +537,7 @@ const VideoIdeasSchema = z.object({
 /**
  * Generate video ideas using enriched keyword data
  */
-export async function generateVideoIdeasFromKeywordData(input: {
+async function generateVideoIdeasFromKeywordData(input: {
   topicDescription: string;
   seedKeywords: string[];
   enrichedKeywords: EnrichedKeyword[];

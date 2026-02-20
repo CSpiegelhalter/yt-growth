@@ -41,7 +41,7 @@ function getTodayDate(): Date {
 /**
  * Get current usage count for a user/feature for today
  */
-export async function getUsage(
+async function getUsage(
   userId: number,
   featureKey: FeatureKey
 ): Promise<number> {
@@ -194,24 +194,6 @@ export async function resetUserUsage(userId: number): Promise<void> {
     where: {
       userId,
       date,
-    },
-  });
-}
-
-/**
- * Reset specific feature usage for a user (dev/testing only)
- */
-export async function resetFeatureUsage(
-  userId: number,
-  featureKey: FeatureKey
-): Promise<void> {
-  const date = getTodayDate();
-
-  await prisma.usageCounter.deleteMany({
-    where: {
-      userId,
-      date,
-      featureKey,
     },
   });
 }
