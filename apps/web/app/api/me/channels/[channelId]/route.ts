@@ -8,8 +8,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
-import { getCurrentUser } from "@/lib/user";
-import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
+import { authenticateAndParseChannel } from "@/lib/api/channel-auth";
 
 async function DELETEHandler(
   req: NextRequest,
@@ -17,29 +16,13 @@ async function DELETEHandler(
 ) {
   void req;
   try {
-    // Auth check
-    const user = await getCurrentUser();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await authenticateAndParseChannel(params);
+    if (!auth.ok) return auth.response;
+    const { user, channelId } = auth;
 
-    // Validate params
-    const paramsObj = await params;
-    const parsed = channelParamsSchema.safeParse(paramsObj);
-    if (!parsed.success) {
-      return Response.json({ error: "Invalid channel ID" }, { status: 400 });
-    }
-
-    const { channelId } = parsed.data;
-
-    // Find and verify ownership
     const channel = await prisma.channel.findFirst({
-      where: {
-        youtubeChannelId: channelId,
-        userId: user.id,
-      },
+      where: { youtubeChannelId: channelId, userId: user.id },
     });
-
     if (!channel) {
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }
@@ -115,27 +98,12 @@ async function GETHandler(
 ) {
   void req;
   try {
-    // Auth check
-    const user = await getCurrentUser();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await authenticateAndParseChannel(params);
+    if (!auth.ok) return auth.response;
+    const { user, channelId } = auth;
 
-    // Validate params
-    const paramsObj = await params;
-    const parsed = channelParamsSchema.safeParse(paramsObj);
-    if (!parsed.success) {
-      return Response.json({ error: "Invalid channel ID" }, { status: 400 });
-    }
-
-    const { channelId } = parsed.data;
-
-    // Find and verify ownership
     const channel = await prisma.channel.findFirst({
-      where: {
-        youtubeChannelId: channelId,
-        userId: user.id,
-      },
+      where: { youtubeChannelId: channelId, userId: user.id },
       include: {
         Video: {
           orderBy: { publishedAt: "desc" },
@@ -149,14 +117,10 @@ async function GETHandler(
           },
         },
         _count: {
-          select: {
-            Video: true,
-            Plan: true,
-          },
+          select: { Video: true, Plan: true },
         },
       },
     });
-
     if (!channel) {
       return Response.json({ error: "Channel not found" }, { status: 404 });
     }

@@ -13,9 +13,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
-import { getCurrentUser } from "@/lib/user";
+import { authenticateAndParseChannel } from "@/lib/api/channel-auth";
 import { getGoogleAccount, fetchChannelVideos } from "@/lib/youtube-api";
-import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 // Page size divisible by 6 for even grid layouts (1, 2, or 3 columns)
 const DEFAULT_PAGE_SIZE = 24;
@@ -42,27 +41,12 @@ async function GETHandler(
   );
 
   try {
-    // Auth check
-    const user = await getCurrentUser();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await authenticateAndParseChannel(params);
+    if (!auth.ok) return auth.response;
+    const { user, channelId } = auth;
 
-    // Validate params
-    const paramsObj = await params;
-    const parsed = channelParamsSchema.safeParse(paramsObj);
-    if (!parsed.success) {
-      return Response.json({ error: "Invalid channel ID" }, { status: 400 });
-    }
-
-    const { channelId } = parsed.data;
-
-    // Verify channel ownership.
     const channel = await prisma.channel.findFirst({
-      where: {
-        youtubeChannelId: channelId,
-        userId: user.id,
-      },
+      where: { youtubeChannelId: channelId, userId: user.id },
       select: { id: true },
     });
 

@@ -1,4 +1,4 @@
-import { Inter } from "next/font/google";
+import { Fustat, Inter } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import { BRAND, CANONICAL_ORIGIN, STRUCTURED_DATA } from "@/lib/brand";
 import { Analytics } from "@vercel/analytics/next";
@@ -10,11 +10,26 @@ import type { Metadata, Viewport } from "next";
  * eliminating font swap CLS. Using `display: swap` with
  * size-adjust for minimal layout shift.
  */
+const fustat = Fustat({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-fustat",
+  weight: ["400", "600", "700"],
+  fallback: [
+    "-apple-system",
+    "BlinkMacSystemFont",
+    "Segoe UI",
+    "Roboto",
+    "Helvetica Neue",
+    "Arial",
+    "sans-serif",
+  ],
+});
+
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
-  // Fallback metrics help reduce CLS during font load
   fallback: [
     "-apple-system",
     "BlinkMacSystemFont",
@@ -122,7 +137,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${fustat.variable} ${inter.variable}`}>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />

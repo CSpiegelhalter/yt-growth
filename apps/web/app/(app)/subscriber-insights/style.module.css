@@ -156,17 +156,6 @@
   color: var(--color-text-muted);
 }
 
-.toolbarControls {
-  display: flex;
-  gap: var(--space-xs);
-}
-
-@media (min-width: 640px) {
-  .toolbarControls {
-    gap: var(--space-xs);
-  }
-}
-
 .select {
   padding: var(--space-sm);
   font-size: var(--control-font-size);
@@ -182,49 +171,6 @@
 .select:focus {
   outline: none;
   border-color: var(--color-primary);
-}
-
-/* Toggle Chip */
-.toggleChip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--control-font-size);
-  font-weight: 500;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  min-height: 44px;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-
-.toggleChip:hover {
-  background: var(--color-surface-2);
-  border-color: var(--color-text-muted);
-}
-
-.toggleChip:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.toggleChip svg {
-  flex-shrink: 0;
-}
-
-.toggleActive {
-  background: rgba(5, 150, 105, 0.1);
-  border-color: rgba(5, 150, 105, 0.3);
-  color: var(--color-success);
-}
-
-.toggleActive:hover {
-  background: rgba(5, 150, 105, 0.15);
 }
 
 /* ================================
@@ -373,10 +319,6 @@
   gap: 2px;
 }
 
-.buildingIcon {
-  font-size: 1.25rem;
-}
-
 .buildingText {
   font-size: 0.8125rem;
   font-weight: 600;
@@ -386,25 +328,6 @@
 .buildingSubtext {
   font-size: 0.6875rem;
   color: var(--color-text-muted);
-}
-
-/* Baseline Note */
-.baselineNote {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-  margin-top: var(--space-sm);
-  padding: var(--space-xs) var(--space-sm);
-  background: var(--color-surface-2);
-  border-radius: var(--radius-md);
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-}
-
-.baselineLabel {
-  font-weight: 600;
-  color: var(--color-text-secondary);
 }
 
 /* Attribution Note */
@@ -576,24 +499,6 @@
 .heroLabel {
   font-size: 0.75rem;
   color: var(--color-text-secondary);
-}
-
-.deltaBadge {
-  font-size: 0.625rem;
-  font-weight: 600;
-  padding: 2px 5px;
-  border-radius: var(--radius-sm);
-  margin-left: 2px;
-}
-
-.deltaUp {
-  background: rgba(5, 150, 105, 0.1);
-  color: var(--color-success);
-}
-
-.deltaDown {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--color-danger);
 }
 
 /* Tier Badge */
@@ -788,66 +693,6 @@
   font-size: 0.9375rem;
 }
 
-/* ================================
-   Insights Section
-   ================================ */
-.insightsSection {
-  margin-top: var(--space-lg);
-  padding-top: var(--space-lg);
-  border-top: 1px solid var(--color-border);
-}
-
-.insightsSectionTitle {
-  font-size: var(--section-title-size);
-  font-weight: var(--section-title-weight);
-  color: var(--color-text);
-  margin: 0 0 var(--space-md);
-}
-
-.insightsGrid {
-  display: grid;
-  gap: var(--space-md);
-}
-
-@media (min-width: 768px) {
-  .insightsGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Insight Card */
-.insightCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-}
-
-.insightCardTitle {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 var(--space-md);
-  line-height: 1.3;
-}
-
-/* Pattern List */
-.patternList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.patternItem {
-  padding: var(--space-sm);
-  background: var(--color-surface-2);
-  border-radius: var(--radius-md);
-}
-
-.patternHeader {
-  margin-bottom: var(--space-xs);
-}
-
 .patternTitle {
   font-size: 0.875rem;
   font-weight: 600;
@@ -870,101 +715,6 @@
 
 .patternHow strong {
   color: var(--color-text);
-}
-
-/* Recipe Content */
-.recipeContent {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.recipeRow {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.recipeLabel {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.recipeValue {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-}
-
-.recipeText {
-  font-size: 0.875rem;
-  color: var(--color-text);
-  line-height: 1.4;
-}
-
-.formulaChip {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.15);
-  border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
-  color: var(--color-primary);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.formulaChip:hover {
-  background: rgba(99, 102, 241, 0.15);
-}
-
-.formulaChip:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.copiedBadge {
-  font-size: 0.6875rem;
-  color: var(--color-success);
-}
-
-/* Legacy List */
-.legacyList {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-}
-
-.legacyList li {
-  margin-bottom: var(--space-xs);
-}
-
-.legacyList li:last-child {
-  margin-bottom: 0;
-}
-
-.noData {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-  margin: 0;
-  text-align: center;
-  padding: var(--space-md) 0;
-}
-
-/* Demo Note */
-.demoNote {
-  text-align: center;
-  font-size: 0.8125rem;
-  color: var(--color-text-muted);
-  margin-top: var(--space-lg);
 }
 
 /* Skeletons */

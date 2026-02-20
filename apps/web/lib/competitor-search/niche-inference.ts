@@ -20,49 +20,13 @@ import type {
 } from "./types";
 import {
   inferNicheFromText,
+  STOPWORDS,
+  extractKeywords,
 } from "./utils";
 import { parseYouTubeVideoId } from "@/lib/youtube-video-id";
 import type { GoogleAccount, VideoDetails } from "@/lib/youtube/types";
 import { fetchVideoDetails } from "@/lib/youtube";
-
-// YouTube category ID to name mapping
-const YOUTUBE_CATEGORIES: Record<string, string> = {
-  "1": "Film & Animation",
-  "2": "Autos & Vehicles",
-  "10": "Music",
-  "15": "Pets & Animals",
-  "17": "Sports",
-  "19": "Travel & Events",
-  "20": "Gaming",
-  "22": "People & Blogs",
-  "23": "Comedy",
-  "24": "Entertainment",
-  "25": "News & Politics",
-  "26": "Howto & Style",
-  "27": "Education",
-  "28": "Science & Technology",
-  "29": "Nonprofits & Activism",
-};
-
-// Common stopwords to filter from query generation
-const STOPWORDS = new Set([
-  "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-  "have", "has", "had", "do", "does", "did", "will", "would", "could",
-  "should", "may", "might", "must", "shall", "can", "need", "dare",
-  "ought", "used", "to", "of", "in", "for", "on", "with", "at", "by",
-  "from", "as", "into", "through", "during", "before", "after", "above",
-  "below", "between", "under", "again", "further", "then", "once", "here",
-  "there", "when", "where", "why", "how", "all", "each", "few", "more",
-  "most", "other", "some", "such", "no", "nor", "not", "only", "own",
-  "same", "so", "than", "too", "very", "just", "and", "but", "if", "or",
-  "because", "until", "while", "although", "though", "this", "that",
-  "these", "those", "i", "me", "my", "myself", "we", "our", "ours",
-  "ourselves", "you", "your", "yours", "yourself", "yourselves", "he",
-  "him", "his", "himself", "she", "her", "hers", "herself", "it", "its",
-  "itself", "they", "them", "their", "theirs", "themselves", "what",
-  "which", "who", "whom", "video", "videos", "youtube", "channel",
-  "watch", "subscribe", "like", "comment", "share",
-]);
+import { YOUTUBE_CATEGORIES } from "@/lib/youtube/constants";
 
 // Platform/game identifiers that provide important context
 const PLATFORM_KEYWORDS = new Set([
@@ -97,20 +61,7 @@ function cleanTitle(title: string): string {
     .toLowerCase();
 }
 
-/**
- * Extract meaningful keywords from text for query generation.
- */
-function extractKeywords(text: string): string[] {
-  if (!text) return [];
 
-  const words = text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length >= 2 && !STOPWORDS.has(w));
-
-  return [...new Set(words)];
-}
 
 /**
  * Extract keywords from video tags, preserving multi-word tags.

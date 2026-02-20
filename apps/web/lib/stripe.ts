@@ -4,25 +4,14 @@
 import { prisma } from "@/prisma";
 import { LIMITS } from "@/lib/product";
 import crypto from "crypto";
+import { timingSafeEqualHex } from "@/lib/crypto";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-// Stripe recommends a tolerance of 5 minutes for webhook signatures.
 const STRIPE_WEBHOOK_TOLERANCE_SECONDS = 5 * 60;
-
-function timingSafeEqualHex(a: string, b: string): boolean {
-  try {
-    const ab = Buffer.from(a, "hex");
-    const bb = Buffer.from(b, "hex");
-    if (ab.length !== bb.length) return false;
-    return crypto.timingSafeEqual(ab, bb);
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Minimal Stripe webhook signature verification (no stripe SDK required).

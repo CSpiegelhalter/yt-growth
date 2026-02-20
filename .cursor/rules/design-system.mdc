@@ -1,0 +1,97 @@
+---
+description: Enforce the brand design system — colors, typography, tag component. No hardcoded hex, no ad-hoc font sizes, no one-off tag styles.
+globs: **/*.tsx, **.*.css
+alwaysApply: false
+---
+
+# Brand Design System (MUST follow for ALL UI work)
+
+This rule is **mandatory** whenever you touch UI code (components, styles, layouts, pages).
+Non-compliance = broken build. See `styles.md` at the repo root for full documentation.
+
+---
+
+## 1) Brand Color Palette — use CSS variables only
+
+| Name            | Variable                    | Hex       |
+|-----|-----|-----|
+| Hot Rose        | `--color-hot-rose`          | `#CA1F7B` |
+| Imperial Blue   | `--color-imperial-blue`     | `#222A68` |
+| Lavender Mist   | `--color-lavender-mist`     | `#F8F1FF` |
+| Cool Sky        | `--color-cool-sky`          | `#35A7FF` |
+| Stormy Teal     | `--color-stormy-teal`       | `#0F7173` |
+
+**Rules:**
+- NEVER hardcode brand hex values in components or CSS modules. Always use the CSS variable.
+- The ONLY place raw hex values for brand colors may appear is `globals.css` `:root` block.
+- Semantic tokens (`--primary`, `--text`, `--border`, etc.) remain valid for non-brand-palette usage.
+
+---
+
+## 2) Typography — Fustat via CSS variables
+
+Font is loaded via `next/font/google` as `--font-fustat` and set as the default `--font-sans`.
+
+| Role         | Class          | CSS variables                                       | Spec                       |
+|-----|----|-----|----|
+| Big Header   | `.text-h1`     | `--text-h1-size` / `--text-h1-weight` / `--text-h1-leading`       | 32px / 600 / 1.0 |
+| Subtitle     | `.text-subtitle`| `--text-subtitle-size` / `--text-subtitle-weight` / `--text-subtitle-leading` | 22px / 700 / 1.0 |
+| Primary text | `.text-body`   | `--text-body-size` / `--text-body-weight` / `--text-body-leading`  | 18px / 400 / 1.0 |
+
+**Rules:**
+- For brand headlines/subtitles/body text, use the classes above or the CSS variables.
+- React components are also available: `<H1>`, `<Subtitle>`, `<Text>` from `@/components/ui`.
+- Do not introduce arbitrary font sizes for UI text. Use the existing scale (`--text-xs` through `--text-4xl`) or the brand typographic tokens above.
+- General-purpose size tokens (`--text-sm`, `--text-base`, etc.) remain available for supporting/meta UI.
+
+---
+
+## 3) Tag / Pill Component — single implementation only
+
+All tag/pill/badge/chip UI MUST use the shared `<Tag>` component:
+
+```tsx
+import { Tag } from '@/components/ui';
+
+<Tag variant="positive">Growing</Tag>
+<Tag variant="negative">Declining</Tag>
+<Tag variant="neutral">Stable</Tag>
+```
+
+**Spec:**
+- Height: 40px
+- Border-radius: 20px
+- Border: 2px gradient (see below)
+- Background: transparent
+- No fill colors
+
+**Gradient borders by variant:**
+- `positive`: `#D03688` → `#5BB8FF`
+- `negative`: `#D03688` → `#222A68`
+- `neutral`:  `#35A7FF` → `#0F7173`
+
+**Rules:**
+- Do NOT create ad-hoc `.badge`, `.chip`, `.pill`, or `.tag` classes in CSS modules.
+- If the existing `<Tag>` component doesn't fit your use case, extend it with a new variant — do not create a parallel component.
+
+---
+
+## 4) File locations (single source of truth)
+
+| What               | Where                                          |
+|-----|----|
+| CSS variables      | `apps/web/app/globals.css` → `:root` block      |
+| Tag component      | `apps/web/components/ui/Tag.tsx` + `Tag.module.css` |
+| Typography components | `apps/web/components/ui/Typography.tsx`       |
+| Typography classes | `apps/web/app/globals.css` → `.text-h1` etc.    |
+| UI barrel export   | `apps/web/components/ui/index.ts`               |
+| Full documentation | `styles.md` (repo root)                         |
+
+---
+
+## 5) When modifying UI
+
+1. **Check** `styles.md` and this rule before adding any color, font, or tag style.
+2. **Use** CSS variables and shared components.
+3. **Refactor** any divergent code you encounter (hardcoded hex, ad-hoc tag styles, etc.).
+4. **Update** `styles.md` if you add new tokens or components.

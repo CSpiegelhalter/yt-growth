@@ -12,7 +12,8 @@ import { z } from "zod";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk, jsonError } from "@/lib/api/response";
+import { jsonOk } from "@/lib/api/response";
+import { quotaExceededResponse } from "@/lib/api/quota";
 import { getLimit, type Plan } from "@/lib/entitlements";
 import { checkAndIncrement, checkUsage } from "@/lib/usage";
 import { hasActiveSubscription } from "@/lib/user";
@@ -123,25 +124,14 @@ export const POST = createApiRoute(
     });
 
     if (!usageResult.allowed) {
-      logger.info("keywords.trends_quota_exceeded", {
+      return quotaExceededResponse({
+        logEvent: "keywords.trends_quota_exceeded",
         userId: user.id,
         plan,
+        limit,
         used: usageResult.used,
-        limit: usageResult.limit,
-      });
-
-      return jsonError({
-        status: 403,
-        code: "LIMIT_REACHED",
-        message: `You've used all ${limit} keyword searches for today.`,
+        resetAt: usageResult.resetAt,
         requestId: api.requestId,
-        details: {
-          used: usageResult.used,
-          limit: usageResult.limit,
-          remaining: 0,
-          resetAt: usageResult.resetAt,
-          upgrade: plan === "FREE",
-        },
       });
     }
 

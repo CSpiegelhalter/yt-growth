@@ -11,6 +11,7 @@ import { createApiRoute } from "@/lib/api/route";
 import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
 import { jsonOk } from "@/lib/api/response";
 import { getSubscriptionStatus } from "@/lib/stripe";
+import { CHANNEL_LIST_SELECT, CHANNEL_LIST_ORDER_BY } from "@/lib/server/channel-query";
 
 export const GET = createApiRoute(
   { route: "/api/me/channels" },
@@ -18,25 +19,8 @@ export const GET = createApiRoute(
     const user = api.user!;
     const channels = await prisma.channel.findMany({
       where: { userId: user.id },
-      orderBy: [{ connectedAt: "desc" }],
-      select: {
-        id: true,
-        youtubeChannelId: true,
-        title: true,
-        thumbnailUrl: true,
-        totalVideoCount: true,
-        subscriberCount: true,
-        connectedAt: true,
-        lastSyncedAt: true,
-        syncStatus: true,
-        syncError: true,
-        _count: {
-          select: {
-            Video: true,
-            Plan: true,
-          },
-        },
-      },
+      orderBy: CHANNEL_LIST_ORDER_BY,
+      select: CHANNEL_LIST_SELECT,
     });
 
     // Get subscription info for channel limit gating

@@ -1,20 +1,14 @@
 import { NextRequest } from "next/server";
-import { z } from "zod";
-import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
-import { getCurrentUserWithSubscription } from "@/lib/user";
-import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-
 import { getGoogleAccount } from "@/lib/youtube-api";
 import { GoogleTokenRefreshError } from "@/lib/google-tokens";
 import { fetchOwnedVideoComments, type VideoComment } from "@/lib/youtube-analytics";
 import { callLLM } from "@/lib/llm";
 import type { VideoMetadata } from "@/lib/youtube-analytics";
-import { channelVideoParamsSchema } from "@/lib/competitors/video-detail/validation";
-
-const QuerySchema = z.object({
-  range: z.enum(["7d", "28d", "90d"]).default("28d"),
-});
+import {
+  getVideoInsightsContext,
+  isErrorResponse,
+} from "@/lib/insights/context";
 
 export type CommentInsights = {
   sentiment: {
@@ -32,77 +26,15 @@ export type CommentInsights = {
   hookInspiration: string[];
 };
 
-/**
- * GET - Fetch comment insights (deep dive, lazy loaded)
- */
 async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string; videoId: string }> }
 ) {
-  const resolvedParams = await params;
-
-  const parsedParams = channelVideoParamsSchema.safeParse(resolvedParams);
-  if (!parsedParams.success) {
-    return Response.json({ error: "Invalid parameters" }, { status: 400 });
-  }
-
-  const { channelId, videoId } = parsedParams.data;
-
-  const url = new URL(req.url);
-  const queryResult = QuerySchema.safeParse({
-    range: url.searchParams.get("range") ?? "28d",
-  });
-  if (!queryResult.success) {
-    return Response.json({ error: "Invalid query parameters" }, { status: 400 });
-  }
-  const { range } = queryResult.data;
+  const ctx = await getVideoInsightsContext(req, params);
+  if (isErrorResponse(ctx)) return ctx;
 
   try {
-    const user = await getCurrentUserWithSubscription();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const channel = await prisma.channel.findFirst({
-      where: { youtubeChannelId: channelId, userId: user.id },
-    });
-    if (!channel) {
-      return Response.json({ error: "Channel not found" }, { status: 404 });
-    }
-
-    // Get cached analytics data (for video metadata)
-    const cached = await prisma.ownedVideoInsightsCache.findFirst({
-      where: {
-        userId: user.id,
-        channelId: channel.id,
-        videoId,
-        range,
-      },
-    });
-
-    if (!cached?.derivedJson) {
-      return Response.json(
-        { error: "Analytics not loaded. Call /analytics first." },
-        { status: 400 }
-      );
-    }
-
-    const derivedData = cached.derivedJson as any;
-
-    // Rate limit (uses same limit as main insights)
-    const rateResult = checkRateLimit(
-      rateLimitKey("videoInsights", user.id),
-      RATE_LIMITS.videoInsights
-    );
-    if (!rateResult.success) {
-      return Response.json(
-        { error: "Rate limit exceeded", retryAfter: rateResult.resetAt },
-        { status: 429 }
-      );
-    }
-
-    // Fetch comments
-    const ga = await getGoogleAccount(user.id, channelId);
+    const ga = await getGoogleAccount(ctx.user.id, ctx.channelId);
     if (!ga) {
       return Response.json(
         { error: "Google account not connected" },
@@ -110,7 +42,7 @@ async function GETHandler(
       );
     }
 
-    const comments = await fetchOwnedVideoComments(ga, videoId, 30);
+    const comments = await fetchOwnedVideoComments(ga, ctx.videoId, 30);
 
     if (comments.length === 0) {
       return Response.json({
@@ -126,30 +58,28 @@ async function GETHandler(
     }
 
     const commentInsights = await generateCommentInsights(
-      derivedData.video,
+      ctx.derivedData.video,
       comments
     );
 
-    // Return with 12-hour cache header for browser caching
     return Response.json(
       { comments: commentInsights },
       {
         headers: {
-          "Cache-Control": "private, max-age=43200", // 12 hours
+          "Cache-Control": "private, max-age=43200",
         },
       }
     );
   } catch (err) {
     console.error("Comment insights error:", err);
-    
-    // Handle token refresh errors specifically
+
     if (err instanceof GoogleTokenRefreshError) {
       return Response.json(
         { error: err.message, code: "youtube_permissions" },
         { status: 403 }
       );
     }
-    
+
     return Response.json(
       { error: "Failed to generate comment insights" },
       { status: 500 }

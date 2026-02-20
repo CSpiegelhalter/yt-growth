@@ -1,17 +1,12 @@
 import { NextRequest } from "next/server";
-import { z } from "zod";
-import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
-import { getCurrentUserWithSubscription } from "@/lib/user";
-import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { callLLM } from "@/lib/llm";
 import type { DerivedMetrics } from "@/lib/owned-video-math";
 import type { VideoMetadata } from "@/lib/youtube-analytics";
-import { channelVideoParamsSchema } from "@/lib/competitors/video-detail/validation";
-
-const QuerySchema = z.object({
-  range: z.enum(["7d", "28d", "90d"]).default("28d"),
-});
+import {
+  getVideoInsightsContext,
+  isErrorResponse,
+} from "@/lib/insights/context";
 
 export type FocusKeywordResult = {
   keyword: string;
@@ -42,81 +37,17 @@ export type SeoAnalysis = {
   };
 };
 
-/**
- * GET - Fetch SEO analysis (deep dive, lazy loaded)
- */
 async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string; videoId: string }> }
 ) {
-  const resolvedParams = await params;
-
-  const parsedParams = channelVideoParamsSchema.safeParse(resolvedParams);
-  if (!parsedParams.success) {
-    return Response.json({ error: "Invalid parameters" }, { status: 400 });
-  }
-
-  const { channelId, videoId } = parsedParams.data;
-
-  const url = new URL(req.url);
-  const queryResult = QuerySchema.safeParse({
-    range: url.searchParams.get("range") ?? "28d",
-  });
-  if (!queryResult.success) {
-    return Response.json(
-      { error: "Invalid query parameters" },
-      { status: 400 }
-    );
-  }
-  const { range } = queryResult.data;
+  const ctx = await getVideoInsightsContext(req, params);
+  if (isErrorResponse(ctx)) return ctx;
 
   try {
-    const user = await getCurrentUserWithSubscription();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const channel = await prisma.channel.findFirst({
-      where: { youtubeChannelId: channelId, userId: user.id },
-    });
-    if (!channel) {
-      return Response.json({ error: "Channel not found" }, { status: 404 });
-    }
-
-    // Get cached analytics data
-    const cached = await prisma.ownedVideoInsightsCache.findFirst({
-      where: {
-        userId: user.id,
-        channelId: channel.id,
-        videoId,
-        range,
-      },
-    });
-
-    if (!cached?.derivedJson) {
-      return Response.json(
-        { error: "Analytics not loaded. Call /analytics first." },
-        { status: 400 }
-      );
-    }
-
-    const derivedData = cached.derivedJson as any;
-
-    // Rate limit (uses same limit as main insights)
-    const rateResult = checkRateLimit(
-      rateLimitKey("videoInsights", user.id),
-      RATE_LIMITS.videoInsights
-    );
-    if (!rateResult.success) {
-      return Response.json(
-        { error: "Rate limit exceeded", retryAfter: rateResult.resetAt },
-        { status: 429 }
-      );
-    }
-
     const seoAnalysis = await generateSeoAnalysis(
-      derivedData.video,
-      derivedData.derived
+      ctx.derivedData.video,
+      ctx.derivedData.derived
     );
 
     if (!seoAnalysis) {
@@ -126,12 +57,11 @@ async function GETHandler(
       );
     }
 
-    // Return with 12-hour cache header for browser caching
     return Response.json(
       { seo: seoAnalysis },
       {
         headers: {
-          "Cache-Control": "private, max-age=43200", // 12 hours
+          "Cache-Control": "private, max-age=43200",
         },
       }
     );
@@ -149,10 +79,6 @@ export const GET = createApiRoute(
   async (req, ctx) => GETHandler(req, ctx as any)
 );
 
-/**
- * Detect the focus keyword for a video using LLM.
- * This understands context like episode numbers, repeated words, game names, etc.
- */
 async function detectFocusKeyword(
   video: VideoMetadata
 ): Promise<FocusKeywordResult | null> {
@@ -204,7 +130,6 @@ async function generateSeoAnalysis(
   video: VideoMetadata,
   derived: DerivedMetrics
 ): Promise<SeoAnalysis | null> {
-  // First, detect the focus keyword (fast, separate call)
   const focusKeyword = await detectFocusKeyword(video);
 
   const searchTraffic = derived.trafficSources?.search ?? 0;
@@ -269,7 +194,6 @@ VIEWS: ${derived.totalViews.toLocaleString()}`;
     );
     const analysis = JSON.parse(result.content);
 
-    // Add focus keyword to the response
     if (focusKeyword) {
       analysis.focusKeyword = focusKeyword;
     }

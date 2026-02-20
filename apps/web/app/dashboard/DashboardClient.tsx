@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
 import Image from "next/image";
 import s from "./style.module.css";
 import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/product";
@@ -539,15 +540,7 @@ export default function DashboardClient({
           <section className={s.videosSection}>
             {videosLoading ? (
               <div className={s.videoList}>
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className={s.videoCardSkeleton}>
-                    <div className={s.skeletonThumb} />
-                    <div className={s.skeletonContent}>
-                      <div className={s.skeletonTitle} />
-                      <div className={s.skeletonMeta} />
-                    </div>
-                  </div>
-                ))}
+                <VideoCardSkeletons s={s} />
               </div>
             ) : videos.length > 0 ? (
               <>

@@ -64,6 +64,43 @@ type SampleVideo = {
   breakoutScore?: number;
 };
 
+type DiscoveredVideoRow = {
+  video_id: string;
+  title: string;
+  channel_id: string;
+  channel_title: string;
+  thumbnail_url: string | null;
+  published_at: Date;
+  view_count: bigint;
+  views_per_day: number;
+  subscriber_count: bigint | null;
+  velocity_24h?: bigint | null;
+  breakout_by_subs?: number | null;
+};
+
+function mapToSampleVideo(
+  v: DiscoveredVideoRow,
+  extras?: { includeVelocity?: boolean; includeBreakout?: boolean },
+): SampleVideo {
+  return {
+    videoId: v.video_id,
+    title: v.title,
+    thumbnailUrl: v.thumbnail_url,
+    channelId: v.channel_id,
+    channelTitle: v.channel_title,
+    channelSubscribers: v.subscriber_count ? Number(v.subscriber_count) : undefined,
+    viewCount: Number(v.view_count),
+    viewsPerDay: v.views_per_day,
+    publishedAt: v.published_at.toISOString(),
+    ...(extras?.includeVelocity && v.velocity_24h != null
+      ? { velocity24h: Number(v.velocity_24h) }
+      : {}),
+    ...(extras?.includeBreakout && v.breakout_by_subs != null
+      ? { breakoutScore: v.breakout_by_subs }
+      : {}),
+  };
+}
+
 type DiscoveredNiche = {
   id: string;
   nicheLabel: string;
@@ -159,18 +196,9 @@ async function fetchFastestGrowing(window: string, limit: number): Promise<Disco
   // Group top videos into a single "Fastest Growing" pseudo-cluster
   if (videos.length === 0) return [];
 
-  const sampleVideos: SampleVideo[] = videos.slice(0, 10).map(v => ({
-    videoId: v.video_id,
-    title: v.title,
-    thumbnailUrl: v.thumbnail_url,
-    channelId: v.channel_id,
-    channelTitle: v.channel_title,
-    channelSubscribers: v.subscriber_count ? Number(v.subscriber_count) : undefined,
-    viewCount: Number(v.view_count),
-    viewsPerDay: v.views_per_day,
-    velocity24h: v.velocity_24h ? Number(v.velocity_24h) : undefined,
-    publishedAt: v.published_at.toISOString(),
-  }));
+  const sampleVideos = videos.slice(0, 10).map(v =>
+    mapToSampleVideo(v, { includeVelocity: true }),
+  );
 
   const uniqueChannels = new Set(videos.map(v => v.channel_id)).size;
   const vpdValues = videos.map(v => v.views_per_day).sort((a, b) => a - b);
@@ -230,19 +258,9 @@ async function fetchBreakouts(window: string, limit: number): Promise<Discovered
 
   if (videos.length === 0) return [];
 
-  const sampleVideos: SampleVideo[] = videos.slice(0, 10).map(v => ({
-    videoId: v.video_id,
-    title: v.title,
-    thumbnailUrl: v.thumbnail_url,
-    channelId: v.channel_id,
-    channelTitle: v.channel_title,
-    channelSubscribers: v.subscriber_count ? Number(v.subscriber_count) : undefined,
-    viewCount: Number(v.view_count),
-    viewsPerDay: v.views_per_day,
-    velocity24h: v.velocity_24h ? Number(v.velocity_24h) : undefined,
-    breakoutScore: v.breakout_by_subs ?? undefined,
-    publishedAt: v.published_at.toISOString(),
-  }));
+  const sampleVideos = videos.slice(0, 10).map(v =>
+    mapToSampleVideo(v, { includeVelocity: true, includeBreakout: true }),
+  );
 
   const uniqueChannels = new Set(videos.map(v => v.channel_id)).size;
 
@@ -265,29 +283,71 @@ async function fetchBreakouts(window: string, limit: number): Promise<Discovered
   }];
 }
 
-async function fetchEmergingNiches(window: string, limit: number): Promise<DiscoveredNiche[]> {
-  // Query pre-computed clusters from niche_clusters
-  const clusters = await prisma.$queryRaw<Array<{
-    cluster_id: string;
-    label: string;
-    keywords: string[];
-    median_velocity_24h: number | null;
-    median_views_per_day: number | null;
-    unique_channels: number | null;
-    total_videos: number | null;
-    avg_days_old: number | null;
-    opportunity_score: number | null;
+type NicheClusterRow = {
+  cluster_id: string;
+  label: string;
+  keywords: string[];
+  median_velocity_24h: number | null;
+  median_views_per_day: number | null;
+  unique_channels: number | null;
+  total_videos: number | null;
+  avg_days_old: number | null;
+  opportunity_score: number | null;
+  avg_channel_subs?: number | null;
+};
+
+async function fetchClusterSampleVideos(
+  clusterId: string,
+  window: string,
+): Promise<SampleVideo[]> {
+  const rows = await prisma.$queryRaw<Array<{
+    video_id: string;
+    title: string;
+    channel_id: string;
+    channel_title: string;
+    thumbnail_url: string | null;
+    published_at: Date;
+    view_count: bigint;
+    views_per_day: number;
+    subscriber_count: bigint | null;
   }>>`
     SELECT 
-      cluster_id,
-      label,
-      keywords,
-      median_velocity_24h,
-      median_views_per_day,
-      unique_channels,
-      total_videos,
-      avg_days_old,
-      opportunity_score
+      dv.video_id,
+      dv.title,
+      dv.channel_id,
+      dv.channel_title,
+      dv.thumbnail_url,
+      dv.published_at,
+      COALESCE(vs.view_count, 0) as view_count,
+      COALESCE(vs.views_per_day, 0) as views_per_day,
+      cpl.subscriber_count
+    FROM niche_cluster_videos ncv
+    JOIN discovered_videos dv ON ncv.video_id = dv.video_id
+    LEFT JOIN video_scores vs ON dv.video_id = vs.video_id AND vs."window" = ${window}
+    LEFT JOIN channel_profiles_lite cpl ON dv.channel_id = cpl.channel_id
+    WHERE ncv.cluster_id = ${clusterId}::uuid
+    ORDER BY ncv.rank_in_cluster ASC
+    LIMIT 3
+  `;
+  return rows.map(v => mapToSampleVideo(v));
+}
+
+function buildNicheMetrics(cluster: NicheClusterRow) {
+  return {
+    medianViewsPerDay: cluster.median_views_per_day ?? 0,
+    totalVideos: cluster.total_videos ?? 0,
+    uniqueChannels: cluster.unique_channels ?? 0,
+    avgDaysOld: cluster.avg_days_old ?? 0,
+    opportunityScore: cluster.opportunity_score ?? undefined,
+  };
+}
+
+async function fetchEmergingNiches(window: string, limit: number): Promise<DiscoveredNiche[]> {
+  const clusters = await prisma.$queryRaw<NicheClusterRow[]>`
+    SELECT 
+      cluster_id, label, keywords,
+      median_velocity_24h, median_views_per_day,
+      unique_channels, total_videos, avg_days_old, opportunity_score
     FROM niche_clusters
     WHERE "window" = ${window}
     ORDER BY COALESCE(median_velocity_24h, median_views_per_day, 0) DESC NULLS LAST
@@ -297,48 +357,7 @@ async function fetchEmergingNiches(window: string, limit: number): Promise<Disco
   const niches: DiscoveredNiche[] = [];
 
   for (const cluster of clusters) {
-    // Fetch sample videos for this cluster
-    const videos = await prisma.$queryRaw<Array<{
-      video_id: string;
-      title: string;
-      channel_id: string;
-      channel_title: string;
-      thumbnail_url: string | null;
-      published_at: Date;
-      view_count: bigint;
-      views_per_day: number;
-      subscriber_count: bigint | null;
-    }>>`
-      SELECT 
-        dv.video_id,
-        dv.title,
-        dv.channel_id,
-        dv.channel_title,
-        dv.thumbnail_url,
-        dv.published_at,
-        COALESCE(vs.view_count, 0) as view_count,
-        COALESCE(vs.views_per_day, 0) as views_per_day,
-        cpl.subscriber_count
-      FROM niche_cluster_videos ncv
-      JOIN discovered_videos dv ON ncv.video_id = dv.video_id
-      LEFT JOIN video_scores vs ON dv.video_id = vs.video_id AND vs."window" = ${window}
-      LEFT JOIN channel_profiles_lite cpl ON dv.channel_id = cpl.channel_id
-      WHERE ncv.cluster_id = ${cluster.cluster_id}::uuid
-      ORDER BY ncv.rank_in_cluster ASC
-      LIMIT 3
-    `;
-
-    const sampleVideos: SampleVideo[] = videos.map(v => ({
-      videoId: v.video_id,
-      title: v.title,
-      thumbnailUrl: v.thumbnail_url,
-      channelId: v.channel_id,
-      channelTitle: v.channel_title,
-      channelSubscribers: v.subscriber_count ? Number(v.subscriber_count) : undefined,
-      viewCount: Number(v.view_count),
-      viewsPerDay: v.views_per_day,
-      publishedAt: v.published_at.toISOString(),
-    }));
+    const sampleVideos = await fetchClusterSampleVideos(cluster.cluster_id, window);
 
     niches.push({
       id: cluster.cluster_id,
@@ -349,13 +368,7 @@ async function fetchEmergingNiches(window: string, limit: number): Promise<Disco
         uniqueChannels: cluster.unique_channels ?? undefined,
       }),
       sampleVideos,
-      metrics: {
-        medianViewsPerDay: cluster.median_views_per_day ?? 0,
-        totalVideos: cluster.total_videos ?? 0,
-        uniqueChannels: cluster.unique_channels ?? 0,
-        avgDaysOld: cluster.avg_days_old ?? 0,
-        opportunityScore: cluster.opportunity_score ?? undefined,
-      },
+      metrics: buildNicheMetrics(cluster),
       queryTerms: [cluster.label.toLowerCase()],
       tags: cluster.keywords?.slice(0, 6) ?? [],
     });
@@ -365,30 +378,12 @@ async function fetchEmergingNiches(window: string, limit: number): Promise<Disco
 }
 
 async function fetchLowCompetition(window: string, limit: number): Promise<DiscoveredNiche[]> {
-  // Query clusters with highest opportunity scores
-  const clusters = await prisma.$queryRaw<Array<{
-    cluster_id: string;
-    label: string;
-    keywords: string[];
-    median_velocity_24h: number | null;
-    median_views_per_day: number | null;
-    unique_channels: number | null;
-    total_videos: number | null;
-    avg_days_old: number | null;
-    avg_channel_subs: number | null;
-    opportunity_score: number | null;
-  }>>`
+  const clusters = await prisma.$queryRaw<NicheClusterRow[]>`
     SELECT 
-      cluster_id,
-      label,
-      keywords,
-      median_velocity_24h,
-      median_views_per_day,
-      unique_channels,
-      total_videos,
-      avg_days_old,
-      avg_channel_subs,
-      opportunity_score
+      cluster_id, label, keywords,
+      median_velocity_24h, median_views_per_day,
+      unique_channels, total_videos, avg_days_old,
+      avg_channel_subs, opportunity_score
     FROM niche_clusters
     WHERE "window" = ${window}
       AND opportunity_score IS NOT NULL
@@ -399,48 +394,7 @@ async function fetchLowCompetition(window: string, limit: number): Promise<Disco
   const niches: DiscoveredNiche[] = [];
 
   for (const cluster of clusters) {
-    // Fetch sample videos
-    const videos = await prisma.$queryRaw<Array<{
-      video_id: string;
-      title: string;
-      channel_id: string;
-      channel_title: string;
-      thumbnail_url: string | null;
-      published_at: Date;
-      view_count: bigint;
-      views_per_day: number;
-      subscriber_count: bigint | null;
-    }>>`
-      SELECT 
-        dv.video_id,
-        dv.title,
-        dv.channel_id,
-        dv.channel_title,
-        dv.thumbnail_url,
-        dv.published_at,
-        COALESCE(vs.view_count, 0) as view_count,
-        COALESCE(vs.views_per_day, 0) as views_per_day,
-        cpl.subscriber_count
-      FROM niche_cluster_videos ncv
-      JOIN discovered_videos dv ON ncv.video_id = dv.video_id
-      LEFT JOIN video_scores vs ON dv.video_id = vs.video_id AND vs."window" = ${window}
-      LEFT JOIN channel_profiles_lite cpl ON dv.channel_id = cpl.channel_id
-      WHERE ncv.cluster_id = ${cluster.cluster_id}::uuid
-      ORDER BY ncv.rank_in_cluster ASC
-      LIMIT 3
-    `;
-
-    const sampleVideos: SampleVideo[] = videos.map(v => ({
-      videoId: v.video_id,
-      title: v.title,
-      thumbnailUrl: v.thumbnail_url,
-      channelId: v.channel_id,
-      channelTitle: v.channel_title,
-      channelSubscribers: v.subscriber_count ? Number(v.subscriber_count) : undefined,
-      viewCount: Number(v.view_count),
-      viewsPerDay: v.views_per_day,
-      publishedAt: v.published_at.toISOString(),
-    }));
+    const sampleVideos = await fetchClusterSampleVideos(cluster.cluster_id, window);
 
     const avgSubs = cluster.avg_channel_subs;
     const competitionLevel = avgSubs ? (avgSubs < 10000 ? "low" : avgSubs < 100000 ? "medium" : "high") : "unknown";
@@ -453,13 +407,7 @@ async function fetchLowCompetition(window: string, limit: number): Promise<Disco
         `Competition: ${competitionLevel} (avg ${Math.round(avgSubs ?? 0).toLocaleString()} subs)`,
       ],
       sampleVideos,
-      metrics: {
-        medianViewsPerDay: cluster.median_views_per_day ?? 0,
-        totalVideos: cluster.total_videos ?? 0,
-        uniqueChannels: cluster.unique_channels ?? 0,
-        avgDaysOld: cluster.avg_days_old ?? 0,
-        opportunityScore: cluster.opportunity_score ?? undefined,
-      },
+      metrics: buildNicheMetrics(cluster),
       queryTerms: [cluster.label.toLowerCase()],
       tags: cluster.keywords?.slice(0, 6) ?? [],
     });

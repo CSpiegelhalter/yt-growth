@@ -21,8 +21,7 @@ import { stableHash } from "@/lib/stable-hash";
 // NICHE TEXT UTILITIES
 // ============================================
 
-// Common stopwords to filter from query generation
-const STOPWORDS = new Set([
+export const STOPWORDS = new Set([
   "the",
   "a",
   "an",
@@ -176,7 +175,7 @@ export function sanitizeNicheText(text: string): string {
 /**
  * Extract meaningful keywords from text.
  */
-function extractKeywords(text: string): string[] {
+export function extractKeywords(text: string): string[] {
   if (!text) return [];
 
   const words = text

@@ -1,0 +1,71 @@
+/* =====================================
+   Tag / Pill Component
+   Gradient-border pill with transparent fill.
+   Variants: positive | negative | neutral
+   ===================================== */
+
+.tag {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 20px;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text);
+  white-space: nowrap;
+  isolation: isolate;
+}
+
+/*
+ * Gradient border technique:
+ * ::before draws the gradient background at full size,
+ * then ::after masks the interior to keep bg transparent.
+ */
+.tag::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  z-index: -2;
+}
+
+.tag::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 18px;
+  background: var(--bg, #fafafa);
+  z-index: -1;
+}
+
+/* --- Positive --- */
+.positive::before {
+  background: var(--gradient-positive);
+}
+
+.positive {
+  color: var(--color-hot-rose);
+}
+
+/* --- Negative --- */
+.negative::before {
+  background: var(--gradient-negative);
+}
+
+.negative {
+  color: var(--color-imperial-blue);
+}
+
+/* --- Neutral --- */
+.neutral::before {
+  background: var(--gradient-neutral);
+}
+
+.neutral {
+  color: var(--color-stormy-teal);
+}

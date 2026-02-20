@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertCircleIcon } from "@/components/icons";
 import s from "./style.module.css";
 import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/product";
 
@@ -80,17 +81,7 @@ export default function BillingCTA({
         {/* Cancellation Notice */}
         {isCanceling && formattedEndDate && (
           <div className={s.cancelNotice} data-testid="cancellation-notice">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 8v4M12 16h.01" />
-            </svg>
+            <AlertCircleIcon size={16} />
             <span>
               Good until <strong>{formattedEndDate}</strong>
             </span>

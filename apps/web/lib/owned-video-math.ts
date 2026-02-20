@@ -447,20 +447,22 @@ function computeTrendMetrics(dailySeries: DailyAnalyticsRow[]): {
 /**
  * Compute channel baseline from multiple videos' derived metrics
  */
+export const EMPTY_CHANNEL_BASELINE: ChannelBaseline = {
+  sampleSize: 0,
+  viewsPerDay: { mean: 0, std: 0 },
+  avgViewPercentage: { mean: 0, std: 0 },
+  watchTimePerViewSec: { mean: 0, std: 0 },
+  subsPer1k: { mean: 0, std: 0 },
+  engagementPerView: { mean: 0, std: 0 },
+  sharesPer1k: { mean: 0, std: 0 },
+};
+
 export function computeChannelBaseline(
   videoMetrics: DerivedMetrics[],
 ): ChannelBaseline {
   const sampleSize = videoMetrics.length;
   if (sampleSize === 0) {
-    return {
-      sampleSize: 0,
-      viewsPerDay: { mean: 0, std: 0 },
-      avgViewPercentage: { mean: 0, std: 0 },
-      watchTimePerViewSec: { mean: 0, std: 0 },
-      subsPer1k: { mean: 0, std: 0 },
-      engagementPerView: { mean: 0, std: 0 },
-      sharesPer1k: { mean: 0, std: 0 },
-    };
+    return { ...EMPTY_CHANNEL_BASELINE };
   }
 
   return {

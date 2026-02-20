@@ -32,17 +32,6 @@
   flex-shrink: 0;
 }
 
-.engagementStat {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  color: var(--color-text-muted);
-}
-
-.engagementStat svg {
-  opacity: 0.7;
-}
-
 .engagementStatLarge {
   display: inline-flex;
   align-items: center;

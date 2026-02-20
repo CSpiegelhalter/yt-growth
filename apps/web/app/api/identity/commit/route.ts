@@ -20,6 +20,7 @@ import {
   verifyModelVersion,
 } from "@/lib/replicate/client";
 import { computeDatasetHash, MIN_TRAINING_PHOTOS } from "@/lib/identity/modelService";
+import { getAppBaseUrl } from "@/lib/server/url";
 
 export const runtime = "nodejs";
 
@@ -59,12 +60,6 @@ function getModelOwner(): string {
   const o = process.env.REPLICATE_MODEL_OWNER;
   if (!o) throw new Error("REPLICATE_MODEL_OWNER not configured");
   return o;
-}
-
-function getAppBaseUrl(): string {
-  const u = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL;
-  if (!u) throw new Error("NEXT_PUBLIC_APP_URL not configured");
-  return u.replace(/\/$/, "");
 }
 
 export const POST = createApiRoute(

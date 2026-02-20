@@ -3,20 +3,13 @@ import {
   getMeServer,
   getChannelsServer,
   resolveActiveChannelId,
+  normalizePlan,
+  isAdminEmail,
+  GUEST_SHELL_PROPS,
 } from "@/lib/server/bootstrap";
 import { AppShellServer } from "@/components/navigation/AppShellServer";
 import { getFilteredNavItems } from "@/lib/nav-config.server";
 import "@/components/learn/learn-components.css";
-
-// Plan type mapping from Me.plan to AppShell Plan type
-type AppPlan = "FREE" | "PRO" | "ENTERPRISE";
-
-function normalizePlan(plan: string): AppPlan {
-  const upper = plan.toUpperCase();
-  if (upper === "PRO") return "PRO";
-  if (upper === "ENTERPRISE" || upper === "TEAM") return "ENTERPRISE";
-  return "FREE";
-}
 
 /**
  * Marketing layout for public pages.
@@ -41,13 +34,7 @@ export default async function MarketingLayout({
   if (!user) {
     return (
       <AppShellServer
-        channels={[]}
-        activeChannelId={null}
-        userEmail={null}
-        userName={null}
-        plan="FREE"
-        channelLimit={1}
-        isAdmin={false}
+        {...GUEST_SHELL_PROPS}
         primaryNavItems={navItems.primary}
         secondaryNavItems={navItems.secondary}
       >
@@ -64,15 +51,7 @@ export default async function MarketingLayout({
 
   const activeChannelId = resolveActiveChannelId(channels, null);
 
-  // Check admin status
-  const adminEmails = String(
-    process.env.ADMIN_EMAILS ?? process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? ""
-  )
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  const isAdmin =
-    adminEmails.length > 0 && adminEmails.includes(user.email.toLowerCase());
+  const isAdmin = isAdminEmail(user.email);
 
   return (
     <AppShellServer

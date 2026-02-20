@@ -468,62 +468,6 @@
 /* ================================
    Info Box (Tips/Context)
    ================================ */
-.infoBox {
-  display: flex;
-  gap: 12px;
-  padding: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  margin-bottom: 24px;
-}
-
-.infoIcon {
-  flex-shrink: 0;
-  color: var(--primary);
-  margin-top: 2px;
-}
-
-.infoContent {
-  flex: 1;
-}
-
-.infoTitle {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0 0 8px;
-}
-
-.infoList {
-  margin: 0 0 12px;
-  padding-left: 20px;
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
-
-.infoList li {
-  margin-bottom: 4px;
-}
-
-.infoList li:last-child {
-  margin-bottom: 0;
-}
-
-.infoList strong {
-  color: var(--text);
-}
-
-.infoWarning {
-  font-size: 0.8125rem;
-  color: var(--warning-text, #b45309);
-  margin: 0;
-  padding: 8px 12px;
-  background: var(--warning-bg, #fef3c7);
-  border-radius: 6px;
-}
-
 /* ================================
    No Tags State
    ================================ */
@@ -579,39 +523,6 @@
 
 .loadingText {
   font-size: 0.9375rem;
-}
-
-/* ================================
-   Empty State
-   ================================ */
-.emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 16px;
-  text-align: center;
-}
-
-.emptyIcon {
-  width: 48px;
-  height: 48px;
-  margin-bottom: 16px;
-  color: var(--border);
-}
-
-.emptyTitle {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--text);
-  margin: 0 0 8px;
-}
-
-.emptyText {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin: 0;
-  max-width: 300px;
 }
 
 /* ================================

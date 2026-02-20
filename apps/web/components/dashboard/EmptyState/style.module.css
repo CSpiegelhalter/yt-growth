@@ -72,10 +72,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-.featureIcon {
-  font-size: 1rem;
-}
-
 .btn {
   display: inline-flex;
   align-items: center;

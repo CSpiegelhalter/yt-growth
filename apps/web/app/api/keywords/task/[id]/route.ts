@@ -19,8 +19,6 @@ import {
   getGoogleTrendsTask,
   parseGoogleTrendsResult,
   DataForSEOError,
-  type KeywordMetrics,
-  type RelatedKeywordRow,
   type KeywordOverviewResponse,
   type KeywordRelatedResponse,
 } from "@/lib/dataforseo";
@@ -28,48 +26,50 @@ import {
   getPendingTask,
   completePendingTask,
 } from "@/lib/dataforseo/cache";
+import {
+  mapToLegacyOverviewRow,
+  mapToLegacyRelatedRow,
+} from "@/lib/keywords/mappers";
 
 // ============================================
-// RESPONSE MAPPERS (same as research route)
+// TASK STATUS HELPER
 // ============================================
 
-function mapToLegacyOverviewRow(metrics: KeywordMetrics) {
-  return {
-    keyword: metrics.keyword,
-    searchVolume: metrics.searchVolume,
-    keywordDifficulty: metrics.difficultyEstimate,
-    cpc: metrics.cpc,
-    competition: metrics.competition,
-    competitionIndex: metrics.competitionIndex,
-    competitionLevel: metrics.competitionLevel,
-    lowTopOfPageBid: metrics.lowTopOfPageBid,
-    highTopOfPageBid: metrics.highTopOfPageBid,
-    resultsCount: 0,
-    trend: metrics.trend,
-    monthlySearches: metrics.monthlySearches,
-    intent: metrics.intent,
-    spellingCorrectedFrom: metrics.spellingCorrectedFrom,
-    difficultyIsEstimate: true as const,
-  };
-}
+/**
+ * Handle the pending/error branches that are identical across all task types.
+ * Returns a Response for pending/error, or null when the task completed.
+ */
+function handlePendingOrError(
+  result: { status: string; error?: string },
+  ctx: { userId: number; taskId: string; mode: string; requestId: string },
+): Response | null {
+  if (result.status === "pending") {
+    logger.info("keywords.task_still_pending", {
+      userId: ctx.userId,
+      taskId: ctx.taskId,
+      mode: ctx.mode,
+    });
+    return jsonOk(
+      { pending: true, taskId: ctx.taskId, message: "Still processing..." },
+      { requestId: ctx.requestId },
+    );
+  }
 
-function mapToLegacyRelatedRow(row: RelatedKeywordRow) {
-  return {
-    keyword: row.keyword,
-    searchVolume: row.searchVolume,
-    keywordDifficulty: row.difficultyEstimate,
-    cpc: row.cpc,
-    competition: row.competition,
-    competitionIndex: row.competitionIndex,
-    competitionLevel: row.competitionLevel,
-    lowTopOfPageBid: row.lowTopOfPageBid,
-    highTopOfPageBid: row.highTopOfPageBid,
-    resultsCount: 0,
-    trend: row.trend,
-    monthlySearches: row.monthlySearches,
-    relevance: row.relevance,
-    difficultyIsEstimate: true as const,
-  };
+  if (result.status === "error") {
+    logger.error("keywords.task_error", {
+      userId: ctx.userId,
+      taskId: ctx.taskId,
+      error: result.error,
+    });
+    return jsonError({
+      status: 500,
+      code: "INTEGRATION_ERROR",
+      message: result.error || "Task failed",
+      requestId: ctx.requestId,
+    });
+  }
+
+  return null;
 }
 
 // ============================================
@@ -99,7 +99,6 @@ export const GET = createApiRoute(
     const pendingTask = await getPendingTask(taskId);
 
     if (!pendingTask) {
-      // Task not found - could be expired, completed, or never existed
       return jsonError({
         status: 404,
         code: "NOT_FOUND",
@@ -109,46 +108,14 @@ export const GET = createApiRoute(
     }
 
     const { mode, phrase, location } = pendingTask;
+    const pollCtx = { userId: user.id, taskId, mode, requestId: api.requestId };
 
     try {
-      // Fetch task results based on mode
       if (mode === "trends") {
-        // Google Trends mode
         const result = await getGoogleTrendsTask(taskId);
+        const earlyReturn = handlePendingOrError(result, pollCtx);
+        if (earlyReturn) return earlyReturn;
 
-        if (result.status === "pending") {
-          logger.info("keywords.task_still_pending", {
-            userId: user.id,
-            taskId,
-            mode,
-          });
-
-          return jsonOk(
-            {
-              pending: true,
-              taskId,
-              message: "Still processing...",
-            },
-            { requestId: api.requestId }
-          );
-        }
-
-        if (result.status === "error") {
-          logger.error("keywords.task_error", {
-            userId: user.id,
-            taskId,
-            error: result.error,
-          });
-
-          return jsonError({
-            status: 500,
-            code: "INTEGRATION_ERROR",
-            message: result.error || "Task failed",
-            requestId: api.requestId,
-          });
-        }
-
-        // Task completed successfully - parse the result
         if (!result.data) {
           return jsonOk(
             {
@@ -172,14 +139,10 @@ export const GET = createApiRoute(
         }
 
         const response = parseGoogleTrendsResult(result.data, phrase, location, taskId);
-
-        // Update cache with completed results
         await completePendingTask(taskId, response);
 
         logger.info("keywords.task_completed", {
-          userId: user.id,
-          taskId,
-          mode,
+          userId: user.id, taskId, mode,
           dataPoints: response.interestOverTime.length,
         });
 
@@ -204,59 +167,19 @@ export const GET = createApiRoute(
         );
       } else if (mode === "overview" || mode === "search_volume") {
         const result = await getSearchVolumeTask(taskId);
+        const earlyReturn = handlePendingOrError(result, pollCtx);
+        if (earlyReturn) return earlyReturn;
 
-        if (result.status === "pending") {
-          logger.info("keywords.task_still_pending", {
-            userId: user.id,
-            taskId,
-            mode,
-          });
-
-          return jsonOk(
-            {
-              pending: true,
-              taskId,
-              message: "Still processing...",
-            },
-            { requestId: api.requestId }
-          );
-        }
-
-        if (result.status === "error") {
-          logger.error("keywords.task_error", {
-            userId: user.id,
-            taskId,
-            error: result.error,
-          });
-
-        return jsonError({
-          status: 500,
-          code: "INTEGRATION_ERROR",
-          message: result.error || "Task failed",
-          requestId: api.requestId,
-        });
-        }
-
-        // Task completed successfully
         const response: KeywordOverviewResponse = {
           rows: result.data ?? [],
-          meta: {
-            location,
-            fetchedAt: new Date().toISOString(),
-            taskId,
-          },
+          meta: { location, fetchedAt: new Date().toISOString(), taskId },
         };
 
-        // Update cache with completed results
         await completePendingTask(taskId, response);
-
         const rows = response.rows.map(mapToLegacyOverviewRow);
 
         logger.info("keywords.task_completed", {
-          userId: user.id,
-          taskId,
-          mode,
-          rowCount: rows.length,
+          userId: user.id, taskId, mode, rowCount: rows.length,
         });
 
         return jsonOk(
@@ -274,62 +197,20 @@ export const GET = createApiRoute(
           { requestId: api.requestId }
         );
       } else {
-        // Related keywords mode
         const result = await getKeywordsForKeywordsTask(taskId);
+        const earlyReturn = handlePendingOrError(result, pollCtx);
+        if (earlyReturn) return earlyReturn;
 
-        if (result.status === "pending") {
-          logger.info("keywords.task_still_pending", {
-            userId: user.id,
-            taskId,
-            mode,
-          });
-
-          return jsonOk(
-            {
-              pending: true,
-              taskId,
-              message: "Still processing...",
-            },
-            { requestId: api.requestId }
-          );
-        }
-
-        if (result.status === "error") {
-          logger.error("keywords.task_error", {
-            userId: user.id,
-            taskId,
-            error: result.error,
-          });
-
-        return jsonError({
-          status: 500,
-          code: "INTEGRATION_ERROR",
-          message: result.error || "Task failed",
-          requestId: api.requestId,
-        });
-        }
-
-        // Task completed successfully
         const response: KeywordRelatedResponse = {
           rows: result.data ?? [],
-          meta: {
-            location,
-            phrase,
-            fetchedAt: new Date().toISOString(),
-            taskId,
-          },
+          meta: { location, phrase, fetchedAt: new Date().toISOString(), taskId },
         };
 
-        // Update cache with completed results
         await completePendingTask(taskId, response);
-
         const rows = response.rows.map(mapToLegacyRelatedRow);
 
         logger.info("keywords.task_completed", {
-          userId: user.id,
-          taskId,
-          mode,
-          rowCount: rows.length,
+          userId: user.id, taskId, mode, rowCount: rows.length,
         });
 
         return jsonOk(

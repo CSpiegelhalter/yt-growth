@@ -158,33 +158,23 @@ export async function upsertCompetitorVideo(
 ): Promise<void> {
   const now = new Date();
 
+  const fields = {
+    channelId: data.channelId,
+    channelTitle: data.channelTitle,
+    title: data.title,
+    description: data.description ?? undefined,
+    publishedAt: data.publishedAt,
+    durationSec: data.durationSec ?? undefined,
+    thumbnailUrl: data.thumbnailUrl ?? undefined,
+    tags: data.tags,
+    categoryId: data.categoryId ?? undefined,
+    lastFetchedAt: now,
+  };
+
   await prisma.competitorVideo.upsert({
     where: { videoId },
-    create: {
-      videoId,
-      channelId: data.channelId,
-      channelTitle: data.channelTitle,
-      title: data.title,
-      description: data.description ?? undefined,
-      publishedAt: data.publishedAt,
-      durationSec: data.durationSec ?? undefined,
-      thumbnailUrl: data.thumbnailUrl ?? undefined,
-      tags: data.tags,
-      categoryId: data.categoryId ?? undefined,
-      lastFetchedAt: now,
-    },
-    update: {
-      channelId: data.channelId,
-      channelTitle: data.channelTitle,
-      title: data.title,
-      description: data.description ?? undefined,
-      publishedAt: data.publishedAt,
-      durationSec: data.durationSec ?? undefined,
-      thumbnailUrl: data.thumbnailUrl ?? undefined,
-      tags: data.tags,
-      categoryId: data.categoryId ?? undefined,
-      lastFetchedAt: now,
-    },
+    create: { videoId, ...fields },
+    update: fields,
   });
 }
 

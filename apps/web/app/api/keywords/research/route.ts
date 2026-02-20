@@ -21,6 +21,7 @@ import { createApiRoute } from "@/lib/api/route";
 import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
 import { jsonOk, jsonError } from "@/lib/api/response";
+import { quotaExceededResponse } from "@/lib/api/quota";
 import { ApiError } from "@/lib/api/errors";
 import { getLimit, type Plan } from "@/lib/entitlements";
 import { checkAndIncrement, checkUsage } from "@/lib/usage";
@@ -37,14 +38,16 @@ import {
   type KeywordOverviewResponse,
   type KeywordRelatedResponse,
   type KeywordCombinedResponse,
-  type KeywordMetrics,
-  type RelatedKeywordRow,
 } from "@/lib/dataforseo";
 import {
   getCachedResponse,
   setCachedResponse,
   setPendingTask,
 } from "@/lib/dataforseo/cache";
+import {
+  mapToLegacyOverviewRow,
+  mapToLegacyRelatedRow,
+} from "@/lib/keywords/mappers";
 
 // ============================================
 // VALIDATION SCHEMA
@@ -113,58 +116,6 @@ function cleanupIpLimiter() {
       ipRateLimiter.delete(ip);
     }
   }
-}
-
-// ============================================
-// RESPONSE MAPPERS
-// ============================================
-
-/**
- * Map KeywordMetrics to the legacy KeywordOverviewRow format for backward compatibility.
- * This ensures existing UI code continues to work.
- */
-function mapToLegacyOverviewRow(metrics: KeywordMetrics) {
-  return {
-    keyword: metrics.keyword,
-    searchVolume: metrics.searchVolume,
-    // Map difficultyEstimate to keywordDifficulty for backward compatibility
-    keywordDifficulty: metrics.difficultyEstimate,
-    cpc: metrics.cpc,
-    competition: metrics.competition,
-    // Include new fields
-    competitionIndex: metrics.competitionIndex,
-    competitionLevel: metrics.competitionLevel,
-    lowTopOfPageBid: metrics.lowTopOfPageBid,
-    highTopOfPageBid: metrics.highTopOfPageBid,
-    resultsCount: 0, // Not available from Standard search_volume endpoint
-    trend: metrics.trend,
-    monthlySearches: metrics.monthlySearches,
-    intent: metrics.intent,
-    spellingCorrectedFrom: metrics.spellingCorrectedFrom,
-    difficultyIsEstimate: true as const,
-  };
-}
-
-/**
- * Map RelatedKeywordRow to legacy format.
- */
-function mapToLegacyRelatedRow(row: RelatedKeywordRow) {
-  return {
-    keyword: row.keyword,
-    searchVolume: row.searchVolume,
-    keywordDifficulty: row.difficultyEstimate,
-    cpc: row.cpc,
-    competition: row.competition,
-    competitionIndex: row.competitionIndex,
-    competitionLevel: row.competitionLevel,
-    lowTopOfPageBid: row.lowTopOfPageBid,
-    highTopOfPageBid: row.highTopOfPageBid,
-    resultsCount: 0,
-    trend: row.trend,
-    monthlySearches: row.monthlySearches,
-    relevance: row.relevance,
-    difficultyIsEstimate: true as const,
-  };
 }
 
 // ============================================
@@ -332,25 +283,14 @@ export const POST = createApiRoute(
     });
 
     if (!usageResult.allowed) {
-      logger.info("keywords.quota_exceeded", {
+      return quotaExceededResponse({
+        logEvent: "keywords.quota_exceeded",
         userId: user.id,
         plan,
+        limit,
         used: usageResult.used,
-        limit: usageResult.limit,
-      });
-
-      return jsonError({
-        status: 403,
-        code: "LIMIT_REACHED",
-        message: `You've used all ${limit} keyword searches for today.`,
+        resetAt: usageResult.resetAt,
         requestId: api.requestId,
-        details: {
-          used: usageResult.used,
-          limit: usageResult.limit,
-          remaining: 0,
-          resetAt: usageResult.resetAt,
-          upgrade: plan === "FREE",
-        },
       });
     }
 

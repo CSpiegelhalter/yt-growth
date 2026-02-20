@@ -8,8 +8,9 @@ import {
   type FormEvent,
 } from "react";
 import { useSearchParams } from "next/navigation";
+import { CompassIcon, AlertCircleIcon, SearchIcon } from "@/components/icons";
 import NicheDiscoveryCard from "./NicheDiscoveryCard";
-import FilterDrawer from "./FilterDrawer";
+import FilterDrawer from "@/components/FilterDrawer/FilterDrawer";
 import type {
   DiscoveredNiche,
   DiscoveryFilters,
@@ -439,17 +440,7 @@ export default function TrendingClient({
         </div>
         <div className={s.lockedState}>
           <div className={s.lockedIcon}>
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-            </svg>
+            <CompassIcon size={48} strokeWidth={1.5} />
           </div>
           <h2 className={s.lockedTitle}>Unlock Trending Search</h2>
           <p className={s.lockedDesc}>
@@ -844,17 +835,7 @@ export default function TrendingClient({
       {/* Error State */}
       {error && (
         <div className={s.discoveryError}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v4M12 16h.01" />
-          </svg>
+          <AlertCircleIcon size={20} />
           <p>{error}</p>
           <button type="button" onClick={handleDiscover} className={s.retryBtn}>
             Retry
@@ -874,17 +855,7 @@ export default function TrendingClient({
       {!isLoading && !error && !hasSearched && (
         <div className={s.discoveryEmpty}>
           <div className={s.discoveryEmptyIcon}>
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-            </svg>
+            <CompassIcon size={48} strokeWidth={1.5} />
           </div>
           <h3 className={s.discoveryEmptyTitle}>Discover Rising Niches</h3>
           <p className={s.discoveryEmptyDesc}>
@@ -899,17 +870,7 @@ export default function TrendingClient({
       {!isLoading && !error && hasSearched && visibleNiches.length === 0 && (
         <div className={s.discoveryEmpty}>
           <div className={s.discoveryEmptyIcon}>
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
+            <SearchIcon size={48} strokeWidth={1.5} />
           </div>
           <h3 className={s.discoveryEmptyTitle}>No Niches Found</h3>
           <p className={s.discoveryEmptyDesc}>

@@ -1,3 +1,4 @@
+import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
 import s from "./style.module.css";
 
 /**
@@ -7,7 +8,6 @@ import s from "./style.module.css";
 export default function DashboardLoading() {
   return (
     <div className={s.page}>
-      {/* Header skeleton */}
       <header className={s.header}>
         <div
           className="skeleton"
@@ -16,18 +16,9 @@ export default function DashboardLoading() {
         <div className="skeleton" style={{ height: 20, width: 280 }} />
       </header>
 
-      {/* Video grid skeleton */}
       <div className={s.content}>
         <div className={s.videoList}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className={s.videoCardSkeleton}>
-              <div className={s.skeletonThumb} />
-              <div className={s.skeletonContent}>
-                <div className={s.skeletonTitle} />
-                <div className={s.skeletonMeta} />
-              </div>
-            </div>
-          ))}
+          <VideoCardSkeletons s={s} />
         </div>
       </div>
     </div>

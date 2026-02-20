@@ -11,15 +11,20 @@ import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/user";
 import { resetUserUsage, getAllUsage } from "@/lib/usage";
 
-async function POSTHandler(req: NextRequest) {
-  void req;
-  // Block in production
+function devOnly(): Response | null {
   if (process.env.NODE_ENV === "production") {
     return Response.json(
       { error: "This endpoint is not available in production" },
-      { status: 403 }
+      { status: 403 },
     );
   }
+  return null;
+}
+
+async function POSTHandler(req: NextRequest) {
+  void req;
+  const blocked = devOnly();
+  if (blocked) return blocked;
 
   try {
     const user = await getCurrentUser();
@@ -27,13 +32,8 @@ async function POSTHandler(req: NextRequest) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get usage before reset (for logging)
     const beforeUsage = await getAllUsage(user.id);
-
-    // Reset all usage for today
     await resetUserUsage(user.id);
-
-    // Get usage after reset
     const afterUsage = await getAllUsage(user.id);
 
     return Response.json({
@@ -66,13 +66,8 @@ export const POST = createApiRoute(
  */
 async function GETHandler(req: NextRequest) {
   void req;
-  // Block in production
-  if (process.env.NODE_ENV === "production") {
-    return Response.json(
-      { error: "This endpoint is not available in production" },
-      { status: 403 }
-    );
-  }
+  const blocked = devOnly();
+  if (blocked) return blocked;
 
   try {
     const user = await getCurrentUser();

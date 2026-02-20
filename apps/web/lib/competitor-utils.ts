@@ -16,6 +16,15 @@ import { daysSince } from "@/lib/youtube/utils";
 
 type DurationBucket = "Shorts" | "Short" | "Medium" | "Long" | "Very Long";
 
+function parseDurationParts(seconds: number): { h: number; m: number; s: number } | null {
+  if (seconds < 0 || !Number.isFinite(seconds)) return null;
+  return {
+    h: Math.floor(seconds / 3600),
+    m: Math.floor((seconds % 3600) / 60),
+    s: Math.floor(seconds % 60),
+  };
+}
+
 /**
  * Format duration consistently across the app.
  * Never shows "0 minutes" - always uses seconds for short content.
@@ -26,18 +35,12 @@ type DurationBucket = "Shorts" | "Short" | "Medium" | "Long" | "Very Long";
  * formatDuration(3661) => "1h 1m"
  */
 export function formatDuration(seconds: number): string {
-  if (seconds < 0 || !Number.isFinite(seconds)) return "—";
+  const p = parseDurationParts(seconds);
+  if (!p) return "—";
+  const { h, m, s } = p;
 
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-
-  if (h > 0) {
-    return m > 0 ? `${h}h ${m}m` : `${h}h`;
-  }
-  if (m > 0) {
-    return s > 0 ? `${m}m ${s}s` : `${m}m`;
-  }
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  if (m > 0) return s > 0 ? `${m}m ${s}s` : `${m}m`;
   return `${s}s`;
 }
 
@@ -45,11 +48,9 @@ export function formatDuration(seconds: number): string {
  * Format duration as a compact badge label (e.g., "10:05")
  */
 export function formatDurationBadge(seconds: number): string {
-  if (seconds < 0 || !Number.isFinite(seconds)) return "—";
-
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
+  const p = parseDurationParts(seconds);
+  if (!p) return "—";
+  const { h, m, s } = p;
 
   if (h > 0) {
     return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;

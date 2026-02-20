@@ -1,3 +1,4 @@
+import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
 import s from "./style.module.css";
 
 /**
@@ -7,7 +8,6 @@ import s from "./style.module.css";
 export default function SubscriberInsightsLoading() {
   return (
     <div className={s.page}>
-      {/* Header skeleton */}
       <header className={s.header}>
         <div
           className="skeleton"
@@ -16,7 +16,6 @@ export default function SubscriberInsightsLoading() {
         <div className="skeleton" style={{ height: 20, width: 300 }} />
       </header>
 
-      {/* Summary cards skeleton */}
       <div className={s.summarySection}>
         <div className={s.summaryGrid}>
           {Array.from({ length: 4 }).map((_, i) => (
@@ -34,17 +33,8 @@ export default function SubscriberInsightsLoading() {
         </div>
       </div>
 
-      {/* Video grid skeleton */}
       <div className={s.videoGrid}>
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className={s.videoCardSkeleton}>
-            <div className={s.skeletonThumb} />
-            <div className={s.skeletonContent}>
-              <div className={s.skeletonTitle} />
-              <div className={s.skeletonMeta} />
-            </div>
-          </div>
-        ))}
+        <VideoCardSkeletons s={s} />
       </div>
     </div>
   );

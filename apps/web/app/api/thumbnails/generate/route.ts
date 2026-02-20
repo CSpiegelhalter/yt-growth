@@ -11,6 +11,7 @@ import { buildThumbnailPrompt } from "@/lib/server/prompting/buildThumbnailPromp
 import { runPrediction } from "@/lib/server/replicate/runPrediction";
 import { verifyModelVersion } from "@/lib/replicate/client";
 import { createLogger } from "@/lib/logger";
+import { getAppBaseUrl } from "@/lib/server/url";
 
 export const runtime = "nodejs";
 
@@ -23,15 +24,6 @@ const bodySchema = z.object({
   identityModelId: z.string().uuid().optional(),
   variants: z.number().int().min(1).max(4).optional().default(3),
 });
-
-function getAppBaseUrl(req: NextRequest): string {
-  const env = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL;
-  if (env) return env.replace(/\/$/, "");
-  const proto = req.headers.get("x-forwarded-proto") ?? "http";
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
-  if (!host) throw new Error("Cannot determine base URL for webhooks");
-  return `${proto}://${host}`;
-}
 
 export const POST = createApiRoute(
   { route: "/api/thumbnails/generate" },

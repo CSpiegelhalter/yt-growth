@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { timingSafeEqualHex } from "@/lib/crypto";
 
 /**
  * Replicate webhook verification.
@@ -14,19 +15,7 @@ import crypto from "crypto";
  * This is intentionally strict: if env is configured, verification must pass.
  */
 
-// Stripe-like timestamp tolerance to mitigate replay attacks
 const TOLERANCE_SECONDS = 5 * 60;
-
-function timingSafeEqualHex(a: string, b: string): boolean {
-  try {
-    const ab = Buffer.from(a, "hex");
-    const bb = Buffer.from(b, "hex");
-    if (ab.length !== bb.length) return false;
-    return crypto.timingSafeEqual(ab, bb);
-  } catch {
-    return false;
-  }
-}
 
 function verifySigned(payload: string, signatureHeader: string) {
   const SIGNING_SECRET = process.env.REPLICATE_WEBHOOK_SIGNING_SECRET;

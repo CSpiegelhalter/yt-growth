@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import { SearchIcon, AlertCircleIcon } from "@/components/icons";
 import s from "./style.module.css";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 import type { Me, Channel, CompetitorVideo } from "@/types/api";
@@ -308,17 +309,7 @@ export default function CompetitorsClient({
         </div>
         <div className={s.lockedState}>
           <div className={s.lockedIcon}>
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
+            <SearchIcon size={48} strokeWidth={1.5} />
           </div>
           <h2 className={s.lockedTitle}>Unlock Competitor Search</h2>
           <p className={s.lockedDesc}>
@@ -370,17 +361,7 @@ export default function CompetitorsClient({
       {/* Error Banner */}
       {error && (
         <div className={s.errorBanner}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v4M12 16h.01" />
-          </svg>
+          <AlertCircleIcon size={20} />
           <p className={s.errorMessage}>{error}</p>
           <button
             className={s.errorDismiss}
@@ -416,17 +397,7 @@ export default function CompetitorsClient({
       {!hasSearched && (
         <div className={s.emptyState}>
           <div className={s.emptyIcon}>
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
+            <SearchIcon size={48} strokeWidth={1.5} />
           </div>
           <h2 className={s.emptyTitle}>Search Any Niche</h2>
           <p className={s.emptyDesc}>

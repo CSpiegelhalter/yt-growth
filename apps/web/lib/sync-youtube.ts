@@ -67,12 +67,84 @@ type YouTubeVideoDetails = {
   };
 };
 
-/**
- * Sync user's YouTube channels from the API
- * Called after OAuth callback
- * @param userId - The user's database ID
- * @param googleAccountId - Optional: specific GoogleAccount to sync. If not provided, syncs ALL GoogleAccounts for the user.
- */
+async function upsertVideoAndMetrics(
+  channelDbId: number,
+  videoId: string,
+  snippet: { title: string; publishedAt: string; thumbnails?: any },
+  details: YouTubeVideoDetails | undefined,
+  cachedUntil: Date,
+) {
+  const thumb =
+    snippet.thumbnails?.high?.url ??
+    snippet.thumbnails?.medium?.url ??
+    snippet.thumbnails?.default?.url ??
+    null;
+
+  const durationSec = details?.contentDetails?.duration
+    ? parseDuration(details.contentDetails.duration)
+    : null;
+
+  const tags = details?.snippet?.tags?.join(",") ?? "";
+  const description = details?.snippet?.description ?? "";
+  const categoryId = details?.snippet?.categoryId ?? null;
+  const privacyStatus = details?.status?.privacyStatus ?? null;
+
+  const views = details?.statistics?.viewCount
+    ? parseInt(details.statistics.viewCount, 10)
+    : 0;
+  const likes = details?.statistics?.likeCount
+    ? parseInt(details.statistics.likeCount, 10)
+    : 0;
+
+  const video = await prisma.video.upsert({
+    where: {
+      channelId_youtubeVideoId: {
+        channelId: channelDbId,
+        youtubeVideoId: videoId,
+      },
+    },
+    update: {
+      title: snippet.title,
+      description,
+      thumbnailUrl: thumb,
+      publishedAt: new Date(snippet.publishedAt),
+      durationSec,
+      tags,
+      categoryId,
+      privacyStatus,
+    },
+    create: {
+      channelId: channelDbId,
+      youtubeVideoId: videoId,
+      title: snippet.title,
+      description,
+      thumbnailUrl: thumb,
+      publishedAt: new Date(snippet.publishedAt),
+      durationSec,
+      tags,
+      categoryId,
+      privacyStatus,
+    },
+  });
+
+  await prisma.videoMetrics.upsert({
+    where: { videoId: video.id },
+    update: {
+      views,
+      likes,
+      fetchedAt: new Date(),
+      cachedUntil,
+    },
+    create: {
+      videoId: video.id,
+      channelId: channelDbId,
+      views,
+      likes,
+      cachedUntil,
+    },
+  });
+}
+
 export async function syncUserChannels(
   userId: number,
   googleAccountId?: number
@@ -270,84 +342,17 @@ async function fetchChannelVideos(
         (detailsData.items ?? []).map((v) => [v.id, v])
       );
 
-      // Cache expiration for metrics (12 hours)
       const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
 
       for (const item of searchData.items ?? []) {
         const videoId = item.id.videoId;
-        const details = detailsMap.get(videoId);
-        const thumb =
-          item.snippet.thumbnails?.high?.url ??
-          item.snippet.thumbnails?.medium?.url ??
-          item.snippet.thumbnails?.default?.url ??
-          null;
-
-        const durationSec = details?.contentDetails?.duration
-          ? parseDuration(details.contentDetails.duration)
-          : null;
-
-        // Get tags, description, categoryId, and privacy status from video details
-        const tags = details?.snippet?.tags?.join(",") ?? "";
-        const description = details?.snippet?.description ?? "";
-        const categoryId = details?.snippet?.categoryId ?? null;
-        const privacyStatus = details?.status?.privacyStatus ?? null;
-
-        // Parse statistics from Data API (total lifetime counts)
-        const views = details?.statistics?.viewCount
-          ? parseInt(details.statistics.viewCount, 10)
-          : 0;
-        const likes = details?.statistics?.likeCount
-          ? parseInt(details.statistics.likeCount, 10)
-          : 0;
-
-        const video = await prisma.video.upsert({
-          where: {
-            channelId_youtubeVideoId: {
-              channelId: channelDbId,
-              youtubeVideoId: videoId,
-            },
-          },
-          update: {
-            title: item.snippet.title,
-            description,
-            thumbnailUrl: thumb,
-            publishedAt: new Date(item.snippet.publishedAt),
-            durationSec,
-            tags,
-            categoryId,
-            privacyStatus,
-          },
-          create: {
-            channelId: channelDbId,
-            youtubeVideoId: videoId,
-            title: item.snippet.title,
-            description,
-            thumbnailUrl: thumb,
-            publishedAt: new Date(item.snippet.publishedAt),
-            durationSec,
-            tags,
-            categoryId,
-            privacyStatus,
-          },
-        });
-
-        // Upsert VideoMetrics with Data API statistics (total views, not Analytics API)
-        await prisma.videoMetrics.upsert({
-          where: { videoId: video.id },
-          update: {
-            views,
-            likes,
-            fetchedAt: new Date(),
-            cachedUntil,
-          },
-          create: {
-            videoId: video.id,
-            channelId: channelDbId,
-            views,
-            likes,
-            cachedUntil,
-          },
-        });
+        await upsertVideoAndMetrics(
+          channelDbId,
+          videoId,
+          item.snippet,
+          detailsMap.get(videoId),
+          cachedUntil,
+        );
       }
 
       // Update channel lastSyncedAt and return
@@ -427,84 +432,17 @@ async function fetchChannelVideos(
 
     const detailsMap = new Map(allDetails.map((v) => [v.id, v]));
 
-    // Cache expiration for metrics (12 hours)
     const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
 
     for (const item of allPlaylistItems) {
       const videoId = item.contentDetails.videoId;
-      const details = detailsMap.get(videoId);
-      const thumb =
-        item.snippet.thumbnails?.high?.url ??
-        item.snippet.thumbnails?.medium?.url ??
-        item.snippet.thumbnails?.default?.url ??
-        null;
-
-      const durationSec = details?.contentDetails?.duration
-        ? parseDuration(details.contentDetails.duration)
-        : null;
-
-      // Get tags, description, categoryId, and privacy status from video details
-      const tags = details?.snippet?.tags?.join(",") ?? "";
-      const description = details?.snippet?.description ?? "";
-      const categoryId = details?.snippet?.categoryId ?? null;
-      const privacyStatus = details?.status?.privacyStatus ?? null;
-
-      // Parse statistics from Data API (total lifetime counts)
-      const views = details?.statistics?.viewCount
-        ? parseInt(details.statistics.viewCount, 10)
-        : 0;
-      const likes = details?.statistics?.likeCount
-        ? parseInt(details.statistics.likeCount, 10)
-        : 0;
-
-      const video = await prisma.video.upsert({
-        where: {
-          channelId_youtubeVideoId: {
-            channelId: channelDbId,
-            youtubeVideoId: videoId,
-          },
-        },
-        update: {
-          title: item.snippet.title,
-          description,
-          thumbnailUrl: thumb,
-          publishedAt: new Date(item.snippet.publishedAt),
-          durationSec,
-          tags,
-          categoryId,
-          privacyStatus,
-        },
-        create: {
-          channelId: channelDbId,
-          youtubeVideoId: videoId,
-          title: item.snippet.title,
-          description,
-          thumbnailUrl: thumb,
-          publishedAt: new Date(item.snippet.publishedAt),
-          durationSec,
-          tags,
-          categoryId,
-          privacyStatus,
-        },
-      });
-
-      // Upsert VideoMetrics with Data API statistics (total views, not Analytics API)
-      await prisma.videoMetrics.upsert({
-        where: { videoId: video.id },
-        update: {
-          views,
-          likes,
-          fetchedAt: new Date(),
-          cachedUntil,
-        },
-        create: {
-          videoId: video.id,
-          channelId: channelDbId,
-          views,
-          likes,
-          cachedUntil,
-        },
-      });
+      await upsertVideoAndMetrics(
+        channelDbId,
+        videoId,
+        item.snippet,
+        detailsMap.get(videoId),
+        cachedUntil,
+      );
     }
 
     // Update channel video count

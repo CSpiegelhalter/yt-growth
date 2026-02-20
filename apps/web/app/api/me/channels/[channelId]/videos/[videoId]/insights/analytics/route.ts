@@ -30,6 +30,7 @@ import {
   detectBottleneck,
   computeSectionConfidence,
   isLowDataMode,
+  EMPTY_CHANNEL_BASELINE,
   type DerivedMetrics,
   type ChannelBaseline,
 } from "@/lib/owned-video-math";
@@ -484,15 +485,7 @@ async function getChannelBaselineFromDB(
   `;
 
   if (otherVideos.length === 0) {
-    return {
-      sampleSize: 0,
-      viewsPerDay: { mean: 0, std: 0 },
-      avgViewPercentage: { mean: 0, std: 0 },
-      watchTimePerViewSec: { mean: 0, std: 0 },
-      subsPer1k: { mean: 0, std: 0 },
-      engagementPerView: { mean: 0, std: 0 },
-      sharesPer1k: { mean: 0, std: 0 },
-    };
+    return { ...EMPTY_CHANNEL_BASELINE };
   }
 
   const derivedList: DerivedMetrics[] = otherVideos.map((v) => {
@@ -558,64 +551,40 @@ async function storeDailyAnalytics(
   for (let i = 0; i < dailySeries.length; i += chunkSize) {
     const chunk = dailySeries.slice(i, i + chunkSize);
     await prisma.$transaction(
-      chunk.map((day) =>
-        prisma.ownedVideoAnalyticsDay.upsert({
+      chunk.map((day) => {
+        const metrics = {
+          views: day.views,
+          engagedViews: day.engagedViews,
+          comments: day.comments,
+          likes: day.likes,
+          shares: day.shares,
+          estimatedMinutesWatched: day.estimatedMinutesWatched,
+          averageViewDuration: day.averageViewDuration,
+          averageViewPercentage: day.averageViewPercentage,
+          subscribersGained: day.subscribersGained,
+          subscribersLost: day.subscribersLost,
+          videosAddedToPlaylists: day.videosAddedToPlaylists,
+          videosRemovedFromPlaylists: day.videosRemovedFromPlaylists,
+          estimatedRevenue: day.estimatedRevenue,
+          estimatedAdRevenue: day.estimatedAdRevenue,
+          grossRevenue: day.grossRevenue,
+          monetizedPlaybacks: day.monetizedPlaybacks,
+          playbackBasedCpm: day.playbackBasedCpm,
+          adImpressions: day.adImpressions,
+          cpm: day.cpm,
+        };
+
+        return prisma.ownedVideoAnalyticsDay.upsert({
           where: {
             userId_channelId_videoId_date: {
-              userId,
-              channelId,
-              videoId,
+              userId, channelId, videoId,
               date: new Date(day.date),
             },
           },
-          create: {
-            userId,
-            channelId,
-            videoId,
-            date: new Date(day.date),
-            views: day.views,
-            engagedViews: day.engagedViews,
-            comments: day.comments,
-            likes: day.likes,
-            shares: day.shares,
-            estimatedMinutesWatched: day.estimatedMinutesWatched,
-            averageViewDuration: day.averageViewDuration,
-            averageViewPercentage: day.averageViewPercentage,
-            subscribersGained: day.subscribersGained,
-            subscribersLost: day.subscribersLost,
-            videosAddedToPlaylists: day.videosAddedToPlaylists,
-            videosRemovedFromPlaylists: day.videosRemovedFromPlaylists,
-            estimatedRevenue: day.estimatedRevenue,
-            estimatedAdRevenue: day.estimatedAdRevenue,
-            grossRevenue: day.grossRevenue,
-            monetizedPlaybacks: day.monetizedPlaybacks,
-            playbackBasedCpm: day.playbackBasedCpm,
-            adImpressions: day.adImpressions,
-            cpm: day.cpm,
-          },
-          update: {
-            views: day.views,
-            engagedViews: day.engagedViews,
-            comments: day.comments,
-            likes: day.likes,
-            shares: day.shares,
-            estimatedMinutesWatched: day.estimatedMinutesWatched,
-            averageViewDuration: day.averageViewDuration,
-            averageViewPercentage: day.averageViewPercentage,
-            subscribersGained: day.subscribersGained,
-            subscribersLost: day.subscribersLost,
-            videosAddedToPlaylists: day.videosAddedToPlaylists,
-            videosRemovedFromPlaylists: day.videosRemovedFromPlaylists,
-            estimatedRevenue: day.estimatedRevenue,
-            estimatedAdRevenue: day.estimatedAdRevenue,
-            grossRevenue: day.grossRevenue,
-            monetizedPlaybacks: day.monetizedPlaybacks,
-            playbackBasedCpm: day.playbackBasedCpm,
-            adImpressions: day.adImpressions,
-            cpm: day.cpm,
-          },
-        }),
-      ),
+          create: { userId, channelId, videoId, date: new Date(day.date), ...metrics },
+          update: metrics,
+        });
+      }),
     );
   }
 }

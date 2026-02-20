@@ -1,9 +1,6 @@
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
-import { getCurrentUserWithSubscription } from "@/lib/user";
-import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { callLLM } from "@/lib/llm";
 import type {
   DerivedMetrics,
@@ -11,11 +8,10 @@ import type {
 } from "@/lib/owned-video-math";
 import type { VideoMetadata } from "@/lib/youtube-analytics";
 import type { ChannelProfileAI } from "@/lib/channel-profile/types";
-import { channelVideoParamsSchema } from "@/lib/competitors/video-detail/validation";
-
-const QuerySchema = z.object({
-  range: z.enum(["7d", "28d", "90d"]).default("28d"),
-});
+import {
+  getVideoInsightsContext,
+  isErrorResponse,
+} from "@/lib/insights/context";
 
 export type RemixIdea = {
   title: string;
@@ -29,85 +25,20 @@ export type IdeasAnalysis = {
   contentGaps: string[];
 };
 
-/**
- * GET - Fetch content ideas (deep dive, lazy loaded)
- */
 async function GETHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string; videoId: string }> },
 ) {
-  const resolvedParams = await params;
-
-  const parsedParams = channelVideoParamsSchema.safeParse(resolvedParams);
-  if (!parsedParams.success) {
-    return Response.json({ error: "Invalid parameters" }, { status: 400 });
-  }
-
-  const { channelId, videoId } = parsedParams.data;
-
-  const url = new URL(req.url);
-  const queryResult = QuerySchema.safeParse({
-    range: url.searchParams.get("range") ?? "28d",
-  });
-  if (!queryResult.success) {
-    return Response.json(
-      { error: "Invalid query parameters" },
-      { status: 400 },
-    );
-  }
-  const { range } = queryResult.data;
+  const ctx = await getVideoInsightsContext(req, params);
+  if (isErrorResponse(ctx)) return ctx;
 
   try {
-    const user = await getCurrentUserWithSubscription();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const channel = await prisma.channel.findFirst({
-      where: { youtubeChannelId: channelId, userId: user.id },
-    });
-    if (!channel) {
-      return Response.json({ error: "Channel not found" }, { status: 404 });
-    }
-
-    // Get cached analytics data
-    const cached = await prisma.ownedVideoInsightsCache.findFirst({
-      where: {
-        userId: user.id,
-        channelId: channel.id,
-        videoId,
-        range,
-      },
-    });
-
-    if (!cached?.derivedJson) {
-      return Response.json(
-        { error: "Analytics not loaded. Call /analytics first." },
-        { status: 400 },
-      );
-    }
-
-    const derivedData = cached.derivedJson as any;
-
-    // Rate limit (uses same limit as main insights)
-    const rateResult = checkRateLimit(
-      rateLimitKey("videoInsights", user.id),
-      RATE_LIMITS.videoInsights,
-    );
-    if (!rateResult.success) {
-      return Response.json(
-        { error: "Rate limit exceeded", retryAfter: rateResult.resetAt },
-        { status: 429 },
-      );
-    }
-
-    // Fetch channel profile for better idea context
     let channelProfile: ChannelProfileAI | null = null;
     try {
       const profiles = await prisma.$queryRaw<
         { aiProfileJson: string | null }[]
       >`
-        SELECT "aiProfileJson" FROM "ChannelProfile" WHERE "channelId" = ${channel.id} LIMIT 1
+        SELECT "aiProfileJson" FROM "ChannelProfile" WHERE "channelId" = ${ctx.channel.id} LIMIT 1
       `;
       if (profiles[0]?.aiProfileJson) {
         channelProfile = JSON.parse(
@@ -115,13 +46,13 @@ async function GETHandler(
         ) as ChannelProfileAI;
       }
     } catch {
-      // Profile table may not exist or no profile set - continue without it
+      // Profile table may not exist or no profile set
     }
 
     const ideas = await generateIdeasAnalysis(
-      derivedData.video,
-      derivedData.derived,
-      derivedData.comparison,
+      ctx.derivedData.video,
+      ctx.derivedData.derived,
+      ctx.derivedData.comparison,
       channelProfile,
     );
 
@@ -132,12 +63,11 @@ async function GETHandler(
       );
     }
 
-    // Return with 12-hour cache header for browser caching
     return Response.json(
       { ideas },
       {
         headers: {
-          "Cache-Control": "private, max-age=43200", // 12 hours
+          "Cache-Control": "private, max-age=43200",
         },
       },
     );
@@ -161,7 +91,6 @@ async function generateIdeasAnalysis(
   _comparison: BaselineComparison,
   channelProfile: ChannelProfileAI | null,
 ): Promise<IdeasAnalysis | null> {
-  // Build channel profile context if available
   const profileContext = channelProfile
     ? `
 CHANNEL PROFILE (use as PRIMARY context for idea generation):

@@ -20,38 +20,15 @@ import {
   ChannelProfileAI,
   ChannelProfileInput,
 } from "@/lib/channel-profile/types";
+import { YOUTUBE_CATEGORIES } from "@/lib/youtube/constants";
 
-// Number of recent videos to analyze for niche detection
 const NICHE_VIDEO_COUNT = 15;
 
-// Cache duration: 7 days (but will regenerate early if video titles change)
 const NICHE_CACHE_DAYS = 7;
 
-// In-flight niche generation promises (for deduplication)
-// This prevents duplicate LLM calls if dashboard and competitors page both request niche simultaneously
 const inFlightGenerations = new Map<number, Promise<ChannelNicheData | null>>();
 
-// Clean up old entries after 5 minutes (in case of errors/hangs)
 const IN_FLIGHT_TIMEOUT_MS = 5 * 60 * 1000;
-
-// YouTube Video Category ID to Name mapping
-const YOUTUBE_CATEGORIES: Record<string, string> = {
-  "1": "Film & Animation",
-  "2": "Autos & Vehicles",
-  "10": "Music",
-  "15": "Pets & Animals",
-  "17": "Sports",
-  "19": "Travel & Events",
-  "20": "Gaming",
-  "22": "People & Blogs",
-  "23": "Comedy",
-  "24": "Entertainment",
-  "25": "News & Politics",
-  "26": "Howto & Style",
-  "27": "Education",
-  "28": "Science & Technology",
-  "29": "Nonprofits & Activism",
-};
 
 // NOTE: We no longer filter tags or title keywords.
 // The LLM should receive ALL raw titles and tags because even "small" tokens

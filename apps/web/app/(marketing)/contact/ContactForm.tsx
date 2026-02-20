@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { AlertCircleIcon } from "@/components/icons";
 import s from "./style.module.css";
 
 type Props = {
@@ -157,18 +158,7 @@ export default function ContactForm({ userEmail }: Props) {
           />
           {errors.email && (
             <p className={s.fieldError}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 8v4M12 16h.01" />
-              </svg>
+              <AlertCircleIcon size={14} aria-hidden="true" />
               {errors.email}
             </p>
           )}
@@ -212,18 +202,7 @@ export default function ContactForm({ userEmail }: Props) {
           />
           {errors.message ? (
             <p className={s.fieldError}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 8v4M12 16h.01" />
-              </svg>
+              <AlertCircleIcon size={14} aria-hidden="true" />
               {errors.message}
             </p>
           ) : (

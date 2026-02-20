@@ -10,6 +10,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/prisma";
 import { getSubscriptionStatus } from "@/lib/stripe";
+import { CHANNEL_LIST_SELECT, CHANNEL_LIST_ORDER_BY } from "@/lib/server/channel-query";
 import type { Me, Channel } from "@/types/api";
 
 type BootstrapUser = {
@@ -95,25 +96,8 @@ const getMeServerCached = cache(
 const getChannelsServerCached = cache(async (userId: number): Promise<Channel[]> => {
   const channels = await prisma.channel.findMany({
     where: { userId },
-    orderBy: [{ connectedAt: "desc" }],
-    select: {
-      id: true,
-      youtubeChannelId: true,
-      title: true,
-      thumbnailUrl: true,
-      totalVideoCount: true,
-      subscriberCount: true,
-      connectedAt: true,
-      lastSyncedAt: true,
-      syncStatus: true,
-      syncError: true,
-      _count: {
-        select: {
-          Video: true,
-          Plan: true,
-        },
-      },
-    },
+    orderBy: CHANNEL_LIST_ORDER_BY,
+    select: CHANNEL_LIST_SELECT,
   });
 
   return channels.map((ch) => ({
@@ -254,4 +238,37 @@ export async function getAppBootstrapOptional(searchParams?: {
   channelId?: string;
 }): Promise<BootstrapData | null> {
   return getAppBootstrapOptionalCached(searchParams?.channelId ?? null);
+}
+
+type AppPlan = "FREE" | "PRO" | "ENTERPRISE";
+
+export function normalizePlan(plan: string): AppPlan {
+  const upper = plan.toUpperCase();
+  if (upper === "PRO") return "PRO";
+  if (upper === "ENTERPRISE" || upper === "TEAM") return "ENTERPRISE";
+  return "FREE";
+}
+
+/**
+ * Default AppShellServer props for unauthenticated (guest) users.
+ * Shared by marketing layout and dashboard layout.
+ */
+export const GUEST_SHELL_PROPS = {
+  channels: [] as Channel[],
+  activeChannelId: null,
+  userEmail: null,
+  userName: null,
+  plan: "FREE" as const,
+  channelLimit: 1,
+  isAdmin: false,
+};
+
+export function isAdminEmail(email: string): boolean {
+  const adminEmails = String(
+    process.env.ADMIN_EMAILS ?? process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? ""
+  )
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return adminEmails.length > 0 && adminEmails.includes(email.toLowerCase());
 }

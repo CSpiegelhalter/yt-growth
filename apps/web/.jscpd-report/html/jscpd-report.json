@@ -1,6 +1,6 @@
 {
   "statistics": {
-    "detectionDate": "2026-02-20T17:36:45.263Z",
+    "detectionDate": "2026-02-20T18:25:18.783Z",
     "formats": {
       "typescript": {
         "sources": {
@@ -8,59 +8,59 @@
             "lines": 806,
             "tokens": 6304,
             "sources": 1,
-            "clones": 4,
-            "duplicatedLines": 93,
-            "duplicatedTokens": 915,
-            "percentage": 11.54,
-            "percentageTokens": 14.51,
+            "clones": 1,
+            "duplicatedLines": 26,
+            "duplicatedTokens": 270,
+            "percentage": 3.23,
+            "percentageTokens": 4.28,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/seo/route.ts": {
-            "lines": 281,
-            "tokens": 1876,
+            "lines": 205,
+            "tokens": 1232,
             "sources": 1,
-            "clones": 4,
-            "duplicatedLines": 113,
-            "duplicatedTokens": 1087,
-            "percentage": 40.21,
-            "percentageTokens": 57.94,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/ideas/route.ts": {
-            "lines": 224,
-            "tokens": 1642,
+            "lines": 153,
+            "tokens": 1013,
             "sources": 1,
-            "clones": 3,
-            "duplicatedLines": 79,
-            "duplicatedTokens": 726,
-            "percentage": 35.27,
-            "percentageTokens": 44.21,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/comments/route.ts": {
-            "lines": 225,
-            "tokens": 1834,
+            "lines": 155,
+            "tokens": 1198,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 65,
-            "duplicatedTokens": 622,
-            "percentage": 28.89,
-            "percentageTokens": 33.91,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/analytics/route.ts": {
-            "lines": 696,
-            "tokens": 5314,
+            "lines": 665,
+            "tokens": 5034,
             "sources": 1,
-            "clones": 4,
-            "duplicatedLines": 78,
-            "duplicatedTokens": 768,
-            "percentage": 11.21,
-            "percentageTokens": 14.45,
+            "clones": 1,
+            "duplicatedLines": 26,
+            "duplicatedTokens": 270,
+            "percentage": 3.91,
+            "percentageTokens": 5.36,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -68,11 +68,11 @@
             "lines": 201,
             "tokens": 1434,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 19,
-            "duplicatedTokens": 124,
-            "percentage": 9.45,
-            "percentageTokens": 8.65,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -137,14 +137,14 @@
             "newClones": 0
           },
           "apps/web/app/api/me/channels/[channelId]/videos/route.ts": {
-            "lines": 132,
-            "tokens": 1027,
+            "lines": 116,
+            "tokens": 907,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 17,
-            "duplicatedTokens": 158,
-            "percentage": 12.88,
-            "percentageTokens": 15.38,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -173,14 +173,14 @@
             "newClones": 0
           },
           "apps/web/app/api/me/channels/[channelId]/profile/route.ts": {
-            "lines": 276,
-            "tokens": 1915,
+            "lines": 234,
+            "tokens": 1521,
             "sources": 1,
-            "clones": 3,
-            "duplicatedLines": 45,
-            "duplicatedTokens": 418,
-            "percentage": 16.3,
-            "percentageTokens": 21.83,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -280,42 +280,6 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "apps/web/.next/dev/node_modules/@prisma/client-2c3a283f134fdcb6/scripts/default-index.d.ts": {
-            "lines": 109,
-            "tokens": 1122,
-            "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 16,
-            "duplicatedTokens": 288,
-            "percentage": 14.68,
-            "percentageTokens": 25.67,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "apps/web/.next/dev/node_modules/@prisma/client-2c3a283f134fdcb6/scripts/default-deno-edge.ts": {
-            "lines": 8,
-            "tokens": 40,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "apps/web/.next/dev/node_modules/@prisma/client-2c3a283f134fdcb6/runtime/index-browser.d.ts": {
-            "lines": 364,
-            "tokens": 4127,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
           "apps/web/app/api/thumbnails/projects/[projectId]/route.ts": {
             "lines": 101,
             "tokens": 885,
@@ -353,14 +317,14 @@
             "newClones": 0
           },
           "apps/web/app/api/private/dev/reset-usage/route.ts": {
-            "lines": 113,
-            "tokens": 880,
+            "lines": 108,
+            "tokens": 883,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 32,
-            "duplicatedTokens": 268,
-            "percentage": 28.32,
-            "percentageTokens": 30.45,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -377,26 +341,26 @@
             "newClones": 0
           },
           "apps/web/app/api/me/channels/[channelId]/route.ts": {
-            "lines": 190,
-            "tokens": 1568,
+            "lines": 154,
+            "tokens": 1335,
             "sources": 1,
-            "clones": 3,
-            "duplicatedLines": 71,
-            "duplicatedTokens": 654,
-            "percentage": 37.37,
-            "percentageTokens": 41.71,
+            "clones": 2,
+            "duplicatedLines": 24,
+            "duplicatedTokens": 282,
+            "percentage": 15.58,
+            "percentageTokens": 21.12,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/app/api/keywords/task/[id]/route.ts": {
-            "lines": 385,
-            "tokens": 2568,
+            "lines": 266,
+            "tokens": 2017,
             "sources": 1,
-            "clones": 6,
-            "duplicatedLines": 180,
-            "duplicatedTokens": 1163,
-            "percentage": 46.75,
-            "percentageTokens": 45.29,
+            "clones": 1,
+            "duplicatedLines": 19,
+            "duplicatedTokens": 142,
+            "percentage": 7.14,
+            "percentageTokens": 7.04,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -557,26 +521,26 @@
             "newClones": 0
           },
           "apps/web/app/api/thumbnails/generate-img2img/route.ts": {
-            "lines": 206,
-            "tokens": 1743,
+            "lines": 198,
+            "tokens": 1612,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 13,
-            "duplicatedTokens": 169,
-            "percentage": 6.31,
-            "percentageTokens": 9.7,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/app/api/thumbnails/generate/route.ts": {
-            "lines": 259,
-            "tokens": 2330,
+            "lines": 251,
+            "tokens": 2199,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 13,
-            "duplicatedTokens": 169,
-            "percentage": 5.02,
-            "percentageTokens": 7.25,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -605,14 +569,14 @@
             "newClones": 0
           },
           "apps/web/app/api/me/channels/route.ts": {
-            "lines": 73,
-            "tokens": 567,
+            "lines": 57,
+            "tokens": 467,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 22,
-            "duplicatedTokens": 140,
-            "percentage": 30.14,
-            "percentageTokens": 24.69,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -641,26 +605,26 @@
             "newClones": 0
           },
           "apps/web/app/api/keywords/trends/route.ts": {
-            "lines": 241,
-            "tokens": 1746,
+            "lines": 231,
+            "tokens": 1671,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 41,
-            "duplicatedTokens": 289,
-            "percentage": 17.01,
-            "percentageTokens": 16.55,
+            "clones": 1,
+            "duplicatedLines": 19,
+            "duplicatedTokens": 142,
+            "percentage": 8.23,
+            "percentageTokens": 8.5,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/app/api/keywords/research/route.ts": {
-            "lines": 611,
-            "tokens": 4474,
+            "lines": 551,
+            "tokens": 4081,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 45,
-            "duplicatedTokens": 308,
-            "percentage": 7.36,
-            "percentageTokens": 6.88,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -713,8 +677,8 @@
             "newClones": 0
           },
           "apps/web/app/api/identity/commit/route.ts": {
-            "lines": 349,
-            "tokens": 2895,
+            "lines": 344,
+            "tokens": 2839,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -749,14 +713,14 @@
             "newClones": 0
           },
           "apps/web/app/api/competitors/discover/route.ts": {
-            "lines": 566,
-            "tokens": 4328,
+            "lines": 564,
+            "tokens": 4217,
             "sources": 1,
-            "clones": 6,
-            "duplicatedLines": 142,
-            "duplicatedTokens": 1080,
-            "percentage": 25.09,
-            "percentageTokens": 24.95,
+            "clones": 4,
+            "duplicatedLines": 98,
+            "duplicatedTokens": 542,
+            "percentage": 17.38,
+            "percentageTokens": 12.85,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -953,14 +917,14 @@
             "newClones": 0
           },
           "apps/web/lib/competitors/video-detail/cache.ts": {
-            "lines": 306,
-            "tokens": 2199,
+            "lines": 296,
+            "tokens": 2103,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 22,
-            "duplicatedTokens": 224,
-            "percentage": 7.19,
-            "percentageTokens": 10.19,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -1075,42 +1039,6 @@
           "apps/web/app/(app)/competitors/utils.ts": {
             "lines": 182,
             "tokens": 1448,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "apps/web/.next/dev/types/validator.ts": {
-            "lines": 933,
-            "tokens": 7789,
-            "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 28,
-            "duplicatedTokens": 382,
-            "percentage": 3,
-            "percentageTokens": 4.9,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "apps/web/.next/dev/types/routes.d.ts": {
-            "lines": 171,
-            "tokens": 1662,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "apps/web/.next/dev/types/cache-life.d.ts": {
-            "lines": 144,
-            "tokens": 319,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -1589,8 +1517,8 @@
             "newClones": 0
           },
           "apps/web/lib/youtube/constants.ts": {
-            "lines": 22,
-            "tokens": 96,
+            "lines": 41,
+            "tokens": 226,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -1732,33 +1660,69 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "apps/web/lib/server/bootstrap.ts": {
-            "lines": 256,
-            "tokens": 1946,
+          "apps/web/lib/server/url.ts": {
+            "lines": 22,
+            "tokens": 176,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 22,
-            "duplicatedTokens": 140,
-            "percentage": 8.59,
-            "percentageTokens": 7.19,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/lib/server/channel-query.ts": {
+            "lines": 29,
+            "tokens": 168,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/lib/server/bootstrap.ts": {
+            "lines": 273,
+            "tokens": 2135,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/lib/replicate/webhook.ts": {
-            "lines": 120,
-            "tokens": 971,
+            "lines": 109,
+            "tokens": 867,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 18,
-            "duplicatedTokens": 125,
-            "percentage": 15,
-            "percentageTokens": 12.87,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/lib/replicate/client.ts": {
             "lines": 332,
             "tokens": 2972,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/lib/keywords/mappers.ts": {
+            "lines": 47,
+            "tokens": 332,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -1777,6 +1741,18 @@
             "duplicatedTokens": 341,
             "percentage": 5.23,
             "percentageTokens": 5.11,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/lib/insights/context.ts": {
+            "lines": 107,
+            "tokens": 932,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -1937,14 +1913,14 @@
             "newClones": 0
           },
           "apps/web/lib/competitor-search/utils.ts": {
-            "lines": 477,
-            "tokens": 3274,
+            "lines": 476,
+            "tokens": 3276,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 34,
-            "duplicatedTokens": 543,
-            "percentage": 7.13,
-            "percentageTokens": 16.59,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -1973,14 +1949,14 @@
             "newClones": 0
           },
           "apps/web/lib/competitor-search/niche-inference.ts": {
-            "lines": 447,
-            "tokens": 3716,
+            "lines": 398,
+            "tokens": 3066,
             "sources": 1,
-            "clones": 3,
-            "duplicatedLines": 52,
-            "duplicatedTokens": 669,
-            "percentage": 11.63,
-            "percentageTokens": 18,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -2093,14 +2069,14 @@
             "newClones": 0
           },
           "apps/web/lib/badges/compute.ts": {
-            "lines": 842,
-            "tokens": 9315,
+            "lines": 829,
+            "tokens": 9100,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 22,
-            "duplicatedTokens": 290,
-            "percentage": 2.61,
-            "percentageTokens": 3.11,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -2212,9 +2188,33 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
+          "apps/web/lib/api/quota.ts": {
+            "lines": 38,
+            "tokens": 258,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
           "apps/web/lib/api/errors.ts": {
             "lines": 86,
             "tokens": 933,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/lib/api/channel-auth.ts": {
+            "lines": 51,
+            "tokens": 532,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -2323,6 +2323,18 @@
           "apps/web/scripts/find_new_short_channels.ts": {
             "lines": 838,
             "tokens": 7228,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/scripts/find-unused-css-modules.ts": {
+            "lines": 195,
+            "tokens": 1643,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -2477,26 +2489,26 @@
             "newClones": 0
           },
           "apps/web/lib/sync-youtube.ts": {
-            "lines": 539,
-            "tokens": 4375,
+            "lines": 477,
+            "tokens": 3892,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 152,
-            "duplicatedTokens": 1186,
-            "percentage": 28.2,
-            "percentageTokens": 27.11,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/lib/stripe.ts": {
-            "lines": 679,
-            "tokens": 5373,
+            "lines": 668,
+            "tokens": 5269,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 18,
-            "duplicatedTokens": 125,
-            "percentage": 2.65,
-            "percentageTokens": 2.33,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -2549,14 +2561,14 @@
             "newClones": 0
           },
           "apps/web/lib/owned-video-math.ts": {
-            "lines": 939,
-            "tokens": 7966,
+            "lines": 941,
+            "tokens": 7985,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 12,
-            "duplicatedTokens": 148,
-            "percentage": 1.28,
-            "percentageTokens": 1.86,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -2668,6 +2680,18 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
+          "apps/web/lib/crypto.ts": {
+            "lines": 20,
+            "tokens": 198,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
           "apps/web/lib/content-hash.ts": {
             "lines": 62,
             "tokens": 542,
@@ -2681,26 +2705,26 @@
             "newClones": 0
           },
           "apps/web/lib/competitor-utils.ts": {
-            "lines": 765,
-            "tokens": 5011,
+            "lines": 766,
+            "tokens": 5041,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 16,
-            "duplicatedTokens": 238,
-            "percentage": 2.09,
-            "percentageTokens": 4.75,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/lib/channel-niche.ts": {
-            "lines": 490,
-            "tokens": 3118,
+            "lines": 467,
+            "tokens": 2993,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 18,
-            "duplicatedTokens": 126,
-            "percentage": 3.67,
-            "percentageTokens": 4.04,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -2898,14 +2922,14 @@
           }
         },
         "total": {
-          "lines": 51581,
-          "tokens": 401672,
-          "sources": 241,
-          "clones": 38,
-          "duplicatedLines": 821,
-          "duplicatedTokens": 7414,
-          "percentage": 1.59,
-          "percentageTokens": 1.85,
+          "lines": 49645,
+          "tokens": 384964,
+          "sources": 243,
+          "clones": 9,
+          "duplicatedLines": 178,
+          "duplicatedTokens": 1467,
+          "percentage": 0.36,
+          "percentageTokens": 0.38,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -3477,14 +3501,14 @@
             "newClones": 0
           },
           "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/TitleOptionsSection.tsx": {
-            "lines": 128,
-            "tokens": 1131,
+            "lines": 42,
+            "tokens": 260,
             "sources": 1,
-            "clones": 4,
-            "duplicatedLines": 67,
-            "duplicatedTokens": 630,
-            "percentage": 52.34,
-            "percentageTokens": 55.7,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -3512,15 +3536,27 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/HooksSection.tsx": {
-            "lines": 128,
-            "tokens": 1136,
+          "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/OptionListSection.tsx": {
+            "lines": 143,
+            "tokens": 1201,
             "sources": 1,
-            "clones": 3,
-            "duplicatedLines": 59,
-            "duplicatedTokens": 555,
-            "percentage": 46.09,
-            "percentageTokens": 48.86,
+            "clones": 1,
+            "duplicatedLines": 8,
+            "duplicatedTokens": 75,
+            "percentage": 5.59,
+            "percentageTokens": 6.24,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/HooksSection.tsx": {
+            "lines": 43,
+            "tokens": 262,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -3861,14 +3897,14 @@
             "newClones": 0
           },
           "apps/web/app/auth/signup/SignupForm.tsx": {
-            "lines": 286,
-            "tokens": 2113,
+            "lines": 248,
+            "tokens": 1900,
             "sources": 1,
-            "clones": 3,
-            "duplicatedLines": 76,
-            "duplicatedTokens": 462,
-            "percentage": 26.57,
-            "percentageTokens": 21.86,
+            "clones": 1,
+            "duplicatedLines": 17,
+            "duplicatedTokens": 125,
+            "percentage": 6.85,
+            "percentageTokens": 6.58,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -3909,14 +3945,14 @@
             "newClones": 0
           },
           "apps/web/app/auth/login/LoginForm.tsx": {
-            "lines": 236,
-            "tokens": 1706,
+            "lines": 197,
+            "tokens": 1489,
             "sources": 1,
-            "clones": 6,
-            "duplicatedLines": 146,
-            "duplicatedTokens": 933,
-            "percentage": 61.86,
-            "percentageTokens": 54.69,
+            "clones": 3,
+            "duplicatedLines": 62,
+            "duplicatedTokens": 457,
+            "percentage": 31.47,
+            "percentageTokens": 30.69,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -4101,14 +4137,14 @@
             "newClones": 0
           },
           "apps/web/app/(marketing)/contact/ContactForm.tsx": {
-            "lines": 247,
-            "tokens": 2130,
+            "lines": 242,
+            "tokens": 2073,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 28,
-            "duplicatedTokens": 216,
-            "percentage": 11.34,
-            "percentageTokens": 10.14,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -4157,18 +4193,6 @@
             "duplicatedTokens": 0,
             "percentage": 0,
             "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "apps/web/app/(app)/trending/FilterDrawer.tsx": {
-            "lines": 186,
-            "tokens": 1336,
-            "sources": 1,
-            "clones": 4,
-            "duplicatedLines": 232,
-            "duplicatedTokens": 1732,
-            "percentage": 124.73,
-            "percentageTokens": 129.64,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -4233,14 +4257,14 @@
             "newClones": 0
           },
           "apps/web/app/(app)/subscriber-insights/loading.tsx": {
-            "lines": 50,
-            "tokens": 447,
+            "lines": 40,
+            "tokens": 339,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 26,
-            "duplicatedTokens": 288,
-            "percentage": 52,
-            "percentageTokens": 64.43,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -4377,26 +4401,14 @@
             "newClones": 0
           },
           "apps/web/app/(app)/competitors/loading.tsx": {
-            "lines": 32,
-            "tokens": 279,
+            "lines": 23,
+            "tokens": 176,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 14,
-            "duplicatedTokens": 147,
-            "percentage": 43.75,
-            "percentageTokens": 52.69,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "apps/web/app/(app)/competitors/FilterDrawer.tsx": {
-            "lines": 186,
-            "tokens": 1336,
-            "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 186,
-            "duplicatedTokens": 1336,
-            "percentage": 100,
-            "percentageTokens": 100,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -4580,6 +4592,18 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
+          "apps/web/components/skeletons/VideoCardSkeletons.tsx": {
+            "lines": 25,
+            "tokens": 189,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
           "apps/web/components/navigation/NavIcon.tsx": {
             "lines": 151,
             "tokens": 1358,
@@ -4596,11 +4620,11 @@
             "lines": 295,
             "tokens": 2163,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 33,
-            "duplicatedTokens": 282,
-            "percentage": 11.19,
-            "percentageTokens": 13.04,
+            "clones": 1,
+            "duplicatedLines": 16,
+            "duplicatedTokens": 127,
+            "percentage": 5.42,
+            "percentageTokens": 5.87,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -4748,15 +4772,51 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "apps/web/components/auth/AuthModal.tsx": {
-            "lines": 277,
-            "tokens": 2000,
+          "apps/web/components/auth/VerifyLoginSection.tsx": {
+            "lines": 52,
+            "tokens": 299,
             "sources": 1,
-            "clones": 3,
-            "duplicatedLines": 59,
-            "duplicatedTokens": 409,
-            "percentage": 21.3,
-            "percentageTokens": 20.45,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/components/auth/GoogleSignInButton.tsx": {
+            "lines": 39,
+            "tokens": 308,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/components/auth/AuthModal.tsx": {
+            "lines": 259,
+            "tokens": 1908,
+            "sources": 1,
+            "clones": 2,
+            "duplicatedLines": 34,
+            "duplicatedTokens": 270,
+            "percentage": 13.13,
+            "percentageTokens": 14.15,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/components/FilterDrawer/FilterDrawer.tsx": {
+            "lines": 166,
+            "tokens": 1294,
+            "sources": 1,
+            "clones": 2,
+            "duplicatedLines": 29,
+            "duplicatedTokens": 241,
+            "percentage": 17.47,
+            "percentageTokens": 18.62,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -4785,26 +4845,26 @@
             "newClones": 0
           },
           "apps/web/app/dashboard/loading.tsx": {
-            "lines": 34,
-            "tokens": 297,
+            "lines": 25,
+            "tokens": 194,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 12,
-            "duplicatedTokens": 141,
-            "percentage": 35.29,
-            "percentageTokens": 47.47,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/app/dashboard/layout.tsx": {
-            "lines": 82,
-            "tokens": 534,
+            "lines": 60,
+            "tokens": 316,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 24,
-            "duplicatedTokens": 132,
-            "percentage": 29.27,
-            "percentageTokens": 24.72,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -4845,26 +4905,26 @@
             "newClones": 0
           },
           "apps/web/app/(marketing)/layout.tsx": {
-            "lines": 91,
-            "tokens": 586,
+            "lines": 70,
+            "tokens": 369,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 19,
-            "duplicatedTokens": 148,
-            "percentage": 20.88,
-            "percentageTokens": 25.26,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/app/(app)/layout.tsx": {
-            "lines": 71,
-            "tokens": 511,
+            "lines": 56,
+            "tokens": 336,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 43,
-            "duplicatedTokens": 280,
-            "percentage": 60.56,
-            "percentageTokens": 54.79,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -4918,14 +4978,14 @@
           }
         },
         "total": {
-          "lines": 35779,
-          "tokens": 344099,
-          "sources": 167,
-          "clones": 35,
-          "duplicatedLines": 759,
-          "duplicatedTokens": 6298,
-          "percentage": 2.12,
-          "percentageTokens": 1.83,
+          "lines": 35475,
+          "tokens": 341470,
+          "sources": 170,
+          "clones": 22,
+          "duplicatedLines": 330,
+          "duplicatedTokens": 3100,
+          "percentage": 0.93,
+          "percentageTokens": 0.91,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -5461,14 +5521,14 @@
             "newClones": 0
           },
           "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/TitleOptionsSection.tsx": {
-            "lines": 89,
-            "tokens": 885,
+            "lines": 10,
+            "tokens": 65,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 37,
-            "duplicatedTokens": 426,
-            "percentage": 41.57,
-            "percentageTokens": 48.14,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -5496,15 +5556,27 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/HooksSection.tsx": {
-            "lines": 89,
-            "tokens": 890,
+          "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/OptionListSection.tsx": {
+            "lines": 90,
+            "tokens": 885,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 37,
-            "duplicatedTokens": 426,
-            "percentage": 41.57,
-            "percentageTokens": 47.87,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/HooksSection.tsx": {
+            "lines": 11,
+            "tokens": 67,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -5821,14 +5893,14 @@
             "newClones": 0
           },
           "apps/web/app/auth/signup/SignupForm.tsx": {
-            "lines": 161,
-            "tokens": 1181,
+            "lines": 121,
+            "tokens": 942,
             "sources": 1,
             "clones": 1,
             "duplicatedLines": 30,
             "duplicatedTokens": 296,
-            "percentage": 18.63,
-            "percentageTokens": 25.06,
+            "percentage": 24.79,
+            "percentageTokens": 31.42,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -5869,8 +5941,8 @@
             "newClones": 0
           },
           "apps/web/app/auth/login/LoginForm.tsx": {
-            "lines": 143,
-            "tokens": 1044,
+            "lines": 102,
+            "tokens": 801,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -6025,8 +6097,8 @@
             "newClones": 0
           },
           "apps/web/app/(marketing)/contact/ContactForm.tsx": {
-            "lines": 147,
-            "tokens": 1316,
+            "lines": 125,
+            "tokens": 1150,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -6084,18 +6156,6 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "apps/web/app/(app)/trending/FilterDrawer.tsx": {
-            "lines": 57,
-            "tokens": 431,
-            "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 57,
-            "duplicatedTokens": 431,
-            "percentage": 100,
-            "percentageTokens": 100,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
           "apps/web/app/(app)/thumbnails/loading.tsx": {
             "lines": 8,
             "tokens": 105,
@@ -6133,8 +6193,8 @@
             "newClones": 0
           },
           "apps/web/app/(app)/subscriber-insights/loading.tsx": {
-            "lines": 35,
-            "tokens": 380,
+            "lines": 27,
+            "tokens": 274,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -6265,26 +6325,14 @@
             "newClones": 0
           },
           "apps/web/app/(app)/competitors/loading.tsx": {
-            "lines": 17,
-            "tokens": 212,
+            "lines": 10,
+            "tokens": 111,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
             "duplicatedTokens": 0,
             "percentage": 0,
             "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "apps/web/app/(app)/competitors/FilterDrawer.tsx": {
-            "lines": 57,
-            "tokens": 431,
-            "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 57,
-            "duplicatedTokens": 431,
-            "percentage": 100,
-            "percentageTokens": 100,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -6456,6 +6504,18 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
+          "apps/web/components/skeletons/VideoCardSkeletons.tsx": {
+            "lines": 4,
+            "tokens": 65,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
           "apps/web/components/navigation/MobileNav.tsx": {
             "lines": 154,
             "tokens": 1104,
@@ -6588,9 +6648,45 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
+          "apps/web/components/auth/VerifyLoginSection.tsx": {
+            "lines": 23,
+            "tokens": 125,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/components/auth/GoogleSignInButton.tsx": {
+            "lines": 6,
+            "tokens": 82,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
           "apps/web/components/auth/AuthModal.tsx": {
-            "lines": 124,
-            "tokens": 869,
+            "lines": 105,
+            "tokens": 764,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/components/FilterDrawer/FilterDrawer.tsx": {
+            "lines": 54,
+            "tokens": 412,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -6613,8 +6709,8 @@
             "newClones": 0
           },
           "apps/web/app/dashboard/loading.tsx": {
-            "lines": 18,
-            "tokens": 225,
+            "lines": 11,
+            "tokens": 124,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -6625,14 +6721,14 @@
             "newClones": 0
           },
           "apps/web/app/dashboard/layout.tsx": {
-            "lines": 39,
-            "tokens": 287,
+            "lines": 23,
+            "tokens": 153,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 43,
-            "duplicatedTokens": 322,
-            "percentage": 110.26,
-            "percentageTokens": 112.2,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -6661,14 +6757,14 @@
             "newClones": 0
           },
           "apps/web/app/(marketing)/layout.tsx": {
-            "lines": 43,
-            "tokens": 322,
+            "lines": 28,
+            "tokens": 189,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 43,
-            "duplicatedTokens": 322,
-            "percentage": 100,
-            "percentageTokens": 100,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -6698,14 +6794,14 @@
           }
         },
         "total": {
-          "lines": 20953,
-          "tokens": 225441,
-          "sources": 147,
-          "clones": 34,
-          "duplicatedLines": 2067,
-          "duplicatedTokens": 29182,
-          "percentage": 9.86,
-          "percentageTokens": 12.94,
+          "lines": 20684,
+          "tokens": 223177,
+          "sources": 150,
+          "clones": 31,
+          "duplicatedLines": 1930,
+          "duplicatedTokens": 28003,
+          "percentage": 9.33,
+          "percentageTokens": 12.55,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -6764,14 +6860,14 @@
       }
     },
     "total": {
-      "lines": 108357,
-      "tokens": 971938,
-      "sources": 558,
-      "clones": 107,
-      "duplicatedLines": 3647,
-      "duplicatedTokens": 42894,
-      "percentage": 3.37,
-      "percentageTokens": 4.41,
+      "lines": 105848,
+      "tokens": 950337,
+      "sources": 566,
+      "clones": 62,
+      "duplicatedLines": 2438,
+      "duplicatedTokens": 32570,
+      "percentage": 2.3,
+      "percentageTokens": 3.43,
       "newDuplicatedLines": 0,
       "newClones": 0
     }
@@ -6779,238 +6875,22 @@
   "duplicates": [
     {
       "format": "typescript",
-      "lines": 19,
-      "fragment": ") {\n  const resolvedParams = await params;\n\n  const parsedParams = channelVideoParamsSchema.safeParse(resolvedParams);\n  if (!parsedParams.success) {\n    return Response.json({ error: \"Invalid parameters\" }, { status: 400 });\n  }\n\n  const { channelId, videoId } = parsedParams.data;\n\n  const url = new URL(req.url);\n  const queryResult = QuerySchema.safeParse({\n    range: url.searchParams.get(\"range\") ?? \"28d\",\n  });\n  if (!queryResult.success) {\n    return Response.json(\n      { error: \"Invalid query parameters\" },\n      { status: 400 }\n    )",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/seo/route.ts",
-        "start": 51,
-        "end": 69,
-        "startLoc": {
-          "line": 51,
-          "column": 1,
-          "position": 440
-        },
-        "endLoc": {
-          "line": 69,
-          "column": 2,
-          "position": 632
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/summary/route.ts",
-        "start": 394,
-        "end": 411,
-        "startLoc": {
-          "line": 394,
-          "column": 1,
-          "position": 3200
-        },
-        "endLoc": {
-          "line": 411,
-          "column": 2,
-          "position": 3390
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 32,
-      "fragment": "async function GETHandler(\n  req: NextRequest,\n  { params }: { params: Promise<{ channelId: string; videoId: string }> },\n) {\n  const resolvedParams = await params;\n\n  const parsedParams = channelVideoParamsSchema.safeParse(resolvedParams);\n  if (!parsedParams.success) {\n    return Response.json({ error: \"Invalid parameters\" }, { status: 400 });\n  }\n\n  const { channelId, videoId } = parsedParams.data;\n\n  const url = new URL(req.url);\n  const queryResult = QuerySchema.safeParse({\n    range: url.searchParams.get(\"range\") ?? \"28d\",\n  });\n  if (!queryResult.success) {\n    return Response.json(\n      { error: \"Invalid query parameters\" },\n      { status: 400 },\n    );\n  }\n  const { range } = queryResult.data;\n\n  try {\n    const user = await getCurrentUserWithSubscription();\n    if (!user) {\n      return Response.json({ error: \"Unauthorized\" }, { status: 401 });\n    }\n\n    const",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/ideas/route.ts",
-        "start": 35,
-        "end": 66,
-        "startLoc": {
-          "line": 35,
-          "column": 1,
-          "position": 282
-        },
-        "endLoc": {
-          "line": 66,
-          "column": 6,
-          "position": 608
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/summary/route.ts",
-        "start": 391,
-        "end": 422,
-        "startLoc": {
-          "line": 391,
-          "column": 1,
-          "position": 3152
-        },
-        "endLoc": {
-          "line": 422,
-          "column": 28,
-          "position": 3478
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 31,
-      "fragment": ");\n  }\n  const { range } = queryResult.data;\n\n  try {\n    const user = await getCurrentUserWithSubscription();\n    if (!user) {\n      return Response.json({ error: \"Unauthorized\" }, { status: 401 });\n    }\n\n    const channel = await prisma.channel.findFirst({\n      where: { youtubeChannelId: channelId, userId: user.id },\n    });\n    if (!channel) {\n      return Response.json({ error: \"Channel not found\" }, { status: 404 });\n    }\n\n    // Get cached analytics data\n    const cached = await prisma.ownedVideoInsightsCache.findFirst({\n      where: {\n        userId: user.id,\n        channelId: channel.id,\n        videoId,\n        range,\n      },\n    });\n\n    if (!cached?.derivedJson) {\n      return Response.json(\n        { error: \"Analytics not loaded. Call /analytics first.\" },\n        { status: 400 },",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/ideas/route.ts",
-        "start": 56,
-        "end": 86,
-        "startLoc": {
-          "line": 56,
-          "column": 5,
-          "position": 523
-        },
-        "endLoc": {
-          "line": 86,
-          "column": 2,
-          "position": 796
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/seo/route.ts",
-        "start": 69,
-        "end": 100,
-        "startLoc": {
-          "line": 69,
-          "column": 5,
-          "position": 632
-        },
-        "endLoc": {
-          "line": 100,
-          "column": 2,
-          "position": 907
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 19,
-      "fragment": "const cached = await prisma.ownedVideoInsightsCache.findFirst({\n      where: {\n        userId: user.id,\n        channelId: channel.id,\n        videoId,\n        range,\n      },\n    });\n\n    if (!cached?.derivedJson) {\n      return Response.json(\n        { error: \"Analytics not loaded. Call /analytics first.\" },\n        { status: 400 },\n      );\n    }\n\n    const derivedData = cached.derivedJson as any;\n\n    // Rate limit (uses same limit as main insights)",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/ideas/route.ts",
-        "start": 74,
-        "end": 92,
-        "startLoc": {
-          "line": 74,
-          "column": 5,
-          "position": 697
-        },
-        "endLoc": {
-          "line": 92,
-          "column": 49,
-          "position": 824
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/summary/route.ts",
-        "start": 431,
-        "end": 449,
-        "startLoc": {
-          "line": 431,
-          "column": 5,
-          "position": 3570
-        },
-        "endLoc": {
-          "line": 449,
-          "column": 56,
-          "position": 3697
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 36,
-      "fragment": "async function GETHandler(\n  req: NextRequest,\n  { params }: { params: Promise<{ channelId: string; videoId: string }> }\n) {\n  const resolvedParams = await params;\n\n  const parsedParams = channelVideoParamsSchema.safeParse(resolvedParams);\n  if (!parsedParams.success) {\n    return Response.json({ error: \"Invalid parameters\" }, { status: 400 });\n  }\n\n  const { channelId, videoId } = parsedParams.data;\n\n  const url = new URL(req.url);\n  const queryResult = QuerySchema.safeParse({\n    range: url.searchParams.get(\"range\") ?? \"28d\",\n  });\n  if (!queryResult.success) {\n    return Response.json({ error: \"Invalid query parameters\" }, { status: 400 });\n  }\n  const { range } = queryResult.data;\n\n  try {\n    const user = await getCurrentUserWithSubscription();\n    if (!user) {\n      return Response.json({ error: \"Unauthorized\" }, { status: 401 });\n    }\n\n    const channel = await prisma.channel.findFirst({\n      where: { youtubeChannelId: channelId, userId: user.id },\n    });\n    if (!channel) {\n      return Response.json({ error: \"Channel not found\" }, { status: 404 });\n    }\n\n    // Get cached analytics data (for video metadata)",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/comments/route.ts",
-        "start": 38,
-        "end": 73,
-        "startLoc": {
-          "line": 38,
-          "column": 1,
-          "position": 323
-        },
-        "endLoc": {
-          "line": 73,
-          "column": 50,
-          "position": 728
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/seo/route.ts",
-        "start": 48,
-        "end": 86,
-        "startLoc": {
-          "line": 48,
-          "column": 1,
-          "position": 393
-        },
-        "endLoc": {
-          "line": 86,
-          "column": 29,
-          "position": 803
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 31,
-      "fragment": "const cached = await prisma.ownedVideoInsightsCache.findFirst({\n      where: {\n        userId: user.id,\n        channelId: channel.id,\n        videoId,\n        range,\n      },\n    });\n\n    if (!cached?.derivedJson) {\n      return Response.json(\n        { error: \"Analytics not loaded. Call /analytics first.\" },\n        { status: 400 }\n      );\n    }\n\n    const derivedData = cached.derivedJson as any;\n\n    // Rate limit (uses same limit as main insights)\n    const rateResult = checkRateLimit(\n      rateLimitKey(\"videoInsights\", user.id),\n      RATE_LIMITS.videoInsights\n    );\n    if (!rateResult.success) {\n      return Response.json(\n        { error: \"Rate limit exceeded\", retryAfter: rateResult.resetAt },\n        { status: 429 }\n      );\n    }\n\n    // Fetch comments",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/comments/route.ts",
-        "start": 74,
-        "end": 104,
-        "startLoc": {
-          "line": 74,
-          "column": 5,
-          "position": 731
-        },
-        "endLoc": {
-          "line": 104,
-          "column": 18,
-          "position": 948
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/seo/route.ts",
-        "start": 87,
-        "end": 117,
-        "startLoc": {
-          "line": 87,
-          "column": 5,
-          "position": 806
-        },
-        "endLoc": {
-          "line": 117,
-          "column": 6,
-          "position": 1023
-        }
-      }
-    },
-    {
-      "format": "typescript",
       "lines": 27,
       "fragment": "const url = new URL(req.url);\n  const queryResult = QuerySchema.safeParse({\n    range: url.searchParams.get(\"range\") ?? \"28d\",\n  });\n  if (!queryResult.success) {\n    return Response.json(\n      { error: \"Invalid query parameters\" },\n      { status: 400 },\n    );\n  }\n  const { range } = queryResult.data;\n\n  try {\n    const user = await getCurrentUserWithSubscription();\n    if (!user) {\n      return Response.json({ error: \"Unauthorized\" }, { status: 401 });\n    }\n\n    // Verify channel ownership\n    const channel = await prisma.channel.findFirst({\n      where: { youtubeChannelId: channelId, userId: user.id },\n    });\n    if (!channel) {\n      return Response.json({ error: \"Channel not found\" }, { status: 404 });\n    }\n\n    // Check for cached analytics",
       "tokens": 0,
       "firstFile": {
         "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/analytics/route.ts",
-        "start": 69,
-        "end": 95,
+        "start": 70,
+        "end": 96,
         "startLoc": {
-          "line": 69,
+          "line": 70,
           "column": 3,
-          "position": 504
+          "position": 508
         },
         "endLoc": {
-          "line": 95,
+          "line": 96,
           "column": 30,
-          "position": 774
+          "position": 778
         }
       },
       "secondFile": {
@@ -7026,114 +6906,6 @@
           "line": 430,
           "column": 19,
           "position": 3567
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 21,
-      "fragment": "views: day.views,\n            engagedViews: day.engagedViews,\n            comments: day.comments,\n            likes: day.likes,\n            shares: day.shares,\n            estimatedMinutesWatched: day.estimatedMinutesWatched,\n            averageViewDuration: day.averageViewDuration,\n            averageViewPercentage: day.averageViewPercentage,\n            subscribersGained: day.subscribersGained,\n            subscribersLost: day.subscribersLost,\n            videosAddedToPlaylists: day.videosAddedToPlaylists,\n            videosRemovedFromPlaylists: day.videosRemovedFromPlaylists,\n            estimatedRevenue: day.estimatedRevenue,\n            estimatedAdRevenue: day.estimatedAdRevenue,\n            grossRevenue: day.grossRevenue,\n            monetizedPlaybacks: day.monetizedPlaybacks,\n            playbackBasedCpm: day.playbackBasedCpm,\n            adImpressions: day.adImpressions,\n            cpm: day.cpm,\n          },\n        }",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/analytics/route.ts",
-        "start": 597,
-        "end": 617,
-        "startLoc": {
-          "line": 597,
-          "column": 13,
-          "position": 4496
-        },
-        "endLoc": {
-          "line": 617,
-          "column": 2,
-          "position": 4671
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/analytics/route.ts",
-        "start": 576,
-        "end": 596,
-        "startLoc": {
-          "line": 576,
-          "column": 13,
-          "position": 4315
-        },
-        "endLoc": {
-          "line": 596,
-          "column": 7,
-          "position": 4490
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 20,
-      "fragment": "// Get channel and verify ownership\n  const channel = await prisma.channel.findFirst({\n    where: {\n      youtubeChannelId,\n      userId: user.id,\n    },\n  });\n\n  if (!channel) {\n    return Response.json({ error: \"Channel not found\" }, { status: 404 });\n  }\n\n  // Get profile using raw SQL (model may not be in Prisma types yet)\n  let profiles: ProfileRow[];\n  try {\n    profiles = await prisma.$queryRaw<ProfileRow[]>`\n      SELECT id, \"channelId\", \"inputJson\", \"inputHash\", \"aiProfileJson\", \n             \"lastGeneratedAt\", \"createdAt\", \"updatedAt\"\n      FROM \"ChannelProfile\"\n      WHERE \"channelId\" = ",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/profile/route.ts",
-        "start": 98,
-        "end": 117,
-        "startLoc": {
-          "line": 98,
-          "column": 3,
-          "position": 661
-        },
-        "endLoc": {
-          "line": 117,
-          "column": 27,
-          "position": 785
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/profile/generate/route.ts",
-        "start": 91,
-        "end": 109,
-        "startLoc": {
-          "line": 91,
-          "column": 3,
-          "position": 690
-        },
-        "endLoc": {
-          "line": 109,
-          "column": 27,
-          "position": 814
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 14,
-      "fragment": "const user = await getCurrentUser();\n  if (!user) {\n    return Response.json({ error: \"Unauthorized\" }, { status: 401 });\n  }\n\n  const paramsObj = await params;\n  const parsed = channelParamsSchema.safeParse(paramsObj);\n  if (!parsed.success) {\n    return Response.json({ error: \"Invalid channel ID\" }, { status: 400 });\n  }\n\n  const { channelId: youtubeChannelId } = parsed.data;\n\n  // Parse and validate request body",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/profile/route.ts",
-        "start": 140,
-        "end": 153,
-        "startLoc": {
-          "line": 140,
-          "column": 3,
-          "position": 945
-        },
-        "endLoc": {
-          "line": 153,
-          "column": 35,
-          "position": 1092
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/profile/route.ts",
-        "start": 85,
-        "end": 98,
-        "startLoc": {
-          "line": 85,
-          "column": 3,
-          "position": 514
-        },
-        "endLoc": {
-          "line": 98,
-          "column": 36,
-          "position": 661
         }
       }
     },
@@ -7319,217 +7091,37 @@
     },
     {
       "format": "typescript",
-      "lines": 9,
-      "fragment": "<\n    R extends runtime.Types.Extensions.UserArgs['result'] = {},\n    M extends runtime.Types.Extensions.UserArgs['model'] = {},\n    Q extends runtime.Types.Extensions.UserArgs['query'] = {},\n    C extends runtime.Types.Extensions.UserArgs['client'] = {},\n    Args extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.InternalArgs<R, M, {}, C>,\n  >(\n    args:\n      | ((client: PrismaClientExtends)",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/.next/dev/node_modules/@prisma/client-2c3a283f134fdcb6/scripts/default-index.d.ts",
-        "start": 82,
-        "end": 90,
-        "startLoc": {
-          "line": 82,
-          "column": 16,
-          "position": 676
-        },
-        "endLoc": {
-          "line": 90,
-          "column": 2,
-          "position": 820
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/.next/dev/node_modules/@prisma/client-2c3a283f134fdcb6/scripts/default-index.d.ts",
-        "start": 40,
-        "end": 48,
-        "startLoc": {
-          "line": 40,
-          "column": 2,
-          "position": 99
-        },
-        "endLoc": {
-          "line": 48,
-          "column": 2,
-          "position": 243
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 17,
-      "fragment": "(req: NextRequest) {\n  void req;\n  // Block in production\n  if (process.env.NODE_ENV === \"production\") {\n    return Response.json(\n      { error: \"This endpoint is not available in production\" },\n      { status: 403 }\n    );\n  }\n\n  try {\n    const user = await getCurrentUser();\n    if (!user) {\n      return Response.json({ error: \"Unauthorized\" }, { status: 401 });\n    }\n\n    const",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/private/dev/reset-usage/route.ts",
-        "start": 67,
-        "end": 83,
-        "startLoc": {
-          "line": 67,
-          "column": 11,
-          "position": 446
-        },
-        "endLoc": {
-          "line": 83,
-          "column": 6,
-          "position": 580
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/private/dev/reset-usage/route.ts",
-        "start": 14,
-        "end": 30,
-        "startLoc": {
-          "line": 14,
-          "column": 12,
-          "position": 63
-        },
-        "endLoc": {
-          "line": 30,
-          "column": 40,
-          "position": 197
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 18,
-      "fragment": ";\n  try {\n    // Auth check\n    const user = await getCurrentUser();\n    if (!user) {\n      return Response.json({ error: \"Unauthorized\" }, { status: 401 });\n    }\n\n    // Validate params\n    const paramsObj = await params;\n    const parsed = channelParamsSchema.safeParse(paramsObj);\n    if (!parsed.success) {\n      return Response.json({ error: \"Invalid channel ID\" }, { status: 400 });\n    }\n\n    const { channelId } = parsed.data;\n\n    // Find and verify ownership",
+      "lines": 13,
+      "fragment": "(\n  req: NextRequest,\n  { params }: { params: Promise<{ channelId: string }> }\n) {\n  void req;\n  try {\n    const auth = await authenticateAndParseChannel(params);\n    if (!auth.ok) return auth.response;\n    const { user, channelId } = auth;\n\n    const channel = await prisma.channel.findFirst({\n      where: { youtubeChannelId: channelId, userId: user.id },\n      include",
       "tokens": 0,
       "firstFile": {
         "name": "apps/web/app/api/me/channels/[channelId]/route.ts",
-        "start": 18,
-        "end": 35,
+        "start": 95,
+        "end": 107,
         "startLoc": {
-          "line": 18,
-          "column": 4,
-          "position": 117
-        },
-        "endLoc": {
-          "line": 35,
-          "column": 29,
-          "position": 275
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/route.ts",
-        "start": 42,
-        "end": 60,
-        "startLoc": {
-          "line": 42,
-          "column": 2,
-          "position": 270
-        },
-        "endLoc": {
-          "line": 60,
-          "column": 29,
-          "position": 429
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 28,
-      "fragment": "(\n  req: NextRequest,\n  { params }: { params: Promise<{ channelId: string }> }\n) {\n  void req;\n  try {\n    // Auth check\n    const user = await getCurrentUser();\n    if (!user) {\n      return Response.json({ error: \"Unauthorized\" }, { status: 401 });\n    }\n\n    // Validate params\n    const paramsObj = await params;\n    const parsed = channelParamsSchema.safeParse(paramsObj);\n    if (!parsed.success) {\n      return Response.json({ error: \"Invalid channel ID\" }, { status: 400 });\n    }\n\n    const { channelId } = parsed.data;\n\n    // Find and verify ownership\n    const channel = await prisma.channel.findFirst({\n      where: {\n        youtubeChannelId: channelId,\n        userId: user.id,\n      },\n      include",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/route.ts",
-        "start": 112,
-        "end": 139,
-        "startLoc": {
-          "line": 112,
+          "line": 95,
           "column": 11,
-          "position": 906
+          "position": 785
         },
         "endLoc": {
-          "line": 139,
+          "line": 107,
           "column": 8,
-          "position": 1154
+          "position": 926
         }
       },
       "secondFile": {
         "name": "apps/web/app/api/me/channels/[channelId]/route.ts",
-        "start": 14,
-        "end": 41,
+        "start": 13,
+        "end": 25,
         "startLoc": {
-          "line": 14,
+          "line": 13,
           "column": 14,
-          "position": 73
+          "position": 60
         },
         "endLoc": {
-          "line": 41,
+          "line": 25,
           "column": 2,
-          "position": 321
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 35,
-      "fragment": "(taskId);\n\n        if (result.status === \"pending\") {\n          logger.info(\"keywords.task_still_pending\", {\n            userId: user.id,\n            taskId,\n            mode,\n          });\n\n          return jsonOk(\n            {\n              pending: true,\n              taskId,\n              message: \"Still processing...\",\n            },\n            { requestId: api.requestId }\n          );\n        }\n\n        if (result.status === \"error\") {\n          logger.error(\"keywords.task_error\", {\n            userId: user.id,\n            taskId,\n            error: result.error,\n          });\n\n        return jsonError({\n          status: 500,\n          code: \"INTEGRATION_ERROR\",\n          message: result.error || \"Task failed\",\n          requestId: api.requestId,\n        });\n        }\n\n        // Task completed successfully",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/keywords/task/[id]/route.ts",
-        "start": 206,
-        "end": 240,
-        "startLoc": {
-          "line": 206,
-          "column": 20,
-          "position": 1417
-        },
-        "endLoc": {
-          "line": 240,
-          "column": 31,
-          "position": 1628
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/keywords/task/[id]/route.ts",
-        "start": 117,
-        "end": 151,
-        "startLoc": {
-          "line": 117,
-          "column": 20,
-          "position": 785
-        },
-        "endLoc": {
-          "line": 151,
-          "column": 50,
-          "position": 996
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 36,
-      "fragment": "(taskId);\n\n        if (result.status === \"pending\") {\n          logger.info(\"keywords.task_still_pending\", {\n            userId: user.id,\n            taskId,\n            mode,\n          });\n\n          return jsonOk(\n            {\n              pending: true,\n              taskId,\n              message: \"Still processing...\",\n            },\n            { requestId: api.requestId }\n          );\n        }\n\n        if (result.status === \"error\") {\n          logger.error(\"keywords.task_error\", {\n            userId: user.id,\n            taskId,\n            error: result.error,\n          });\n\n        return jsonError({\n          status: 500,\n          code: \"INTEGRATION_ERROR\",\n          message: result.error || \"Task failed\",\n          requestId: api.requestId,\n        });\n        }\n\n        // Task completed successfully\n        const response: KeywordRelatedResponse",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/keywords/task/[id]/route.ts",
-        "start": 278,
-        "end": 313,
-        "startLoc": {
-          "line": 278,
-          "column": 27,
-          "position": 1887
-        },
-        "endLoc": {
-          "line": 313,
-          "column": 23,
-          "position": 2106
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/keywords/task/[id]/route.ts",
-        "start": 117,
-        "end": 241,
-        "startLoc": {
-          "line": 117,
-          "column": 20,
-          "position": 785
-        },
-        "endLoc": {
-          "line": 241,
-          "column": 24,
-          "position": 1636
+          "position": 201
         }
       }
     },
@@ -8578,362 +8170,74 @@
       }
     },
     {
-      "format": "javascript",
-      "lines": 38,
-      "fragment": ".length}\n        >\n          {copiedId === \"all-hooks\" ? \"Copied\" : \"Copy all\"}\n        </button>\n      </div>\n      <p className={s.sectionIntro}>\n        Use one as your first line and commit to it in the first 10 seconds.\n      </p>\n\n      {isLoading && !hooks.length && (\n        <div className={s.skeletonList} aria-hidden=\"true\">\n          {Array.from({ length: 5 }).map((_, i) => (\n            <div key={i} className={s.skeletonRow}>\n              <div className={s.skeletonIndex} />\n              <div className={s.skeletonBody}>\n                <div className={s.skeletonLine} />\n                <div className={`${s.skeletonLine} ${s.skeletonLineShort}`} />\n              </div>\n            </div>\n          ))}\n        </div>\n      )}\n\n      {hasError && !hooks.length && (\n        <div className={s.errorCallout} role=\"alert\">\n          <div className={s.errorText}>Couldn't generate hooks.</div>\n          <button className={s.retryBtn} onClick={onRetry}>\n            Retry\n          </button>\n        </div>\n      )}\n\n      <div className={s.optionList}>\n        {displayList.map((text, i) => {\n          const t = String(text ?? \"\").trim();\n          if (!t) return null;\n          return (\n            <div key={`hook-",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/HooksSection.tsx",
-        "start": 38,
-        "end": 75,
-        "startLoc": {
-          "line": 38,
-          "column": 6,
-          "position": 277
-        },
-        "endLoc": {
-          "line": 75,
-          "column": 7,
-          "position": 703
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/TitleOptionsSection.tsx",
-        "start": 38,
-        "end": 75,
-        "startLoc": {
-          "line": 38,
-          "column": 7,
-          "position": 279
-        },
-        "endLoc": {
-          "line": 75,
-          "column": 8,
-          "position": 700
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 15,
-      "fragment": ".length && (\n        <div className={s.skeletonList} aria-hidden=\"true\">\n          {Array.from({ length: 5 }).map((_, i) => (\n            <div key={i} className={s.skeletonRow}>\n              <div className={s.skeletonIndex} />\n              <div className={s.skeletonBody}>\n                <div className={s.skeletonLine} />\n                <div className={`${s.skeletonLine} ${s.skeletonLineShort}`} />\n              </div>\n            </div>\n          ))}\n        </div>\n      )}\n\n      {hasError && !hooks",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/HooksSection.tsx",
-        "start": 47,
-        "end": 61,
-        "startLoc": {
-          "line": 47,
-          "column": 6,
-          "position": 369
-        },
-        "endLoc": {
-          "line": 61,
-          "column": 6,
-          "position": 540
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/TitleOptionsSection.tsx",
-        "start": 47,
-        "end": 61,
-        "startLoc": {
-          "line": 47,
-          "column": 7,
-          "position": 364
-        },
-        "endLoc": {
-          "line": 61,
-          "column": 7,
-          "position": 535
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 16,
-      "fragment": ".</div>\n          <button className={s.retryBtn} onClick={onRetry}>\n            Retry\n          </button>\n        </div>\n      )}\n\n      <div className={s.optionList}>\n        {displayList.map((text, i) => {\n          const t = String(text ?? \"\").trim();\n          if (!t) return null;\n          return (\n            <div key={`hook-${i}`} className={s.optionRow}>\n              <div className={s.optionIndex}>{i + 1}</div>\n              <div className={s.optionBody}>\n                <p className={s.optionText}>&ldquo;",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/HooksSection.tsx",
-        "start": 63,
-        "end": 78,
-        "startLoc": {
-          "line": 63,
-          "column": 6,
-          "position": 584
-        },
-        "endLoc": {
-          "line": 78,
-          "column": 8,
-          "position": 767
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/TitleOptionsSection.tsx",
-        "start": 63,
-        "end": 78,
-        "startLoc": {
-          "line": 63,
-          "column": 8,
-          "position": 581
-        },
-        "endLoc": {
-          "line": 78,
-          "column": 2,
-          "position": 764
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 31,
-      "fragment": "${i}` ? (\n                  <svg\n                    width=\"16\"\n                    height=\"16\"\n                    viewBox=\"0 0 24 24\"\n                    fill=\"none\"\n                    stroke=\"currentColor\"\n                    strokeWidth=\"2\"\n                  >\n                    <path d=\"M20 6L9 17l-5-5\" />\n                  </svg>\n                ) : (\n                  <svg\n                    width=\"16\"\n                    height=\"16\"\n                    viewBox=\"0 0 24 24\"\n                    fill=\"none\"\n                    stroke=\"currentColor\"\n                    strokeWidth=\"2\"\n                  >\n                    <rect x=\"9\" y=\"9\" width=\"13\" height=\"13\" rx=\"2\" />\n                    <path d=\"M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1\" />\n                  </svg>\n                )}\n              </button>\n            </div>\n          );\n        })}\n      </div>\n\n      {hooks",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/HooksSection.tsx",
-        "start": 86,
-        "end": 116,
-        "startLoc": {
-          "line": 86,
-          "column": 7,
-          "position": 842
-        },
-        "endLoc": {
-          "line": 116,
-          "column": 6,
-          "position": 1043
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/TitleOptionsSection.tsx",
-        "start": 86,
-        "end": 116,
-        "startLoc": {
-          "line": 86,
-          "column": 8,
-          "position": 837
-        },
-        "endLoc": {
-          "line": 116,
-          "column": 7,
-          "position": 1038
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 14,
-      "fragment": "),\n});\n\nfunction getAppBaseUrl(req: NextRequest): string {\n  const env = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL;\n  if (env) return env.replace(/\\/$/, \"\");\n  const proto = req.headers.get(\"x-forwarded-proto\") ?? \"http\";\n  const host = req.headers.get(\"x-forwarded-host\") ?? req.headers.get(\"host\");\n  if (!host) throw new Error(\"Cannot determine base URL for webhooks\");\n  return `${proto}://${host}`;\n}\n\nexport const POST = createApiRoute(\n  { route: \"/api/thumbnails/generate\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/thumbnails/generate/route.ts",
-        "start": 24,
-        "end": 37,
-        "startLoc": {
-          "line": 24,
-          "column": 2,
-          "position": 340
-        },
-        "endLoc": {
-          "line": 37,
-          "column": 27,
-          "position": 509
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/thumbnails/generate-img2img/route.ts",
-        "start": 20,
-        "end": 33,
-        "startLoc": {
-          "line": 20,
-          "column": 5,
-          "position": 269
-        },
-        "endLoc": {
-          "line": 33,
-          "column": 35,
-          "position": 438
-        }
-      }
-    },
-    {
       "format": "typescript",
       "lines": 20,
       "fragment": ".length,\n      });\n\n      return jsonOk(\n        {\n          keyword: response.keyword,\n          interestOverTime: response.interestOverTime,\n          risingQueries: response.risingQueries,\n          topQueries: response.topQueries,\n          regionBreakdown: response.regionBreakdown,\n          averageInterest: response.averageInterest,\n          meta: {\n            source: \"dataforseo\",\n            location: response.meta.location,\n            dateFrom: response.meta.dateFrom,\n            dateTo: response.meta.dateTo,\n            fetchedAt: response.meta.fetchedAt,\n            cached: false,\n          },\n          usage",
       "tokens": 0,
       "firstFile": {
         "name": "apps/web/app/api/keywords/trends/route.ts",
-        "start": 198,
-        "end": 217,
+        "start": 188,
+        "end": 207,
         "startLoc": {
-          "line": 198,
+          "line": 188,
           "column": 16,
-          "position": 1424
+          "position": 1349
         },
         "endLoc": {
-          "line": 217,
+          "line": 207,
           "column": 6,
-          "position": 1566
+          "position": 1491
         }
       },
       "secondFile": {
         "name": "apps/web/app/api/keywords/task/[id]/route.ts",
-        "start": 183,
-        "end": 202,
+        "start": 146,
+        "end": 165,
         "startLoc": {
-          "line": 183,
+          "line": 146,
           "column": 17,
-          "position": 1221
+          "position": 1056
         },
         "endLoc": {
-          "line": 202,
+          "line": 165,
           "column": 2,
-          "position": 1363
+          "position": 1198
         }
       }
     },
     {
       "format": "typescript",
-      "lines": 24,
-      "fragment": "function mapToLegacyRelatedRow(row: RelatedKeywordRow) {\n  return {\n    keyword: row.keyword,\n    searchVolume: row.searchVolume,\n    keywordDifficulty: row.difficultyEstimate,\n    cpc: row.cpc,\n    competition: row.competition,\n    competitionIndex: row.competitionIndex,\n    competitionLevel: row.competitionLevel,\n    lowTopOfPageBid: row.lowTopOfPageBid,\n    highTopOfPageBid: row.highTopOfPageBid,\n    resultsCount: 0,\n    trend: row.trend,\n    monthlySearches: row.monthlySearches,\n    relevance: row.relevance,\n    difficultyIsEstimate: true as const,\n  };\n}\n\n// ============================================\n// ROUTE HANDLER\n// ============================================\n\nexport const POST",
+      "lines": 33,
+      "fragment": "const videos = await prisma.$queryRaw<Array<{\n      video_id: string;\n      title: string;\n      channel_id: string;\n      channel_title: string;\n      thumbnail_url: string | null;\n      published_at: Date;\n      view_count: bigint;\n      views_per_day: number;\n      subscriber_count: bigint | null;\n    }>>`\n      SELECT \n        dv.video_id,\n        dv.title,\n        dv.channel_id,\n        dv.channel_title,\n        dv.thumbnail_url,\n        dv.published_at,\n        COALESCE(vs.view_count, 0) as view_count,\n        COALESCE(vs.views_per_day, 0) as views_per_day,\n        cpl.subscriber_count\n      FROM niche_cluster_videos ncv\n      JOIN discovered_videos dv ON ncv.video_id = dv.video_id\n      LEFT JOIN video_scores vs ON dv.video_id = vs.video_id AND vs.\"window\" = ${window}\n      LEFT JOIN channel_profiles_lite cpl ON dv.channel_id = cpl.channel_id\n      WHERE ncv.cluster_id = ${cluster.cluster_id}::uuid\n      ORDER BY ncv.rank_in_cluster ASC\n      LIMIT 3\n    `;\n\n    const sampleVideos = videos.map(v => mapToSampleVideo(v));\n\n    const",
       "tokens": 0,
       "firstFile": {
-        "name": "apps/web/app/api/keywords/research/route.ts",
-        "start": 151,
-        "end": 174,
+        "name": "apps/web/app/api/competitors/discover/route.ts",
+        "start": 411,
+        "end": 443,
         "startLoc": {
-          "line": 151,
-          "column": 1,
-          "position": 1007
-        },
-        "endLoc": {
-          "line": 174,
+          "line": 411,
           "column": 5,
-          "position": 1168
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/keywords/task/[id]/route.ts",
-        "start": 56,
-        "end": 79,
-        "startLoc": {
-          "line": 56,
-          "column": 1,
-          "position": 304
+          "position": 2971
         },
         "endLoc": {
-          "line": 79,
-          "column": 4,
-          "position": 465
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 23,
-      "fragment": ", {\n        userId: user.id,\n        plan,\n        used: usageResult.used,\n        limit: usageResult.limit,\n      });\n\n      return jsonError({\n        status: 403,\n        code: \"LIMIT_REACHED\",\n        message: `You've used all ${limit} keyword searches for today.`,\n        requestId: api.requestId,\n        details: {\n          used: usageResult.used,\n          limit: usageResult.limit,\n          remaining: 0,\n          resetAt: usageResult.resetAt,\n          upgrade: plan === \"FREE\",\n        },\n      });\n    }\n\n    // Fetch from DataForSEO using Standard task workflow",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/keywords/research/route.ts",
-        "start": 335,
-        "end": 357,
-        "startLoc": {
-          "line": 335,
-          "column": 26,
-          "position": 2470
-        },
-        "endLoc": {
-          "line": 357,
-          "column": 54,
-          "position": 2617
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/keywords/trends/route.ts",
-        "start": 126,
-        "end": 148,
-        "startLoc": {
-          "line": 126,
-          "column": 33,
-          "position": 915
-        },
-        "endLoc": {
-          "line": 148,
-          "column": 43,
-          "position": 1062
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 13,
-      "fragment": "if (videos.length === 0) return [];\n\n  const sampleVideos: SampleVideo[] = videos.slice(0, 10).map(v => ({\n    videoId: v.video_id,\n    title: v.title,\n    thumbnailUrl: v.thumbnail_url,\n    channelId: v.channel_id,\n    channelTitle: v.channel_title,\n    channelSubscribers: v.subscriber_count ? Number(v.subscriber_count) : undefined,\n    viewCount: Number(v.view_count),\n    viewsPerDay: v.views_per_day,\n    velocity24h: v.velocity_24h ? Number(v.velocity_24h) : undefined,\n    breakoutScore",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/competitors/discover/route.ts",
-        "start": 231,
-        "end": 243,
-        "startLoc": {
-          "line": 231,
-          "column": 3,
-          "position": 1767
-        },
-        "endLoc": {
-          "line": 243,
-          "column": 14,
-          "position": 1928
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/competitors/discover/route.ts",
-        "start": 160,
-        "end": 172,
-        "startLoc": {
-          "line": 160,
-          "column": 3,
-          "position": 1187
-        },
-        "endLoc": {
-          "line": 172,
-          "column": 12,
-          "position": 1348
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 43,
-      "fragment": "const videos = await prisma.$queryRaw<Array<{\n      video_id: string;\n      title: string;\n      channel_id: string;\n      channel_title: string;\n      thumbnail_url: string | null;\n      published_at: Date;\n      view_count: bigint;\n      views_per_day: number;\n      subscriber_count: bigint | null;\n    }>>`\n      SELECT \n        dv.video_id,\n        dv.title,\n        dv.channel_id,\n        dv.channel_title,\n        dv.thumbnail_url,\n        dv.published_at,\n        COALESCE(vs.view_count, 0) as view_count,\n        COALESCE(vs.views_per_day, 0) as views_per_day,\n        cpl.subscriber_count\n      FROM niche_cluster_videos ncv\n      JOIN discovered_videos dv ON ncv.video_id = dv.video_id\n      LEFT JOIN video_scores vs ON dv.video_id = vs.video_id AND vs.\"window\" = ${window}\n      LEFT JOIN channel_profiles_lite cpl ON dv.channel_id = cpl.channel_id\n      WHERE ncv.cluster_id = ${cluster.cluster_id}::uuid\n      ORDER BY ncv.rank_in_cluster ASC\n      LIMIT 3\n    `;\n\n    const sampleVideos: SampleVideo[] = videos.map(v => ({\n      videoId: v.video_id,\n      title: v.title,\n      thumbnailUrl: v.thumbnail_url,\n      channelId: v.channel_id,\n      channelTitle: v.channel_title,\n      channelSubscribers: v.subscriber_count ? Number(v.subscriber_count) : undefined,\n      viewCount: Number(v.view_count),\n      viewsPerDay: v.views_per_day,\n      publishedAt: v.published_at.toISOString(),\n    }));\n\n    const",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/api/competitors/discover/route.ts",
-        "start": 403,
-        "end": 445,
-        "startLoc": {
-          "line": 403,
-          "column": 5,
-          "position": 2974
-        },
-        "endLoc": {
-          "line": 445,
+          "line": 443,
           "column": 6,
-          "position": 3210
+          "position": 3099
         }
       },
       "secondFile": {
         "name": "apps/web/app/api/competitors/discover/route.ts",
-        "start": 301,
-        "end": 343,
+        "start": 319,
+        "end": 351,
         "startLoc": {
-          "line": 301,
+          "line": 319,
           "column": 5,
-          "position": 2319
+          "position": 2424
         },
         "endLoc": {
-          "line": 343,
+          "line": 351,
           "column": 7,
-          "position": 2555
+          "position": 2552
         }
       }
     },
@@ -8944,32 +8248,32 @@
       "tokens": 0,
       "firstFile": {
         "name": "apps/web/app/api/competitors/discover/route.ts",
-        "start": 454,
-        "end": 471,
+        "start": 452,
+        "end": 469,
         "startLoc": {
-          "line": 454,
+          "line": 452,
           "column": 2,
-          "position": 3345
+          "position": 3234
         },
         "endLoc": {
-          "line": 471,
+          "line": 469,
           "column": 48,
-          "position": 3488
+          "position": 3377
         }
       },
       "secondFile": {
         "name": "apps/web/app/api/competitors/discover/route.ts",
-        "start": 350,
-        "end": 367,
+        "start": 358,
+        "end": 375,
         "startLoc": {
-          "line": 350,
+          "line": 358,
           "column": 2,
-          "position": 2632
+          "position": 2629
         },
         "endLoc": {
-          "line": 367,
+          "line": 375,
           "column": 6,
-          "position": 2775
+          "position": 2772
         }
       }
     },
@@ -9010,42 +8314,6 @@
       }
     },
     {
-      "format": "typescript",
-      "lines": 12,
-      "fragment": "channelId: data.channelId,\n      channelTitle: data.channelTitle,\n      title: data.title,\n      description: data.description ?? undefined,\n      publishedAt: data.publishedAt,\n      durationSec: data.durationSec ?? undefined,\n      thumbnailUrl: data.thumbnailUrl ?? undefined,\n      tags: data.tags,\n      categoryId: data.categoryId ?? undefined,\n      lastFetchedAt: now,\n    },\n  }",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/lib/competitors/video-detail/cache.ts",
-        "start": 177,
-        "end": 188,
-        "startLoc": {
-          "line": 177,
-          "column": 7,
-          "position": 1185
-        },
-        "endLoc": {
-          "line": 188,
-          "column": 2,
-          "position": 1297
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/lib/competitors/video-detail/cache.ts",
-        "start": 165,
-        "end": 176,
-        "startLoc": {
-          "line": 165,
-          "column": 7,
-          "position": 1067
-        },
-        "endLoc": {
-          "line": 176,
-          "column": 7,
-          "position": 1179
-        }
-      }
-    },
-    {
       "format": "javascript",
       "lines": 31,
       "fragment": "={s.page}>\n      <div className={s.card}>\n        <div className={s.branding}>\n          <h1 className={s.logo}>{BRAND.name}</h1>\n          <p className={s.tagline}>{BRAND.tagline}</p>\n        </div>\n\n        <div className={s.header}>\n          <h2 className={s.title}>Reset your password</h2>\n          <p className={s.subtitle}>Enter your new password below.</p>\n        </div>\n\n        {err && (\n          <div className={s.errorAlert} role=\"alert\">\n            {err}\n          </div>\n        )}\n\n        <form onSubmit={onSubmit} className={s.form}>\n          <div className={s.field}>\n            <label htmlFor=\"password\" className={s.label}>\n              New password\n            </label>\n            <input\n              id=\"password\"\n              name=\"password\"\n              type=\"password\"\n              autoComplete=\"new-password\"\n              placeholder=\"Enter new password (min 12 characters)\"\n              className={s.input}\n              minLength={12",
@@ -9067,17 +8335,17 @@
       },
       "secondFile": {
         "name": "apps/web/app/auth/signup/SignupForm.tsx",
-        "start": 119,
-        "end": 158,
+        "start": 121,
+        "end": 160,
         "startLoc": {
-          "line": 119,
+          "line": 121,
           "column": 10,
-          "position": 900
+          "position": 926
         },
         "endLoc": {
-          "line": 158,
+          "line": 160,
           "column": 2,
-          "position": 1233
+          "position": 1259
         }
       }
     },
@@ -9088,104 +8356,32 @@
       "tokens": 0,
       "firstFile": {
         "name": "apps/web/app/auth/login/LoginForm.tsx",
-        "start": 18,
-        "end": 35,
+        "start": 20,
+        "end": 37,
         "startLoc": {
-          "line": 18,
+          "line": 20,
           "column": 4,
-          "position": 162
+          "position": 188
         },
         "endLoc": {
-          "line": 35,
+          "line": 37,
           "column": 6,
-          "position": 287
+          "position": 313
         }
       },
       "secondFile": {
         "name": "apps/web/app/auth/signup/SignupForm.tsx",
-        "start": 17,
-        "end": 34,
+        "start": 19,
+        "end": 36,
         "startLoc": {
-          "line": 17,
+          "line": 19,
           "column": 2,
-          "position": 157
+          "position": 183
         },
         "endLoc": {
-          "line": 34,
+          "line": 36,
           "column": 5,
-          "position": 282
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 26,
-      "fragment": "}\n        <button\n          type=\"button\"\n          onClick={handleGoogleSignIn}\n          disabled={loading}\n          className={s.googleBtn}\n        >\n          <svg className={s.googleIcon} viewBox=\"0 0 24 24\" aria-hidden=\"true\">\n            <path\n              fill=\"#4285F4\"\n              d=\"M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z\"\n            />\n            <path\n              fill=\"#34A853\"\n              d=\"M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z\"\n            />\n            <path\n              fill=\"#FBBC05\"\n              d=\"M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z\"\n            />\n            <path\n              fill=\"#EA4335\"\n              d=\"M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z\"\n            />\n          </svg>\n          Continue",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/auth/login/LoginForm.tsx",
-        "start": 168,
-        "end": 193,
-        "startLoc": {
-          "line": 168,
-          "column": 21,
-          "position": 1290
-        },
-        "endLoc": {
-          "line": 193,
-          "column": 9,
-          "position": 1427
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/auth/signup/SignupForm.tsx",
-        "start": 205,
-        "end": 230,
-        "startLoc": {
-          "line": 205,
-          "column": 21,
-          "position": 1578
-        },
-        "endLoc": {
-          "line": 230,
-          "column": 5,
-          "position": 1715
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 35,
-      "fragment": "with Google\n        </button>\n\n        {/* Verification Login - only shown when enabled for demo recordings */}\n        {showVerifyButton && (\n          <div className={s.verifySection}>\n            <button\n              type=\"button\"\n              onClick={handleVerificationLogin}\n              disabled={loading}\n              className={s.verifyBtn}\n            >\n              <svg\n                className={s.verifyIcon}\n                viewBox=\"0 0 24 24\"\n                fill=\"none\"\n                stroke=\"currentColor\"\n                strokeWidth=\"2\"\n                aria-hidden=\"true\"\n              >\n                <path\n                  strokeLinecap=\"round\"\n                  strokeLinejoin=\"round\"\n                  d=\"M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z\"\n                />\n              </svg>\n              Verification Login\n            </button>\n            <p className={s.verifyHint}>\n              Use for Google verification recordings. Forces consent screen.\n            </p>\n          </div>\n        )}\n\n        {/* Footer */",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/auth/login/LoginForm.tsx",
-        "start": 193,
-        "end": 227,
-        "startLoc": {
-          "line": 193,
-          "column": 2,
-          "position": 1429
-        },
-        "endLoc": {
-          "line": 227,
-          "column": 13,
-          "position": 1629
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/auth/signup/SignupForm.tsx",
-        "start": 230,
-        "end": 264,
-        "startLoc": {
-          "line": 230,
-          "column": 2,
-          "position": 1719
-        },
-        "endLoc": {
-          "line": 264,
-          "column": 12,
-          "position": 1919
+          "position": 308
         }
       }
     },
@@ -9212,16 +8408,16 @@
       "secondFile": {
         "name": "apps/web/app/auth/reset-password/ResetPasswordForm.tsx",
         "start": 155,
-        "end": 158,
+        "end": 160,
         "startLoc": {
           "line": 155,
           "column": 6,
           "position": 1398
         },
         "endLoc": {
-          "line": 158,
+          "line": 160,
           "column": 2,
-          "position": 1233
+          "position": 1259
         }
       }
     },
@@ -9247,17 +8443,17 @@
       },
       "secondFile": {
         "name": "apps/web/app/auth/login/LoginForm.tsx",
-        "start": 108,
-        "end": 132,
+        "start": 110,
+        "end": 134,
         "startLoc": {
-          "line": 108,
+          "line": 110,
           "column": 9,
-          "position": 841
+          "position": 867
         },
         "endLoc": {
-          "line": 132,
+          "line": 134,
           "column": 4,
-          "position": 1017
+          "position": 1043
         }
       }
     },
@@ -9372,42 +8568,6 @@
     {
       "format": "tsx",
       "lines": 15,
-      "fragment": "(\n            <p className={s.fieldError}>\n              <svg\n                width=\"14\"\n                height=\"14\"\n                viewBox=\"0 0 24 24\"\n                fill=\"none\"\n                stroke=\"currentColor\"\n                strokeWidth=\"2\"\n                aria-hidden=\"true\"\n              >\n                <circle cx=\"12\" cy=\"12\" r=\"10\" />\n                <path d=\"M12 8v4M12 16h.01\" />\n              </svg>\n              {errors.message",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/(marketing)/contact/ContactForm.tsx",
-        "start": 213,
-        "end": 227,
-        "startLoc": {
-          "line": 213,
-          "column": 2,
-          "position": 1874
-        },
-        "endLoc": {
-          "line": 227,
-          "column": 8,
-          "position": 1982
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/(marketing)/contact/ContactForm.tsx",
-        "start": 158,
-        "end": 172,
-        "startLoc": {
-          "line": 158,
-          "column": 2,
-          "position": 1366
-        },
-        "endLoc": {
-          "line": 172,
-          "column": 6,
-          "position": 1474
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 15,
       "fragment": "<div className={s.discoveryEmpty}>\n          <div className={s.discoveryEmptyIcon}>\n            <svg\n              width=\"48\"\n              height=\"48\"\n              viewBox=\"0 0 24 24\"\n              fill=\"none\"\n              stroke=\"currentColor\"\n              strokeWidth=\"1.5\"\n            >\n              <circle cx=\"12\" cy=\"12\" r=\"10\" />\n              <polygon points=\"16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76\" />\n            </svg>\n          </div>\n          <h3",
       "tokens": 0,
       "firstFile": {
@@ -9438,114 +8598,6 @@
           "line": 454,
           "column": 3,
           "position": 3730
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 15,
-      "fragment": "}\n      <div className={s.videoGrid}>\n        {Array.from({ length: 6 }).map((_, i) => (\n          <div key={i} className={s.videoCardSkeleton}>\n            <div className={s.skeletonThumb} />\n            <div className={s.skeletonContent}>\n              <div className={s.skeletonTitle} />\n              <div className={s.skeletonMeta} />\n            </div>\n          </div>\n        ))}\n      </div>\n    </div>\n  );\n}",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/(app)/competitors/loading.tsx",
-        "start": 19,
-        "end": 33,
-        "startLoc": {
-          "line": 19,
-          "column": 59,
-          "position": 132
-        },
-        "endLoc": {
-          "line": 33,
-          "column": 2,
-          "position": 279
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/(app)/subscriber-insights/loading.tsx",
-        "start": 37,
-        "end": 51,
-        "startLoc": {
-          "line": 37,
-          "column": 26,
-          "position": 300
-        },
-        "endLoc": {
-          "line": 51,
-          "column": 2,
-          "position": 447
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 58,
-      "fragment": "={s.filterDrawerBackdrop}\n      onClick={handleBackdropClick}\n      aria-hidden=\"true\"\n    >\n      <div\n        ref={drawerRef}\n        className={s.filterDrawer}\n        role=\"dialog\"\n        aria-modal=\"true\"\n        aria-label={title}\n      >\n        {/* Handle (visual affordance for swipe) */}\n        <div className={s.filterDrawerHandle} aria-hidden=\"true\" />\n\n        {/* Header */}\n        <div className={s.filterDrawerHeader}>\n          <h2 className={s.filterDrawerTitle}>{title}</h2>\n          <button\n            ref={closeButtonRef}\n            type=\"button\"\n            className={s.filterDrawerClose}\n            onClick={onClose}\n            aria-label=\"Close filters\"\n          >\n            <svg\n              width=\"24\"\n              height=\"24\"\n              viewBox=\"0 0 24 24\"\n              fill=\"none\"\n              stroke=\"currentColor\"\n              strokeWidth=\"2\"\n            >\n              <line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\" />\n              <line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\" />\n            </svg>\n          </button>\n        </div>\n\n        {/* Content */}\n        <div className={s.filterDrawerContent}>{children}</div>\n\n        {/* Footer (optional action) */}\n        {(actionLabel && onAction) || (secondaryActionLabel && onSecondaryAction) ? (\n          <div className={s.filterDrawerFooter}>\n            {secondaryActionLabel && onSecondaryAction && (\n              <button\n                type=\"button\"\n                className={s.filterDrawerSecondaryAction}\n                onClick={onSecondaryAction}\n              >\n                {secondaryActionLabel}\n              </button>\n            )}\n            {actionLabel && onAction && (\n              <button\n                type=\"button\"\n                className={s.filterDrawerAction}\n                onClick={onAction}",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/(app)/competitors/FilterDrawer.tsx",
-        "start": 116,
-        "end": 173,
-        "startLoc": {
-          "line": 116,
-          "column": 10,
-          "position": 824
-        },
-        "endLoc": {
-          "line": 173,
-          "column": 2,
-          "position": 1255
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/(app)/trending/FilterDrawer.tsx",
-        "start": 116,
-        "end": 173,
-        "startLoc": {
-          "line": 116,
-          "column": 10,
-          "position": 824
-        },
-        "endLoc": {
-          "line": 173,
-          "column": 2,
-          "position": 1255
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 187,
-      "fragment": "\"use client\";\n\nimport { useCallback, useEffect, useRef, type ReactNode } from \"react\";\nimport { createPortal } from \"react-dom\";\nimport s from \"./style.module.css\";\n\ntype Props = {\n  isOpen: boolean;\n  onClose: () => void;\n  title: string;\n  children: ReactNode;\n  /** Optional action button in footer */\n  actionLabel?: string;\n  onAction?: () => void;\n  /** Optional secondary action (e.g. Reset) */\n  secondaryActionLabel?: string;\n  onSecondaryAction?: () => void;\n};\n\n/**\n * FilterDrawer - Mobile bottom sheet for filters\n *\n * A reusable bottom sheet component that:\n * - Slides up from the bottom\n * - Has backdrop + click-outside-to-close\n * - Traps focus when open\n * - Closes on Escape\n * - Renders via portal to escape stacking context\n */\nexport default function FilterDrawer({\n  isOpen,\n  onClose,\n  title,\n  children,\n  actionLabel,\n  onAction,\n  secondaryActionLabel,\n  onSecondaryAction,\n}: Props) {\n  const drawerRef = useRef<HTMLDivElement>(null);\n  const closeButtonRef = useRef<HTMLButtonElement>(null);\n\n  // Handle Escape key\n  useEffect(() => {\n    if (!isOpen) return;\n\n    const handleKeyDown = (e: KeyboardEvent) => {\n      if (e.key === \"Escape\") {\n        onClose();\n      }\n    };\n\n    document.addEventListener(\"keydown\", handleKeyDown);\n    return () => document.removeEventListener(\"keydown\", handleKeyDown);\n  }, [isOpen, onClose]);\n\n  // Prevent body scroll when open\n  useEffect(() => {\n    if (isOpen) {\n      document.body.style.overflow = \"hidden\";\n    } else {\n      document.body.style.overflow = \"\";\n    }\n    return () => {\n      document.body.style.overflow = \"\";\n    };\n  }, [isOpen]);\n\n  // Focus trap\n  useEffect(() => {\n    if (!isOpen || !drawerRef.current) return;\n\n    const drawer = drawerRef.current;\n    const focusableElements = drawer.querySelectorAll<HTMLElement>(\n      'button, [href], input, select, textarea, [tabindex]:not([tabindex=\"-1\"])'\n    );\n    const firstElement = focusableElements[0];\n    const lastElement = focusableElements[focusableElements.length - 1];\n\n    // Focus close button on open\n    closeButtonRef.current?.focus();\n\n    const handleTabKey = (e: KeyboardEvent) => {\n      if (e.key !== \"Tab\") return;\n\n      if (e.shiftKey) {\n        if (document.activeElement === firstElement) {\n          e.preventDefault();\n          lastElement?.focus();\n        }\n      } else {\n        if (document.activeElement === lastElement) {\n          e.preventDefault();\n          firstElement?.focus();\n        }\n      }\n    };\n\n    drawer.addEventListener(\"keydown\", handleTabKey);\n    return () => drawer.removeEventListener(\"keydown\", handleTabKey);\n  }, [isOpen]);\n\n  const handleBackdropClick = useCallback(\n    (e: React.MouseEvent) => {\n      if (e.target === e.currentTarget) {\n        onClose();\n      }\n    },\n    [onClose]\n  );\n\n  if (!isOpen) return null;\n\n  const content = (\n    <div\n      className={s.filterDrawerBackdrop}\n      onClick={handleBackdropClick}\n      aria-hidden=\"true\"\n    >\n      <div\n        ref={drawerRef}\n        className={s.filterDrawer}\n        role=\"dialog\"\n        aria-modal=\"true\"\n        aria-label={title}\n      >\n        {/* Handle (visual affordance for swipe) */}\n        <div className={s.filterDrawerHandle} aria-hidden=\"true\" />\n\n        {/* Header */}\n        <div className={s.filterDrawerHeader}>\n          <h2 className={s.filterDrawerTitle}>{title}</h2>\n          <button\n            ref={closeButtonRef}\n            type=\"button\"\n            className={s.filterDrawerClose}\n            onClick={onClose}\n            aria-label=\"Close filters\"\n          >\n            <svg\n              width=\"24\"\n              height=\"24\"\n              viewBox=\"0 0 24 24\"\n              fill=\"none\"\n              stroke=\"currentColor\"\n              strokeWidth=\"2\"\n            >\n              <line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\" />\n              <line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\" />\n            </svg>\n          </button>\n        </div>\n\n        {/* Content */}\n        <div className={s.filterDrawerContent}>{children}</div>\n\n        {/* Footer (optional action) */}\n        {(actionLabel && onAction) || (secondaryActionLabel && onSecondaryAction) ? (\n          <div className={s.filterDrawerFooter}>\n            {secondaryActionLabel && onSecondaryAction && (\n              <button\n                type=\"button\"\n                className={s.filterDrawerSecondaryAction}\n                onClick={onSecondaryAction}\n              >\n                {secondaryActionLabel}\n              </button>\n            )}\n            {actionLabel && onAction && (\n              <button\n                type=\"button\"\n                className={s.filterDrawerAction}\n                onClick={onAction}\n              >\n                {actionLabel}\n              </button>\n            )}\n          </div>\n        ) : null}\n      </div>\n    </div>\n  );\n\n  // Render via portal to body\n  if (typeof window === \"undefined\") return null;\n  return createPortal(content, document.body);\n}",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/(app)/competitors/FilterDrawer.tsx",
-        "start": 1,
-        "end": 187,
-        "startLoc": {
-          "line": 1,
-          "column": 1,
-          "position": 0
-        },
-        "endLoc": {
-          "line": 187,
-          "column": 2,
-          "position": 1336
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/(app)/trending/FilterDrawer.tsx",
-        "start": 1,
-        "end": 187,
-        "startLoc": {
-          "line": 1,
-          "column": 1,
-          "position": 0
-        },
-        "endLoc": {
-          "line": 187,
-          "column": 2,
-          "position": 1336
         }
       }
     },
@@ -9695,42 +8747,6 @@
     },
     {
       "format": "typescript",
-      "lines": 15,
-      "fragment": ") => React.ReactNode | Promise<React.ReactNode> | never | void | Promise<void>)\n  generateStaticParams?: (props: { params: ParamMap[Route] }) => Promise<any[]> | any[]\n  generateMetadata?: (\n    props: { params: Promise<ParamMap[Route]> } & any,\n    parent: ResolvingMetadata\n  ) => Promise<any> | any\n  generateViewport?: (\n    props: { params: Promise<ParamMap[Route]> } & any,\n    parent: ResolvingViewport\n  ) => Promise<any> | any\n  metadata?: any\n  viewport?: any\n}\n\ntype RouteHandlerConfig",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/.next/dev/types/validator.ts",
-        "start": 25,
-        "end": 39,
-        "startLoc": {
-          "line": 25,
-          "column": 2,
-          "position": 366
-        },
-        "endLoc": {
-          "line": 39,
-          "column": 19,
-          "position": 557
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/.next/dev/types/validator.ts",
-        "start": 10,
-        "end": 24,
-        "startLoc": {
-          "line": 10,
-          "column": 4,
-          "position": 134
-        },
-        "endLoc": {
-          "line": 24,
-          "column": 13,
-          "position": 325
-        }
-      }
-    },
-    {
-      "format": "typescript",
       "lines": 11,
       "fragment": ", () => {\n    const videos = Array.from({ length: 5 }, (_, i) =>\n      createVideoWithMetrics(daysAgo(i), { views: 100 })\n    );\n    const channelStats: ChannelStatsForBadges = { subscriberCount: 50, totalVideoCount: 5 };\n    const unlockedBadges: UnlockedBadge[] = [\n      { badgeId: \"first-upload\", unlockedAt: \"2026-01-01T00:00:00Z\", seen: true },\n    ];\n\n    const badges = computeAllBadgesProgress(videos, channelStats, unlockedBadges);\n    const summary",
       "tokens": 0,
@@ -9762,42 +8778,6 @@
           "line": 395,
           "column": 7,
           "position": 3783
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 23,
-      "fragment": "},\n    orderBy: [{ connectedAt: \"desc\" }],\n    select: {\n      id: true,\n      youtubeChannelId: true,\n      title: true,\n      thumbnailUrl: true,\n      totalVideoCount: true,\n      subscriberCount: true,\n      connectedAt: true,\n      lastSyncedAt: true,\n      syncStatus: true,\n      syncError: true,\n      _count: {\n        select: {\n          Video: true,\n          Plan: true,\n        },\n      },\n    },\n  });\n\n  return",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/lib/server/bootstrap.ts",
-        "start": 97,
-        "end": 119,
-        "startLoc": {
-          "line": 97,
-          "column": 2,
-          "position": 845
-        },
-        "endLoc": {
-          "line": 119,
-          "column": 7,
-          "position": 985
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/route.ts",
-        "start": 20,
-        "end": 42,
-        "startLoc": {
-          "line": 20,
-          "column": 2,
-          "position": 170
-        },
-        "endLoc": {
-          "line": 42,
-          "column": 50,
-          "position": 310
         }
       }
     },
@@ -9874,186 +8854,6 @@
       }
     },
     {
-      "format": "typescript",
-      "lines": 21,
-      "fragment": "// Common stopwords to filter from query generation\nconst STOPWORDS = new Set([\n  \"the\", \"a\", \"an\", \"is\", \"are\", \"was\", \"were\", \"be\", \"been\", \"being\",\n  \"have\", \"has\", \"had\", \"do\", \"does\", \"did\", \"will\", \"would\", \"could\",\n  \"should\", \"may\", \"might\", \"must\", \"shall\", \"can\", \"need\", \"dare\",\n  \"ought\", \"used\", \"to\", \"of\", \"in\", \"for\", \"on\", \"with\", \"at\", \"by\",\n  \"from\", \"as\", \"into\", \"through\", \"during\", \"before\", \"after\", \"above\",\n  \"below\", \"between\", \"under\", \"again\", \"further\", \"then\", \"once\", \"here\",\n  \"there\", \"when\", \"where\", \"why\", \"how\", \"all\", \"each\", \"few\", \"more\",\n  \"most\", \"other\", \"some\", \"such\", \"no\", \"nor\", \"not\", \"only\", \"own\",\n  \"same\", \"so\", \"than\", \"too\", \"very\", \"just\", \"and\", \"but\", \"if\", \"or\",\n  \"because\", \"until\", \"while\", \"although\", \"though\", \"this\", \"that\",\n  \"these\", \"those\", \"i\", \"me\", \"my\", \"myself\", \"we\", \"our\", \"ours\",\n  \"ourselves\", \"you\", \"your\", \"yours\", \"yourself\", \"yourselves\", \"he\",\n  \"him\", \"his\", \"himself\", \"she\", \"her\", \"hers\", \"herself\", \"it\", \"its\",\n  \"itself\", \"they\", \"them\", \"their\", \"theirs\", \"themselves\", \"what\",\n  \"which\", \"who\", \"whom\", \"video\", \"videos\", \"youtube\", \"channel\",\n  \"watch\", \"subscribe\", \"like\", \"comment\", \"share\",\n]);\n\n// Platform/game identifiers that provide important context",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/lib/competitor-search/niche-inference.ts",
-        "start": 47,
-        "end": 67,
-        "startLoc": {
-          "line": 47,
-          "column": 1,
-          "position": 221
-        },
-        "endLoc": {
-          "line": 67,
-          "column": 60,
-          "position": 652
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/lib/competitor-search/utils.ts",
-        "start": 24,
-        "end": 162,
-        "startLoc": {
-          "line": 24,
-          "column": 1,
-          "position": 87
-        },
-        "endLoc": {
-          "line": 162,
-          "column": 4,
-          "position": 634
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 15,
-      "fragment": "function extractKeywords(text: string): string[] {\n  if (!text) return [];\n\n  const words = text\n    .toLowerCase()\n    .replace(/[^\\w\\s-]/g, \" \")\n    .split(/\\s+/)\n    .filter((w) => w.length >= 2 && !STOPWORDS.has(w));\n\n  return [...new Set(words)];\n}\n\n/**\n * Extract keywords from video tags, preserving multi-word tags.\n */",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/lib/competitor-search/niche-inference.ts",
-        "start": 103,
-        "end": 117,
-        "startLoc": {
-          "line": 103,
-          "column": 1,
-          "position": 985
-        },
-        "endLoc": {
-          "line": 117,
-          "column": 4,
-          "position": 1097
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/lib/competitor-search/utils.ts",
-        "start": 179,
-        "end": 193,
-        "startLoc": {
-          "line": 179,
-          "column": 1,
-          "position": 736
-        },
-        "endLoc": {
-          "line": 193,
-          "column": 4,
-          "position": 848
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 12,
-      "fragment": "(videos: VideoForBadges[]): number {\n  if (videos.length === 0) return 0;\n\n  const sorted = [...videos]\n    .filter((v) => v.publishedAt)\n    .map((v) => new Date(v.publishedAt!))\n    .sort((a, b) => b.getTime() - a.getTime());\n\n  if (sorted.length === 0) return 0;\n\n  const now = new Date();\n  let",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/lib/badges/compute.ts",
-        "start": 146,
-        "end": 157,
-        "startLoc": {
-          "line": 146,
-          "column": 28,
-          "position": 1601
-        },
-        "endLoc": {
-          "line": 157,
-          "column": 4,
-          "position": 1746
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/lib/badges/compute.ts",
-        "start": 112,
-        "end": 123,
-        "startLoc": {
-          "line": 112,
-          "column": 27,
-          "position": 1223
-        },
-        "endLoc": {
-          "line": 123,
-          "column": 4,
-          "position": 1368
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 18,
-      "fragment": "useEffect(() => {\n    if (isOpen) {\n      document.body.style.overflow = \"hidden\";\n    } else {\n      document.body.style.overflow = \"\";\n    }\n    return () => {\n      document.body.style.overflow = \"\";\n    };\n  }, [isOpen]);\n\n  // Focus trap\n  useEffect(() => {\n    if (!isOpen || !drawerRef.current) return;\n\n    const drawer = drawerRef.current;\n    const focusableElements = drawer.querySelectorAll<HTMLElement>(\n      'button, a[href], input, select, textarea, [tabindex]:not([tabindex=\"-1\"])'",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/components/navigation/MobileNav.tsx",
-        "start": 77,
-        "end": 94,
-        "startLoc": {
-          "line": 77,
-          "column": 3,
-          "position": 532
-        },
-        "endLoc": {
-          "line": 94,
-          "column": 76,
-          "position": 687
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/(app)/trending/FilterDrawer.tsx",
-        "start": 58,
-        "end": 75,
-        "startLoc": {
-          "line": 58,
-          "column": 3,
-          "position": 350
-        },
-        "endLoc": {
-          "line": 75,
-          "column": 75,
-          "position": 505
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 17,
-      "fragment": "= (e: KeyboardEvent) => {\n      if (e.key !== \"Tab\") return;\n\n      if (e.shiftKey) {\n        if (document.activeElement === firstElement) {\n          e.preventDefault();\n          lastElement?.focus();\n        }\n      } else {\n        if (document.activeElement === lastElement) {\n          e.preventDefault();\n          firstElement?.focus();\n        }\n      }\n    };\n\n    // Focus first element when opening",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/components/navigation/MobileNav.tsx",
-        "start": 99,
-        "end": 115,
-        "startLoc": {
-          "line": 99,
-          "column": 2,
-          "position": 731
-        },
-        "endLoc": {
-          "line": 115,
-          "column": 36,
-          "position": 858
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/(app)/trending/FilterDrawer.tsx",
-        "start": 83,
-        "end": 99,
-        "startLoc": {
-          "line": 83,
-          "column": 2,
-          "position": 564
-        },
-        "endLoc": {
-          "line": 99,
-          "column": 7,
-          "position": 691
-        }
-      }
-    },
-    {
       "format": "tsx",
       "lines": 12,
       "fragment": "<div className={s.searchWrap}>\n            <svg\n              className={s.searchIcon}\n              width=\"16\"\n              height=\"16\"\n              viewBox=\"0 0 24 24\"\n              fill=\"none\"\n              stroke=\"currentColor\"\n              strokeWidth=\"2\"\n            >\n              <circle cx=\"11\" cy=\"11\" r=\"8\" />\n              <path d=\"M21 21l-4.35-4.35",
@@ -10110,18 +8910,18 @@
         }
       },
       "secondFile": {
-        "name": "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/TitleOptionsSection.tsx",
-        "start": 98,
-        "end": 106,
+        "name": "apps/web/components/dashboard/IdeaBoard/IdeaDetailSheet/OptionListSection.tsx",
+        "start": 113,
+        "end": 121,
         "startLoc": {
-          "line": 98,
+          "line": 113,
           "column": 19,
-          "position": 913
+          "position": 983
         },
         "endLoc": {
-          "line": 106,
+          "line": 121,
           "column": 3,
-          "position": 988
+          "position": 1058
         }
       }
     },
@@ -10163,145 +8963,109 @@
     },
     {
       "format": "tsx",
-      "lines": 14,
-      "fragment": "useEffect(() => {\n    if (!isOpen) return;\n\n    const handleKeyDown = (e: KeyboardEvent) => {\n      if (e.key === \"Escape\") {\n        onClose();\n      }\n    };\n\n    document.addEventListener(\"keydown\", handleKeyDown);\n    return () => document.removeEventListener(\"keydown\", handleKeyDown);\n  }, [isOpen, onClose]);\n\n  // Prevent body scroll when modal is open",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/components/auth/AuthModal.tsx",
-        "start": 50,
-        "end": 63,
-        "startLoc": {
-          "line": 50,
-          "column": 3,
-          "position": 365
-        },
-        "endLoc": {
-          "line": 63,
-          "column": 42,
-          "position": 479
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/(app)/trending/FilterDrawer.tsx",
-        "start": 44,
-        "end": 57,
-        "startLoc": {
-          "line": 44,
-          "column": 3,
-          "position": 233
-        },
-        "endLoc": {
-          "line": 57,
-          "column": 33,
-          "position": 347
-        }
-      }
-    },
-    {
-      "format": "tsx",
       "lines": 22,
       "fragment": "{\n    e.preventDefault();\n    setErr(null);\n    setLoading(true);\n\n    const form = new FormData(e.currentTarget);\n    const email = String(form.get(\"email\") || \"\").trim();\n    const password = String(form.get(\"password\") || \"\");\n\n    if (!email) {\n      setErr(\"Please enter your email address\");\n      setLoading(false);\n      return;\n    }\n\n    if (!password) {\n      setErr(\"Please enter your password\");\n      setLoading(false);\n      return;\n    }\n\n    try",
       "tokens": 0,
       "firstFile": {
         "name": "apps/web/components/auth/AuthModal.tsx",
-        "start": 101,
-        "end": 122,
+        "start": 102,
+        "end": 123,
         "startLoc": {
-          "line": 101,
+          "line": 102,
           "column": 2,
-          "position": 789
+          "position": 802
         },
         "endLoc": {
-          "line": 122,
+          "line": 123,
           "column": 4,
-          "position": 945
+          "position": 958
         }
       },
       "secondFile": {
         "name": "apps/web/app/auth/login/LoginForm.tsx",
-        "start": 29,
-        "end": 50,
+        "start": 31,
+        "end": 52,
         "startLoc": {
-          "line": 29,
+          "line": 31,
           "column": 2,
-          "position": 242
+          "position": 268
         },
         "endLoc": {
-          "line": 50,
+          "line": 52,
           "column": 6,
-          "position": 398
+          "position": 424
         }
       }
     },
     {
       "format": "tsx",
-      "lines": 26,
-      "fragment": "{/* Google Sign In */}\n        <button\n          type=\"button\"\n          onClick={handleGoogleSignIn}\n          disabled={loading}\n          className={s.googleBtn}\n        >\n          <svg className={s.googleIcon} viewBox=\"0 0 24 24\" aria-hidden=\"true\">\n            <path\n              fill=\"#4285F4\"\n              d=\"M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z\"\n            />\n            <path\n              fill=\"#34A853\"\n              d=\"M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z\"\n            />\n            <path\n              fill=\"#FBBC05\"\n              d=\"M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z\"\n            />\n            <path\n              fill=\"#EA4335\"\n              d=\"M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z\"\n            />\n          </svg>\n          {",
+      "lines": 14,
+      "fragment": "useEffect(() => {\n    if (!isOpen) return;\n\n    const handleKeyDown = (e: KeyboardEvent) => {\n      if (e.key === \"Escape\") {\n        onClose();\n      }\n    };\n\n    document.addEventListener(\"keydown\", handleKeyDown);\n    return () => document.removeEventListener(\"keydown\", handleKeyDown);\n  }, [isOpen, onClose]);\n\n  useEffect",
       "tokens": 0,
       "firstFile": {
-        "name": "apps/web/components/auth/AuthModal.tsx",
-        "start": 191,
-        "end": 216,
+        "name": "apps/web/components/FilterDrawer/FilterDrawer.tsx",
+        "start": 31,
+        "end": 44,
         "startLoc": {
-          "line": 191,
-          "column": 9,
-          "position": 1408
-        },
-        "endLoc": {
-          "line": 216,
-          "column": 2,
-          "position": 1547
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/auth/login/LoginForm.tsx",
-        "start": 168,
-        "end": 230,
-        "startLoc": {
-          "line": 168,
-          "column": 9,
-          "position": 1288
-        },
-        "endLoc": {
-          "line": 230,
-          "column": 5,
-          "position": 1715
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 13,
-      "fragment": "<div className={s.videoList}>\n          {Array.from({ length: 6 }).map((_, i) => (\n            <div key={i} className={s.videoCardSkeleton}>\n              <div className={s.skeletonThumb} />\n              <div className={s.skeletonContent}>\n                <div className={s.skeletonTitle} />\n                <div className={s.skeletonMeta} />\n              </div>\n            </div>\n          ))}\n        </div>\n      </div>\n    </",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/dashboard/loading.tsx",
-        "start": 21,
-        "end": 33,
-        "startLoc": {
-          "line": 21,
-          "column": 9,
-          "position": 148
-        },
-        "endLoc": {
-          "line": 33,
+          "line": 31,
           "column": 3,
-          "position": 289
+          "position": 222
+        },
+        "endLoc": {
+          "line": 44,
+          "column": 10,
+          "position": 336
         }
       },
       "secondFile": {
-        "name": "apps/web/app/(app)/subscriber-insights/loading.tsx",
-        "start": 38,
-        "end": 50,
+        "name": "apps/web/components/auth/AuthModal.tsx",
+        "start": 51,
+        "end": 64,
         "startLoc": {
-          "line": 38,
-          "column": 7,
-          "position": 303
+          "line": 51,
+          "column": 3,
+          "position": 378
         },
         "endLoc": {
-          "line": 50,
+          "line": 64,
+          "column": 42,
+          "position": 492
+        }
+      }
+    },
+    {
+      "format": "tsx",
+      "lines": 17,
+      "fragment": "= (e: KeyboardEvent) => {\n      if (e.key !== \"Tab\") return;\n\n      if (e.shiftKey) {\n        if (document.activeElement === firstElement) {\n          e.preventDefault();\n          lastElement?.focus();\n        }\n      } else {\n        if (document.activeElement === lastElement) {\n          e.preventDefault();\n          firstElement?.focus();\n        }\n      }\n    };\n\n    drawer",
+      "tokens": 0,
+      "firstFile": {
+        "name": "apps/web/components/FilterDrawer/FilterDrawer.tsx",
+        "start": 67,
+        "end": 83,
+        "startLoc": {
+          "line": 67,
           "column": 2,
-          "position": 444
+          "position": 544
+        },
+        "endLoc": {
+          "line": 83,
+          "column": 7,
+          "position": 671
+        }
+      },
+      "secondFile": {
+        "name": "apps/web/components/navigation/MobileNav.tsx",
+        "start": 99,
+        "end": 115,
+        "startLoc": {
+          "line": 99,
+          "column": 2,
+          "position": 731
+        },
+        "endLoc": {
+          "line": 115,
+          "column": 36,
+          "position": 858
         }
       }
     },
@@ -10338,294 +9102,6 @@
           "line": 340,
           "column": 2,
           "position": 3230
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 44,
-      "fragment": "={[]}\n        activeChannelId={null}\n        userEmail={null}\n        userName={null}\n        plan=\"FREE\"\n        channelLimit={1}\n        isAdmin={false}\n        primaryNavItems={navItems.primary}\n        secondaryNavItems={navItems.secondary}\n      >\n        {children}\n      </AppShellServer>\n    );\n  }\n\n  // Authenticated: Use full AppShell with user data\n  const [me, channels] = await Promise.all([\n    getMeServer(user),\n    getChannelsServer(user.id),\n  ]);\n\n  const activeChannelId = resolveActiveChannelId(channels, null);\n\n  // Check admin status\n  const adminEmails = String(\n    process.env.ADMIN_EMAILS ?? process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? \"\"\n  )\n    .split(\",\")\n    .map((s) => s.trim().toLowerCase())\n    .filter(Boolean);\n  const isAdmin =\n    adminEmails.length > 0 && adminEmails.includes(user.email.toLowerCase());\n\n  return (\n    <AppShellServer\n      channels={channels}\n      activeChannelId={activeChannelId}\n      userEmail={me.email}\n      userName={me.name}\n      plan={normalizePlan(me.plan)}\n      channelLimit={me.channel_limit}\n      isAdmin={isAdmin}\n      primaryNavItems={navItems.primary}\n      secondaryNavItems={navItems.secondary}",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/(marketing)/layout.tsx",
-        "start": 44,
-        "end": 87,
-        "startLoc": {
-          "line": 44,
-          "column": 9,
-          "position": 246
-        },
-        "endLoc": {
-          "line": 87,
-          "column": 2,
-          "position": 568
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/dashboard/layout.tsx",
-        "start": 39,
-        "end": 78,
-        "startLoc": {
-          "line": 39,
-          "column": 9,
-          "position": 229
-        },
-        "endLoc": {
-          "line": 78,
-          "column": 2,
-          "position": 516
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 25,
-      "fragment": "} from \"@/lib/server/bootstrap\";\nimport { AppShellServer } from \"@/components/navigation/AppShellServer\";\nimport { getFilteredNavItems } from \"@/lib/nav-config.server\";\n\n// Plan type mapping from Me.plan to AppShell Plan type\ntype AppPlan = \"FREE\" | \"PRO\" | \"ENTERPRISE\";\n\nfunction normalizePlan(plan: string): AppPlan {\n  const upper = plan.toUpperCase();\n  if (upper === \"PRO\") return \"PRO\";\n  if (upper === \"ENTERPRISE\" || upper === \"TEAM\") return \"ENTERPRISE\";\n  return \"FREE\";\n}\n\n/**\n * App layout for authenticated pages.\n * \n * Server Component that:\n * 1. Checks auth server-side (no client round trip)\n * 2. Fetches user/channel data server-side\n * 3. Renders the AppShell with initial data\n * \n * This ensures the AppShell renders with correct data from first paint,\n * eliminating layout shift from auth loading states.\n */",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/(app)/layout.tsx",
-        "start": 2,
-        "end": 26,
-        "startLoc": {
-          "line": 2,
-          "column": 2,
-          "position": 28
-        },
-        "endLoc": {
-          "line": 26,
-          "column": 4,
-          "position": 160
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/dashboard/layout.tsx",
-        "start": 3,
-        "end": 26,
-        "startLoc": {
-          "line": 3,
-          "column": 1,
-          "position": 8
-        },
-        "endLoc": {
-          "line": 26,
-          "column": 4,
-          "position": 140
-        }
-      }
-    },
-    {
-      "format": "tsx",
-      "lines": 20,
-      "fragment": "=> s.trim().toLowerCase())\n    .filter(Boolean);\n  const isAdmin = adminEmails.length > 0 && adminEmails.includes(user.email.toLowerCase());\n  \n  return (\n    <AppShellServer\n      channels={channels}\n      activeChannelId={activeChannelId}\n      userEmail={me.email}\n      userName={me.name}\n      plan={normalizePlan(me.plan)}\n      channelLimit={me.channel_limit}\n      isAdmin={isAdmin}\n      primaryNavItems={navItems.primary}\n      secondaryNavItems={navItems.secondary}\n    >\n      {children}\n    </AppShellServer>\n  );\n}",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/app/(app)/layout.tsx",
-        "start": 53,
-        "end": 72,
-        "startLoc": {
-          "line": 53,
-          "column": 2,
-          "position": 363
-        },
-        "endLoc": {
-          "line": 72,
-          "column": 2,
-          "position": 511
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/(marketing)/layout.tsx",
-        "start": 72,
-        "end": 92,
-        "startLoc": {
-          "line": 72,
-          "column": 2,
-          "position": 438
-        },
-        "endLoc": {
-          "line": 92,
-          "column": 2,
-          "position": 586
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 77,
-      "fragment": ".videoId;\n      const details = detailsMap.get(videoId);\n      const thumb =\n        item.snippet.thumbnails?.high?.url ??\n        item.snippet.thumbnails?.medium?.url ??\n        item.snippet.thumbnails?.default?.url ??\n        null;\n\n      const durationSec = details?.contentDetails?.duration\n        ? parseDuration(details.contentDetails.duration)\n        : null;\n\n      // Get tags, description, categoryId, and privacy status from video details\n      const tags = details?.snippet?.tags?.join(\",\") ?? \"\";\n      const description = details?.snippet?.description ?? \"\";\n      const categoryId = details?.snippet?.categoryId ?? null;\n      const privacyStatus = details?.status?.privacyStatus ?? null;\n\n      // Parse statistics from Data API (total lifetime counts)\n      const views = details?.statistics?.viewCount\n        ? parseInt(details.statistics.viewCount, 10)\n        : 0;\n      const likes = details?.statistics?.likeCount\n        ? parseInt(details.statistics.likeCount, 10)\n        : 0;\n\n      const video = await prisma.video.upsert({\n        where: {\n          channelId_youtubeVideoId: {\n            channelId: channelDbId,\n            youtubeVideoId: videoId,\n          },\n        },\n        update: {\n          title: item.snippet.title,\n          description,\n          thumbnailUrl: thumb,\n          publishedAt: new Date(item.snippet.publishedAt),\n          durationSec,\n          tags,\n          categoryId,\n          privacyStatus,\n        },\n        create: {\n          channelId: channelDbId,\n          youtubeVideoId: videoId,\n          title: item.snippet.title,\n          description,\n          thumbnailUrl: thumb,\n          publishedAt: new Date(item.snippet.publishedAt),\n          durationSec,\n          tags,\n          categoryId,\n          privacyStatus,\n        },\n      });\n\n      // Upsert VideoMetrics with Data API statistics (total views, not Analytics API)\n      await prisma.videoMetrics.upsert({\n        where: { videoId: video.id },\n        update: {\n          views,\n          likes,\n          fetchedAt: new Date(),\n          cachedUntil,\n        },\n        create: {\n          videoId: video.id,\n          channelId: channelDbId,\n          views,\n          likes,\n          cachedUntil,\n        },\n      });\n    }\n\n    // Update channel video count",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/lib/sync-youtube.ts",
-        "start": 434,
-        "end": 510,
-        "startLoc": {
-          "line": 434,
-          "column": 15,
-          "position": 3500
-        },
-        "endLoc": {
-          "line": 510,
-          "column": 30,
-          "position": 4093
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/lib/sync-youtube.ts",
-        "start": 277,
-        "end": 353,
-        "startLoc": {
-          "line": 277,
-          "column": 3,
-          "position": 2115
-        },
-        "endLoc": {
-          "line": 353,
-          "column": 42,
-          "position": 2708
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 19,
-      "fragment": "= 5 * 60;\n\nfunction timingSafeEqualHex(a: string, b: string): boolean {\n  try {\n    const ab = Buffer.from(a, \"hex\");\n    const bb = Buffer.from(b, \"hex\");\n    if (ab.length !== bb.length) return false;\n    return crypto.timingSafeEqual(ab, bb);\n  } catch {\n    return false;\n  }\n}\n\n/**\n * Minimal Stripe webhook signature verification (no stripe SDK required).\n *\n * Stripe-Signature header format: \"t=timestamp,v1=signature[,v1=signature2...]\"\n * Signature = HMAC_SHA256(secret, `${t}.${payload}`) as hex.\n */",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/lib/stripe.ts",
-        "start": 14,
-        "end": 32,
-        "startLoc": {
-          "line": 14,
-          "column": 2,
-          "position": 101
-        },
-        "endLoc": {
-          "line": 32,
-          "column": 4,
-          "position": 226
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/lib/replicate/webhook.ts",
-        "start": 18,
-        "end": 31,
-        "startLoc": {
-          "line": 18,
-          "column": 2,
-          "position": 19
-        },
-        "endLoc": {
-          "line": 31,
-          "column": 9,
-          "position": 144
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 13,
-      "fragment": "=== 0) {\n    return {\n      sampleSize: 0,\n      viewsPerDay: { mean: 0, std: 0 },\n      avgViewPercentage: { mean: 0, std: 0 },\n      watchTimePerViewSec: { mean: 0, std: 0 },\n      subsPer1k: { mean: 0, std: 0 },\n      engagementPerView: { mean: 0, std: 0 },\n      sharesPer1k: { mean: 0, std: 0 },\n    };\n  }\n\n  return",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/lib/owned-video-math.ts",
-        "start": 454,
-        "end": 466,
-        "startLoc": {
-          "line": 454,
-          "column": 2,
-          "position": 3559
-        },
-        "endLoc": {
-          "line": 466,
-          "column": 7,
-          "position": 3707
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/app/api/me/channels/[channelId]/videos/[videoId]/insights/analytics/route.ts",
-        "start": 486,
-        "end": 498,
-        "startLoc": {
-          "line": 486,
-          "column": 2,
-          "position": 3391
-        },
-        "endLoc": {
-          "line": 498,
-          "column": 6,
-          "position": 3539
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 9,
-      "fragment": "(seconds: number): string {\n  if (seconds < 0 || !Number.isFinite(seconds)) return \"—\";\n\n  const h = Math.floor(seconds / 3600);\n  const m = Math.floor((seconds % 3600) / 60);\n  const s = Math.floor(seconds % 60);\n\n  if (h > 0) {\n    return `",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/lib/competitor-utils.ts",
-        "start": 47,
-        "end": 55,
-        "startLoc": {
-          "line": 47,
-          "column": 20,
-          "position": 272
-        },
-        "endLoc": {
-          "line": 55,
-          "column": 2,
-          "position": 391
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/lib/competitor-utils.ts",
-        "start": 28,
-        "end": 36,
-        "startLoc": {
-          "line": 28,
-          "column": 15,
-          "position": 57
-        },
-        "endLoc": {
-          "line": 36,
-          "column": 2,
-          "position": 176
-        }
-      }
-    },
-    {
-      "format": "typescript",
-      "lines": 19,
-      "fragment": "const YOUTUBE_CATEGORIES: Record<string, string> = {\n  \"1\": \"Film & Animation\",\n  \"2\": \"Autos & Vehicles\",\n  \"10\": \"Music\",\n  \"15\": \"Pets & Animals\",\n  \"17\": \"Sports\",\n  \"19\": \"Travel & Events\",\n  \"20\": \"Gaming\",\n  \"22\": \"People & Blogs\",\n  \"23\": \"Comedy\",\n  \"24\": \"Entertainment\",\n  \"25\": \"News & Politics\",\n  \"26\": \"Howto & Style\",\n  \"27\": \"Education\",\n  \"28\": \"Science & Technology\",\n  \"29\": \"Nonprofits & Activism\",\n};\n\n// NOTE: We no longer filter tags or title keywords.",
-      "tokens": 0,
-      "firstFile": {
-        "name": "apps/web/lib/channel-niche.ts",
-        "start": 38,
-        "end": 56,
-        "startLoc": {
-          "line": 38,
-          "column": 1,
-          "position": 137
-        },
-        "endLoc": {
-          "line": 56,
-          "column": 53,
-          "position": 263
-        }
-      },
-      "secondFile": {
-        "name": "apps/web/lib/competitor-search/niche-inference.ts",
-        "start": 29,
-        "end": 47,
-        "startLoc": {
-          "line": 29,
-          "column": 1,
-          "position": 95
-        },
-        "endLoc": {
-          "line": 47,
-          "column": 52,
-          "position": 221
         }
       }
     }

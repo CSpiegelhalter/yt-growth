@@ -13,7 +13,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
-import { getCurrentUser } from "@/lib/user";
+import { requireOwnedChannel } from "@/lib/api/channel-auth";
 import {
   ChannelProfileInputSchema,
   ChannelProfile,
@@ -24,7 +24,6 @@ import {
   computeProfileInputHash,
   sanitizeProfileInput,
 } from "@/lib/channel-profile/utils";
-import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 // Database row type for raw SQL queries
 type ProfileRow = {
@@ -82,30 +81,9 @@ async function GETHandler(
   { params }: { params: Promise<{ channelId: string }> }
 ) {
   void req;
-  const user = await getCurrentUser();
-  if (!user) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const paramsObj = await params;
-  const parsed = channelParamsSchema.safeParse(paramsObj);
-  if (!parsed.success) {
-    return Response.json({ error: "Invalid channel ID" }, { status: 400 });
-  }
-
-  const { channelId: youtubeChannelId } = parsed.data;
-
-  // Get channel and verify ownership
-  const channel = await prisma.channel.findFirst({
-    where: {
-      youtubeChannelId,
-      userId: user.id,
-    },
-  });
-
-  if (!channel) {
-    return Response.json({ error: "Channel not found" }, { status: 404 });
-  }
+  const auth = await requireOwnedChannel(params);
+  if (!auth.ok) return auth.response;
+  const { channel } = auth;
 
   // Get profile using raw SQL (model may not be in Prisma types yet)
   let profiles: ProfileRow[];
@@ -137,18 +115,8 @@ async function PUTHandler(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const paramsObj = await params;
-  const parsed = channelParamsSchema.safeParse(paramsObj);
-  if (!parsed.success) {
-    return Response.json({ error: "Invalid channel ID" }, { status: 400 });
-  }
-
-  const { channelId: youtubeChannelId } = parsed.data;
+  const auth = await requireOwnedChannel(params);
+  if (!auth.ok) return auth.response;
 
   // Parse and validate request body
   let body: unknown;
@@ -166,17 +134,7 @@ async function PUTHandler(
     );
   }
 
-  // Get channel and verify ownership
-  const channel = await prisma.channel.findFirst({
-    where: {
-      youtubeChannelId,
-      userId: user.id,
-    },
-  });
-
-  if (!channel) {
-    return Response.json({ error: "Channel not found" }, { status: 404 });
-  }
+  const { channel } = auth;
 
   // Sanitize and compute hash
   const sanitizedInput = sanitizeProfileInput(bodyParsed.data.input);

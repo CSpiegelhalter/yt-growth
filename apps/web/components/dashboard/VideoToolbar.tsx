@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { SearchIcon, CopyIcon } from "@/components/icons";
 import s from "./VideoToolbar.module.css";
 import {
   SortKey,
@@ -179,18 +180,7 @@ export default function VideoToolbar({
 
           {/* Search */}
           <div className={s.searchWrap}>
-            <svg
-              className={s.searchIcon}
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
+            <SearchIcon size={16} className={s.searchIcon} />
             <input
               type="text"
               className={s.searchInput}
@@ -268,17 +258,7 @@ export default function VideoToolbar({
                   role="menuitem"
                   onClick={handleCopySummary}
                 >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                  </svg>
+                  <CopyIcon size={16} />
                   Copy top 5 summary
                 </button>
               </div>

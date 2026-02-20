@@ -8,6 +8,7 @@ import { ApiError } from "@/lib/api/errors";
 import { prisma } from "@/prisma";
 import { runPrediction } from "@/lib/server/replicate/runPrediction";
 import { createLogger } from "@/lib/logger";
+import { getAppBaseUrl } from "@/lib/server/url";
 
 export const runtime = "nodejs";
 
@@ -19,15 +20,6 @@ const bodySchema = z.object({
   prompt: z.string().trim().min(3).max(500).optional(),
   strength: z.number().min(0.1).max(1.0).optional().default(0.75),
 });
-
-function getAppBaseUrl(req: NextRequest): string {
-  const env = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL;
-  if (env) return env.replace(/\/$/, "");
-  const proto = req.headers.get("x-forwarded-proto") ?? "http";
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
-  if (!host) throw new Error("Cannot determine base URL for webhooks");
-  return `${proto}://${host}`;
-}
 
 export const POST = createApiRoute(
   { route: "/api/thumbnails/generate-img2img" },

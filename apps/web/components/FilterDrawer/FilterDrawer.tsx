@@ -9,24 +9,12 @@ type Props = {
   onClose: () => void;
   title: string;
   children: ReactNode;
-  /** Optional action button in footer */
   actionLabel?: string;
   onAction?: () => void;
-  /** Optional secondary action (e.g. Reset) */
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
 };
 
-/**
- * FilterDrawer - Mobile bottom sheet for filters
- *
- * A reusable bottom sheet component that:
- * - Slides up from the bottom
- * - Has backdrop + click-outside-to-close
- * - Traps focus when open
- * - Closes on Escape
- * - Renders via portal to escape stacking context
- */
 export default function FilterDrawer({
   isOpen,
   onClose,
@@ -40,7 +28,6 @@ export default function FilterDrawer({
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Handle Escape key
   useEffect(() => {
     if (!isOpen) return;
 
@@ -54,7 +41,6 @@ export default function FilterDrawer({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -66,7 +52,6 @@ export default function FilterDrawer({
     };
   }, [isOpen]);
 
-  // Focus trap
   useEffect(() => {
     if (!isOpen || !drawerRef.current) return;
 
@@ -77,7 +62,6 @@ export default function FilterDrawer({
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
 
-    // Focus close button on open
     closeButtonRef.current?.focus();
 
     const handleTabKey = (e: KeyboardEvent) => {
@@ -113,27 +97,25 @@ export default function FilterDrawer({
 
   const content = (
     <div
-      className={s.filterDrawerBackdrop}
+      className={s.backdrop}
       onClick={handleBackdropClick}
       aria-hidden="true"
     >
       <div
         ref={drawerRef}
-        className={s.filterDrawer}
+        className={s.drawer}
         role="dialog"
         aria-modal="true"
         aria-label={title}
       >
-        {/* Handle (visual affordance for swipe) */}
-        <div className={s.filterDrawerHandle} aria-hidden="true" />
+        <div className={s.handle} aria-hidden="true" />
 
-        {/* Header */}
-        <div className={s.filterDrawerHeader}>
-          <h2 className={s.filterDrawerTitle}>{title}</h2>
+        <div className={s.header}>
+          <h2 className={s.title}>{title}</h2>
           <button
             ref={closeButtonRef}
             type="button"
-            className={s.filterDrawerClose}
+            className={s.close}
             onClick={onClose}
             aria-label="Close filters"
           >
@@ -151,16 +133,15 @@ export default function FilterDrawer({
           </button>
         </div>
 
-        {/* Content */}
-        <div className={s.filterDrawerContent}>{children}</div>
+        <div className={s.content}>{children}</div>
 
-        {/* Footer (optional action) */}
-        {(actionLabel && onAction) || (secondaryActionLabel && onSecondaryAction) ? (
-          <div className={s.filterDrawerFooter}>
+        {(actionLabel && onAction) ||
+        (secondaryActionLabel && onSecondaryAction) ? (
+          <div className={s.footer}>
             {secondaryActionLabel && onSecondaryAction && (
               <button
                 type="button"
-                className={s.filterDrawerSecondaryAction}
+                className={s.secondaryAction}
                 onClick={onSecondaryAction}
               >
                 {secondaryActionLabel}
@@ -169,7 +150,7 @@ export default function FilterDrawer({
             {actionLabel && onAction && (
               <button
                 type="button"
-                className={s.filterDrawerAction}
+                className={s.primaryAction}
                 onClick={onAction}
               >
                 {actionLabel}
@@ -181,7 +162,6 @@ export default function FilterDrawer({
     </div>
   );
 
-  // Render via portal to body
   if (typeof window === "undefined") return null;
   return createPortal(content, document.body);
 }

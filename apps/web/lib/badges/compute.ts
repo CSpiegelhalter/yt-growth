@@ -109,7 +109,17 @@ export function sumSubsGainedInWindow(videos: VideoForBadges[], window: string):
 // STREAK CALCULATIONS
 // ============================================
 
-export function calculatePostingStreakDays(videos: VideoForBadges[]): number {
+/**
+ * Count consecutive periods (going backwards from now) that contain
+ * at least one published video. `windowDays` controls granularity:
+ *   1  → daily streak
+ *   7  → weekly streak
+ */
+function calculatePostingStreak(
+  videos: VideoForBadges[],
+  windowDays: 1 | 7,
+  maxPeriods: number,
+): number {
   if (videos.length === 0) return 0;
 
   const sorted = [...videos]
@@ -119,22 +129,25 @@ export function calculatePostingStreakDays(videos: VideoForBadges[]): number {
 
   if (sorted.length === 0) return 0;
 
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
+  const alignStart = windowDays === 7 ? getWeekStart(new Date()) : (() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); return d;
+  })();
+
   let streak = 0;
-  let currentDate = new Date(now);
+  let windowStart = new Date(alignStart);
 
-  for (let i = 0; i < 365; i++) {
-    const dayStart = new Date(currentDate);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(currentDate);
-    dayEnd.setHours(23, 59, 59, 999);
+  for (let i = 0; i < maxPeriods; i++) {
+    const windowEnd = new Date(windowStart);
+    windowEnd.setDate(windowEnd.getDate() + windowDays);
 
-    const hasVideoThisDay = sorted.some((date) => date >= dayStart && date <= dayEnd);
+    const hasVideo = sorted.some(
+      (date) => date >= windowStart && date < windowEnd,
+    );
 
-    if (hasVideoThisDay) {
+    if (hasVideo) {
       streak++;
-      currentDate.setDate(currentDate.getDate() - 1);
+      windowStart = new Date(windowStart);
+      windowStart.setDate(windowStart.getDate() - windowDays);
     } else {
       break;
     }
@@ -143,38 +156,12 @@ export function calculatePostingStreakDays(videos: VideoForBadges[]): number {
   return streak;
 }
 
+export function calculatePostingStreakDays(videos: VideoForBadges[]): number {
+  return calculatePostingStreak(videos, 1, 365);
+}
+
 export function calculatePostingStreakWeeks(videos: VideoForBadges[]): number {
-  if (videos.length === 0) return 0;
-
-  const sorted = [...videos]
-    .filter((v) => v.publishedAt)
-    .map((v) => new Date(v.publishedAt!))
-    .sort((a, b) => b.getTime() - a.getTime());
-
-  if (sorted.length === 0) return 0;
-
-  const now = new Date();
-  let streak = 0;
-  let currentWeekStart = getWeekStart(now);
-
-  for (let i = 0; i < 52; i++) {
-    const weekEnd = new Date(currentWeekStart);
-    weekEnd.setDate(weekEnd.getDate() + 7);
-
-    const hasVideoThisWeek = sorted.some(
-      (date) => date >= currentWeekStart && date < weekEnd
-    );
-
-    if (hasVideoThisWeek) {
-      streak++;
-      currentWeekStart = new Date(currentWeekStart);
-      currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-    } else {
-      break;
-    }
-  }
-
-  return streak;
+  return calculatePostingStreak(videos, 7, 52);
 }
 
 // ============================================

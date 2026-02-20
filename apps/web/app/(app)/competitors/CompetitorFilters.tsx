@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, type ChangeEvent } from "react";
-import FilterDrawer from "./FilterDrawer";
+import FilterDrawer from "@/components/FilterDrawer/FilterDrawer";
 import s from "./style.module.css";
 
 export type ContentType = "shorts" | "long" | "both";

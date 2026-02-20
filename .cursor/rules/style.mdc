@@ -1,6 +1,7 @@
 ---
-name: style
 description: Enforce consistent spacing, typography, hierarchy, accessibility, and maintainable UI code (mobile-first).
+globs: **/*.tsx,**.*.css
+alwaysApply: false
 ---
 
 # UI Style + Code Quality Rule (Must Follow)
@@ -17,6 +18,7 @@ If you touch UI code, you must satisfy **all** sections below.
 - **No one-off styling**: avoid arbitrary values and bespoke variants unless promoted to shared tokens/variants.
 - **Complete experiences**: every interactive feature must include loading/empty/error/success/disabled states.
 - **Accessible by default**: semantic HTML + keyboard support + focus management are required.
+- **Brand design system**: see `design-system.mdc` for mandatory brand colors, Fustat typography, and Tag component rules. No hardcoded brand hex, no ad-hoc tags.
 
 ---
 

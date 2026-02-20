@@ -14,6 +14,7 @@
     "dev": "next dev -p 3000",
     "build": "rm -rf .next && next build",
     "start": "next start",
+    "css:unused:report": "bun run scripts/find-unused-css-modules.ts",
     "lint": "eslint . --max-warnings=0",
     "db:up": "docker compose -f ../../docker-compose.yml up -d",
     "db:down": "docker compose -f ../../docker-compose.yml down",

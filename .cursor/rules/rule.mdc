@@ -10,7 +10,7 @@ Build a YouTube growth application that helps creators make better content faste
 - Thumbnail generation
 - Anything else that measurably improves growth (CTR, retention, upload consistency)
 
-Success looks like: fast, clear workflows that create “wow” moments, keep users engaged, and improve creator outcomes.
+Success looks like: fast, clear workflows that create "wow" moments, keep users engaged, and improve creator outcomes.
 
 ---
 
@@ -19,28 +19,45 @@ Success looks like: fast, clear workflows that create “wow” moments, keep us
 - Framework: **Next.js App Router** (`app/`).
 - **Do NOT use Next.js middleware** (deprecated for this project). We use **proxy.ts** for request proxying instead.
 - Payments: **Stripe**.
-  - Stripe webhooks exist and are critical—treat webhook routes as externally-invoked entrypoints.
-  - Never assume a webhook route is unused just because UI doesn’t call it.
+  - Stripe webhooks exist and are critical -- treat webhook routes as externally-invoked entrypoints.
+  - Never assume a webhook route is unused just because UI doesn't call it.
 
 ---
 
-## Architecture & Project Structure (assumptions)
-- `app/` is the canonical source of routes (RSC-first).
-  - `app/**/page.tsx` = pages
-  - `app/api/**/route.ts` = server endpoints (treat as entrypoints)
-  - `app/sitemap.ts` and `app/robots.ts` exist, but sitemap omissions are not proof a route is dead.
-- `components/` contains UI components; keep them small and composable.
-- `lib/` contains reusable logic (server helpers, integrations like YouTube/Stripe, thumbnail generation, etc.).
-- `scripts/` contains CLI/maintenance scripts (entrypoints).
-- `tests/` contains unit/integration tests (treat test-only helpers as “alive” if tests depend on them).
-- `proxy.ts` is used for proxying; keep it aligned with routes and API boundaries.
+## Architecture & Project Structure
 
-If the actual structure differs, update this file to match reality.
+The canonical architecture is defined in `docs/ARCHITECTURE.md` and enforced by
+`.cursor/rules/architecture.mdc`. Summary of the layered structure:
+
+- **`app/`** -- entrypoints only (routes, pages, layouts). Must remain thin.
+  - `app/**/page.tsx` = pages (RSC-first, fetch via `lib/server/`, pass props)
+  - `app/api/**/route.ts` = API routes (orchestrate: validate -> use-case -> respond)
+  - `app/sitemap.ts` and `app/robots.ts` exist; sitemap omissions are not proof a route is dead.
+- **`components/`** -- UI layer:
+  - `ui/` -- presentational primitives (no business logic)
+  - `layout/` -- app shell, headers, sidebars, navigation
+  - `features/<domain>/` -- feature-specific client components + hooks
+- **`lib/`** -- all non-UI code:
+  - `api/` -- route middleware & response helpers (existing, keep as-is)
+  - `features/<domain>/` -- domain logic, use-cases, schemas, types, errors
+  - `ports/` -- interface contracts for external I/O (pure types)
+  - `adapters/<provider>/` -- external I/O implementations (YouTube, Stripe, etc.)
+  - `shared/` -- cross-domain utilities (last resort -- must be used by 3+ domains)
+  - `server/` -- server-only helpers (bootstrap, auth, env, request context)
+  - `client/` -- client-side API helpers
+- **`scripts/`** -- CLI/maintenance scripts (entrypoints).
+- **`tests/`** -- unit/integration tests (treat test-only helpers as "alive" if tests depend on them).
+- **`proxy.ts`** -- request proxying; keep aligned with routes and API boundaries.
+
+**Dependency direction** (strict, one-way):
+`app/` + `components/` -> `lib/features/` -> `lib/ports/` <- `lib/adapters/`
+`lib/shared/` is a leaf layer imported by features/adapters but imports nothing app-specific.
+See `architecture.mdc` for the full forbidden-imports table.
 
 ---
 
 ## UX Principles (non-negotiables)
-- User-centric workflows: help creators move from “question” → “action” quickly.
+- User-centric workflows: help creators move from "question" to "action" quickly.
 - Usability: clear navigation, predictable flows, minimal friction.
 - Consistency: reuse patterns and components.
 - Clarity & hierarchy: important info stands out; reduce noise.
@@ -55,7 +72,7 @@ If the actual structure differs, update this file to match reality.
 - Context-aware UI: tailor based on channel state, plan tier, device.
 - Error prevention & recovery: guard rails + helpful messages.
 - Recognition over recall: keep key info visible.
-- Peak-end rule: make “results” screens and completion moments delightful.
+- Peak-end rule: make "results" screens and completion moments delightful.
 
 ---
 
@@ -70,24 +87,26 @@ If the actual structure differs, update this file to match reality.
   - browser-only APIs
   - realtime UX
 - Prefer server actions / route handlers for mutations when appropriate.
-- Keep pages thin: pages compose smaller components and call into `lib/`.
+- Keep pages thin: pages compose smaller components and call into `lib/features/`.
 
 ---
 
 ## Code Quality & Maintainability
 - Components should be small; avoid giant files.
-- Prefer clear separation of responsibilities:
-  - UI (components/app)
-  - domain logic (lib)
-  - integrations (lib/*integration*)
-- Reuse logic; avoid duplication.
+- Follow the layered architecture separation:
+  - UI in `components/` and `app/`
+  - Domain logic in `lib/features/`
+  - External I/O in `lib/adapters/`
+  - Contracts in `lib/ports/`
+  - Cross-cutting utilities in `lib/shared/`
+- Reuse logic; avoid duplication. Search existing code before adding new utilities.
 - Keep performance in mind (avoid heavy client bundles; code split).
 - Write code that is easy to change and test.
 
 ---
 
 ## SEO Requirements
-- “SEO is a feature.” Pages must be indexable, fast, and content-rich.
+- "SEO is a feature." Pages must be indexable, fast, and content-rich.
 - Use Next.js metadata APIs correctly:
   - `generateMetadata` where appropriate
   - unique titles/descriptions per route
@@ -101,11 +120,13 @@ If the actual structure differs, update this file to match reality.
 ---
 
 ## Error Handling & Validation
+- Domain errors extend `DomainError` from `lib/shared/errors.ts`.
+- Each feature defines its own error subclass in `lib/features/<domain>/errors.ts`.
+- Route handlers use `withErrorHandling` middleware; `toApiError()` maps `DomainError` to `ApiError`.
+- Zod schemas live in `lib/features/<domain>/schemas.ts`.
+- Route handlers validate with `withValidation()` from `lib/api/withValidation.ts`.
 - Use guard clauses / early returns.
 - Handle edge cases explicitly (missing channel data, rate limits, empty results).
-- Prefer custom error types and consistent error surfaces.
-- Validate inputs at boundaries (API routes, server actions, webhook handlers):
-  - use **Zod** schemas for parsing/validation
 - Never log secrets. Be careful with webhook payloads and auth tokens.
 
 ---
@@ -131,7 +152,7 @@ If the actual structure differs, update this file to match reality.
 
 ## Safe Refactors & Cleanup Policy
 - Do not delete routes/files/exports unless you have 2 proofs of unused:
-  1) IDE/TypeScript “Find References” or compiler/linter evidence, AND
+  1) IDE/TypeScript "Find References" or compiler/linter evidence, AND
   2) repo-wide search evidence (including dynamic imports and string-based usage)
 - Always check for:
   - `import()`, `require()`, `next/dynamic`, `React.lazy`
@@ -139,10 +160,72 @@ If the actual structure differs, update this file to match reality.
   - usage from scripts/tests/CI/infra
 - Make changes in small batches; run verification commands after each batch.
 
-Recommended verification (bun):
-- `bun run lint`
-- `bun run typecheck`
-- `bun run test:unit` (and integration/e2e if present)
+---
+
+## Verified-Change Workflow (MANDATORY)
+
+Every code modification must pass a **Pre-Flight Check** before the task is
+considered complete. No exceptions.
+
+### Pre-Flight Suite
+
+Run all six commands in order. If any command fails to install/run, skip it and
+note the skip in the summary.
+
+```
+bun run build
+bun run lint
+bunx knip --config apps/web/knip.json
+bunx madge --circular --extensions ts,tsx,js,jsx apps/web/app apps/web/lib
+bunx depcruise --config dependency-cruiser.js --output-type err-long apps/web
+bunx jscpd apps/web --pattern "**/*.{ts,tsx}" --min-lines 8 --min-tokens 70
+```
+
+### Baseline Tracking
+
+1. A baseline file lives at `.agent/baseline.json`.
+2. **If the file does not exist**, run the full suite once and save the results
+   as the baseline. The baseline records counts for: build errors, lint errors,
+   knip unused exports/files, circular dependency count, dependency-cruiser
+   violations, and jscpd duplicate clones.
+3. **After every task**, run the suite again and compare against the baseline.
+4. **If any metric is HIGHER than the baseline**, the task has failed. Fix the
+   regressions before reporting completion.
+5. **If any metric is LOWER than the baseline**, update the baseline with the
+   new (improved) counts.
+
+### Summary Table
+
+After running the checks, output a comparison table in the chat:
+
+```
+| Metric                | Baseline | Current | Status |
+|-----------------------|----------|---------|--------|
+| Build errors          | 0        | 0       | pass   |
+| Lint errors           | 0        | 0       | pass   |
+| Knip unused exports   | 12       | 12      | pass   |
+| Circular deps (madge) | 3        | 2       | pass*  |
+| Dep-cruiser violations| 0        | 0       | pass   |
+| jscpd clones          | 5        | 5       | pass   |
+```
+
+Mark improved metrics with `*` and update the baseline. Mark regressions with
+`FAIL` and fix them before completing the task.
+
+### `.agent/baseline.json` Format
+
+```json
+{
+  "generatedAt": "ISO timestamp",
+  "buildErrors": 0,
+  "lintErrors": 0,
+  "knipUnusedExports": 0,
+  "knipUnusedFiles": 0,
+  "circularDeps": 0,
+  "depcruiseViolations": 0,
+  "jscpdClones": 0
+}
+```
 
 ---
 
@@ -152,6 +235,7 @@ When implementing or refactoring:
 2) Plan the smallest safe change set.
 3) Implement step-by-step.
 4) Review for edge cases, performance, security.
-5) Finalize with verification commands.
+5) Run the Verified-Change Workflow pre-flight suite.
+6) Output the summary table. Fix regressions. Update baseline if improved.
 
 Prefer the simplest solution that is safe, maintainable, and performant.

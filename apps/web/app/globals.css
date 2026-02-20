@@ -416,13 +416,46 @@
   --space-2xl: var(--space-12);
   
   /* ===========================================
+     BRAND PALETTE
+     Single source of truth — never hardcode these hex values elsewhere.
+     Use var(--color-hot-rose) etc. in all components.
+     =========================================== */
+  --color-hot-rose: #CA1F7B;
+  --color-imperial-blue: #222A68;
+  --color-lavender-mist: #F8F1FF;
+  --color-cool-sky: #35A7FF;
+  --color-stormy-teal: #0F7173;
+
+  /* Tag / pill gradient borders (defined as full gradient values) */
+  --gradient-positive: linear-gradient(90deg, #D03688, #5BB8FF);
+  --gradient-negative: linear-gradient(90deg, #D03688, #222A68);
+  --gradient-neutral:  linear-gradient(90deg, #35A7FF, #0F7173);
+
+  /* ===========================================
      TYPOGRAPHY
      =========================================== */
-  /* Use next/font Inter variable with system fallbacks for zero-CLS font loading */
-  --font-sans: var(--font-inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+  --font-fustat: var(--font-fustat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+  --font-sans: var(--font-fustat);
+  --font-inter: var(--font-inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
   --font-mono: "SF Mono", Monaco, Consolas, "Liberation Mono", monospace;
   
-  /* Font sizes */
+  /* Brand typography scale (Fustat) */
+  --text-h1-size: 2rem;         /* 32px — Big Header */
+  --text-h1-weight: 600;
+  --text-h1-leading: 1.0;
+  --text-h1-tracking: 0;
+
+  --text-subtitle-size: 1.375rem; /* 22px — Subtitle */
+  --text-subtitle-weight: 700;
+  --text-subtitle-leading: 1.0;
+  --text-subtitle-tracking: 0;
+
+  --text-body-size: 1.125rem;   /* 18px — Primary text */
+  --text-body-weight: 400;
+  --text-body-leading: 1.0;
+  --text-body-tracking: 0;
+
+  /* General-purpose font sizes */
   --text-xs: 0.75rem;      /* 12px */
   --text-sm: 0.875rem;     /* 14px */
   --text-base: 1rem;       /* 16px */
@@ -2083,3 +2116,50 @@ label {
   margin: var(--space-8) 0;
   border: none;
 }
+
+/* =====================================
+   BRAND TYPOGRAPHY UTILITIES
+   Use these classes for consistent type.
+   Prefer these over ad-hoc font sizes.
+   ===================================== */
+
+.text-h1 {
+  font-family: var(--font-sans);
+  font-weight: var(--text-h1-weight);
+  font-size: var(--text-h1-size);
+  line-height: var(--text-h1-leading);
+  letter-spacing: var(--text-h1-tracking);
+}
+
+.text-subtitle {
+  font-family: var(--font-sans);
+  font-weight: var(--text-subtitle-weight);
+  font-size: var(--text-subtitle-size);
+  line-height: var(--text-subtitle-leading);
+  letter-spacing: var(--text-subtitle-tracking);
+}
+
+.text-body {
+  font-family: var(--font-sans);
+  font-weight: var(--text-body-weight);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+  letter-spacing: var(--text-body-tracking);
+}
+
+/* =====================================
+   BRAND COLOR UTILITIES
+   Quick helpers — prefer CSS vars in modules.
+   ===================================== */
+
+.color-hot-rose     { color: var(--color-hot-rose); }
+.color-imperial-blue{ color: var(--color-imperial-blue); }
+.color-lavender-mist{ color: var(--color-lavender-mist); }
+.color-cool-sky     { color: var(--color-cool-sky); }
+.color-stormy-teal  { color: var(--color-stormy-teal); }
+
+.bg-hot-rose     { background-color: var(--color-hot-rose); }
+.bg-imperial-blue{ background-color: var(--color-imperial-blue); }
+.bg-lavender-mist{ background-color: var(--color-lavender-mist); }
+.bg-cool-sky     { background-color: var(--color-cool-sky); }
+.bg-stormy-teal  { background-color: var(--color-stormy-teal); }

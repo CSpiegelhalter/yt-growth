@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import CompetitorVideoCard from "./CompetitorVideoCard";
+import { AlertCircleIcon, SearchIcon } from "@/components/icons";
 import s from "./style.module.css";
 import type { CompetitorVideo } from "@/types/api";
 
@@ -451,17 +452,7 @@ export default function CompetitorResultsStream({
   if (state === "error" && videos.length === 0) {
     return (
       <div className={s.emptyVideos}>
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 8v4M12 16h.01" />
-        </svg>
+        <AlertCircleIcon size={48} strokeWidth={1.5} />
         <p>
           Something went wrong. Please try again or adjust your search criteria.
         </p>
@@ -473,17 +464,7 @@ export default function CompetitorResultsStream({
   if (state === "done" && videos.length === 0) {
     return (
       <div className={s.emptyVideos}>
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="M21 21l-4.35-4.35" />
-        </svg>
+        <SearchIcon size={48} strokeWidth={1.5} />
         <p>
           No competitor videos found. Try broadening your filters or adjusting
           your niche description.

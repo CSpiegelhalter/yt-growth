@@ -1,18 +1,11 @@
 import {
   getAppBootstrapOptional,
+  normalizePlan,
+  isAdminEmail,
+  GUEST_SHELL_PROPS,
 } from "@/lib/server/bootstrap";
 import { AppShellServer } from "@/components/navigation/AppShellServer";
 import { getFilteredNavItems } from "@/lib/nav-config.server";
-
-// Plan type mapping from Me.plan to AppShell Plan type
-type AppPlan = "FREE" | "PRO" | "ENTERPRISE";
-
-function normalizePlan(plan: string): AppPlan {
-  const upper = plan.toUpperCase();
-  if (upper === "PRO") return "PRO";
-  if (upper === "ENTERPRISE" || upper === "TEAM") return "ENTERPRISE";
-  return "FREE";
-}
 
 /**
  * Dashboard layout that handles both authenticated and unauthenticated states.
@@ -36,13 +29,7 @@ export default async function DashboardLayout({
   if (!bootstrap) {
     return (
       <AppShellServer
-        channels={[]}
-        activeChannelId={null}
-        userEmail={null}
-        userName={null}
-        plan="FREE"
-        channelLimit={1}
-        isAdmin={false}
+        {...GUEST_SHELL_PROPS}
         primaryNavItems={navItems.primary}
         secondaryNavItems={navItems.secondary}
       >
@@ -54,16 +41,7 @@ export default async function DashboardLayout({
   // Authenticated: Use full AppShell with user data
   const { me, channels, activeChannelId } = bootstrap;
 
-  // Check admin status
-  const adminEmails = String(
-    process.env.ADMIN_EMAILS ?? process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? ""
-  )
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  const isAdmin =
-    adminEmails.length > 0 &&
-    adminEmails.includes(bootstrap.me.email.toLowerCase());
+  const isAdmin = isAdminEmail(bootstrap.me.email);
 
   return (
     <AppShellServer

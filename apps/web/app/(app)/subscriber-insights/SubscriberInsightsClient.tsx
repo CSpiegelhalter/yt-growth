@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
+import { SearchIcon } from "@/components/icons";
 import s from "./style.module.css";
 import { formatDurationBadge } from "@/lib/competitor-utils";
 import type {
@@ -230,18 +232,7 @@ export default function SubscriberInsightsClient({
       <div className={s.toolbar}>
         <div className={s.toolbarRow}>
           <div className={s.searchWrap}>
-            <svg
-              className={s.searchIcon}
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
+            <SearchIcon size={16} className={s.searchIcon} />
             <input
               type="text"
               className={s.searchInput}
@@ -327,15 +318,7 @@ export default function SubscriberInsightsClient({
       {/* Loading State */}
       {loading && (
         <div className={s.videoGrid}>
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className={s.videoCardSkeleton}>
-              <div className={s.skeletonThumb} />
-              <div className={s.skeletonContent}>
-                <div className={s.skeletonTitle} />
-                <div className={s.skeletonMeta} />
-              </div>
-            </div>
-          ))}
+          <VideoCardSkeletons s={s} />
         </div>
       )}
 

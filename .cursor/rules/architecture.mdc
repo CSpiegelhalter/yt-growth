@@ -1,0 +1,208 @@
+---
+description: Enforce layered architecture boundaries, naming conventions, and standard patterns for apps/web.
+alwaysApply: true
+---
+
+# Architecture Rules (Must Follow)
+
+These rules enforce the layered architecture defined in `docs/ARCHITECTURE.md`.
+Every code change in `apps/web/` must comply.
+
+---
+
+## 1. Layer Boundaries (dependency direction)
+
+Imports flow **downward only**. Never import upward or sideways against the
+dependency direction.
+
+```
+app/ (entrypoints)
+  └──► components/, lib/api/, lib/features/, lib/adapters/, lib/server/
+
+components/
+  └──► lib/features/, lib/shared/
+
+lib/features/
+  └──► lib/ports/, lib/shared/
+
+lib/adapters/
+  └──► lib/ports/, lib/shared/
+
+lib/server/
+  └──► lib/features/, lib/adapters/, lib/shared/
+
+lib/api/
+  └──► lib/shared/
+
+lib/ports/
+  └──► (nothing — pure types)
+
+lib/shared/
+  └──► (nothing — leaf layer)
+```
+
+### Forbidden imports
+
+- `lib/features/` must NOT import from `lib/adapters/`, `components/`, or `app/`.
+- `lib/adapters/` must NOT import from `lib/features/`, `components/`, or `app/`.
+- `lib/ports/` must NOT import from `lib/features/`, `lib/adapters/`, or `components/`.
+- `lib/shared/` must NOT import from `lib/features/`, `lib/adapters/`, or `components/`.
+- `components/ui/` must NOT import from `lib/adapters/` or `app/`.
+
+If a change requires a forbidden import, the code is in the wrong layer. Move it.
+
+---
+
+## 2. Entrypoints Are Orchestration Only
+
+**`app/api/**/route.ts`** must only:
+1. Call middleware (`createApiRoute`, `withAuth`, `withValidation`, `withRateLimit`)
+2. Invoke a use-case from `lib/features/`
+3. Map the result to a response (`jsonOk`, `jsonError`)
+
+No business logic, no direct database queries, no LLM calls, no external API
+calls in route handlers. If the route handler is doing more than orchestration,
+extract the logic into `lib/features/<domain>/use-cases/`.
+
+**`app/**/page.tsx`** must only:
+1. Fetch data via `lib/server/` bootstrap helpers
+2. Pass data as props to components
+3. Define metadata via `generateMetadata` or `export const metadata`
+
+---
+
+## 3. Features Own Their Domain
+
+Each feature domain in `lib/features/<domain>/` owns:
+- **types.ts** — domain types and interfaces
+- **schemas.ts** — Zod validation schemas
+- **errors.ts** — domain error classes extending `DomainError`
+- **use-cases/** — one file per use-case function
+- **index.ts** — barrel re-exports (public API)
+
+Rules:
+- Features receive already-validated, typed inputs. They do not parse raw HTTP requests.
+- Features return domain types or throw `DomainError`. They do not return `Response` objects.
+- Features access external I/O through port interfaces, not adapter implementations.
+- New features MUST include an `errors.ts` with at least one error subclass.
+
+---
+
+## 4. Adapters Do I/O Only
+
+Adapters in `lib/adapters/<provider>/` handle:
+- HTTP calls, SDK wrappers, caching, retries
+- Data mapping from external formats to port-defined types
+- Provider-specific error wrapping
+
+Adapters must NOT:
+- Make business decisions (if/else based on business rules)
+- Import feature code
+- Return UI-specific formats
+
+---
+
+## 5. Shared Is Last Resort
+
+Before adding to `lib/shared/`:
+1. Verify the utility is used by **3+ domains**.
+2. Verify it does not belong in a specific feature or adapter.
+3. If in doubt, keep it in the feature that needs it. Promote later.
+
+---
+
+## 6. Barrel File Rules
+
+- Barrel files (`index.ts`) are **re-export only**. No logic, no side effects.
+- A module must NOT import its own barrel (no circular `import from './index'`).
+- Keep barrel exports intentional — only export the public API of a module.
+
+---
+
+## 7. Naming Conventions
+
+| Item | Convention | Example |
+| --- | --- | --- |
+| Folders | kebab-case | `competitor-search/` |
+| Files | kebab-case | `search-engine.ts` |
+| React components | PascalCase.tsx | `ExampleWidget.tsx` |
+| Types/interfaces | PascalCase | `CompetitorVideo` |
+| Functions | camelCase | `discoverCompetitors` |
+| Zod schemas | PascalCase + `Schema` | `DiscoverQuerySchema` |
+| Error classes | PascalCase + `Error` | `CompetitorNotFoundError` |
+| Use-case files | camelCase verb phrase | `discoverCompetitors.ts` |
+| CSS modules | `style.module.css` or `<Component>.module.css` | |
+
+### Before creating a new utility
+
+Search the codebase first:
+1. `lib/shared/` — does a similar helper exist?
+2. `lib/features/<domain>/` — is it feature-specific?
+3. `lib/adapters/` — is it I/O-related?
+
+Extend existing functions rather than creating near-duplicates.
+
+---
+
+## 8. Error Handling
+
+- Domain errors extend `DomainError` from `lib/shared/errors.ts`.
+- Each feature defines its own error subclass in `errors.ts`.
+- Route handlers rely on `withErrorHandling` middleware to catch errors.
+- `toApiError()` in `lib/api/errors.ts` maps `DomainError` → `ApiError` using the `code` field.
+- Common domain error codes: `NOT_FOUND`, `UNAUTHORIZED`, `FORBIDDEN`, `LIMIT_REACHED`, `INVALID_INPUT`, `EXTERNAL_FAILURE`, `TIMEOUT`, `RATE_LIMITED`.
+
+---
+
+## 9. Validation
+
+- Zod schemas live in `lib/features/<domain>/schemas.ts`.
+- Route handlers validate using `withValidation()` from `lib/api/withValidation.ts`.
+- Use-cases receive validated types — they do NOT re-parse with Zod.
+- Infer types from schemas: `type Input = z.infer<typeof InputSchema>`.
+- Schema naming: `<Noun><Verb>Schema` or `<Verb><Noun>Schema`.
+
+---
+
+## 10. Adding a New API Route
+
+Follow this exact pattern:
+
+```ts
+import { createApiRoute } from "@/lib/api/route";
+import { withAuth } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
+import { jsonOk } from "@/lib/api/response";
+import { SomeBodySchema } from "@/lib/features/<domain>";
+import { doSomething } from "@/lib/features/<domain>";
+
+export const POST = createApiRoute(
+  { route: "/api/path/here" },
+  withAuth({ mode: "required" },
+    withValidation({ body: SomeBodySchema }, async (_req, _ctx, api, { body }) => {
+      const result = await doSomething({ userId: api.userId!, ...body });
+      return jsonOk(result, { requestId: api.requestId });
+    })
+  )
+);
+```
+
+---
+
+## 11. Testing Expectations
+
+- **Unit tests** for `lib/features/` and `lib/adapters/` are required for new code.
+- Tests live in `__tests__/` subdirectories co-located with the code they test.
+- Mock port interfaces for feature tests, not HTTP calls.
+- Mock external APIs for adapter tests.
+- Test file naming: `<module>.test.ts`.
+- Run: `bun run test:unit` after changes.
+
+---
+
+## 12. Server vs Client
+
+- Default to React Server Components. Only add `'use client'` when required.
+- Client components live in `components/features/<domain>/` or co-located in `app/`.
+- Server-only modules use `import "server-only"` for enforcement.
+- Minimize `useEffect` and `useState` — prefer server-fetched data as props.

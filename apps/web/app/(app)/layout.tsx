@@ -1,17 +1,7 @@
 import { redirect } from "next/navigation";
-import { getCurrentUserServer, getMeServer, getChannelsServer, resolveActiveChannelId } from "@/lib/server/bootstrap";
+import { getCurrentUserServer, getMeServer, getChannelsServer, resolveActiveChannelId, normalizePlan, isAdminEmail } from "@/lib/server/bootstrap";
 import { AppShellServer } from "@/components/navigation/AppShellServer";
 import { getFilteredNavItems } from "@/lib/nav-config.server";
-
-// Plan type mapping from Me.plan to AppShell Plan type
-type AppPlan = "FREE" | "PRO" | "ENTERPRISE";
-
-function normalizePlan(plan: string): AppPlan {
-  const upper = plan.toUpperCase();
-  if (upper === "PRO") return "PRO";
-  if (upper === "ENTERPRISE" || upper === "TEAM") return "ENTERPRISE";
-  return "FREE";
-}
 
 /**
  * App layout for authenticated pages.
@@ -47,12 +37,7 @@ export default async function AppLayout({
   // Resolve active channel (will be used by pages)
   const activeChannelId = resolveActiveChannelId(channels, null);
   
-  // Check admin status
-  const adminEmails = String(process.env.ADMIN_EMAILS ?? process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map(s => s.trim().toLowerCase())
-    .filter(Boolean);
-  const isAdmin = adminEmails.length > 0 && adminEmails.includes(user.email.toLowerCase());
+  const isAdmin = isAdminEmail(user.email);
   
   return (
     <AppShellServer

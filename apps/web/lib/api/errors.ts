@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { DomainError } from "@/lib/shared/errors";
 
 export type ApiErrorCode =
   | "VALIDATION_ERROR"
@@ -32,8 +33,28 @@ function isZodError(err: unknown): err is z.ZodError {
   return err instanceof z.ZodError;
 }
 
+const DOMAIN_CODE_MAP: Record<string, { code: ApiErrorCode; status: number }> = {
+  NOT_FOUND: { code: "NOT_FOUND", status: 404 },
+  UNAUTHORIZED: { code: "UNAUTHORIZED", status: 401 },
+  FORBIDDEN: { code: "FORBIDDEN", status: 403 },
+  LIMIT_REACHED: { code: "LIMIT_REACHED", status: 402 },
+  INVALID_INPUT: { code: "VALIDATION_ERROR", status: 400 },
+  EXTERNAL_FAILURE: { code: "INTEGRATION_ERROR", status: 502 },
+  TIMEOUT: { code: "TIMEOUT", status: 504 },
+  RATE_LIMITED: { code: "RATE_LIMITED", status: 429 },
+};
+
 export function toApiError(err: unknown): ApiError {
   if (err instanceof ApiError) return err;
+
+  if (err instanceof DomainError) {
+    const mapping = DOMAIN_CODE_MAP[err.code];
+    return new ApiError({
+      code: mapping?.code ?? "INTERNAL",
+      status: mapping?.status ?? 500,
+      message: err.message,
+    });
+  }
 
   // Legacy helper used in older parts of this repo
   if (err && typeof err === "object" && (err as any).status && (err as any).message) {
