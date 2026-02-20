@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import s from "./style.module.css";
+import { formatDurationBadge } from "@/lib/competitor-utils";
 import type {
   Me,
   Channel,
@@ -449,7 +450,7 @@ function VideoCard({
         <span className={s.rankBadge}>#{rank}</span>
         {video.durationSec && (
           <span className={s.durationBadge}>
-            {formatDuration(video.durationSec)}
+            {formatDurationBadge(video.durationSec)}
           </span>
         )}
       </Link>
@@ -505,11 +506,6 @@ function formatNumber(num: number): string {
   return num.toLocaleString();
 }
 
-function formatDuration(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "";

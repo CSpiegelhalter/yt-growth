@@ -6,6 +6,7 @@
 
 import type { CompetitorVideo, CompetitorVideoAnalysis, CompetitorCommentsAnalysis } from "@/types/api";
 import { computePublicSignals } from "@/lib/competitor-utils";
+import { daysSince } from "@/lib/youtube/utils";
 import { computeStrategicInsights, deriveKeywordsFromText } from "./strategic";
 import type {
   VideoDetailsResult,
@@ -30,12 +31,8 @@ export function buildVideoObject(
   snapshots: Array<{ viewCount: number; capturedAt: Date }>,
   now: Date
 ): CompetitorVideo {
-  const publishedAt = new Date(videoDetails.publishedAt);
-  const daysSincePublish = Math.max(
-    1,
-    Math.floor((now.getTime() - publishedAt.getTime()) / (1000 * 60 * 60 * 24))
-  );
-  const viewsPerDay = Math.round(videoDetails.viewCount / daysSincePublish);
+  const daysPublished = daysSince(videoDetails.publishedAt, now.getTime());
+  const viewsPerDay = Math.round(videoDetails.viewCount / daysPublished);
 
   // Calculate engagement rate
   const engagementPerView =

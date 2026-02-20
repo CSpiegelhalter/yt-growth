@@ -22,18 +22,7 @@ export function formatRelativeDate(dateStr: string): string {
   return years === 1 ? "1 year ago" : `${years} years ago`;
 }
 
-/**
- * Format duration in seconds to human-readable string
- */
-export function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m ${secs}s`;
-  return `${secs}s`;
-}
+export { formatDuration } from "@/lib/competitor-utils";
 
 /**
  * Format reset date/time for limit reached messages

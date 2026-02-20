@@ -22,7 +22,6 @@ export { DEFAULT_FILTERS } from "./types";
 // Export pure utilities (can be used in tests)
 export {
   sanitizeNicheText,
-  validateAndExtractVideoId,
   hashNicheForLogging,
   makeCacheKey,
 } from "./utils";

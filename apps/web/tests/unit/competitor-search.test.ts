@@ -16,10 +16,10 @@ import {
   calculateDerivedMetrics,
   passesFilters,
   sortVideos,
-  validateAndExtractVideoId,
   sanitizeNicheText,
   inferNicheFromText,
 } from "@/lib/competitor-search/utils";
+import { parseYouTubeVideoId } from "@/lib/youtube-video-id";
 import type {
   CompetitorSearchFilters,
   CompetitorVideoResult,
@@ -420,38 +420,38 @@ describe("Competitor Search - Filter Application", () => {
 });
 
 describe("Competitor Search - Niche Inference", () => {
-  describe("validateAndExtractVideoId", () => {
+  describe("parseYouTubeVideoId (canonical, was validateAndExtractVideoId)", () => {
     it("extracts video ID from standard youtube.com URL", () => {
       expect(
-        validateAndExtractVideoId("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        parseYouTubeVideoId("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
       ).toBe("dQw4w9WgXcQ");
     });
 
     it("extracts video ID from youtu.be short URL", () => {
-      expect(validateAndExtractVideoId("https://youtu.be/dQw4w9WgXcQ")).toBe(
+      expect(parseYouTubeVideoId("https://youtu.be/dQw4w9WgXcQ")).toBe(
         "dQw4w9WgXcQ"
       );
     });
 
     it("extracts video ID from mobile URL", () => {
       expect(
-        validateAndExtractVideoId("https://m.youtube.com/watch?v=dQw4w9WgXcQ")
+        parseYouTubeVideoId("https://m.youtube.com/watch?v=dQw4w9WgXcQ")
       ).toBe("dQw4w9WgXcQ");
     });
 
     it("rejects non-YouTube URLs", () => {
-      expect(validateAndExtractVideoId("https://vimeo.com/123456")).toBeNull();
-      expect(validateAndExtractVideoId("https://example.com/video")).toBeNull();
+      expect(parseYouTubeVideoId("https://vimeo.com/123456")).toBeNull();
+      expect(parseYouTubeVideoId("https://example.com/video")).toBeNull();
     });
 
     it("rejects invalid URLs", () => {
-      expect(validateAndExtractVideoId("not a url")).toBeNull();
-      expect(validateAndExtractVideoId("")).toBeNull();
+      expect(parseYouTubeVideoId("not a url")).toBeNull();
+      expect(parseYouTubeVideoId("")).toBeNull();
     });
 
     it("handles null/undefined gracefully", () => {
-      expect(validateAndExtractVideoId(null as any)).toBeNull();
-      expect(validateAndExtractVideoId(undefined as any)).toBeNull();
+      expect(parseYouTubeVideoId(null as any)).toBeNull();
+      expect(parseYouTubeVideoId(undefined as any)).toBeNull();
     });
   });
 

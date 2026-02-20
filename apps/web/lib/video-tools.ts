@@ -5,6 +5,9 @@
  * quickly sort, filter, and find what to work on next.
  */
 
+import { daysSince } from "@/lib/youtube/utils";
+import { safeGetItem, safeSetItem } from "@/lib/storage/safeLocalStorage";
+
 // ============================================
 // TYPES
 // ============================================
@@ -173,14 +176,11 @@ type VideoToolsState = {
 // ============================================
 
 /**
- * Calculate days since a video was published
+ * Calculate days since a video was published.
+ * Delegates to the canonical daysSince in lib/youtube/utils.ts.
  */
 export function daysSincePublish(publishedAt: string | null): number {
-  if (!publishedAt) return 0;
-  const published = new Date(publishedAt);
-  const now = new Date();
-  const diffMs = now.getTime() - published.getTime();
-  return Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  return daysSince(publishedAt);
 }
 
 /**
@@ -230,7 +230,7 @@ export function calcSubsPerThousandViews(
   subsGained: number | null | undefined,
   views: number
 ): number | null {
-  if (subsGained == null || views === 0) return null;
+  if (subsGained == null || views <= 0) return null;
   return (subsGained / views) * 1000;
 }
 
@@ -584,11 +584,9 @@ function getStorageKey(channelId: string): string {
  * Load saved state from localStorage
  */
 export function loadVideoToolsState(channelId: string): VideoToolsState | null {
-  if (typeof window === "undefined") return null;
-
+  const stored = safeGetItem(getStorageKey(channelId));
+  if (!stored) return null;
   try {
-    const stored = localStorage.getItem(getStorageKey(channelId));
-    if (!stored) return null;
     return JSON.parse(stored) as VideoToolsState;
   } catch {
     return null;
@@ -602,13 +600,7 @@ export function saveVideoToolsState(
   channelId: string,
   state: VideoToolsState
 ): void {
-  if (typeof window === "undefined") return;
-
-  try {
-    localStorage.setItem(getStorageKey(channelId), JSON.stringify(state));
-  } catch {
-    // Ignore storage errors
-  }
+  safeSetItem(getStorageKey(channelId), JSON.stringify(state));
 }
 
 // ============================================
@@ -759,10 +751,10 @@ export function formatContextMetric(
 }
 
 /**
- * Format duration as badge text
+ * Return a "Short" label for YouTube Shorts (≤60s), null otherwise.
  */
-export function formatDurationBadge(durationSec: number | null): string | null {
+export function shortFormBadge(durationSec: number | null): string | null {
   if (durationSec == null) return null;
   if (durationSec <= 60) return "Short";
-  return null; // Only show badge for shorts
+  return null;
 }

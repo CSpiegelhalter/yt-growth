@@ -20,7 +20,8 @@ import {
   getCurrentUserWithSubscription,
   hasActiveSubscription,
 } from "@/lib/user";
-import { calcSubsPerThousandViews } from "@/lib/retention";
+import { calcSubsPerThousandViews } from "@/lib/video-tools";
+import { daysSince } from "@/lib/youtube/utils";
 import { generateSubscriberInsights } from "@/lib/llm";
 
 import { hashSubscriberAuditContent } from "@/lib/content-hash";
@@ -133,20 +134,12 @@ async function GETHandler(
         const views = metrics.views;
         const viewsIn1k = views / 1000;
         const daysSincePublished = v.publishedAt
-          ? Math.max(
-              1,
-              Math.floor(
-                (now.getTime() - new Date(v.publishedAt).getTime()) /
-                  (1000 * 60 * 60 * 24)
-              )
-            )
+          ? daysSince(v.publishedAt.toISOString(), now.getTime())
           : 1;
 
         // Calculate derived metrics
-        const subsPerThousand = calcSubsPerThousandViews(
-          metrics.subscribersGained,
-          views
-        );
+        const subsPerThousand =
+          Math.round((calcSubsPerThousandViews(metrics.subscribersGained, views) ?? 0) * 100) / 100;
         const commentsPer1k = viewsIn1k > 0 ? metrics.comments / viewsIn1k : 0;
         const sharesPer1k = viewsIn1k > 0 ? metrics.shares / viewsIn1k : 0;
 
@@ -184,7 +177,8 @@ async function GETHandler(
       0
     );
     const totalViews = videosWithMetrics.reduce((sum, v) => sum + v.views, 0);
-    const avgSubsPerThousand = calcSubsPerThousandViews(totalSubs, totalViews);
+    const avgSubsPerThousand =
+      Math.round((calcSubsPerThousandViews(totalSubs, totalViews) ?? 0) * 100) / 100;
 
     // Sort by total subscribers gained to calculate percentile ranks
     const sortedByConversion = [...videosWithMetrics].sort(

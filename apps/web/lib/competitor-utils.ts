@@ -8,6 +8,8 @@
  * - Honest confidence labels
  */
 
+import { daysSince } from "@/lib/youtube/utils";
+
 // ============================================
 // DURATION FORMATTING
 // ============================================
@@ -515,13 +517,7 @@ export function computePublicSignals(input: {
   likeCount?: number | null;
   commentCount?: number | null;
 }): CompetitorPublicSignals {
-  const now = new Date();
-  const publishedDate = new Date(input.publishedAt);
-  const videoAgeDays = Math.max(
-    1,
-    Math.floor((now.getTime() - publishedDate.getTime()) / (1000 * 60 * 60 * 24))
-  );
-
+  const videoAgeDays = daysSince(input.publishedAt);
   const viewsPerDay = Math.round(input.viewCount / videoAgeDays);
 
   // Like rate: likes per 100 views

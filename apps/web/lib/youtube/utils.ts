@@ -91,9 +91,10 @@ export function yyyyMmDd(date: Date): string {
 
 /**
  * Calculate days since a given ISO date string.
- * Returns at least 1 to avoid division by zero.
+ * Returns 0 for null/missing dates, otherwise at least 1 to avoid division by zero.
  */
-export function daysSince(isoDate: string, nowMs: number = Date.now()): number {
+export function daysSince(isoDate: string | null, nowMs: number = Date.now()): number {
+  if (!isoDate) return 0;
   const publishedMs = new Date(isoDate).getTime();
   const daysDiff = Math.floor((nowMs - publishedMs) / (1000 * 60 * 60 * 24));
   return Math.max(1, daysDiff);

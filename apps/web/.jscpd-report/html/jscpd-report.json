@@ -1,6 +1,6 @@
 {
   "statistics": {
-    "detectionDate": "2026-02-20T16:38:38.085Z",
+    "detectionDate": "2026-02-20T17:36:45.263Z",
     "formats": {
       "typescript": {
         "sources": {
@@ -161,8 +161,8 @@
             "newClones": 0
           },
           "apps/web/app/api/me/channels/[channelId]/subscriber-audit/route.ts": {
-            "lines": 343,
-            "tokens": 2956,
+            "lines": 337,
+            "tokens": 2960,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -271,6 +271,42 @@
           "apps/web/app/(app)/competitors/video/[videoId]/_components/serverFetch.ts": {
             "lines": 155,
             "tokens": 1166,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/.next/dev/node_modules/@prisma/client-2c3a283f134fdcb6/scripts/default-index.d.ts": {
+            "lines": 109,
+            "tokens": 1122,
+            "sources": 1,
+            "clones": 2,
+            "duplicatedLines": 16,
+            "duplicatedTokens": 288,
+            "percentage": 14.68,
+            "percentageTokens": 25.67,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/.next/dev/node_modules/@prisma/client-2c3a283f134fdcb6/scripts/default-deno-edge.ts": {
+            "lines": 8,
+            "tokens": 40,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "apps/web/.next/dev/node_modules/@prisma/client-2c3a283f134fdcb6/runtime/index-browser.d.ts": {
+            "lines": 364,
+            "tokens": 4127,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -473,8 +509,8 @@
             "newClones": 0
           },
           "apps/web/app/(app)/video/[videoId]/components/helpers.ts": {
-            "lines": 49,
-            "tokens": 558,
+            "lines": 38,
+            "tokens": 428,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -702,7 +738,7 @@
           },
           "apps/web/app/api/competitors/search/route.ts": {
             "lines": 371,
-            "tokens": 2786,
+            "tokens": 2795,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -893,8 +929,8 @@
             "newClones": 0
           },
           "apps/web/lib/competitors/video-detail/response.ts": {
-            "lines": 268,
-            "tokens": 1922,
+            "lines": 265,
+            "tokens": 1880,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -1037,8 +1073,8 @@
             "newClones": 0
           },
           "apps/web/app/(app)/competitors/utils.ts": {
-            "lines": 196,
-            "tokens": 1576,
+            "lines": 182,
+            "tokens": 1448,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -1313,8 +1349,8 @@
             "newClones": 0
           },
           "apps/web/tests/unit/dataforseo.test.ts": {
-            "lines": 949,
-            "tokens": 8894,
+            "lines": 916,
+            "tokens": 8594,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -1338,7 +1374,7 @@
           },
           "apps/web/tests/unit/competitor-search.test.ts": {
             "lines": 531,
-            "tokens": 4507,
+            "tokens": 4516,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -1481,8 +1517,8 @@
             "newClones": 0
           },
           "apps/web/lib/youtube/utils.ts": {
-            "lines": 99,
-            "tokens": 854,
+            "lines": 100,
+            "tokens": 871,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -1817,8 +1853,8 @@
             "newClones": 0
           },
           "apps/web/lib/dataforseo/utils.ts": {
-            "lines": 493,
-            "tokens": 3911,
+            "lines": 434,
+            "tokens": 3526,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -1901,20 +1937,20 @@
             "newClones": 0
           },
           "apps/web/lib/competitor-search/utils.ts": {
-            "lines": 558,
-            "tokens": 3954,
+            "lines": 477,
+            "tokens": 3274,
             "sources": 1,
             "clones": 2,
             "duplicatedLines": 34,
             "duplicatedTokens": 543,
-            "percentage": 6.09,
-            "percentageTokens": 13.73,
+            "percentage": 7.13,
+            "percentageTokens": 16.59,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/lib/competitor-search/types.ts": {
-            "lines": 293,
-            "tokens": 1254,
+            "lines": 283,
+            "tokens": 1230,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -1938,19 +1974,19 @@
           },
           "apps/web/lib/competitor-search/niche-inference.ts": {
             "lines": 447,
-            "tokens": 3707,
+            "tokens": 3716,
             "sources": 1,
             "clones": 3,
             "duplicatedLines": 52,
             "duplicatedTokens": 669,
             "percentage": 11.63,
-            "percentageTokens": 18.05,
+            "percentageTokens": 18,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "apps/web/lib/competitor-search/index.ts": {
-            "lines": 41,
-            "tokens": 137,
+            "lines": 40,
+            "tokens": 133,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -1985,8 +2021,8 @@
             "newClones": 0
           },
           "apps/web/lib/channel-profile/utils.ts": {
-            "lines": 124,
-            "tokens": 1070,
+            "lines": 120,
+            "tokens": 1033,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -2057,14 +2093,14 @@
             "newClones": 0
           },
           "apps/web/lib/badges/compute.ts": {
-            "lines": 844,
-            "tokens": 9363,
+            "lines": 842,
+            "tokens": 9315,
             "sources": 1,
             "clones": 2,
             "duplicatedLines": 22,
             "duplicatedTokens": 290,
             "percentage": 2.61,
-            "percentageTokens": 3.1,
+            "percentageTokens": 3.11,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -2203,18 +2239,6 @@
           "apps/web/lib/__tests__/use-sync-active-channel.test.ts": {
             "lines": 109,
             "tokens": 865,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "apps/web/lib/__tests__/retention.test.ts": {
-            "lines": 26,
-            "tokens": 269,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -2405,8 +2429,8 @@
             "newClones": 0
           },
           "apps/web/lib/video-tools.ts": {
-            "lines": 767,
-            "tokens": 5918,
+            "lines": 759,
+            "tokens": 5796,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -2476,9 +2500,9 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "apps/web/lib/seo.ts": {
-            "lines": 16,
-            "tokens": 123,
+          "apps/web/lib/stable-hash.ts": {
+            "lines": 26,
+            "tokens": 257,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -2488,9 +2512,9 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "apps/web/lib/retention.ts": {
-            "lines": 6,
-            "tokens": 70,
+          "apps/web/lib/seo.ts": {
+            "lines": 16,
+            "tokens": 123,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -2645,8 +2669,8 @@
             "newClones": 0
           },
           "apps/web/lib/content-hash.ts": {
-            "lines": 80,
-            "tokens": 652,
+            "lines": 62,
+            "tokens": 542,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -2657,14 +2681,14 @@
             "newClones": 0
           },
           "apps/web/lib/competitor-utils.ts": {
-            "lines": 769,
-            "tokens": 5076,
+            "lines": 765,
+            "tokens": 5011,
             "sources": 1,
             "clones": 2,
             "duplicatedLines": 16,
             "duplicatedTokens": 238,
-            "percentage": 2.08,
-            "percentageTokens": 4.69,
+            "percentage": 2.09,
+            "percentageTokens": 4.75,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -2874,14 +2898,14 @@
           }
         },
         "total": {
-          "lines": 51359,
-          "tokens": 398492,
-          "sources": 239,
-          "clones": 37,
-          "duplicatedLines": 813,
-          "duplicatedTokens": 7270,
-          "percentage": 1.58,
-          "percentageTokens": 1.82,
+          "lines": 51581,
+          "tokens": 401672,
+          "sources": 241,
+          "clones": 38,
+          "duplicatedLines": 821,
+          "duplicatedTokens": 7414,
+          "percentage": 1.59,
+          "percentageTokens": 1.85,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -3165,8 +3189,8 @@
             "newClones": 0
           },
           "apps/web/app/(app)/competitors/video/[videoId]/_components/VideoDetailShell.tsx": {
-            "lines": 515,
-            "tokens": 4472,
+            "lines": 506,
+            "tokens": 4330,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -4221,14 +4245,14 @@
             "newClones": 0
           },
           "apps/web/app/(app)/subscriber-insights/SubscriberInsightsClient.tsx": {
-            "lines": 521,
-            "tokens": 4713,
+            "lines": 517,
+            "tokens": 4650,
             "sources": 1,
             "clones": 2,
             "duplicatedLines": 23,
             "duplicatedTokens": 236,
-            "percentage": 4.41,
-            "percentageTokens": 5.01,
+            "percentage": 4.45,
+            "percentageTokens": 5.08,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -4894,8 +4918,8 @@
           }
         },
         "total": {
-          "lines": 35792,
-          "tokens": 344304,
+          "lines": 35779,
+          "tokens": 344099,
           "sources": 167,
           "clones": 35,
           "duplicatedLines": 759,
@@ -6671,41 +6695,17 @@
             "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
-          },
-          "apps/web/next.config.js": {
-            "lines": 121,
-            "tokens": 1131,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "apps/web/eslint.config.js": {
-            "lines": 50,
-            "tokens": 292,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
           }
         },
         "total": {
-          "lines": 21124,
-          "tokens": 226864,
-          "sources": 149,
+          "lines": 20953,
+          "tokens": 225441,
+          "sources": 147,
           "clones": 34,
           "duplicatedLines": 2067,
           "duplicatedTokens": 29182,
-          "percentage": 9.79,
-          "percentageTokens": 12.86,
+          "percentage": 9.86,
+          "percentageTokens": 12.94,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -6764,13 +6764,13 @@
       }
     },
     "total": {
-      "lines": 108319,
-      "tokens": 970386,
+      "lines": 108357,
+      "tokens": 971938,
       "sources": 558,
-      "clones": 106,
-      "duplicatedLines": 3639,
-      "duplicatedTokens": 42750,
-      "percentage": 3.36,
+      "clones": 107,
+      "duplicatedLines": 3647,
+      "duplicatedTokens": 42894,
+      "percentage": 3.37,
       "percentageTokens": 4.41,
       "newDuplicatedLines": 0,
       "newClones": 0
@@ -7314,6 +7314,42 @@
           "line": 341,
           "column": 4,
           "position": 3089
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 9,
+      "fragment": "<\n    R extends runtime.Types.Extensions.UserArgs['result'] = {},\n    M extends runtime.Types.Extensions.UserArgs['model'] = {},\n    Q extends runtime.Types.Extensions.UserArgs['query'] = {},\n    C extends runtime.Types.Extensions.UserArgs['client'] = {},\n    Args extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.InternalArgs<R, M, {}, C>,\n  >(\n    args:\n      | ((client: PrismaClientExtends)",
+      "tokens": 0,
+      "firstFile": {
+        "name": "apps/web/.next/dev/node_modules/@prisma/client-2c3a283f134fdcb6/scripts/default-index.d.ts",
+        "start": 82,
+        "end": 90,
+        "startLoc": {
+          "line": 82,
+          "column": 16,
+          "position": 676
+        },
+        "endLoc": {
+          "line": 90,
+          "column": 2,
+          "position": 820
+        }
+      },
+      "secondFile": {
+        "name": "apps/web/.next/dev/node_modules/@prisma/client-2c3a283f134fdcb6/scripts/default-index.d.ts",
+        "start": 40,
+        "end": 48,
+        "startLoc": {
+          "line": 40,
+          "column": 2,
+          "position": 99
+        },
+        "endLoc": {
+          "line": 48,
+          "column": 2,
+          "position": 243
         }
       }
     },
@@ -9849,27 +9885,27 @@
         "startLoc": {
           "line": 47,
           "column": 1,
-          "position": 212
+          "position": 221
         },
         "endLoc": {
           "line": 67,
           "column": 60,
-          "position": 643
+          "position": 652
         }
       },
       "secondFile": {
         "name": "apps/web/lib/competitor-search/utils.ts",
-        "start": 23,
-        "end": 161,
+        "start": 24,
+        "end": 162,
         "startLoc": {
-          "line": 23,
+          "line": 24,
           "column": 1,
-          "position": 70
+          "position": 87
         },
         "endLoc": {
-          "line": 161,
+          "line": 162,
           "column": 4,
-          "position": 617
+          "position": 634
         }
       }
     },
@@ -9885,27 +9921,27 @@
         "startLoc": {
           "line": 103,
           "column": 1,
-          "position": 976
+          "position": 985
         },
         "endLoc": {
           "line": 117,
           "column": 4,
-          "position": 1088
+          "position": 1097
         }
       },
       "secondFile": {
         "name": "apps/web/lib/competitor-search/utils.ts",
-        "start": 178,
-        "end": 192,
+        "start": 179,
+        "end": 193,
         "startLoc": {
-          "line": 178,
+          "line": 179,
           "column": 1,
-          "position": 719
+          "position": 736
         },
         "endLoc": {
-          "line": 192,
+          "line": 193,
           "column": 4,
-          "position": 831
+          "position": 848
         }
       }
     },
@@ -9916,32 +9952,32 @@
       "tokens": 0,
       "firstFile": {
         "name": "apps/web/lib/badges/compute.ts",
-        "start": 145,
-        "end": 156,
+        "start": 146,
+        "end": 157,
         "startLoc": {
-          "line": 145,
+          "line": 146,
           "column": 28,
-          "position": 1588
+          "position": 1601
         },
         "endLoc": {
-          "line": 156,
+          "line": 157,
           "column": 4,
-          "position": 1733
+          "position": 1746
         }
       },
       "secondFile": {
         "name": "apps/web/lib/badges/compute.ts",
-        "start": 111,
-        "end": 122,
+        "start": 112,
+        "end": 123,
         "startLoc": {
-          "line": 111,
+          "line": 112,
           "column": 27,
-          "position": 1210
+          "position": 1223
         },
         "endLoc": {
-          "line": 122,
+          "line": 123,
           "column": 4,
-          "position": 1355
+          "position": 1368
         }
       }
     },
@@ -10039,17 +10075,17 @@
       },
       "secondFile": {
         "name": "apps/web/app/(app)/subscriber-insights/SubscriberInsightsClient.tsx",
-        "start": 231,
-        "end": 242,
+        "start": 232,
+        "end": 243,
         "startLoc": {
-          "line": 231,
+          "line": 232,
           "column": 11,
-          "position": 2161
+          "position": 2174
         },
         "endLoc": {
-          "line": 242,
+          "line": 243,
           "column": 17,
-          "position": 2254
+          "position": 2267
         }
       }
     },
@@ -10291,17 +10327,17 @@
       },
       "secondFile": {
         "name": "apps/web/app/(app)/subscriber-insights/SubscriberInsightsClient.tsx",
-        "start": 327,
-        "end": 339,
+        "start": 328,
+        "end": 340,
         "startLoc": {
-          "line": 327,
+          "line": 328,
           "column": 2,
-          "position": 3075
+          "position": 3088
         },
         "endLoc": {
-          "line": 339,
+          "line": 340,
           "column": 2,
-          "position": 3217
+          "position": 3230
         }
       }
     },
@@ -10528,32 +10564,32 @@
       "tokens": 0,
       "firstFile": {
         "name": "apps/web/lib/competitor-utils.ts",
-        "start": 45,
-        "end": 53,
+        "start": 47,
+        "end": 55,
         "startLoc": {
-          "line": 45,
+          "line": 47,
           "column": 20,
-          "position": 260
+          "position": 272
         },
         "endLoc": {
-          "line": 53,
+          "line": 55,
           "column": 2,
-          "position": 379
+          "position": 391
         }
       },
       "secondFile": {
         "name": "apps/web/lib/competitor-utils.ts",
-        "start": 26,
-        "end": 34,
+        "start": 28,
+        "end": 36,
         "startLoc": {
-          "line": 26,
+          "line": 28,
           "column": 15,
-          "position": 45
+          "position": 57
         },
         "endLoc": {
-          "line": 34,
+          "line": 36,
           "column": 2,
-          "position": 164
+          "position": 176
         }
       }
     },
@@ -10584,12 +10620,12 @@
         "startLoc": {
           "line": 29,
           "column": 1,
-          "position": 86
+          "position": 95
         },
         "endLoc": {
           "line": 47,
           "column": 52,
-          "position": 212
+          "position": 221
         }
       }
     }

@@ -30,6 +30,7 @@ import {
   WaysToOutperform,
   EngagementBadge,
 } from "./InteractiveHeaderClient";
+import { formatDurationBadge } from "@/lib/competitor-utils";
 import s from "../style.module.css";
 
 type Props = {
@@ -47,16 +48,6 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const sec = seconds % 60;
-  if (h > 0)
-    return `${h}:${m.toString().padStart(2, "0")}:${sec
-      .toString()
-      .padStart(2, "0")}`;
-  return `${m}:${sec.toString().padStart(2, "0")}`;
-}
 
 function formatCompact(num: number): string {
   if (num >= 1_000_000) {
@@ -148,7 +139,7 @@ export default function VideoDetailShell({
             )}
             {video.durationSec && (
               <span className={s.durationBadge}>
-                {formatDuration(video.durationSec)}
+                {formatDurationBadge(video.durationSec)}
               </span>
             )}
             <div className={s.playOverlay}>

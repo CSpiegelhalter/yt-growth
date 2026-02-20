@@ -19,9 +19,9 @@ import type {
   ContentTypeFilter,
 } from "./types";
 import {
-  validateAndExtractVideoId,
   inferNicheFromText,
 } from "./utils";
+import { parseYouTubeVideoId } from "@/lib/youtube-video-id";
 import type { GoogleAccount, VideoDetails } from "@/lib/youtube/types";
 import { fetchVideoDetails } from "@/lib/youtube";
 
@@ -411,7 +411,7 @@ export async function inferNiche(
 
   // Case 3: Video URL provided (with or without text)
   if (referenceVideoUrl) {
-    const videoId = validateAndExtractVideoId(referenceVideoUrl);
+    const videoId = parseYouTubeVideoId(referenceVideoUrl);
     if (!videoId) {
       throw new Error(
         "Invalid YouTube URL. Please provide a valid youtube.com or youtu.be URL."

@@ -4,6 +4,8 @@
  * Client-safe utilities for validation and formatting.
  */
 
+import { parseYouTubeVideoId } from "@/lib/youtube-video-id";
+
 // ============================================
 // URL VALIDATION
 // ============================================
@@ -17,10 +19,11 @@ type UrlValidationResult = {
 /**
  * Validate a YouTube video URL and extract the video ID.
  * Returns validation result with video ID or error message.
+ * Delegates parsing to the canonical parseYouTubeVideoId.
  */
 export function validateYouTubeUrl(url: string): UrlValidationResult {
   if (!url || typeof url !== "string") {
-    return { isValid: true, videoId: null, error: null }; // Empty is valid (optional field)
+    return { isValid: true, videoId: null, error: null };
   }
 
   const trimmed = url.trim();
@@ -28,71 +31,54 @@ export function validateYouTubeUrl(url: string): UrlValidationResult {
     return { isValid: true, videoId: null, error: null };
   }
 
+  let parsed: URL;
   try {
-    const parsed = new URL(trimmed);
-    const host = parsed.hostname.toLowerCase();
-
-    const validHosts = [
-      "youtube.com",
-      "www.youtube.com",
-      "m.youtube.com",
-      "youtu.be",
-    ];
-    
-    if (!validHosts.includes(host)) {
-      return {
-        isValid: false,
-        videoId: null,
-        error: "Please enter a valid YouTube URL (youtube.com or youtu.be)",
-      };
-    }
-
-    // youtu.be format
-    if (host === "youtu.be") {
-      const videoId = parsed.pathname.slice(1).split("/")[0];
-      if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-        return { isValid: true, videoId, error: null };
-      }
-      return {
-        isValid: false,
-        videoId: null,
-        error: "Could not extract video ID from youtu.be URL",
-      };
-    }
-
-    // youtube.com/watch?v=
-    if (parsed.pathname === "/watch") {
-      const videoId = parsed.searchParams.get("v");
-      if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-        return { isValid: true, videoId, error: null };
-      }
-      return {
-        isValid: false,
-        videoId: null,
-        error: "Missing or invalid video ID in URL",
-      };
-    }
-
-    // youtube.com/shorts/, /embed/, /v/
-    const pathMatch = parsed.pathname.match(
-      /^\/(?:shorts|embed|v)\/([a-zA-Z0-9_-]{11})/
-    );
-    if (pathMatch) {
-      return { isValid: true, videoId: pathMatch[1], error: null };
-    }
-
-    return {
-      isValid: false,
-      videoId: null,
-      error: "Unrecognized YouTube URL format. Try a video or Shorts URL.",
-    };
+    parsed = new URL(trimmed);
   } catch {
+    return { isValid: false, videoId: null, error: "Invalid URL format" };
+  }
+
+  const host = parsed.hostname.toLowerCase();
+  const validHosts = [
+    "youtube.com",
+    "www.youtube.com",
+    "m.youtube.com",
+    "youtu.be",
+    "www.youtu.be",
+  ];
+
+  if (!validHosts.includes(host)) {
     return {
       isValid: false,
       videoId: null,
-      error: "Invalid URL format",
+      error: "Please enter a valid YouTube URL (youtube.com or youtu.be)",
     };
   }
+
+  const videoId = parseYouTubeVideoId(trimmed);
+  if (videoId) {
+    return { isValid: true, videoId, error: null };
+  }
+
+  if (host === "youtu.be" || host === "www.youtu.be") {
+    return {
+      isValid: false,
+      videoId: null,
+      error: "Could not extract video ID from youtu.be URL",
+    };
+  }
+  if (parsed.pathname === "/watch") {
+    return {
+      isValid: false,
+      videoId: null,
+      error: "Missing or invalid video ID in URL",
+    };
+  }
+  return {
+    isValid: false,
+    videoId: null,
+    error: "Unrecognized YouTube URL format. Try a video or Shorts URL.",
+  };
 }
 
 /**

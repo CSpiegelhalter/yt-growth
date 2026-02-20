@@ -5,7 +5,6 @@
  * These are shared between client and server code.
  */
 
-import crypto from "crypto";
 import type {
   CompetitorSearchFilters,
   CompetitorVideoResult,
@@ -15,6 +14,8 @@ import type {
   InferredNiche,
 } from "./types";
 import { DEFAULT_FILTERS } from "./types";
+import { daysSince } from "@/lib/youtube/utils";
+import { stableHash } from "@/lib/stable-hash";
 
 // ============================================
 // NICHE TEXT UTILITIES
@@ -242,60 +243,6 @@ export function inferNicheFromText(nicheText: string): InferredNiche {
 }
 
 /**
- * Validate and extract video ID from a YouTube URL.
- */
-export function validateAndExtractVideoId(url: string): string | null {
-  if (!url || typeof url !== "string") return null;
-
-  const trimmed = url.trim();
-  if (!trimmed) return null;
-
-  try {
-    const parsed = new URL(trimmed);
-    const host = parsed.hostname.toLowerCase();
-
-    const validHosts = [
-      "youtube.com",
-      "www.youtube.com",
-      "m.youtube.com",
-      "youtu.be",
-    ];
-    if (!validHosts.includes(host)) {
-      return null;
-    }
-
-    // youtu.be format
-    if (host === "youtu.be") {
-      const videoId = parsed.pathname.slice(1).split("/")[0];
-      if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-        return videoId;
-      }
-      return null;
-    }
-
-    // youtube.com/watch?v=
-    if (parsed.pathname === "/watch") {
-      const videoId = parsed.searchParams.get("v");
-      if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-        return videoId;
-      }
-    }
-
-    // youtube.com/shorts/, /embed/, /v/
-    const pathMatch = parsed.pathname.match(
-      /^\/(?:shorts|embed|v)\/([a-zA-Z0-9_-]{11})/
-    );
-    if (pathMatch) {
-      return pathMatch[1];
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Generate a hash of niche data for logging (privacy-preserving).
  */
 export function hashNicheForLogging(niche: InferredNiche): string {
@@ -374,24 +321,6 @@ export function normalizeFilters(
 }
 
 /**
- * Recursively sort object keys for stable JSON stringification.
- */
-function sortObjectKeys(obj: unknown): unknown {
-  if (obj === null || typeof obj !== "object") {
-    return obj;
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(sortObjectKeys);
-  }
-  const sorted: Record<string, unknown> = {};
-  const keys = Object.keys(obj as Record<string, unknown>).sort();
-  for (const key of keys) {
-    sorted[key] = sortObjectKeys((obj as Record<string, unknown>)[key]);
-  }
-  return sorted;
-}
-
-/**
  * Create a stable cache key from search parameters.
  */
 export function makeCacheKey(
@@ -402,17 +331,12 @@ export function makeCacheKey(
 ): string {
   const normalized = normalizeFilters(filters);
 
-  const keyData = {
+  return stableHash({
     mode,
     niche: niche.toLowerCase().trim(),
     queryTerms: [...queryTerms].sort(),
     filters: normalized,
-  };
-
-  // Recursively sort all keys for stable stringification
-  const sortedData = sortObjectKeys(keyData);
-  const jsonStr = JSON.stringify(sortedData);
-  return crypto.createHash("sha256").update(jsonStr).digest("hex").slice(0, 32);
+  });
 }
 
 // ============================================
@@ -428,12 +352,7 @@ export function calculateDerivedMetrics(
   likeCount?: number,
   commentCount?: number
 ): DerivedMetrics {
-  const now = Date.now();
-  const publishedMs = new Date(publishedAt).getTime();
-  const daysSincePublished = Math.max(
-    1,
-    Math.floor((now - publishedMs) / (1000 * 60 * 60 * 24))
-  );
+  const daysSincePublished = daysSince(publishedAt);
 
   const effectiveDays = Math.max(0.5, daysSincePublished);
   const viewsPerDay = Math.round(viewCount / effectiveDays);

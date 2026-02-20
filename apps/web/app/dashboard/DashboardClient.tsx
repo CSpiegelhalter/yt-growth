@@ -26,7 +26,7 @@ import {
   loadVideoToolsState,
   saveVideoToolsState,
   formatContextMetric,
-  formatDurationBadge,
+  shortFormBadge,
 } from "@/lib/video-tools";
 import { apiFetchJson } from "@/lib/client/api";
 import {
@@ -710,7 +710,7 @@ function VideoCard({
 
   // Get context metric based on current sort
   const contextMetric = formatContextMetric(video, sortKey);
-  const durationBadge = formatDurationBadge(video.durationSec);
+  const durationBadge = shortFormBadge(video.durationSec);
 
   const showPlaceholder = !video.thumbnailUrl || imgError;
 

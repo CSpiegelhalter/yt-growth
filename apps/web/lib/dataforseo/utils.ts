@@ -5,7 +5,7 @@
  * These are testable without server-only restrictions.
  */
 
-import { createHash } from "crypto";
+import { stableHash } from "@/lib/stable-hash";
 
 // ============================================
 // LOCATION & LANGUAGE MAPPINGS
@@ -243,7 +243,7 @@ export function generateRequestHash(params: {
       ? [params.phrase.toLowerCase().trim()]
       : [];
 
-  const normalized = JSON.stringify({
+  return stableHash({
     mode: params.mode,
     keywords: normalizedKeywords,
     location: params.location.toLowerCase(),
@@ -252,7 +252,6 @@ export function generateRequestHash(params: {
     dateFrom: params.dateFrom ?? null,
     dateTo: params.dateTo ?? null,
   });
-  return createHash("sha256").update(normalized).digest("hex");
 }
 
 // ============================================
@@ -435,60 +434,3 @@ export function isRestrictedCategoryError(statusCode: number, message?: string):
   return false;
 }
 
-// ============================================
-// RATE LIMITING HELPERS
-// ============================================
-
-/**
- * In-memory rate limiter for DataForSEO API calls.
- * Used to respect tasks_ready max 20 calls/min limit.
- */
-export class RateLimiter {
-  private timestamps: number[] = [];
-  private readonly maxRequests: number;
-  private readonly windowMs: number;
-
-  constructor(maxRequests: number, windowMs: number) {
-    this.maxRequests = maxRequests;
-    this.windowMs = windowMs;
-  }
-
-  /**
-   * Check if we can make a request without exceeding rate limit.
-   */
-  canRequest(): boolean {
-    this.cleanup();
-    return this.timestamps.length < this.maxRequests;
-  }
-
-  /**
-   * Record a request timestamp.
-   */
-  recordRequest(): void {
-    this.timestamps.push(Date.now());
-  }
-
-  /**
-   * Get time in ms until next request is allowed.
-   * Returns 0 if request is allowed now.
-   */
-  getWaitTime(): number {
-    this.cleanup();
-    if (this.timestamps.length < this.maxRequests) {
-      return 0;
-    }
-    // Oldest timestamp determines when we can make the next request
-    const oldest = this.timestamps[0];
-    if (!oldest) return 0;
-    const waitUntil = oldest + this.windowMs;
-    return Math.max(0, waitUntil - Date.now());
-  }
-
-  /**
-   * Remove timestamps outside the current window.
-   */
-  private cleanup(): void {
-    const cutoff = Date.now() - this.windowMs;
-    this.timestamps = this.timestamps.filter((t) => t > cutoff);
-  }
-}

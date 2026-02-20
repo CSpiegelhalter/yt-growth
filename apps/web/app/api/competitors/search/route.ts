@@ -30,7 +30,6 @@ import {
   type SearchCursor,
   DEFAULT_FILTERS,
   inferNiche,
-  validateAndExtractVideoId,
   sanitizeNicheText,
   makeCacheKey,
   getCachedSearchResults,
@@ -38,6 +37,7 @@ import {
   searchCompetitorsWithCache,
   hashNicheForLogging,
 } from "@/lib/competitor-search";
+import { parseYouTubeVideoId } from "@/lib/youtube-video-id";
 
 // ============================================
 // REQUEST VALIDATION
@@ -270,7 +270,7 @@ async function POSTHandler(req: NextRequest) {
       // Validate video URL if provided
       let videoId: string | undefined;
       if (referenceVideoUrl) {
-        videoId = validateAndExtractVideoId(referenceVideoUrl) ?? undefined;
+        videoId = parseYouTubeVideoId(referenceVideoUrl) ?? undefined;
         if (!videoId) {
           return Response.json(
             {

@@ -4,7 +4,7 @@
  * Tests for validation, hashing, difficulty heuristic, parsing, and rate limiting.
  * These are pure unit tests with no external dependencies.
  */
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect } from "bun:test";
 import {
   validatePhrase,
   validateKeywords,
@@ -19,7 +19,6 @@ import {
   DataForSEOError,
   SUPPORTED_LOCATIONS,
   LOCATION_MAP,
-  RateLimiter,
 } from "@/lib/dataforseo/utils";
 
 describe("DataForSEO Client Unit Tests", () => {
@@ -265,14 +264,14 @@ describe("DataForSEO Client Unit Tests", () => {
       expect(hash1).not.toBe(hash2);
     });
 
-    it("returns 64-character hex string (SHA256)", () => {
+    it("returns 32-character hex string (SHA256 truncated)", () => {
       const hash = generateRequestHash({
         mode: "overview",
         phrase: "test",
         location: "us",
       });
 
-      expect(hash).toMatch(/^[a-f0-9]{64}$/);
+      expect(hash).toMatch(/^[a-f0-9]{32}$/);
     });
   });
 
@@ -560,38 +559,6 @@ describe("DataForSEO Client Unit Tests", () => {
     });
   });
 
-  describe("RateLimiter", () => {
-    let limiter: RateLimiter;
-
-    beforeEach(() => {
-      limiter = new RateLimiter(3, 1000); // 3 requests per 1 second
-    });
-
-    it("allows requests within limit", () => {
-      expect(limiter.canRequest()).toBe(true);
-      limiter.recordRequest();
-      expect(limiter.canRequest()).toBe(true);
-      limiter.recordRequest();
-      expect(limiter.canRequest()).toBe(true);
-      limiter.recordRequest();
-      expect(limiter.canRequest()).toBe(false);
-    });
-
-    it("returns correct wait time when at limit", () => {
-      limiter.recordRequest();
-      limiter.recordRequest();
-      limiter.recordRequest();
-
-      const waitTime = limiter.getWaitTime();
-      expect(waitTime).toBeGreaterThan(0);
-      expect(waitTime).toBeLessThanOrEqual(1000);
-    });
-
-    it("returns 0 wait time when under limit", () => {
-      limiter.recordRequest();
-      expect(limiter.getWaitTime()).toBe(0);
-    });
-  });
 });
 
 describe("DataForSEO Standard Task Flow Fixtures", () => {

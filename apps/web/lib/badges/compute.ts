@@ -19,6 +19,7 @@ import type {
   UnlockedBadge,
 } from "./types";
 import { BADGES, DEFAULT_GOALS, SHORTS_MAX_DURATION_SEC } from "./registry";
+import { daysSince } from "@/lib/youtube/utils";
 
 // ============================================
 // DATE/WINDOW HELPERS
@@ -191,10 +192,7 @@ function median(arr: number[]): number {
 /** Calculate views per day for a video */
 function getViewsPerDay(video: VideoForBadges): number {
   if (!video.publishedAt || !video.views) return 0;
-  const daysSincePublish = Math.max(1, Math.floor(
-    (Date.now() - new Date(video.publishedAt).getTime()) / (1000 * 60 * 60 * 24)
-  ));
-  return video.views / daysSincePublish;
+  return video.views / daysSince(video.publishedAt);
 }
 
 /** Check if video is in top X% of views/day */

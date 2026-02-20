@@ -4,15 +4,14 @@
  * Hashing, cache validation, and helper functions.
  */
 
-import crypto from "crypto";
 import { ChannelProfileInput, PROFILE_CACHE_DAYS } from "./types";
+import { stableHash } from "@/lib/stable-hash";
 
 /**
  * Compute a stable hash from the profile input for cache invalidation
  */
 export function computeProfileInputHash(input: ChannelProfileInput): string {
-  // Normalize the input for consistent hashing
-  const normalized = {
+  return stableHash({
     description: input.description.toLowerCase().trim(),
     categories: [...input.categories].sort(),
     customCategory: (input.customCategory || "").toLowerCase().trim(),
@@ -21,10 +20,7 @@ export function computeProfileInputHash(input: ChannelProfileInput): string {
     tone: [...(input.tone || [])].sort(),
     examples: (input.examples || []).map(e => e.toLowerCase().trim()).sort(),
     goals: [...(input.goals || [])].sort(),
-  };
-
-  const json = JSON.stringify(normalized);
-  return crypto.createHash("md5").update(json).digest("hex");
+  });
 }
 
 /**
