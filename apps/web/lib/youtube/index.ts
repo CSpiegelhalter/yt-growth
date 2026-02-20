@@ -19,6 +19,7 @@ import {
   searchVideos,
   fetchRecentChannelVideosCore,
   fetchVideoComments as fetchVideoCommentsCore,
+  fetchVideoSnippetByApiKey,
 } from "./data-api";
 import {
   fetchVideoMetrics as fetchVideoMetricsCore,
@@ -40,6 +41,9 @@ import type {
 // Re-export account lookup
 export { getGoogleAccount } from "./accounts";
 
+// Re-export API-key video snippet fetcher for public routes
+export { fetchVideoSnippetByApiKey };
+
 // Re-export types
 export type {
   GoogleAccount,
@@ -54,6 +58,7 @@ export type {
   FetchCommentsResult,
   CompetitorVideo,
 } from "./types";
+export type { YouTubeVideoSnippetItem } from "./data-api";
 
 // ============================================
 // Channel Videos

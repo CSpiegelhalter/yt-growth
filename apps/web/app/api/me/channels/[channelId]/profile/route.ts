@@ -24,10 +24,7 @@ import {
   computeProfileInputHash,
   sanitizeProfileInput,
 } from "@/lib/channel-profile/utils";
-
-const ParamsSchema = z.object({
-  channelId: z.string().min(1),
-});
+import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 // Database row type for raw SQL queries
 type ProfileRow = {
@@ -91,7 +88,7 @@ async function GETHandler(
   }
 
   const paramsObj = await params;
-  const parsed = ParamsSchema.safeParse(paramsObj);
+  const parsed = channelParamsSchema.safeParse(paramsObj);
   if (!parsed.success) {
     return Response.json({ error: "Invalid channel ID" }, { status: 400 });
   }
@@ -146,7 +143,7 @@ async function PUTHandler(
   }
 
   const paramsObj = await params;
-  const parsed = ParamsSchema.safeParse(paramsObj);
+  const parsed = channelParamsSchema.safeParse(paramsObj);
   if (!parsed.success) {
     return Response.json({ error: "Invalid channel ID" }, { status: 400 });
   }

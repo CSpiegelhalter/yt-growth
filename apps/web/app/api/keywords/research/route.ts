@@ -19,6 +19,7 @@
 import { z } from "zod";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
 import { jsonOk, jsonError } from "@/lib/api/response";
 import { ApiError } from "@/lib/api/errors";
 import { getLimit, type Plan } from "@/lib/entitlements";
@@ -29,8 +30,8 @@ import {
   fetchKeywordOverview,
   fetchRelatedKeywords,
   fetchCombinedKeywordData,
-  validatePhrase,
-  validateLocation,
+  prepareDataForSeoRequest,
+  mapDataForSEOError,
   DataForSEOError,
   SUPPORTED_LOCATIONS,
   type KeywordOverviewResponse,
@@ -172,8 +173,11 @@ function mapToLegacyRelatedRow(row: RelatedKeywordRow) {
 
 export const POST = createApiRoute(
   { route: "/api/keywords/research" },
-  withAuth({ mode: "optional" }, async (req, _ctx, api: ApiAuthContext) => {
+  withAuth(
+    { mode: "optional" },
+    withValidation({ body: requestSchema }, async (req, _ctx, api: ApiAuthContext, validated) => {
     const user = api.user;
+    const { mode, phrase, phrases, database, displayLimit } = validated.body!;
 
     // Get IP for rate limiting
     const forwardedFor = req.headers.get("x-forwarded-for");
@@ -191,30 +195,6 @@ export const POST = createApiRoute(
       });
     }
 
-    // Parse and validate request body
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      throw new ApiError({
-        code: "VALIDATION_ERROR",
-        status: 400,
-        message: "Invalid JSON body",
-      });
-    }
-
-    const parsed = requestSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new ApiError({
-        code: "VALIDATION_ERROR",
-        status: 400,
-        message: parsed.error.errors[0]?.message || "Invalid request",
-        details: parsed.error.flatten(),
-      });
-    }
-
-    const { mode, phrase, phrases, database, displayLimit } = parsed.data;
-
     // Support both single phrase and array - normalize to array
     const inputPhrases = phrases ?? (phrase ? [phrase] : []);
     if (inputPhrases.length === 0) {
@@ -225,25 +205,12 @@ export const POST = createApiRoute(
       });
     }
 
-    // Validate inputs with DataForSEO validation (stricter limits)
-    let cleanPhrases: string[];
-    let locationInfo: ReturnType<typeof validateLocation>;
-    try {
-      cleanPhrases = inputPhrases.map(p => validatePhrase(p));
-      locationInfo = validateLocation(database);
-    } catch (err) {
-      if (err instanceof DataForSEOError) {
-        throw new ApiError({
-          code: "VALIDATION_ERROR",
-          status: 400,
-          message: err.message,
-        });
-      }
-      throw err;
-    }
-
-    // Primary phrase for caching and display (first in array)
-    const cleanPhrase = cleanPhrases[0];
+    // Validate and normalize inputs
+    const { cleanPhrases, locationInfo } = prepareDataForSeoRequest({
+      phrases: inputPhrases,
+      location: database,
+    });
+    const cleanPhrase = cleanPhrases[0]!;
 
     // If not authenticated, return needsAuth
     if (!user) {
@@ -615,7 +582,6 @@ export const POST = createApiRoute(
         );
       }
     } catch (err) {
-      // Handle DataForSEO-specific errors
       if (err instanceof DataForSEOError) {
         logger.error("keywords.dataforseo_error", {
           userId: user.id,
@@ -624,69 +590,23 @@ export const POST = createApiRoute(
           taskId: err.taskId,
         });
 
-        // Don't consume quota if the request failed due to provider issues
-        // (We already incremented, so we'd need to decrement - but for simplicity
-        // we'll let it consume for now and fix properly with a transaction later)
-
-        // Map to appropriate HTTP status
-        let status = 500;
-        let code: string = "INTERNAL";
-        let userMessage = err.message;
-
-        switch (err.code) {
-          case "RATE_LIMITED":
-            status = 429;
-            code = "RATE_LIMITED";
-            userMessage = "Service is busy. Please try again in a moment.";
-            break;
-          case "QUOTA_EXCEEDED":
-            status = 503;
-            code = "SERVICE_UNAVAILABLE";
-            userMessage = "Keyword service is temporarily unavailable.";
-            break;
-          case "TIMEOUT":
-            status = 504;
-            code = "TIMEOUT";
-            userMessage = "Request timed out. Please try again.";
-            break;
-          case "VALIDATION_ERROR":
-            status = 400;
-            code = "VALIDATION_ERROR";
-            break;
-          case "AUTH_ERROR":
-            status = 503;
-            code = "SERVICE_UNAVAILABLE";
-            userMessage = "Keyword service is temporarily unavailable.";
-            break;
-          case "RESTRICTED_CATEGORY":
-            status = 400;
-            code = "RESTRICTED_CONTENT";
-            userMessage = "Some keywords can't return data due to Google Ads restrictions.";
-            break;
-          case "TASK_PENDING":
-            // This shouldn't happen here, but handle it gracefully
-            return jsonOk(
-              {
-                pending: true,
-                taskId: err.taskId,
-                message: "Fetching keyword data...",
-              },
-              { requestId: api.requestId }
-            );
+        if (err.code === "TASK_PENDING") {
+          return jsonOk(
+            {
+              pending: true,
+              taskId: err.taskId,
+              message: "Fetching keyword data...",
+            },
+            { requestId: api.requestId }
+          );
         }
 
-        return jsonError({
-          status,
-          code: code as any,
-          message: userMessage,
-          requestId: api.requestId,
-        });
+        throw mapDataForSEOError(err);
       }
 
-      // Re-throw unknown errors
       throw err;
     }
-  })
+  }))
 );
 
 export const runtime = "nodejs";

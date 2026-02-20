@@ -3,11 +3,12 @@ import { Suspense } from "react";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/brand";
 import {
-  ErrorState,
   VideoDetailShell,
   MoreFromChannel,
   fetchCompetitorVideoAnalysis,
 } from "./_components";
+import { ErrorState } from "@/components/ui/ErrorState";
+import s from "./style.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -49,10 +50,13 @@ export default async function CompetitorVideoDetailPage({
   // If no active channel, show error state (no fallback)
   if (!activeChannelId) {
     return (
-      <ErrorState
-        title="No channel selected"
-        description="Please select a channel to analyze competitor videos."
-      />
+      <main className={s.page}>
+        <ErrorState
+          title="No channel selected"
+          description="Please select a channel to analyze competitor videos."
+          backLink={{ href: "/competitors", label: "Go Back" }}
+        />
+      </main>
     );
   }
 
@@ -61,12 +65,15 @@ export default async function CompetitorVideoDetailPage({
 
   // If fetch failed, show error state
   if (!result.ok) {
+    const backHref = `/competitors?channelId=${encodeURIComponent(activeChannelId)}`;
     return (
-      <ErrorState
-        title={result.error}
-        description="We couldn't analyze this competitor video."
-        activeChannelId={activeChannelId}
-      />
+      <main className={s.page}>
+        <ErrorState
+          title={result.error}
+          description="We couldn't analyze this competitor video."
+          backLink={{ href: backHref, label: "Go Back" }}
+        />
+      </main>
     );
   }
 

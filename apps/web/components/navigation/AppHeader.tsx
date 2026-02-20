@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { getPageTitle, accountNavItems } from "@/lib/nav-config";
 import { NavIcon } from "./NavIcon";
@@ -53,8 +53,6 @@ export function AppHeader({
 }: AppHeaderProps) {
   void plan;
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [channelDropdownOpen, setChannelDropdownOpen] = useState(false);
@@ -102,28 +100,7 @@ export function AppHeader({
 
   const handleChannelSelect = (channelId: string) => {
     setChannelDropdownOpen(false);
-    
-    if (onChannelChange) {
-      onChannelChange(channelId);
-      return;
-    }
-
-    // Default channel change behavior
-    localStorage.setItem("activeChannelId", channelId);
-
-    // If on a video page, redirect to dashboard
-    if (isVideoPath(pathname)) {
-      router.push(`/dashboard?channelId=${channelId}`);
-      return;
-    }
-
-    // If on a channel-scoped page, update the URL
-    if (isChannelScopedPath(pathname)) {
-      const next = new URLSearchParams(searchParams.toString());
-      next.set("channelId", channelId);
-      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-      router.refresh();
-    }
+    onChannelChange?.(channelId);
   };
 
   return (
@@ -420,19 +397,4 @@ function truncateEmail(email: string): string {
   const localPart = email.substring(0, atIndex);
   if (localPart.length <= 8) return localPart;
   return localPart.substring(0, 8) + "…";
-}
-
-function isChannelScopedPath(pathname: string): boolean {
-  if (pathname === "/dashboard") return true;
-  if (pathname === "/ideas") return true;
-  if (pathname === "/goals") return true;
-  if (pathname === "/subscriber-insights") return true;
-  if (pathname === "/competitors") return true;
-  if (pathname.startsWith("/video/")) return true;
-  if (pathname.startsWith("/competitors/video/")) return true;
-  return false;
-}
-
-function isVideoPath(pathname: string): boolean {
-  return pathname.startsWith("/video/") || pathname.startsWith("/competitors/video/");
 }

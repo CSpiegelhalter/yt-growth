@@ -25,15 +25,17 @@ type ErrorStateProps = {
   /** Custom title override */
   title?: string;
   /** Custom description override */
-  description?: string;
+  description?: string | ReactNode;
   /** Custom icon override */
   icon?: ReactNode;
-  /** Retry callback */
+  /** Retry callback (only rendered when actions is not provided) */
   onRetry?: () => void;
-  /** Back link for navigation */
+  /** Back link for navigation (only rendered when actions is not provided) */
   backLink?: { href: string; label: string };
-  /** Additional action buttons */
+  /** Custom action buttons — replaces all default action rendering when provided */
   actions?: ReactNode;
+  /** Standalone requestId (falls back to error.requestId) */
+  requestId?: string;
   /** Custom className to merge */
   className?: string;
 };
@@ -120,11 +122,11 @@ export function ErrorState({
   onRetry,
   backLink,
   actions,
+  requestId,
   className = "",
 }: ErrorStateProps) {
   const router = useRouter();
 
-  // Determine error type and content
   const errorCode = error?.code?.toUpperCase() ?? "";
   const isRateLimited = error?.status === 429 || errorCode === "RATE_LIMITED";
   const isLimitReached = errorCode === "LIMIT_REACHED";
@@ -163,56 +165,57 @@ export function ErrorState({
       <ErrorIcon />
     ));
 
+  const resolvedRequestId = requestId ?? error?.requestId;
+
   return (
     <div className={`${styles.error} ${className}`.trim()}>
       <div className={styles.icon}>{computedIcon}</div>
       <h2 className={styles.title}>{computedTitle}</h2>
       <p className={styles.description}>{computedDescription}</p>
 
-      {error?.requestId && (
+      {resolvedRequestId && (
         <p className={styles.requestId}>
-          Request ID: <code>{error.requestId}</code>
+          Request ID: <code>{resolvedRequestId}</code>
         </p>
       )}
 
       <div className={styles.actions}>
-        {/* Custom actions passed in */}
-        {actions}
-
-        {/* Default retry button */}
-        {onRetry && (
-          <button onClick={onRetry} className={styles.btnPrimary} type="button">
-            Try Again
-          </button>
-        )}
-
-        {/* Permission-specific reconnect */}
-        {isPermissionError && !actions && (
-          <a href="/api/integrations/google/start" className={styles.btnPrimary}>
-            Reconnect Account
-          </a>
-        )}
-
-        {/* Limit reached upgrade CTA */}
-        {(isLimitReached || error?.details?.upgrade) && (
-          <Link href="/api/integrations/stripe/checkout" className={styles.btnPrimary}>
-            Upgrade to Pro
-          </Link>
-        )}
-
-        {/* Back link or generic back */}
-        {backLink ? (
-          <Link href={backLink.href} className={styles.btnSecondary}>
-            {backLink.label}
-          </Link>
+        {actions ? (
+          actions
         ) : (
-          <button
-            onClick={() => router.back()}
-            className={styles.btnSecondary}
-            type="button"
-          >
-            Go Back
-          </button>
+          <>
+            {onRetry && (
+              <button onClick={onRetry} className={styles.btnPrimary} type="button">
+                Try Again
+              </button>
+            )}
+
+            {isPermissionError && (
+              <a href="/api/integrations/google/start" className={styles.btnPrimary}>
+                Reconnect Account
+              </a>
+            )}
+
+            {(isLimitReached || error?.details?.upgrade) && (
+              <Link href="/api/integrations/stripe/checkout" className={styles.btnPrimary}>
+                Upgrade to Pro
+              </Link>
+            )}
+
+            {backLink ? (
+              <Link href={backLink.href} className={styles.btnSecondary}>
+                {backLink.label}
+              </Link>
+            ) : (
+              <button
+                onClick={() => router.back()}
+                className={styles.btnSecondary}
+                type="button"
+              >
+                Go Back
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

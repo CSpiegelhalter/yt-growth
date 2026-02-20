@@ -12,7 +12,6 @@
  * Rate limit: None (lightweight endpoint)
  */
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUserWithSubscription } from "@/lib/user";
@@ -20,10 +19,7 @@ import {
   getChannelNiche,
   triggerNicheGenerationInBackground,
 } from "@/lib/channel-niche";
-
-const ParamsSchema = z.object({
-  channelId: z.string().min(1),
-});
+import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 /**
  * GET - Get current niche status and optionally trigger generation
@@ -40,7 +36,7 @@ async function GETHandler(
     }
 
     const paramsObj = await params;
-    const parsedParams = ParamsSchema.safeParse(paramsObj);
+    const parsedParams = channelParamsSchema.safeParse(paramsObj);
     if (!parsedParams.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }
@@ -106,7 +102,7 @@ async function POSTHandler(
     }
 
     const paramsObj = await params;
-    const parsedParams = ParamsSchema.safeParse(paramsObj);
+    const parsedParams = channelParamsSchema.safeParse(paramsObj);
     if (!parsedParams.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }

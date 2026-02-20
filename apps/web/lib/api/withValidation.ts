@@ -1,12 +1,47 @@
 import type { NextRequest } from "next/server";
 import type { z } from "zod";
-import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
+import type { ApiRequestContext, NextRouteContext } from "./types";
 import { ApiError } from "./errors";
 
+// ── parseBody ──────────────────────────────────────────────────
+
+export type ParseBodyResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; type: "json" }
+  | { ok: false; type: "validation"; firstMessage: string; zodError: z.ZodError };
+
+/**
+ * Parse and validate a JSON request body against a Zod schema.
+ * Returns a discriminated result so callers can map errors to any response shape.
+ */
+export async function parseBody<T>(
+  req: Request,
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
+): Promise<ParseBodyResult<T>> {
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    return { ok: false, type: "json" };
+  }
+  const result = schema.safeParse(raw);
+  if (!result.success) {
+    return {
+      ok: false,
+      type: "validation",
+      firstMessage: result.error.errors[0]?.message || "Invalid request",
+      zodError: result.error,
+    };
+  }
+  return { ok: true, data: result.data };
+}
+
+// ── withValidation ─────────────────────────────────────────────
+
 export type ValidationSchemas<P, Q, B> = {
-  params?: z.ZodType<P>;
-  query?: z.ZodType<Q>;
-  body?: z.ZodType<B>;
+  params?: z.ZodType<P, z.ZodTypeDef, unknown>;
+  query?: z.ZodType<Q, z.ZodTypeDef, unknown>;
+  body?: z.ZodType<B, z.ZodTypeDef, unknown>;
 };
 
 export type Validated<P, Q, B> = {
@@ -15,22 +50,42 @@ export type Validated<P, Q, B> = {
   body?: B;
 };
 
-export function withValidation<PIn, POut, QOut, BOut>(
+/**
+ * Middleware that validates request params, query, and/or body
+ * before passing control to the inner handler.
+ *
+ * Generic over the API context type so it composes with
+ * withAuth (ApiAuthContext) or bare createApiRoute (ApiRequestContext).
+ */
+export function withValidation<
+  PIn,
+  POut,
+  QOut,
+  BOut,
+  Api extends ApiRequestContext = ApiRequestContext,
+>(
   schemas: ValidationSchemas<POut, QOut, BOut>,
   handler: (
     req: NextRequest,
     ctx: NextRouteContext<PIn>,
-    api: ApiRequestContext,
-    validated: Validated<POut, QOut, BOut>
-  ) => Promise<Response>
-): ApiHandler<PIn> {
+    api: Api,
+    validated: Validated<POut, QOut, BOut>,
+  ) => Promise<Response>,
+): (req: NextRequest, ctx: NextRouteContext<PIn>, api: Api) => Promise<Response> {
   return async (req, ctx, api) => {
     const validated: Validated<POut, QOut, BOut> = {};
 
     if (schemas.params) {
       const paramsRaw = await (ctx as any).params;
       const parsed = schemas.params.safeParse(paramsRaw);
-      if (!parsed.success) throw parsed.error;
+      if (!parsed.success) {
+        throw new ApiError({
+          code: "VALIDATION_ERROR",
+          status: 400,
+          message: parsed.error.errors[0]?.message || "Invalid request",
+          details: parsed.error.flatten(),
+        });
+      }
       validated.params = parsed.data;
     }
 
@@ -39,18 +94,30 @@ export function withValidation<PIn, POut, QOut, BOut>(
       const queryObj: Record<string, string> = {};
       url.searchParams.forEach((v, k) => (queryObj[k] = v));
       const parsed = schemas.query.safeParse(queryObj);
-      if (!parsed.success) throw parsed.error;
+      if (!parsed.success) {
+        throw new ApiError({
+          code: "VALIDATION_ERROR",
+          status: 400,
+          message: parsed.error.errors[0]?.message || "Invalid request",
+          details: parsed.error.flatten(),
+        });
+      }
       validated.query = parsed.data;
     }
 
     if (schemas.body) {
-      const bodyRaw = await req.json().catch(() => undefined);
-      const parsed = schemas.body.safeParse(bodyRaw);
-      if (!parsed.success) throw parsed.error;
-      validated.body = parsed.data;
+      const result = await parseBody(req, schemas.body);
+      if (!result.ok) {
+        throw new ApiError({
+          code: "VALIDATION_ERROR",
+          status: 400,
+          message: result.type === "json" ? "Invalid JSON body" : result.firstMessage,
+          ...(result.type === "validation" ? { details: result.zodError.flatten() } : {}),
+        });
+      }
+      validated.body = result.data;
     }
 
-    // Basic guard for routes that expect some params but didn't receive any
     if (schemas.params && !validated.params) {
       throw new ApiError({
         code: "VALIDATION_ERROR",
@@ -62,5 +129,3 @@ export function withValidation<PIn, POut, QOut, BOut>(
     return handler(req, ctx, api, validated);
   };
 }
-
-

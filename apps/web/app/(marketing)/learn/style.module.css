@@ -1373,3 +1373,203 @@
   outline: none;
   box-shadow: var(--focus-ring);
 }
+
+/* ================================
+   ARTICLE SHELL
+   Reusable 2-column layout for all articles
+   ================================ */
+
+.shellLayout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+@media (min-width: 1100px) {
+  .shellLayout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: var(--space-8);
+    align-items: start;
+  }
+}
+
+/* Sidebar (desktop only) */
+.shellSidebar {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  .shellSidebar {
+    display: block;
+    position: sticky;
+    top: var(--space-8);
+    max-height: calc(100vh - var(--space-16));
+    overflow-y: auto;
+  }
+}
+
+.shellSidebarInner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.shellTocTitle {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 var(--space-3);
+}
+
+.shellTocList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.shellTocLink {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid transparent;
+  transition: all var(--transition-base);
+  line-height: var(--leading-snug);
+}
+
+.shellTocLink:hover {
+  background: var(--surface-alt);
+  color: var(--primary);
+}
+
+.shellTocLinkActive {
+  color: var(--primary);
+  background: var(--primary-light);
+  border-left-color: var(--primary);
+  font-weight: var(--font-medium);
+}
+
+/* Mobile TOC */
+.shellMobileToc {
+  display: block;
+}
+
+@media (min-width: 1100px) {
+  .shellMobileToc {
+    display: none;
+  }
+}
+
+.shellMobileTocDetails {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.shellMobileTocSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+  transition: background var(--transition-base);
+}
+
+.shellMobileTocSummary::-webkit-details-marker {
+  display: none;
+}
+
+.shellMobileTocSummary:hover {
+  background: var(--surface-alt);
+}
+
+.shellMobileTocChevron {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  transition: transform var(--transition-base);
+}
+
+.shellMobileTocDetails[open] .shellMobileTocChevron {
+  transform: rotate(180deg);
+}
+
+.shellMobileTocList {
+  list-style: none;
+  padding: 0 var(--space-4) var(--space-4);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Main content column */
+.shellMain {
+  min-width: 0;
+}
+
+.shellHero {
+  margin-bottom: var(--space-6);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.shellHeroImage {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.shellTitle {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  margin: 0 0 var(--space-4);
+  color: var(--text);
+}
+
+@media (min-width: 768px) {
+  .shellTitle {
+    font-size: var(--text-4xl);
+  }
+}
+
+.shellDescription {
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0 0 var(--space-6);
+  max-width: 700px;
+}
+
+.shellSeparator {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0 0 var(--space-8);
+}
+
+.shellContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .shellContent {
+    gap: var(--space-6);
+  }
+}

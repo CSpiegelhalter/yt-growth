@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import s from "./style.module.css";
 import { formatResetAt } from "./components/helpers";
 import { SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { ErrorState } from "@/components/ui/ErrorState";
+import {
+  canAttemptOAuth,
+  recordOAuthAttempt,
+} from "@/lib/storage/oauthAttemptTracker";
 
 type InsightsError =
   | {
@@ -29,33 +34,28 @@ type Props = {
 
 /**
  * VideoInsightsError - Error page for video insights
- * Used by server component when analytics fetch fails
+ * Uses canonical ErrorState for card UI, adds page layout and OAuth auto-redirect.
  */
 export function VideoInsightsError({ error, channelId, backLink }: Props) {
   const router = useRouter();
   const [redirectCountdown, setRedirectCountdown] = useState(3);
 
-  // Auto-redirect to Google OAuth for permission errors
+  const reconnectUrl = channelId
+    ? `/api/integrations/google/start?channelId=${encodeURIComponent(channelId)}`
+    : "/api/integrations/google/start";
+
   useEffect(() => {
     if (error.kind !== "youtube_permissions") return;
 
-    // Check if we just came from OAuth (prevent redirect loop)
     const urlParams = new URLSearchParams(window.location.search);
     const justReconnected = urlParams.get("reconnected") === "1";
-    const lastOAuthAttempt = sessionStorage.getItem("lastOAuthAttempt");
-    const recentOAuth =
-      lastOAuthAttempt && Date.now() - parseInt(lastOAuthAttempt) < 60000;
 
-    if (justReconnected || recentOAuth) {
+    if (justReconnected || !canAttemptOAuth()) {
       setRedirectCountdown(-1);
       return;
     }
 
-    sessionStorage.setItem("lastOAuthAttempt", Date.now().toString());
-
-    const reconnectUrl = channelId
-      ? `/api/integrations/google/start?channelId=${encodeURIComponent(channelId)}`
-      : "/api/integrations/google/start";
+    recordOAuthAttempt();
 
     const timer = setInterval(() => {
       setRedirectCountdown((prev) => {
@@ -69,7 +69,7 @@ export function VideoInsightsError({ error, channelId, backLink }: Props) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [error.kind, channelId]);
+  }, [error.kind, channelId, reconnectUrl]);
 
   const handleRetry = () => {
     router.refresh();
@@ -101,99 +101,87 @@ export function VideoInsightsError({ error, channelId, backLink }: Props) {
     return "We couldn't analyze this video. Try again later.";
   };
 
+  const renderActions = () => {
+    if (error.kind === "youtube_permissions") {
+      if (redirectCountdown === -1) {
+        return (
+          <>
+            <a className={s.backBtn} href={reconnectUrl}>
+              Try a Different Google Account
+            </a>
+            <button
+              onClick={handleRetry}
+              className={s.secondaryBtn}
+              type="button"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => router.back()}
+              className={s.secondaryBtn}
+              type="button"
+            >
+              Go Back
+            </button>
+          </>
+        );
+      }
+      return (
+        <>
+          <div className={s.redirectingBox}>
+            <span className={s.spinner} />
+            Redirecting to Google...
+          </div>
+          <a
+            href={reconnectUrl}
+            className={s.secondaryBtn}
+            style={{ marginTop: "0.5rem" }}
+          >
+            Click here if not redirected
+          </a>
+        </>
+      );
+    }
+
+    return (
+      <>
+        {(error.kind === "limit_reached" ||
+          error.kind === "upgrade_required") && (
+          <a className={s.backBtn} href="/api/integrations/stripe/checkout">
+            Upgrade to Pro —{" "}
+            {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/
+            {SUBSCRIPTION.PRO_INTERVAL}
+          </a>
+        )}
+        <button
+          onClick={handleRetry}
+          className={s.secondaryBtn}
+          type="button"
+        >
+          Try Again
+        </button>
+        <button
+          onClick={() => router.back()}
+          className={s.secondaryBtn}
+          type="button"
+        >
+          Go Back
+        </button>
+      </>
+    );
+  };
+
   return (
     <main className={s.page}>
       <Link href={backLink.href} className={s.backLink}>
         ← {backLink.label}
       </Link>
-      <div className={s.errorState}>
-        <h2 className={s.errorTitle}>{getErrorTitle()}</h2>
-        <p className={s.errorDesc}>{getErrorDescription()}</p>
-        {error.requestId && (
-          <p className={s.muted} style={{ marginTop: 8 }}>
-            Request ID: <code>{error.requestId}</code>
-          </p>
-        )}
-
-        <div className={s.errorActions}>
-          {error.kind === "youtube_permissions" ? (
-            redirectCountdown === -1 ? (
-              <>
-                <a
-                  className={s.backBtn}
-                  href={
-                    channelId
-                      ? `/api/integrations/google/start?channelId=${encodeURIComponent(channelId)}`
-                      : "/api/integrations/google/start"
-                  }
-                >
-                  Try a Different Google Account
-                </a>
-                <button
-                  onClick={handleRetry}
-                  className={s.secondaryBtn}
-                  type="button"
-                >
-                  Try Again
-                </button>
-                <button
-                  onClick={() => router.back()}
-                  className={s.secondaryBtn}
-                  type="button"
-                >
-                  Go Back
-                </button>
-              </>
-            ) : (
-              <>
-                <div className={s.redirectingBox}>
-                  <span className={s.spinner} />
-                  Redirecting to Google...
-                </div>
-                <a
-                  href={
-                    channelId
-                      ? `/api/integrations/google/start?channelId=${encodeURIComponent(channelId)}`
-                      : "/api/integrations/google/start"
-                  }
-                  className={s.secondaryBtn}
-                  style={{ marginTop: "0.5rem" }}
-                >
-                  Click here if not redirected
-                </a>
-              </>
-            )
-          ) : (
-            <>
-              {(error.kind === "limit_reached" ||
-                error.kind === "upgrade_required") && (
-                <a
-                  className={s.backBtn}
-                  href="/api/integrations/stripe/checkout"
-                >
-                  Upgrade to Pro —{" "}
-                  {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/
-                  {SUBSCRIPTION.PRO_INTERVAL}
-                </a>
-              )}
-              <button
-                onClick={handleRetry}
-                className={s.secondaryBtn}
-                type="button"
-              >
-                Try Again
-              </button>
-              <button
-                onClick={() => router.back()}
-                className={s.secondaryBtn}
-                type="button"
-              >
-                Go Back
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <ErrorState
+        title={getErrorTitle()}
+        description={getErrorDescription()}
+        requestId={error.requestId}
+        actions={renderActions()}
+      />
     </main>
   );
 }

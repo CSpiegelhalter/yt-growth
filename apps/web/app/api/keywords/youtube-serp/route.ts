@@ -12,13 +12,14 @@
 import { z } from "zod";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
-import { jsonOk, jsonError } from "@/lib/api/response";
+import { parseBody } from "@/lib/api/withValidation";
+import { jsonOk } from "@/lib/api/response";
 import { ApiError } from "@/lib/api/errors";
 import { logger } from "@/lib/logger";
 import {
   fetchYouTubeSerp,
-  validatePhrase,
-  validateLocation,
+  prepareDataForSeoRequest,
+  mapDataForSEOError,
   DataForSEOError,
   SUPPORTED_LOCATIONS,
   type YouTubeSerpResponse,
@@ -65,46 +66,28 @@ export const POST = createApiRoute(
       );
     }
 
-    // Parse and validate request body
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
+    // Parse and validate request body (uses parseBody to share core logic;
+    // withValidation wrapper not used here because the auth check above must
+    // run before body parsing to preserve the needsAuth response for
+    // unauthenticated requests with invalid input)
+    const parsed = await parseBody(req, requestSchema);
+    if (!parsed.ok) {
       throw new ApiError({
         code: "VALIDATION_ERROR",
         status: 400,
-        message: "Invalid JSON body",
-      });
-    }
-
-    const parsed = requestSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new ApiError({
-        code: "VALIDATION_ERROR",
-        status: 400,
-        message: parsed.error.errors[0]?.message || "Invalid request",
-        details: parsed.error.flatten(),
+        message: parsed.type === "json" ? "Invalid JSON body" : parsed.firstMessage,
+        ...(parsed.type === "validation" ? { details: parsed.zodError.flatten() } : {}),
       });
     }
 
     const { keyword, location, limit } = parsed.data;
 
-    // Validate inputs with DataForSEO validation
-    let cleanKeyword: string;
-    let locationInfo: ReturnType<typeof validateLocation>;
-    try {
-      cleanKeyword = validatePhrase(keyword);
-      locationInfo = validateLocation(location);
-    } catch (err) {
-      if (err instanceof DataForSEOError) {
-        throw new ApiError({
-          code: "VALIDATION_ERROR",
-          status: 400,
-          message: err.message,
-        });
-      }
-      throw err;
-    }
+    // Validate and normalize inputs
+    const { cleanPhrases, locationInfo } = prepareDataForSeoRequest({
+      phrase: keyword,
+      location,
+    });
+    const cleanKeyword = cleanPhrases[0]!;
 
     // Check cache first (24 hour TTL for YouTube SERP)
     const cached = await getCachedResponse<YouTubeSerpResponse>(
@@ -156,54 +139,15 @@ export const POST = createApiRoute(
         { requestId: api.requestId }
       );
     } catch (err) {
-      // Handle DataForSEO-specific errors
       if (err instanceof DataForSEOError) {
         logger.error("youtube_serp.dataforseo_error", {
           userId: user.id,
           code: err.code,
           message: err.message,
         });
-
-        let status = 500;
-        let code: string = "INTERNAL";
-        let userMessage = err.message;
-
-        switch (err.code) {
-          case "RATE_LIMITED":
-            status = 429;
-            code = "RATE_LIMITED";
-            userMessage = "Service is busy. Please try again in a moment.";
-            break;
-          case "QUOTA_EXCEEDED":
-            status = 503;
-            code = "SERVICE_UNAVAILABLE";
-            userMessage = "Service is temporarily unavailable.";
-            break;
-          case "TIMEOUT":
-            status = 504;
-            code = "TIMEOUT";
-            userMessage = "Request timed out. Please try again.";
-            break;
-          case "VALIDATION_ERROR":
-            status = 400;
-            code = "VALIDATION_ERROR";
-            break;
-          case "AUTH_ERROR":
-            status = 503;
-            code = "SERVICE_UNAVAILABLE";
-            userMessage = "Service is temporarily unavailable.";
-            break;
-        }
-
-        return jsonError({
-          status,
-          code: code as any,
-          message: userMessage,
-          requestId: api.requestId,
-        });
+        throw mapDataForSEOError(err);
       }
 
-      // Re-throw unknown errors
       throw err;
     }
   })

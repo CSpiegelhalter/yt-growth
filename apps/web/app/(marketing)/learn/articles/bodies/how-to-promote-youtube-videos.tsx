@@ -13,7 +13,9 @@
  */
 
 import Link from "next/link";
-import type { BodyProps } from "./index";
+import { LEARN_ARTICLES } from "../../articles";
+import type { BodyProps, ArticleMeta } from "./_shared";
+import { tocFromArticle } from "./_shared";
 
 /* ================================================
    INLINE SVG VISUALS (UNIQUE TO THIS PAGE)
@@ -1816,6 +1818,16 @@ function CollabIcon() {
 /* ================================================
    MAIN BODY COMPONENT
    ================================================ */
+
+const _article = LEARN_ARTICLES["how-to-promote-youtube-videos"];
+
+export const meta: ArticleMeta = {
+  slug: _article.slug,
+  title: _article.title,
+  description: _article.description,
+};
+
+export const toc = tocFromArticle(_article.toc);
 
 export function Body({ s }: BodyProps) {
   return (

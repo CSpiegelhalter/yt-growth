@@ -37,6 +37,7 @@ import {
   type QuickChipId,
 } from "./discovery-utils";
 import s from "./style.module.css";
+import { safeGetItem, safeSetItem } from "@/lib/storage/safeLocalStorage";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 import type { Me } from "@/types/api";
 import { SUBSCRIPTION, formatUsd } from "@/lib/product";
@@ -100,12 +101,12 @@ export default function TrendingClient({
   // Load saved/dismissed from localStorage
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("discovery-saved-niches");
+      const saved = safeGetItem("discovery-saved-niches");
       if (saved) setSavedNiches(new Set(JSON.parse(saved)));
-      const dismissed = localStorage.getItem("discovery-dismissed-niches");
+      const dismissed = safeGetItem("discovery-dismissed-niches");
       if (dismissed) setDismissedNiches(new Set(JSON.parse(dismissed)));
     } catch {
-      // Ignore localStorage errors
+      // Ignore parse errors
     }
   }, []);
 
@@ -194,14 +195,10 @@ export default function TrendingClient({
       } else {
         next.add(niche.id);
       }
-      try {
-        localStorage.setItem(
-          "discovery-saved-niches",
-          JSON.stringify([...next]),
-        );
-      } catch {
-        /* ignore */
-      }
+      safeSetItem(
+        "discovery-saved-niches",
+        JSON.stringify([...next]),
+      );
       return next;
     });
   }, []);
@@ -210,14 +207,10 @@ export default function TrendingClient({
     setDismissedNiches((prev) => {
       const next = new Set(prev);
       next.add(niche.id);
-      try {
-        localStorage.setItem(
-          "discovery-dismissed-niches",
-          JSON.stringify([...next]),
-        );
-      } catch {
-        /* ignore */
-      }
+      safeSetItem(
+        "discovery-dismissed-niches",
+        JSON.stringify([...next]),
+      );
       return next;
     });
     setNiches((prev) => prev.filter((n) => n.id !== niche.id));

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import s from "./ideas.module.css";
 import { useToast } from "@/components/ui/Toast";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
 import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 
@@ -293,18 +294,15 @@ export function IdeasPublicClient() {
 
       {/* Error State */}
       {error && (
-        <div className={s.errorState}>
-          <svg className={s.errorIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <h3 className={s.errorTitle}>Something went wrong</h3>
-          <p className={s.errorText}>{error}</p>
-          <button type="button" onClick={handleRetry} className={s.retryBtn}>
-            Try again
-          </button>
-        </div>
+        <ErrorState
+          title="Something went wrong"
+          description={error}
+          actions={
+            <button type="button" onClick={handleRetry} className={s.retryBtn}>
+              Try again
+            </button>
+          }
+        />
       )}
 
       {/* Loading State */}

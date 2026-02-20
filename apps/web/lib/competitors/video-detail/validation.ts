@@ -6,6 +6,26 @@
 
 import { z } from "zod";
 
+// ---------------------------------------------------------------------------
+// Shared channel + video param schemas (used by owned-video insights routes)
+// ---------------------------------------------------------------------------
+
+export const channelIdSchema = z.string().min(1);
+export const videoIdSchema = z.string().min(1);
+
+export const channelParamsSchema = z.object({
+  channelId: channelIdSchema,
+});
+
+export const channelVideoParamsSchema = z.object({
+  channelId: channelIdSchema,
+  videoId: videoIdSchema,
+});
+
+// ---------------------------------------------------------------------------
+// Competitor video-detail schemas (existing – do not modify)
+// ---------------------------------------------------------------------------
+
 export const ParamsSchema = z.object({
   videoId: z.string().min(1, "Video ID is required"),
 });

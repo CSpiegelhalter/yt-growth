@@ -7,7 +7,6 @@
  * Subscription: Required
  */
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import {
@@ -16,10 +15,7 @@ import {
 } from "@/lib/user";
 import { callLLM } from "@/lib/llm";
 import type { ConversionVideoIdea } from "@/types/api";
-
-const ParamsSchema = z.object({
-  channelId: z.string().min(1),
-});
+import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 async function POSTHandler(
   req: NextRequest,
@@ -43,7 +39,7 @@ async function POSTHandler(
 
     // Validate params
     const resolvedParams = await params;
-    const parsedParams = ParamsSchema.safeParse(resolvedParams);
+    const parsedParams = channelParamsSchema.safeParse(resolvedParams);
     if (!parsedParams.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }

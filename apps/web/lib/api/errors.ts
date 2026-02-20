@@ -9,7 +9,10 @@ export type ApiErrorCode =
   | "RATE_LIMITED"
   | "LIMIT_REACHED"
   | "INTEGRATION_ERROR"
-  | "INTERNAL";
+  | "INTERNAL"
+  | "SERVICE_UNAVAILABLE"
+  | "TIMEOUT"
+  | "RESTRICTED_CONTENT";
 
 export class ApiError extends Error {
   code: ApiErrorCode;

@@ -11,16 +11,16 @@
 import { z } from "zod";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
 import { jsonOk, jsonError } from "@/lib/api/response";
-import { ApiError } from "@/lib/api/errors";
 import { getLimit, type Plan } from "@/lib/entitlements";
 import { checkAndIncrement, checkUsage } from "@/lib/usage";
 import { hasActiveSubscription } from "@/lib/user";
 import { logger } from "@/lib/logger";
 import {
   fetchGoogleTrends,
-  validatePhrase,
-  validateLocation,
+  prepareDataForSeoRequest,
+  mapDataForSEOError,
   DataForSEOError,
   SUPPORTED_LOCATIONS,
 } from "@/lib/dataforseo";
@@ -58,49 +58,18 @@ const requestSchema = z.object({
 
 export const POST = createApiRoute(
   { route: "/api/keywords/trends" },
-  withAuth({ mode: "required" }, async (req, _ctx, api: ApiAuthContext) => {
+  withAuth(
+    { mode: "required" },
+    withValidation({ body: requestSchema }, async (_req, _ctx, api: ApiAuthContext, validated) => {
     const user = api.user!;
+    const { keyword, database, dateFrom, dateTo } = validated.body!;
 
-    // Parse and validate request body
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      throw new ApiError({
-        code: "VALIDATION_ERROR",
-        status: 400,
-        message: "Invalid JSON body",
-      });
-    }
-
-    const parsed = requestSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new ApiError({
-        code: "VALIDATION_ERROR",
-        status: 400,
-        message: parsed.error.errors[0]?.message || "Invalid request",
-        details: parsed.error.flatten(),
-      });
-    }
-
-    const { keyword, database, dateFrom, dateTo } = parsed.data;
-
-    // Validate inputs
-    let cleanKeyword: string;
-    let locationInfo: ReturnType<typeof validateLocation>;
-    try {
-      cleanKeyword = validatePhrase(keyword);
-      locationInfo = validateLocation(database);
-    } catch (err) {
-      if (err instanceof DataForSEOError) {
-        throw new ApiError({
-          code: "VALIDATION_ERROR",
-          status: 400,
-          message: err.message,
-        });
-      }
-      throw err;
-    }
+    // Validate and normalize inputs
+    const { cleanPhrases, locationInfo } = prepareDataForSeoRequest({
+      phrase: keyword,
+      location: database,
+    });
+    const cleanKeyword = cleanPhrases[0]!;
 
     // Determine plan and limits (shares quota with keyword research)
     const isPro = hasActiveSubscription(user.subscription);
@@ -262,39 +231,12 @@ export const POST = createApiRoute(
           message: err.message,
           taskId: err.taskId,
         });
-
-        let status = 500;
-        let code: string = "INTERNAL";
-        let userMessage = err.message;
-
-        switch (err.code) {
-          case "RATE_LIMITED":
-            status = 429;
-            code = "RATE_LIMITED";
-            userMessage = "Service is busy. Please try again in a moment.";
-            break;
-          case "TIMEOUT":
-            status = 504;
-            code = "TIMEOUT";
-            userMessage = "Request timed out. Please try again.";
-            break;
-          case "VALIDATION_ERROR":
-            status = 400;
-            code = "VALIDATION_ERROR";
-            break;
-        }
-
-        return jsonError({
-          status,
-          code: code as any,
-          message: userMessage,
-          requestId: api.requestId,
-        });
+        throw mapDataForSEOError(err);
       }
 
       throw err;
     }
-  })
+  }))
 );
 
 export const runtime = "nodejs";

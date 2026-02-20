@@ -8,8 +8,20 @@
 
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
-import type { BodyProps } from "./index";
+import { LEARN_ARTICLES } from "../../articles";
+import type { BodyProps, ArticleMeta } from "./_shared";
+import { tocFromArticle } from "./_shared";
 import { Callout } from "../../_components";
+
+const _article = LEARN_ARTICLES["youtube-channel-audit"];
+
+export const meta: ArticleMeta = {
+  slug: _article.slug,
+  title: _article.title,
+  description: _article.description,
+};
+
+export const toc = tocFromArticle(_article.toc);
 
 export function Body({ s }: BodyProps) {
   return (

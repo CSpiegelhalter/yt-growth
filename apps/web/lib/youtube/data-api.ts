@@ -25,6 +25,7 @@ import {
   isInsufficientScope,
   MISSING_COMMENTS_SCOPE_ERROR,
 } from "./errors";
+import { ApiError } from "@/lib/api/errors";
 import type {
   GoogleAccount,
   YouTubeVideo,
@@ -36,6 +37,107 @@ import type {
   FetchCommentsResult,
   VideoStats,
 } from "./types";
+
+// ============================================
+// API-Key Video Snippet (public/unauthenticated routes)
+// ============================================
+
+/**
+ * Shape returned by YouTube Data API videos.list when requesting part=snippet.
+ * All sub-fields are optional because callers use `fields=` to request subsets.
+ */
+export type YouTubeVideoSnippetItem = {
+  snippet: {
+    title?: string;
+    description?: string;
+    channelTitle?: string;
+    tags?: string[];
+    thumbnails?: {
+      medium?: { url: string };
+      high?: { url: string };
+      maxres?: { url: string };
+      default?: { url: string };
+    };
+  };
+};
+
+/**
+ * Fetch a single video's snippet using API-key auth (no OAuth required).
+ * Used by public routes that don't have a user OAuth context.
+ *
+ * Throws ApiError on HTTP failures or missing API key.
+ * Returns null when the API responds 200 but no matching video item exists.
+ */
+export async function fetchVideoSnippetByApiKey(
+  videoId: string,
+  options?: {
+    fields?: string;
+    timeoutMs?: number;
+  }
+): Promise<YouTubeVideoSnippetItem | null> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    throw new ApiError({
+      code: "INTERNAL",
+      status: 500,
+      message: "YouTube API is not configured. Please contact support.",
+    });
+  }
+
+  const url = new URL(`${YOUTUBE_DATA_API}/videos`);
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("id", videoId);
+  url.searchParams.set("key", apiKey);
+  if (options?.fields) {
+    url.searchParams.set("fields", options.fields);
+  }
+
+  const timeoutMs = options?.timeoutMs ?? 10000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url.toString(), {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new ApiError({
+          code: "NOT_FOUND",
+          status: 404,
+          message: "Video not found. Please check the URL and try again.",
+        });
+      }
+      if (response.status === 403) {
+        throw new ApiError({
+          code: "FORBIDDEN",
+          status: 403,
+          message:
+            "Unable to access this video. It may be private or restricted.",
+        });
+      }
+      throw new ApiError({
+        code: "INTERNAL",
+        status: 500,
+        message: "Failed to fetch video data. Please try again.",
+      });
+    }
+
+    const data = await response.json();
+    const item = data.items?.[0];
+    return (item as YouTubeVideoSnippetItem) ?? null;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof ApiError) throw err;
+    throw new ApiError({
+      code: "INTERNAL",
+      status: 500,
+      message: "Failed to fetch video data. Please try again.",
+    });
+  }
+}
 
 // ============================================
 // Channel Operations

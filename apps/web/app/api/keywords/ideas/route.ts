@@ -20,6 +20,7 @@
 
 import { z } from "zod";
 import { NextResponse } from "next/server";
+import { parseBody } from "@/lib/api/withValidation";
 import { logger } from "@/lib/logger";
 import { checkEntitlement, entitlementErrorResponse } from "@/lib/with-entitlements";
 import {
@@ -32,7 +33,7 @@ import {
   setCachedVideoIdeas,
   generateVideoIdeasCacheKey,
 } from "@/lib/dataforseo/cache";
-import { validateLocation, DataForSEOError } from "@/lib/dataforseo/client";
+import { prepareDataForSeoRequest, DataForSEOError } from "@/lib/dataforseo";
 import { getCurrentUserWithSubscription } from "@/lib/user";
 
 // ============================================
@@ -70,21 +71,15 @@ export async function POST(request: Request) {
   const startTime = Date.now();
 
   try {
-    // Parse request body
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return jsonError("INVALID_JSON", "Invalid request body", 400);
-    }
-
-    // Validate request
-    const parsed = RequestSchema.safeParse(body);
-    if (!parsed.success) {
-      const firstError = parsed.error.errors[0];
+    const parsed = await parseBody(request, RequestSchema);
+    if (!parsed.ok) {
+      if (parsed.type === "json") {
+        return jsonError("INVALID_JSON", "Invalid request body", 400);
+      }
+      const firstError = parsed.zodError.errors[0];
       return jsonError(
         "VALIDATION_ERROR",
-        firstError?.message || "Invalid request",
+        parsed.firstMessage,
         400,
         { field: firstError?.path.join(".") }
       );
@@ -95,7 +90,7 @@ export async function POST(request: Request) {
     // Validate location
     let locationInfo;
     try {
-      locationInfo = validateLocation(locationCode);
+      ({ locationInfo } = prepareDataForSeoRequest({ location: locationCode }));
     } catch {
       return jsonError("INVALID_LOCATION", "Unsupported region", 400);
     }

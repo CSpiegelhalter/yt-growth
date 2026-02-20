@@ -13,6 +13,10 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  canAttemptOAuth,
+  recordOAuthAttempt,
+} from "@/lib/storage/oauthAttemptTracker";
 import styles from "./VideoInsightsV2.module.css";
 import { VideoHeaderCompact } from "./components/VideoHeaderCompact";
 import { AnalysisTabs, TabPanel, type TabId } from "./components/AnalysisTabs";
@@ -216,11 +220,8 @@ export default function VideoInsightsClientV2({
           const errorCode =
             errData.details?.code || errData.code || errData.error?.code;
           if (errorCode === "youtube_permissions") {
-            const lastAttempt = sessionStorage.getItem("lastOAuthAttempt");
-            const isRecentAttempt =
-              lastAttempt && Date.now() - parseInt(lastAttempt) < 60000;
-            if (!isRecentAttempt) {
-              sessionStorage.setItem("lastOAuthAttempt", Date.now().toString());
+            if (canAttemptOAuth()) {
+              recordOAuthAttempt();
               window.location.href = `/api/integrations/google/start?channelId=${encodeURIComponent(channelId)}`;
               return;
             }

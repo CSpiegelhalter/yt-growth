@@ -17,12 +17,9 @@ import {
   fetchChannelAuditMetrics,
   type ChannelAuditMetrics,
 } from "@/lib/youtube-analytics";
+import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 export const dynamic = "force-dynamic";
-
-const ParamsSchema = z.object({
-  channelId: z.string().min(1),
-});
 
 const QuerySchema = z.object({
   range: z.enum(["7d", "28d", "90d"]).default("28d"),
@@ -111,7 +108,7 @@ export async function GET(
 ) {
   try {
     const resolvedParams = await params;
-    const parsedParams = ParamsSchema.safeParse(resolvedParams);
+    const parsedParams = channelParamsSchema.safeParse(resolvedParams);
     if (!parsedParams.success) {
       return NextResponse.json(
         { error: "Invalid parameters" },

@@ -11,11 +11,7 @@ import type {
 } from "@/lib/owned-video-math";
 import type { VideoMetadata } from "@/lib/youtube-analytics";
 import type { ChannelProfileAI } from "@/lib/channel-profile/types";
-
-const ParamsSchema = z.object({
-  channelId: z.string().min(1),
-  videoId: z.string().min(1),
-});
+import { channelVideoParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 const QuerySchema = z.object({
   range: z.enum(["7d", "28d", "90d"]).default("28d"),
@@ -42,7 +38,7 @@ async function GETHandler(
 ) {
   const resolvedParams = await params;
 
-  const parsedParams = ParamsSchema.safeParse(resolvedParams);
+  const parsedParams = channelVideoParamsSchema.safeParse(resolvedParams);
   if (!parsedParams.success) {
     return Response.json({ error: "Invalid parameters" }, { status: 400 });
   }

@@ -28,10 +28,7 @@ import type {
   SubscriberMagnetVideo,
   PatternAnalysisJson,
 } from "@/types/api";
-
-const ParamsSchema = z.object({
-  channelId: z.string().min(1),
-});
+import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 const QuerySchema = z.object({
   limit: z.coerce.number().min(1).max(200).default(200),
@@ -61,7 +58,7 @@ async function GETHandler(
 
     // Validate params
     const resolvedParams = await params;
-    const parsedParams = ParamsSchema.safeParse(resolvedParams);
+    const parsedParams = channelParamsSchema.safeParse(resolvedParams);
     if (!parsedParams.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }

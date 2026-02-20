@@ -2,7 +2,6 @@ export * from "./helpers";
 export * from "./CopyButton";
 export * from "./MetricRow";
 export * from "./LoadingState";
-export * from "./ErrorState";
 export * from "./AllMetrics";
 // NEW: Premium analysis components
 export * from "./Benchmarks";

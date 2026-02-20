@@ -38,10 +38,7 @@ import { normalizeIdeaBoardData } from "@/lib/idea-board-normalize";
 import { getOrGenerateNiche } from "@/lib/channel-niche";
 import type { IdeaBoardData, SimilarChannel } from "@/types/api";
 import type { ChannelProfileAI } from "@/lib/channel-profile/types";
-
-const ParamsSchema = z.object({
-  channelId: z.string().min(1),
-});
+import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 const QuerySchema = z.object({
   range: z.enum(["7d", "28d"]).default("7d"),
@@ -77,7 +74,7 @@ async function GETHandler(
     }
 
     // Validate params
-    const parsedParams = ParamsSchema.safeParse(paramsObj);
+    const parsedParams = channelParamsSchema.safeParse(paramsObj);
     if (!parsedParams.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }
@@ -187,7 +184,7 @@ async function POSTHandler(
     }
 
     // Validate params
-    const parsedParams = ParamsSchema.safeParse(paramsObj);
+    const parsedParams = channelParamsSchema.safeParse(paramsObj);
     if (!parsedParams.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }

@@ -13,7 +13,6 @@
 // Number of videos to sync (divisible by 6 for grid layout)
 const SYNC_VIDEO_COUNT = 96;
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/prisma";
 import { getGoogleAccount, fetchChannelVideos, fetchVideoMetrics } from "@/lib/youtube-api";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
@@ -22,10 +21,7 @@ import {
   entitlementErrorResponse,
 } from "@/lib/with-entitlements";
 import { createApiRoute } from "@/lib/api/route";
-
-const ParamsSchema = z.object({
-  channelId: z.string().min(1),
-});
+import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 async function POSTHandler(
   req: NextRequest,
@@ -35,7 +31,7 @@ async function POSTHandler(
   try {
     // Validate params first (before auth/entitlement to give useful error)
     const paramsObj = await params;
-    const parsed = ParamsSchema.safeParse(paramsObj);
+    const parsed = channelParamsSchema.safeParse(paramsObj);
     if (!parsed.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }

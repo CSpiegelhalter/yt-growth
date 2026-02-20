@@ -11,15 +11,11 @@
  * Subscription: NOT required
  */
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/user";
 import { getGoogleAccount, fetchChannelVideos } from "@/lib/youtube-api";
-
-const ParamsSchema = z.object({
-  channelId: z.string().min(1),
-});
+import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 // Page size divisible by 6 for even grid layouts (1, 2, or 3 columns)
 const DEFAULT_PAGE_SIZE = 24;
@@ -54,7 +50,7 @@ async function GETHandler(
 
     // Validate params
     const paramsObj = await params;
-    const parsed = ParamsSchema.safeParse(paramsObj);
+    const parsed = channelParamsSchema.safeParse(paramsObj);
     if (!parsed.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }

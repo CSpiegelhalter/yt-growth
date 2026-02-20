@@ -1,0 +1,14 @@
+{
+  "entry": [
+    "apps/web/app/**/*.{ts,tsx}",
+    "apps/web/lib/**/*.{ts,tsx}",
+    "apps/web/components/**/*.{ts,tsx}",
+    "apps/web/proxy.{ts,tsx}",
+    "apps/web/next.config.{js,ts}",
+    "apps/web/app/**/route.{ts,tsx}",
+    "apps/web/app/**/page.{ts,tsx}",
+    "apps/web/app/**/layout.{ts,tsx}"
+  ],
+  "project": ["apps/web/tsconfig.json"],
+  "ignore": ["**/*.test.*", "**/*.spec.*", "**/*.stories.*"]
+}

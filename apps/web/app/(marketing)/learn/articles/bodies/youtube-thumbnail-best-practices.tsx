@@ -6,8 +6,20 @@
 import Link from "next/link";
 import { useId } from "react";
 import { BRAND } from "@/lib/brand";
-import type { BodyProps } from "./index";
+import { LEARN_ARTICLES } from "../../articles";
+import type { BodyProps, ArticleMeta } from "./_shared";
+import { tocFromArticle } from "./_shared";
 import u from "./youtube-thumbnail-best-practices.module.css";
+
+const _article = LEARN_ARTICLES["youtube-thumbnail-best-practices"];
+
+export const meta: ArticleMeta = {
+  slug: _article.slug,
+  title: _article.title,
+  description: _article.description,
+};
+
+export const toc = tocFromArticle(_article.toc);
 
 /* ============================================================================
  * THUMBNAIL COMPARISON COMPONENT

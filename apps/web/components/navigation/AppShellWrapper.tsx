@@ -5,6 +5,10 @@ import { useSession, signOut } from "next-auth/react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { AppShell } from "./AppShell";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
+import {
+  useSyncActiveChannel,
+  resolveActiveChannelId,
+} from "@/lib/use-sync-active-channel";
 
 type Channel = {
   id: number;
@@ -26,7 +30,6 @@ type AppShellWrapperProps = {
 export function AppShellWrapper({ children }: AppShellWrapperProps) {
   const { data: session, status } = useSession();
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [channelLimit, setChannelLimit] = useState<number>(1);
   const [plan, setPlan] = useState<Plan>("FREE");
   const [mounted, setMounted] = useState(false);
@@ -34,6 +37,14 @@ export function AppShellWrapper({ children }: AppShellWrapperProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const urlChannelId = searchParams.get("channelId");
+
+  // Centralized active channel management
+  const { activeChannelId, setActiveChannelId } = useSyncActiveChannel({
+    channels,
+    urlChannelId,
+  });
 
   // Mark as mounted
   useEffect(() => {
@@ -59,34 +70,19 @@ export function AppShellWrapper({ children }: AppShellWrapperProps) {
           setPlan(data.plan);
         }
 
-        const urlChannelId = searchParams.get("channelId");
-        const storedChannelId = localStorage.getItem("activeChannelId");
         const isNewChannel = searchParams.get("newChannel") === "1";
-        let nextActiveChannelId: string | null = null;
 
+        // For newChannel, override the hook's resolution to select the newest
+        let nextActiveChannelId: string | null = null;
         if (isNewChannel && channelList.length > 0) {
           nextActiveChannelId = channelList[0].channel_id;
-        } else if (
-          urlChannelId &&
-          channelList.some((c: Channel) => c.channel_id === urlChannelId)
-        ) {
-          nextActiveChannelId = urlChannelId;
-        } else if (
-          storedChannelId &&
-          channelList.some((c: Channel) => c.channel_id === storedChannelId)
-        ) {
-          nextActiveChannelId = storedChannelId;
-        } else if (channelList.length > 0) {
-          nextActiveChannelId = channelList[0].channel_id;
+          setActiveChannelId(nextActiveChannelId);
         } else {
-          nextActiveChannelId = null;
-        }
-
-        setActiveChannelId(nextActiveChannelId);
-        if (nextActiveChannelId) {
-          localStorage.setItem("activeChannelId", nextActiveChannelId);
-        } else {
-          localStorage.removeItem("activeChannelId");
+          // Compute what the hook will resolve to for URL sync
+          nextActiveChannelId = resolveActiveChannelId(
+            channelList,
+            urlChannelId,
+          );
         }
 
         // Sync URL if needed
@@ -114,41 +110,28 @@ export function AppShellWrapper({ children }: AppShellWrapperProps) {
     }
 
     loadChannels();
-  }, [session?.user, searchParams, pathname, router]);
+  }, [session?.user, searchParams, pathname, router, setActiveChannelId, urlChannelId]);
 
   // Listen for channel-removed events
   useEffect(() => {
     const handleChannelRemoved = (e: CustomEvent<{ channelId: string }>) => {
-      const removedChannelId = e.detail.channelId;
-
-      setChannels((prev) => {
-        const updated = prev.filter((c) => c.channel_id !== removedChannelId);
-
-        if (activeChannelId === removedChannelId) {
-          if (updated.length > 0) {
-            setActiveChannelId(updated[0].channel_id);
-            localStorage.setItem("activeChannelId", updated[0].channel_id);
-          } else {
-            setActiveChannelId(null);
-            localStorage.removeItem("activeChannelId");
-          }
-        }
-
-        return updated;
-      });
+      setChannels((prev) =>
+        prev.filter((c) => c.channel_id !== e.detail.channelId),
+      );
+      // Hook's synchronous reconciliation handles activeChannelId fallback
     };
 
     window.addEventListener(
       "channel-removed",
-      handleChannelRemoved as EventListener
+      handleChannelRemoved as EventListener,
     );
     return () => {
       window.removeEventListener(
         "channel-removed",
-        handleChannelRemoved as EventListener
+        handleChannelRemoved as EventListener,
       );
     };
-  }, [activeChannelId]);
+  }, []);
 
   const isAdmin = useMemo(() => {
     const email = String(session?.user?.email ?? "").toLowerCase();
@@ -162,15 +145,12 @@ export function AppShellWrapper({ children }: AppShellWrapperProps) {
 
   const handleChannelChange = (channelId: string) => {
     setActiveChannelId(channelId);
-    localStorage.setItem("activeChannelId", channelId);
 
-    // If on a video page, redirect to dashboard
     if (isVideoPath(pathname)) {
       router.push(`/dashboard?channelId=${channelId}`);
       return;
     }
 
-    // If on a channel-scoped page, update the URL
     if (isChannelScopedPath(pathname)) {
       const next = new URLSearchParams(searchParams.toString());
       next.set("channelId", channelId);

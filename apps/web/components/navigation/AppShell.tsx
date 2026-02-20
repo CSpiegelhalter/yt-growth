@@ -8,6 +8,7 @@ import {
   primaryNavItems as staticPrimaryNavItems,
   secondaryNavItems as staticSecondaryNavItems,
 } from "@/lib/nav-config";
+import { safeGetItem, safeSetItem } from "@/lib/storage/safeLocalStorage";
 import type { SerializableNavItem } from "@/lib/nav-config.server";
 import s from "./AppShell.module.css";
 
@@ -91,7 +92,7 @@ export function AppShell({
 
   // Load sidebar collapse state from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
+    const stored = safeGetItem(SIDEBAR_COLLAPSE_KEY);
     if (stored !== null) {
       setSidebarCollapsed(stored === "true");
     }
@@ -100,7 +101,7 @@ export function AppShell({
   const handleToggleCollapse = useCallback(() => {
     setSidebarCollapsed((prev) => {
       const next = !prev;
-      localStorage.setItem(SIDEBAR_COLLAPSE_KEY, String(next));
+      safeSetItem(SIDEBAR_COLLAPSE_KEY, String(next));
       return next;
     });
   }, []);

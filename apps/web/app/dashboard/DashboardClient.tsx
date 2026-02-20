@@ -12,7 +12,7 @@ import ErrorAlert from "@/components/dashboard/ErrorAlert";
 import VideoToolbar from "@/components/dashboard/VideoToolbar";
 import { ChannelInsightsPanel } from "@/components/dashboard/ChannelInsightsPanel";
 import { Tabs } from "@/components/ui";
-import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
+import { useSyncActiveChannel } from "@/lib/use-sync-active-channel";
 import { formatCompact } from "@/lib/format";
 import {
   DashboardVideo,
@@ -33,6 +33,8 @@ import {
   STORAGE_KEYS,
   getJSONWithExpiry,
   setJSONWithExpiry,
+  safeSessionGetItem,
+  safeSessionRemoveItem,
 } from "@/lib/storage/safeLocalStorage";
 
 type Video = DashboardVideo & {
@@ -81,12 +83,15 @@ export default function DashboardClient({
   // State initialized from server props
   const [me, setMe] = useState<Me>(initialMe);
   const [channels, setChannels] = useState<Channel[]>(initialChannels);
-  const [activeChannelId, setActiveChannelId] = useState<string | null>(
+
+  // Centralized active channel management
+  const { activeChannelId, setActiveChannelId } = useSyncActiveChannel({
+    channels,
     initialActiveChannelId,
-  );
+    urlChannelId,
+  });
 
   // Keep client state in sync when server props / URL params change.
-  // (Next.js will re-render the page with new props, but `useState(initialX)` won't auto-update.)
   useEffect(() => {
     setMe(initialMe);
   }, [initialMe]);
@@ -95,20 +100,13 @@ export default function DashboardClient({
     setChannels(initialChannels);
   }, [initialChannels]);
 
-  useEffect(() => {
-    // Prefer URL (source of truth for server bootstrap), fallback to server prop.
-    const next = urlChannelId ?? initialActiveChannelId ?? null;
-    setActiveChannelId(next);
-  }, [urlChannelId, initialActiveChannelId]);
-
   // Handle OAuth return - redirect to original page after reconnecting
   useEffect(() => {
     const reconnected = searchParams.get("reconnected") === "1";
-    if (reconnected && typeof window !== "undefined") {
-      const returnTo = sessionStorage.getItem("oauthReturnTo");
+    if (reconnected) {
+      const returnTo = safeSessionGetItem("oauthReturnTo");
       if (returnTo) {
-        sessionStorage.removeItem("oauthReturnTo");
-        // Redirect to the original page
+        safeSessionRemoveItem("oauthReturnTo");
         window.location.href = returnTo;
       }
     }
@@ -209,18 +207,13 @@ export default function DashboardClient({
     }
   }, [checkoutStatus]);
 
-  // Sync activeChannelId to localStorage
-  useSyncActiveChannelIdToLocalStorage(activeChannelId);
-
   // Listen for channel-removed events (from profile page or elsewhere)
   useEffect(() => {
     const handleChannelRemoved = (e: CustomEvent<{ channelId: string }>) => {
-      const removedId = e.detail.channelId;
-      setChannels((prev) => prev.filter((c) => c.channel_id !== removedId));
-      if (activeChannelId === removedId) {
-        setActiveChannelId(null);
-        localStorage.removeItem("activeChannelId");
-      }
+      setChannels((prev) =>
+        prev.filter((c) => c.channel_id !== e.detail.channelId),
+      );
+      // Hook's synchronous reconciliation handles activeChannelId fallback
     };
 
     window.addEventListener(
@@ -233,7 +226,7 @@ export default function DashboardClient({
         handleChannelRemoved as EventListener,
       );
     };
-  }, [activeChannelId]);
+  }, []);
 
   // Refresh channels when page becomes visible (handles navigation back from profile)
   useEffect(() => {
@@ -243,22 +236,9 @@ export default function DashboardClient({
           const res = await fetch("/api/me/channels", { cache: "no-store" });
           if (res.ok) {
             const data = await res.json();
-            // Handle both old format (array) and new format ({channels, channelLimit, plan})
             const freshChannels = Array.isArray(data) ? data : data.channels;
             setChannels(freshChannels);
-            // If active channel no longer exists, clear it
-            if (
-              activeChannelId &&
-              !freshChannels.some(
-                (c: Channel) => c.channel_id === activeChannelId,
-              )
-            ) {
-              const newActiveId = freshChannels[0]?.channel_id ?? null;
-              setActiveChannelId(newActiveId);
-              if (!newActiveId) {
-                localStorage.removeItem("activeChannelId");
-              }
-            }
+            // Hook's reconciliation handles stale activeChannelId
           }
         } catch (err) {
           console.error("Failed to refresh channels:", err);
@@ -270,26 +250,7 @@ export default function DashboardClient({
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [activeChannelId]);
-
-  // Clear stale activeChannelId if it doesn't exist in channels
-  useEffect(() => {
-    if (activeChannelId && channels.length > 0) {
-      const exists = channels.some((c) => c.channel_id === activeChannelId);
-      if (!exists) {
-        // Active channel was deleted, switch to first available or clear
-        const newActiveId = channels[0]?.channel_id ?? null;
-        setActiveChannelId(newActiveId);
-        if (!newActiveId) {
-          localStorage.removeItem("activeChannelId");
-        }
-      }
-    } else if (activeChannelId && channels.length === 0) {
-      // All channels deleted, clear the stale ID
-      setActiveChannelId(null);
-      localStorage.removeItem("activeChannelId");
-    }
-  }, [activeChannelId, channels]);
+  }, []);
 
   // Load videos for a channel (initial load)
   const loadVideos = useCallback(

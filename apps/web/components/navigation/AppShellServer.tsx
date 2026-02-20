@@ -7,6 +7,8 @@ import { AppSidebar } from "./AppSidebar";
 import { MobileNav } from "./MobileNav";
 import { AppHeader } from "./AppHeader";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
+import { safeGetItem, safeSetItem } from "@/lib/storage/safeLocalStorage";
+import { useSyncActiveChannel } from "@/lib/use-sync-active-channel";
 import type { SerializableNavItem } from "@/lib/nav-config.server";
 import s from "./AppShell.module.css";
 
@@ -64,24 +66,17 @@ export function AppShellServer({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
+  const urlChannelId = searchParams.get("channelId");
+
   // Channels state (can be refreshed client-side)
   const [channels, setChannels] = useState(initialChannels);
-  const [activeChannelId, setActiveChannelId] = useState(() => {
-    // Check URL for channelId param first
-    const urlChannelId = searchParams.get("channelId");
-    if (urlChannelId && initialChannels.some(c => c.channel_id === urlChannelId)) {
-      return urlChannelId;
-    }
-    // Check localStorage
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("activeChannelId");
-      if (stored && initialChannels.some(c => c.channel_id === stored)) {
-        return stored;
-      }
-    }
-    // Fall back to initial
-    return initialActiveChannelId;
+
+  // Centralized active channel management
+  const { activeChannelId, setActiveChannelId } = useSyncActiveChannel({
+    channels,
+    initialActiveChannelId,
+    urlChannelId,
   });
   
   // Sidebar collapse state
@@ -92,66 +87,48 @@ export function AppShellServer({
 
   // Load sidebar collapse state from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
+    const stored = safeGetItem(SIDEBAR_COLLAPSE_KEY);
     if (stored !== null) {
       setSidebarCollapsed(stored === "true");
     }
   }, []);
   
-  // Sync active channel to localStorage and URL on mount
+  // Sync active channel to URL on mount
   useEffect(() => {
     if (didInitialSync.current) return;
     didInitialSync.current = true;
     
     if (activeChannelId) {
-      localStorage.setItem("activeChannelId", activeChannelId);
-      
       // Sync URL if on a channel-scoped page and URL doesn't match
-      const urlChannelId = searchParams.get("channelId");
       if (isChannelScopedPath(pathname) && urlChannelId !== activeChannelId) {
         const next = new URLSearchParams(searchParams.toString());
         next.set("channelId", activeChannelId);
-        // Remove newChannel param if present
         next.delete("newChannel");
         router.replace(`${pathname}?${next.toString()}`, { scroll: false });
       }
     }
-  }, [activeChannelId, pathname, searchParams, router]);
+  }, [activeChannelId, pathname, searchParams, router, urlChannelId]);
 
   // Listen for channel-removed events
   useEffect(() => {
     const handleChannelRemoved = (e: CustomEvent<{ channelId: string }>) => {
-      const removedChannelId = e.detail.channelId;
-
-      setChannels((prev) => {
-        const updated = prev.filter((c) => c.channel_id !== removedChannelId);
-
-        if (activeChannelId === removedChannelId) {
-          if (updated.length > 0) {
-            setActiveChannelId(updated[0].channel_id);
-            localStorage.setItem("activeChannelId", updated[0].channel_id);
-          } else {
-            setActiveChannelId(null);
-            localStorage.removeItem("activeChannelId");
-          }
-        }
-
-        return updated;
-      });
+      setChannels((prev) =>
+        prev.filter((c) => c.channel_id !== e.detail.channelId),
+      );
+      // Hook's synchronous reconciliation handles activeChannelId fallback
     };
 
     window.addEventListener("channel-removed", handleChannelRemoved as EventListener);
     return () => {
       window.removeEventListener("channel-removed", handleChannelRemoved as EventListener);
     };
-  }, [activeChannelId]);
+  }, []);
   
   // Listen for newChannel query param (after OAuth redirect)
   useEffect(() => {
     const isNewChannel = searchParams.get("newChannel") === "1";
     if (!isNewChannel) return;
     
-    // Refresh channels from API to get the newly added channel
     async function refreshChannels() {
       try {
         const data = await apiFetchJson<any>("/api/me/channels", {
@@ -160,13 +137,10 @@ export function AppShellServer({
         const channelList = Array.isArray(data) ? data : data.channels;
         setChannels(channelList);
         
-        // Set the new channel as active
         if (channelList.length > 0) {
           const newChannelId = channelList[0].channel_id;
           setActiveChannelId(newChannelId);
-          localStorage.setItem("activeChannelId", newChannelId);
           
-          // Clear newChannel param from URL
           const next = new URLSearchParams(searchParams.toString());
           next.delete("newChannel");
           if (isChannelScopedPath(pathname)) {
@@ -183,34 +157,31 @@ export function AppShellServer({
     }
     
     refreshChannels();
-  }, [searchParams, pathname, router]);
+  }, [searchParams, pathname, router, setActiveChannelId]);
 
   const handleToggleCollapse = useCallback(() => {
     setSidebarCollapsed((prev) => {
       const next = !prev;
-      localStorage.setItem(SIDEBAR_COLLAPSE_KEY, String(next));
+      safeSetItem(SIDEBAR_COLLAPSE_KEY, String(next));
       return next;
     });
   }, []);
 
   const handleChannelChange = useCallback((channelId: string) => {
     setActiveChannelId(channelId);
-    localStorage.setItem("activeChannelId", channelId);
 
-    // If on a video page, redirect to dashboard
     if (isVideoPath(pathname)) {
       router.push(`/dashboard?channelId=${channelId}`);
       return;
     }
 
-    // If on a channel-scoped page, update the URL
     if (isChannelScopedPath(pathname)) {
       const next = new URLSearchParams(searchParams.toString());
       next.set("channelId", channelId);
       router.replace(`${pathname}?${next.toString()}`, { scroll: false });
       router.refresh();
     }
-  }, [pathname, searchParams, router]);
+  }, [pathname, searchParams, router, setActiveChannelId]);
 
   return (
     <div className={s.shell}>

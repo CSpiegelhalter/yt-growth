@@ -4,7 +4,19 @@
  */
 
 import Link from "next/link";
-import type { BodyProps } from "./index";
+import { LEARN_ARTICLES } from "../../articles";
+import type { BodyProps, ArticleMeta } from "./_shared";
+import { tocFromArticle } from "./_shared";
+
+const _article = LEARN_ARTICLES["youtube-shorts-length"];
+
+export const meta: ArticleMeta = {
+  slug: _article.slug,
+  title: _article.title,
+  description: _article.description,
+};
+
+export const toc = tocFromArticle(_article.toc);
 
 export function Body({ s }: BodyProps) {
   return (

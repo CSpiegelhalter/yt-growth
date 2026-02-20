@@ -16,10 +16,7 @@ import {
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { getOrGenerateNiche } from "@/lib/channel-niche";
 import type { CompetitorFeedResponse, CompetitorVideo } from "@/types/api";
-
-const ParamsSchema = z.object({
-  channelId: z.string().min(1),
-});
+import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 const QuerySchema = z.object({
   range: z.enum(["7d", "28d"]).default("7d"),
@@ -75,7 +72,7 @@ async function GETHandler(
     }
 
     // Validate params
-    const parsedParams = ParamsSchema.safeParse(paramsObj);
+    const parsedParams = channelParamsSchema.safeParse(paramsObj);
     if (!parsedParams.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }

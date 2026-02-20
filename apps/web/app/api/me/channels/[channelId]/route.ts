@@ -6,14 +6,10 @@
  * Auth: Required
  */
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/user";
-
-const ParamsSchema = z.object({
-  channelId: z.string().min(1),
-});
+import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 
 async function DELETEHandler(
   req: NextRequest,
@@ -29,7 +25,7 @@ async function DELETEHandler(
 
     // Validate params
     const paramsObj = await params;
-    const parsed = ParamsSchema.safeParse(paramsObj);
+    const parsed = channelParamsSchema.safeParse(paramsObj);
     if (!parsed.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }
@@ -127,7 +123,7 @@ async function GETHandler(
 
     // Validate params
     const paramsObj = await params;
-    const parsed = ParamsSchema.safeParse(paramsObj);
+    const parsed = channelParamsSchema.safeParse(paramsObj);
     if (!parsed.success) {
       return Response.json({ error: "Invalid channel ID" }, { status: 400 });
     }

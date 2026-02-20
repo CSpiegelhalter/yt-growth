@@ -13,10 +13,12 @@
 import { z } from "zod";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
 import { jsonOk, jsonError } from "@/lib/api/response";
 import { ApiError } from "@/lib/api/errors";
 import { callLLM } from "@/lib/llm";
 import { parseYouTubeVideoId } from "@/lib/youtube-video-id";
+import { fetchVideoSnippetByApiKey } from "@/lib/youtube/data-api";
 import { getLimit, type Plan } from "@/lib/entitlements";
 import { checkAndIncrement } from "@/lib/usage";
 import { hasActiveSubscription } from "@/lib/user";
@@ -84,7 +86,7 @@ const requestSchema = z.object({
 });
 
 // ============================================
-// YOUTUBE API FETCH
+// YOUTUBE SNIPPET TYPE (for reference video context)
 // ============================================
 
 type YouTubeSnippet = {
@@ -93,65 +95,6 @@ type YouTubeSnippet = {
   tags?: string[];
   channelTitle: string;
 };
-
-async function fetchYouTubeVideoSnippet(
-  videoId: string
-): Promise<YouTubeSnippet | null> {
-  const apiKey = process.env.YOUTUBE_API_KEY;
-  if (!apiKey) {
-    logger.warn("youtube-tag-generator.missing_api_key", {
-      message: "YOUTUBE_API_KEY not configured",
-    });
-    return null;
-  }
-
-  const url = new URL("https://www.googleapis.com/youtube/v3/videos");
-  url.searchParams.set("part", "snippet");
-  url.searchParams.set("id", videoId);
-  url.searchParams.set("key", apiKey);
-  url.searchParams.set(
-    "fields",
-    "items/snippet(title,description,tags,channelTitle)"
-  );
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-    const response = await fetch(url.toString(), {
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      logger.warn("youtube-tag-generator.youtube_api_error", {
-        status: response.status,
-        videoId,
-      });
-      return null;
-    }
-
-    const data = await response.json();
-    const snippet = data.items?.[0]?.snippet;
-
-    if (!snippet) {
-      return null;
-    }
-
-    return {
-      title: snippet.title || "",
-      description: snippet.description || "",
-      tags: snippet.tags || [],
-      channelTitle: snippet.channelTitle || "",
-    };
-  } catch (err) {
-    logger.warn("youtube-tag-generator.youtube_fetch_failed", {
-      videoId,
-      error: err instanceof Error ? err.message : "Unknown error",
-    });
-    return null;
-  }
-}
 
 // ============================================
 // LLM TAG GENERATION
@@ -291,161 +234,141 @@ Channel: ${input.referenceVideo.channelTitle}`;
 
 export const POST = createApiRoute(
   { route: "/api/youtube-tag-generator" },
-  withAuth({ mode: "optional" }, async (req, _ctx, api: ApiAuthContext) => {
-    const user = api.user;
+  withAuth(
+    { mode: "optional" },
+    withValidation(
+      { body: requestSchema },
+      async (req, _ctx, api: ApiAuthContext, validated) => {
+        const user = api.user;
+        const { title, description, referenceYoutubeUrl } = validated.body!;
 
-    // Parse and validate request body
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      throw new ApiError({
-        code: "VALIDATION_ERROR",
-        status: 400,
-        message: "Invalid JSON body",
-      });
-    }
+        // Rate limiting
+        let remaining: number;
+        let resetAt: string;
+        let isPro = false;
 
-    // Validate request size (abuse protection)
-    const bodyStr = JSON.stringify(body);
-    if (bodyStr.length > 50000) {
-      throw new ApiError({
-        code: "VALIDATION_ERROR",
-        status: 400,
-        message: "Request too large",
-      });
-    }
+        if (user) {
+          isPro = hasActiveSubscription(user.subscription);
+          const plan: Plan = isPro ? "PRO" : "FREE";
+          const limit = getLimit(plan, "tag_generate");
 
-    const parsed = requestSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new ApiError({
-        code: "VALIDATION_ERROR",
-        status: 400,
-        message: parsed.error.errors[0]?.message || "Invalid request",
-        details: parsed.error.flatten(),
-      });
-    }
+          const usageResult = await checkAndIncrement({
+            userId: user.id,
+            featureKey: "tag_generate",
+            limit,
+          });
 
-    const { title, description, referenceYoutubeUrl } = parsed.data;
+          if (!usageResult.allowed) {
+            logger.info("youtube-tag-generator.rate_limited", {
+              userId: user.id,
+              plan,
+            });
 
-    // Rate limiting
-    let remaining: number;
-    let resetAt: string;
-    let isPro = false;
+            return jsonError({
+              status: 429,
+              code: "LIMIT_REACHED",
+              message: `You have used all ${limit} tag generations for today.`,
+              requestId: api.requestId,
+              details: {
+                remaining: 0,
+                resetAt: usageResult.resetAt,
+                isPro,
+              },
+            });
+          }
 
-    if (user) {
-      // Authenticated user: use database-backed rate limiting
-      isPro = hasActiveSubscription(user.subscription);
-      const plan: Plan = isPro ? "PRO" : "FREE";
-      const limit = getLimit(plan, "tag_generate");
+          remaining = usageResult.remaining;
+          resetAt = usageResult.resetAt;
+        } else {
+          cleanupOldEntries();
 
-      const usageResult = await checkAndIncrement({
-        userId: user.id,
-        featureKey: "tag_generate",
-        limit,
-      });
+          const forwardedFor = req.headers.get("x-forwarded-for");
+          const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
 
-      if (!usageResult.allowed) {
-        logger.info("youtube-tag-generator.rate_limited", {
-          userId: user.id,
-          plan,
-        });
+          const anonLimit = getAnonymousRateLimit(ip);
 
-        return jsonError({
-          status: 429,
-          code: "LIMIT_REACHED",
-          message: `You have used all ${limit} tag generations for today.`,
-          requestId: api.requestId,
-          details: {
-            remaining: 0,
-            resetAt: usageResult.resetAt,
-            isPro,
-          },
-        });
-      }
+          if (!anonLimit.allowed) {
+            logger.info("youtube-tag-generator.rate_limited_anonymous", { ip });
 
-      remaining = usageResult.remaining;
-      resetAt = usageResult.resetAt;
-    } else {
-      // Anonymous user: use simple IP-based rate limiting
-      cleanupOldEntries();
-      
-      // Get IP from headers (works with most reverse proxies)
-      const forwardedFor = req.headers.get("x-forwarded-for");
-      const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
-      
-      const anonLimit = getAnonymousRateLimit(ip);
-      
-      if (!anonLimit.allowed) {
-        logger.info("youtube-tag-generator.rate_limited_anonymous", { ip });
+            return jsonError({
+              status: 429,
+              code: "LIMIT_REACHED",
+              message: `You've reached the free limit. Sign up for more generations.`,
+              requestId: api.requestId,
+              details: {
+                remaining: 0,
+                resetAt: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+              },
+            });
+          }
 
-        return jsonError({
-          status: 429,
-          code: "LIMIT_REACHED",
-          message: `You've reached the free limit. Sign up for more generations.`,
-          requestId: api.requestId,
-          details: {
-            remaining: 0,
-            resetAt: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
-          },
-        });
-      }
-
-      remaining = anonLimit.remaining;
-      resetAt = new Date(new Date().setHours(24, 0, 0, 0)).toISOString();
-    }
-
-    // Fetch reference video if URL provided
-    let referenceVideo: YouTubeSnippet | null = null;
-    let referenceWarning: string | null = null;
-
-    if (referenceYoutubeUrl) {
-      const videoId = parseYouTubeVideoId(referenceYoutubeUrl);
-      if (videoId) {
-        referenceVideo = await fetchYouTubeVideoSnippet(videoId);
-        if (!referenceVideo) {
-          referenceWarning =
-            "Could not fetch reference video. Generating tags without it.";
+          remaining = anonLimit.remaining;
+          resetAt = new Date(new Date().setHours(24, 0, 0, 0)).toISOString();
         }
+
+        let referenceVideo: YouTubeSnippet | null = null;
+        let referenceWarning: string | null = null;
+
+        if (referenceYoutubeUrl) {
+          const videoId = parseYouTubeVideoId(referenceYoutubeUrl);
+          if (videoId) {
+            try {
+              const item = await fetchVideoSnippetByApiKey(videoId, {
+                fields:
+                  "items/snippet(title,description,tags,channelTitle)",
+              });
+              if (item?.snippet) {
+                referenceVideo = {
+                  title: item.snippet.title || "",
+                  description: item.snippet.description || "",
+                  tags: item.snippet.tags || [],
+                  channelTitle: item.snippet.channelTitle || "",
+                };
+              }
+            } catch {
+              // Silently fall through — tags will be generated without reference
+            }
+            if (!referenceVideo) {
+              referenceWarning =
+                "Could not fetch reference video. Generating tags without it.";
+            }
+          }
+        }
+
+        const result = await generateTags({
+          title,
+          description,
+          referenceVideo,
+        });
+
+        if (referenceWarning && result.notes.length < 3) {
+          result.notes.push(referenceWarning);
+        }
+
+        const copyComma = result.tags.join(", ");
+        const copyLines = result.tags.join("\n");
+
+        logger.info("youtube-tag-generator.success", {
+          userId: user?.id ?? "anonymous",
+          tagCount: result.tags.length,
+          hadReference: !!referenceVideo,
+          plan: user ? (isPro ? "PRO" : "FREE") : "ANONYMOUS",
+        });
+
+        return jsonOk(
+          {
+            tags: result.tags,
+            copyComma,
+            copyLines,
+            notes: result.notes,
+            remaining,
+            resetAt,
+          },
+          { requestId: api.requestId }
+        );
       }
-    }
-
-    // Generate tags
-    const result = await generateTags({
-      title,
-      description,
-      referenceVideo,
-    });
-
-    // Add warning note if reference video fetch failed
-    if (referenceWarning && result.notes.length < 3) {
-      result.notes.push(referenceWarning);
-    }
-
-    // Build copy strings
-    const copyComma = result.tags.join(", ");
-    const copyLines = result.tags.join("\n");
-
-    // Log success (no sensitive data)
-    logger.info("youtube-tag-generator.success", {
-      userId: user?.id ?? "anonymous",
-      tagCount: result.tags.length,
-      hadReference: !!referenceVideo,
-      plan: user ? (isPro ? "PRO" : "FREE") : "ANONYMOUS",
-    });
-
-    return jsonOk(
-      {
-        tags: result.tags,
-        copyComma,
-        copyLines,
-        notes: result.notes,
-        remaining,
-        resetAt,
-      },
-      { requestId: api.requestId }
-    );
-  })
+    )
+  )
 );
 
 export const runtime = "nodejs";

@@ -1,4 +1,3 @@
-export { default as ErrorState } from "./ErrorState";
 export { default as VideoDetailShell } from "./VideoDetailShell";
 export { default as MoreFromChannel } from "./MoreFromChannel";
 export {

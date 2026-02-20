@@ -26,8 +26,11 @@ export {
   // Recent videos
   fetchRecentChannelVideos,
 
-  // Single video
+  // Single video (OAuth)
   fetchVideoDetails,
+
+  // Single video snippet (API key)
+  fetchVideoSnippetByApiKey,
 
   // Comments
   fetchVideoComments,
@@ -50,3 +53,4 @@ export type {
   FetchCommentsResult,
   CompetitorVideo,
 } from "./youtube/types";
+export type { YouTubeVideoSnippetItem } from "./youtube/data-api";

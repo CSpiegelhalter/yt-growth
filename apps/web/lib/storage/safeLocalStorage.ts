@@ -177,3 +177,72 @@ export const STORAGE_KEYS = {
   /** Dashboard videos page cache (channel/page scoped) */
   DASHBOARD_VIDEOS: "dashboard_videos_v1",
 } as const;
+
+/* ------------------------------------------------------------------ */
+/*  Raw-string helpers (no prefix, no JSON encoding)                  */
+/*  Use for keys that store plain strings (e.g. activeChannelId).     */
+/* ------------------------------------------------------------------ */
+
+export function safeGetItem(key: string): string | null {
+  if (!isLocalStorageAvailable()) return null;
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function safeSetItem(key: string, value: string): boolean {
+  if (!isLocalStorageAvailable()) return false;
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function safeRemoveItem(key: string): boolean {
+  if (!isLocalStorageAvailable()) return false;
+  try {
+    window.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  sessionStorage helpers (raw string, no prefix)                    */
+/* ------------------------------------------------------------------ */
+
+function isSessionStorageAvailable(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const testKey = "__storage_test__";
+    window.sessionStorage.setItem(testKey, testKey);
+    window.sessionStorage.removeItem(testKey);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function safeSessionGetItem(key: string): string | null {
+  if (!isSessionStorageAvailable()) return null;
+  try {
+    return window.sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function safeSessionRemoveItem(key: string): boolean {
+  if (!isSessionStorageAvailable()) return false;
+  try {
+    window.sessionStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
