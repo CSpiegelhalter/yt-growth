@@ -1,0 +1,38 @@
+---
+description: Before modifying files in guarded architecture layers, read the README.md in that directory to understand import rules and conventions.
+globs:
+  - apps/web/lib/features/**
+  - apps/web/lib/adapters/**
+  - apps/web/lib/ports/**
+  - apps/web/lib/shared/**
+  - apps/web/components/features/**
+  - apps/web/components/layout/**
+  - apps/web/components/ui/**
+---
+
+# Layer Guardrails (Auto-Triggered)
+
+You are about to modify a file in a guarded architecture layer.
+
+**Before writing any code**, you MUST read the `README.md` in the nearest
+parent directory listed below. The README defines what this layer is for, what
+it may import, and what it must NOT import.
+
+| If you are editing files in...       | Read this first                              |
+| ------------------------------------ | -------------------------------------------- |
+| `lib/features/**`                    | `apps/web/lib/features/README.md`            |
+| `lib/adapters/**`                    | `apps/web/lib/adapters/README.md`            |
+| `lib/ports/**`                       | `apps/web/lib/ports/README.md`               |
+| `lib/shared/**`                      | `apps/web/lib/shared/README.md`              |
+| `components/features/**`             | `apps/web/components/features/README.md`     |
+| `components/layout/**`               | `apps/web/components/layout/README.md`       |
+| `components/ui/**`                   | `apps/web/components/ui/README.md`           |
+
+After reading the README, verify your planned change complies with:
+1. The **allowed imports** list.
+2. The **forbidden imports** list.
+3. The **file naming** conventions.
+4. The **purpose** of the layer (don't put code in the wrong place).
+
+If your change would violate any rule in the README, move the code to the
+correct layer instead.
