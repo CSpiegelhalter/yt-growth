@@ -5,7 +5,7 @@
  * subscription.isActive is false (which is normal for FREE users)
  */
 import { describe, it, expect } from "vitest";
-import { LIMITS } from "@/lib/product";
+import { LIMITS } from "@/lib/shared/product";
 
 // Replicate the logic from DashboardClient.tsx
 function canAddAnotherChannel(

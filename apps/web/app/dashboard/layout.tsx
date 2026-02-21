@@ -5,7 +5,7 @@ import {
   GUEST_SHELL_PROPS,
 } from "@/lib/server/bootstrap";
 import { AppShellServer } from "@/components/navigation/AppShellServer";
-import { getFilteredNavItems } from "@/lib/nav-config.server";
+import { getFilteredNavItems } from "@/lib/server/nav-config.server";
 
 /**
  * Dashboard layout that handles both authenticated and unauthenticated states.

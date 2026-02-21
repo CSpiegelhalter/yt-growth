@@ -15,7 +15,7 @@ import { describe, it, expect } from "bun:test";
 describe("Trending feature flag gating", () => {
   describe("nav-config", () => {
     it("primaryNavItems includes trending with featureFlag property", async () => {
-      const { primaryNavItems } = await import("@/lib/nav-config");
+      const { primaryNavItems } = await import("@/lib/shared/nav-config");
 
       const trendingItem = primaryNavItems.find((item) => item.id === "trending");
 
@@ -26,7 +26,7 @@ describe("Trending feature flag gating", () => {
     });
 
     it("competitors nav item does not have a feature flag", async () => {
-      const { primaryNavItems } = await import("@/lib/nav-config");
+      const { primaryNavItems } = await import("@/lib/shared/nav-config");
 
       const competitorsItem = primaryNavItems.find((item) => item.id === "competitors");
 
@@ -35,7 +35,7 @@ describe("Trending feature flag gating", () => {
     });
 
     it("thumbnails nav item is gated by thumbnail_generation flag", async () => {
-      const { primaryNavItems } = await import("@/lib/nav-config");
+      const { primaryNavItems } = await import("@/lib/shared/nav-config");
 
       const thumbnailsItem = primaryNavItems.find((item) => item.id === "thumbnails");
 
@@ -68,7 +68,7 @@ describe("Trending feature flag gating", () => {
     });
 
     it("getFeatureFlag function exists and returns a promise", async () => {
-      const { getFeatureFlag } = await import("@/lib/feature-flags");
+      const { getFeatureFlag } = await import("@/lib/shared/feature-flags");
 
       expect(typeof getFeatureFlag).toBe("function");
 
@@ -82,7 +82,7 @@ describe("Trending feature flag gating", () => {
 describe("Trending route guard logic", () => {
   it("feature flag returns false as safe default on error", async () => {
     const { getFeatureFlag, invalidateFeatureFlagCache } = await import(
-      "@/lib/feature-flags"
+      "@/lib/shared/feature-flags"
     );
 
     // Clear cache to force fresh check
@@ -95,7 +95,7 @@ describe("Trending route guard logic", () => {
   });
 
   it("invalidateFeatureFlagCache does not throw for trending_search", () => {
-    const { invalidateFeatureFlagCache } = require("@/lib/feature-flags");
+    const { invalidateFeatureFlagCache } = require("@/lib/shared/feature-flags");
 
     expect(() => invalidateFeatureFlagCache("trending_search")).not.toThrow();
   });

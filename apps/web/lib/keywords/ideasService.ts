@@ -15,7 +15,7 @@ import "server-only";
 import { z } from "zod";
 
 import { callLLM } from "@/lib/llm";
-import { logger } from "@/lib/logger";
+import { logger } from "@/lib/shared/logger";
 import {
   postKeywordsForKeywordsTask,
   getKeywordsForKeywordsTask,

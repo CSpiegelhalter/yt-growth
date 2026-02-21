@@ -1,5 +1,6 @@
 // lib/google-tokens.ts
 import { prisma } from "@/prisma";
+import { googleOAuthAdapter } from "@/lib/adapters/google";
 
 /**
  * Custom error for when Google token refresh fails (revoked access, invalid token, etc.)
@@ -170,48 +171,27 @@ async function getAccessToken(
 async function refreshAccessToken(ga: GA): Promise<string> {
   if (!ga.refreshTokenEnc) throw new Error("No refresh token saved");
 
-  const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID!,
-    client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-    grant_type: "refresh_token",
-    refresh_token: ga.refreshTokenEnc,
-  });
-
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-  });
-
-  if (!res.ok) {
-    // 400 invalid_grant -> refresh token revoked or user removed access
-    console.error(
-      `[GoogleTokens] Token refresh failed with status ${res.status}`
-    );
+  let tok;
+  try {
+    tok = await googleOAuthAdapter.refreshToken(ga.refreshTokenEnc);
+  } catch {
     throw new GoogleTokenRefreshError(
       "Your Google access has been revoked or expired. Please reconnect your Google account."
     );
   }
 
-  const tok = (await res.json()) as {
-    access_token: string;
-    expires_in: number;
-    scope?: string;
-  };
+  const expiresAt = Date.now() + tok.expiresIn * 1000;
 
-  const expiresAt = Date.now() + tok.expires_in * 1000;
-
-  // Store the access token in the database (so it works across Next.js workers)
   await prisma.googleAccount.update({
     where: { id: ga.id },
     data: {
-      accessTokenEnc: tok.access_token,
+      accessTokenEnc: tok.accessToken,
       tokenExpiresAt: new Date(expiresAt),
       scopes: tok.scope ?? undefined,
     },
   });
 
-  return tok.access_token;
+  return tok.accessToken;
 }
 
 // Generic wrapper that auto-refreshes on 401 once.

@@ -4,7 +4,7 @@ import {
   validateLocation,
   DataForSEOError,
   type LocationCode,
-} from "./utils";
+} from "@/lib/adapters/dataforseo/utils";
 
 // ============================================
 // CENTRALIZED VALIDATION + ERROR MAPPING
@@ -46,8 +46,6 @@ export function prepareDataForSeoRequest(input: {
 
 /**
  * Map a DataForSEOError to the canonical ApiError used by the API layer.
- * Superset of all route-specific switch/case blocks — covers every
- * DataForSEOErrorCode so routes don't need their own mapping.
  */
 export function mapDataForSEOError(err: DataForSEOError): ApiError {
   switch (err.code) {
@@ -96,7 +94,7 @@ export function mapDataForSEOError(err: DataForSEOError): ApiError {
   }
 }
 
-// Re-export from client (server-only)
+// Re-export from adapter (server-only)
 export {
   fetchKeywordOverview,
   fetchRelatedKeywords,
@@ -111,23 +109,21 @@ export {
   type KeywordOverviewResponse,
   type KeywordRelatedResponse,
   type KeywordCombinedResponse,
-} from "./client";
+} from "@/lib/adapters/dataforseo/client";
 
 // Re-export YouTube SERP client (server-only)
 export {
   fetchYouTubeSerp,
   type YouTubeSerpResponse,
-} from "./youtube-serp";
+} from "@/lib/adapters/dataforseo/youtube-serp";
 
-// Re-export competitive context (server-only)
+// Re-export competitive context — barrel delegates to lib/features/video-insights/
 export {
   fetchCompetitiveContext,
   type CompetitiveContext,
 } from "./competitive-context";
 
-// Re-export utilities (can be used in tests)
+// Re-export utilities
 export {
   DataForSEOError,
-  SUPPORTED_LOCATIONS,
-} from "./utils";
-
+} from "@/lib/adapters/dataforseo/utils";

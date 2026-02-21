@@ -72,3 +72,9 @@ export const KeywordIdeasBodySchema = z.object({
 });
 
 export type KeywordIdeasBody = z.infer<typeof KeywordIdeasBodySchema>;
+
+// ── /api/keywords/task/:id ─────────────────────────────────────
+
+export const TaskIdParamsSchema = z.object({
+  id: z.string().min(10, "Invalid task ID"),
+});

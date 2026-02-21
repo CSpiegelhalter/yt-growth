@@ -8,7 +8,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { LIMITS } from "@/lib/product";
+import { LIMITS } from "@/lib/shared/product";
 
 // Set test environment
 process.env.DISABLE_RATE_LIMITS = "1";

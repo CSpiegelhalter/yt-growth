@@ -7,13 +7,12 @@ export {
   KeywordTrendsBodySchema,
   YoutubeSerpBodySchema,
   KeywordIdeasBodySchema,
+  TaskIdParamsSchema,
 } from "./schemas";
-
-// Errors
-export { KeywordError } from "./errors";
 
 // Use-cases
 export { researchKeywords } from "./use-cases/researchKeywords";
 export { getKeywordTrends } from "./use-cases/getKeywordTrends";
 export { getYoutubeSerp } from "./use-cases/getYoutubeSerp";
 export { generateKeywordIdeas } from "./use-cases/generateKeywordIdeas";
+export { pollKeywordTask } from "./use-cases/pollKeywordTask";

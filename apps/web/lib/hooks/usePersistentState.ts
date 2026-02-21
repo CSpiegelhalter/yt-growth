@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getJSON, setJSON } from "@/lib/storage/safeLocalStorage";
+import { getJSON, setJSON } from "@/lib/client/safeLocalStorage";
 
 type UsePersistentStateOptions<T> = {
   /** localStorage key (will be prefixed automatically) */

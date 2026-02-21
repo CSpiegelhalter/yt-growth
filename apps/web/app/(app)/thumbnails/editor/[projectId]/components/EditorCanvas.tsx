@@ -9,6 +9,13 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT, MIN_ZOOM, MAX_ZOOM } from "./constants";
 import { sortByZIndex, snapToCenter } from "./utils";
 import s from "./editor.module.css";
 
+const LAYER_MAP: Record<string, typeof TextLayer | typeof ArrowLayer | typeof ImageLayer | typeof ShapeLayer> = {
+  text: TextLayer,
+  arrow: ArrowLayer,
+  image: ImageLayer,
+  shape: ShapeLayer,
+};
+
 interface EditorCanvasProps {
   document: EditorDocument;
   selectedId: string | null;
@@ -312,52 +319,17 @@ export function EditorCanvas({
 
             {/* Render all objects */}
             {sortedObjects.map((obj) => {
-              const isSelected = obj.id === selectedId;
-
-              switch (obj.type) {
-                case "text":
-                  return (
-                    <TextLayer
-                      key={obj.id}
-                      obj={obj}
-                      isSelected={isSelected}
-                      onSelect={() => onSelect(obj.id)}
-                      onChange={(patch) => handleObjectChange(obj.id, patch)}
-                    />
-                  );
-                case "arrow":
-                  return (
-                    <ArrowLayer
-                      key={obj.id}
-                      obj={obj}
-                      isSelected={isSelected}
-                      onSelect={() => onSelect(obj.id)}
-                      onChange={(patch) => handleObjectChange(obj.id, patch)}
-                    />
-                  );
-                case "image":
-                  return (
-                    <ImageLayer
-                      key={obj.id}
-                      obj={obj}
-                      isSelected={isSelected}
-                      onSelect={() => onSelect(obj.id)}
-                      onChange={(patch) => handleObjectChange(obj.id, patch)}
-                    />
-                  );
-                case "shape":
-                  return (
-                    <ShapeLayer
-                      key={obj.id}
-                      obj={obj}
-                      isSelected={isSelected}
-                      onSelect={() => onSelect(obj.id)}
-                      onChange={(patch) => handleObjectChange(obj.id, patch)}
-                    />
-                  );
-                default:
-                  return null;
-              }
+              const Component = LAYER_MAP[obj.type];
+              if (!Component) return null;
+              return (
+                <Component
+                  key={obj.id}
+                  obj={obj as never}
+                  isSelected={obj.id === selectedId}
+                  onSelect={() => onSelect(obj.id)}
+                  onChange={(patch: Partial<EditorObject>) => handleObjectChange(obj.id, patch)}
+                />
+              );
             })}
 
             {/* Safe area guides */}

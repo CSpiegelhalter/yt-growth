@@ -1,11 +1,12 @@
 import "server-only";
 
-import { getLimit, type Plan, type FeatureKey } from "@/lib/entitlements";
+import { getLimit } from "@/lib/features/subscriptions/use-cases/checkEntitlement";
+import type { Plan, FeatureKey } from "@/lib/features/subscriptions/types";
 import {
   checkAndIncrement,
   checkUsage,
-  type UsageCheckResult,
-} from "@/lib/usage";
+} from "@/lib/features/subscriptions/use-cases/trackUsage";
+import type { UsageCheckResult } from "@/lib/features/subscriptions/types";
 import type { UsageInfo } from "./types";
 
 /**

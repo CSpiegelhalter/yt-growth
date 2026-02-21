@@ -13,20 +13,13 @@
  */
 
 import Link from "next/link";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import { LEARN_ARTICLES } from "../../articles";
-import type { BodyProps, ArticleMeta } from "./_shared";
-import { tocFromArticle } from "./_shared";
+import type { BodyProps } from "./_shared";
+import { articleExports } from "./_shared";
+import { ArticleCta } from "./_ArticleCta";
 
-const _article = LEARN_ARTICLES["youtube-shorts-monetization"];
-
-export const meta: ArticleMeta = {
-  slug: _article.slug,
-  title: _article.title,
-  description: _article.description,
-};
-
-export const toc = tocFromArticle(_article.toc);
+export const { meta, toc } = articleExports(LEARN_ARTICLES["youtube-shorts-monetization"]);
 
 /* ================================================
    INLINE SVG VISUALS
@@ -872,39 +865,10 @@ export function Body({ s }: BodyProps) {
       </section>
 
       {/* CTA */}
-      <div className="sectionAccent">
-        <h3
-          style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}
-        >
-          Track what&apos;s actually working
-        </h3>
-        <p
-          style={{
-            fontSize: "1.125rem",
-            marginBottom: "1.5rem",
-            maxWidth: "500px",
-            marginLeft: "auto",
-            marginRight: "auto",
-          }}
-        >
-          {BRAND.name} helps you see which Shorts drive subscribers, identify
-          your best-performing content patterns, and find opportunities in your niche.
-        </p>
-        <Link
-          href="/dashboard"
-          style={{
-            display: "inline-block",
-            padding: "0.875rem 2rem",
-            background: "white",
-            color: "#6366f1",
-            fontWeight: 600,
-            borderRadius: "0.5rem",
-            textDecoration: "none",
-          }}
-        >
-          Try {BRAND.name} Free
-        </Link>
-      </div>
+      <ArticleCta
+        heading="Track what's actually working"
+        description={`${BRAND.name} helps you see which Shorts drive subscribers, identify your best-performing content patterns, and find opportunities in your niche.`}
+      />
     </>
   );
 }

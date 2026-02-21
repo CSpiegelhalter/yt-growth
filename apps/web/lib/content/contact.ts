@@ -3,7 +3,7 @@
  * Improves text-to-HTML ratio while providing helpful information
  */
 
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 
 export const CONTACT_CONTENT = {
   hero: {

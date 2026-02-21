@@ -3,8 +3,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { validateEmailPassword } from "@/components/auth/auth-helpers";
+import { useEscapeKey } from "@/lib/client/use-escape-key";
+import { useBodyScrollLock } from "@/lib/client/use-body-scroll-lock";
 import s from "./AuthModal.module.css";
 
 type AuthModalProps = {
@@ -47,31 +50,9 @@ export function AuthModal({
     }
   }, [isOpen]);
 
-  // Handle ESC key
-  useEffect(() => {
-    if (!isOpen) return;
+  useEscapeKey(isOpen, onClose);
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   const handleGoogleSignIn = useCallback(async () => {
     setLoading(true);
@@ -104,18 +85,9 @@ export function AuthModal({
     setErr(null);
     setLoading(true);
 
-    const form = new FormData(e.currentTarget);
-    const email = String(form.get("email") || "").trim();
-    const password = String(form.get("password") || "");
-
-    if (!email) {
-      setErr("Please enter your email address");
-      setLoading(false);
-      return;
-    }
-
-    if (!password) {
-      setErr("Please enter your password");
+    const { email, password, error } = validateEmailPassword(new FormData(e.currentTarget));
+    if (error) {
+      setErr(error);
       setLoading(false);
       return;
     }

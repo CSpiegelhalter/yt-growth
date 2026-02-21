@@ -19,7 +19,7 @@ import {
   sanitizeNicheText,
   inferNicheFromText,
 } from "@/lib/competitor-search/utils";
-import { parseYouTubeVideoId } from "@/lib/youtube-video-id";
+import { parseYouTubeVideoId } from "@/lib/shared/youtube-video-id";
 import type {
   CompetitorSearchFilters,
   CompetitorVideoResult,

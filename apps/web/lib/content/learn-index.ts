@@ -3,7 +3,7 @@
  * Improves text-to-HTML ratio with category descriptions and FAQ
  */
 
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 
 export const LEARN_INDEX_CONTENT = {
   hero: {

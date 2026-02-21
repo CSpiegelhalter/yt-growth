@@ -10,8 +10,8 @@ import {
   ChannelProfileAI,
   ChannelProfileAISchema,
   createFallbackAIProfile,
-} from "./types";
-import { formatInputForLLM } from "./utils";
+  formatInputForLLM,
+} from "@/lib/features/channels";
 
 const SYSTEM_PROMPT = `You are an expert YouTube strategist and taxonomy builder. Your job is to analyze a creator's channel description and categorize it into a structured profile that can be used for:
 - Generating video ideas

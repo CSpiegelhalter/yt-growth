@@ -8,8 +8,7 @@
 export { VideoDetailError } from "./types";
 export type { RequestContext } from "./types";
 
-// Validation
-export { parseParams, parseQuery } from "./validation";
+// Validation (channelParamsSchema imported directly from ./validation by consumers)
 
 // YouTube fetch helpers
 export {
@@ -42,5 +41,4 @@ export {
   buildVideoObject,
   buildMoreFromChannel,
   buildResponse,
-  buildLLMErrorResponse,
 } from "./response";

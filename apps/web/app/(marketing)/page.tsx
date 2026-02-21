@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND, FEATURES } from "@/lib/brand";
+import { BRAND, FEATURES } from "@/lib/shared/brand";
 import { HOME_CONTENT } from "@/lib/content/home";
 import { HeroStaticCTAs } from "@/components/HeroStaticCTAs";
 import { LEARN_ARTICLES } from "./learn/articles";

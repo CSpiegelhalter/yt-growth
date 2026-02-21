@@ -11,61 +11,7 @@ import { z } from "zod";
 // ---------------------------------------------------------------------------
 
 const channelIdSchema = z.string().min(1);
-const videoIdSchema = z.string().min(1);
 
 export const channelParamsSchema = z.object({
   channelId: channelIdSchema,
 });
-
-export const channelVideoParamsSchema = z.object({
-  channelId: channelIdSchema,
-  videoId: videoIdSchema,
-});
-
-// ---------------------------------------------------------------------------
-// Competitor video-detail schemas (existing – do not modify)
-// ---------------------------------------------------------------------------
-
-const ParamsSchema = z.object({
-  videoId: z.string().min(1, "Video ID is required"),
-});
-
-const QuerySchema = z.object({
-  channelId: z.string().min(1, "Channel ID is required"),
-  includeMoreFromChannel: z
-    .union([z.literal("0"), z.literal("1")])
-    .optional()
-    .default("1"),
-});
-
-type ValidatedParams = z.infer<typeof ParamsSchema>;
-type ValidatedQuery = z.infer<typeof QuerySchema>;
-
-/**
- * Parse and validate route params.
- * Returns validated params or throws VideoDetailError.
- */
-export function parseParams(params: Record<string, string>): ValidatedParams {
-  const result = ParamsSchema.safeParse(params);
-  if (!result.success) {
-    throw new Error(`Invalid video ID: ${result.error.message}`);
-  }
-  return result.data;
-}
-
-/**
- * Parse and validate query params from URL.
- * Returns validated query or throws VideoDetailError.
- */
-export function parseQuery(url: URL): ValidatedQuery {
-  const result = QuerySchema.safeParse({
-    channelId: url.searchParams.get("channelId") ?? "",
-    includeMoreFromChannel:
-      (url.searchParams.get("includeMoreFromChannel") as "0" | "1" | null) ??
-      undefined,
-  });
-  if (!result.success) {
-    throw new Error(`channelId query parameter required`);
-  }
-  return result.data;
-}

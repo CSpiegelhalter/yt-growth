@@ -8,8 +8,8 @@
  */
 import { NextRequest } from "next/server";
 import { createApiRoute } from "@/lib/api/route";
-import { getCurrentUser } from "@/lib/user";
-import { resetUserUsage, getAllUsage } from "@/lib/usage";
+import { getCurrentUser } from "@/lib/server/auth";
+import { resetUserUsage, getAllUsage } from "@/lib/features/subscriptions/use-cases/trackUsage";
 
 function devOnly(): Response | null {
   if (process.env.NODE_ENV === "production") {
@@ -79,7 +79,7 @@ async function GETHandler(req: NextRequest) {
 
     // Also get limits for context
     const { getSubscriptionStatus } = await import("@/lib/stripe");
-    const { getPlanFromSubscription, getLimits, getResetAt } = await import("@/lib/entitlements");
+    const { getPlanFromSubscription, getLimits, getResetAt } = await import("@/lib/features/subscriptions/use-cases/checkEntitlement");
     
     const subscription = await getSubscriptionStatus(user.id);
     const plan = getPlanFromSubscription(subscription);

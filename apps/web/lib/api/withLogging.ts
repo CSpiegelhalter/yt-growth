@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { logger } from "@/lib/logger";
+import { logger } from "@/lib/shared/logger";
 import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
 import { jsonError } from "./response";
 import type { ApiErrorCode } from "./errors";

@@ -13,7 +13,7 @@ import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
 import { jsonOk } from "@/lib/api/response";
 import { quotaExceededResponse } from "@/lib/api/quota";
-import { hasActiveSubscription } from "@/lib/user";
+import { hasActiveSubscription } from "@/lib/server/auth";
 import { KeywordTrendsBodySchema, getKeywordTrends } from "@/lib/features/keywords";
 
 export const POST = createApiRoute(

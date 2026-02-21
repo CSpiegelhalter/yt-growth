@@ -19,7 +19,7 @@ import { generateNicheQueries, ChannelProfileContext } from "@/lib/llm";
 import {
   ChannelProfileAI,
   ChannelProfileInput,
-} from "@/lib/channel-profile/types";
+} from "@/lib/features/channels";
 import { YOUTUBE_CATEGORIES } from "@/lib/youtube/constants";
 
 const NICHE_VIDEO_COUNT = 15;

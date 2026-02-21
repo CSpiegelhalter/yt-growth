@@ -40,7 +40,7 @@ lib/adapters/<provider>/
 
 ## Example
 
-See `lib/storage/` for an existing adapter pattern:
-- `adapter.ts` defines the `StorageAdapter` interface (port)
-- `local.ts` and `s3.ts` are adapter implementations
-- `index.ts` exports a factory function `getStorage()`
+See `lib/adapters/storage/` for a concrete adapter:
+- `client.ts` exports the `getStorage()` factory and key helpers
+- `local.ts` and `s3.ts` implement `StoragePort` from `lib/ports/StoragePort`
+- `index.ts` barrel re-exports the public API

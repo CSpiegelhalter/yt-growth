@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { formatCompact, formatCompactFloored } from "@/lib/format";
+import { formatCompact, formatCompactFloored } from "@/lib/shared/format";
 import type { CompetitorVideo } from "@/types/api";
 import { formatDate } from "./utils";
 import s from "./style.module.css";

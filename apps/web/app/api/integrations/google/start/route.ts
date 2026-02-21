@@ -3,6 +3,7 @@ import { createApiRoute } from "@/lib/api/route";
 import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
 import { prisma } from "@/prisma";
 import crypto from "crypto";
+import { googleOAuthAdapter } from "@/lib/adapters/google";
 
 export const runtime = "nodejs";
 
@@ -33,26 +34,9 @@ export const GET = createApiRoute(
 
       const redirectUri =
         process.env.GOOGLE_REDIRECT_URI ?? process.env.GOOGLE_OAUTH_REDIRECT!;
-      const params = new URLSearchParams({
-        client_id: process.env.GOOGLE_CLIENT_ID!,
-        redirect_uri: redirectUri,
-        response_type: "code",
-        access_type: "offline",
-        prompt: "select_account consent",  // Force account selection AND fresh consent
-        scope: [
-          "openid",
-          "email",
-          "profile",
-          "https://www.googleapis.com/auth/youtube.readonly",
-          "https://www.googleapis.com/auth/youtube.force-ssl",
-          "https://www.googleapis.com/auth/yt-analytics.readonly",
-        ].join(" "),
-        state,
-      });
+      const authUrl = googleOAuthAdapter.buildAuthUrl(redirectUri, state);
 
-      const res = NextResponse.redirect(
-        "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString()
-      );
+      const res = NextResponse.redirect(authUrl);
       res.headers.set("x-request-id", api.requestId);
       return res;
     } catch {

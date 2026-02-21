@@ -7,19 +7,20 @@ import { withRateLimit } from "@/lib/api/withRateLimit";
 import { ApiError } from "@/lib/api/errors";
 import { prisma } from "@/prisma";
 import { getStorage } from "@/lib/storage";
-import { normalizeIdentityImage } from "@/lib/identity/normalizeImage";
 import {
+  normalizeIdentityImage,
   generateIdentityTriggerWord,
   isSafeTriggerWord,
-} from "@/lib/identity/triggerWord";
-import { createLogger } from "@/lib/logger";
+  computeDatasetHash,
+  MIN_TRAINING_PHOTOS,
+} from "@/lib/features/identity";
+import { createLogger } from "@/lib/shared/logger";
 import {
   createModel,
   createTraining,
   uploadFileToReplicate,
   verifyModelVersion,
 } from "@/lib/replicate/client";
-import { computeDatasetHash, MIN_TRAINING_PHOTOS } from "@/lib/identity/modelService";
 import { getAppBaseUrl } from "@/lib/server/url";
 
 export const runtime = "nodejs";

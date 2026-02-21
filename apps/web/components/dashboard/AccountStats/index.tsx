@@ -2,7 +2,7 @@
 
 import s from "./style.module.css";
 import type { Me } from "@/types/api";
-import { LIMITS } from "@/lib/product";
+import { LIMITS } from "@/lib/shared/product";
 
 function Stat({
   label,

@@ -23,7 +23,7 @@ import {
   type VideoForBadges,
   type ChannelStatsForBadges,
   type UnlockedBadge,
-} from "@/lib/badges";
+} from "@/lib/features/badges";
 
 // Helper to create dates relative to now
 function daysAgo(days: number): Date {

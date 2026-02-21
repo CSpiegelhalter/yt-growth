@@ -7,7 +7,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { fetchMoreFromChannel } from "./serverFetch";
-import { formatCompact } from "@/lib/format";
+import { formatCompact } from "@/lib/shared/format";
 import s from "../style.module.css";
 
 type Props = {

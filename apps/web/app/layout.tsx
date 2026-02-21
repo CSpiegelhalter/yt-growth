@@ -1,6 +1,6 @@
 import { Fustat, Inter } from "next/font/google";
 import { Providers } from "@/components/Providers";
-import { BRAND, CANONICAL_ORIGIN, STRUCTURED_DATA } from "@/lib/brand";
+import { BRAND, CANONICAL_ORIGIN, STRUCTURED_DATA } from "@/lib/shared/brand";
 import { Analytics } from "@vercel/analytics/next";
 import "@/app/globals.css";
 import type { Metadata, Viewport } from "next";

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { BRAND } from "@/lib/brand";
+import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import s from "../login/style.module.css";
 
 /**
@@ -18,7 +18,6 @@ export default function ResetPasswordForm() {
   const token = sp.get("token");
 
   useEffect(() => {
-    // Verify token exists
     if (!token) {
       setTokenValid(false);
     } else {
@@ -75,159 +74,103 @@ export default function ResetPasswordForm() {
     }
   }
 
-  // Invalid or missing token
+  const signInFooter = (
+    <>
+      Remember your password?{" "}
+      <Link href="/auth/login" className={s.link}>
+        Sign in
+      </Link>
+    </>
+  );
+
   if (tokenValid === false) {
     return (
-      <main className={s.page}>
-        <div className={s.card}>
-          <div className={s.branding}>
-            <h1 className={s.logo}>{BRAND.name}</h1>
-            <p className={s.tagline}>{BRAND.tagline}</p>
-          </div>
-
-          <div className={s.header}>
-            <h2 className={s.title}>Invalid reset link</h2>
-            <p className={s.subtitle}>
-              This password reset link is invalid or has expired. Please request
-              a new one.
-            </p>
-          </div>
-
-          <div className={s.errorAlert}>
-            The reset link is missing or invalid.
-          </div>
-
-          <Link href="/auth/forgot-password" className={s.submitBtn} style={{ textDecoration: "none", textAlign: "center" }}>
-            Request new link
-          </Link>
-
-          <p className={s.footer}>
-            Remember your password?{" "}
-            <Link href="/auth/login" className={s.link}>
-              Sign in
-            </Link>
-          </p>
-        </div>
-      </main>
+      <AuthPageShell
+        styles={s}
+        title="Invalid reset link"
+        subtitle="This password reset link is invalid or has expired. Please request a new one."
+        error="The reset link is missing or invalid."
+        footer={signInFooter}
+      >
+        <Link href="/auth/forgot-password" className={s.submitBtn} style={{ textDecoration: "none", textAlign: "center" }}>
+          Request new link
+        </Link>
+      </AuthPageShell>
     );
   }
 
-  // Success state
   if (success) {
     return (
-      <main className={s.page}>
-        <div className={s.card}>
-          <div className={s.branding}>
-            <h1 className={s.logo}>{BRAND.name}</h1>
-            <p className={s.tagline}>{BRAND.tagline}</p>
-          </div>
-
-          <div className={s.header}>
-            <h2 className={s.title}>Password reset successful</h2>
-            <p className={s.subtitle}>
-              Your password has been updated. You can now sign in with your new
-              password.
-            </p>
-          </div>
-
-          <div className={s.successAlert}>
-            Your password has been reset successfully.
-          </div>
-
-          <Link href="/auth/login" className={s.submitBtn} style={{ textDecoration: "none", textAlign: "center" }}>
-            Sign in
-          </Link>
-        </div>
-      </main>
+      <AuthPageShell
+        styles={s}
+        title="Password reset successful"
+        subtitle="Your password has been updated. You can now sign in with your new password."
+        successMessage="Your password has been reset successfully."
+      >
+        <Link href="/auth/login" className={s.submitBtn} style={{ textDecoration: "none", textAlign: "center" }}>
+          Sign in
+        </Link>
+      </AuthPageShell>
     );
   }
 
-  // Loading token validation
   if (tokenValid === null) {
     return (
-      <main className={s.page}>
-        <div className={s.card}>
-          <div className={s.branding}>
-            <h1 className={s.logo}>{BRAND.name}</h1>
-            <p className={s.tagline}>{BRAND.tagline}</p>
-          </div>
-          <div className={s.header}>
-            <h2 className={s.title}>Loading...</h2>
-          </div>
-        </div>
-      </main>
+      <AuthPageShell styles={s} title="Loading...">
+        {null}
+      </AuthPageShell>
     );
   }
 
-  // Reset form
   return (
-    <main className={s.page}>
-      <div className={s.card}>
-        <div className={s.branding}>
-          <h1 className={s.logo}>{BRAND.name}</h1>
-          <p className={s.tagline}>{BRAND.tagline}</p>
+    <AuthPageShell
+      styles={s}
+      title="Reset your password"
+      subtitle="Enter your new password below."
+      error={err}
+      footer={signInFooter}
+    >
+      <form onSubmit={onSubmit} className={s.form}>
+        <div className={s.field}>
+          <label htmlFor="password" className={s.label}>
+            New password
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Enter new password (min 12 characters)"
+            className={s.input}
+            minLength={12}
+          />
         </div>
 
-        <div className={s.header}>
-          <h2 className={s.title}>Reset your password</h2>
-          <p className={s.subtitle}>Enter your new password below.</p>
+        <div className={s.field}>
+          <label htmlFor="confirmPassword" className={s.label}>
+            Confirm password
+          </label>
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Confirm new password"
+            className={s.input}
+          />
         </div>
 
-        {err && (
-          <div className={s.errorAlert} role="alert">
-            {err}
-          </div>
-        )}
-
-        <form onSubmit={onSubmit} className={s.form}>
-          <div className={s.field}>
-            <label htmlFor="password" className={s.label}>
-              New password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="Enter new password (min 12 characters)"
-              className={s.input}
-              minLength={12}
-            />
-          </div>
-
-          <div className={s.field}>
-            <label htmlFor="confirmPassword" className={s.label}>
-              Confirm password
-            </label>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              placeholder="Confirm new password"
-              className={s.input}
-            />
-          </div>
-
-          <button type="submit" disabled={loading} className={s.submitBtn}>
-            {loading ? (
-              <>
-                <span className={s.spinner} aria-hidden="true" />
-                Resetting...
-              </>
-            ) : (
-              "Reset password"
-            )}
-          </button>
-        </form>
-
-        <p className={s.footer}>
-          Remember your password?{" "}
-          <Link href="/auth/login" className={s.link}>
-            Sign in
-          </Link>
-        </p>
-      </div>
-    </main>
+        <button type="submit" disabled={loading} className={s.submitBtn}>
+          {loading ? (
+            <>
+              <span className={s.spinner} aria-hidden="true" />
+              Resetting...
+            </>
+          ) : (
+            "Reset password"
+          )}
+        </button>
+      </form>
+    </AuthPageShell>
   );
 }

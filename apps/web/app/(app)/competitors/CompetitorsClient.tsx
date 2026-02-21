@@ -6,7 +6,6 @@ import { SearchIcon, AlertCircleIcon } from "@/components/icons";
 import s from "./style.module.css";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 import type { Me, Channel, CompetitorVideo } from "@/types/api";
-import { SUBSCRIPTION, formatUsd } from "@/lib/product";
 import CompetitorSearchPanel from "./CompetitorSearchPanel";
 import CompetitorFilters, {
   type FilterState,
@@ -14,6 +13,7 @@ import CompetitorFilters, {
 } from "./CompetitorFilters";
 import CompetitorResultsStream from "./CompetitorResultsStream";
 import { ProfileTip } from "@/components/dashboard/ProfileTip";
+import { LockedFeatureGate } from "@/components/features/LockedFeatureGate";
 
 type Props = {
   initialMe: Me;
@@ -297,31 +297,16 @@ export default function CompetitorsClient({
     setIsSearching(false);
   }, []);
 
-  // Show locked state if subscription is required
   if (!isSubscribed) {
     return (
-      <main className={s.page}>
-        <div className={s.header}>
-          <div>
-            <h1 className={s.title}>Competitor Search</h1>
-            <p className={s.subtitle}>Find winning videos in any niche</p>
-          </div>
-        </div>
-        <div className={s.lockedState}>
-          <div className={s.lockedIcon}>
-            <SearchIcon size={48} strokeWidth={1.5} />
-          </div>
-          <h2 className={s.lockedTitle}>Unlock Competitor Search</h2>
-          <p className={s.lockedDesc}>
-            Discover winning videos in any niche. Search by topic, analyze
-            competitors' best content, and find proven ideas to remix.
-          </p>
-          <a href="/api/integrations/stripe/checkout" className={s.lockedBtn}>
-            Subscribe to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/
-            {SUBSCRIPTION.PRO_INTERVAL}
-          </a>
-        </div>
-      </main>
+      <LockedFeatureGate
+        pageTitle="Competitor Search"
+        pageSubtitle="Find winning videos in any niche"
+        icon={<SearchIcon size={48} strokeWidth={1.5} />}
+        unlockTitle="Unlock Competitor Search"
+        unlockDesc="Discover winning videos in any niche. Search by topic, analyze competitors' best content, and find proven ideas to remix."
+        styles={s}
+      />
     );
   }
 

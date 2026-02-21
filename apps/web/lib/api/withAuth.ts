@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
 import { ApiError } from "./errors";
-import { getCurrentUserWithSubscription, type AuthUserWithSubscription } from "@/lib/user";
+import { getCurrentUserWithSubscription, type AuthUserWithSubscription } from "@/lib/server/auth";
 
 type AuthMode = "required" | "optional";
 

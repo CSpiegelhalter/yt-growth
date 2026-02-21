@@ -1,338 +1,41 @@
-/**
- * GET /api/me/channels/[channelId]/subscriber-audit
- *
- * Get videos ranked by subscriber conversion rate with pattern analysis.
- * This is a PAID feature - requires active subscription.
- *
- * Auth: Required
- * Subscription: Required
- * Caching: 12-24h
- *
- * Query params:
- * - limit: number (default: 200, max: 200)
- * - sort: "subs_gained" | "views" | "newest" | "engaged_rate" (default: "subs_gained")
- */
-import { NextRequest } from "next/server";
-import { z } from "zod";
-import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
+import { withAuth } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
+import { jsonOk } from "@/lib/api/response";
+import { ApiError } from "@/lib/api/errors";
+import { hasActiveSubscription } from "@/lib/server/auth";
+import { callLLM } from "@/lib/llm";
+import type { LlmPort } from "@/lib/ports/LlmPort";
 import {
-  getCurrentUserWithSubscription,
-  hasActiveSubscription,
-} from "@/lib/user";
-import { calcSubsPerThousandViews } from "@/lib/video-tools";
-import { daysSince } from "@/lib/youtube/utils";
-import { generateSubscriberInsights } from "@/lib/llm";
+  SubscriberAuditParamsSchema,
+  SubscriberAuditQuerySchema,
+  runSubscriberAudit,
+} from "@/lib/features/subscriber-insights";
 
-import { hashSubscriberAuditContent } from "@/lib/content-hash";
-import type {
-  SubscriberMagnetVideo,
-  PatternAnalysisJson,
-} from "@/types/api";
-import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
-
-const QuerySchema = z.object({
-  limit: z.coerce.number().min(1).max(200).default(200),
-  sort: z
-    .enum(["subs_gained", "views", "newest", "engaged_rate"])
-    .default("subs_gained"),
-});
-
-async function GETHandler(
-  req: NextRequest,
-  { params }: { params: Promise<{ channelId: string }> }
-) {
-  try {
-    // Auth check
-    const user = await getCurrentUserWithSubscription();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Subscription check (paid feature)
-    if (!hasActiveSubscription(user.subscription)) {
-      return Response.json(
-        { error: "Subscription required", code: "SUBSCRIPTION_REQUIRED" },
-        { status: 403 }
-      );
-    }
-
-    // Validate params
-    const resolvedParams = await params;
-    const parsedParams = channelParamsSchema.safeParse(resolvedParams);
-    if (!parsedParams.success) {
-      return Response.json({ error: "Invalid channel ID" }, { status: 400 });
-    }
-
-    const { channelId } = parsedParams.data;
-
-    // Parse query params
-    const url = new URL(req.url);
-    const queryResult = QuerySchema.safeParse({
-      limit: url.searchParams.get("limit") ?? "200",
-      sort: url.searchParams.get("sort") ?? "subs_gained",
-    });
-
-    if (!queryResult.success) {
-      return Response.json(
-        { error: "Invalid query parameters" },
-        { status: 400 }
-      );
-    }
-
-    const { limit } = queryResult.data;
-
-    // Get channel and verify ownership
-    const channel = await prisma.channel.findFirst({
-      where: {
-        youtubeChannelId: channelId,
-        userId: user.id,
-      },
-    });
-
-    if (!channel) {
-      return Response.json({ error: "Channel not found" }, { status: 404 });
-    }
-
-    // Get all videos with metrics (no date range filter - show all-time)
-    const videos = await prisma.video.findMany({
-      where: {
-        channelId: channel.id,
-        VideoMetrics: { isNot: null },
-      },
-      include: {
-        VideoMetrics: true,
-      },
-      orderBy: { publishedAt: "desc" },
-      take: 200, // Increased limit for all-time view
-    });
-
-    if (videos.length === 0) {
-      return Response.json({
-        channelId,
-        range: "all", // All-time data
-        generatedAt: new Date().toISOString(),
-        cachedUntil: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
-        videos: [],
-        patternAnalysis: { analysisJson: null, analysisMarkdownFallback: null },
-        stats: {
-          totalVideosAnalyzed: 0,
-          avgSubsPerThousand: 0,
-          totalSubscribersGained: 0,
-          totalViews: 0,
-          strongSubscriberDriverCount: 0,
-        },
-      });
-    }
-
-    // Calculate metrics for each video
-    const now = new Date();
-    const videosWithMetrics: SubscriberMagnetVideo[] = videos
-      .filter((v) => v.VideoMetrics && v.VideoMetrics.views > 0)
-      .map((v) => {
-        const metrics = v.VideoMetrics!;
-        const views = metrics.views;
-        const viewsIn1k = views / 1000;
-        const daysSincePublished = v.publishedAt
-          ? daysSince(v.publishedAt.toISOString(), now.getTime())
-          : 1;
-
-        // Calculate derived metrics
-        const subsPerThousand =
-          Math.round((calcSubsPerThousandViews(metrics.subscribersGained, views) ?? 0) * 100) / 100;
-        const commentsPer1k = viewsIn1k > 0 ? metrics.comments / viewsIn1k : 0;
-        const sharesPer1k = viewsIn1k > 0 ? metrics.shares / viewsIn1k : 0;
-
-        // Engaged rate approximation: (likes + comments + shares) / views
-        // This is a proxy since we don't have engagedViews in VideoMetrics
-        const engagementSum = metrics.likes + metrics.comments + metrics.shares;
-        const engagedRate = views > 0 ? engagementSum / views : 0;
-
-        return {
-          videoId: v.youtubeVideoId,
-          title: v.title ?? "Untitled",
-          views,
-          subscribersGained: metrics.subscribersGained,
-          subsPerThousand,
-          publishedAt: v.publishedAt?.toISOString() ?? null,
-          thumbnailUrl: v.thumbnailUrl,
-          durationSec: v.durationSec,
-          viewsPerDay: Math.round(views / daysSincePublished),
-          avdSec: metrics.averageViewDuration
-            ? Math.round(metrics.averageViewDuration)
-            : null,
-          apv: metrics.averageViewPercentage ?? null,
-          // Additional conversion metrics
-          commentsPer1k: commentsPer1k > 0 ? commentsPer1k : null,
-          sharesPer1k: sharesPer1k > 0 ? sharesPer1k : null,
-          engagedRate: engagedRate > 0 ? engagedRate : null,
-          // playlistAddsPer1k not available in VideoMetrics
-          playlistAddsPer1k: null,
-        };
-      });
-
-    // Calculate channel averages and percentiles for tier assignment
-    const totalSubs = videosWithMetrics.reduce(
-      (sum, v) => sum + v.subscribersGained,
-      0
-    );
-    const totalViews = videosWithMetrics.reduce((sum, v) => sum + v.views, 0);
-    const avgSubsPerThousand =
-      Math.round((calcSubsPerThousandViews(totalSubs, totalViews) ?? 0) * 100) / 100;
-
-    // Sort by total subscribers gained to calculate percentile ranks
-    const sortedByConversion = [...videosWithMetrics].sort(
-      (a, b) => b.subscribersGained - a.subscribersGained
-    );
-
-    // Assign conversion tier based on absolute subscriber gains
-    // Using thresholds that make sense for smaller channels
-    sortedByConversion.forEach((v, idx) => {
-      const percentile =
-        ((sortedByConversion.length - idx) / sortedByConversion.length) * 100;
-      v.percentileRank = percentile;
-      
-      // Use absolute thresholds rather than just percentiles
-      // A video needs to actually gain subscribers to be "strong"
-      if (v.subscribersGained >= 10 && percentile >= 75) {
-        v.conversionTier = "strong";
-      } else if (v.subscribersGained >= 3 && percentile >= 25) {
-        v.conversionTier = "average";
-      } else {
-        v.conversionTier = "weak";
-      }
-    });
-
-    // Count strong subscriber-driver videos
-    const strongSubscriberDriverCount = videosWithMetrics.filter(
-      (v) => v.conversionTier === "strong"
-    ).length;
-
-    // Sort based on query param and take limit
-    const topVideos = sortedByConversion.slice(0, limit);
-
-    // Generate structured insights with content-hash caching
-    let analysisJson: PatternAnalysisJson | null = null;
-    let analysisMarkdownFallback: string | null = null;
-
-    if (topVideos.length >= 3) {
-      const topSubscriberDrivers = sortedByConversion
-        .filter((v) => v.conversionTier === "strong")
-        .slice(0, 10);
-
-      // Compute content hash for the top videos
-      const contentHash = hashSubscriberAuditContent(
-        topSubscriberDrivers.map((v) => ({
-          videoId: v.videoId,
-          title: v.title,
-          subsPerThousand: v.subsPerThousand,
-        }))
-      );
-
-      // Check for cached analysis (using 'all' as the range key for all-time data)
-      const cachedAnalysis = await prisma.subscriberAuditCache.findFirst({
-        where: {
-          userId: user.id,
-          channelId: channel.id,
-          range: "all",
-        },
-      });
-
-      const isCacheFresh =
-        cachedAnalysis &&
-        cachedAnalysis.cachedUntil > new Date() &&
-        cachedAnalysis.contentHash === contentHash;
-
-      if (isCacheFresh && cachedAnalysis.analysisJson) {
-        console.log(
-          `[subscriber-audit] Using cached LLM analysis (hash: ${contentHash})`
-        );
-        analysisJson = cachedAnalysis.analysisJson as PatternAnalysisJson;
-      } else {
-        try {
-          console.log(
-            `[subscriber-audit] Generating new LLM analysis (hash: ${cachedAnalysis?.contentHash} -> ${contentHash})`
-          );
-          const result = await generateSubscriberInsights(
-            topSubscriberDrivers.map((v) => ({
-              title: v.title,
-              subsPerThousand: v.subsPerThousand,
-              views: v.views,
-              viewsPerDay: v.viewsPerDay ?? 0,
-              engagedRate: v.engagedRate ?? 0,
-            })),
-            avgSubsPerThousand
-          );
-
-          analysisJson = result;
-
-          // Cache the analysis (using 'all' as the range key for all-time data)
-          await prisma.subscriberAuditCache.upsert({
-            where: {
-              userId_channelId_range: {
-                userId: user.id,
-                channelId: channel.id,
-                range: "all",
-              },
-            },
-            create: {
-              userId: user.id,
-              channelId: channel.id,
-              range: "all",
-              contentHash,
-              analysisJson: result as object,
-              cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-            },
-            update: {
-              contentHash,
-              analysisJson: result as object,
-              cachedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
-            },
-          });
-        } catch (err) {
-          console.warn("Failed to generate subscriber insights:", err);
-        }
-      }
-    }
-
-    // Calculate additional avg stats
-    const avgEngagedRate =
-      videosWithMetrics.reduce((sum, v) => sum + (v.engagedRate ?? 0), 0) /
-      videosWithMetrics.length;
-
-    const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours
-
-    return Response.json({
-      channelId,
-      range: "all" as const, // All-time data
-      generatedAt: new Date().toISOString(),
-      cachedUntil: cachedUntil.toISOString(),
-      videos: topVideos,
-      patternAnalysis: {
-        analysisJson,
-        analysisMarkdownFallback,
-      },
-      stats: {
-        totalVideosAnalyzed: videosWithMetrics.length,
-        avgSubsPerThousand,
-        totalSubscribersGained: totalSubs,
-        totalViews,
-        strongSubscriberDriverCount,
-        avgEngagedRate: avgEngagedRate > 0 ? avgEngagedRate : undefined,
-      },
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Subscriber audit error:", err);
-
-    return Response.json(
-      { error: "Failed to fetch subscriber audit", detail: message },
-      { status: 500 }
-    );
-  }
-}
+const llmAdapter: LlmPort = {
+  complete: (p) =>
+    callLLM(p.messages, { model: p.model, maxTokens: p.maxTokens, temperature: p.temperature }),
+  completeJson: () => {
+    throw new Error("Not implemented");
+  },
+};
 
 export const GET = createApiRoute(
   { route: "/api/me/channels/[channelId]/subscriber-audit" },
-  async (req, ctx) => GETHandler(req, ctx as any)
+  withAuth(
+    { mode: "required" },
+    withValidation(
+      { params: SubscriberAuditParamsSchema, query: SubscriberAuditQuerySchema },
+      async (_req, _ctx, api, { params, query }) => {
+        if (!hasActiveSubscription(api.user?.subscription ?? null)) {
+          throw new ApiError({ code: "FORBIDDEN", status: 403, message: "Subscription required" });
+        }
+        const result = await runSubscriberAudit(
+          { userId: api.userId!, channelId: params!.channelId, limit: query!.limit },
+          { llm: llmAdapter },
+        );
+        return jsonOk(result, { requestId: api.requestId });
+      },
+    ),
+  ),
 );

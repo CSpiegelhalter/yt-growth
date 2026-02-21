@@ -5,6 +5,5 @@
 
 export { StructuredData } from "./StructuredData";
 export { LearnTopicsNav } from "./LearnTopicsNav";
-export { LearnHero } from "./LearnHero";
 export { LearnFAQ } from "./LearnFAQ";
 export { RelatedArticles } from "./RelatedArticles";

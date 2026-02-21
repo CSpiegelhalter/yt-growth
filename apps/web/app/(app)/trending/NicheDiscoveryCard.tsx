@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { formatCompact } from "@/lib/format";
+import { formatCompact } from "@/lib/shared/format";
 import type { DiscoveredNiche } from "./types";
 import s from "./style.module.css";
 

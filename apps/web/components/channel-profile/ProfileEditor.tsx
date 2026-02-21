@@ -2,13 +2,13 @@
 
 import { useState, useCallback, useEffect } from "react";
 import s from "./ProfileEditor.module.css";
+import type { ChannelProfileInput } from "@/lib/features/channels/schemas";
 import {
-  ChannelProfileInput,
   DEFAULT_PROFILE_INPUT,
   PROFILE_CATEGORIES,
   CONTENT_FORMATS,
-} from "@/lib/channel-profile/types";
-import { sanitizeUserText } from "@/lib/channel-profile/utils";
+} from "@/lib/features/channels/types";
+import { sanitizeUserText } from "@/lib/features/channels/utils";
 
 type Props = {
   initialInput?: ChannelProfileInput | null;

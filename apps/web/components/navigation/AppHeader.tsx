@@ -5,9 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { getPageTitle, accountNavItems } from "@/lib/nav-config";
+import { getPageTitle, accountNavItems } from "@/lib/shared/nav-config";
 import { NavIcon } from "./NavIcon";
-import { LIMITS } from "@/lib/product";
+import { LIMITS } from "@/lib/shared/product";
 import s from "./AppHeader.module.css";
 
 type Channel = {

@@ -15,7 +15,7 @@ import type {
 } from "./types";
 import { DEFAULT_FILTERS } from "./types";
 import { daysSince } from "@/lib/youtube/utils";
-import { stableHash } from "@/lib/stable-hash";
+import { stableHash } from "@/lib/shared/stable-hash";
 
 // ============================================
 // NICHE TEXT UTILITIES

@@ -7,7 +7,8 @@ import { useToast } from "@/components/ui/Toast";
 import { AuthModal } from "@/components/auth";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
 import { ResearchTab } from "./components/ResearchTab";
-import { SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
+import type { RelatedKeyword, YouTubeRanking, GoogleTrendsData } from "./types";
 
 // ============================================
 // ZOD SCHEMAS - Response validation for API data
@@ -131,69 +132,7 @@ function parseYouTubeRanking(data: unknown): YouTubeRanking | null {
   }
 }
 
-// ============================================
-// TYPES
-// ============================================
-
-
-/**
- * Related keyword row with extended metrics.
- */
-export type RelatedKeyword = {
-  keyword: string;
-  searchVolume: number;
-  keywordDifficulty: number;
-  trend: number[];
-  intent: string | null;
-  // Additional fields from DataForSEO (may be null for some keywords)
-  cpc?: number | null;
-  competition?: number | null;
-  competitionIndex?: number | null;
-  competitionLevel?: string | null;
-  relevance?: number;
-  difficultyIsEstimate?: boolean;
-};
-
-export type YouTubeRanking = {
-  position: number;
-  title: string;
-  channelName: string;
-  channelUrl: string;
-  videoUrl: string;
-  videoId: string;
-  views: number | null;
-  publishedDate: string | null;
-  thumbnailUrl: string | null;
-  duration: string | null;
-};
-
-export type GoogleTrendsTimePoint = {
-  dateFrom: string;
-  dateTo: string;
-  timestamp: number;
-  value: number;
-  missingData: boolean;
-};
-
-export type GoogleTrendsRisingQuery = {
-  query: string;
-  value: number;
-};
-
-export type GoogleTrendsRegion = {
-  geoId: string;
-  geoName: string;
-  value: number;
-};
-
-export type GoogleTrendsData = {
-  keyword: string;
-  interestOverTime: GoogleTrendsTimePoint[];
-  risingQueries: GoogleTrendsRisingQuery[];
-  topQueries: Array<{ query: string; value: number }>;
-  regionBreakdown: GoogleTrendsRegion[];
-  averageInterest: number;
-};
+// Types imported from ./types to avoid circular dependency with ResearchTab
 
 // Database options
 const DATABASE_OPTIONS = [
@@ -284,6 +223,15 @@ export function KeywordResearchClient() {
     setError(null);
   }, []);
 
+  const applyParsedRows = useCallback((data: { rows?: unknown }) => {
+    if (data.rows && Array.isArray(data.rows)) {
+      const parsedRows = (data.rows as unknown[])
+        .map((row) => parseRelatedKeyword(row))
+        .filter((row): row is RelatedKeyword => row !== null);
+      setRelatedKeywords(parsedRows);
+    }
+  }, []);
+
   // Poll for task results
   const pollForResults = useCallback(
     async (taskId: string) => {
@@ -319,13 +267,7 @@ export function KeywordResearchClient() {
         pollAttemptsRef.current = 0;
         setLoadingKeywords(false);
 
-        if (data.rows && Array.isArray(data.rows)) {
-          const rows = data.rows as unknown[];
-          const parsedRows = rows
-            .map((row) => parseRelatedKeyword(row))
-            .filter((row): row is RelatedKeyword => row !== null);
-          setRelatedKeywords(parsedRows);
-        }
+        applyParsedRows(data);
 
       } catch (err) {
         console.error("Poll error:", err);
@@ -364,14 +306,7 @@ export function KeywordResearchClient() {
         }
 
         setLoadingKeywords(false);
-
-        if (data.rows && Array.isArray(data.rows)) {
-          const rows = data.rows as unknown[];
-          const parsedRows = rows
-            .map((row) => parseRelatedKeyword(row))
-            .filter((row): row is RelatedKeyword => row !== null);
-          setRelatedKeywords(parsedRows);
-        }
+        applyParsedRows(data);
       } catch (err) {
         setLoadingKeywords(false);
         if (isApiClientError(err)) {

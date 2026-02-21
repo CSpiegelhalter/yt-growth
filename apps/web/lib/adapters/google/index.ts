@@ -1,0 +1,1 @@
+export { googleOAuthAdapter } from "./oauth";

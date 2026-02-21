@@ -14,8 +14,8 @@ import {
   getPlanFromSubscription,
   getLimits,
   featureLocked,
-} from "@/lib/entitlements";
-import { LIMITS } from "@/lib/product";
+} from "@/lib/features/subscriptions/use-cases/checkEntitlement";
+import { LIMITS } from "@/lib/shared/product";
 
 const TEST_EMAIL = "entitlements-test@example.com";
 

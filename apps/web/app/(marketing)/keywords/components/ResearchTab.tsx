@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import s from "../keywords.module.css";
-import type { RelatedKeyword, YouTubeRanking, GoogleTrendsData } from "../KeywordResearchClient";
+import type { RelatedKeyword, YouTubeRanking, GoogleTrendsData } from "../types";
 
 // ============================================
 // TYPES

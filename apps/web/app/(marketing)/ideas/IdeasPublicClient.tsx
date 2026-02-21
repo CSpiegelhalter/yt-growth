@@ -8,7 +8,7 @@ import s from "./ideas.module.css";
 import { useToast } from "@/components/ui/Toast";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
-import { SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
 
 // ============================================
 // TYPES

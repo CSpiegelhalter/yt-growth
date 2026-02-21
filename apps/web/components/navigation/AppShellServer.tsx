@@ -7,9 +7,9 @@ import { AppSidebar } from "./AppSidebar";
 import { MobileNav } from "./MobileNav";
 import { AppHeader } from "./AppHeader";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
-import { safeGetItem, safeSetItem } from "@/lib/storage/safeLocalStorage";
+import { safeGetItem, safeSetItem } from "@/lib/client/safeLocalStorage";
 import { useSyncActiveChannel } from "@/lib/use-sync-active-channel";
-import type { SerializableNavItem } from "@/lib/nav-config.server";
+import type { SerializableNavItem } from "@/lib/server/nav-config.server";
 import s from "./AppShell.module.css";
 
 type Channel = {

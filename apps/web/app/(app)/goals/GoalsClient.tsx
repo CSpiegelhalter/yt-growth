@@ -14,14 +14,14 @@ import type {
   BadgeCategory,
   BadgeRarity,
   BadgeSortKey,
-} from "@/lib/badges";
+} from "@/lib/features/badges";
 import {
   BADGE_CATEGORIES,
   BADGE_RARITIES,
   sortBadgesByClosest,
   sortBadgesByRecent,
   sortBadgesByRarity,
-} from "@/lib/badges";
+} from "@/lib/features/badges";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 
 type Props = {

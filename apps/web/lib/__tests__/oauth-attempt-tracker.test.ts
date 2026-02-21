@@ -3,7 +3,7 @@ import {
   getLastOAuthAttempt,
   canAttemptOAuth,
   recordOAuthAttempt,
-} from "../storage/oauthAttemptTracker";
+} from "../client/oauthAttemptTracker";
 
 const store = new Map<string, string>();
 

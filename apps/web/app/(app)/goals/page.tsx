@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import GoalsClient from "./GoalsClient";
 
 export const metadata: Metadata = {

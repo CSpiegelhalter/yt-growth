@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/user";
-import { BRAND } from "@/lib/brand";
+import { getCurrentUser } from "@/lib/server/auth";
+import { BRAND } from "@/lib/shared/brand";
 import SavedIdeasClient from "./SavedIdeasClient";
 
 export const metadata: Metadata = {

@@ -9,7 +9,7 @@ import {
   generateCompetitorVideoAnalysisParallel,
   analyzeVideoComments,
 } from "@/lib/llm";
-import { createLogger } from "@/lib/logger";
+import { createLogger } from "@/lib/shared/logger";
 import { withTimeout, TimeoutError } from "./timeout";
 import { saveCommentsCache } from "./cache";
 import { fallbackWhatItsAbout } from "./strategic";

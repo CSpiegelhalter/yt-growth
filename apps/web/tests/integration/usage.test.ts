@@ -16,8 +16,8 @@ import {
   checkUsage,
   resetUserUsage,
   getAllUsage,
-} from "@/lib/usage";
-import type { FeatureKey } from "@/lib/entitlements";
+} from "@/lib/features/subscriptions/use-cases/trackUsage";
+import type { FeatureKey } from "@/lib/features/subscriptions/types";
 
 async function getUsage(userId: number, featureKey: FeatureKey): Promise<number> {
   const info = await getUsageInfo(userId, featureKey, 999999);

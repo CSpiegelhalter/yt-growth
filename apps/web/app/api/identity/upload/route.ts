@@ -7,7 +7,7 @@ import { withRateLimit } from "@/lib/api/withRateLimit";
 import { ApiError } from "@/lib/api/errors";
 import { prisma } from "@/prisma";
 import { getStorage, mimeToExt } from "@/lib/storage";
-import { handleDatasetChange, MIN_TRAINING_PHOTOS } from "@/lib/identity/modelService";
+import { handleDatasetChange, MIN_TRAINING_PHOTOS } from "@/lib/features/identity";
 
 export const runtime = "nodejs";
 

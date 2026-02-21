@@ -1,4 +1,4 @@
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 
 /**
  * Learn articles metadata - Single source of truth for all article data

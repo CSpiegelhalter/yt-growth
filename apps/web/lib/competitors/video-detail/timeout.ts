@@ -4,7 +4,7 @@
  * Helpers for adding timeouts to async operations.
  */
 
-import { createLogger } from "@/lib/logger";
+import { createLogger } from "@/lib/shared/logger";
 
 const logger = createLogger({ module: "video-detail.timeout" });
 

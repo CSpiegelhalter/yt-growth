@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import s from "./style.module.css";
 import { formatResetAt } from "./components/helpers";
-import { SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
 import { ErrorState } from "@/components/ui/ErrorState";
 import {
   canAttemptOAuth,
   recordOAuthAttempt,
-} from "@/lib/storage/oauthAttemptTracker";
+} from "@/lib/client/oauthAttemptTracker";
 
 type InsightsError =
   | {

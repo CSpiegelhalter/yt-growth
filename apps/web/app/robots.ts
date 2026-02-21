@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { CANONICAL_ORIGIN } from "@/lib/brand";
+import { CANONICAL_ORIGIN } from "@/lib/shared/brand";
 
 /**
  * Generate robots.txt for SEO

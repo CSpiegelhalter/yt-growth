@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import styles from "./VideoHeaderCompact.module.css";
 import { formatRelativeDate, formatDuration } from "./helpers";
-import { formatCompactRounded as formatCompact } from "@/lib/format";
+import { formatCompactRounded as formatCompact } from "@/lib/shared/format";
 
 type VideoData = {
   title: string;
@@ -243,13 +243,42 @@ export function VideoHeaderCompact({
   );
 }
 
-/**
- * CTR KPI with info tooltip showing benchmarks
- */
-function CtrKpi({ ctr }: { ctr: number }) {
-  const [showTooltip, setShowTooltip] = useState(false);
-  const rating = getCtrRating(ctr);
+type Benchmark = { label: string; color: string; text: string };
 
+function InfoIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      style={{ marginLeft: 3, opacity: 0.5, verticalAlign: "middle" }}
+    >
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="8" r="1" />
+      <rect x="11" y="11" width="2" height="6" rx="1" />
+    </svg>
+  );
+}
+
+function KpiWithTooltip({
+  value,
+  label,
+  rating,
+  tooltipTitle,
+  tooltipDesc,
+  benchmarks,
+  tooltipNote,
+}: {
+  value: string;
+  label: string;
+  rating: { label: string; color: string };
+  tooltipTitle: string;
+  tooltipDesc: string;
+  benchmarks: Benchmark[];
+  tooltipNote: string;
+}) {
+  const [showTooltip, setShowTooltip] = useState(false);
   return (
     <div
       className={styles.kpi}
@@ -257,129 +286,69 @@ function CtrKpi({ ctr }: { ctr: number }) {
       onMouseLeave={() => setShowTooltip(false)}
       style={{ position: "relative", cursor: "help" }}
     >
-      <span className={styles.kpiValue}>{ctr.toFixed(1)}%</span>
+      <span className={styles.kpiValue}>{value}</span>
       <span className={styles.kpiLabel}>
-        CTR
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          style={{ marginLeft: 3, opacity: 0.5, verticalAlign: "middle" }}
-        >
-          <circle
-            cx="12"
-            cy="12"
-            r="10"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-          <circle cx="12" cy="8" r="1" />
-          <rect x="11" y="11" width="2" height="6" rx="1" />
-        </svg>
+        {label}
+        <InfoIcon />
       </span>
       <span className={styles.kpiRating} style={{ color: rating.color }}>
         {rating.label}
       </span>
       {showTooltip && (
         <div className={styles.tooltip}>
-          <div className={styles.tooltipTitle}>Click-Through Rate (CTR)</div>
-          <p className={styles.tooltipDesc}>
-            How many people click your video after seeing the thumbnail/title.
-          </p>
+          <div className={styles.tooltipTitle}>{tooltipTitle}</div>
+          <p className={styles.tooltipDesc}>{tooltipDesc}</p>
           <div className={styles.tooltipBenchmarks}>
-            <div className={styles.tooltipBenchmark}>
-              <span style={{ color: "#22c55e" }}>10%+</span> Exceptional (esp.
-              day 1)
-            </div>
-            <div className={styles.tooltipBenchmark}>
-              <span style={{ color: "#22c55e" }}>7%+</span> Strong
-            </div>
-            <div className={styles.tooltipBenchmark}>
-              <span style={{ color: "#3b82f6" }}>5%+</span> Good baseline
-            </div>
+            {benchmarks.map((b) => (
+              <div key={b.label} className={styles.tooltipBenchmark}>
+                <span style={{ color: b.color }}>{b.label}</span> {b.text}
+              </div>
+            ))}
           </div>
-          <p className={styles.tooltipNote}>
-            CTR often drops as a video spreads wider - colder audiences click
-            less. High CTR with low impressions can signal narrow audience
-            match.
-          </p>
+          <p className={styles.tooltipNote}>{tooltipNote}</p>
         </div>
       )}
     </div>
   );
 }
 
-/**
- * Subscriber Rate KPI (conversion)
- */
-function SubRateKpi({
-  subsGained,
-  views,
-}: {
-  subsGained: number;
-  views: number;
-}) {
-  const [showTooltip, setShowTooltip] = useState(false);
-  const rate = views > 0 ? (subsGained / views) * 100 : 0;
-  const rating = getSubRateRating(rate);
+const CTR_BENCHMARKS: Benchmark[] = [
+  { label: "10%+", color: "#22c55e", text: "Exceptional (esp. day 1)" },
+  { label: "7%+", color: "#22c55e", text: "Strong" },
+  { label: "5%+", color: "#3b82f6", text: "Good baseline" },
+];
 
-  // Don't show if rate is effectively zero
-  if (rate < 0.01) return null;
+const SUB_RATE_BENCHMARKS: Benchmark[] = [
+  { label: "2-3%+", color: "#22c55e", text: "Strong conversion" },
+  { label: "1%", color: "#3b82f6", text: "Average" },
+];
 
+function CtrKpi({ ctr }: { ctr: number }) {
   return (
-    <div
-      className={styles.kpi}
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
-      style={{ position: "relative", cursor: "help" }}
-    >
-      <span className={styles.kpiValue}>{rate.toFixed(2)}%</span>
-      <span className={styles.kpiLabel}>
-        Sub Rate
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          style={{ marginLeft: 3, opacity: 0.5, verticalAlign: "middle" }}
-        >
-          <circle
-            cx="12"
-            cy="12"
-            r="10"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-          <circle cx="12" cy="8" r="1" />
-          <rect x="11" y="11" width="2" height="6" rx="1" />
-        </svg>
-      </span>
-      <span className={styles.kpiRating} style={{ color: rating.color }}>
-        {rating.label}
-      </span>
-      {showTooltip && (
-        <div className={styles.tooltip}>
-          <div className={styles.tooltipTitle}>Subscriber Conversion Rate</div>
-          <p className={styles.tooltipDesc}>
-            How many viewers subscribe after watching this video.
-          </p>
-          <div className={styles.tooltipBenchmarks}>
-            <div className={styles.tooltipBenchmark}>
-              <span style={{ color: "#22c55e" }}>2-3%+</span> Strong conversion
-            </div>
-            <div className={styles.tooltipBenchmark}>
-              <span style={{ color: "#3b82f6" }}>1%</span> Average
-            </div>
-          </div>
-          <p className={styles.tooltipNote}>
-            Low conversion often signals content-audience mismatch or unclear
-            channel value proposition.
-          </p>
-        </div>
-      )}
-    </div>
+    <KpiWithTooltip
+      value={`${ctr.toFixed(1)}%`}
+      label="CTR"
+      rating={getCtrRating(ctr)}
+      tooltipTitle="Click-Through Rate (CTR)"
+      tooltipDesc="How many people click your video after seeing the thumbnail/title."
+      benchmarks={CTR_BENCHMARKS}
+      tooltipNote="CTR often drops as a video spreads wider - colder audiences click less. High CTR with low impressions can signal narrow audience match."
+    />
+  );
+}
+
+function SubRateKpi({ subsGained, views }: { subsGained: number; views: number }) {
+  const rate = views > 0 ? (subsGained / views) * 100 : 0;
+  if (rate < 0.01) return null;
+  return (
+    <KpiWithTooltip
+      value={`${rate.toFixed(2)}%`}
+      label="Sub Rate"
+      rating={getSubRateRating(rate)}
+      tooltipTitle="Subscriber Conversion Rate"
+      tooltipDesc="How many viewers subscribe after watching this video."
+      benchmarks={SUB_RATE_BENCHMARKS}
+      tooltipNote="Low conversion often signals content-audience mismatch or unclear channel value proposition."
+    />
   );
 }

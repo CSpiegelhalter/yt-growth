@@ -6,10 +6,10 @@
  */
 
 import Link from "next/link";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import { LEARN_ARTICLES } from "../../articles";
-import type { BodyProps, ArticleMeta } from "./_shared";
-import { tocFromArticle } from "./_shared";
+import type { BodyProps } from "./_shared";
+import { articleExports } from "./_shared";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    INLINE SVG VISUALS
@@ -450,15 +450,7 @@ function TrendRadarSvg() {
    BODY COMPONENT
    ───────────────────────────────────────────────────────────────────────────── */
 
-const _article = LEARN_ARTICLES["youtube-video-ideas"];
-
-export const meta: ArticleMeta = {
-  slug: _article.slug,
-  title: _article.title,
-  description: _article.description,
-};
-
-export const toc = tocFromArticle(_article.toc);
+export const { meta, toc } = articleExports(LEARN_ARTICLES["youtube-video-ideas"]);
 
 export function Body({ s }: BodyProps) {
   return (

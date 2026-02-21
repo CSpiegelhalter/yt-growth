@@ -30,11 +30,30 @@ export interface TocEntry {
  * Convert articles.ts toc format ({id, title}) to TocEntry format ({id, label}).
  * Accepts `unknown[]` to avoid type-inference issues with large const objects.
  */
-export function tocFromArticle(
+function tocFromArticle(
   items: ReadonlyArray<Record<string, string>>,
 ): readonly TocEntry[] {
   return items.map((t) => ({
     id: t.id ?? "",
     label: t.title ?? t.label ?? t.id ?? "",
   }));
+}
+
+/**
+ * Build standard meta + toc exports from an article slug.
+ * Reduces boilerplate in each article body file.
+ */
+export function articleExports(article: {
+  slug: string;
+  title: string;
+  description: string;
+  toc: ReadonlyArray<Record<string, string>>;
+}) {
+  const meta: ArticleMeta = {
+    slug: article.slug,
+    title: article.title,
+    description: article.description,
+  };
+  const toc = tocFromArticle(article.toc);
+  return { meta, toc } as const;
 }

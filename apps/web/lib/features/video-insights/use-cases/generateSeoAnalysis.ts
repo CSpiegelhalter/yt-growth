@@ -1,0 +1,152 @@
+/**
+ * Generate SEO Analysis Use-Case
+ *
+ * LLM-powered SEO analysis for YouTube videos: focus keyword detection,
+ * title/description/tag analysis with actionable suggestions.
+ */
+
+import type { SeoAnalysis, FocusKeywordResult, LlmCallFn } from "../types";
+import { VideoInsightError } from "../errors";
+
+type GenerateSeoAnalysisInput = {
+  video: {
+    title: string;
+    description: string;
+    tags: string[];
+    durationSec: number;
+  };
+  totalViews: number;
+  trafficSources: { search?: number; total?: number } | null;
+};
+
+async function detectFocusKeyword(
+  video: { title: string; description: string; tags: string[] },
+  callLlm: LlmCallFn,
+): Promise<FocusKeywordResult | null> {
+  const systemPrompt = `You are a YouTube SEO expert. Your task is to identify the main search keyword/phrase for a video.
+
+Return ONLY valid JSON:
+{
+  "keyword": "the main searchable keyword (2-4 words ideal)",
+  "confidence": "high" | "medium" | "low",
+  "reasoning": "Brief explanation of why this keyword (1 sentence)",
+  "alternatives": ["alt keyword 1", "alt keyword 2", "alt keyword 3"]
+}
+
+CRITICAL RULES:
+1. The keyword should be what someone would SEARCH to find this video
+2. IGNORE episode numbers, part numbers, day numbers (e.g., "#51", "Day 3", "Part 2")
+3. IGNORE filler/repeated words in titles (e.g., "Please, Please, Please" is not a keyword)
+4. For gaming videos: use the GAME NAME as the primary keyword (e.g., "Blue Prince", "Minecraft", "Elden Ring")
+5. For series/vlogs: focus on the TOPIC, not the episode (e.g., "Japan travel", not "Day 3")
+6. For tutorials: include the skill/topic (e.g., "smokey eye tutorial", "Python basics")
+7. For reviews: include the product (e.g., "iPhone 15 review", "MacBook Pro review")
+8. Keep keywords 2-4 words for best searchability
+9. Confidence: high = clear topic, medium = somewhat ambiguous, low = very unclear/artistic title
+10. Alternatives should be related searchable variations`;
+
+  const videoContext = `TITLE: "${video.title}"
+DESCRIPTION EXCERPT: "${video.description?.slice(0, 300) || "No description"}"
+TAGS: [${video.tags
+    .slice(0, 10)
+    .map((t) => `"${t}"`)
+    .join(", ")}]`;
+
+  try {
+    const result = await callLlm(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: videoContext },
+      ],
+      { maxTokens: 200, temperature: 0.2, responseFormat: "json_object" },
+    );
+    return JSON.parse(result.content);
+  } catch (err) {
+    console.error("Focus keyword detection failed:", err);
+    return null;
+  }
+}
+
+export async function generateSeoAnalysis(
+  input: GenerateSeoAnalysisInput,
+  callLlm: LlmCallFn,
+): Promise<SeoAnalysis> {
+  const { video, totalViews, trafficSources } = input;
+
+  const focusKeyword = await detectFocusKeyword(video, callLlm);
+
+  const searchTraffic = trafficSources?.search ?? 0;
+  const totalTraffic = trafficSources?.total ?? 1;
+  const isSearchDriven = searchTraffic > totalTraffic * 0.3;
+  const tagImpactNote = isSearchDriven
+    ? "Tags are HIGH IMPACT for this video since it gets significant search traffic."
+    : "Tags are LOW IMPACT for most YouTube videos. Focus on title/thumbnail instead.";
+
+  const keywordContext = focusKeyword
+    ? `The main keyword for this video is "${focusKeyword.keyword}". Use this in your analysis.`
+    : "";
+
+  const systemPrompt = `You are an elite YouTube SEO specialist. Analyze this video's title, description, and tags.
+${keywordContext}
+
+Return ONLY valid JSON:
+{
+  "titleAnalysis": {
+    "score": 7,
+    "strengths": ["What makes this title work"],
+    "weaknesses": ["What could be improved"],
+    "suggestions": ["Full alternative title 1", "Full alternative title 2", "Full alternative title 3"]
+  },
+  "descriptionAnalysis": {
+    "score": 7,
+    "weaknesses": ["What is missing or hurting SEO"],
+    "rewrittenOpening": "Stronger first 200 characters for search + humans",
+    "addTheseLines": ["Copy/paste line 1", "Copy/paste line 2", "Copy/paste line 3"]
+  },
+  "tagAnalysis": {
+    "score": 6,
+    "feedback": "Specific feedback about the tags",
+    "missing": ["specific tag 1", "specific tag 2", "...15-20 tags total"],
+    "impactLevel": "high" | "medium" | "low"
+  }
+}
+
+RULES:
+1. Title suggestions MUST be complete, usable titles for THIS video's topic
+2. Tag suggestions in "missing" must be SPECIFIC, ready to paste (15-20 tags)
+3. ${tagImpactNote}
+4. Description rewrite should include the main keyword naturally
+5. No emojis, no hashtags`;
+
+  const videoContext = `TITLE: "${video.title}"
+DESCRIPTION: "${video.description?.slice(0, 500) || "No description"}"
+TAGS: [${video.tags
+    .slice(0, 20)
+    .map((t) => `"${t}"`)
+    .join(", ")}]
+DURATION: ${Math.round(video.durationSec / 60)} minutes
+VIEWS: ${totalViews.toLocaleString()}`;
+
+  try {
+    const result = await callLlm(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: videoContext },
+      ],
+      { maxTokens: 1000, temperature: 0.3, responseFormat: "json_object" },
+    );
+    const analysis = JSON.parse(result.content);
+
+    if (focusKeyword) {
+      analysis.focusKeyword = focusKeyword;
+    }
+
+    return analysis;
+  } catch (err) {
+    throw new VideoInsightError(
+      "EXTERNAL_FAILURE",
+      "Failed to generate SEO analysis",
+      err,
+    );
+  }
+}

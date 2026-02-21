@@ -1,6 +1,6 @@
 "use client";
 
-import type { NavIconType } from "@/lib/nav-config";
+import type { NavIconType } from "@/lib/shared/nav-config";
 
 type NavIconProps = {
   type: NavIconType;

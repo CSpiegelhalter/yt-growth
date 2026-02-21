@@ -7,9 +7,9 @@
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getFeatureFlag } from "@/lib/feature-flags";
+import { getFeatureFlag } from "@/lib/shared/feature-flags";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import TrendingClient from "./TrendingClient";
 
 export const metadata: Metadata = {

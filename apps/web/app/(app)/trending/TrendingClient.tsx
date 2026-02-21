@@ -38,10 +38,10 @@ import {
   type QuickChipId,
 } from "./discovery-utils";
 import s from "./style.module.css";
-import { safeGetItem, safeSetItem } from "@/lib/storage/safeLocalStorage";
+import { safeGetItem, safeSetItem } from "@/lib/client/safeLocalStorage";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
 import type { Me } from "@/types/api";
-import { SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { LockedFeatureGate } from "@/components/features/LockedFeatureGate";
 import { ProfileTip } from "@/components/dashboard/ProfileTip";
 
 type Props = {
@@ -426,34 +426,16 @@ export default function TrendingClient({
     [setFilters],
   );
 
-  // Show locked state if subscription is required
   if (!isSubscribed) {
     return (
-      <main className={s.page}>
-        <div className={s.header}>
-          <div>
-            <h1 className={s.title}>Trending Search</h1>
-            <p className={s.subtitle}>
-              Discover trending niches and rising videos
-            </p>
-          </div>
-        </div>
-        <div className={s.lockedState}>
-          <div className={s.lockedIcon}>
-            <CompassIcon size={48} strokeWidth={1.5} />
-          </div>
-          <h2 className={s.lockedTitle}>Unlock Trending Search</h2>
-          <p className={s.lockedDesc}>
-            Discover rising niches, breakout videos, and emerging opportunities.
-            Filter by channel size, content type, and more to find your next
-            hit.
-          </p>
-          <a href="/api/integrations/stripe/checkout" className={s.lockedBtn}>
-            Subscribe to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/
-            {SUBSCRIPTION.PRO_INTERVAL}
-          </a>
-        </div>
-      </main>
+      <LockedFeatureGate
+        pageTitle="Trending Search"
+        pageSubtitle="Discover trending niches and rising videos"
+        icon={<CompassIcon size={48} strokeWidth={1.5} />}
+        unlockTitle="Unlock Trending Search"
+        unlockDesc="Discover rising niches, breakout videos, and emerging opportunities. Filter by channel size, content type, and more to find your next hit."
+        styles={s}
+      />
     );
   }
 

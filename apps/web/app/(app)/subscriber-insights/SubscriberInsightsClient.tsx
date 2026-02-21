@@ -14,7 +14,7 @@ import type {
   SubscriberAuditResponse,
   SubscriberMagnetVideo,
 } from "@/types/api";
-import { SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
 
 type Props = {
   initialMe: Me;

@@ -9,9 +9,9 @@ import {
   fetchVideoDetails as ytFetchVideoDetails,
   fetchVideoComments as ytFetchVideoComments,
   fetchRecentChannelVideos as ytFetchRecentChannelVideos,
-} from "@/lib/youtube-api";
+} from "@/lib/adapters/youtube";
 import type { GoogleAccount } from "@/lib/youtube/types";
-import { createLogger } from "@/lib/logger";
+import { createLogger } from "@/lib/shared/logger";
 import { withTimeout, withTimeoutOptional, TimeoutError } from "./timeout";
 import { VideoDetailError, TIMEOUTS, CACHE_CONFIG } from "./types";
 import type {

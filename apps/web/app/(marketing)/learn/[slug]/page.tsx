@@ -11,7 +11,7 @@ import {
   RelatedArticles,
 } from "@/components/learn/server";
 import { LearnStaticCTA, normalizeItems } from "@/components/learn";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import s from "../style.module.css";
 
 export function generateStaticParams() {

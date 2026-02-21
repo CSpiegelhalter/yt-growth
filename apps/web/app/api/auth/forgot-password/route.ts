@@ -3,10 +3,10 @@ import { z } from "zod";
 import { createApiRoute } from "@/lib/api/route";
 import { withValidation } from "@/lib/api/withValidation";
 import { jsonOk } from "@/lib/api/response";
-import { issuePasswordResetToken } from "@/lib/jwt";
+import { issuePasswordResetToken } from "@/lib/server/auth";
 import { Resend } from "resend";
-import { BRAND } from "@/lib/brand";
-import { logger } from "@/lib/logger";
+import { BRAND } from "@/lib/shared/brand";
+import { logger } from "@/lib/shared/logger";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

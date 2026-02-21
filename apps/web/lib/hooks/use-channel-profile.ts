@@ -8,11 +8,8 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  ChannelProfile,
-  ChannelProfileInput,
-  ChannelProfileAI,
-} from "@/lib/channel-profile/types";
+import type { ChannelProfileInput, ChannelProfileAI } from "@/lib/features/channels/schemas";
+import type { ChannelProfile } from "@/lib/features/channels/types";
 
 type UseChannelProfileResult = {
   // State

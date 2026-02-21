@@ -9,7 +9,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { CANONICAL_ORIGIN, buildLlmsTxt } from "@/lib/llms";
+import { CANONICAL_ORIGIN, buildLlmsTxt } from "@/lib/shared/llms";
 
 /**
  * Force static generation for optimal caching.

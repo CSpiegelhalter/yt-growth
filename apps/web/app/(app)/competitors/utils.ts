@@ -4,7 +4,7 @@
  * Client-safe utilities for validation and formatting.
  */
 
-import { parseYouTubeVideoId } from "@/lib/youtube-video-id";
+import { parseYouTubeVideoId } from "@/lib/shared/youtube-video-id";
 
 // ============================================
 // URL VALIDATION

@@ -14,7 +14,7 @@ type ParseBodyResult<T> =
  * Parse and validate a JSON request body against a Zod schema.
  * Returns a discriminated result so callers can map errors to any response shape.
  */
-export async function parseBody<T>(
+async function parseBody<T>(
   req: Request,
   schema: z.ZodType<T, z.ZodTypeDef, unknown>,
 ): Promise<ParseBodyResult<T>> {

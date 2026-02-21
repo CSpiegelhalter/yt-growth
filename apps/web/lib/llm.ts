@@ -1,3 +1,4 @@
+import { complete } from "@/lib/adapters/openai";
 
 type LLMMessage = {
   role: "system" | "user" | "assistant";
@@ -9,9 +10,6 @@ type LLMResponse = {
   tokensUsed: number;
   model: string;
 };
-
-const DEFAULT_MODEL = "gpt-4o-mini";
-const MAX_TOKENS = 2000;
 
 /**
  * Get the current date context string to inject into LLM system prompts.
@@ -34,6 +32,7 @@ function withDateContext(systemPrompt: string): string {
 /**
  * Call the OpenAI API with messages.
  * Automatically injects current date context into system messages.
+ * Delegates the actual API call to the OpenAI adapter (lib/adapters/openai).
  */
 export async function callLLM(
   messages: LLMMessage[],
@@ -44,238 +43,24 @@ export async function callLLM(
     responseFormat?: "json_object";
   }
 ): Promise<LLMResponse> {
-  // Inject date context into system messages so LLM knows current year
   const messagesWithDate = messages.map((msg) =>
     msg.role === "system"
       ? { ...msg, content: withDateContext(msg.content) }
       : msg
   );
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY not configured");
-  }
-
-  const model = options?.model ?? DEFAULT_MODEL;
-  const maxTokens = options?.maxTokens ?? MAX_TOKENS;
-  const temperature = options?.temperature ?? 0.7;
-  const responseFormat = options?.responseFormat;
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: messagesWithDate,
-      max_tokens: maxTokens,
-      temperature,
-      store: false,
-      ...(responseFormat ? { response_format: { type: responseFormat } } : {}),
-    }),
+  const result = await complete({
+    messages: messagesWithDate,
+    model: options?.model,
+    maxTokens: options?.maxTokens,
+    temperature: options?.temperature,
+    responseFormat: options?.responseFormat,
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`OpenAI API error ${response.status}: ${error}`);
-  }
-
-  const data = await response.json();
-  const choice = data.choices?.[0];
-
   return {
-    content: choice?.message?.content ?? "",
-    tokensUsed: data.usage?.total_tokens ?? 0,
-    model,
-  };
-}
-
-type PatternAnalysisJson = {
-  summary: string;
-  commonPatterns: string[];
-  ctaPatterns: string[];
-  formatPatterns: string[];
-  nextExperiments: string[];
-  hooksToTry: string[];
-  structuredInsights?: {
-    commonPatterns: Array<{
-      pattern: string;
-      evidence: string;
-      howToUse: string;
-    }>;
-    conversionRecipe: {
-      titleFormulas: string[];
-      ctaTiming: string;
-      structure: string;
-    };
-    nextIdeas: Array<{
-      title: string;
-      hook: string;
-      whyItConverts: string;
-      ctaSuggestion: string;
-    }>;
-  };
-};
-
-/**
- * Generate structured subscriber insights for Subscriber Drivers page.
- * Returns patterns, recipe, and video ideas optimized for subscriber conversion.
- */
-export async function generateSubscriberInsights(
-  videos: Array<{
-    title: string;
-    subsPerThousand: number;
-    views: number;
-    viewsPerDay: number;
-    engagedRate: number;
-  }>,
-  channelAvgSubsPerThousand: number
-): Promise<PatternAnalysisJson> {
-  const systemPrompt = `You are a YouTube growth expert specializing in subscriber conversion optimization.
-
-Analyze these top-converting videos and return ONLY valid JSON matching this EXACT structure:
-
-{
-  "summary": "One sentence about what makes these videos convert viewers to subscribers",
-  "commonPatterns": ["pattern1", "pattern2", "pattern3"],
-  "ctaPatterns": ["cta1", "cta2"],
-  "formatPatterns": ["format1", "format2"],
-  "nextExperiments": ["experiment1", "experiment2", "experiment3"],
-  "hooksToTry": ["hook1", "hook2"],
-  "structuredInsights": {
-    "commonPatterns": [
-      {
-        "pattern": "Clear pattern title",
-        "evidence": "Seen in X of Y top videos",
-        "howToUse": "Actionable one-liner"
-      }
-    ],
-    "conversionRecipe": {
-      "titleFormulas": ["[Outcome] in [Timeframe]", "[Number] Ways to [Benefit]"],
-      "ctaTiming": "Place subscribe CTA after delivering first value moment (usually 60-90s)",
-      "structure": "Problem statement → Quick win → Deep value → Clear next step"
-    },
-    "nextIdeas": [
-      {
-        "title": "Video title idea",
-        "hook": "Opening line that grabs attention",
-        "whyItConverts": "One line explanation",
-        "ctaSuggestion": "When and how to ask for subscribe"
-      }
-    ]
-  }
-}
-
-Guidelines:
-- Keep patterns specific and actionable
-- Base evidence on actual video data
-- Generate 3-5 common patterns
-- Generate exactly 3 video ideas
-- Title formulas should be templates with [placeholders]
-- CTA timing should reference specific moments
-- Structure should be a clear flow`;
-
-  const userPrompt = `Analyze these top converting videos (channel avg: ${channelAvgSubsPerThousand.toFixed(
-    1
-  )} subs/1k):
-
-${videos
-  .map(
-    (v, i) =>
-      `${i + 1}. "${v.title}"
-   - ${v.subsPerThousand.toFixed(1)} subs/1k views (${(
-        (v.subsPerThousand / channelAvgSubsPerThousand - 1) *
-        100
-      ).toFixed(0)}% above avg)
-   - ${v.views.toLocaleString()} views, ${v.viewsPerDay}/day
-   - ${(v.engagedRate * 100).toFixed(1)}% engagement`
-  )
-  .join("\n\n")}
-
-Return ONLY JSON, no explanation.`;
-
-  try {
-    const result = await callLLM(
-      [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      { temperature: 0.6, maxTokens: 2000 }
-    );
-
-    const jsonMatch = result.content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]) as PatternAnalysisJson;
-      return parsed;
-    }
-  } catch (err) {
-    console.warn("Failed to generate subscriber insights:", err);
-  }
-
-  // Fallback with reasonable defaults
-  return {
-    summary: "Your top videos share clear value propositions and strong hooks.",
-    commonPatterns: [
-      "Strong opening hook in first 5 seconds",
-      "Clear promise delivered early",
-      "Consistent call-to-action placement",
-    ],
-    ctaPatterns: ["Subscribe CTA after first value delivery"],
-    formatPatterns: ["Problem-solution structure"],
-    nextExperiments: [
-      "Test different CTA placements",
-      "Try more specific titles",
-      "Increase early value density",
-    ],
-    hooksToTry: [
-      "What if I told you...",
-      "Here's what nobody tells you about...",
-    ],
-    structuredInsights: {
-      commonPatterns: [
-        {
-          pattern: "Clear promise in first 10 seconds",
-          evidence: "Present in most top videos",
-          howToUse: "State the viewer benefit before your intro",
-        },
-        {
-          pattern: "Value delivered before CTA",
-          evidence: "Top subscriber drivers give value first",
-          howToUse: "Share a quick win before asking for subscribe",
-        },
-      ],
-      conversionRecipe: {
-        titleFormulas: [
-          "[Outcome] in [Timeframe]",
-          "How I [Achievement] (and you can too)",
-        ],
-        ctaTiming: "Place subscribe CTA after delivering first value moment",
-        structure: "Hook → Quick win → Deep value → Subscribe ask → Next step",
-      },
-      nextIdeas: [
-        {
-          title: "The [Topic] Mistake Everyone Makes",
-          hook: "I used to make this mistake every single day...",
-          whyItConverts:
-            "Creates immediate identification with viewer struggles",
-          ctaSuggestion: "Ask for subscribe after revealing the solution",
-        },
-        {
-          title: "[Number] [Topic] Tips That Actually Work",
-          hook: "Forget everything you've heard about [topic]...",
-          whyItConverts: "Promises curated, tested value upfront",
-          ctaSuggestion: "Soft CTA between tips, strong CTA at end",
-        },
-        {
-          title: "How to [Achieve Goal] in [Timeframe]",
-          hook: "In the next [X] minutes, you'll learn exactly how to...",
-          whyItConverts: "Specific outcome with time commitment",
-          ctaSuggestion: "CTA after demonstrating the first result",
-        },
-      ],
-    },
+    content: result.content,
+    tokensUsed: result.tokensUsed,
+    model: result.model,
   };
 }
 

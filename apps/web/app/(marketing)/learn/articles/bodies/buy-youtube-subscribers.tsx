@@ -7,18 +7,22 @@
 
 import Link from "next/link";
 import { LEARN_ARTICLES } from "../../articles";
-import type { BodyProps, ArticleMeta } from "./_shared";
-import { tocFromArticle } from "./_shared";
+import type { BodyProps } from "./_shared";
+import { articleExports } from "./_shared";
 
-const _article = LEARN_ARTICLES["buy-youtube-subscribers"];
+export const { meta, toc } = articleExports(LEARN_ARTICLES["buy-youtube-subscribers"]);
 
-export const meta: ArticleMeta = {
-  slug: _article.slug,
-  title: _article.title,
-  description: _article.description,
+const pathNavLinkStyle: React.CSSProperties = {
+  padding: "0.625rem 1rem",
+  background: "var(--surface-alt)",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius-md)",
+  fontSize: "var(--text-sm)",
+  fontWeight: 500,
+  color: "var(--text)",
+  textDecoration: "none",
+  transition: "all 0.15s",
 };
-
-export const toc = tocFromArticle(_article.toc);
 
 export function Body({ s }: BodyProps) {
   return (
@@ -70,52 +74,13 @@ export function Body({ s }: BodyProps) {
             marginTop: "1rem",
           }}
         >
-          <Link
-            href="#subscriber-sellers"
-            style={{
-              padding: "0.625rem 1rem",
-              background: "var(--surface-alt)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
-              fontSize: "var(--text-sm)",
-              fontWeight: 500,
-              color: "var(--text)",
-              textDecoration: "none",
-              transition: "all 0.15s",
-            }}
-          >
-            I'm considering buying subs
+          <Link href="#subscriber-sellers" style={pathNavLinkStyle}>
+            I&apos;m considering buying subs
           </Link>
-          <Link
-            href="#youtube-promotions"
-            style={{
-              padding: "0.625rem 1rem",
-              background: "var(--surface-alt)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
-              fontSize: "var(--text-sm)",
-              fontWeight: 500,
-              color: "var(--text)",
-              textDecoration: "none",
-              transition: "all 0.15s",
-            }}
-          >
+          <Link href="#youtube-promotions" style={pathNavLinkStyle}>
             I want legit paid promotion
           </Link>
-          <Link
-            href="#recovery"
-            style={{
-              padding: "0.625rem 1rem",
-              background: "var(--surface-alt)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
-              fontSize: "var(--text-sm)",
-              fontWeight: 500,
-              color: "var(--text)",
-              textDecoration: "none",
-              transition: "all 0.15s",
-            }}
-          >
+          <Link href="#recovery" style={pathNavLinkStyle}>
             I already bought subs
           </Link>
         </nav>

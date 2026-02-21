@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { editorStateV1Schema, defaultEditorState } from "@/lib/thumbnails-v2/editorState";
+import { editorStateV1Schema, defaultEditorState } from "@/lib/features/thumbnails/editor/editorState";
 
 describe("editorState schema", () => {
   test("round-trips default state", () => {

@@ -28,7 +28,7 @@ import { useRouter } from "next/navigation";
 import s from "./style.module.css";
 import { useToast } from "@/components/ui/Toast";
 import { usePersistentState } from "@/lib/hooks/usePersistentState";
-import { STORAGE_KEYS } from "@/lib/storage/safeLocalStorage";
+import { STORAGE_KEYS } from "@/lib/client/safeLocalStorage";
 
 // ============================================
 // TYPES

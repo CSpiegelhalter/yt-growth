@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { BadgeRarity, BadgeIcon } from "@/lib/badges";
+import type { BadgeRarity, BadgeIcon } from "@/lib/features/badges";
 import s from "./BadgeArt.module.css";
 
 type Props = {

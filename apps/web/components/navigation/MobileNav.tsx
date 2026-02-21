@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getNavHref } from "@/lib/nav-config";
-import type { SerializableNavItem } from "@/lib/nav-config.server";
+import { useFocusTrap } from "@/lib/client/use-focus-trap";
+import { useBodyScrollLock } from "@/lib/client/use-body-scroll-lock";
+import { getNavHref } from "@/lib/shared/nav-config";
+import type { SerializableNavItem } from "@/lib/server/nav-config.server";
 import { NavIcon } from "./NavIcon";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import s from "./MobileNav.module.css";
 
 type MobileNavProps = {
@@ -73,51 +75,9 @@ export function MobileNav({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen]);
 
-  // Prevent body scroll when drawer is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
-  // Focus trap
-  useEffect(() => {
-    if (!isOpen || !drawerRef.current) return;
-
-    const drawer = drawerRef.current;
-    const focusableElements = drawer.querySelectorAll<HTMLElement>(
-      'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
-
-    const handleTab = (e: KeyboardEvent) => {
-      if (e.key !== "Tab") return;
-
-      if (e.shiftKey) {
-        if (document.activeElement === firstElement) {
-          e.preventDefault();
-          lastElement?.focus();
-        }
-      } else {
-        if (document.activeElement === lastElement) {
-          e.preventDefault();
-          firstElement?.focus();
-        }
-      }
-    };
-
-    // Focus first element when opening
-    firstElement?.focus();
-
-    document.addEventListener("keydown", handleTab);
-    return () => document.removeEventListener("keydown", handleTab);
-  }, [isOpen]);
+  useFocusTrap(drawerRef, isOpen);
 
   const handleClose = useCallback(() => {
     setIsOpen(false);

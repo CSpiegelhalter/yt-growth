@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import BadgeArt from "./BadgeArt";
-import type { BadgeWithProgress } from "@/lib/badges";
-import { getBadgeChain, getGoalsForBadge } from "@/lib/badges";
+import type { BadgeWithProgress } from "@/lib/features/badges";
+import { getBadgeChain, getGoalsForBadge } from "@/lib/features/badges";
 import s from "./BadgeDetailModal.module.css";
 
 type Props = {

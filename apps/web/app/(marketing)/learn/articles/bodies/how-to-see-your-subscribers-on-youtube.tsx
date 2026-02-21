@@ -25,20 +25,21 @@
  * 10. Sample-not-census stamp
  */
 
+import React from "react";
 import Link from "next/link";
 import { LEARN_ARTICLES } from "../../articles";
-import type { BodyProps, ArticleMeta } from "./_shared";
-import { tocFromArticle } from "./_shared";
+import type { BodyProps } from "./_shared";
+import { articleExports } from "./_shared";
 
-const _article = LEARN_ARTICLES["how-to-see-your-subscribers-on-youtube"];
+export const { meta, toc } = articleExports(LEARN_ARTICLES["how-to-see-your-subscribers-on-youtube"]);
 
-export const meta: ArticleMeta = {
-  slug: _article.slug,
-  title: _article.title,
-  description: _article.description,
-};
-
-export const toc = tocFromArticle(_article.toc);
+function SectionSvg({ children }: { children: React.ReactNode }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" focusable="false">
+      {children}
+    </svg>
+  );
+}
 
 export function Body({ s }: BodyProps) {
   return (
@@ -127,19 +128,7 @@ export function Body({ s }: BodyProps) {
       <section id="check-count" className="sectionOpen">
         <h2 className={s.sectionTitle}>
           <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d="M3 3v18h18" />
-              <path d="M18 17V9M13 17V5M8 17v-3" />
-            </svg>
+            <SectionSvg><path d="M3 3v18h18" /><path d="M18 17V9M13 17V5M8 17v-3" /></SectionSvg>
           </span>
           Check Your Count
         </h2>
@@ -192,19 +181,7 @@ export function Body({ s }: BodyProps) {
       <section id="see-who-subscribed" className="sectionTinted">
         <h2 className={s.sectionTitle}>
           <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
+            <SectionSvg><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></SectionSvg>
           </span>
           See Who Subscribed
         </h2>
@@ -249,20 +226,7 @@ export function Body({ s }: BodyProps) {
       <section id="analytics" className="sectionOpen">
         <h2 className={s.sectionTitle}>
           <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <line x1="18" y1="20" x2="18" y2="10" />
-              <line x1="12" y1="20" x2="12" y2="4" />
-              <line x1="6" y1="20" x2="6" y2="14" />
-            </svg>
+            <SectionSvg><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></SectionSvg>
           </span>
           What to Look at Instead
         </h2>
@@ -322,19 +286,7 @@ export function Body({ s }: BodyProps) {
       <section id="realtime" className="sectionTinted">
         <h2 className={s.sectionTitle}>
           <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
+            <SectionSvg><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></SectionSvg>
           </span>
           Real-Time Counts
         </h2>
@@ -370,20 +322,7 @@ export function Body({ s }: BodyProps) {
       <section className="sectionOpen">
         <h2 className={s.sectionTitle}>
           <span className={s.sectionIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
+            <SectionSvg><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></SectionSvg>
           </span>
           Common Questions
         </h2>

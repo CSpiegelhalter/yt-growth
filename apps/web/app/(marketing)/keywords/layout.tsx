@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BRAND, CANONICAL_ORIGIN } from "@/lib/brand";
+import { BRAND, CANONICAL_ORIGIN } from "@/lib/shared/brand";
 
 export const metadata: Metadata = {
   title: `YouTube Keyword Research Tool | ${BRAND.name}`,

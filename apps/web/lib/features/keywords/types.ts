@@ -78,3 +78,14 @@ export type GenerateKeywordIdeasInput = {
 export type GenerateKeywordIdeasResult =
   | { type: "success"; body: Record<string, unknown> }
   | { type: "needs_upgrade"; body: Record<string, unknown> };
+
+// ── pollKeywordTask ────────────────────────────────────────────
+
+export type PollKeywordTaskInput = {
+  userId: number;
+  taskId: string;
+};
+
+export type PollKeywordTaskResult =
+  | { type: "pending"; body: Record<string, unknown> }
+  | { type: "completed"; body: Record<string, unknown> };

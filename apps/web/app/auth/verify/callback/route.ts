@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/prisma";
-import { logger } from "@/lib/logger";
+import { logger } from "@/lib/shared/logger";
 import { encode } from "next-auth/jwt";
 
 /**

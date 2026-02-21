@@ -6,7 +6,7 @@ import {
   setJSONWithExpiry,
   removeJSON,
   STORAGE_KEYS,
-} from "@/lib/storage/safeLocalStorage";
+} from "@/lib/client/safeLocalStorage";
 
 // The storage functions prefix keys with "cb_thumbnails_"
 const PREFIX = "cb_thumbnails_";

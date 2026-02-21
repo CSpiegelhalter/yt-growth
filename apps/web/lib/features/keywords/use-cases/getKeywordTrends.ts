@@ -1,6 +1,6 @@
 import "server-only";
 
-import { logger } from "@/lib/logger";
+import { logger } from "@/lib/shared/logger";
 import {
   fetchGoogleTrends,
   prepareDataForSeoRequest,
@@ -15,6 +15,7 @@ import {
 import type { GoogleTrendsResponse } from "@/lib/dataforseo/client";
 import type { GetKeywordTrendsInput, UsageInfo } from "../types";
 import { resolveQuota } from "../quota";
+import { mapTrendsBody } from "./trends-mapper";
 
 type SuccessResult = { type: "success"; body: Record<string, unknown> };
 type PendingResult = { type: "pending"; body: Record<string, unknown> };
@@ -126,23 +127,7 @@ export async function getKeywordTrends(
 
     return {
       type: "success",
-      body: {
-        keyword: response.keyword,
-        interestOverTime: response.interestOverTime,
-        risingQueries: response.risingQueries,
-        topQueries: response.topQueries,
-        regionBreakdown: response.regionBreakdown,
-        averageInterest: response.averageInterest,
-        meta: {
-          source: "dataforseo",
-          location: response.meta.location,
-          dateFrom: response.meta.dateFrom,
-          dateTo: response.meta.dateTo,
-          fetchedAt: response.meta.fetchedAt,
-          cached: false,
-        },
-        usage: usageInfo,
-      },
+      body: { ...mapTrendsBody(response), usage: usageInfo },
     };
   } catch (err) {
     if (err instanceof DataForSEOError) {

@@ -9,9 +9,10 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { ViewsGradientDef } from "@/components/ui/ChartGradients";
 import styles from "./panels.module.css";
 import { InsightCard } from "../ui";
-import { formatCompactRounded as formatCompact } from "@/lib/format";
+import { formatCompactRounded as formatCompact } from "@/lib/shared/format";
 
 type DailySeries = {
   date: string;
@@ -138,16 +139,7 @@ export function DiscoveryChart({
                 margin={{ top: 5, right: 15, left: 15, bottom: 5 }}
               >
                 <defs>
-                  <linearGradient
-                    id="viewsGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
+                  <ViewsGradientDef />
                 </defs>
                 <XAxis
                   dataKey="label"

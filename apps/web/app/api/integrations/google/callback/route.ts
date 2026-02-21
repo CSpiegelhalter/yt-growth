@@ -4,69 +4,7 @@ import { prisma } from "@/prisma";
 import { syncUserChannels } from "@/lib/sync-youtube";
 import { checkChannelLimit } from "@/lib/with-entitlements";
 import { createApiRoute } from "@/lib/api/route";
-// Note: clearAccessTokenCache is only used for invalidating stale tokens, not after fresh OAuth
-
-async function exchangeCode(code: string) {
-  const redirectUri =
-    process.env.GOOGLE_REDIRECT_URI ?? process.env.GOOGLE_OAUTH_REDIRECT!;
-  const params = new URLSearchParams({
-    code,
-    client_id: process.env.GOOGLE_CLIENT_ID!,
-    client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-    redirect_uri: redirectUri,
-    grant_type: "authorization_code",
-  });
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-  });
-  if (!res.ok) throw new Error("Token exchange failed");
-  return res.json() as Promise<{
-    access_token: string;
-    refresh_token?: string;
-    expires_in: number;
-    scope?: string;
-    id_token?: string;
-  }>;
-}
-
-async function getUserInfo(accessToken: string) {
-  const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!res.ok) throw new Error("userinfo fetch failed");
-  return res.json() as Promise<{ sub: string; email?: string; name?: string }>;
-}
-
-/**
- * Test if the access token has Analytics access to a specific channel.
- * Returns true if access is granted, false otherwise.
- */
-async function testAnalyticsAccess(
-  accessToken: string,
-  channelId: string
-): Promise<{ ok: boolean; email?: string }> {
-  // Make a minimal analytics query to test access
-  const today = new Date().toISOString().split("T")[0];
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split("T")[0];
-
-  const url = new URL("https://youtubeanalytics.googleapis.com/v2/reports");
-  url.searchParams.set("ids", `channel==${channelId}`);
-  url.searchParams.set("startDate", weekAgo);
-  url.searchParams.set("endDate", today);
-  url.searchParams.set("metrics", "views");
-
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  console.log(`[OAuth] Analytics access test for ${channelId}: ${res.status}`);
-
-  return { ok: res.status === 200 };
-}
+import { googleOAuthAdapter } from "@/lib/adapters/google";
 
 export const GET = createApiRoute(
   { route: "/api/integrations/google/callback" },
@@ -119,17 +57,19 @@ export const GET = createApiRoute(
       // consume state
       await prisma.oAuthState.delete({ where: { state: stateRandom } });
 
-      const tok = await exchangeCode(code);
-      const me = await getUserInfo(tok.access_token);
-      const providerAccountId = me.sub;
-      const tokenExpiresAt = new Date(Date.now() + tok.expires_in * 1000);
+      const redirectUri =
+        process.env.GOOGLE_REDIRECT_URI ?? process.env.GOOGLE_OAUTH_REDIRECT!;
+      const tok = await googleOAuthAdapter.exchangeCode(code, redirectUri);
+      const me = await googleOAuthAdapter.getUserInfo(tok.accessToken);
+      const providerAccountId = me.providerAccountId;
+      const tokenExpiresAt = new Date(Date.now() + tok.expiresIn * 1000);
       const scopes = tok.scope ?? "";
 
       // If reconnecting a specific channel, verify the account has Analytics access
       if (reconnectChannelId) {
-        const analyticsTest = await testAnalyticsAccess(
-          tok.access_token,
-          reconnectChannelId
+        const analyticsTest = await googleOAuthAdapter.verifyAnalyticsAccess(
+          tok.accessToken,
+          reconnectChannelId,
         );
         if (!analyticsTest.ok) {
           console.log(
@@ -159,16 +99,16 @@ export const GET = createApiRoute(
           userId: row.userId,
           tokenExpiresAt,
           scopes,
-          accessTokenEnc: tok.access_token, // Store the fresh access token!
-          ...(tok.refresh_token ? { refreshTokenEnc: tok.refresh_token } : {}),
+          accessTokenEnc: tok.accessToken,
+          ...(tok.refreshToken ? { refreshTokenEnc: tok.refreshToken } : {}),
           updatedAt: new Date(),
         },
         create: {
           userId: row.userId,
           provider: "google",
           providerAccountId,
-          refreshTokenEnc: tok.refresh_token ?? null,
-          accessTokenEnc: tok.access_token, // Store the fresh access token!
+          refreshTokenEnc: tok.refreshToken ?? null,
+          accessTokenEnc: tok.accessToken,
           scopes,
           tokenExpiresAt,
         },

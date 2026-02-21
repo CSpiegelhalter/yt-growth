@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import VideoInsightsClientV2 from "./VideoInsightsClientV2";
 import { VideoInsightsError } from "./VideoInsightsError";
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { BRAND } from "@/lib/brand";
-import { generateBreadcrumbSchema } from "@/lib/seo";
+import { BRAND } from "@/lib/shared/brand";
+import { generateBreadcrumbSchema } from "@/lib/shared/seo";
 import {
   type LearnArticle,
   generateLearnArticleSchema,

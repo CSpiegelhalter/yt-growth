@@ -6,7 +6,7 @@
  */
 
 import { daysSince } from "@/lib/youtube/utils";
-import { safeGetItem, safeSetItem } from "@/lib/storage/safeLocalStorage";
+import { safeGetItem, safeSetItem } from "@/lib/client/safeLocalStorage";
 
 // ============================================
 // TYPES

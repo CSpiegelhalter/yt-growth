@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
 import { ApiError } from "./errors";
-import { checkRateLimit, rateLimitKey, RATE_LIMITS, type RateLimitConfig } from "@/lib/rate-limit";
+import { checkRateLimit, rateLimitKey, RATE_LIMITS, type RateLimitConfig } from "@/lib/shared/rate-limit";
 
 export function withRateLimit<P>(
   opts: {

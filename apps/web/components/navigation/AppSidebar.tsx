@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getNavHref } from "@/lib/nav-config";
-import type { SerializableNavItem } from "@/lib/nav-config.server";
+import { getNavHref } from "@/lib/shared/nav-config";
+import type { SerializableNavItem } from "@/lib/server/nav-config.server";
 import { NavIcon } from "./NavIcon";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import s from "./AppSidebar.module.css";
 
 type AppSidebarProps = {

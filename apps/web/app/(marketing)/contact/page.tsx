@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { BRAND } from "@/lib/brand";
+import { authOptions } from "@/lib/server/auth";
+import { BRAND } from "@/lib/shared/brand";
 import { CONTACT_CONTENT } from "@/lib/content/contact";
+import { FaqSection } from "@/components/ui/FaqSection";
 import ContactForm from "./ContactForm";
 import s from "./style.module.css";
 
@@ -143,17 +144,18 @@ export default async function ContactPage() {
         </p>
 
         {/* FAQ Section */}
-        <section className={s.faqSection}>
-          <h2 className={s.faqTitle}>{content.faq.title}</h2>
-          <div className={s.faqList}>
-            {content.faq.items.map((faq, idx) => (
-              <details key={idx} className={s.faqItem}>
-                <summary className={s.faqQuestion}>{faq.question}</summary>
-                <p className={s.faqAnswer}>{faq.answer}</p>
-              </details>
-            ))}
-          </div>
-        </section>
+        <FaqSection
+          title={content.faq.title}
+          items={content.faq.items}
+          classes={{
+            section: s.faqSection,
+            title: s.faqTitle,
+            list: s.faqList,
+            item: s.faqItem,
+            question: s.faqQuestion,
+            answer: s.faqAnswer,
+          }}
+        />
 
         {/* Product Blurb */}
         <section className={s.productSection}>

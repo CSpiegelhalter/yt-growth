@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import { LEARN_INDEX_CONTENT } from "@/lib/content/learn-index";
+import { FaqSection } from "@/components/ui/FaqSection";
 import { learnArticles } from "./articles";
 import s from "./style.module.css";
 
@@ -203,17 +204,18 @@ export default function LearnPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className={s.learnFaqSection}>
-        <h2 className={s.learnFaqTitle}>{content.faq.title}</h2>
-        <div className={s.learnFaqList}>
-          {content.faq.items.map((faq, idx) => (
-            <details key={idx} className={s.learnFaqItem}>
-              <summary className={s.learnFaqQuestion}>{faq.question}</summary>
-              <p className={s.learnFaqAnswer}>{faq.answer}</p>
-            </details>
-          ))}
-        </div>
-      </section>
+      <FaqSection
+        title={content.faq.title}
+        items={content.faq.items}
+        classes={{
+          section: s.learnFaqSection,
+          title: s.learnFaqTitle,
+          list: s.learnFaqList,
+          item: s.learnFaqItem,
+          question: s.learnFaqQuestion,
+          answer: s.learnFaqAnswer,
+        }}
+      />
 
       {/* Bottom CTA */}
       <section className={s.hubCta}>

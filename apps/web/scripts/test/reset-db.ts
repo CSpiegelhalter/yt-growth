@@ -16,7 +16,7 @@
 import { PrismaClient } from "@prisma/client";
 import { execSync } from "child_process";
 import bcrypt from "bcryptjs";
-import { LIMITS } from "@/lib/product";
+import { LIMITS } from "@/lib/shared/product";
 
 const prisma = new PrismaClient();
 

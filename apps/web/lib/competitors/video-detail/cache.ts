@@ -6,7 +6,7 @@
  */
 
 import { prisma } from "@/prisma";
-import { createLogger } from "@/lib/logger";
+import { createLogger } from "@/lib/shared/logger";
 import type {
   CachedCompetitorVideo,
   CachedComments,

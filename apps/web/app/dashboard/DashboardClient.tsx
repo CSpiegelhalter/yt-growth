@@ -6,7 +6,7 @@ import Link from "next/link";
 import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
 import Image from "next/image";
 import s from "./style.module.css";
-import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
 import { Me, Channel } from "@/types/api";
 import ChannelsSection from "@/components/dashboard/ChannelSection";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
@@ -14,7 +14,7 @@ import VideoToolbar from "@/components/dashboard/VideoToolbar";
 import { ChannelInsightsPanel } from "@/components/dashboard/ChannelInsightsPanel";
 import { Tabs } from "@/components/ui";
 import { useSyncActiveChannel } from "@/lib/use-sync-active-channel";
-import { formatCompact } from "@/lib/format";
+import { formatCompact } from "@/lib/shared/format";
 import {
   DashboardVideo,
   VideoWithMetrics,
@@ -36,7 +36,7 @@ import {
   setJSONWithExpiry,
   safeSessionGetItem,
   safeSessionRemoveItem,
-} from "@/lib/storage/safeLocalStorage";
+} from "@/lib/client/safeLocalStorage";
 
 type Video = DashboardVideo & {
   id?: number;

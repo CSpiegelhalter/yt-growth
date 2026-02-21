@@ -5,21 +5,13 @@
 
 import Link from "next/link";
 import { useId } from "react";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import { LEARN_ARTICLES } from "../../articles";
-import type { BodyProps, ArticleMeta } from "./_shared";
-import { tocFromArticle } from "./_shared";
+import type { BodyProps } from "./_shared";
+import { articleExports } from "./_shared";
 import u from "./youtube-thumbnail-best-practices.module.css";
 
-const _article = LEARN_ARTICLES["youtube-thumbnail-best-practices"];
-
-export const meta: ArticleMeta = {
-  slug: _article.slug,
-  title: _article.title,
-  description: _article.description,
-};
-
-export const toc = tocFromArticle(_article.toc);
+export const { meta, toc } = articleExports(LEARN_ARTICLES["youtube-thumbnail-best-practices"]);
 
 /* ============================================================================
  * THUMBNAIL COMPARISON COMPONENT

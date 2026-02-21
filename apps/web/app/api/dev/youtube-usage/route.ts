@@ -4,8 +4,8 @@ import {
   getGoogleApiUsageStats,
   resetGoogleApiUsageStats,
 } from "@/lib/google-tokens";
-import { getCurrentUser } from "@/lib/user";
-import { isAdminUser } from "@/lib/admin";
+import { getCurrentUser } from "@/lib/server/auth";
+import { isAdminUser } from "@/lib/server/auth";
 import { createApiRoute } from "@/lib/api/route";
 
 async function GETHandler(_req: NextRequest) {

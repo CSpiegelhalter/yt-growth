@@ -3,7 +3,7 @@ import {
   safeGetItem,
   safeSetItem,
   safeRemoveItem,
-} from "@/lib/storage/safeLocalStorage";
+} from "@/lib/client/safeLocalStorage";
 
 const ACTIVE_CHANNEL_STORAGE_KEY = "activeChannelId";
 

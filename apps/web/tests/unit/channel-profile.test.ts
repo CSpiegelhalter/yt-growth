@@ -10,14 +10,14 @@ import {
   DEFAULT_PROFILE_INPUT,
   PROFILE_CATEGORIES,
   CONTENT_FORMATS,
-} from "@/lib/channel-profile/types";
+} from "@/lib/features/channels";
 import {
   computeProfileInputHash,
   isProfileCacheValid,
   sanitizeUserText,
   sanitizeProfileInput,
   formatInputForLLM,
-} from "@/lib/channel-profile/utils";
+} from "@/lib/features/channels/utils";
 
 describe("Channel Profile Types", () => {
   describe("ChannelProfileInputSchema", () => {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import s from "./style.module.css";
-import { LIMITS } from "@/lib/product";
+import { LIMITS } from "@/lib/shared/product";
 
 type Props = {
   onConnect: () => void;

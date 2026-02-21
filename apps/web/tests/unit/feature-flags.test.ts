@@ -12,7 +12,7 @@ import { describe, expect, test } from "bun:test";
  * since Bun's test mocking doesn't intercept Prisma client properly.
  */
 
-import type { FeatureFlagKey } from "@/lib/feature-flags";
+import type { FeatureFlagKey } from "@/lib/shared/feature-flags";
 
 describe("FeatureFlagKey type", () => {
   test("type only allows valid keys", () => {
@@ -38,22 +38,22 @@ describe("FeatureFlagKey type", () => {
 
 describe("module exports", () => {
   test("exports getFeatureFlag function", async () => {
-    const { getFeatureFlag } = await import("@/lib/feature-flags");
+    const { getFeatureFlag } = await import("@/lib/shared/feature-flags");
     expect(typeof getFeatureFlag).toBe("function");
   });
 
   test("exports getFeatureFlags function", async () => {
-    const { getFeatureFlags } = await import("@/lib/feature-flags");
+    const { getFeatureFlags } = await import("@/lib/shared/feature-flags");
     expect(typeof getFeatureFlags).toBe("function");
   });
 
   test("exports invalidateFeatureFlagCache function", async () => {
-    const { invalidateFeatureFlagCache } = await import("@/lib/feature-flags");
+    const { invalidateFeatureFlagCache } = await import("@/lib/shared/feature-flags");
     expect(typeof invalidateFeatureFlagCache).toBe("function");
   });
 
   test("exports isFeatureEnabled alias", async () => {
-    const { isFeatureEnabled, getFeatureFlag } = await import("@/lib/feature-flags");
+    const { isFeatureEnabled, getFeatureFlag } = await import("@/lib/shared/feature-flags");
     expect(isFeatureEnabled).toBe(getFeatureFlag);
   });
 });
@@ -61,7 +61,7 @@ describe("module exports", () => {
 describe("safe fallback behavior", () => {
   test("getFeatureFlag returns boolean (false on missing DB)", async () => {
     const { getFeatureFlag, invalidateFeatureFlagCache } = await import(
-      "@/lib/feature-flags"
+      "@/lib/shared/feature-flags"
     );
 
     // Clear cache to force a fresh DB check
@@ -75,7 +75,7 @@ describe("safe fallback behavior", () => {
 
   test("getFeatureFlags returns object with boolean values (false on missing DB)", async () => {
     const { getFeatureFlags, invalidateFeatureFlagCache } = await import(
-      "@/lib/feature-flags"
+      "@/lib/shared/feature-flags"
     );
 
     // Clear cache to force fresh DB check
@@ -90,7 +90,7 @@ describe("safe fallback behavior", () => {
   });
 
   test("invalidateFeatureFlagCache does not throw", () => {
-    const { invalidateFeatureFlagCache } = require("@/lib/feature-flags");
+    const { invalidateFeatureFlagCache } = require("@/lib/shared/feature-flags");
 
     // These should not throw
     expect(() => invalidateFeatureFlagCache()).not.toThrow();

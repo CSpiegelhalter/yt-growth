@@ -7,21 +7,14 @@
  */
 
 import Link from "next/link";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 import { LEARN_ARTICLES } from "../../articles";
-import type { BodyProps, ArticleMeta } from "./_shared";
-import { tocFromArticle } from "./_shared";
+import type { BodyProps } from "./_shared";
+import { articleExports } from "./_shared";
+import { ArticleCta } from "./_ArticleCta";
 import { Callout } from "../../_components";
 
-const _article = LEARN_ARTICLES["youtube-channel-audit"];
-
-export const meta: ArticleMeta = {
-  slug: _article.slug,
-  title: _article.title,
-  description: _article.description,
-};
-
-export const toc = tocFromArticle(_article.toc);
+export const { meta, toc } = articleExports(LEARN_ARTICLES["youtube-channel-audit"]);
 
 export function Body({ s }: BodyProps) {
   return (
@@ -892,48 +885,15 @@ export function Body({ s }: BodyProps) {
       </section>
 
       {/* FINAL CTA */}
-      <div className="sectionAccent">
-        <h3
-          style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}
-        >
-          If you want the audit without tab-hopping
-        </h3>
-        <p
-          style={{
-            fontSize: "1.125rem",
-            marginBottom: "1.5rem",
-            maxWidth: "500px",
-            marginLeft: "auto",
-            marginRight: "auto",
-          }}
-        >
-          {BRAND.name} connects to your YouTube analytics and surfaces
-          what&apos;s working—and what needs attention—in one place.
-        </p>
-        <Link
-          href="/dashboard"
-          style={{
-            display: "inline-block",
-            padding: "0.875rem 2rem",
-            background: "white",
-            color: "#6366f1",
-            fontWeight: 600,
-            borderRadius: "0.5rem",
-            textDecoration: "none",
-          }}
-        >
-          Run your audit in {BRAND.name}
-        </Link>
-        <p
-          style={{
-            fontSize: "0.875rem",
-            marginTop: "1rem",
-            opacity: 0.9,
-          }}
-        >
+      <ArticleCta
+        heading="If you want the audit without tab-hopping"
+        description={`${BRAND.name} connects to your YouTube analytics and surfaces what's working—and what needs attention—in one place.`}
+        linkText={`Run your audit in ${BRAND.name}`}
+      >
+        <p style={{ fontSize: "0.875rem", marginTop: "1rem", opacity: 0.9 }}>
           See what&apos;s working, what&apos;s not, and what to do next.
         </p>
-      </div>
+      </ArticleCta>
     </>
   );
 }

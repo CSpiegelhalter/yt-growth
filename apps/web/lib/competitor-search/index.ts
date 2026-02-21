@@ -9,14 +9,6 @@
  */
 import "server-only";
 
-// Export types
-export type {
-  CompetitorSearchFilters,
-  InferredNiche,
-  SearchEvent,
-  SearchCursor,
-} from "./types";
-
 export { DEFAULT_FILTERS } from "./types";
 
 // Export pure utilities (can be used in tests)

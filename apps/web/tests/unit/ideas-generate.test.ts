@@ -7,7 +7,7 @@ import { describe, it, expect } from "bun:test";
 
 describe("Ideas Generate Entitlement Limits", () => {
   // Import the limits to verify they're configured correctly
-  const { getLimits } = require("@/lib/entitlements");
+  const { getLimits } = require("@/lib/features/subscriptions/use-cases/checkEntitlement");
 
   it("FREE plan has idea_generate limit", () => {
     const limits = getLimits("FREE");

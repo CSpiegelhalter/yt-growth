@@ -202,6 +202,102 @@ function Toggle({
   );
 }
 
+type ShadowSectionProps = {
+  title?: string;
+  enabled: boolean;
+  color: string;
+  blur: number;
+  offsetX?: number;
+  offsetY?: number;
+  onEnabledChange: (v: boolean) => void;
+  onColorChange: (v: string) => void;
+  onBlurChange: (v: number) => void;
+  onOffsetXChange?: (v: number) => void;
+  onOffsetYChange?: (v: number) => void;
+  blurInput?: "slider" | "number";
+};
+
+function ShadowControls({
+  title = "Shadow",
+  enabled,
+  color,
+  blur,
+  offsetX,
+  offsetY,
+  onEnabledChange,
+  onColorChange,
+  onBlurChange,
+  onOffsetXChange,
+  onOffsetYChange,
+  blurInput = "slider",
+}: ShadowSectionProps) {
+  return (
+    <Section title={title}>
+      <Row label="Enabled">
+        <Toggle checked={enabled} onChange={onEnabledChange} />
+      </Row>
+      {enabled && (
+        <>
+          <Row label="Color">
+            <ColorInput value={color} onChange={onColorChange} />
+          </Row>
+          <Row label="Blur">
+            {blurInput === "slider" ? (
+              <SliderInput value={blur} onChange={onBlurChange} min={0} max={50} />
+            ) : (
+              <NumberInput value={blur} onChange={onBlurChange} min={0} max={50} />
+            )}
+          </Row>
+          {onOffsetXChange && offsetX !== undefined && (
+            <Row label="Offset X">
+              <SliderInput value={offsetX} onChange={onOffsetXChange} min={-30} max={30} />
+            </Row>
+          )}
+          {onOffsetYChange && offsetY !== undefined && (
+            <Row label="Offset Y">
+              <SliderInput value={offsetY} onChange={onOffsetYChange} min={-30} max={30} />
+            </Row>
+          )}
+        </>
+      )}
+    </Section>
+  );
+}
+
+function StrokeControls({
+  enabled,
+  color,
+  width,
+  onEnabledChange,
+  onColorChange,
+  onWidthChange,
+}: {
+  enabled: boolean;
+  color: string;
+  width: number;
+  onEnabledChange: (v: boolean) => void;
+  onColorChange: (v: string) => void;
+  onWidthChange: (v: number) => void;
+}) {
+  return (
+    <Section title="Stroke">
+      <Row label="Enabled">
+        <Toggle checked={enabled} onChange={onEnabledChange} />
+      </Row>
+      {enabled && (
+        <>
+          <Row label="Color">
+            <ColorInput value={color} onChange={onColorChange} />
+          </Row>
+          <Row label="Width">
+            <SliderInput value={width} onChange={onWidthChange} min={0} max={30} suffix="px" />
+          </Row>
+        </>
+      )}
+    </Section>
+  );
+}
+
 function Select({
   value,
   options,
@@ -413,48 +509,18 @@ function TextPropertiesPanel({
         </Row>
       </Section>
 
-      <Section title="Shadow">
-        <Row label="Enabled">
-          <Toggle
-            checked={obj.shadowEnabled}
-            onChange={(v) => onChange({ shadowEnabled: v })}
-          />
-        </Row>
-        {obj.shadowEnabled && (
-          <>
-            <Row label="Color">
-              <ColorInput
-                value={obj.shadowColor}
-                onChange={(v) => onChange({ shadowColor: v })}
-              />
-            </Row>
-            <Row label="Blur">
-              <SliderInput
-                value={obj.shadowBlur}
-                onChange={(v) => onChange({ shadowBlur: v })}
-                min={0}
-                max={50}
-              />
-            </Row>
-            <Row label="Offset X">
-              <SliderInput
-                value={obj.shadowOffsetX}
-                onChange={(v) => onChange({ shadowOffsetX: v })}
-                min={-30}
-                max={30}
-              />
-            </Row>
-            <Row label="Offset Y">
-              <SliderInput
-                value={obj.shadowOffsetY}
-                onChange={(v) => onChange({ shadowOffsetY: v })}
-                min={-30}
-                max={30}
-              />
-            </Row>
-          </>
-        )}
-      </Section>
+      <ShadowControls
+        enabled={obj.shadowEnabled}
+        color={obj.shadowColor}
+        blur={obj.shadowBlur}
+        offsetX={obj.shadowOffsetX}
+        offsetY={obj.shadowOffsetY}
+        onEnabledChange={(v) => onChange({ shadowEnabled: v })}
+        onColorChange={(v) => onChange({ shadowColor: v })}
+        onBlurChange={(v) => onChange({ shadowBlur: v })}
+        onOffsetXChange={(v) => onChange({ shadowOffsetX: v })}
+        onOffsetYChange={(v) => onChange({ shadowOffsetY: v })}
+      />
 
       <Section title="Background Pill">
         <Row label="Enabled">
@@ -617,32 +683,16 @@ function ArrowPropertiesPanel({
         )}
       </Section>
 
-      <Section title="Shadow / Glow">
-        <Row label="Enabled">
-          <Toggle
-            checked={obj.shadowEnabled}
-            onChange={(v) => onChange({ shadowEnabled: v })}
-          />
-        </Row>
-        {obj.shadowEnabled && (
-          <>
-            <Row label="Color">
-              <ColorInput
-                value={obj.shadowColor}
-                onChange={(v) => onChange({ shadowColor: v })}
-              />
-            </Row>
-            <Row label="Blur">
-              <NumberInput
-                value={obj.shadowBlur}
-                onChange={(v) => onChange({ shadowBlur: v })}
-                min={0}
-                max={50}
-              />
-            </Row>
-          </>
-        )}
-      </Section>
+      <ShadowControls
+        title="Shadow / Glow"
+        enabled={obj.shadowEnabled}
+        color={obj.shadowColor}
+        blur={obj.shadowBlur}
+        onEnabledChange={(v) => onChange({ shadowEnabled: v })}
+        onColorChange={(v) => onChange({ shadowColor: v })}
+        onBlurChange={(v) => onChange({ shadowBlur: v })}
+        blurInput="number"
+      />
     </>
   );
 }
@@ -816,57 +866,23 @@ function ShapePropertiesPanel({
         )}
       </Section>
 
-      <Section title="Stroke">
-        <Row label="Enabled">
-          <Toggle
-            checked={obj.strokeEnabled}
-            onChange={(v) => onChange({ strokeEnabled: v })}
-          />
-        </Row>
-        {obj.strokeEnabled && (
-          <>
-            <Row label="Color">
-              <ColorInput value={obj.stroke} onChange={(v) => onChange({ stroke: v })} />
-            </Row>
-            <Row label="Width">
-              <SliderInput
-                value={obj.strokeWidth}
-                onChange={(v) => onChange({ strokeWidth: v })}
-                min={0}
-                max={30}
-                suffix="px"
-              />
-            </Row>
-          </>
-        )}
-      </Section>
+      <StrokeControls
+        enabled={obj.strokeEnabled}
+        color={obj.stroke}
+        width={obj.strokeWidth}
+        onEnabledChange={(v) => onChange({ strokeEnabled: v })}
+        onColorChange={(v) => onChange({ stroke: v })}
+        onWidthChange={(v) => onChange({ strokeWidth: v })}
+      />
 
-      <Section title="Shadow">
-        <Row label="Enabled">
-          <Toggle
-            checked={obj.shadowEnabled}
-            onChange={(v) => onChange({ shadowEnabled: v })}
-          />
-        </Row>
-        {obj.shadowEnabled && (
-          <>
-            <Row label="Color">
-              <ColorInput
-                value={obj.shadowColor}
-                onChange={(v) => onChange({ shadowColor: v })}
-              />
-            </Row>
-            <Row label="Blur">
-              <SliderInput
-                value={obj.shadowBlur}
-                onChange={(v) => onChange({ shadowBlur: v })}
-                min={0}
-                max={50}
-              />
-            </Row>
-          </>
-        )}
-      </Section>
+      <ShadowControls
+        enabled={obj.shadowEnabled}
+        color={obj.shadowColor}
+        blur={obj.shadowBlur}
+        onEnabledChange={(v) => onChange({ shadowEnabled: v })}
+        onColorChange={(v) => onChange({ shadowColor: v })}
+        onBlurChange={(v) => onChange({ shadowBlur: v })}
+      />
     </>
   );
 }

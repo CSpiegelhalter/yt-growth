@@ -6,40 +6,32 @@
  *
  * Auth: Required
  */
-import { prisma } from "@/prisma";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
 import { jsonOk } from "@/lib/api/response";
-import { getSubscriptionStatus } from "@/lib/stripe";
-import { CHANNEL_LIST_SELECT, CHANNEL_LIST_ORDER_BY } from "@/lib/server/channel-query";
+import { listChannels } from "@/lib/features/channels";
+import { resolveSubscription } from "@/lib/features/subscriptions/use-cases/resolveSubscription";
 
 export const GET = createApiRoute(
   { route: "/api/me/channels" },
   withAuth({ mode: "required" }, async (_req, _ctx, api: ApiAuthContext) => {
     const user = api.user!;
-    const channels = await prisma.channel.findMany({
-      where: { userId: user.id },
-      orderBy: CHANNEL_LIST_ORDER_BY,
-      select: CHANNEL_LIST_SELECT,
-    });
+    const channels = await listChannels({ userId: user.id });
+    const subscription = await resolveSubscription(user.id);
 
-    // Get subscription info for channel limit gating
-    const subscription = await getSubscriptionStatus(user.id);
-
-    // Transform to expected format
     const transformed = channels.map((ch) => ({
       channel_id: ch.youtubeChannelId,
       id: ch.id,
       title: ch.title,
       thumbnailUrl: ch.thumbnailUrl,
-      totalVideoCount: ch.totalVideoCount,    // Total videos on YouTube
-      subscriberCount: ch.subscriberCount,    // Subscriber count
-      syncedVideoCount: ch._count.Video,      // Videos we've synced locally
+      totalVideoCount: ch.totalVideoCount,
+      subscriberCount: ch.subscriberCount,
+      syncedVideoCount: ch._count.Video,
       connectedAt: ch.connectedAt,
       lastSyncedAt: ch.lastSyncedAt,
       syncStatus: ch.syncStatus,
       syncError: ch.syncError,
-      videoCount: ch._count.Video,            // Keep for backwards compat
+      videoCount: ch._count.Video,
       planCount: ch._count.Plan,
     }));
 
@@ -52,8 +44,7 @@ export const GET = createApiRoute(
       {
         headers: { "cache-control": "no-store" },
         requestId: api.requestId,
-      }
+      },
     );
-  })
+  }),
 );
-

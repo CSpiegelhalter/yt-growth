@@ -6,8 +6,8 @@
  */
 
 import { redirect, notFound } from "next/navigation";
-import { getCurrentUserWithSubscription } from "@/lib/user";
-import { getFeatureFlag } from "@/lib/feature-flags";
+import { getCurrentUserWithSubscription } from "@/lib/server/auth";
+import { getFeatureFlag } from "@/lib/shared/feature-flags";
 import ThumbnailsClient from "./ThumbnailsClient";
 
 export const metadata = {

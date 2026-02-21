@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AlertCircleIcon } from "@/components/icons";
 import s from "./style.module.css";
-import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/product";
+import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
 
 type Props = {
   isSubscribed: boolean;

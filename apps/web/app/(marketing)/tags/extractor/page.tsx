@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CANONICAL_ORIGIN } from "@/lib/brand";
+import { CANONICAL_ORIGIN } from "@/lib/shared/brand";
 import { TagExtractorClient } from "./TagExtractorClient";
 
 export const metadata: Metadata = {

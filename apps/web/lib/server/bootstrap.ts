@@ -7,7 +7,7 @@
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/lib/server/auth";
 import { prisma } from "@/prisma";
 import { getSubscriptionStatus } from "@/lib/stripe";
 import { CHANNEL_LIST_SELECT, CHANNEL_LIST_ORDER_BY } from "@/lib/server/channel-query";

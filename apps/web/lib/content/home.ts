@@ -3,7 +3,7 @@
  * Additional content section to improve text-to-HTML ratio
  */
 
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/shared/brand";
 
 export const HOME_CONTENT = {
   seoSection: {

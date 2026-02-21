@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUserServer, getMeServer, getChannelsServer, resolveActiveChannelId, normalizePlan, isAdminEmail } from "@/lib/server/bootstrap";
 import { AppShellServer } from "@/components/navigation/AppShellServer";
-import { getFilteredNavItems } from "@/lib/nav-config.server";
+import { getFilteredNavItems } from "@/lib/server/nav-config.server";
 
 /**
  * App layout for authenticated pages.

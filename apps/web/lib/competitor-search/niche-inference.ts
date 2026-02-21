@@ -23,7 +23,7 @@ import {
   STOPWORDS,
   extractKeywords,
 } from "./utils";
-import { parseYouTubeVideoId } from "@/lib/youtube-video-id";
+import { parseYouTubeVideoId } from "@/lib/shared/youtube-video-id";
 import type { GoogleAccount, VideoDetails } from "@/lib/youtube/types";
 import { fetchVideoDetails } from "@/lib/youtube";
 import { YOUTUBE_CATEGORIES } from "@/lib/youtube/constants";

@@ -2,7 +2,7 @@
 
 import styles from "./panels.module.css";
 import { InsightCard } from "../ui";
-import { formatCompactRounded as formatCompact } from "@/lib/format";
+import { formatCompactRounded as formatCompact } from "@/lib/shared/format";
 
 type PostWatchPanelProps = {
   endScreenClicks: number | null;

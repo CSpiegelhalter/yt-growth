@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BRAND, CANONICAL_ORIGIN, STRUCTURED_DATA } from "@/lib/brand";
+import { BRAND, CANONICAL_ORIGIN, STRUCTURED_DATA } from "@/lib/shared/brand";
 import { IdeasPublicClient } from "./IdeasPublicClient";
 
 /**

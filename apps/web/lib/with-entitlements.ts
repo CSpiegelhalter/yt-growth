@@ -1,35 +1,32 @@
 /**
  * Entitlements Enforcement Wrapper
  *
- * Provides a utility for API routes to:
- * - Load the current user and determine their plan
- * - Check if a feature is locked
- * - Enforce usage limits
- * - Return standardized error responses
+ * Thin orchestration layer that wires the subscriptions feature domain
+ * to concrete I/O (user session, Stripe status, usage counters).
+ *
+ * Route handlers call these functions; the actual business logic lives
+ * in lib/features/subscriptions/.
  */
 
 import {
   getCurrentUserWithSubscription,
   type AuthUserWithSubscription,
-} from "./user";
+} from "@/lib/server/auth";
 import { getSubscriptionStatus } from "./stripe";
 import {
-  getPlanFromSubscription,
-  featureLocked,
-  getLimit,
-  getFeatureDisplayName,
-  type Plan,
-  type FeatureKey,
-} from "./entitlements";
+  checkEntitlement as checkEntitlementCore,
+  checkChannelLimit as checkChannelLimitCore,
+} from "@/lib/features/subscriptions";
+import type {
+  Plan,
+  FeatureKey,
+  EntitlementError as EntitlementErrorType,
+  UsageCheckResult,
+} from "@/lib/features/subscriptions";
 import {
   checkAndIncrement,
   getUsageInfo,
-  type UsageCheckResult,
-} from "./usage";
-
-// ============================================
-// TYPES
-// ============================================
+} from "@/lib/features/subscriptions/use-cases/trackUsage";
 
 type EntitlementContext = {
   user: AuthUserWithSubscription;
@@ -37,165 +34,60 @@ type EntitlementContext = {
   usage: UsageCheckResult | null;
 };
 
-type EntitlementError =
-  | {
-      type: "unauthorized";
-      status: 401;
-      body: { error: string };
-    }
-  | {
-      type: "feature_locked";
-      status: 403;
-      body: {
-        error: "upgrade_required";
-        featureKey: string;
-        message: string;
-      };
-    }
-  | {
-      type: "limit_reached";
-      status: 403;
-      body: {
-        error: "limit_reached";
-        featureKey: string;
-        used: number;
-        limit: number;
-        remaining: number;
-        resetAt: string;
-        upgrade: boolean;
-      };
-    };
-
-type EntitlementCheckResult =
+type LegacyEntitlementCheckResult =
   | { ok: true; context: EntitlementContext }
-  | { ok: false; error: EntitlementError };
-
-// ============================================
-// MAIN ENFORCEMENT FUNCTION
-// ============================================
+  | { ok: false; error: EntitlementErrorType };
 
 /**
- * Check entitlements for a feature access
+ * Check entitlements for a feature access.
  *
- * Use cases:
- * 1. Feature lock check only (e.g., keyword_research)
- * 2. Usage limit check + increment (e.g., owned_video_analysis)
- * 3. Account limit check (e.g., channels_connected) - handled separately
- *
- * @param options.featureKey - The feature being accessed
- * @param options.increment - Whether to increment usage (default: true for usage-limited features)
- * @param options.amount - How much to increment (default: 1)
+ * Wraps the pure domain use-case with concrete I/O callbacks.
  */
 export async function checkEntitlement(options: {
   featureKey: FeatureKey;
   increment?: boolean;
   amount?: number;
-}): Promise<EntitlementCheckResult> {
-  const { featureKey, increment = true, amount = 1 } = options;
-
-  // 1. Load user
+}): Promise<LegacyEntitlementCheckResult> {
   const user = await getCurrentUserWithSubscription();
-  if (!user) {
-    return {
-      ok: false,
-      error: {
-        type: "unauthorized",
-        status: 401,
-        body: { error: "Unauthorized" },
-      },
-    };
-  }
 
-  // 2. Determine plan
-  const subscription = await getSubscriptionStatus(user.id);
-  const plan = getPlanFromSubscription(subscription);
+  const result = await checkEntitlementCore({
+    ...options,
+    getUser: async () => (user ? { id: user.id } : null),
+    getSubscriptionStatus: async (userId: number) => {
+      const sub = await getSubscriptionStatus(userId);
+      return {
+        isActive: sub.isActive,
+        plan: sub.plan,
+        currentPeriodEnd: sub.currentPeriodEnd,
+      };
+    },
+    checkAndIncrement,
+    getUsageInfo,
+  });
 
-  // 3. Check feature lock
-  if (featureLocked(plan, featureKey)) {
-    return {
-      ok: false,
-      error: {
-        type: "feature_locked",
-        status: 403,
-        body: {
-          error: "upgrade_required",
-          featureKey,
-          message: `${getFeatureDisplayName(featureKey)} is available on Pro.`,
-        },
-      },
-    };
-  }
-
-  // 4. Check/enforce usage limit
-  const limit = getLimit(plan, featureKey);
-
-  // Skip usage tracking for non-usage-limited features (like channels_connected)
-  if (featureKey === "channels_connected") {
-    return {
-      ok: true,
-      context: {
-        user,
-        plan,
-        usage: null,
-      },
-    };
-  }
-
-  let usage: UsageCheckResult;
-
-  if (increment) {
-    usage = await checkAndIncrement({
-      userId: user.id,
-      featureKey,
-      limit,
-      amount,
-    });
-  } else {
-    usage = await getUsageInfo(user.id, featureKey, limit);
-  }
-
-  if (!usage.allowed) {
-    return {
-      ok: false,
-      error: {
-        type: "limit_reached",
-        status: 403,
-        body: {
-          error: "limit_reached",
-          featureKey,
-          used: usage.used,
-          limit: usage.limit,
-          remaining: usage.remaining,
-          resetAt: usage.resetAt,
-          upgrade: plan === "FREE",
-        },
-      },
-    };
-  }
+  if (!result.ok) return result;
 
   return {
     ok: true,
     context: {
-      user,
-      plan,
-      usage,
+      user: user!,
+      plan: result.context.plan,
+      usage: result.context.usage,
     },
   };
 }
 
-// ============================================
-// RESPONSE HELPERS
-// ============================================
-
 /**
- * Convert entitlement error to Response
+ * Convert entitlement error to Response.
  */
-export function entitlementErrorResponse(error: EntitlementError): Response {
+export function entitlementErrorResponse(
+  error: EntitlementErrorType,
+): Response {
   return Response.json(error.body, { status: error.status });
 }
 
 /**
- * Check if user can connect another channel
+ * Check if user can connect another channel.
  */
 export async function checkChannelLimit(userId: number): Promise<{
   allowed: boolean;
@@ -203,20 +95,19 @@ export async function checkChannelLimit(userId: number): Promise<{
   limit: number;
   plan: Plan;
 }> {
-  const subscription = await getSubscriptionStatus(userId);
-  const plan = getPlanFromSubscription(subscription);
-  const limit = getLimit(plan, "channels_connected");
-
-  // Import prisma here to avoid circular deps
   const { prisma } = await import("@/prisma");
-  const channelCount = await prisma.channel.count({
-    where: { userId },
-  });
 
-  return {
-    allowed: channelCount < limit,
-    current: channelCount,
-    limit,
-    plan,
-  };
+  return checkChannelLimitCore({
+    userId,
+    getSubscriptionStatus: async (uid: number) => {
+      const sub = await getSubscriptionStatus(uid);
+      return {
+        isActive: sub.isActive,
+        plan: sub.plan,
+        currentPeriodEnd: sub.currentPeriodEnd,
+      };
+    },
+    getChannelCount: async (uid: number) =>
+      prisma.channel.count({ where: { userId: uid } }),
+  });
 }

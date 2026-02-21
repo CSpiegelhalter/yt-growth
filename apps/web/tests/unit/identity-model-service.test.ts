@@ -54,7 +54,7 @@ mock.module("@/lib/replicate/client", () => ({
   deleteModel: mockDeleteModel,
 }));
 
-mock.module("@/lib/logger", () => ({
+mock.module("@/lib/shared/logger", () => ({
   createLogger: () => ({
     info: () => {},
     warn: () => {},
@@ -70,7 +70,7 @@ import {
   handleTrainingComplete,
   canTrain,
   MIN_TRAINING_PHOTOS,
-} from "@/lib/identity/modelService";
+} from "@/lib/features/identity";
 
 describe("computeDatasetHash", () => {
   beforeEach(() => {

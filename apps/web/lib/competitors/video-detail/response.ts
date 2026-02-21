@@ -15,7 +15,7 @@ import type {
   BeatChecklist,
   ChannelVideosResult,
 } from "./types";
-import { createLogger } from "@/lib/logger";
+import { createLogger } from "@/lib/shared/logger";
 
 const logger = createLogger({ module: "video-detail.response" });
 
@@ -232,35 +232,3 @@ export function buildResponse(input: BuildResponseInput): CompetitorVideoAnalysi
   };
 }
 
-// ============================================
-// ERROR RESPONSE BUILDER
-// ============================================
-
-/**
- * Build error response for LLM failure (strategy A).
- * Returns a 502 with clear error payload.
- */
-export function buildLLMErrorResponse(
-  error: Error,
-  ctx: RequestContext
-): Response {
-  const totalDuration = Date.now() - ctx.startTime;
-
-  logger.error("Returning LLM error response", {
-    videoId: ctx.videoId,
-    error: error.message,
-    timings: ctx.timings,
-    totalDurationMs: totalDuration,
-  });
-
-  return Response.json(
-    {
-      error: {
-        message: error.message,
-        code: "LLM_UNAVAILABLE",
-        videoId: ctx.videoId,
-      },
-    },
-    { status: 502 }
-  );
-}

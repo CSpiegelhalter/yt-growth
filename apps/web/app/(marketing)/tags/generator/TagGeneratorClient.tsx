@@ -6,6 +6,18 @@ import s from "../tags.module.css";
 import { useToast } from "@/components/ui/Toast";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
 
+function CopyTagsButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" className={s.copyBtn} onClick={onClick}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+      </svg>
+      {label}
+    </button>
+  );
+}
+
 // ============================================
 // TYPES
 // ============================================
@@ -321,44 +333,8 @@ export function TagGeneratorClient() {
           <div className={s.resultsHeader}>
             <h2 className={s.resultsTitle}>Generated Tags ({tags.length})</h2>
             <div className={s.copyButtons}>
-              <button
-                type="button"
-                className={s.copyBtn}
-                onClick={() => handleCopy(copyComma, "comma")}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden="true"
-                >
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                </svg>
-                Copy (comma)
-              </button>
-              <button
-                type="button"
-                className={s.copyBtn}
-                onClick={() => handleCopy(copyLines, "lines")}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden="true"
-                >
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                </svg>
-                Copy (lines)
-              </button>
+              <CopyTagsButton label="Copy (comma)" onClick={() => handleCopy(copyComma, "comma")} />
+              <CopyTagsButton label="Copy (lines)" onClick={() => handleCopy(copyLines, "lines")} />
             </div>
           </div>
 

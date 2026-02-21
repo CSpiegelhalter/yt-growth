@@ -1,0 +1,415 @@
+/**
+ * Analyze Retention Use-Case
+ *
+ * Orchestrates fetching YouTube analytics, computing derived metrics,
+ * baseline comparisons, bottleneck detection, confidence scoring,
+ * and performance grading for a single owned video.
+ *
+ * Accepts YouTube analytics adapter functions via the `deps` parameter
+ * so the feature layer stays decoupled from the adapter implementation.
+ */
+
+import { prisma } from "@/prisma";
+import {
+  computeDerivedMetrics,
+  computeChannelBaseline,
+  compareToBaseline,
+  getRetentionGrade,
+  getConversionGrade,
+  getEngagementGrade,
+  detectBottleneck,
+  computeSectionConfidence,
+  isLowDataMode,
+  EMPTY_CHANNEL_BASELINE,
+  type DerivedMetrics,
+  type ChannelBaseline,
+} from "@/lib/owned-video-math";
+import { getDateRange, type AnalyticsRange } from "@/lib/shared/date-range";
+import type {
+  DailyAnalyticsRow,
+  VideoMetadata,
+  SubscriberBreakdown,
+  GeographicBreakdown,
+  TrafficSourceDetail,
+  DemographicBreakdown,
+} from "@/lib/ports/YouTubePort";
+import { VideoInsightError } from "../errors";
+
+// ── Types ───────────────────────────────────────────────────
+
+type GoogleAccount = {
+  id: number;
+  refreshTokenEnc: string | null;
+  tokenExpiresAt: Date | null;
+};
+
+type TotalsResult = {
+  totals: Record<string, any> | null;
+  permission: { ok: boolean; reason?: string };
+};
+
+type DailyResult = {
+  rows: DailyAnalyticsRow[];
+};
+
+type DiscoveryResult = {
+  impressions: number | null;
+  impressionsCtr: number | null;
+  trafficSources: Record<string, number> | null;
+  hasData: boolean;
+  reason?: string;
+};
+
+export type AnalyzeRetentionDeps = {
+  fetchVideoMetadata: (ga: GoogleAccount, videoId: string) => Promise<VideoMetadata | null>;
+  fetchTotalsWithStatus: (ga: GoogleAccount, channelId: string, videoId: string, start: string, end: string) => Promise<TotalsResult>;
+  fetchDailyWithStatus: (ga: GoogleAccount, channelId: string, videoId: string, start: string, end: string) => Promise<DailyResult>;
+  fetchRetentionCurve: (ga: GoogleAccount, channelId: string, videoId: string) => Promise<Array<{ elapsedRatio: number; audienceWatchRatio: number }>>;
+  fetchDiscoveryMetrics: (ga: GoogleAccount, channelId: string, videoId: string, start: string, end: string) => Promise<DiscoveryResult>;
+  fetchSubscriberBreakdown: (ga: GoogleAccount, channelId: string, videoId: string, start: string, end: string) => Promise<SubscriberBreakdown>;
+  fetchGeoBreakdown: (ga: GoogleAccount, channelId: string, videoId: string, start: string, end: string) => Promise<GeographicBreakdown>;
+  fetchTrafficDetail: (ga: GoogleAccount, channelId: string, videoId: string, start: string, end: string) => Promise<TrafficSourceDetail>;
+  fetchDemographicBreakdown: (ga: GoogleAccount, channelId: string, videoId: string, start: string, end: string) => Promise<DemographicBreakdown>;
+};
+
+type AnalyzeRetentionInput = {
+  googleAccount: GoogleAccount;
+  dbChannelId: number;
+  youtubeChannelId: string;
+  videoId: string;
+  range: AnalyticsRange;
+  userId: number;
+};
+
+// ── Main Use-Case ───────────────────────────────────────────
+
+export async function analyzeRetention(
+  input: AnalyzeRetentionInput,
+  deps: AnalyzeRetentionDeps,
+) {
+  const { googleAccount: ga, dbChannelId, youtubeChannelId, videoId, range, userId } = input;
+  const { startDate, endDate } = getDateRange(range);
+
+  const [
+    videoMeta,
+    totalsResult,
+    dailyResult,
+    baseline,
+    retentionPoints,
+    discoveryMetrics,
+    subscriberBreakdown,
+    geoBreakdown,
+    trafficDetail,
+  ] = await Promise.all([
+    deps.fetchVideoMetadata(ga, videoId),
+    deps.fetchTotalsWithStatus(ga, youtubeChannelId, videoId, startDate, endDate),
+    deps.fetchDailyWithStatus(ga, youtubeChannelId, videoId, startDate, endDate),
+    getChannelBaselineFromDB(userId, dbChannelId, videoId, range),
+    deps.fetchRetentionCurve(ga, youtubeChannelId, videoId).catch(() => []),
+    deps.fetchDiscoveryMetrics(ga, youtubeChannelId, videoId, startDate, endDate).catch(() => ({
+      impressions: null, impressionsCtr: null, trafficSources: null, hasData: false, reason: "connect_analytics" as const,
+    })),
+    deps.fetchSubscriberBreakdown(ga, youtubeChannelId, videoId, startDate, endDate).catch(() => ({
+      subscribers: null, nonSubscribers: null, subscriberViewPct: null,
+    })),
+    deps.fetchGeoBreakdown(ga, youtubeChannelId, videoId, startDate, endDate).catch(() => ({
+      topCountries: [], primaryMarket: null,
+    })),
+    deps.fetchTrafficDetail(ga, youtubeChannelId, videoId, startDate, endDate).catch(() => ({
+      searchTerms: null, suggestedVideos: null, browseFeatures: null,
+    })),
+  ]);
+
+  if (!videoMeta) {
+    throw new VideoInsightError("NOT_FOUND", "Could not fetch video metadata");
+  }
+
+  if (!totalsResult.permission.ok && totalsResult.permission.reason === "permission_denied") {
+    throw new VideoInsightError("FORBIDDEN", "Missing YouTube Analytics permissions.");
+  }
+
+  const totals = totalsResult.totals;
+  const dailySeries = dailyResult.rows;
+
+  if (!totals) {
+    throw new VideoInsightError("EXTERNAL_FAILURE", "Could not fetch analytics totals");
+  }
+
+  const demographicBreakdown =
+    totals.views > 500
+      ? await deps.fetchDemographicBreakdown(ga, youtubeChannelId, videoId, startDate, endDate).catch(() => null)
+      : null;
+
+  const totalsWithDiscovery = {
+    ...totals,
+    impressions: discoveryMetrics.impressions,
+    impressionsCtr: discoveryMetrics.impressionsCtr,
+    trafficSources: discoveryMetrics.trafficSources,
+  };
+
+  const derived = computeDerivedMetrics(
+    totalsWithDiscovery as any,
+    dailySeries,
+    videoMeta.durationSec,
+    videoMeta.publishedAt,
+  );
+
+  derived.totalViews = videoMeta.viewCount;
+
+  const comparison = compareToBaseline(derived, totals.averageViewPercentage, baseline);
+  const bottleneck = detectBottleneck(derived, comparison, baseline);
+  const confidence = computeSectionConfidence(derived, discoveryMetrics.hasData, discoveryMetrics.trafficSources != null);
+  const lowDataMode = isLowDataMode(derived);
+
+  const analyticsAvailability = {
+    hasImpressions: discoveryMetrics.impressions != null,
+    hasCtr: discoveryMetrics.impressionsCtr != null,
+    hasTrafficSources: discoveryMetrics.trafficSources != null,
+    hasEndScreenCtr: derived.endScreenClickRate != null,
+    hasCardCtr: derived.cardClickRate != null,
+    reason: discoveryMetrics.hasData ? undefined : discoveryMetrics.reason,
+  };
+
+  const retentionGrade = getRetentionGrade(derived.avdRatio);
+  const conversionGrade = getConversionGrade(derived.subsPer1k);
+  const engagementGrade = getEngagementGrade(derived.engagementPerView);
+
+  const levers = {
+    retention: {
+      grade: retentionGrade.grade,
+      color: retentionGrade.color,
+      reason: getRetentionReason(derived, comparison),
+      action: getRetentionAction(retentionGrade.grade),
+    },
+    conversion: {
+      grade: conversionGrade.grade,
+      color: conversionGrade.color,
+      reason: getConversionReason(derived, comparison),
+      action: getConversionAction(conversionGrade.grade),
+    },
+    engagement: {
+      grade: engagementGrade.grade,
+      color: engagementGrade.color,
+      reason: getEngagementReason(derived, comparison),
+      action: getEngagementAction(engagementGrade.grade),
+    },
+  };
+
+  const retention =
+    retentionPoints.length > 0
+      ? { points: retentionPoints, cliffTimeSec: null, cliffReason: null }
+      : undefined;
+
+  storeDailyAnalytics(userId, dbChannelId, videoId, dailySeries).catch(() => {});
+
+  return {
+    video: videoMeta,
+    analytics: { totals, dailySeries },
+    derived,
+    baseline,
+    comparison,
+    levers,
+    retention,
+    bottleneck,
+    confidence,
+    isLowDataMode: lowDataMode,
+    analyticsAvailability,
+    subscriberBreakdown,
+    geoBreakdown,
+    trafficDetail,
+    demographicBreakdown,
+  };
+}
+
+// ── Helpers ─────────────────────────────────────────────────
+
+async function getChannelBaselineFromDB(
+  userId: number,
+  channelId: number,
+  excludeVideoId: string,
+  range: AnalyticsRange,
+): Promise<ChannelBaseline> {
+  const { startDate, endDate } = getDateRange(range);
+
+  const otherVideos = await prisma.$queryRaw<
+    Array<{
+      videoId: string;
+      totalViews: number;
+      avgViewPct: number | null;
+      subsGained: number | null;
+      watchMin: number | null;
+      shares: number | null;
+      likes: number | null;
+      comments: number | null;
+      daysCount: number;
+    }>
+  >`
+    SELECT 
+      "videoId",
+      SUM(views) as "totalViews",
+      AVG("averageViewPercentage") as "avgViewPct",
+      SUM("subscribersGained") as "subsGained",
+      SUM("estimatedMinutesWatched") as "watchMin",
+      SUM(shares) as shares,
+      SUM(likes) as likes,
+      SUM(comments) as comments,
+      COUNT(*) as "daysCount"
+    FROM "OwnedVideoAnalyticsDay"
+    WHERE "userId" = ${userId}
+      AND "channelId" = ${channelId}
+      AND "videoId" != ${excludeVideoId}
+      AND date >= ${new Date(startDate)}::date
+      AND date <= ${new Date(endDate)}::date
+    GROUP BY "videoId"
+    HAVING SUM(views) > 0
+    LIMIT 50
+  `;
+
+  if (otherVideos.length === 0) {
+    return { ...EMPTY_CHANNEL_BASELINE };
+  }
+
+  const derivedList: DerivedMetrics[] = otherVideos.map((v) => {
+    const views = Number(v.totalViews) || 1;
+    const viewsPer1k = views / 1000;
+    const days = Number(v.daysCount) || 1;
+
+    return {
+      viewsPerDay: views / days,
+      totalViews: views,
+      daysInRange: days,
+      subsPer1k: v.subsGained != null ? Number(v.subsGained) / viewsPer1k : null,
+      sharesPer1k: v.shares != null ? Number(v.shares) / viewsPer1k : null,
+      commentsPer1k: v.comments != null ? Number(v.comments) / viewsPer1k : null,
+      likesPer1k: v.likes != null ? Number(v.likes) / viewsPer1k : null,
+      playlistAddsPer1k: null,
+      netSubsPer1k: null,
+      netSavesPer1k: null,
+      likeRatio: null,
+      watchTimePerViewSec: v.watchMin != null ? (Number(v.watchMin) * 60) / views : null,
+      avdRatio: v.avgViewPct != null ? Number(v.avgViewPct) / 100 : null,
+      avgWatchTimeMin: null,
+      avgViewDuration: null,
+      avgViewPercentage: v.avgViewPct != null ? Number(v.avgViewPct) : null,
+      engagementPerView: (Number(v.likes ?? 0) + Number(v.comments ?? 0) + Number(v.shares ?? 0)) / views,
+      engagedViewRate: null,
+      cardClickRate: null,
+      endScreenClickRate: null,
+      premiumViewRate: null,
+      watchTimePerSub: null,
+      rpm: null,
+      monetizedPlaybackRate: null,
+      adImpressionsPerView: null,
+      cpm: null,
+      impressions: null,
+      impressionsCtr: null,
+      first24hViews: null,
+      first48hViews: null,
+      trafficSources: null,
+      velocity24h: null,
+      velocity7d: null,
+      acceleration24h: null,
+    };
+  });
+
+  return computeChannelBaseline(derivedList);
+}
+
+async function storeDailyAnalytics(
+  userId: number,
+  channelId: number,
+  videoId: string,
+  dailySeries: DailyAnalyticsRow[],
+): Promise<void> {
+  const chunkSize = 25;
+  for (let i = 0; i < dailySeries.length; i += chunkSize) {
+    const chunk = dailySeries.slice(i, i + chunkSize);
+    await prisma.$transaction(
+      chunk.map((day) => {
+        const metrics = {
+          views: day.views,
+          engagedViews: day.engagedViews,
+          comments: day.comments,
+          likes: day.likes,
+          shares: day.shares,
+          estimatedMinutesWatched: day.estimatedMinutesWatched,
+          averageViewDuration: day.averageViewDuration,
+          averageViewPercentage: day.averageViewPercentage,
+          subscribersGained: day.subscribersGained,
+          subscribersLost: day.subscribersLost,
+          videosAddedToPlaylists: day.videosAddedToPlaylists,
+          videosRemovedFromPlaylists: day.videosRemovedFromPlaylists,
+          estimatedRevenue: day.estimatedRevenue,
+          estimatedAdRevenue: day.estimatedAdRevenue,
+          grossRevenue: day.grossRevenue,
+          monetizedPlaybacks: day.monetizedPlaybacks,
+          playbackBasedCpm: day.playbackBasedCpm,
+          adImpressions: day.adImpressions,
+          cpm: day.cpm,
+        };
+
+        return prisma.ownedVideoAnalyticsDay.upsert({
+          where: {
+            userId_channelId_videoId_date: {
+              userId, channelId, videoId,
+              date: new Date(day.date),
+            },
+          },
+          create: { userId, channelId, videoId, date: new Date(day.date), ...metrics },
+          update: metrics,
+        });
+      }),
+    );
+  }
+}
+
+function getRetentionReason(derived: DerivedMetrics, comparison: any): string {
+  if (derived.avdRatio == null) return "Retention data not available yet.";
+  const pct = (derived.avdRatio * 100).toFixed(1);
+  if (comparison.avgViewPercentage.vsBaseline === "above") return `${pct}% avg viewed is above your channel average.`;
+  if (comparison.avgViewPercentage.vsBaseline === "below") return `${pct}% avg viewed is below your channel average.`;
+  return `${pct}% avg viewed is around your channel average.`;
+}
+
+function getRetentionAction(grade: string): string {
+  switch (grade) {
+    case "Needs Work": return "Add a pattern interrupt in the first 30 seconds.";
+    case "OK": return "Tighten the intro and get to value faster.";
+    case "Good": return "Maintain pacing; test mid-roll hooks.";
+    default: return "Keep doing what you're doing.";
+  }
+}
+
+function getConversionReason(derived: DerivedMetrics, comparison: any): string {
+  if (derived.subsPer1k == null) return "Subscriber data not available.";
+  const subs = derived.subsPer1k.toFixed(2);
+  if (comparison.subsPer1k.vsBaseline === "above") return `${subs} subs/1K views is above your channel average.`;
+  if (comparison.subsPer1k.vsBaseline === "below") return `${subs} subs/1K views is below your channel average.`;
+  return `${subs} subs/1K views is around your channel average.`;
+}
+
+function getConversionAction(grade: string): string {
+  switch (grade) {
+    case "Needs Work": return "Add a subscribe reminder after delivering value.";
+    case "OK": return "Test different subscribe reminder placements.";
+    case "Good": return "Experiment with end screen timing.";
+    default: return "Your subscribe prompts are working well.";
+  }
+}
+
+function getEngagementReason(derived: DerivedMetrics, comparison: any): string {
+  if (derived.engagementPerView == null) return "Engagement data not available.";
+  const eng = (derived.engagementPerView * 100).toFixed(2);
+  if (comparison.engagementPerView.vsBaseline === "above") return `${eng}% engagement rate is above your channel average.`;
+  if (comparison.engagementPerView.vsBaseline === "below") return `${eng}% engagement rate is below your channel average.`;
+  return `${eng}% engagement rate is around your channel average.`;
+}
+
+function getEngagementAction(grade: string): string {
+  switch (grade) {
+    case "Needs Work": return "Ask a specific question to prompt comments.";
+    case "OK": return "Pin a comment to spark discussion.";
+    case "Good": return "Reply to comments to boost engagement.";
+    default: return "Your engagement is strong.";
+  }
+}

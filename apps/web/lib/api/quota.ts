@@ -1,4 +1,4 @@
-import { logger } from "@/lib/logger";
+import { logger } from "@/lib/shared/logger";
 import { jsonError } from "@/lib/api/response";
 
 /**

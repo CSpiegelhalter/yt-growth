@@ -13,7 +13,7 @@
 
 import { LEARN_ARTICLES, learnArticles } from "../app/(marketing)/learn/articles";
 import sitemap from "../app/sitemap";
-import { BRAND, CANONICAL_ORIGIN } from "../lib/brand";
+import { BRAND, CANONICAL_ORIGIN } from "../lib/shared/brand";
 
 // Required pages that must be in sitemap and internally linked
 const REQUIRED_PAGES = [

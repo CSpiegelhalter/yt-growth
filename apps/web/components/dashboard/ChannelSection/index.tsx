@@ -6,7 +6,7 @@ import s from "./style.module.css";
 import { Channel } from "@/types/api";
 import ChannelCard from "@/components/dashboard/ChannelCard";
 import EmptyState from "@/components/dashboard/EmptyState";
-import { LIMITS } from "@/lib/product";
+import { LIMITS } from "@/lib/shared/product";
 
 type ChannelsSectionProps = {
   channels: Channel[];

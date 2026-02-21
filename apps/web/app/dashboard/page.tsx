@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
-import { BRAND, CANONICAL_ORIGIN } from "@/lib/brand";
+import { BRAND, CANONICAL_ORIGIN } from "@/lib/shared/brand";
 import { LoggedOutDashboardPreview } from "@/components/dashboard/LoggedOutDashboardPreview";
 import DashboardClient from "./DashboardClient";
 

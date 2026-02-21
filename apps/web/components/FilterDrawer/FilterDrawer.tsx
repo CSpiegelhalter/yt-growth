@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useFocusTrap } from "@/lib/client/use-focus-trap";
+import { useEscapeKey } from "@/lib/client/use-escape-key";
+import { useBodyScrollLock } from "@/lib/client/use-body-scroll-lock";
 import s from "./style.module.css";
 
 type Props = {
@@ -28,60 +31,14 @@ export default function FilterDrawer({
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
+  useEscapeKey(isOpen, onClose);
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
+  useBodyScrollLock(isOpen);
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  useFocusTrap(drawerRef, isOpen, { autoFocus: false });
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen || !drawerRef.current) return;
-
-    const drawer = drawerRef.current;
-    const focusableElements = drawer.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
-
-    closeButtonRef.current?.focus();
-
-    const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key !== "Tab") return;
-
-      if (e.shiftKey) {
-        if (document.activeElement === firstElement) {
-          e.preventDefault();
-          lastElement?.focus();
-        }
-      } else {
-        if (document.activeElement === lastElement) {
-          e.preventDefault();
-          firstElement?.focus();
-        }
-      }
-    };
-
-    drawer.addEventListener("keydown", handleTabKey);
-    return () => drawer.removeEventListener("keydown", handleTabKey);
+    if (isOpen) closeButtonRef.current?.focus();
   }, [isOpen]);
 
   const handleBackdropClick = useCallback(

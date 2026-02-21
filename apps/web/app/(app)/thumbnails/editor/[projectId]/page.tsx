@@ -1,7 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/prisma";
-import { getCurrentUserWithSubscription } from "@/lib/user";
-import { getFeatureFlag } from "@/lib/feature-flags";
+import { getCurrentUserWithSubscription } from "@/lib/server/auth";
+import { getFeatureFlag } from "@/lib/shared/feature-flags";
 import ThumbnailEditorClient from "./ThumbnailEditorClient";
 
 export const metadata = {

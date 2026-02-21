@@ -15,8 +15,8 @@ import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
 import { jsonOk, jsonError } from "@/lib/api/response";
 import { quotaExceededResponse } from "@/lib/api/quota";
-import { hasActiveSubscription } from "@/lib/user";
-import { logger } from "@/lib/logger";
+import { hasActiveSubscription } from "@/lib/server/auth";
+import { logger } from "@/lib/shared/logger";
 import { ResearchKeywordsBodySchema, researchKeywords } from "@/lib/features/keywords";
 
 // ── IP rate limiting (abuse prevention for unauthenticated) ─────

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
-import { normalizeCanonicalOrigin } from "@/lib/brand";
+import { normalizeCanonicalOrigin } from "@/lib/shared/brand";
 
 /**
  * Regression tests to ensure sitemap and robots never emit

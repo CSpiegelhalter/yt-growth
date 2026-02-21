@@ -16,7 +16,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import {
   canAttemptOAuth,
   recordOAuthAttempt,
-} from "@/lib/storage/oauthAttemptTracker";
+} from "@/lib/client/oauthAttemptTracker";
 import styles from "./VideoInsightsV2.module.css";
 import { VideoHeaderCompact } from "./components/VideoHeaderCompact";
 import { AnalysisTabs, TabPanel, type TabId } from "./components/AnalysisTabs";

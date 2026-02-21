@@ -6,7 +6,7 @@
  *
  * Also includes bottleneck detection and confidence scoring.
  */
-import type { AnalyticsTotals, DailyAnalyticsRow } from "./youtube-analytics";
+import type { AnalyticsTotals, DailyAnalyticsRow } from "@/lib/ports/YouTubePort";
 import type {
   BottleneckResult,
   ConfidenceLevel,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { logger } from "@/lib/logger";
+import { logger } from "@/lib/shared/logger";
 import { DomainError } from "@/lib/shared/errors";
 
 export type ApiErrorCode =
