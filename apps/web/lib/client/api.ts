@@ -20,31 +20,37 @@ class ApiClientError extends Error {
   }
 }
 
+type JsonResponseBody = Record<string, unknown>;
+type JsonErrorObject = Record<string, unknown>;
+
 export function isApiClientError(err: unknown): err is ApiClientError {
   return err instanceof ApiClientError;
 }
 
 function tryGetRequestIdFromBody(body: unknown): string | undefined {
-  if (!body || typeof body !== "object") return undefined;
-  const e = (body as any).error;
-  if (!e || typeof e !== "object") return undefined;
-  return typeof e.requestId === "string" ? e.requestId : undefined;
+  if (!body || typeof body !== "object") {return undefined;}
+  const obj = body as JsonResponseBody;
+  const e = obj.error;
+  if (!e || typeof e !== "object") {return undefined;}
+  const errObj = e as JsonErrorObject;
+  return typeof errObj.requestId === "string" ? errObj.requestId : undefined;
 }
 
 function tryGetMessageFromBody(body: unknown): string | undefined {
-  if (!body || typeof body !== "object") return undefined;
-  const e = (body as any).error;
-  if (e && typeof e === "object" && typeof e.message === "string") return e.message;
-  if (typeof (body as any).message === "string") return (body as any).message;
+  if (!body || typeof body !== "object") {return undefined;}
+  const obj = body as JsonResponseBody;
+  const e = obj.error;
+  if (e && typeof e === "object" && typeof (e as JsonErrorObject).message === "string") {return (e as JsonErrorObject).message as string;}
+  if (typeof obj.message === "string") {return obj.message;}
   return undefined;
 }
 
 function tryGetCodeFromBody(body: unknown): string | undefined {
-  if (!body || typeof body !== "object") return undefined;
-  const e = (body as any).error;
-  if (e && typeof e === "object" && typeof e.code === "string") return e.code;
-  // legacy surfaces (some routes still return `code` at top-level)
-  if (typeof (body as any).code === "string") return (body as any).code;
+  if (!body || typeof body !== "object") {return undefined;}
+  const obj = body as JsonResponseBody;
+  const e = obj.error;
+  if (e && typeof e === "object" && typeof (e as JsonErrorObject).code === "string") {return (e as JsonErrorObject).code as string;}
+  if (typeof obj.code === "string") {return obj.code;}
   return undefined;
 }
 
@@ -74,9 +80,10 @@ export async function apiFetchJson<T>(
   if (!res.ok) {
     const requestId = tryGetRequestIdFromBody(body) ?? res.headers.get("x-request-id") ?? undefined;
     const code = tryGetCodeFromBody(body) ?? `HTTP_${res.status}`;
+    const bodyObj = body as JsonResponseBody;
     const message =
       tryGetMessageFromBody(body) ??
-      (typeof (body as any)?.error === "string" ? String((body as any).error) : undefined) ??
+      (typeof bodyObj?.error === "string" ? String(bodyObj.error) : undefined) ??
       `Request failed (${res.status})`;
 
     throw new ApiClientError({
@@ -84,7 +91,7 @@ export async function apiFetchJson<T>(
       code,
       message,
       requestId,
-      details: (body as any)?.details ?? body,
+      details: bodyObj?.details ?? body,
     });
   }
 

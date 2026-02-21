@@ -27,7 +27,7 @@ function sortEntries<T extends { calls: number; estimatedUnits: number }>(
   return Object.entries(obj).sort((a, b) => {
     const ua = a[1]?.estimatedUnits ?? 0;
     const ub = b[1]?.estimatedUnits ?? 0;
-    if (ub !== ua) return ub - ua;
+    if (ub !== ua) {return ub - ua;}
     return (b[1]?.calls ?? 0) - (a[1]?.calls ?? 0);
   });
 }
@@ -69,7 +69,7 @@ export default function AdminYoutubeUsageClient() {
       const res = await fetch("/api/dev/youtube-usage?action=reset", {
         method: "POST",
       });
-      if (!res.ok) throw new Error("Reset failed");
+      if (!res.ok) {throw new Error("Reset failed");}
       await fetchData();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Reset failed");
@@ -88,7 +88,7 @@ export default function AdminYoutubeUsageClient() {
       const res = await fetch("/api/dev/youtube-usage?action=clear-cache", {
         method: "POST",
       });
-      if (!res.ok) throw new Error("Clear cache failed");
+      if (!res.ok) {throw new Error("Clear cache failed");}
       const json = await res.json();
       alert(`Cleared: ${json.cleared?.join(", ") || "none"}`);
     } catch (e) {
@@ -104,7 +104,7 @@ export default function AdminYoutubeUsageClient() {
   }, []);
 
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!autoRefresh) {return;}
     const id = setInterval(() => {
       fetchData();
     }, 2000);

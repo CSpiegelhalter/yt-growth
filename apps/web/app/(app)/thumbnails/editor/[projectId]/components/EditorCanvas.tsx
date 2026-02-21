@@ -92,7 +92,7 @@ export function EditorCanvas({
   useEffect(() => {
     const tr = trRef.current;
     const stage = stageRef.current;
-    if (!tr || !stage) return;
+    if (!tr || !stage) {return;}
 
     if (!selectedId) {
       tr.nodes([]);
@@ -115,7 +115,7 @@ export function EditorCanvas({
       return;
     }
 
-    tr.nodes([node as any]);
+    tr.nodes([node]);
     tr.getLayer()?.batchDraw();
   }, [selectedId, document.objects, stageRef]);
 
@@ -127,10 +127,10 @@ export function EditorCanvas({
     (e: Konva.KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault();
       const stage = stageRef.current;
-      if (!stage) return;
+      if (!stage) {return;}
 
       const pointer = stage.getPointerPosition();
-      if (!pointer) return;
+      if (!pointer) {return;}
 
       // Calculate zoom
       const oldZoom = zoom;
@@ -161,7 +161,7 @@ export function EditorCanvas({
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (tool === "pan" || isPanning) {
         const stage = stageRef.current;
-        if (!stage) return;
+        if (!stage) {return;}
         const pos = stage.getPointerPosition();
         if (pos) {
           lastPanPos.current = { x: pos.x - panX, y: pos.y - panY };
@@ -181,11 +181,11 @@ export function EditorCanvas({
 
   const handleMouseMove = useCallback(
     (_e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (!isPanning) return;
+      if (!isPanning) {return;}
       const stage = stageRef.current;
-      if (!stage) return;
+      if (!stage) {return;}
       const pos = stage.getPointerPosition();
-      if (!pos) return;
+      if (!pos) {return;}
 
       onPanChange(pos.x - lastPanPos.current.x, pos.y - lastPanPos.current.y);
     },
@@ -202,18 +202,17 @@ export function EditorCanvas({
   // Handle object change with snapping
   const handleObjectChange = useCallback(
     (id: string, patch: Partial<EditorObject>) => {
-      // Apply center snapping for position changes (not for arrows which use points)
+      let finalPatch = patch;
       if ("x" in patch || "y" in patch) {
         const obj = document.objects.find((o) => o.id === id);
-        // Don't snap arrows - they use points for position
         if (obj && obj.type !== "arrow") {
           const newX = patch.x ?? obj.x;
           const newY = patch.y ?? obj.y;
           const snapped = snapToCenter(newX, newY);
-          patch = { ...patch, x: snapped.x, y: snapped.y };
+          finalPatch = { ...finalPatch, x: snapped.x, y: snapped.y };
         }
       }
-      onObjectChange(id, patch);
+      onObjectChange(id, finalPatch);
     },
     [document.objects, onObjectChange]
   );
@@ -255,7 +254,7 @@ export function EditorCanvas({
         }}
       >
         <Stage
-          ref={stageRef as any}
+          ref={stageRef as React.RefObject<Konva.Stage>}
           width={containerSize.width}
           height={containerSize.height}
           scaleX={scaleFactor * zoom}
@@ -267,8 +266,8 @@ export function EditorCanvas({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          onTouchStart={handleMouseDown as any}
-          onTouchMove={handleMouseMove as any}
+          onTouchStart={handleMouseDown as unknown as (e: Konva.KonvaEventObject<TouchEvent>) => void}
+          onTouchMove={handleMouseMove as unknown as (e: Konva.KonvaEventObject<TouchEvent>) => void}
           onTouchEnd={handleMouseUp}
         >
           <Layer>
@@ -320,7 +319,7 @@ export function EditorCanvas({
             {/* Render all objects */}
             {sortedObjects.map((obj) => {
               const Component = LAYER_MAP[obj.type];
-              if (!Component) return null;
+              if (!Component) {return null;}
               return (
                 <Component
                   key={obj.id}
@@ -368,7 +367,7 @@ export function EditorCanvas({
 
             {/* Transformer for selected object */}
             <Transformer
-              ref={trRef as any}
+              ref={trRef as React.RefObject<Konva.Transformer>}
               rotateEnabled
               keepRatio={false}
               enabledAnchors={[
@@ -412,7 +411,7 @@ export async function exportCanvas(
   format: "png" | "jpg"
 ): Promise<string> {
   const stage = stageRef.current;
-  if (!stage) throw new Error("Stage not available");
+  if (!stage) {throw new Error("Stage not available");}
 
   // Store current state
   const oldScaleX = stage.scaleX();

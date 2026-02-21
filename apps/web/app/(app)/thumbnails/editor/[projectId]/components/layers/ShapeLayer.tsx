@@ -1,6 +1,7 @@
 "use client";
 
 import { Rect, Ellipse, RegularPolygon } from "react-konva";
+import type Konva from "konva";
 import type { ShapeObject } from "../types";
 
 interface ShapeLayerProps {
@@ -28,7 +29,7 @@ export function ShapeLayer({ obj, isSelected: _isSelected, onSelect, onChange }:
     draggable: true,
     onClick: onSelect,
     onTap: onSelect,
-    onDragEnd: (e: any) => {
+    onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
       onChange({
         x: e.target.x(),
         y: e.target.y(),
@@ -36,7 +37,7 @@ export function ShapeLayer({ obj, isSelected: _isSelected, onSelect, onChange }:
     },
   };
 
-  const handleTransformEnd = (e: any) => {
+  const handleTransformEnd = (e: Konva.KonvaEventObject<Event>) => {
     const node = e.target;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();

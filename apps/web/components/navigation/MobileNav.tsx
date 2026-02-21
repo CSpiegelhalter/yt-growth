@@ -62,7 +62,7 @@ export function MobileNav({
 
   // Handle escape key
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {return;}
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {

@@ -455,17 +455,17 @@ describe("DataForSEO Client Unit Tests", () => {
 
     it("returns empty array for undefined/null", () => {
       expect(parseMonthlyTrend(undefined)).toEqual([]);
-      expect(parseMonthlyTrend(null as any)).toEqual([]);
+      expect(parseMonthlyTrend(null as unknown as undefined)).toEqual([]);
     });
 
     it("returns empty array for non-array", () => {
-      expect(parseMonthlyTrend("not an array" as any)).toEqual([]);
+      expect(parseMonthlyTrend("not an array" as unknown as undefined)).toEqual([]);
     });
 
     it("handles missing search_volume gracefully", () => {
-      const data = [
+      const data: Array<{ year: number; month: number; search_volume?: number }> = [
         { year: 2024, month: 1, search_volume: 100 },
-        { year: 2024, month: 2 } as any, // Missing search_volume
+        { year: 2024, month: 2 },
         { year: 2024, month: 3, search_volume: 300 },
       ];
 
@@ -746,9 +746,9 @@ describe("YouTube SERP Client Unit Tests", () => {
     // The actual function is in youtube-serp.ts but we test the logic
 
     function formatViews(views: number | null): string {
-      if (views === null || views === undefined) return "—";
-      if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M`;
-      if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
+      if (views === null || views === undefined) {return "—";}
+      if (views >= 1000000) {return `${(views / 1000000).toFixed(1)}M`;}
+      if (views >= 1000) {return `${(views / 1000).toFixed(1)}K`;}
       return views.toString();
     }
 

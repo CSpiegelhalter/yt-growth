@@ -21,17 +21,18 @@ import {
   getVideoAnalytics,
   VideoInsightError,
 } from "@/lib/features/video-insights";
+import type { AnalyzeRetentionDeps } from "@/lib/features/video-insights/use-cases/analyzeRetention";
 
-const retentionDeps = {
-  fetchVideoMetadata: fetchOwnedVideoMetadata as any,
-  fetchTotalsWithStatus: fetchVideoAnalyticsTotalsWithStatus as any,
-  fetchDailyWithStatus: fetchVideoAnalyticsDailyWithStatus as any,
-  fetchRetentionCurve: fetchRetentionCurve as any,
-  fetchDiscoveryMetrics: fetchVideoDiscoveryMetrics as any,
-  fetchSubscriberBreakdown: fetchSubscriberBreakdown as any,
-  fetchGeoBreakdown: fetchGeographicBreakdown as any,
-  fetchTrafficDetail: fetchTrafficSourceDetail as any,
-  fetchDemographicBreakdown: fetchDemographicBreakdown as any,
+const retentionDeps: AnalyzeRetentionDeps = {
+  fetchVideoMetadata: fetchOwnedVideoMetadata as AnalyzeRetentionDeps["fetchVideoMetadata"],
+  fetchTotalsWithStatus: fetchVideoAnalyticsTotalsWithStatus as AnalyzeRetentionDeps["fetchTotalsWithStatus"],
+  fetchDailyWithStatus: fetchVideoAnalyticsDailyWithStatus as AnalyzeRetentionDeps["fetchDailyWithStatus"],
+  fetchRetentionCurve: fetchRetentionCurve as AnalyzeRetentionDeps["fetchRetentionCurve"],
+  fetchDiscoveryMetrics: fetchVideoDiscoveryMetrics as AnalyzeRetentionDeps["fetchDiscoveryMetrics"],
+  fetchSubscriberBreakdown: fetchSubscriberBreakdown as AnalyzeRetentionDeps["fetchSubscriberBreakdown"],
+  fetchGeoBreakdown: fetchGeographicBreakdown as AnalyzeRetentionDeps["fetchGeoBreakdown"],
+  fetchTrafficDetail: fetchTrafficSourceDetail as AnalyzeRetentionDeps["fetchTrafficDetail"],
+  fetchDemographicBreakdown: fetchDemographicBreakdown as AnalyzeRetentionDeps["fetchDemographicBreakdown"],
 };
 
 export const GET = createApiRoute(

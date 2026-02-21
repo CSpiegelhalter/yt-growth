@@ -39,19 +39,19 @@ type VideoHeaderCompactProps = {
 
 // CTR rating based on benchmarks
 function getCtrRating(ctr: number): { label: string; color: string } {
-  if (ctr >= 10) return { label: "Exceptional", color: "#22c55e" };
-  if (ctr >= 7) return { label: "Strong", color: "#22c55e" };
-  if (ctr >= 5) return { label: "Good", color: "#3b82f6" };
-  if (ctr >= 3) return { label: "Average", color: "#f59e0b" };
+  if (ctr >= 10) {return { label: "Exceptional", color: "#22c55e" };}
+  if (ctr >= 7) {return { label: "Strong", color: "#22c55e" };}
+  if (ctr >= 5) {return { label: "Good", color: "#3b82f6" };}
+  if (ctr >= 3) {return { label: "Average", color: "#f59e0b" };}
   return { label: "Needs work", color: "#ef4444" };
 }
 
 // Subscriber conversion rate rating
 function getSubRateRating(rate: number): { label: string; color: string } {
-  if (rate >= 3) return { label: "Excellent", color: "#22c55e" };
-  if (rate >= 2) return { label: "Strong", color: "#22c55e" };
-  if (rate >= 1) return { label: "Average", color: "#3b82f6" };
-  if (rate >= 0.5) return { label: "Below avg", color: "#f59e0b" };
+  if (rate >= 3) {return { label: "Excellent", color: "#22c55e" };}
+  if (rate >= 2) {return { label: "Strong", color: "#22c55e" };}
+  if (rate >= 1) {return { label: "Average", color: "#3b82f6" };}
+  if (rate >= 0.5) {return { label: "Below avg", color: "#f59e0b" };}
   return { label: "Low", color: "#ef4444" };
 }
 
@@ -339,7 +339,7 @@ function CtrKpi({ ctr }: { ctr: number }) {
 
 function SubRateKpi({ subsGained, views }: { subsGained: number; views: number }) {
   const rate = views > 0 ? (subsGained / views) * 100 : 0;
-  if (rate < 0.01) return null;
+  if (rate < 0.01) {return null;}
   return (
     <KpiWithTooltip
       value={`${rate.toFixed(2)}%`}

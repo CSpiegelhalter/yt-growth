@@ -22,7 +22,7 @@ export const GET = createApiRoute(
       async (_req, _ctx, api, { params, query }) => {
         const { channelId, videoId } = params!;
         const ctx = await resolveInsightContext(api.userId!, channelId, videoId, query!.range);
-        if (ctx instanceof Response) return ctx;
+        if (ctx instanceof Response) {return ctx;}
 
         try {
           const result = await getCommentInsights(

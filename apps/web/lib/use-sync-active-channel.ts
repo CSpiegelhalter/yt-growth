@@ -113,7 +113,7 @@ export function useSyncActiveChannel({
   // current channels list, even before effects run.  This avoids a one-frame
   // flash when a channel is removed.
   const activeChannelId = useMemo(() => {
-    if (channels.length === 0) return null;
+    if (channels.length === 0) {return null;}
     if (selectedId && channels.some((c) => c.channel_id === selectedId)) {
       return selectedId;
     }
@@ -152,7 +152,7 @@ export function useSyncActiveChannel({
   // Re-select when the URL channel ID changes externally.
   const prevUrlRef = useRef(urlChannelId);
   useEffect(() => {
-    if (urlChannelId === prevUrlRef.current) return;
+    if (urlChannelId === prevUrlRef.current) {return;}
     prevUrlRef.current = urlChannelId;
     if (
       urlChannelId &&
@@ -179,8 +179,8 @@ export function useSyncActiveChannelIdToLocalStorage(
   activeChannelId: string | null,
 ) {
   useEffect(() => {
-    if (!activeChannelId) return;
-    if (typeof window === "undefined") return;
+    if (!activeChannelId) {return;}
+    if (typeof window === "undefined") {return;}
     window.localStorage.setItem(ACTIVE_CHANNEL_STORAGE_KEY, activeChannelId);
   }, [activeChannelId]);
 }

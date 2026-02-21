@@ -5,7 +5,7 @@
  *
  * Auth: Stripe signature verification
  */
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { handleStripeWebhook } from "@/lib/stripe";
 import { createApiRoute } from "@/lib/api/route";
 import { ApiError } from "@/lib/api/errors";

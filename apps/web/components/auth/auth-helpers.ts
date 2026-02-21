@@ -31,8 +31,8 @@ export function validateEmailPassword(form: FormData): {
   const email = String(form.get("email") || "").trim();
   const password = String(form.get("password") || "");
 
-  if (!email) return { email, password, error: "Please enter your email address" };
-  if (!password) return { email, password, error: "Please enter your password" };
+  if (!email) {return { email, password, error: "Please enter your email address" };}
+  if (!password) {return { email, password, error: "Please enter your password" };}
 
   return { email, password, error: null };
 }

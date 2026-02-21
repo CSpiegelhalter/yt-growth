@@ -45,9 +45,9 @@ function stripControlChars(s: string): string {
 
 function clampPrompt(s: string, maxChars: number, opts?: { suffix?: string }) {
   const suffix = opts?.suffix ?? "";
-  if (s.length <= maxChars) return s;
+  if (s.length <= maxChars) {return s;}
   const keep = maxChars - suffix.length - 1;
-  if (keep <= 0) return suffix.slice(0, maxChars);
+  if (keep <= 0) {return suffix.slice(0, maxChars);}
   return `${s.slice(0, keep).trim()} ${suffix}`.trim();
 }
 
@@ -61,7 +61,7 @@ export async function buildPrompt(
   deps: BuildPromptDeps,
 ): Promise<BuildPromptOutput> {
   const userText = stripControlChars(input.userText).trim().slice(0, 500);
-  if (!userText) throw new ThumbnailError("INVALID_INPUT", "Empty prompt");
+  if (!userText) {throw new ThumbnailError("INVALID_INPUT", "Empty prompt");}
 
   const styleTrigger = input.styleTriggerWord.trim();
   const identityTrigger = input.identityTriggerWord?.trim();
@@ -129,7 +129,7 @@ Return JSON only.`;
       parsed = JSON.parse(llm.content);
     } catch {
       const m = llm.content.match(/\{[\s\S]*\}/);
-      if (!m) throw new Error("Failed to parse LLM JSON");
+      if (!m) {throw new Error("Failed to parse LLM JSON");}
       parsed = JSON.parse(m[0]);
     }
 

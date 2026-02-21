@@ -33,7 +33,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     id?: string | number;
     email?: string;
   } | null;
-  if (!sessionUser) return null;
+  if (!sessionUser) {return null;}
 
   let user: AuthUser | null = null;
 
@@ -76,7 +76,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
  */
 export async function getCurrentUserWithSubscription(): Promise<AuthUserWithSubscription | null> {
   const user = await getCurrentUser();
-  if (!user) return null;
+  if (!user) {return null;}
 
   const subscription = await prisma.subscription.findUnique({
     where: { userId: user.id },
@@ -100,8 +100,8 @@ export async function getCurrentUserWithSubscription(): Promise<AuthUserWithSubs
 export function hasActiveSubscription(
   subscription: AuthUserWithSubscription["subscription"]
 ): boolean {
-  if (!subscription) return false;
-  if (subscription.plan === "free") return false;
+  if (!subscription) {return false;}
+  if (subscription.plan === "free") {return false;}
 
   // If Stripe gave us a period end, treat this as the source of truth:
   // user remains entitled until `currentPeriodEnd`, even if they canceled in the portal.

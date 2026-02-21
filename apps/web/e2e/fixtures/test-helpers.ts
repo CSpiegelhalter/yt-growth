@@ -6,7 +6,7 @@
  * - API helpers for test-only routes
  * - Common page interactions
  */
-import { Page, expect } from "@playwright/test";
+import { type Page, expect } from "@playwright/test";
 
 // Standard test user credentials
 export const TEST_USER = {

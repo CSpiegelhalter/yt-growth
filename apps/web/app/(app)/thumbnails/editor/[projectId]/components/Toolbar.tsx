@@ -68,7 +68,7 @@ export function Toolbar({
         accept="image/png,image/jpeg,image/webp"
         onChange={(e) => {
           onImageUpload(e.target.files);
-          if (fileInputRef.current) fileInputRef.current.value = "";
+          if (fileInputRef.current) {fileInputRef.current.value = "";}
         }}
         style={{ display: "none" }}
       />

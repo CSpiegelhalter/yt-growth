@@ -8,7 +8,7 @@ import { PrismaClient } from "@prisma/client";
  */
 function getDatabaseUrl(): string {
   const raw = process.env.DATABASE_URL ?? "";
-  if (!raw) return raw;
+  if (!raw) {return raw;}
 
   try {
     const url = new URL(raw);

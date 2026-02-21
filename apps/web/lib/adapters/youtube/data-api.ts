@@ -129,7 +129,7 @@ export async function fetchVideoSnippetByApiKey(
     return (item as YouTubeVideoSnippetItem) ?? null;
   } catch (err) {
     clearTimeout(timeoutId);
-    if (err instanceof ApiError) throw err;
+    if (err instanceof ApiError) {throw err;}
     throw new ApiError({
       code: "INTERNAL",
       status: 500,
@@ -229,7 +229,7 @@ export async function fetchVideosDetailsBatch(
   ga: GoogleAccount,
   videoIds: string[]
 ): Promise<YouTubeVideo[]> {
-  if (videoIds.length === 0) return [];
+  if (videoIds.length === 0) {return [];}
 
   const batches = chunk(videoIds, VIDEO_BATCH_SIZE);
 
@@ -321,7 +321,7 @@ export async function fetchVideoDetails(
   }>(ga, url.toString());
 
   const item = data.items?.[0];
-  if (!item) return null;
+  if (!item) {return null;}
 
   return {
     videoId: item.id,
@@ -352,7 +352,7 @@ export async function fetchVideosStatsBatch(
   ga: GoogleAccount,
   videoIds: string[]
 ): Promise<Map<string, VideoStats>> {
-  if (videoIds.length === 0) return new Map();
+  if (videoIds.length === 0) {return new Map();}
 
   const results = new Map<string, VideoStats>();
   const batches = chunk(videoIds, VIDEO_BATCH_SIZE);
@@ -541,7 +541,7 @@ export async function fetchRecentChannelVideosCore(
     url.searchParams.set("part", "snippet,contentDetails");
     url.searchParams.set("playlistId", uploadsPlaylistId);
     url.searchParams.set("maxResults", "50");
-    if (pageToken) url.searchParams.set("pageToken", pageToken);
+    if (pageToken) {url.searchParams.set("pageToken", pageToken);}
 
     const data = await youtubeFetch<{
       items?: Array<{
@@ -574,9 +574,9 @@ export async function fetchRecentChannelVideosCore(
       });
     }
 
-    if (crossedCutoff) break;
-    if (!data.nextPageToken) break;
-    if (candidates.length >= 50) break;
+    if (crossedCutoff) {break;}
+    if (!data.nextPageToken) {break;}
+    if (candidates.length >= 50) {break;}
     pageToken = data.nextPageToken;
   }
 
@@ -633,7 +633,7 @@ async function fetchRecentVideosViaSearch(
   }>(ga, url.toString());
 
   const videoIds = searchData.items?.map((i) => i.id.videoId) ?? [];
-  if (videoIds.length === 0) return [];
+  if (videoIds.length === 0) {return [];}
 
   // Fetch stats for these videos
   const statsMap = await fetchVideosStatsBatch(ga, videoIds);

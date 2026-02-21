@@ -65,7 +65,7 @@ export default function GoalsClient({
       setLoading(true);
       setError(null);
       const res = await fetch(`/api/me/badges?channelId=${activeChannelId}`);
-      if (!res.ok) throw new Error("Failed to load badges");
+      if (!res.ok) {throw new Error("Failed to load badges");}
       const json = await res.json();
       setData(json);
     } catch (err) {
@@ -81,7 +81,7 @@ export default function GoalsClient({
 
   // Filter and sort badges
   const filteredBadges = useMemo(() => {
-    if (!data?.badges) return [];
+    if (!data?.badges) {return [];}
 
     let badges = [...data.badges];
 
@@ -122,10 +122,10 @@ export default function GoalsClient({
 
   // Group goals by category
   const goalsByCategory = useMemo(() => {
-    if (!data?.goals) return {};
+    if (!data?.goals) {return {};}
     const grouped: Record<string, GoalWithProgress[]> = {};
     for (const goal of data.goals) {
-      if (!grouped[goal.category]) grouped[goal.category] = [];
+      if (!grouped[goal.category]) {grouped[goal.category] = [];}
       grouped[goal.category].push(goal);
     }
     return grouped;
@@ -168,7 +168,7 @@ export default function GoalsClient({
 
   // Count new badges
   const newBadgeCount = useMemo(() => {
-    if (!data?.badges) return 0;
+    if (!data?.badges) {return 0;}
     return data.badges.filter((b) => b.unlocked && !b.seen).length;
   }, [data?.badges]);
 
@@ -494,7 +494,7 @@ export default function GoalsClient({
           <div className={s.recentList}>
             {data.recentUnlocks.slice(0, 5).map((unlock) => {
               const badge = data.badges.find((b) => b.id === unlock.badgeId);
-              if (!badge) return null;
+              if (!badge) {return null;}
               return (
                 <div
                   key={unlock.badgeId}

@@ -18,7 +18,7 @@ export const GenerateTagsBodySchema = z.object({
     .optional()
     .refine(
       (val) => {
-        if (!val) return true;
+        if (!val) {return true;}
         return parseYouTubeVideoId(val) !== null;
       },
       { message: "Invalid YouTube URL" },

@@ -18,7 +18,7 @@ type BulletListProps = {
  * No emojis, just subtle color indicators
  */
 export function BulletList({ type, items, title }: BulletListProps) {
-  if (items.length === 0) return null;
+  if (items.length === 0) {return null;}
 
   return (
     <div className={styles.bulletList}>

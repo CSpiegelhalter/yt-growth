@@ -15,8 +15,8 @@
 
 import crypto from "crypto";
 import { prisma } from "@/prisma";
-import { generateNicheQueries, ChannelProfileContext } from "@/lib/llm";
-import {
+import { generateNicheQueries, type ChannelProfileContext } from "@/lib/llm";
+import type {
   ChannelProfileAI,
   ChannelProfileInput,
 } from "@/lib/features/channels";
@@ -67,7 +67,7 @@ async function getChannelNiche(
     where: { channelId },
   });
 
-  if (!cached) return null;
+  if (!cached) {return null;}
 
   // Check if cache is still valid
   if (cached.cachedUntil < new Date()) {
@@ -302,7 +302,7 @@ async function getNicheFromProfile(
     `;
 
     const profile = profiles[0];
-    if (!profile) return null;
+    if (!profile) {return null;}
 
     // If we have an AI profile, use its competitorSearchHints directly
     if (profile.aiProfileJson) {

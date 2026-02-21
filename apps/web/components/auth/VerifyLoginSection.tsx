@@ -19,7 +19,7 @@ export function VerifyLoginSection({
   iconClassName,
   hintClassName,
 }: Props) {
-  if (!visible) return null;
+  if (!visible) {return null;}
 
   return (
     <div className={sectionClassName}>

@@ -87,7 +87,7 @@ export default function ProfileEditor({
 
   // Handle save
   const handleSave = async () => {
-    if (!validate()) return;
+    if (!validate()) {return;}
 
     const success = await onSave(input);
     if (success) {

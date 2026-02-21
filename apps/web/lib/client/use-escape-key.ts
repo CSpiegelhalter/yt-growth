@@ -5,10 +5,10 @@ import { useEffect } from "react";
  */
 export function useEscapeKey(isOpen: boolean, onClose: () => void) {
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {return;}
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {onClose();}
     };
 
     document.addEventListener("keydown", handleKeyDown);

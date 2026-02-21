@@ -104,15 +104,15 @@ export function OverviewPanel({
 
   // Determine status based on bottleneck
   const getStatus = (): "strong" | "mixed" | "needs-work" | "neutral" => {
-    if (!bottleneck) return "neutral";
+    if (!bottleneck) {return "neutral";}
     // Not enough data means neutral
-    if (bottleneck.bottleneck === "NOT_ENOUGH_DATA") return "neutral";
+    if (bottleneck.bottleneck === "NOT_ENOUGH_DATA") {return "neutral";}
     // Major issues with discovery or retention
     if (
       bottleneck.bottleneck === "DISCOVERY_IMPRESSIONS" ||
       bottleneck.bottleneck === "RETENTION"
     )
-      return "needs-work";
+      {return "needs-work";}
     return "mixed";
   };
 
@@ -228,7 +228,7 @@ export function OverviewPanel({
                 {
                   label:
                     topAction.what.length > 50
-                      ? topAction.what.substring(0, 50) + "..."
+                      ? `${topAction.what.substring(0, 50)  }...`
                       : topAction.what,
                   variant: "primary",
                 },

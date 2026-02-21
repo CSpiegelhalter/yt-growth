@@ -39,7 +39,7 @@ function extractCssModuleClasses(css: string): Set<string> {
   const out = new Set<string>();
   const re = /\.([a-zA-Z_][a-zA-Z0-9_-]*)/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(css))) out.add(m[1]);
+  while ((m = re.exec(css))) {out.add(m[1]);}
   return out;
 }
 
@@ -58,7 +58,7 @@ function findImportNames(code: string, moduleCssBaseName: string): string[] {
     "g",
   );
   let m: RegExpExecArray | null;
-  while ((m = re.exec(code))) names.push(m[1]);
+  while ((m = re.exec(code))) {names.push(m[1]);}
   return names;
 }
 
@@ -130,7 +130,7 @@ async function main() {
   for (const cssFile of cssFiles) {
     const css = read(cssFile);
     const classes = extractCssModuleClasses(css);
-    if (classes.size === 0) continue;
+    if (classes.size === 0) {continue;}
 
     const cssBase = path.basename(cssFile);
 
@@ -138,7 +138,7 @@ async function main() {
     const importerCandidates: string[] = [];
     for (const f of codeFiles) {
       const code = read(f);
-      if (isLikelyImporter(code, cssBase)) importerCandidates.push(f);
+      if (isLikelyImporter(code, cssBase)) {importerCandidates.push(f);}
     }
 
     if (importerCandidates.length === 0) {
@@ -159,14 +159,14 @@ async function main() {
     for (const importer of importerCandidates) {
       const code = read(importer);
       const importNames = findImportNames(code, cssBase);
-      if (importNames.length === 0) continue;
+      if (importNames.length === 0) {continue;}
 
       for (const importName of importNames) {
         if (detectDynamicIndexedAccess(code, importName))
-          suspiciousDynamicAccess = true;
+          {suspiciousDynamicAccess = true;}
 
         for (const cls of classes) {
-          if (countUsages(code, importName, cls) > 0) used.add(cls);
+          if (countUsages(code, importName, cls) > 0) {used.add(cls);}
         }
       }
     }

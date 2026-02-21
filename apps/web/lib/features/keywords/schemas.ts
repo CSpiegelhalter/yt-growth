@@ -5,7 +5,7 @@ const locationField = z
   .string()
   .trim()
   .default("us")
-  .refine((val) => SUPPORTED_LOCATIONS.includes(val.toLowerCase() as any), {
+  .refine((val) => (SUPPORTED_LOCATIONS as readonly string[]).includes(val.toLowerCase()), {
     message: "Invalid region code",
   });
 

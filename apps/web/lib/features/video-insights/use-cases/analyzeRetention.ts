@@ -23,9 +23,11 @@ import {
   EMPTY_CHANNEL_BASELINE,
   type DerivedMetrics,
   type ChannelBaseline,
+  type BaselineComparison,
 } from "@/lib/owned-video-math";
 import { getDateRange, type AnalyticsRange } from "@/lib/shared/date-range";
 import type {
+  AnalyticsTotals,
   DailyAnalyticsRow,
   VideoMetadata,
   SubscriberBreakdown,
@@ -34,17 +36,12 @@ import type {
   DemographicBreakdown,
 } from "@/lib/ports/YouTubePort";
 import { VideoInsightError } from "../errors";
+import type { GoogleAccount } from "../types";
 
 // ── Types ───────────────────────────────────────────────────
 
-type GoogleAccount = {
-  id: number;
-  refreshTokenEnc: string | null;
-  tokenExpiresAt: Date | null;
-};
-
 type TotalsResult = {
-  totals: Record<string, any> | null;
+  totals: AnalyticsTotals | null;
   permission: { ok: boolean; reason?: string };
 };
 
@@ -148,7 +145,7 @@ export async function analyzeRetention(
   };
 
   const derived = computeDerivedMetrics(
-    totalsWithDiscovery as any,
+    totalsWithDiscovery as Parameters<typeof computeDerivedMetrics>[0],
     dailySeries,
     videoMeta.durationSec,
     videoMeta.publishedAt,
@@ -363,11 +360,11 @@ async function storeDailyAnalytics(
   }
 }
 
-function getRetentionReason(derived: DerivedMetrics, comparison: any): string {
-  if (derived.avdRatio == null) return "Retention data not available yet.";
+function getRetentionReason(derived: DerivedMetrics, comparison: BaselineComparison): string {
+  if (derived.avdRatio == null) {return "Retention data not available yet.";}
   const pct = (derived.avdRatio * 100).toFixed(1);
-  if (comparison.avgViewPercentage.vsBaseline === "above") return `${pct}% avg viewed is above your channel average.`;
-  if (comparison.avgViewPercentage.vsBaseline === "below") return `${pct}% avg viewed is below your channel average.`;
+  if (comparison.avgViewPercentage.vsBaseline === "above") {return `${pct}% avg viewed is above your channel average.`;}
+  if (comparison.avgViewPercentage.vsBaseline === "below") {return `${pct}% avg viewed is below your channel average.`;}
   return `${pct}% avg viewed is around your channel average.`;
 }
 
@@ -380,11 +377,11 @@ function getRetentionAction(grade: string): string {
   }
 }
 
-function getConversionReason(derived: DerivedMetrics, comparison: any): string {
-  if (derived.subsPer1k == null) return "Subscriber data not available.";
+function getConversionReason(derived: DerivedMetrics, comparison: BaselineComparison): string {
+  if (derived.subsPer1k == null) {return "Subscriber data not available.";}
   const subs = derived.subsPer1k.toFixed(2);
-  if (comparison.subsPer1k.vsBaseline === "above") return `${subs} subs/1K views is above your channel average.`;
-  if (comparison.subsPer1k.vsBaseline === "below") return `${subs} subs/1K views is below your channel average.`;
+  if (comparison.subsPer1k.vsBaseline === "above") {return `${subs} subs/1K views is above your channel average.`;}
+  if (comparison.subsPer1k.vsBaseline === "below") {return `${subs} subs/1K views is below your channel average.`;}
   return `${subs} subs/1K views is around your channel average.`;
 }
 
@@ -397,11 +394,11 @@ function getConversionAction(grade: string): string {
   }
 }
 
-function getEngagementReason(derived: DerivedMetrics, comparison: any): string {
-  if (derived.engagementPerView == null) return "Engagement data not available.";
+function getEngagementReason(derived: DerivedMetrics, comparison: BaselineComparison): string {
+  if (derived.engagementPerView == null) {return "Engagement data not available.";}
   const eng = (derived.engagementPerView * 100).toFixed(2);
-  if (comparison.engagementPerView.vsBaseline === "above") return `${eng}% engagement rate is above your channel average.`;
-  if (comparison.engagementPerView.vsBaseline === "below") return `${eng}% engagement rate is below your channel average.`;
+  if (comparison.engagementPerView.vsBaseline === "above") {return `${eng}% engagement rate is above your channel average.`;}
+  if (comparison.engagementPerView.vsBaseline === "below") {return `${eng}% engagement rate is below your channel average.`;}
   return `${eng}% engagement rate is around your channel average.`;
 }
 

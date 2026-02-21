@@ -3,14 +3,14 @@ import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
 
 function getOrCreateRequestId(req: NextRequest) {
   const incoming = req.headers.get("x-request-id");
-  if (incoming && incoming.length >= 8 && incoming.length <= 128) return incoming;
+  if (incoming && incoming.length >= 8 && incoming.length <= 128) {return incoming;}
   // Node runtime: crypto.randomUUID exists in Node 20+
   return globalThis.crypto?.randomUUID?.() ?? Math.random().toString(16).slice(2);
 }
 
 function getIp(req: NextRequest): string | undefined {
   const xff = req.headers.get("x-forwarded-for");
-  if (!xff) return undefined;
+  if (!xff) {return undefined;}
   return xff.split(",")[0]?.trim() || undefined;
 }
 
@@ -27,10 +27,10 @@ export function withRequestContext<P>(
     let channelId: string | undefined;
     let videoId: string | undefined;
     try {
-      const params = await (ctx as any)?.params;
+      const params = await (ctx as NextRouteContext<Record<string, string>>).params;
       if (params && typeof params === "object") {
-        channelId = typeof (params as any).channelId === "string" ? (params as any).channelId : undefined;
-        videoId = typeof (params as any).videoId === "string" ? (params as any).videoId : undefined;
+        channelId = typeof params.channelId === "string" ? params.channelId : undefined;
+        videoId = typeof params.videoId === "string" ? params.videoId : undefined;
       }
     } catch {
       // ignore

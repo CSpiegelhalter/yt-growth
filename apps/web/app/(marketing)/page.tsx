@@ -507,7 +507,7 @@ function PopularGuidesSection() {
     return {
       slug,
       title: article.shortTitle,
-      description: article.description.slice(0, 120) + "...",
+      description: `${article.description.slice(0, 120)  }...`,
     };
   });
 

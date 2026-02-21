@@ -291,7 +291,7 @@ function parseSearchVolumeResult(
   const trend = parseMonthlyTrend(monthlySearchesRaw);
   const monthlySearches = monthlySearchesRaw
     .sort((a, b) => {
-      if (a.year !== b.year) return a.year - b.year;
+      if (a.year !== b.year) {return a.year - b.year;}
       return a.month - b.month;
     })
     .slice(-12)
@@ -345,7 +345,7 @@ function parseKeywordsForKeywordsResult(
   const trend = parseMonthlyTrend(monthlySearchesRaw);
   const monthlySearches = monthlySearchesRaw
     .sort((a, b) => {
-      if (a.year !== b.year) return a.year - b.year;
+      if (a.year !== b.year) {return a.year - b.year;}
       return a.month - b.month;
     })
     .slice(-12)

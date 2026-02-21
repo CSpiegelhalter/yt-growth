@@ -160,7 +160,7 @@ export const STOPWORDS = new Set([
  * Sanitize user-provided niche text.
  */
 export function sanitizeNicheText(text: string): string {
-  if (!text || typeof text !== "string") return "";
+  if (!text || typeof text !== "string") {return "";}
 
   return (
     text
@@ -176,7 +176,7 @@ export function sanitizeNicheText(text: string): string {
  * Extract meaningful keywords from text.
  */
 export function extractKeywords(text: string): string[] {
-  if (!text) return [];
+  if (!text) {return [];}
 
   const words = text
     .toLowerCase()
@@ -194,7 +194,7 @@ function generateQueryTerms(
   keywords: string[],
   categoryName?: string
 ): string[] {
-  if (keywords.length === 0) return [];
+  if (keywords.length === 0) {return [];}
 
   const queries: string[] = [];
   const topKeywords = keywords.slice(0, 15);
@@ -379,12 +379,12 @@ function passesContentTypeFilter(
   durationSec: number | undefined,
   filter: ContentTypeFilter
 ): boolean {
-  if (filter === "both") return true;
-  if (durationSec === undefined) return true;
+  if (filter === "both") {return true;}
+  if (durationSec === undefined) {return true;}
 
   const isShort = durationSec < 60;
-  if (filter === "shorts") return isShort;
-  if (filter === "long") return !isShort;
+  if (filter === "shorts") {return isShort;}
+  if (filter === "long") {return !isShort;}
   return true;
 }
 
@@ -408,16 +408,16 @@ export function passesFilters(
   if (filters.postedAfter) {
     const postedAfterMs = new Date(filters.postedAfter).getTime();
     const videoMs = new Date(video.publishedAt).getTime();
-    if (videoMs < postedAfterMs) return false;
+    if (videoMs < postedAfterMs) {return false;}
   }
   if (filters.postedBefore) {
     const postedBeforeMs = new Date(filters.postedBefore).getTime();
     const videoMs = new Date(video.publishedAt).getTime();
-    if (videoMs > postedBeforeMs) return false;
+    if (videoMs > postedBeforeMs) {return false;}
   }
 
   const minVpd = filters.minViewsPerDay ?? DEFAULT_FILTERS.minViewsPerDay;
-  if (video.derived.viewsPerDay < minVpd) return false;
+  if (video.derived.viewsPerDay < minVpd) {return false;}
 
   if (
     filters.maxViewsPerDay !== undefined &&

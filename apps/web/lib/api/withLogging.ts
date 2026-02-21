@@ -4,6 +4,11 @@ import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
 import { jsonError } from "./response";
 import type { ApiErrorCode } from "./errors";
 
+type LegacyErrorBody = {
+  error?: string | { code?: string; requestId?: string; message?: string };
+  message?: string;
+};
+
 export function withLogging<P>(handler: ApiHandler<P>): ApiHandler<P> {
   return async (
     req: NextRequest,
@@ -39,7 +44,8 @@ export function withLogging<P>(handler: ApiHandler<P>): ApiHandler<P> {
     if (res.status >= 400 && contentType.includes("application/json")) {
       try {
         const body = await res.clone().json();
-        const maybeErrObj = (body as any)?.error;
+        const bodyObj = body as LegacyErrorBody;
+        const maybeErrObj = bodyObj?.error;
         const alreadyUnified =
           maybeErrObj &&
           typeof maybeErrObj === "object" &&
@@ -50,12 +56,12 @@ export function withLogging<P>(handler: ApiHandler<P>): ApiHandler<P> {
             typeof maybeErrObj === "string" ? maybeErrObj : undefined;
 
           const codeFromStatus = (status: number): ApiErrorCode => {
-            if (status === 400) return "VALIDATION_ERROR";
-            if (status === 401) return "UNAUTHORIZED";
-            if (status === 403) return "FORBIDDEN";
-            if (status === 404) return "NOT_FOUND";
-            if (status === 429) return "RATE_LIMITED";
-            if (status >= 500) return "INTERNAL";
+            if (status === 400) {return "VALIDATION_ERROR";}
+            if (status === 401) {return "UNAUTHORIZED";}
+            if (status === 403) {return "FORBIDDEN";}
+            if (status === 404) {return "NOT_FOUND";}
+            if (status === 429) {return "RATE_LIMITED";}
+            if (status >= 500) {return "INTERNAL";}
             return "INTERNAL";
           };
 
@@ -75,8 +81,8 @@ export function withLogging<P>(handler: ApiHandler<P>): ApiHandler<P> {
               ? "Upgrade required"
               : legacyError === "channel_limit_reached"
               ? "Channel limit reached"
-              : typeof (body as any)?.message === "string"
-              ? (body as any).message
+              : typeof bodyObj?.message === "string"
+              ? bodyObj.message
               : typeof legacyError === "string"
               ? legacyError
               : "Request failed";

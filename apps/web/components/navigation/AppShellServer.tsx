@@ -95,7 +95,7 @@ export function AppShellServer({
   
   // Sync active channel to URL on mount
   useEffect(() => {
-    if (didInitialSync.current) return;
+    if (didInitialSync.current) {return;}
     didInitialSync.current = true;
     
     if (activeChannelId) {
@@ -127,11 +127,11 @@ export function AppShellServer({
   // Listen for newChannel query param (after OAuth redirect)
   useEffect(() => {
     const isNewChannel = searchParams.get("newChannel") === "1";
-    if (!isNewChannel) return;
+    if (!isNewChannel) {return;}
     
     async function refreshChannels() {
       try {
-        const data = await apiFetchJson<any>("/api/me/channels", {
+        const data = await apiFetchJson<Channel[] | { channels: Channel[] }>("/api/me/channels", {
           cache: "no-store",
         });
         const channelList = Array.isArray(data) ? data : data.channels;
@@ -227,13 +227,13 @@ export function AppShellServer({
 /* ---------- Helpers ---------- */
 
 function isChannelScopedPath(pathname: string): boolean {
-  if (pathname === "/dashboard") return true;
-  if (pathname === "/ideas") return true;
-  if (pathname === "/goals") return true;
-  if (pathname === "/subscriber-insights") return true;
-  if (pathname === "/competitors") return true;
-  if (pathname.startsWith("/video/")) return true;
-  if (pathname.startsWith("/competitors/video/")) return true;
+  if (pathname === "/dashboard") {return true;}
+  if (pathname === "/ideas") {return true;}
+  if (pathname === "/goals") {return true;}
+  if (pathname === "/subscriber-insights") {return true;}
+  if (pathname === "/competitors") {return true;}
+  if (pathname.startsWith("/video/")) {return true;}
+  if (pathname.startsWith("/competitors/video/")) {return true;}
   return false;
 }
 

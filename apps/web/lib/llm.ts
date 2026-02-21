@@ -537,21 +537,29 @@ Good examples:
     const list = Array.isArray(parsed.beatThisVideo)
       ? parsed.beatThisVideo
       : [];
-    return list
-      .map((x: any) => ({
+    type BeatChecklistItem = {
+      action?: string;
+      difficulty?: string;
+      impact?: string;
+    };
+
+    return (list as BeatChecklistItem[])
+      .map((x) => ({
         action: typeof x?.action === "string" ? x.action.trim() : "",
-        difficulty:
+        difficulty: (
           x?.difficulty === "Easy" ||
           x?.difficulty === "Medium" ||
           x?.difficulty === "Hard"
             ? x.difficulty
-            : "Medium",
-        impact:
+            : "Medium"
+        ) as "Easy" | "Medium" | "Hard",
+        impact: (
           x?.impact === "Low" || x?.impact === "Medium" || x?.impact === "High"
             ? x.impact
-            : "High",
+            : "High"
+        ) as "Low" | "Medium" | "High",
       }))
-      .filter((x: any) => x.action.length >= 16)
+      .filter((x) => x.action.length >= 16)
       .slice(0, 8);
   } catch (err) {
     console.error("Competitor beat checklist failed:", err);
@@ -735,7 +743,7 @@ function getCachedPersona(
   // Look for any cached entry for this channel that's still valid
   // If content hash differs but entry is recent (< 1 day), reuse it
   for (const [key, entry] of personaCache.entries()) {
-    if (!key.startsWith(`${channelId}:`)) continue;
+    if (!key.startsWith(`${channelId}:`)) {continue;}
 
     const age = Date.now() - entry.cachedAt;
     if (age >= PERSONA_CACHE_TTL_MS) {

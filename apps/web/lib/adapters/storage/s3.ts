@@ -108,7 +108,7 @@ class S3StorageAdapter implements StoragePort {
       method,
       urlPath,
       "",
-      canonicalHeaders + "\n",
+      `${canonicalHeaders  }\n`,
       signedHeaders,
       payloadHash,
     ].join("\n");
@@ -125,7 +125,7 @@ class S3StorageAdapter implements StoragePort {
 
     const encoder = new TextEncoder();
     const kDate = await hmacSha256(
-      encoder.encode("AWS4" + this.config.secretAccessKey),
+      encoder.encode(`AWS4${  this.config.secretAccessKey}`),
       date,
     );
     const kRegion = await hmacSha256(kDate, region);

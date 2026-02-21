@@ -57,7 +57,7 @@ export async function listIdeas(input: ListIdeasInput): Promise<ListIdeasResult>
 
     return { savedIdeas: mapped, total: mapped.length };
   } catch (err) {
-    if (err instanceof SavedIdeaError) throw err;
+    if (err instanceof SavedIdeaError) {throw err;}
     throw new SavedIdeaError("EXTERNAL_FAILURE", "Failed to fetch saved ideas", err);
   }
 }

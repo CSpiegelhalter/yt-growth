@@ -76,7 +76,7 @@ async function main() {
     `✅ Pro subscription created: expires ${subscription.currentPeriodEnd?.toISOString()}`
   );
 
-  console.log("\n" + "=".repeat(50));
+  console.log(`\n${  "=".repeat(50)}`);
   console.log("📋 GOOGLE REVIEWER TEST CREDENTIALS");
   console.log("=".repeat(50));
   console.log(`Email:    ${REVIEWER_EMAIL}`);

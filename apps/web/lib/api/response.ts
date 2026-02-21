@@ -2,7 +2,7 @@ import type { ApiErrorCode } from "./errors";
 
 export function jsonOk<T>(data: T, init?: ResponseInit & { requestId?: string }) {
   const headers = new Headers(init?.headers);
-  if (init?.requestId) headers.set("x-request-id", init.requestId);
+  if (init?.requestId) {headers.set("x-request-id", init.requestId);}
   return Response.json(data, { ...init, headers });
 }
 

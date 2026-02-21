@@ -20,17 +20,17 @@ const REDACT_KEYS = new Set([
 
 function redactValue(value: unknown): unknown {
   if (typeof value === "string") {
-    if (value.length <= 4) return "***";
+    if (value.length <= 4) {return "***";}
     return `${value.slice(0, 2)}***${value.slice(-2)}`;
   }
   return "***";
 }
 
 function redactDeep(input: unknown, depth = 0): unknown {
-  if (depth > 6) return "[MaxDepth]";
-  if (input == null) return input;
-  if (Array.isArray(input)) return input.map((v) => redactDeep(v, depth + 1));
-  if (typeof input !== "object") return input;
+  if (depth > 6) {return "[MaxDepth]";}
+  if (input == null) {return input;}
+  if (Array.isArray(input)) {return input.map((v) => redactDeep(v, depth + 1));}
+  if (typeof input !== "object") {return input;}
 
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
@@ -81,7 +81,7 @@ export function createLogger(baseFields?: LogFields): Logger {
     info: (message, fields) => emit("info", message, { ...baseFields, ...fields }),
     warn: (message, fields) => emit("warn", message, { ...baseFields, ...fields }),
     error: (message, fields) => {
-      const err = (fields as any)?.err;
+      const err = fields?.err;
       const normalized =
         err instanceof Error
           ? { name: err.name, message: err.message, stack: err.stack }

@@ -2,8 +2,8 @@
  * Truncate text to a maximum length with ellipsis
  */
 export function truncate(text: string, maxLen: number): string {
-  if (text.length <= maxLen) return text;
-  return text.slice(0, maxLen - 3) + "...";
+  if (text.length <= maxLen) {return text;}
+  return `${text.slice(0, maxLen - 3)  }...`;
 }
 
 /**

@@ -253,7 +253,7 @@ function saveReport(results, summary) {
  * Main execution.
  */
 async function main() {
-  console.log("\n" + "=".repeat(70));
+  console.log(`\n${  "=".repeat(70)}`);
   console.log("🔍 SEO Text-to-HTML Ratio Checker");
   console.log("=".repeat(70));
   console.log(`Base URL:   ${BASE_URL}`);
@@ -284,13 +284,13 @@ async function main() {
 
   // Sort results by ratio ascending (worst first)
   const sortedResults = [...results].sort((a, b) => {
-    if (a.ratio === undefined) return -1;
-    if (b.ratio === undefined) return 1;
+    if (a.ratio === undefined) {return -1;}
+    if (b.ratio === undefined) {return 1;}
     return a.ratio - b.ratio;
   });
 
   // Summary table
-  console.log("\n" + "=".repeat(90));
+  console.log(`\n${  "=".repeat(90)}`);
   console.log("RESULTS (sorted by ratio, worst first)");
   console.log("=".repeat(90));
   console.log(

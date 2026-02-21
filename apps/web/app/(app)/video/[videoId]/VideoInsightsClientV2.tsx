@@ -32,13 +32,43 @@ import {
   DimensionalInsightsPanel,
 } from "./components/panels";
 import type { CoreAnalysis } from "./components/AiSummaryCard";
-import type { BottleneckResult } from "@/types/api";
+import type {
+  BottleneckResult,
+  DerivedMetrics,
+  AnalyticsTotals,
+  DailyAnalyticsRow,
+  ChannelBaseline,
+  BaselineComparison,
+  SectionConfidence,
+} from "@/types/api";
+import type {
+  VideoMetadata,
+  SubscriberBreakdown,
+  GeographicBreakdown,
+  TrafficSourceDetail,
+  DemographicBreakdown,
+} from "@/lib/ports/YouTubePort";
 
 // Types for deep dive data
 type SeoData = {
-  titleAnalysis?: any;
-  descriptionAnalysis?: any;
-  tagAnalysis?: any;
+  titleAnalysis?: {
+    score: number;
+    strengths: string[];
+    weaknesses: string[];
+    suggestions: string[];
+  };
+  descriptionAnalysis?: {
+    score: number;
+    weaknesses: string[];
+    rewrittenOpening: string;
+    addTheseLines: string[];
+  };
+  tagAnalysis?: {
+    score: number;
+    feedback: string;
+    missing: string[];
+    impactLevel: "high" | "medium" | "low";
+  };
 };
 
 type CommentsData = {
@@ -72,41 +102,29 @@ type DeepDiveState = {
 
 // Analytics response from server
 type AnalyticsResponse = {
-  video: {
-    videoId: string;
-    title: string;
-    description: string;
-    publishedAt: string;
-    tags: string[];
-    categoryId: string | null;
-    thumbnailUrl: string | null;
-    durationSec: number;
-    viewCount: number;
-    likeCount: number;
-    commentCount: number;
-  };
+  video: VideoMetadata;
   analytics: {
-    totals: any;
-    dailySeries: any[];
+    totals: AnalyticsTotals;
+    dailySeries: DailyAnalyticsRow[];
   };
-  derived: any;
-  baseline: any;
-  comparison: any;
-  levers: any;
+  derived: DerivedMetrics;
+  baseline: ChannelBaseline;
+  comparison: BaselineComparison;
+  levers: Record<string, unknown>;
   retention?: {
     points: Array<{ elapsedRatio: number; audienceWatchRatio: number }>;
     cliffTimeSec?: number | null;
   };
   bottleneck?: BottleneckResult;
-  confidence?: any;
+  confidence?: SectionConfidence;
   isLowDataMode?: boolean;
-  analyticsAvailability?: any;
+  analyticsAvailability?: Record<string, unknown>;
   cached?: boolean;
   hasSummary?: boolean;
-  subscriberBreakdown?: any;
-  geoBreakdown?: any;
-  trafficDetail?: any;
-  demographicBreakdown?: any;
+  subscriberBreakdown?: SubscriberBreakdown;
+  geoBreakdown?: GeographicBreakdown;
+  trafficDetail?: TrafficSourceDetail;
+  demographicBreakdown?: DemographicBreakdown;
 };
 
 type SummaryResponse = {
@@ -286,7 +304,7 @@ export default function VideoInsightsClientV2({
 
   // Fetch summary and deep dives on mount
   useEffect(() => {
-    if (fetchedRef.current) return;
+    if (fetchedRef.current) {return;}
     fetchedRef.current = true;
 
     fetchSummary();

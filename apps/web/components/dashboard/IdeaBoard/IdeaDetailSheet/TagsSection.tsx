@@ -68,7 +68,7 @@ export function TagsSection({
       <div className={s.keywordChips}>
         {displayList.map((kw, i) => {
           const text = String(kw ?? "").trim();
-          if (!text) return null;
+          if (!text) {return null;}
           const id = `kw-${i}`;
           const isCopied = copiedId === id;
           return (

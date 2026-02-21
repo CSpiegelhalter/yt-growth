@@ -6,7 +6,7 @@
  *
  * Auth: Not required (works for signed in and signed out users)
  */
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { Resend } from "resend";
 import { createApiRoute } from "@/lib/api/route";
 import { withValidation } from "@/lib/api/withValidation";

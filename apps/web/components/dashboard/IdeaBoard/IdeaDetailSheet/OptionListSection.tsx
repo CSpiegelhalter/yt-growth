@@ -83,7 +83,7 @@ export function OptionListSection({
       <div className={s.optionList}>
         {displayList.map((text, i) => {
           const t = String(text ?? "").trim();
-          if (!t) return null;
+          if (!t) {return null;}
           const itemId = `${keyPrefix}-${i}`;
           return (
             <div key={itemId} className={s.optionRow}>

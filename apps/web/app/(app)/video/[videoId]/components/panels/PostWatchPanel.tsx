@@ -141,7 +141,7 @@ function getEndScreenPerformance(
   message: string;
   status: "strong" | "mixed" | "needs-work";
 } | null {
-  if (ctr == null) return null;
+  if (ctr == null) {return null;}
 
   // Compare to baseline if available
   if (baseline != null && baseline > 0) {

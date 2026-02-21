@@ -73,13 +73,13 @@ type LikelyFormat =
  */
 function guessLikelyFormat(title: string, description: string): LikelyFormat {
   const haystack = `${title} ${description}`;
-  if (/tutorial|how to|guide|step|learn/i.test(haystack)) return "Tutorial";
-  if (/review|honest|vs |compared|worth/i.test(title)) return "Review";
-  if (/vlog|day in|week in|behind/i.test(haystack)) return "Vlog";
-  if (/react|watch|reacts/i.test(title)) return "Reaction";
-  if (/story|journey|experience/i.test(haystack)) return "Story/Documentary";
-  if (/top \d|best \d|\d things|\d ways/i.test(title)) return "Listicle";
-  if (/explained|what is|why/i.test(title)) return "Explainer";
+  if (/tutorial|how to|guide|step|learn/i.test(haystack)) {return "Tutorial";}
+  if (/review|honest|vs |compared|worth/i.test(title)) {return "Review";}
+  if (/vlog|day in|week in|behind/i.test(haystack)) {return "Vlog";}
+  if (/react|watch|reacts/i.test(title)) {return "Reaction";}
+  if (/story|journey|experience/i.test(haystack)) {return "Story/Documentary";}
+  if (/top \d|best \d|\d things|\d ways/i.test(title)) {return "Listicle";}
+  if (/explained|what is|why/i.test(title)) {return "Explainer";}
   return "General";
 }
 
@@ -90,8 +90,8 @@ function guessProductionLevel(
   durationMin: number,
   views: number
 ): "Low" | "Medium" | "High" {
-  if (durationMin < 3) return "Low";
-  if (durationMin > 15 && views > 50_000) return "High";
+  if (durationMin < 3) {return "Low";}
+  if (durationMin > 15 && views > 50_000) {return "High";}
   return "Medium";
 }
 
@@ -119,7 +119,7 @@ export function fallbackWhatItsAbout(input: {
     const t = s.trim();
     return t.length >= 60 && t.length <= 240;
   });
-  if (firstSentence) return firstSentence.trim();
+  if (firstSentence) {return firstSentence.trim();}
 
   const topTags = (input.tags ?? []).slice(0, 4).filter(Boolean);
   if (topTags.length > 0) {
@@ -151,7 +151,8 @@ function hashStringToUint32(input: string): number {
 /**
  * Mulberry32 PRNG for deterministic random number generation.
  */
-function mulberry32(seed: number): () => number {
+function mulberry32(initialSeed: number): () => number {
+  let seed = initialSeed;
   return () => {
     let t = (seed += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
@@ -172,13 +173,13 @@ function pickTopicHint(input: {
     .map((t) => t.trim())
     .filter(Boolean)
     .find((t) => !/youtube|subscribe|video|views/i.test(t.toLowerCase()));
-  if (tag) return tag;
+  if (tag) {return tag;}
 
   const kws = deriveKeywordsFromText(
     `${input.title} ${input.description}`.slice(0, 800)
   );
-  if (kws.length >= 2) return `${kws[0]} ${kws[1]}`;
-  if (kws.length === 1) return kws[0];
+  if (kws.length >= 2) {return `${kws[0]} ${kws[1]}`;}
+  if (kws.length === 1) {return kws[0];}
   return "this topic";
 }
 
@@ -547,16 +548,16 @@ export function computeStrategicInsights(input: {
   const commentRate = (comments / views) * 1000;
 
   let likeRateVerdict: "Below Average" | "Average" | "Above Average" | "Exceptional" = "Average";
-  if (likeRate < 2) likeRateVerdict = "Below Average";
-  else if (likeRate >= 2 && likeRate < 4) likeRateVerdict = "Average";
-  else if (likeRate >= 4 && likeRate < 6) likeRateVerdict = "Above Average";
-  else likeRateVerdict = "Exceptional";
+  if (likeRate < 2) {likeRateVerdict = "Below Average";}
+  else if (likeRate >= 2 && likeRate < 4) {likeRateVerdict = "Average";}
+  else if (likeRate >= 4 && likeRate < 6) {likeRateVerdict = "Above Average";}
+  else {likeRateVerdict = "Exceptional";}
 
   let commentRateVerdict: "Below Average" | "Average" | "Above Average" | "Exceptional" = "Average";
-  if (commentRate < 1) commentRateVerdict = "Below Average";
-  else if (commentRate >= 1 && commentRate < 3) commentRateVerdict = "Average";
-  else if (commentRate >= 3 && commentRate < 6) commentRateVerdict = "Above Average";
-  else commentRateVerdict = "Exceptional";
+  if (commentRate < 1) {commentRateVerdict = "Below Average";}
+  else if (commentRate >= 1 && commentRate < 3) {commentRateVerdict = "Average";}
+  else if (commentRate >= 3 && commentRate < 6) {commentRateVerdict = "Above Average";}
+  else {commentRateVerdict = "Exceptional";}
 
   // ===== COMPETITION DIFFICULTY =====
   let difficultyScore: "Easy" | "Medium" | "Hard" | "Very Hard" = "Medium";
@@ -744,13 +745,13 @@ export function computeStrategicInsights(input: {
 
   const keyElements: string[] = [];
   if (chapterDetection.hasChapters)
-    keyElements.push(`Chapter timestamps (${chapterDetection.chapterCount})`);
+    {keyElements.push(`Chapter timestamps (${chapterDetection.chapterCount})`);}
   if (linkAnalysis.hasLinks)
-    keyElements.push(`External links (${linkAnalysis.linkCount})`);
-  if (hasCTA) keyElements.push("Call-to-action");
+    {keyElements.push(`External links (${linkAnalysis.linkCount})`);}
+  if (hasCTA) {keyElements.push("Call-to-action");}
   if (hashtagAnalysis.count > 0)
-    keyElements.push(`Hashtags (${hashtagAnalysis.count})`);
-  if (linkAnalysis.hasSocialLinks) keyElements.push("Social media links");
+    {keyElements.push(`Hashtags (${hashtagAnalysis.count})`);}
+  if (linkAnalysis.hasSocialLinks) {keyElements.push("Social media links");}
 
   // ===== FORMAT SIGNALS =====
   let paceEstimate: "Slow" | "Medium" | "Fast" = "Medium";

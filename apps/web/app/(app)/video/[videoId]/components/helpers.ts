@@ -7,9 +7,9 @@ export function formatRelativeDate(dateStr: string): string {
   const diffMs = now.getTime() - published.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return "Published today";
-  if (diffDays === 1) return "Published yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays === 0) {return "Published today";}
+  if (diffDays === 1) {return "Published yesterday";}
+  if (diffDays < 7) {return `${diffDays} days ago`;}
   if (diffDays < 30) {
     const weeks = Math.floor(diffDays / 7);
     return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
@@ -29,7 +29,7 @@ export { formatDuration } from "@/lib/competitor-utils";
  */
 export function formatResetAt(resetAt: string): string {
   const d = new Date(resetAt);
-  if (Number.isNaN(d.getTime())) return "tomorrow";
+  if (Number.isNaN(d.getTime())) {return "tomorrow";}
   return d.toLocaleString(undefined, {
     month: "short",
     day: "numeric",

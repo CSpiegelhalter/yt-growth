@@ -68,7 +68,7 @@ export function AppHeader({
 
   // Close dropdowns on outside click
   useEffect(() => {
-    if (!menuOpen && !channelDropdownOpen) return;
+    if (!menuOpen && !channelDropdownOpen) {return;}
 
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -85,7 +85,7 @@ export function AppHeader({
 
   // Close dropdowns on escape
   useEffect(() => {
-    if (!menuOpen && !channelDropdownOpen) return;
+    if (!menuOpen && !channelDropdownOpen) {return;}
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -382,7 +382,7 @@ export function AppHeader({
 /* ---------- Helpers ---------- */
 
 function getInitials(name: string): string {
-  if (!name) return "?";
+  if (!name) {return "?";}
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) {
     return parts[0].substring(0, 2).toUpperCase();
@@ -391,10 +391,10 @@ function getInitials(name: string): string {
 }
 
 function truncateEmail(email: string): string {
-  if (!email) return "";
+  if (!email) {return "";}
   const atIndex = email.indexOf("@");
-  if (atIndex <= 0) return email;
+  if (atIndex <= 0) {return email;}
   const localPart = email.substring(0, atIndex);
-  if (localPart.length <= 8) return localPart;
-  return localPart.substring(0, 8) + "…";
+  if (localPart.length <= 8) {return localPart;}
+  return `${localPart.substring(0, 8)  }…`;
 }

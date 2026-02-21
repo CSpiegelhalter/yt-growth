@@ -64,8 +64,8 @@ function UsageBar({
   const percentage = (remaining / limit) * 100;
 
   const getColor = () => {
-    if (percentage > 50) return "#22c55e";
-    if (percentage > 20) return "#f59e0b";
+    if (percentage > 50) {return "#22c55e";}
+    if (percentage > 20) {return "#f59e0b";}
     return "#ef4444";
   };
 

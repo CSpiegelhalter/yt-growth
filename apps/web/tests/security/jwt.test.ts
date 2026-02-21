@@ -6,6 +6,8 @@
 import { describe, it, expect } from "vitest";
 import jwt from "jsonwebtoken";
 
+type JwtPayload = Record<string, unknown>;
+
 // Test JWT functionality
 describe("JWT Security", () => {
   const TEST_SECRET = "test-secret-at-least-32-characters-long";
@@ -49,7 +51,7 @@ describe("JWT Security", () => {
         { expiresIn: "1h" }
       );
 
-      const decoded = jwt.verify(token, TEST_SECRET) as any;
+      const decoded = jwt.verify(token, TEST_SECRET) as JwtPayload;
 
       expect(decoded.sub).toBe("user123");
       expect(decoded.email).toBe("test@test.com");
@@ -68,8 +70,7 @@ describe("JWT Security", () => {
         TEST_SECRET
       );
 
-      // Decode without verification to inspect payload
-      const decoded = jwt.decode(badToken) as any;
+      const decoded = jwt.decode(badToken) as JwtPayload;
 
       // These should NOT be in tokens
       // This test documents what to avoid
@@ -89,14 +90,13 @@ describe("JWT Security", () => {
         { expiresIn: "30d" }
       );
 
-      const decoded = jwt.decode(goodToken) as any;
+      const decoded = jwt.decode(goodToken) as JwtPayload;
 
       expect(decoded.sub).toBeDefined();
       expect(decoded.email).toBeDefined();
       expect(decoded.exp).toBeDefined();
       expect(decoded.iat).toBeDefined();
 
-      // Should NOT have sensitive data
       expect(decoded.password).toBeUndefined();
       expect(decoded.accessToken).toBeUndefined();
       expect(decoded.refreshToken).toBeUndefined();
@@ -109,10 +109,10 @@ describe("JWT Security", () => {
         expiresIn: "1h",
       });
 
-      const decoded = jwt.decode(token) as any;
+      const decoded = jwt.decode(token) as JwtPayload;
 
       expect(decoded.exp).toBeDefined();
-      expect(decoded.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
+      expect(decoded.exp as number).toBeGreaterThan(Math.floor(Date.now() / 1000));
     });
 
     it("should expire within reasonable time (30 days max)", () => {
@@ -122,10 +122,9 @@ describe("JWT Security", () => {
         expiresIn: "30d",
       });
 
-      const decoded = jwt.decode(token) as any;
+      const decoded = jwt.decode(token) as JwtPayload;
 
-      // Should be around 30 days from now (with some tolerance)
-      expect(decoded.exp).toBeLessThanOrEqual(maxExpiry + 60);
+      expect(decoded.exp as number).toBeLessThanOrEqual(maxExpiry + 60);
     });
   });
 
@@ -143,7 +142,7 @@ describe("JWT Security", () => {
 
     it("should use HS256 by default", () => {
       const token = jwt.sign({ sub: "user123" }, TEST_SECRET);
-      const decoded = jwt.decode(token, { complete: true }) as any;
+      const decoded = jwt.decode(token, { complete: true }) as { header: { alg: string } };
 
       expect(decoded.header.alg).toBe("HS256");
     });
@@ -164,7 +163,7 @@ describe("Password Reset Token Security", () => {
       { expiresIn: "1h" }
     );
 
-    const decoded = jwt.decode(token) as any;
+    const decoded = jwt.decode(token) as JwtPayload;
 
     expect(decoded.purpose).toBe("password_reset");
   });
@@ -176,10 +175,10 @@ describe("Password Reset Token Security", () => {
       { expiresIn: "1h" }
     );
 
-    const decoded = jwt.decode(token) as any;
-    const maxExpiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour
+    const decoded = jwt.decode(token) as JwtPayload;
+    const maxExpiry = Math.floor(Date.now() / 1000) + 3600;
 
-    expect(decoded.exp).toBeLessThanOrEqual(maxExpiry + 60);
+    expect(decoded.exp as number).toBeLessThanOrEqual(maxExpiry + 60);
   });
 
   it("should verify purpose before accepting", () => {
@@ -190,9 +189,8 @@ describe("Password Reset Token Security", () => {
       { expiresIn: "1h" }
     );
 
-    const decoded = jwt.verify(emailVerifyToken, TOKEN_SECRET) as any;
+    const decoded = jwt.verify(emailVerifyToken, TOKEN_SECRET) as JwtPayload;
 
-    // Should reject if purpose doesn't match expected
     expect(decoded.purpose).not.toBe("password_reset");
   });
 });

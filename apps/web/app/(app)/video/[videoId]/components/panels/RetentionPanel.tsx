@@ -46,9 +46,9 @@ const RETENTION_BENCHMARKS = {
 };
 
 function getBenchmarkForDuration(durationSec: number) {
-  if (durationSec <= 60) return RETENTION_BENCHMARKS.shorts;
-  if (durationSec <= 360) return RETENTION_BENCHMARKS.short;
-  if (durationSec <= 720) return RETENTION_BENCHMARKS.medium;
+  if (durationSec <= 60) {return RETENTION_BENCHMARKS.shorts;}
+  if (durationSec <= 360) {return RETENTION_BENCHMARKS.short;}
+  if (durationSec <= 720) {return RETENTION_BENCHMARKS.medium;}
   return RETENTION_BENCHMARKS.long;
 }
 
@@ -69,7 +69,7 @@ export function RetentionPanel({
 
   // Prepare chart data
   const chartData = useMemo(() => {
-    if (!points.length) return [];
+    if (!points.length) {return [];}
     return points.map((p) => ({
       time: formatTime(p.elapsedRatio * durationSec),
       timeRatio: p.elapsedRatio,
@@ -79,7 +79,7 @@ export function RetentionPanel({
 
   // Calculate retention insights
   const insights = useMemo(() => {
-    if (points.length < 2) return null;
+    if (points.length < 2) {return null;}
 
     // Find steepest drop
     let maxDrop = 0;
@@ -156,7 +156,7 @@ export function RetentionPanel({
 
   // Timestamp diagnosis - identify significant drops and explain them
   const timestampDiagnosis = useMemo(() => {
-    if (points.length < 5) return [];
+    if (points.length < 5) {return [];}
 
     const diagnosis: TimestampDiagnosis[] = [];
     const SIGNIFICANT_DROP_THRESHOLD = 0.08; // 8% drop is significant

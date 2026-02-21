@@ -50,7 +50,7 @@ export function DiscoveryChart({
 }: DiscoveryChartProps) {
   // Sort and prepare data, filtering to only show data from publish date
   const chartData = useMemo(() => {
-    if (!dailySeries || dailySeries.length === 0) return null;
+    if (!dailySeries || dailySeries.length === 0) {return null;}
 
     // Filter to only include dates on or after publish date
     let filtered = dailySeries;
@@ -63,7 +63,7 @@ export function DiscoveryChart({
       });
     }
 
-    if (filtered.length === 0) return null;
+    if (filtered.length === 0) {return null;}
 
     const sorted = [...filtered].sort((a, b) => a.date.localeCompare(b.date));
 

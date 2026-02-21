@@ -28,7 +28,7 @@
  * - Decline: 4000000000000002
  * - Requires auth: 4000002500003155
  */
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
   signIn,
   TEST_USER,
@@ -168,7 +168,7 @@ test.describe("Stripe Checkout Flow", () => {
 
       // Check if card form is visible or needs "Pay with card" click
       const cardNumberField = page.locator("input#cardNumber");
-      let cardVisible = await cardNumberField
+      const cardVisible = await cardNumberField
         .isVisible({ timeout: 5000 })
         .catch(() => false);
 
@@ -178,7 +178,7 @@ test.describe("Stripe Checkout Flow", () => {
           const btn = document.querySelector(
             '[aria-label="Pay with card"]'
           ) as HTMLElement;
-          if (btn) btn.click();
+          if (btn) {btn.click();}
         });
         await page.waitForTimeout(2000);
       }

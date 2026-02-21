@@ -24,7 +24,7 @@ export function NextSteps({
   description,
   actions,
 }: NextStepsProps) {
-  if (actions.length === 0) return null;
+  if (actions.length === 0) {return null;}
 
   return (
     <div className={styles.nextSteps}>

@@ -2,6 +2,8 @@ import { prisma } from "@/prisma";
 import { ThumbnailError } from "../errors";
 import { defaultEditorState } from "../editor/editorState";
 
+type OutputImage = { url?: string; [key: string]: unknown };
+
 type CreateProjectInput = {
   userId: number;
   thumbnailJobId: string;
@@ -37,13 +39,19 @@ export async function createProject(
   const allOutputUrls = new Set<string>();
   if (Array.isArray(job.outputImages)) {
     for (const img of job.outputImages) {
-      if ((img as any)?.url) allOutputUrls.add((img as any).url);
+      const imgObj = img as OutputImage;
+      if (imgObj?.url) {
+        allOutputUrls.add(imgObj.url);
+      }
     }
   }
   for (const pred of job.Predictions) {
     if (Array.isArray(pred.outputImages)) {
       for (const img of pred.outputImages) {
-        if ((img as any)?.url) allOutputUrls.add((img as any).url);
+        const imgObj = img as OutputImage;
+        if (imgObj?.url) {
+          allOutputUrls.add(imgObj.url);
+        }
       }
     }
   }

@@ -26,7 +26,7 @@ export function decodeHtmlEntities(text: string): string {
  */
 export function parseDuration(iso: string): number {
   const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return 0;
+  if (!match) {return 0;}
   const hours = parseInt(match[1] ?? "0", 10);
   const minutes = parseInt(match[2] ?? "0", 10);
   const seconds = parseInt(match[3] ?? "0", 10);
@@ -59,8 +59,8 @@ export async function mapLimit<T, R>(
   limit: number,
   fn: (item: T, index: number) => Promise<R>
 ): Promise<R[]> {
-  if (items.length === 0) return [];
-  if (limit <= 0) limit = 1;
+  if (items.length === 0) {return [];}
+  const effectiveLimit = limit <= 0 ? 1 : limit;
 
   const results: R[] = new Array(items.length);
   let nextIndex = 0;
@@ -74,7 +74,7 @@ export async function mapLimit<T, R>(
 
   // Start `limit` workers
   const workers: Promise<void>[] = [];
-  for (let i = 0; i < Math.min(limit, items.length); i++) {
+  for (let i = 0; i < Math.min(effectiveLimit, items.length); i++) {
     workers.push(worker());
   }
 
@@ -94,7 +94,7 @@ export function yyyyMmDd(date: Date): string {
  * Returns 0 for null/missing dates, otherwise at least 1 to avoid division by zero.
  */
 export function daysSince(isoDate: string | null, nowMs: number = Date.now()): number {
-  if (!isoDate) return 0;
+  if (!isoDate) {return 0;}
   const publishedMs = new Date(isoDate).getTime();
   const daysDiff = Math.floor((nowMs - publishedMs) / (1000 * 60 * 60 * 24));
   return Math.max(1, daysDiff);

@@ -14,7 +14,7 @@
  *   bun run test:e2e
  */
 
-import { spawn, execSync, ChildProcess } from "child_process";
+import { spawn, execSync, type ChildProcess } from "child_process";
 
 const PORT = process.env.TEST_PORT || "3000";
 const BASE_URL = `http://localhost:${PORT}`;

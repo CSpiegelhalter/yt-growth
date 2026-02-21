@@ -103,9 +103,9 @@ export default function TrendingClient({
   useEffect(() => {
     try {
       const saved = safeGetItem("discovery-saved-niches");
-      if (saved) setSavedNiches(new Set(JSON.parse(saved)));
+      if (saved) {setSavedNiches(new Set(JSON.parse(saved)));}
       const dismissed = safeGetItem("discovery-dismissed-niches");
-      if (dismissed) setDismissedNiches(new Set(JSON.parse(dismissed)));
+      if (dismissed) {setDismissedNiches(new Set(JSON.parse(dismissed)));}
     } catch {
       // Ignore parse errors
     }
@@ -118,7 +118,7 @@ export default function TrendingClient({
       currentQueryText: string,
       append = false,
     ) => {
-      if (abortRef.current) abortRef.current.abort();
+      if (abortRef.current) {abortRef.current.abort();}
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -159,7 +159,7 @@ export default function TrendingClient({
         setTotalFound(data.totalFound);
         setNextCursor(data.nextCursor ?? null);
       } catch (err) {
-        if ((err as Error).name === "AbortError") return;
+        if ((err as Error).name === "AbortError") {return;}
         setError(
           err instanceof Error ? err.message : "Failed to discover niches",
         );
@@ -222,7 +222,7 @@ export default function TrendingClient({
     (niche: DiscoveredNiche) => {
       // Build URL with niche as query param for competitor search
       const params = new URLSearchParams();
-      if (activeChannelId) params.set("channelId", activeChannelId);
+      if (activeChannelId) {params.set("channelId", activeChannelId);}
       params.set("niche", niche.nicheLabel);
       window.location.href = `/competitors?${params.toString()}`;
     },

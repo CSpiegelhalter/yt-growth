@@ -89,10 +89,9 @@ describe("safe fallback behavior", () => {
     expect(typeof result.trending_search).toBe("boolean");
   });
 
-  test("invalidateFeatureFlagCache does not throw", () => {
-    const { invalidateFeatureFlagCache } = require("@/lib/shared/feature-flags");
+  test("invalidateFeatureFlagCache does not throw", async () => {
+    const { invalidateFeatureFlagCache } = await import("@/lib/shared/feature-flags");
 
-    // These should not throw
     expect(() => invalidateFeatureFlagCache()).not.toThrow();
     expect(() => invalidateFeatureFlagCache("thumbnail_generation")).not.toThrow();
     expect(() => invalidateFeatureFlagCache("trending_search")).not.toThrow();

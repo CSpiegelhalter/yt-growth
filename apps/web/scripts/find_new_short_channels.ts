@@ -92,11 +92,11 @@ const INITIAL_BACKOFF_MS = 1000;
  * Returns 0 if parsing fails.
  */
 export function parseISO8601Duration(duration: string): number {
-  if (!duration || typeof duration !== "string") return 0;
+  if (!duration || typeof duration !== "string") {return 0;}
 
   // Match PT[#H][#M][#S] format
   const match = duration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
-  if (!match) return 0;
+  if (!match) {return 0;}
 
   const hours = parseInt(match[1] || "0", 10);
   const minutes = parseInt(match[2] || "0", 10);
@@ -287,7 +287,7 @@ async function fetchTrendingKeywords(geo: string, maxKeywords: number): Promise<
           keywords.push(title);
         }
       }
-      if (keywords.length >= maxKeywords) break;
+      if (keywords.length >= maxKeywords) {break;}
     }
 
     if (keywords.length === 0) {
@@ -607,7 +607,7 @@ async function main(): Promise<void> {
         console.log(`  Page ${page + 1}: ${result.videoIds.length} videos`);
 
         pageToken = result.nextPageToken;
-        if (!pageToken) break;
+        if (!pageToken) {break;}
       } catch (err) {
         console.error(`  Error: ${err instanceof Error ? err.message : err}`);
         break;
@@ -682,10 +682,10 @@ async function main(): Promise<void> {
   qualifyingVideos.sort((a, b) => b.viewCount - a.viewCount);
 
   for (const video of qualifyingVideos) {
-    if (seenChannels.has(video.channelId)) continue;
+    if (seenChannels.has(video.channelId)) {continue;}
 
     const channel = channelDetails.get(video.channelId);
-    if (!channel) continue;
+    if (!channel) {continue;}
 
     const channelAgeDays = calculateAgeDays(channel.publishedAt);
 

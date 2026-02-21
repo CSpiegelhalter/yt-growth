@@ -26,16 +26,16 @@ export function getPlanFromSubscription(
     currentPeriodEnd: Date | string | null;
   } | null,
 ): Plan {
-  if (!subscription) return "FREE";
-  if (!subscription.isActive) return "FREE";
-  if (subscription.plan === "free") return "FREE";
+  if (!subscription) {return "FREE";}
+  if (!subscription.isActive) {return "FREE";}
+  if (subscription.plan === "free") {return "FREE";}
 
   if (subscription.currentPeriodEnd) {
     const periodEnd =
       typeof subscription.currentPeriodEnd === "string"
         ? new Date(subscription.currentPeriodEnd)
         : subscription.currentPeriodEnd;
-    if (periodEnd.getTime() <= Date.now()) return "FREE";
+    if (periodEnd.getTime() <= Date.now()) {return "FREE";}
   }
 
   return "PRO";

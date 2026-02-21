@@ -10,6 +10,33 @@ import { ResearchTab } from "./components/ResearchTab";
 import { SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
 import type { RelatedKeyword, YouTubeRanking, GoogleTrendsData } from "./types";
 
+type KeywordTaskResponse = {
+  pending?: boolean;
+  taskId?: string;
+  rows?: unknown;
+  [key: string]: unknown;
+};
+
+type KeywordResearchResponse = {
+  needsAuth?: boolean;
+  pending?: boolean;
+  taskId?: string;
+  rows?: unknown;
+  [key: string]: unknown;
+};
+
+type KeywordTrendsResponse = {
+  pending?: boolean;
+  taskId?: string;
+  [key: string]: unknown;
+};
+
+type YoutubeSerpResponse = {
+  needsAuth?: boolean;
+  results?: unknown[];
+  [key: string]: unknown;
+};
+
 // ============================================
 // ZOD SCHEMAS - Response validation for API data
 // ============================================
@@ -252,7 +279,7 @@ export function KeywordResearchClient() {
       }
 
       try {
-        const data = await apiFetchJson<any>(`/api/keywords/task/${taskId}`);
+        const data = await apiFetchJson<KeywordTaskResponse>(`/api/keywords/task/${taskId}`);
 
         if (data.pending) {
           return; // Keep polling
@@ -282,7 +309,7 @@ export function KeywordResearchClient() {
       const keywords = Array.isArray(kws) ? kws : [kws];
       setLoadingKeywords(true);
       try {
-        const data = await apiFetchJson<any>("/api/keywords/research", {
+        const data = await apiFetchJson<KeywordResearchResponse>("/api/keywords/research", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mode: "related", phrases: keywords, database: db }),
@@ -297,10 +324,11 @@ export function KeywordResearchClient() {
 
         // Handle pending state - start polling
         if (data.pending && data.taskId) {
+          const tid = data.taskId;
           setPolling(true);
           pollAttemptsRef.current = 0;
           pollIntervalRef.current = setInterval(() => {
-            pollForResults(data.taskId);
+            pollForResults(tid);
           }, POLL_INTERVAL_MS);
           return;
         }
@@ -348,7 +376,7 @@ export function KeywordResearchClient() {
       }
 
       try {
-        const data = await apiFetchJson<any>(`/api/keywords/task/${taskId}`);
+        const data = await apiFetchJson<KeywordTaskResponse>(`/api/keywords/task/${taskId}`);
 
         if (data.pending) {
           return; // Keep polling
@@ -387,7 +415,7 @@ export function KeywordResearchClient() {
     trendsPollAttemptsRef.current = 0;
 
     try {
-      const data = await apiFetchJson<any>("/api/keywords/trends", {
+      const data = await apiFetchJson<KeywordTrendsResponse>("/api/keywords/trends", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ keyword: kw, database: db }),
@@ -395,9 +423,10 @@ export function KeywordResearchClient() {
 
       // Handle pending - start polling with longer intervals for trends
       if (data.pending && data.taskId) {
+        const tid = data.taskId;
         trendsPollAttemptsRef.current = 0;
         trendsPollIntervalRef.current = setInterval(() => {
-          pollForTrendsResults(data.taskId);
+          pollForTrendsResults(tid);
         }, TRENDS_POLL_INTERVAL_MS);
         return;
       }
@@ -422,7 +451,7 @@ export function KeywordResearchClient() {
   const fetchRankings = useCallback(async (kw: string, db: string) => {
     setLoadingRankings(true);
     try {
-      const data = await apiFetchJson<any>("/api/keywords/youtube-serp", {
+      const data = await apiFetchJson<YoutubeSerpResponse>("/api/keywords/youtube-serp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ keyword: kw, location: db, limit: 10 }),
@@ -455,7 +484,7 @@ export function KeywordResearchClient() {
   // Add a keyword to the list
   const addKeyword = useCallback((kw: string) => {
     const keyword = kw.trim().toLowerCase();
-    if (!keyword) return;
+    if (!keyword) {return;}
     if (keywords.includes(keyword)) {
       toast("Keyword already added", "info");
       return;
@@ -496,7 +525,7 @@ export function KeywordResearchClient() {
   // Execute search for keywords
   const executeSearch = useCallback(
     (kws: string[], db: string, addToHistory = true) => {
-      if (kws.length === 0) return;
+      if (kws.length === 0) {return;}
 
       resetResults();
       setError(null);

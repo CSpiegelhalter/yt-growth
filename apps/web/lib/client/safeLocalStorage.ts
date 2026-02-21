@@ -20,7 +20,7 @@ type ExpiringStorageEnvelope<T> = {
  * Returns false during SSR or if localStorage is blocked.
  */
 function isLocalStorageAvailable(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined") {return false;}
   try {
     const testKey = "__storage_test__";
     window.localStorage.setItem(testKey, testKey);
@@ -43,11 +43,11 @@ export function getJSON<T>(
   key: string,
   validator?: (value: unknown) => value is T,
 ): T | null {
-  if (!isLocalStorageAvailable()) return null;
+  if (!isLocalStorageAvailable()) {return null;}
 
   try {
     const raw = window.localStorage.getItem(STORAGE_PREFIX + key);
-    if (raw === null) return null;
+    if (raw === null) {return null;}
 
     const parsed: unknown = JSON.parse(raw);
 
@@ -72,7 +72,7 @@ export function getJSONWithExpiry<T>(
   const envelope = getJSON<ExpiringStorageEnvelope<unknown>>(
     key,
     (value): value is ExpiringStorageEnvelope<unknown> => {
-      if (!value || typeof value !== "object") return false;
+      if (!value || typeof value !== "object") {return false;}
       const v = value as Record<string, unknown>;
       return (
         "value" in v &&
@@ -82,7 +82,7 @@ export function getJSONWithExpiry<T>(
     },
   );
 
-  if (!envelope) return null;
+  if (!envelope) {return null;}
 
   if (envelope.expiresAt <= Date.now()) {
     removeJSON(key);
@@ -102,7 +102,7 @@ export function getJSONWithExpiry<T>(
  * Returns true if successful, false otherwise.
  */
 export function setJSON<T>(key: string, value: T): boolean {
-  if (!isLocalStorageAvailable()) return false;
+  if (!isLocalStorageAvailable()) {return false;}
 
   try {
     const serialized = JSON.stringify(value);
@@ -147,7 +147,7 @@ export function setJSONWithExpiry<T>(
  * Returns true if successful, false otherwise.
  */
 export function removeJSON(key: string): boolean {
-  if (!isLocalStorageAvailable()) return false;
+  if (!isLocalStorageAvailable()) {return false;}
 
   try {
     window.localStorage.removeItem(STORAGE_PREFIX + key);
@@ -176,7 +176,7 @@ export const STORAGE_KEYS = {
 /* ------------------------------------------------------------------ */
 
 export function safeGetItem(key: string): string | null {
-  if (!isLocalStorageAvailable()) return null;
+  if (!isLocalStorageAvailable()) {return null;}
   try {
     return window.localStorage.getItem(key);
   } catch {
@@ -185,7 +185,7 @@ export function safeGetItem(key: string): string | null {
 }
 
 export function safeSetItem(key: string, value: string): boolean {
-  if (!isLocalStorageAvailable()) return false;
+  if (!isLocalStorageAvailable()) {return false;}
   try {
     window.localStorage.setItem(key, value);
     return true;
@@ -195,7 +195,7 @@ export function safeSetItem(key: string, value: string): boolean {
 }
 
 export function safeRemoveItem(key: string): boolean {
-  if (!isLocalStorageAvailable()) return false;
+  if (!isLocalStorageAvailable()) {return false;}
   try {
     window.localStorage.removeItem(key);
     return true;
@@ -209,7 +209,7 @@ export function safeRemoveItem(key: string): boolean {
 /* ------------------------------------------------------------------ */
 
 function isSessionStorageAvailable(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined") {return false;}
   try {
     const testKey = "__storage_test__";
     window.sessionStorage.setItem(testKey, testKey);
@@ -221,7 +221,7 @@ function isSessionStorageAvailable(): boolean {
 }
 
 export function safeSessionGetItem(key: string): string | null {
-  if (!isSessionStorageAvailable()) return null;
+  if (!isSessionStorageAvailable()) {return null;}
   try {
     return window.sessionStorage.getItem(key);
   } catch {
@@ -230,7 +230,7 @@ export function safeSessionGetItem(key: string): string | null {
 }
 
 export function safeSessionRemoveItem(key: string): boolean {
-  if (!isSessionStorageAvailable()) return false;
+  if (!isSessionStorageAvailable()) {return false;}
   try {
     window.sessionStorage.removeItem(key);
     return true;

@@ -9,6 +9,13 @@ import { IdeaDetailSheet } from "@/components/dashboard/IdeaBoard";
 
 type Status = "saved" | "in_progress" | "filmed" | "published";
 
+type IdeaJsonData = Record<string, unknown> & {
+  __detailsGeneratedAt?: string;
+  titles?: Array<{ text: string; styleTags?: string[] }>;
+  hooks?: Array<{ text: string; typeTags?: string[] }>;
+  keywords?: Array<{ text: string }>;
+};
+
 type SavedIdea = {
   id: string;
   ideaId: string;
@@ -51,7 +58,7 @@ export default function SavedIdeasClient() {
   const fetchIdeas = useCallback(async () => {
     try {
       const res = await fetch("/api/me/saved-ideas");
-      if (!res.ok) throw new Error("Failed to fetch");
+      if (!res.ok) {throw new Error("Failed to fetch");}
       const data = await res.json();
       setIdeas(data.savedIdeas || []);
     } catch (err) {
@@ -100,18 +107,18 @@ export default function SavedIdeasClient() {
       }
 
       const current = ideas.find((i) => i.ideaId === ideaId);
-      if (!current) return;
+      if (!current) {return;}
 
-      const existing: any = current.ideaJson ?? {};
+      const existing = (current.ideaJson ?? {}) as IdeaJsonData;
       const alreadyHasDetails =
         Boolean(existing.__detailsGeneratedAt) ||
         (Array.isArray(existing.titles) && existing.titles.length > 0) ||
         (Array.isArray(existing.hooks) && existing.hooks.length > 0) ||
         (Array.isArray(existing.keywords) && existing.keywords.length > 0);
 
-      if (alreadyHasDetails) return;
+      if (alreadyHasDetails) {return;}
 
-      const enriched: any = {
+      const enriched: IdeaJsonData = {
         ...existing,
         titles: payload.titles.map((t) => ({
           text: t,
@@ -136,13 +143,13 @@ export default function SavedIdeasClient() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ideaJson: enriched }),
         });
-        if (!res.ok) return;
+        if (!res.ok) {return;}
 
         setIdeas((prev) =>
-          prev.map((i) => (i.ideaId === ideaId ? { ...i, ideaJson: enriched } : i))
+          prev.map((i) => (i.ideaId === ideaId ? { ...i, ideaJson: enriched as unknown as Idea } : i))
         );
         setSelectedIdea((prev) =>
-          prev?.ideaId === ideaId ? { ...prev, ideaJson: enriched } : prev
+          prev?.ideaId === ideaId ? { ...prev, ideaJson: enriched as unknown as Idea } : prev
         );
       } catch {
         // Non-critical: modal still works even if persistence fails.
@@ -159,7 +166,7 @@ export default function SavedIdeasClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (!res.ok) throw new Error("Failed to update");
+      if (!res.ok) {throw new Error("Failed to update");}
 
       setIdeas((prev) =>
         prev.map((idea) =>
@@ -181,7 +188,7 @@ export default function SavedIdeasClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notes }),
       });
-      if (!res.ok) throw new Error("Failed to update");
+      if (!res.ok) {throw new Error("Failed to update");}
 
       setIdeas((prev) =>
         prev.map((idea) =>
@@ -198,13 +205,13 @@ export default function SavedIdeasClient() {
 
   // Delete saved idea
   const deleteIdea = useCallback(async (ideaId: string) => {
-    if (!confirm("Remove this idea from your saved list?")) return;
+    if (!confirm("Remove this idea from your saved list?")) {return;}
 
     try {
       const res = await fetch(`/api/me/saved-ideas/${ideaId}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed to delete");
+      if (!res.ok) {throw new Error("Failed to delete");}
 
       setIdeas((prev) => prev.filter((idea) => idea.ideaId !== ideaId));
       showToast("Idea removed");
@@ -216,7 +223,7 @@ export default function SavedIdeasClient() {
 
   // Filtered ideas
   const filteredIdeas = useMemo(() => {
-    if (filter === "all") return ideas;
+    if (filter === "all") {return ideas;}
     return ideas.filter((idea) => idea.status === filter);
   }, [ideas, filter]);
 
@@ -236,9 +243,9 @@ export default function SavedIdeasClient() {
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (days === 0) return "Today";
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `${days} days ago`;
+    if (days === 0) {return "Today";}
+    if (days === 1) {return "Yesterday";}
+    if (days < 7) {return `${days} days ago`;}
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
@@ -331,7 +338,7 @@ export default function SavedIdeasClient() {
                   tabIndex={0}
                   onClick={() => setSelectedIdea(idea)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") setSelectedIdea(idea);
+                    if (e.key === "Enter" || e.key === " ") {setSelectedIdea(idea);}
                   }}
                 >
                   <div className={s.ideaCardHeader}>

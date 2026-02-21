@@ -31,7 +31,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const article = LEARN_ARTICLES[slug as ArticleSlug];
-  if (!article) return {};
+  if (!article) {return {};}
   return buildLearnMetadata(article);
 }
 

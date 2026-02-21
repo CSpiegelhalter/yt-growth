@@ -13,7 +13,7 @@ export function useFocusTrap(
   options?: { autoFocus?: boolean },
 ) {
   useEffect(() => {
-    if (!isOpen || !ref.current) return;
+    if (!isOpen || !ref.current) {return;}
 
     const container = ref.current;
     const focusableElements = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
@@ -25,19 +25,17 @@ export function useFocusTrap(
     }
 
     const handleTab = (e: KeyboardEvent) => {
-      if (e.key !== "Tab") return;
+      if (e.key !== "Tab") {return;}
 
       if (e.shiftKey) {
         if (document.activeElement === firstElement) {
           e.preventDefault();
           lastElement?.focus();
         }
-      } else {
-        if (document.activeElement === lastElement) {
+      } else if (document.activeElement === lastElement) {
           e.preventDefault();
           firstElement?.focus();
         }
-      }
     };
 
     container.addEventListener("keydown", handleTab);

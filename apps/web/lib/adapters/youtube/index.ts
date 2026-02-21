@@ -61,7 +61,7 @@ export async function fetchChannelVideos(
 
   // List video IDs from playlist
   const videoIds = await listUploadsVideoIds(ga, uploadsPlaylistId, maxResults);
-  if (videoIds.length === 0) return [];
+  if (videoIds.length === 0) {return [];}
 
   // Fetch full video details with concurrency-limited batching
   return fetchVideosDetailsBatch(ga, videoIds);

@@ -6,7 +6,7 @@
  *
  * Auth: Required
  */
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { createApiRoute } from "@/lib/api/route";
 import { getCurrentUser } from "@/lib/server/auth";
 import { resetUserUsage, getAllUsage } from "@/lib/features/subscriptions/use-cases/trackUsage";
@@ -24,7 +24,7 @@ function devOnly(): Response | null {
 async function POSTHandler(req: NextRequest) {
   void req;
   const blocked = devOnly();
-  if (blocked) return blocked;
+  if (blocked) {return blocked;}
 
   try {
     const user = await getCurrentUser();
@@ -67,7 +67,7 @@ export const POST = createApiRoute(
 async function GETHandler(req: NextRequest) {
   void req;
   const blocked = devOnly();
-  if (blocked) return blocked;
+  if (blocked) {return blocked;}
 
   try {
     const user = await getCurrentUser();

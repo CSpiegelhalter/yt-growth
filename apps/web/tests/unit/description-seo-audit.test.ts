@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   runDescriptionSeoAudit,
-  DescriptionSeoInput,
-  DescriptionSeoResult,
-  DescriptionCheck,
+  type DescriptionSeoInput,
+  type DescriptionSeoResult,
+  type DescriptionCheck,
 } from "../../lib/youtube/descriptionSeoAudit";
 
 describe("runDescriptionSeoAudit", () => {

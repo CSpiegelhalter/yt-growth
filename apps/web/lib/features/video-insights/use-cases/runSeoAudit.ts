@@ -111,7 +111,7 @@ function containsKeyword(text: string, keyword: string): boolean {
 function countKeywordOccurrences(text: string, keyword: string): number {
   const normalizedText = normalizeText(text);
   const normalizedKeyword = normalizeText(keyword);
-  if (!normalizedKeyword) return 0;
+  if (!normalizedKeyword) {return 0;}
 
   let count = 0;
   let pos = 0;
@@ -175,7 +175,7 @@ function areChaptersAscending(chapters: Chapter[]): boolean {
 
 function getHashtagPositionPercent(description: string): number {
   const firstHashtagIndex = description.search(/#[\p{L}\p{N}_]+/u);
-  if (firstHashtagIndex === -1) return 100;
+  if (firstHashtagIndex === -1) {return 100;}
   return (firstHashtagIndex / description.length) * 100;
 }
 
@@ -186,7 +186,7 @@ function getRelatedKeywords(focusKeyword: string, candidates: string[]): string[
   return candidates
     .filter((c) => {
       const normalized = normalizeText(c);
-      if (normalized === normalizedFocus) return false;
+      if (normalized === normalizedFocus) {return false;}
       const cWords = normalized.split(" ");
       const overlap = cWords.some((w) => focusWords.has(w));
       return overlap;
@@ -225,13 +225,13 @@ function detectFocusKeyword(input: DescriptionSeoInput): {
     const inTags = tags.some((tag) => containsKeyword(tag, keyword));
 
     let score = 0;
-    if (inTitle) score += 3;
-    if (inEarlyDescription) score += 2;
-    if (inTags) score += 1;
+    if (inTitle) {score += 3;}
+    if (inEarlyDescription) {score += 2;}
+    if (inTags) {score += 1;}
 
     const wordCount = keyword.split(" ").length;
-    if (wordCount >= 2) score += 0.5;
-    if (wordCount >= 3) score += 0.5;
+    if (wordCount >= 2) {score += 0.5;}
+    if (wordCount >= 3) {score += 0.5;}
 
     scoredCandidates.push({ keyword, score, inTitle, inEarlyDescription, inTags });
   }
@@ -409,7 +409,7 @@ function checkRelatedKeywords(
     evidence: foundRelated.length === 0
       ? "No related keywords found"
       : `Only ${foundRelated.length} related term found`,
-    recommendation: "Add related terms like: " + relatedKeywords.slice(0, 3).join(", "),
+    recommendation: `Add related terms like: ${  relatedKeywords.slice(0, 3).join(", ")}`,
     exampleFix: relatedKeywords.length > 0
       ? `Try adding: ${relatedKeywords.slice(0, 2).join(", ")}`
       : undefined,
@@ -623,9 +623,9 @@ function checkHashtagContent(description: string, focusKeyword: string | null): 
   }
 
   const issues: string[] = [];
-  if (!hasKeywordHashtag && focusKeyword) issues.push("missing keyword hashtag");
-  if (generalHashtags.length === 0) issues.push("no general hashtag");
-  if (specificHashtags.length === 0) issues.push("no specific hashtag");
+  if (!hasKeywordHashtag && focusKeyword) {issues.push("missing keyword hashtag");}
+  if (generalHashtags.length === 0) {issues.push("no general hashtag");}
+  if (specificHashtags.length === 0) {issues.push("no specific hashtag");}
 
   return {
     id,
@@ -675,7 +675,7 @@ function checkTagsKeywordCoverage(tags: string[], focusKeyword: string | null): 
 
   const closeVariations = tags.filter((tag) => {
     const tagNorm = normalizeText(tag);
-    if (tagNorm === normalizedFocus) return false;
+    if (tagNorm === normalizedFocus) {return false;}
     return focusWords.every((fw) => tagNorm.includes(fw));
   });
 
@@ -749,9 +749,9 @@ function checkTagsMix(tags: string[]): DescriptionCheck {
   }
 
   const issues: string[] = [];
-  if (generalTags.length < 2) issues.push("add more general tags");
-  if (specificTags.length < 3) issues.push("add more long-tail specific tags");
-  if (!hasSynonym) issues.push("add synonym/alternate phrasing tags");
+  if (generalTags.length < 2) {issues.push("add more general tags");}
+  if (specificTags.length < 3) {issues.push("add more long-tail specific tags");}
+  if (!hasSynonym) {issues.push("add synonym/alternate phrasing tags");}
 
   return {
     id,
@@ -931,8 +931,8 @@ function checkChapterSpacing(description: string): DescriptionCheck {
   }
 
   const issues: string[] = [];
-  if (tinyGaps > 1) issues.push(`${tinyGaps} gaps under 30 seconds`);
-  if (hugeGaps > 1) issues.push(`${hugeGaps} gaps over 5 minutes`);
+  if (tinyGaps > 1) {issues.push(`${tinyGaps} gaps under 30 seconds`);}
+  if (hugeGaps > 1) {issues.push(`${hugeGaps} gaps over 5 minutes`);}
 
   return {
     id,
@@ -975,8 +975,8 @@ function checkChapterTitles(description: string, focusKeyword: string | null, ca
   }
 
   const issues: string[] = [];
-  if (longTitles.length > 0) issues.push(`${longTitles.length} titles too long (>6 words)`);
-  if (keywordRichTitles.length < chapters.length * 0.3) issues.push("few titles contain keywords");
+  if (longTitles.length > 0) {issues.push(`${longTitles.length} titles too long (>6 words)`);}
+  if (keywordRichTitles.length < chapters.length * 0.3) {issues.push("few titles contain keywords");}
 
   return {
     id,

@@ -28,7 +28,7 @@ const REPLICATE_API_BASE = "https://api.replicate.com/v1";
 
 function getReplicateApiKey(): string {
   const key = process.env.REPLICATE_API_KEY;
-  if (!key) throw new Error("REPLICATE_API_KEY not configured");
+  if (!key) {throw new Error("REPLICATE_API_KEY not configured");}
   return key;
 }
 

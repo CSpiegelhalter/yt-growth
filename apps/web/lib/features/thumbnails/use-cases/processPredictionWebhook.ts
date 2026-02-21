@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/prisma";
 
 type ProcessPredictionWebhookInput = {
@@ -59,14 +60,14 @@ export async function processPredictionWebhook(
   }
 
   let jobStatus: "running" | "succeeded" | "failed" | "canceled" = "running";
-  if (allSucceeded) jobStatus = "succeeded";
-  else if (allTerminal && !anySucceeded) jobStatus = "failed";
+  if (allSucceeded) {jobStatus = "succeeded";}
+  else if (allTerminal && !anySucceeded) {jobStatus = "failed";}
 
   await prisma.thumbnailJob.update({
     where: { id: pred.thumbnailJobId },
     data: {
       status: jobStatus,
-      outputImages: aggregated as unknown as import("@prisma/client").Prisma.InputJsonValue,
+      outputImages: aggregated as unknown as Prisma.InputJsonValue,
     },
   });
 

@@ -66,14 +66,14 @@ describe("safeLocalStorage", () => {
 
     test("parses valid JSON", () => {
       const data = { foo: "bar", count: 42 };
-      window.localStorage.setItem(PREFIX + "test_key", JSON.stringify(data));
+      window.localStorage.setItem(`${PREFIX  }test_key`, JSON.stringify(data));
 
       const result = getJSON<typeof data>("test_key");
       expect(result).toEqual(data);
     });
 
     test("returns null for invalid JSON", () => {
-      window.localStorage.setItem(PREFIX + "bad_json", "not valid json {{{");
+      window.localStorage.setItem(`${PREFIX  }bad_json`, "not valid json {{{");
 
       const result = getJSON("bad_json");
       expect(result).toBeNull();
@@ -81,7 +81,7 @@ describe("safeLocalStorage", () => {
 
     test("returns null when validator fails", () => {
       const data = { foo: "bar" };
-      window.localStorage.setItem(PREFIX + "validated", JSON.stringify(data));
+      window.localStorage.setItem(`${PREFIX  }validated`, JSON.stringify(data));
 
       // Validator that always returns false
       const validator = (_: unknown): _ is never => false;
@@ -94,7 +94,7 @@ describe("safeLocalStorage", () => {
       const data = [
         { id: "1", url: "http://example.com", createdAt: 123, jobId: "job1" },
       ];
-      window.localStorage.setItem(PREFIX + "validated", JSON.stringify(data));
+      window.localStorage.setItem(`${PREFIX  }validated`, JSON.stringify(data));
 
       // Simple validator for our thumbnail structure
       const validator = (val: unknown): val is typeof data => {
@@ -122,7 +122,7 @@ describe("safeLocalStorage", () => {
       const success = setJSON("store_test", data);
 
       expect(success).toBe(true);
-      expect(window.localStorage.getItem(PREFIX + "store_test")).toBe(
+      expect(window.localStorage.getItem(`${PREFIX  }store_test`)).toBe(
         JSON.stringify(data),
       );
     });
@@ -160,13 +160,13 @@ describe("safeLocalStorage", () => {
         expiresAt: Date.now() - 1,
       };
       window.localStorage.setItem(
-        PREFIX + "expired_key",
+        `${PREFIX  }expired_key`,
         JSON.stringify(expiredEnvelope),
       );
 
       const result = getJSONWithExpiry("expired_key");
       expect(result).toBeNull();
-      expect(window.localStorage.getItem(PREFIX + "expired_key")).toBeNull();
+      expect(window.localStorage.getItem(`${PREFIX  }expired_key`)).toBeNull();
     });
 
     test("setJSONWithExpiry returns false for invalid ttl", () => {
@@ -177,12 +177,12 @@ describe("safeLocalStorage", () => {
 
   describe("removeJSON", () => {
     test("removes existing key", () => {
-      window.localStorage.setItem(PREFIX + "to_remove", "some value");
+      window.localStorage.setItem(`${PREFIX  }to_remove`, "some value");
 
       const result = removeJSON("to_remove");
 
       expect(result).toBe(true);
-      expect(window.localStorage.getItem(PREFIX + "to_remove")).toBeNull();
+      expect(window.localStorage.getItem(`${PREFIX  }to_remove`)).toBeNull();
     });
 
     test("returns true even for non-existent key", () => {

@@ -52,7 +52,7 @@ export default function ContactForm({ userEmail }: Props) {
     e.preventDefault();
     setServerError(null);
 
-    if (!validateForm()) return;
+    if (!validateForm()) {return;}
 
     setSubmitting(true);
 
@@ -152,7 +152,7 @@ export default function ContactForm({ userEmail }: Props) {
             onChange={(e) => {
               setEmail(e.target.value);
               if (errors.email)
-                setErrors((prev) => ({ ...prev, email: undefined }));
+                {setErrors((prev) => ({ ...prev, email: undefined }));}
             }}
             autoComplete="email"
           />
@@ -196,7 +196,7 @@ export default function ContactForm({ userEmail }: Props) {
             onChange={(e) => {
               setMessage(e.target.value);
               if (errors.message)
-                setErrors((prev) => ({ ...prev, message: undefined }));
+                {setErrors((prev) => ({ ...prev, message: undefined }));}
             }}
             rows={6}
           />

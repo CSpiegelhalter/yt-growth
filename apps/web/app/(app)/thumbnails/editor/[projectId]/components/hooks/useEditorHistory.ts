@@ -68,7 +68,7 @@ export function useEditorHistory(initialDocument: EditorDocument): UseEditorHist
 
   const undo = useCallback(() => {
     setState((prev) => {
-      if (prev.past.length === 0) return prev;
+      if (prev.past.length === 0) {return prev;}
 
       const newPast = [...prev.past];
       const previous = newPast.pop()!;
@@ -86,7 +86,7 @@ export function useEditorHistory(initialDocument: EditorDocument): UseEditorHist
 
   const redo = useCallback(() => {
     setState((prev) => {
-      if (prev.future.length === 0) return prev;
+      if (prev.future.length === 0) {return prev;}
 
       const newFuture = [...prev.future];
       const next = newFuture.shift()!;
@@ -149,7 +149,7 @@ export function historyReducer(state: HistoryState, action: HistoryAction): Hist
     }
 
     case "UNDO": {
-      if (state.past.length === 0) return state;
+      if (state.past.length === 0) {return state;}
       const newPast = [...state.past];
       const previous = newPast.pop()!;
       return {
@@ -161,7 +161,7 @@ export function historyReducer(state: HistoryState, action: HistoryAction): Hist
     }
 
     case "REDO": {
-      if (state.future.length === 0) return state;
+      if (state.future.length === 0) {return state;}
       const newFuture = [...state.future];
       const next = newFuture.shift()!;
       return {

@@ -55,8 +55,8 @@ export function buildVideoObject(
       return age >= 6 * 24 * 60 * 60 * 1000 && age <= 8 * 24 * 60 * 60 * 1000;
     });
 
-    if (snapshot24h) velocity24h = latest.viewCount - snapshot24h.viewCount;
-    if (snapshot7d) velocity7d = latest.viewCount - snapshot7d.viewCount;
+    if (snapshot24h) {velocity24h = latest.viewCount - snapshot24h.viewCount;}
+    if (snapshot7d) {velocity7d = latest.viewCount - snapshot7d.viewCount;}
   }
 
   return {

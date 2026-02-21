@@ -58,7 +58,7 @@ function saveState(state: Omit<SavedState, "timestamp">) {
 function loadState(): SavedState | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
+    if (!raw) {return null;}
 
     const state = JSON.parse(raw) as SavedState;
 
@@ -182,7 +182,7 @@ export default function CompetitorsClient({
   // Restore state from sessionStorage AFTER hydration
   useEffect(() => {
     // Skip if we have a URL niche parameter
-    if (urlNiche) return;
+    if (urlNiche) {return;}
 
     const savedState = loadState();
     const clickedVideoId = getAndClearClickedVideo();
@@ -218,7 +218,7 @@ export default function CompetitorsClient({
 
   // Save state to sessionStorage whenever it changes
   useEffect(() => {
-    if (!hasSearched || hasRestoredRef.current) return;
+    if (!hasSearched || hasRestoredRef.current) {return;}
 
     saveState({
       nicheText,

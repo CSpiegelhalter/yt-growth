@@ -33,16 +33,18 @@ type YouTubeChannelItem = {
   };
 };
 
+type YouTubeThumbnails = {
+  high?: { url: string };
+  medium?: { url: string };
+  default?: { url: string };
+};
+
 type YouTubeVideoItem = {
   id: { videoId: string };
   snippet: {
     title: string;
     publishedAt: string;
-    thumbnails?: {
-      high?: { url: string };
-      medium?: { url: string };
-      default?: { url: string };
-    };
+    thumbnails?: YouTubeThumbnails;
     channelId: string;
   };
 };
@@ -70,7 +72,7 @@ type YouTubeVideoDetails = {
 async function upsertVideoAndMetrics(
   channelDbId: number,
   videoId: string,
-  snippet: { title: string; publishedAt: string; thumbnails?: any },
+  snippet: { title: string; publishedAt: string; thumbnails?: YouTubeThumbnails },
   details: YouTubeVideoDetails | undefined,
   cachedUntil: Date,
 ) {
@@ -156,7 +158,7 @@ export async function syncUserChannels(
       })
     : await prisma.googleAccount.findMany({ where: { userId } });
 
-  if (googleAccounts.length === 0) return;
+  if (googleAccounts.length === 0) {return;}
 
   // Mark channels as syncing
   await prisma.channel.updateMany({
@@ -323,7 +325,7 @@ async function fetchChannelVideos(
       const videoIds = (searchData.items ?? [])
         .map((v) => v.id.videoId)
         .filter(Boolean);
-      if (videoIds.length === 0) return;
+      if (videoIds.length === 0) {return;}
 
       // Fetch video details (duration, tags, description, statistics, status)
       const detailsUrl = new URL(
@@ -367,7 +369,7 @@ async function fetchChannelVideos(
     // Fetch videos with pagination (YouTube API max 50 per page)
     let allPlaylistItems: Array<{
       contentDetails: { videoId: string };
-      snippet: { title: string; publishedAt: string; thumbnails: any };
+      snippet: { title: string; publishedAt: string; thumbnails: YouTubeThumbnails };
     }> = [];
     let nextPageToken: string | undefined;
 
@@ -389,7 +391,7 @@ async function fetchChannelVideos(
         nextPageToken?: string;
         items: Array<{
           contentDetails: { videoId: string };
-          snippet: { title: string; publishedAt: string; thumbnails: any };
+          snippet: { title: string; publishedAt: string; thumbnails: YouTubeThumbnails };
         }>;
       }>(ga, playlistUrl.toString());
 
@@ -397,7 +399,7 @@ async function fetchChannelVideos(
       nextPageToken = playlistData.nextPageToken;
 
       // No more pages
-      if (!nextPageToken || (playlistData.items ?? []).length === 0) break;
+      if (!nextPageToken || (playlistData.items ?? []).length === 0) {break;}
     }
 
     // Trim to SYNC_VIDEO_COUNT
@@ -406,7 +408,7 @@ async function fetchChannelVideos(
     const videoIds = allPlaylistItems
       .map((v) => v.contentDetails.videoId)
       .filter(Boolean);
-    if (videoIds.length === 0) return;
+    if (videoIds.length === 0) {return;}
 
     // Fetch video details (duration, tags, description, statistics)
     // YouTube API allows max 50 IDs per request, so batch if needed
@@ -470,7 +472,7 @@ async function fetchChannelVideos(
  */
 function parseDuration(duration: string): number {
   const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return 0;
+  if (!match) {return 0;}
   const hours = parseInt(match[1] || "0", 10);
   const minutes = parseInt(match[2] || "0", 10);
   const seconds = parseInt(match[3] || "0", 10);

@@ -9,8 +9,8 @@ export function sha256Short(input: string): string {
 }
 
 function sortKeys(obj: unknown): unknown {
-  if (obj === null || typeof obj !== "object") return obj;
-  if (Array.isArray(obj)) return obj.map(sortKeys);
+  if (obj === null || typeof obj !== "object") {return obj;}
+  if (Array.isArray(obj)) {return obj.map(sortKeys);}
   const sorted: Record<string, unknown> = {};
   for (const key of Object.keys(obj as Record<string, unknown>).sort()) {
     sorted[key] = sortKeys((obj as Record<string, unknown>)[key]);

@@ -17,7 +17,7 @@ import { daysSince } from "@/lib/youtube/utils";
 type DurationBucket = "Shorts" | "Short" | "Medium" | "Long" | "Very Long";
 
 function parseDurationParts(seconds: number): { h: number; m: number; s: number } | null {
-  if (seconds < 0 || !Number.isFinite(seconds)) return null;
+  if (seconds < 0 || !Number.isFinite(seconds)) {return null;}
   return {
     h: Math.floor(seconds / 3600),
     m: Math.floor((seconds % 3600) / 60),
@@ -36,11 +36,11 @@ function parseDurationParts(seconds: number): { h: number; m: number; s: number 
  */
 export function formatDuration(seconds: number): string {
   const p = parseDurationParts(seconds);
-  if (!p) return "—";
+  if (!p) {return "—";}
   const { h, m, s } = p;
 
-  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
-  if (m > 0) return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  if (h > 0) {return m > 0 ? `${h}h ${m}m` : `${h}h`;}
+  if (m > 0) {return s > 0 ? `${m}m ${s}s` : `${m}m`;}
   return `${s}s`;
 }
 
@@ -49,7 +49,7 @@ export function formatDuration(seconds: number): string {
  */
 export function formatDurationBadge(seconds: number): string {
   const p = parseDurationParts(seconds);
-  if (!p) return "—";
+  if (!p) {return "—";}
   const { h, m, s } = p;
 
   if (h > 0) {
@@ -62,10 +62,10 @@ export function formatDurationBadge(seconds: number): string {
  * Categorize duration into buckets for analysis
  */
 export function getDurationBucket(seconds: number): DurationBucket {
-  if (seconds < 60) return "Shorts";
-  if (seconds < 240) return "Short"; // < 4 min
-  if (seconds < 1200) return "Medium"; // 4-20 min
-  if (seconds < 3600) return "Long"; // 20-60 min
+  if (seconds < 60) {return "Shorts";}
+  if (seconds < 240) {return "Short";} // < 4 min
+  if (seconds < 1200) {return "Medium";} // 4-20 min
+  if (seconds < 3600) {return "Long";} // 20-60 min
   return "Very Long"; // 60+ min
 }
 

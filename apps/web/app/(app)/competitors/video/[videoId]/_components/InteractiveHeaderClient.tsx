@@ -163,7 +163,7 @@ export const CommentsSection = memo(function CommentsSection({
 
   // Sort comments by likes (most liked first) and filter
   const filteredComments = useMemo(() => {
-    if (!comments.topComments) return [];
+    if (!comments.topComments) {return [];}
     
     // Sort by likes descending to surface what people agree with
     const sorted = [...comments.topComments].sort(

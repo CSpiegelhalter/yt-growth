@@ -29,16 +29,16 @@ type DerivedData = {
 };
 
 type ComparisonData = {
-  viewsPerDay: { vsBaseline: string; delta?: number };
-  avgViewPercentage: { vsBaseline: string; delta?: number };
-  engagementPerView: { vsBaseline: string; delta?: number };
-  subsPer1k: { vsBaseline: string; delta?: number };
+  viewsPerDay: { vsBaseline: string; delta?: number | null };
+  avgViewPercentage: { vsBaseline: string; delta?: number | null };
+  engagementPerView: { vsBaseline: string; delta?: number | null };
+  subsPer1k: { vsBaseline: string; delta?: number | null };
 };
 
 type BottleneckData = {
   bottleneck: string;
   evidence: string;
-  severity: string;
+  severity?: string;
 } | null;
 
 type SubscriberBreakdownData = {
@@ -68,7 +68,7 @@ type DemographicData = {
   byGender: Array<{ gender: string; viewsPct: number }>;
 } | null;
 
-type CompetitiveContextData = {
+export type CompetitiveContextData = {
   searchRankings?: Array<{
     term: string;
     position: number | null;
@@ -240,7 +240,7 @@ ${subscriberSection}
 ${geoSection}
 ${trafficSection}
 ${demoSection}
-${competitiveSection ? "\n" + competitiveSection : ""}`;
+${competitiveSection ? `\n${  competitiveSection}` : ""}`;
 }
 
 // ── Main Use-Case ───────────────────────────────────────────

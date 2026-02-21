@@ -4,9 +4,9 @@ import { useState, useMemo, useCallback } from "react";
 import styles from "./panels.module.css";
 import {
   runDescriptionSeoAudit,
-  DescriptionSeoInput,
-  DescriptionCheck,
-  DescriptionCheckStatus,
+  type DescriptionSeoInput,
+  type DescriptionCheck,
+  type DescriptionCheckStatus,
 } from "@/lib/youtube/descriptionSeoAudit";
 import { copyToClipboard } from "@/components/ui/Toast";
 

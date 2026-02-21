@@ -60,7 +60,7 @@ const SUSPICIOUS_PATHS = [
 function getOrCreateRequestId(req: NextRequest) {
   const incoming = req.headers.get("x-request-id");
   if (incoming && incoming.length >= 8 && incoming.length <= 128)
-    return incoming;
+    {return incoming;}
   return crypto.randomUUID();
 }
 

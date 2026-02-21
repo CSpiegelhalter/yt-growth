@@ -5,11 +5,11 @@ import { handleTrainingComplete } from "./manageModel";
 const log = createLogger({ subsystem: "identity-webhook" });
 
 function getOutputVersionId(output: unknown): string | null {
-  if (!output || typeof output !== "object") return null;
+  if (!output || typeof output !== "object") {return null;}
   const o = output as Record<string, unknown>;
-  if (typeof o.version === "string") return o.version;
-  if (typeof o.version_id === "string") return o.version_id;
-  if (typeof o.model_version === "string") return o.model_version;
+  if (typeof o.version === "string") {return o.version;}
+  if (typeof o.version_id === "string") {return o.version_id;}
+  if (typeof o.model_version === "string") {return o.model_version;}
   if (
     typeof o.version === "object" &&
     o.version !== null &&
@@ -21,7 +21,7 @@ function getOutputVersionId(output: unknown): string | null {
 }
 
 function getWeightsUrl(output: unknown): string | null {
-  if (!output || typeof output !== "object") return null;
+  if (!output || typeof output !== "object") {return null;}
   const o = output as Record<string, unknown>;
   return (
     (typeof o.weights === "string" ? o.weights : null) ??

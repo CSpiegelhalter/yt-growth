@@ -2,6 +2,32 @@ import "server-only";
 import { prisma } from "@/prisma";
 import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/shared/rate-limit";
 
+type InsightDerivedData = {
+  video: {
+    title: string;
+    description?: string;
+    tags?: string[];
+    durationSec: number;
+    categoryId?: string;
+    [key: string]: unknown;
+  };
+  derived: {
+    totalViews: number;
+    trafficSources?: Record<string, number> | null;
+    [key: string]: unknown;
+  };
+  comparison?: Record<string, unknown>;
+  bottleneck?: Record<string, unknown>;
+  subscriberBreakdown?: Record<string, unknown>;
+  geoBreakdown?: Record<string, unknown>;
+  trafficDetail?: {
+    searchTerms?: Array<{ term: string; views: number }>;
+    [key: string]: unknown;
+  };
+  demographicBreakdown?: Record<string, unknown>;
+  [key: string]: unknown;
+};
+
 type InsightContext = {
   channel: { id: number; youtubeChannelId: string };
   cached: {
@@ -10,7 +36,7 @@ type InsightContext = {
     cachedUntil: Date;
     contentHash: string | null;
   };
-  derivedData: any;
+  derivedData: InsightDerivedData;
 };
 
 /**
@@ -62,6 +88,6 @@ export async function resolveInsightContext(
       cachedUntil: cached.cachedUntil,
       contentHash: cached.contentHash,
     },
-    derivedData: cached.derivedJson as any,
+    derivedData: cached.derivedJson as InsightDerivedData,
   };
 }

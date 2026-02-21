@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import s from "./style.module.css";
-import { Channel } from "@/types/api";
+import type { Channel } from "@/types/api";
 
 type ChannelCardProps = {
   channel: Channel;
@@ -216,9 +216,9 @@ function StatusChip({ status }: { status: ChannelStatus }) {
 
 /* ---------- Helpers ---------- */
 function getChannelStatus(channel: Channel): ChannelStatus {
-  if (channel.syncError) return "error";
-  if (channel.syncStatus === "running") return "processing";
-  if (channel.videoCount > 0) return "ready";
+  if (channel.syncError) {return "error";}
+  if (channel.syncStatus === "running") {return "processing";}
+  if (channel.videoCount > 0) {return "ready";}
   return "connected";
 }
 
@@ -230,9 +230,9 @@ function formatRelativeTime(dateStr: string): string {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffMins < 1) {return "just now";}
+  if (diffMins < 60) {return `${diffMins}m ago`;}
+  if (diffHours < 24) {return `${diffHours}h ago`;}
+  if (diffDays < 7) {return `${diffDays}d ago`;}
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }

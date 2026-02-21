@@ -166,8 +166,8 @@ export default function CompetitorResultsStream({
 
   // Dedicated scroll effect - scrolls to the clicked video when we have videos and a scroll target
   useEffect(() => {
-    if (!scrollToVideoId || hasScrolledRef.current) return;
-    if (videos.length === 0) return;
+    if (!scrollToVideoId || hasScrolledRef.current) {return;}
+    if (videos.length === 0) {return;}
     
     // Mark as scrolled immediately to prevent re-triggering
     hasScrolledRef.current = true;
@@ -330,7 +330,7 @@ export default function CompetitorResultsStream({
       while (true) {
         const { done, value } = await reader.read();
 
-        if (done) break;
+        if (done) {break;}
 
         buffer += decoder.decode(value, { stream: true });
 
@@ -339,7 +339,7 @@ export default function CompetitorResultsStream({
         buffer = lines.pop() || ""; // Keep incomplete line in buffer
 
         for (const line of lines) {
-          if (!line.trim()) continue;
+          if (!line.trim()) {continue;}
 
           try {
             const event = JSON.parse(line) as SearchEvent;
@@ -374,7 +374,7 @@ export default function CompetitorResultsStream({
 
   // Handle "Load More" button click
   const handleLoadMore = useCallback(() => {
-    if (!nextCursor || isLoadingMore) return;
+    if (!nextCursor || isLoadingMore) {return;}
 
     setIsLoadingMore(true);
     setState("streaming");
@@ -388,7 +388,7 @@ export default function CompetitorResultsStream({
 
   // Perform initial search when searchKey changes
   useEffect(() => {
-    if (!searchKey) return;
+    if (!searchKey) {return;}
 
     // If this is a restoration (searchKey starts with "restored:") AND we have cached data,
     // skip the API call - we'll use the cached data from initialVideos

@@ -164,6 +164,23 @@ export type IdeasAnalysis = {
   contentGaps: string[];
 };
 
+// ── Shared Analytics Types ───────────────────────────────────
+
+export type GoogleAccount = {
+  id: number;
+  refreshTokenEnc: string | null;
+  tokenExpiresAt: Date | null;
+};
+
+export type GoogleAccountResult = GoogleAccount | null;
+
+export type RawComment = {
+  text: string;
+  likes?: number;
+  author?: string;
+  publishedAt?: string;
+};
+
 // ── LLM Dependency ──────────────────────────────────────────
 
 export type LlmCallFn = (

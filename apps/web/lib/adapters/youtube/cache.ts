@@ -9,6 +9,21 @@ import "server-only";
 import { prisma } from "@/prisma";
 import { CACHE_TTL_MS } from "./constants";
 
+type YouTubeSearchCacheModel = {
+  findUnique: (args: {
+    where: { kind_query: { kind: string; query: string } };
+  }) => Promise<{ responseJson: unknown; cachedUntil: Date } | null>;
+  upsert: (args: {
+    where: { kind_query: { kind: string; query: string } };
+    create: { kind: string; query: string; responseJson: object; cachedUntil: Date };
+    update: { responseJson: object; cachedUntil: Date };
+  }) => Promise<unknown>;
+};
+
+type PrismaWithCache = typeof prisma & {
+  youTubeSearchCache?: YouTubeSearchCacheModel;
+};
+
 type CacheHit = { hit: true; value: unknown };
 type CacheMiss = { hit: false };
 type CacheResult = CacheHit | CacheMiss;
@@ -23,7 +38,7 @@ export async function getCache(
   query: string
 ): Promise<CacheResult> {
   try {
-    const cacheModel = (prisma as any).youTubeSearchCache;
+    const cacheModel = (prisma as PrismaWithCache).youTubeSearchCache;
     if (!cacheModel?.findUnique) {
       return { hit: false };
     }
@@ -59,7 +74,7 @@ export async function setCache(
   ttlMs: number = CACHE_TTL_MS
 ): Promise<void> {
   try {
-    const cacheModel = (prisma as any).youTubeSearchCache;
+    const cacheModel = (prisma as PrismaWithCache).youTubeSearchCache;
     if (!cacheModel?.upsert) {
       return;
     }

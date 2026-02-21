@@ -54,11 +54,11 @@ const googleApiStats: GoogleApiStats = {
 function estimateYouTubeQuotaUnits(urlStr: string): number {
   try {
     const url = new URL(urlStr);
-    if (!url.pathname.includes("/youtube/v3/")) return 0;
+    if (!url.pathname.includes("/youtube/v3/")) {return 0;}
     const resource = url.pathname.split("/youtube/v3/")[1] ?? "";
     const r = resource.split("/")[0] ?? "";
     // Current documented values: search.list = 100 units, most reads = 1 unit.
-    if (r === "search") return 100;
+    if (r === "search") {return 100;}
     return 1;
   } catch {
     return 0;
@@ -105,7 +105,12 @@ function recordGoogleApiCall(input: {
   // Persist to DB so stats work across Next dev workers/processes.
   // Best-effort: ignore if table/migrations not applied yet.
   try {
-    const logModel = (prisma as any).googleApiCallLog;
+    type PrismaWithApiLog = typeof prisma & {
+      googleApiCallLog?: {
+        create: (args: { data: { url: string; host: string; path: string; status: string; estimatedUnits: number } }) => Promise<unknown>;
+      };
+    };
+    const logModel = (prisma as PrismaWithApiLog).googleApiCallLog;
     if (logModel?.create) {
       logModel
         .create({
@@ -169,7 +174,7 @@ async function getAccessToken(
 }
 
 async function refreshAccessToken(ga: GA): Promise<string> {
-  if (!ga.refreshTokenEnc) throw new Error("No refresh token saved");
+  if (!ga.refreshTokenEnc) {throw new Error("No refresh token saved");}
 
   let tok;
   try {
@@ -263,9 +268,9 @@ export async function googleFetchWithAutoRefresh<T>(
     // For analytics metric permission errors, throw a regular error with a flag
     // so the caller can catch it and try with fewer metrics
     if (isAnalyticsMetricPermError) {
-      const error = new Error("Insufficient permission to access this report");
-      (error as any).isAnalyticsPermError = true;
-      throw error;
+      const permError = new Error("Insufficient permission to access this report") as Error & { isAnalyticsPermError: boolean };
+      permError.isAnalyticsPermError = true;
+      throw permError;
     }
 
     throw new Error(`google_api_error_${r.status}: ${body}`);

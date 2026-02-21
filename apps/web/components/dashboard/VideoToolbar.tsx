@@ -4,14 +4,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { SearchIcon, CopyIcon } from "@/components/icons";
 import s from "./VideoToolbar.module.css";
 import {
-  SortKey,
-  VideoFilters,
+  type SortKey,
+  type VideoFilters,
   DEFAULT_FILTERS,
   getAvailableSortOptions,
   getSortLabel,
   downloadCSV,
-  VideoWithMetrics,
-  DashboardVideo,
+  type VideoWithMetrics,
+  type DashboardVideo,
 } from "@/lib/video-tools";
 
 type Props = {

@@ -32,7 +32,7 @@ const logger = createLogger({ module: "video-detail.analysis" });
  * Normalize beat checklist from LLM output.
  */
 export function normalizeBeatChecklist(input: unknown): BeatChecklist | undefined {
-  if (!Array.isArray(input)) return undefined;
+  if (!Array.isArray(input)) {return undefined;}
   const out = input
     .map((x: unknown) => {
       const item = x as Record<string, unknown>;
@@ -290,7 +290,7 @@ export async function runParallelAnalysis(
       commentsAnalysis,
       commentsLLMResult,
     };
-  } else {
+  } 
     // No comments LLM needed, just run main analysis
     logger.info("Running main LLM only (no comments)", {
       videoId: ctx.videoId,
@@ -315,7 +315,7 @@ export async function runParallelAnalysis(
       commentsAnalysis: partialCommentsAnalysis,
       commentsLLMResult: null,
     };
-  }
+  
 }
 
 // ============================================

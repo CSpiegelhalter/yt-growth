@@ -113,7 +113,7 @@ export function AuthModal({
     }
   }, [onSuccess, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return (
     <div 

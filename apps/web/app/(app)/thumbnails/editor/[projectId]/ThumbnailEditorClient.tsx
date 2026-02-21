@@ -70,6 +70,8 @@ import type {
 } from "./components/types";
 import s from "./components/editor.module.css";
 
+type ExportEntry = { url: string; [key: string]: unknown };
+
 type Props = {
   projectId: string;
   baseImageUrl: string;
@@ -98,7 +100,7 @@ export default function ThumbnailEditorClient(props: Props) {
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [showSafeArea, setShowSafeArea] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
-  const [_exportsList, setExportsList] = useState<any[]>(
+  const [_exportsList, setExportsList] = useState<ExportEntry[]>(
     Array.isArray(props.initialExports) ? props.initialExports : []
   );
 
@@ -111,7 +113,7 @@ export default function ThumbnailEditorClient(props: Props) {
   
   useEffect(() => {
     // Build Google Fonts URL with all fonts
-    const fontFamilies = GOOGLE_FONTS.map((f) => f.replace(/ /g, "+") + ":wght@400;500;600;700;800;900").join("&family=");
+    const fontFamilies = GOOGLE_FONTS.map((f) => `${f.replace(/ /g, "+")  }:wght@400;500;600;700;800;900`).join("&family=");
     const link = window.document.createElement("link");
     link.rel = "stylesheet";
     link.href = `https://fonts.googleapis.com/css2?family=${fontFamilies}&display=swap`;
@@ -128,7 +130,7 @@ export default function ThumbnailEditorClient(props: Props) {
   
   const saveTimer = useRef<number | null>(null);
   useEffect(() => {
-    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    if (saveTimer.current) {window.clearTimeout(saveTimer.current);}
     saveTimer.current = window.setTimeout(async () => {
       try {
         await fetch(`/api/thumbnails/projects/${props.projectId}`, {
@@ -141,7 +143,7 @@ export default function ThumbnailEditorClient(props: Props) {
       }
     }, 1500);
     return () => {
-      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+      if (saveTimer.current) {window.clearTimeout(saveTimer.current);}
     };
   }, [document, props.projectId]);
 
@@ -170,7 +172,7 @@ export default function ThumbnailEditorClient(props: Props) {
       }
 
       // Don't handle other shortcuts when typing
-      if (isInput) return;
+      if (isInput) {return;}
 
       // Delete/Backspace to delete selected
       if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
@@ -202,12 +204,12 @@ export default function ThumbnailEditorClient(props: Props) {
       }
 
       // Tool shortcuts
-      if (e.key.toLowerCase() === "v") setTool("select");
-      if (e.key.toLowerCase() === "h") setTool("pan");
-      if (e.key.toLowerCase() === "t") addText();
-      if (e.key.toLowerCase() === "a") addArrow(false);
-      if (e.key.toLowerCase() === "o") addShape("ellipse");
-      if (e.key.toLowerCase() === "r") addShape("rectangle");
+      if (e.key.toLowerCase() === "v") {setTool("select");}
+      if (e.key.toLowerCase() === "h") {setTool("pan");}
+      if (e.key.toLowerCase() === "t") {addText();}
+      if (e.key.toLowerCase() === "a") {addArrow(false);}
+      if (e.key.toLowerCase() === "o") {addShape("ellipse");}
+      if (e.key.toLowerCase() === "r") {addShape("rectangle");}
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -276,7 +278,7 @@ export default function ThumbnailEditorClient(props: Props) {
   );
 
   const deleteSelected = useCallback(() => {
-    if (!selectedId) return;
+    if (!selectedId) {return;}
     updateDocument((doc) => ({
       ...doc,
       objects: doc.objects.filter((o) => o.id !== selectedId),
@@ -285,7 +287,7 @@ export default function ThumbnailEditorClient(props: Props) {
   }, [selectedId, updateDocument]);
 
   const duplicateSelected = useCallback(() => {
-    if (!selectedObject) return;
+    if (!selectedObject) {return;}
     const newId = generateId();
     const newObj = {
       ...selectedObject,
@@ -299,13 +301,13 @@ export default function ThumbnailEditorClient(props: Props) {
 
   const moveLayer = useCallback(
     (direction: "up" | "down") => {
-      if (!selectedId) return;
+      if (!selectedId) {return;}
       
       const sorted = [...document.objects].sort((a, b) => a.zIndex - b.zIndex);
       const idx = sorted.findIndex((o) => o.id === selectedId);
       const swapIdx = direction === "up" ? idx + 1 : idx - 1;
       
-      if (swapIdx < 0 || swapIdx >= sorted.length) return;
+      if (swapIdx < 0 || swapIdx >= sorted.length) {return;}
       
       const current = sorted[idx];
       const swap = sorted[swapIdx];
@@ -313,8 +315,8 @@ export default function ThumbnailEditorClient(props: Props) {
       updateDocument((doc) => ({
         ...doc,
         objects: doc.objects.map((o) => {
-          if (o.id === current.id) return { ...o, zIndex: swap.zIndex } as EditorObject;
-          if (o.id === swap.id) return { ...o, zIndex: current.zIndex } as EditorObject;
+          if (o.id === current.id) {return { ...o, zIndex: swap.zIndex } as EditorObject;}
+          if (o.id === swap.id) {return { ...o, zIndex: current.zIndex } as EditorObject;}
           return o;
         }),
       }));
@@ -395,7 +397,7 @@ export default function ThumbnailEditorClient(props: Props) {
 
   const handleImageUpload = useCallback(
     async (files: FileList | null) => {
-      if (!files || files.length === 0) return;
+      if (!files || files.length === 0) {return;}
       const file = files[0];
 
       // Validate type
@@ -583,8 +585,8 @@ export default function ThumbnailEditorClient(props: Props) {
           onPanChange={handlePanChange}
           isPanning={isPanning || isSpacePressed}
           setIsPanning={setIsPanning}
-          containerRef={containerRef as any}
-          stageRef={stageRef as any}
+          containerRef={containerRef as React.RefObject<HTMLDivElement>}
+          stageRef={stageRef as React.RefObject<Konva.Stage | null>}
         />
       </div>
 

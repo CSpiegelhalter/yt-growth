@@ -56,7 +56,7 @@ function ColorInput({ value, onChange }: { value: string; onChange: (v: string) 
   
   // Close picker on click outside
   useEffect(() => {
-    if (!showPicker) return;
+    if (!showPicker) {return;}
     
     const handleClickOutside = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -321,7 +321,7 @@ function Select({
 // Helper to convert rgba to hex (rough)
 function rgbaToHex(rgba: string): string {
   const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (!match) return "#000000";
+  if (!match) {return "#000000";}
   const [, r, g, b] = match;
   return `#${[r, g, b].map((x) => parseInt(x).toString(16).padStart(2, "0")).join("")}`;
 }

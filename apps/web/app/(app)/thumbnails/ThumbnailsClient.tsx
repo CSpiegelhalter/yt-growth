@@ -109,7 +109,7 @@ type PersistedThumbnail = {
 function isPersistedThumbnailArray(
   value: unknown,
 ): value is PersistedThumbnail[] {
-  if (!Array.isArray(value)) return false;
+  if (!Array.isArray(value)) {return false;}
   return value.every(
     (item) =>
       typeof item === "object" &&
@@ -126,7 +126,7 @@ function isPersistedThumbnailArray(
  * These are the identity photos used for face training.
  */
 function isUploadedPhotoArray(value: unknown): value is UploadedPhoto[] {
-  if (!Array.isArray(value)) return false;
+  if (!Array.isArray(value)) {return false;}
   return value.every(
     (item) =>
       typeof item === "object" &&
@@ -254,7 +254,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
   const loadIdentityStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/identity/status");
-      if (!res.ok) return;
+      if (!res.ok) {return;}
       const data = (await res.json()) as IdentityStatus & {
         photoCount?: number;
         photos?: UploadedPhoto[];
@@ -279,7 +279,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
 
   // Only poll when training is in progress
   useEffect(() => {
-    if (identity.status !== "training" && identity.status !== "pending") return;
+    if (identity.status !== "training" && identity.status !== "pending") {return;}
 
     const t = setInterval(() => void loadIdentityStatus(), 5000);
     return () => clearInterval(t);
@@ -294,11 +294,11 @@ export default function ThumbnailsClient({ initialUser }: Props) {
     async (id: string) => {
       try {
         const res = await fetch(`/api/thumbnails/job/${id}`);
-        if (!res.ok) return;
+        if (!res.ok) {return;}
         const data = (await res.json()) as ThumbnailJobV2;
         setJob(data);
         if (data.status === "succeeded" || data.status === "failed") {
-          if (pollRef.current) window.clearInterval(pollRef.current);
+          if (pollRef.current) {window.clearInterval(pollRef.current);}
           pollRef.current = null;
           setGenerating(false);
           setGenerationPhase(null);
@@ -334,12 +334,12 @@ export default function ThumbnailsClient({ initialUser }: Props) {
   );
 
   useEffect(() => {
-    if (!jobId) return;
+    if (!jobId) {return;}
     void pollJob(jobId);
-    if (pollRef.current) window.clearInterval(pollRef.current);
+    if (pollRef.current) {window.clearInterval(pollRef.current);}
     pollRef.current = window.setInterval(() => void pollJob(jobId), 2500);
     return () => {
-      if (pollRef.current) window.clearInterval(pollRef.current);
+      if (pollRef.current) {window.clearInterval(pollRef.current);}
       pollRef.current = null;
     };
   }, [jobId, pollJob]);
@@ -349,7 +349,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
   // across navigation and page refresh.
   useEffect(() => {
     // Only run after localStorage has been loaded and if we don't already have a job
-    if (!thumbnailsHydrated || job || jobId || generating) return;
+    if (!thumbnailsHydrated || job || jobId || generating) {return;}
 
     if (persistedThumbnails.length > 0) {
       // Group by most recent jobId to create a synthetic job for display
@@ -388,7 +388,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
     if (canUseIdentity && !identityReady && photoCount >= 7) {
       setIncludeIdentity(true);
     }
-    if (!canUseIdentity) setIncludeIdentity(false);
+    if (!canUseIdentity) {setIncludeIdentity(false);}
   }, [canUseIdentity, identityReady, photoCount]);
 
   const examples = useMemo(
@@ -402,7 +402,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
     for (let i = 0; i < maxAttempts; i++) {
       await new Promise((r) => setTimeout(r, 5000));
       const res = await fetch("/api/identity/status");
-      if (!res.ok) continue;
+      if (!res.ok) {continue;}
       const data = await res.json();
       // BUG FIX: Only update identity status, not photos. The photos state
       // is managed separately and should not be cleared during training polling.
@@ -517,7 +517,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
   const openEditor = useCallback(
     async (baseImageUrl: string, targetJobId?: string) => {
       const jid = targetJobId ?? jobId;
-      if (!jid) return;
+      if (!jid) {return;}
       try {
         const res = await fetch("/api/thumbnails/projects", {
           method: "POST",
@@ -543,7 +543,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
 
   const handleRegenerate = useCallback(
     async (inputImageUrl: string, parentJobId: string) => {
-      if (regenerating) return;
+      if (regenerating) {return;}
       setRegenerating(inputImageUrl);
       try {
         const res = await fetch("/api/thumbnails/generate-img2img", {
@@ -579,7 +579,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
   const handleUploadPhotos = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
-      if (!files || files.length === 0) return;
+      if (!files || files.length === 0) {return;}
 
       // Reset input immediately so user can re-select same files
       const inputEl = e.target;
@@ -587,7 +587,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
       setUploading(true);
       try {
         const form = new FormData();
-        for (const f of Array.from(files)) form.append("file", f);
+        for (const f of Array.from(files)) {form.append("file", f);}
         const res = await fetch("/api/identity/upload", {
           method: "POST",
           body: form,
@@ -643,7 +643,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
           method: "DELETE",
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.message || "Failed to delete");
+        if (!res.ok) {throw new Error(data.message || "Failed to delete");}
 
         // BUG FIX: Only update the photos array. The photoCount is now derived
         // from photos.length, so we don't need to update it separately.
@@ -679,7 +679,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
           body: JSON.stringify({ deletePhotos }),
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.message || "Failed to reset model");
+        if (!res.ok) {throw new Error(data.message || "Failed to reset model");}
 
         toast(data.message || "Model reset successfully", "success");
 

@@ -94,8 +94,8 @@ describe("Trending route guard logic", () => {
     // Note: Actual value depends on DB state, but should always be boolean
   });
 
-  it("invalidateFeatureFlagCache does not throw for trending_search", () => {
-    const { invalidateFeatureFlagCache } = require("@/lib/shared/feature-flags");
+  it("invalidateFeatureFlagCache does not throw for trending_search", async () => {
+    const { invalidateFeatureFlagCache } = await import("@/lib/shared/feature-flags");
 
     expect(() => invalidateFeatureFlagCache("trending_search")).not.toThrow();
   });

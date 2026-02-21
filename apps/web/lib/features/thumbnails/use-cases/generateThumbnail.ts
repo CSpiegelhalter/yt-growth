@@ -83,7 +83,7 @@ export async function generateThumbnail(
   log.info("Verifying style model", {
     styleOwner,
     styleName,
-    styleVersion: styleCfg.version.slice(0, 20) + "...",
+    styleVersion: `${styleCfg.version.slice(0, 20)  }...`,
   });
 
   const verification = await deps.replicate.verifyModelVersion(
@@ -156,7 +156,7 @@ export async function generateThumbnail(
         replicateInput.lora_scale = 0.5;
 
         log.info("Using direct weights URL for extra_lora", {
-          extra_lora: identityLoraWeightsUrl.slice(0, 60) + "...",
+          extra_lora: `${identityLoraWeightsUrl.slice(0, 60)  }...`,
           extra_lora_scale: replicateInput.extra_lora_scale,
         });
       } else {
@@ -169,12 +169,12 @@ export async function generateThumbnail(
 
     log.info("Sending prediction to Replicate", {
       styleModel: styleCfg.model,
-      styleVersion: styleCfg.version.slice(0, 20) + "...",
+      styleVersion: `${styleCfg.version.slice(0, 20)  }...`,
       styleTrigger: styleCfg.triggerWord,
       identityLora: identityLoraWeightsUrl ? identityLoraWeightsUrl.slice(0, 50) : "none",
       identityTrigger: identityTriggerWord ?? "none",
       prompt: typeof replicateInput.prompt === "string"
-        ? replicateInput.prompt.slice(0, 100) + "..."
+        ? `${replicateInput.prompt.slice(0, 100)  }...`
         : "no prompt",
       extra_lora: replicateInput.extra_lora ? "set" : "not set",
       extra_lora_scale: replicateInput.extra_lora_scale,

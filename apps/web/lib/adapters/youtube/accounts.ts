@@ -28,13 +28,13 @@ export async function getGoogleAccount(
       const ga = await prisma.googleAccount.findUnique({
         where: { id: channel.googleAccountId },
       });
-      if (ga) return ga;
+      if (ga) {return ga;}
     }
   }
 
   // Fallback: return first GoogleAccount for user
   const ga = await prisma.googleAccount.findFirst({ where: { userId } });
-  if (ga) return ga;
+  if (ga) {return ga;}
 
   return null;
 }

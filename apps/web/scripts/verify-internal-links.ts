@@ -268,7 +268,7 @@ async function main() {
   ];
 
   // Summary
-  console.log("\n" + "=".repeat(50));
+  console.log(`\n${  "=".repeat(50)}`);
   console.log("📊 Summary");
 
   const allErrors = results.flatMap((r) => r.errors);

@@ -65,7 +65,7 @@ export default function BadgeArt({
   const px = SIZE_MAP[size];
 
   const rarityClass = useMemo(() => {
-    if (!unlocked) return s.locked;
+    if (!unlocked) {return s.locked;}
     return {
       common: s.common,
       rare: s.rare,

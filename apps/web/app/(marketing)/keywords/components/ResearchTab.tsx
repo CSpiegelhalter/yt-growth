@@ -75,41 +75,41 @@ interface Props {
 // ============================================
 
 function formatNumber(num: number | null | undefined): string {
-  if (num == null) return "—";
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
-  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+  if (num == null) {return "—";}
+  if (num >= 1000000) {return `${(num / 1000000).toFixed(1)  }M`;}
+  if (num >= 1000) {return `${(num / 1000).toFixed(1)  }K`;}
   return num.toLocaleString();
 }
 
 function formatViews(views: number | null): string {
-  if (views === null) return "—";
-  if (views >= 1000000) return (views / 1000000).toFixed(1) + "M";
-  if (views >= 1000) return (views / 1000).toFixed(1) + "K";
+  if (views === null) {return "—";}
+  if (views >= 1000000) {return `${(views / 1000000).toFixed(1)  }M`;}
+  if (views >= 1000) {return `${(views / 1000).toFixed(1)  }K`;}
   return views.toString();
 }
 
 function formatCompetition(competition: number | null | undefined, level: string | null | undefined): string {
-  if (competition == null && !level) return "—";
-  if (level) return level.charAt(0) + level.slice(1).toLowerCase(); // "HIGH" -> "High"
-  if (competition != null) return `${Math.round(competition * 100)}%`;
+  if (competition == null && !level) {return "—";}
+  if (level) {return level.charAt(0) + level.slice(1).toLowerCase();} // "HIGH" -> "High"
+  if (competition != null) {return `${Math.round(competition * 100)}%`;}
   return "—";
 }
 
 function getKdClass(kd: number): string {
-  if (kd <= 30) return s.kdEasy;
-  if (kd <= 60) return s.kdMedium;
+  if (kd <= 30) {return s.kdEasy;}
+  if (kd <= 60) {return s.kdMedium;}
   return s.kdHard;
 }
 
 function getKdLabel(kd: number): string {
-  if (kd <= 30) return "Easy";
-  if (kd <= 60) return "Medium";
+  if (kd <= 30) {return "Easy";}
+  if (kd <= 60) {return "Medium";}
   return "Hard";
 }
 
 function getDifficultyCategory(kd: number): DifficultyFilter {
-  if (kd <= 30) return "easy";
-  if (kd <= 60) return "medium";
+  if (kd <= 30) {return "easy";}
+  if (kd <= 60) {return "medium";}
   return "hard";
 }
 
@@ -138,7 +138,7 @@ function calculateTrendChange(data: number[] | undefined): { direction: "up" | "
   // Use 10% threshold for meaningful change
   if (percentChange > 10) {
     return { direction: "up", percentage: Math.round(percentChange) };
-  } else if (percentChange < -10) {
+  } if (percentChange < -10) {
     return { direction: "down", percentage: Math.abs(Math.round(percentChange)) };
   }
   return { direction: "stable", percentage: Math.abs(Math.round(percentChange)) };
@@ -193,7 +193,7 @@ function compareByField(a: RelatedKeyword, b: RelatedKeyword, field: SortField):
     case "keywordDifficulty":
       return (a.keywordDifficulty ?? 0) - (b.keywordDifficulty ?? 0);
     case "competition":
-      return ((a as any).competition ?? 0) - ((b as any).competition ?? 0);
+      return (a.competition ?? 0) - (b.competition ?? 0);
     default:
       return 0;
   }
@@ -330,13 +330,13 @@ export function ResearchTab({
   // Export to CSV with all available fields
   const handleExportCSV = useCallback(() => {
     const headers = ["Keyword", "Volume", "Difficulty", "Difficulty Level", "Competition"];
-    const rows = filteredKeywords.map((kw: any) => [
+    const rows = filteredKeywords.map((kw) => [
       // Escape keywords that might contain commas
       `"${kw.keyword.replace(/"/g, '""')}"`,
       kw.searchVolume?.toString() ?? "",
       kw.keywordDifficulty?.toString() ?? "",
       getKdLabel(kw.keywordDifficulty ?? 0),
-      kw.competitionLevel ?? (kw.competition != null ? Math.round(kw.competition * 100) + "%" : ""),
+      kw.competitionLevel ?? (kw.competition != null ? `${Math.round(kw.competition * 100)  }%` : ""),
     ]);
 
     const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
@@ -362,7 +362,7 @@ export function ResearchTab({
 
   // Trend bars for the table with color coding and tooltip
   const TrendBarsWithChange = ({ data }: { data: number[] | undefined }) => {
-    if (!data || data.length === 0) return <span>—</span>;
+    if (!data || data.length === 0) {return <span>—</span>;}
 
     const max = Math.max(...data, 1);
     const avg = data.reduce((a, b) => a + b, 0) / data.length;
@@ -570,7 +570,7 @@ export function ResearchTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedKeywords.map((kw: any) => {
+                  {paginatedKeywords.map((kw) => {
                     // Check if this keyword is in rising queries
                     const risingQuery = trends?.risingQueries.find(
                       (q) => q.query.toLowerCase() === kw.keyword.toLowerCase()
@@ -590,7 +590,7 @@ export function ResearchTab({
                             {kw.keyword}
                           </button>
                           {risingQuery && (
-                            <span className={s.risingBadge} title={`Rising +${risingQuery.value >= 1000 ? "Breakout" : risingQuery.value + "%"}`}>
+                            <span className={s.risingBadge} title={`Rising +${risingQuery.value >= 1000 ? "Breakout" : `${risingQuery.value  }%`}`}>
                               <svg className={s.risingBadgeIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                 <path d="M7 17l5-5 5 5M7 7l5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
                               </svg>

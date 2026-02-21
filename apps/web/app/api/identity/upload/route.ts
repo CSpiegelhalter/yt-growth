@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import sharp from "sharp";
 import { createApiRoute } from "@/lib/api/route";

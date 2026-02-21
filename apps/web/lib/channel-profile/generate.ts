@@ -6,8 +6,8 @@
 
 import { callLLM } from "@/lib/llm";
 import {
-  ChannelProfileInput,
-  ChannelProfileAI,
+  type ChannelProfileInput,
+  type ChannelProfileAI,
   ChannelProfileAISchema,
   createFallbackAIProfile,
   formatInputForLLM,

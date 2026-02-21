@@ -21,7 +21,7 @@ type ExportProjectResult = {
 
 function decodeDataUrl(dataUrl: string): { mime: string; bytes: Buffer } {
   const m = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  if (!m) throw new Error("Invalid data URL");
+  if (!m) {throw new Error("Invalid data URL");}
   return { mime: m[1], bytes: Buffer.from(m[2], "base64") };
 }
 

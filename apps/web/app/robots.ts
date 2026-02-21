@@ -1,4 +1,4 @@
-import { MetadataRoute } from "next";
+import type { MetadataRoute } from "next";
 import { CANONICAL_ORIGIN } from "@/lib/shared/brand";
 
 /**

@@ -217,7 +217,7 @@ export async function syncChannel<A>(
     );
     for (const videoId of videoIds) {
       const videoDbId = videoIdMap.get(videoId);
-      if (!videoDbId) continue;
+      if (!videoDbId) {continue;}
 
       const dataStats = dataApiStatsMap.get(videoId) ?? {
         views: 0,

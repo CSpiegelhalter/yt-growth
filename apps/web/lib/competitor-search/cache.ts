@@ -37,7 +37,7 @@ export async function getCachedSearchResults(
       where: { kind_query: { kind: SEARCH_CACHE_KIND, query: cacheKey } },
     });
 
-    if (!cached) return null;
+    if (!cached) {return null;}
 
     // Check expiration
     if (cached.cachedUntil <= new Date()) {

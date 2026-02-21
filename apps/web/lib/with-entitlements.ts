@@ -65,7 +65,7 @@ export async function checkEntitlement(options: {
     getUsageInfo,
   });
 
-  if (!result.ok) return result;
+  if (!result.ok) {return result;}
 
   return {
     ok: true,

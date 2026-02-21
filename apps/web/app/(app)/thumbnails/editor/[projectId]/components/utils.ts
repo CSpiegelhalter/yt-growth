@@ -19,7 +19,7 @@ export function generateId(): string {
 // ============================================================================
 
 export function getNextZIndex(objects: EditorObject[]): number {
-  if (objects.length === 0) return 1;
+  if (objects.length === 0) {return 1;}
   return Math.max(...objects.map((o) => o.zIndex)) + 1;
 }
 
@@ -71,13 +71,13 @@ export function fitImageContain(
       width: containerWidth,
       height: containerWidth / imgRatio,
     };
-  } else {
+  } 
     // Image is taller - fit to height
     return {
       width: containerHeight * imgRatio,
       height: containerHeight,
     };
-  }
+  
 }
 
 /**
@@ -98,13 +98,13 @@ export function fitImageCover(
       width: containerHeight * imgRatio,
       height: containerHeight,
     };
-  } else {
+  } 
     // Image is taller - fit to width
     return {
       width: containerWidth,
       height: containerWidth / imgRatio,
     };
-  }
+  
 }
 
 /**
@@ -145,7 +145,7 @@ export function migrateFromV1(v1State: unknown): EditorDocument {
   const v1Objects = Array.isArray(state.objects) ? state.objects : [];
 
   for (const obj of v1Objects) {
-    if (!obj || typeof obj !== "object") continue;
+    if (!obj || typeof obj !== "object") {continue;}
     const o = obj as Record<string, unknown>;
 
     switch (o.type) {

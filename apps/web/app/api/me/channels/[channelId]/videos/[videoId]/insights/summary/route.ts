@@ -13,6 +13,7 @@ import {
   checkEntitlement,
   entitlementErrorResponse,
 } from "@/lib/with-entitlements";
+import type { EntitlementError as EntitlementErrorType } from "@/lib/features/subscriptions";
 import { fetchCompetitiveContext } from "@/lib/dataforseo";
 import { resolveInsightContext } from "@/lib/server/video-insight-context";
 
@@ -27,17 +28,17 @@ export const GET = createApiRoute(
         const range = query!.range;
 
         const ctx = await resolveInsightContext(api.userId!, channelId, videoId, range);
-        if (ctx instanceof Response) return ctx;
+        if (ctx instanceof Response) {return ctx;}
 
         try {
           const result = await getVideoSummary(
-            { userId: api.userId!, videoId, range, context: ctx },
-            { fetchCompetitiveContext, callLlm: callLLM, checkEntitlement: checkEntitlement as any },
+            { userId: api.userId!, videoId, range, context: ctx as unknown as Parameters<typeof getVideoSummary>[0]["context"] },
+            { fetchCompetitiveContext, callLlm: callLLM, checkEntitlement: checkEntitlement as Parameters<typeof getVideoSummary>[1]["checkEntitlement"] },
           );
           return jsonOk(result, { requestId: api.requestId });
         } catch (err) {
           if (err instanceof VideoInsightError && err.code === "LIMIT_REACHED" && err.cause) {
-            return entitlementErrorResponse(err.cause as any);
+            return entitlementErrorResponse(err.cause as EntitlementErrorType);
           }
           throw err;
         }

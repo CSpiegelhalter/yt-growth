@@ -1,9 +1,12 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/prisma";
 import { createLogger } from "@/lib/shared/logger";
 import type { ReplicatePort } from "@/lib/ports/ReplicatePort";
 import { ThumbnailError } from "../errors";
 
 const log = createLogger({ subsystem: "thumbnails/getJob" });
+
+type OutputImage = { url: string; [key: string]: unknown };
 
 type GetJobInput = {
   userId: number;
@@ -62,7 +65,7 @@ export async function getJob(
           p.status === "failed" ||
           p.status === "canceled"
         ) {
-          if (p.status === "failed" || p.status === "canceled") anyFailed = true;
+          if (p.status === "failed" || p.status === "canceled") {anyFailed = true;}
           continue;
         }
 
@@ -120,16 +123,19 @@ export async function getJob(
       if (allDone) {
         const newStatus = anyFailed ? "failed" : "succeeded";
 
-        const aggregatedImages: any[] = [];
+        const aggregatedImages: OutputImage[] = [];
         for (const p of job.Predictions) {
           if (Array.isArray(p.outputImages)) {
-            aggregatedImages.push(...p.outputImages);
+            aggregatedImages.push(...(p.outputImages as OutputImage[]));
           }
         }
 
         await prisma.thumbnailJob.update({
           where: { id: job.id },
-          data: { status: newStatus, outputImages: aggregatedImages },
+          data: {
+            status: newStatus,
+            outputImages: aggregatedImages as unknown as Prisma.InputJsonValue,
+          },
         });
         job.status = newStatus;
         log.info("Job completed via polling", {
@@ -141,10 +147,10 @@ export async function getJob(
     }
   }
 
-  const images: any[] = [];
+  const images: OutputImage[] = [];
   for (const p of job.Predictions) {
     if (Array.isArray(p.outputImages)) {
-      images.push(...p.outputImages);
+      images.push(...(p.outputImages as OutputImage[]));
     }
   }
 
@@ -152,7 +158,7 @@ export async function getJob(
     jobId: job.id,
     status: job.status,
     style: job.style,
-    outputImages: images,
+    outputImages: images as GetJobResult["outputImages"],
     createdAt: job.createdAt.toISOString(),
     updatedAt: job.updatedAt.toISOString(),
   };

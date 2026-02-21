@@ -1,9 +1,20 @@
 import { prisma } from "@/prisma";
 import type { IdeasAnalysis, LlmCallFn } from "../types";
-import { generateIdeas } from "./generateIdeas";
+import { generateIdeas, type ChannelProfileForIdeas } from "./generateIdeas";
+
+type InsightDerivedData = {
+  video: {
+    title: string;
+    description?: string;
+    tags?: string[];
+  };
+  derived: {
+    totalViews: number;
+  };
+};
 
 type InsightContext = {
-  derivedData: any;
+  derivedData: InsightDerivedData;
   channel: { id: number };
 };
 
@@ -18,7 +29,7 @@ export async function getVideoIdeasWithProfile(
   const { context } = input;
   const { derivedData, channel } = context;
 
-  let channelProfile: any = null;
+  let channelProfile: ChannelProfileForIdeas = null;
   try {
     const profiles = await prisma.$queryRaw<
       { aiProfileJson: string | null }[]
@@ -26,7 +37,7 @@ export async function getVideoIdeasWithProfile(
       SELECT "aiProfileJson" FROM "ChannelProfile" WHERE "channelId" = ${channel.id} LIMIT 1
     `;
     if (profiles[0]?.aiProfileJson) {
-      channelProfile = JSON.parse(profiles[0].aiProfileJson);
+      channelProfile = JSON.parse(profiles[0].aiProfileJson) as ChannelProfileForIdeas;
     }
   } catch {
     // Profile table may not exist or no profile set

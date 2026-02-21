@@ -1,10 +1,25 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/prisma";
 import { VideoInsightError } from "../errors";
+import type { GoogleAccountResult } from "../types";
 import { analyzeRetention, type AnalyzeRetentionDeps } from "./analyzeRetention";
 
+type CachedDerivedJson = {
+  video: unknown;
+  analytics: unknown;
+  derived: unknown;
+  baseline: unknown;
+  comparison: unknown;
+  levers: unknown;
+  retention: unknown;
+  bottleneck: unknown;
+  confidence: unknown;
+  isLowDataMode: unknown;
+  analyticsAvailability: unknown;
+};
+
 type GetVideoAnalyticsDeps = {
-  getGoogleAccount: (userId: number, channelId: string) => Promise<any>;
+  getGoogleAccount: (userId: number, channelId: string) => Promise<GoogleAccountResult>;
   retentionDeps: AnalyzeRetentionDeps;
 };
 
@@ -25,7 +40,7 @@ export async function getVideoAnalytics(
     where: { userId, channelId: channel.id, videoId, range },
   });
   if (cached?.derivedJson && cached.cachedUntil > new Date()) {
-    const d = cached.derivedJson as any;
+    const d = cached.derivedJson as CachedDerivedJson;
     return {
       video: d.video,
       analytics: d.analytics,

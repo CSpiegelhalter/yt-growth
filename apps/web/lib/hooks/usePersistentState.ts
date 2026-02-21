@@ -59,7 +59,7 @@ export function usePersistentState<T>({
 
   // Load from localStorage after mount (client-only)
   useEffect(() => {
-    if (hasLoadedRef.current) return;
+    if (hasLoadedRef.current) {return;}
     hasLoadedRef.current = true;
 
     const stored = getJSON<T>(key, validator);

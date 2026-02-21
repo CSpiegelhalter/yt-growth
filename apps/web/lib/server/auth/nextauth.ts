@@ -1,4 +1,4 @@
-import { type NextAuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/prisma";
 import { compare } from "@/lib/shared/crypto";
@@ -86,15 +86,15 @@ export const authOptions: NextAuthOptions = {
       },
       authorize: async (creds) => {
         if (!creds?.email || !creds?.password)
-          throw new Error("Missing credentials");
+          {throw new Error("Missing credentials");}
 
         const user = await prisma.user.findUnique({
           where: { email: creds.email },
         });
-        if (!user || !user.passwordHash) throw new Error("Invalid credentials");
+        if (!user || !user.passwordHash) {throw new Error("Invalid credentials");}
 
         const ok = await compare(creds.password, user.passwordHash);
-        if (!ok) throw new Error("Invalid credentials");
+        if (!ok) {throw new Error("Invalid credentials");}
 
         logger.info("auth.login.ok", { userId: user.id });
         return {
@@ -111,11 +111,11 @@ export const authOptions: NextAuthOptions = {
       name: "Email Token",
       credentials: { token: { label: "Token", type: "text" } },
       authorize: async (creds) => {
-        if (!creds?.token) throw new Error("Token missing");
+        if (!creds?.token) {throw new Error("Token missing");}
         const { id, email } = verifyEmailToken(creds.token);
 
         logger.info("auth.email_token.verified", { userId: id });
-        return { id: String(id), email: email, name: undefined };
+        return { id: String(id), email, name: undefined };
       },
     }),
     Google({
@@ -155,7 +155,9 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token.uid) (session.user as any).id = token.uid;
+      if (session.user && token.uid) {
+        (session.user as typeof session.user & { id?: string }).id = token.uid as string;
+      }
       return session;
     },
     async signIn({ user, account, profile }) {
@@ -185,9 +187,9 @@ export const authOptions: NextAuthOptions = {
               },
             });
             logger.info("auth.google.new_user", { userId: dbUser.id });
-          } catch (error: any) {
-            // Handle race condition - user was created by another concurrent request
-            if (error?.code === "P2002") {
+          } catch (error: unknown) {
+            const prismaError = error as Error & { code?: string };
+            if (prismaError?.code === "P2002") {
               dbUser = await prisma.user.findUnique({
                 where: { email: user.email },
               });

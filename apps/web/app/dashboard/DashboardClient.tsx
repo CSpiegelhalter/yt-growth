@@ -7,7 +7,7 @@ import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
 import Image from "next/image";
 import s from "./style.module.css";
 import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
-import { Me, Channel } from "@/types/api";
+import type { Me, Channel } from "@/types/api";
 import ChannelsSection from "@/components/dashboard/ChannelSection";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
 import VideoToolbar from "@/components/dashboard/VideoToolbar";
@@ -16,10 +16,10 @@ import { Tabs } from "@/components/ui";
 import { useSyncActiveChannel } from "@/lib/use-sync-active-channel";
 import { formatCompact } from "@/lib/shared/format";
 import {
-  DashboardVideo,
-  VideoWithMetrics,
-  SortKey,
-  VideoFilters,
+  type DashboardVideo,
+  type VideoWithMetrics,
+  type SortKey,
+  type VideoFilters,
   DEFAULT_FILTERS,
   enhanceVideosWithMetrics,
   applyFilters,
@@ -301,7 +301,7 @@ export default function DashboardClient({
 
   // Load more videos (pagination)
   const loadMoreVideos = useCallback(async () => {
-    if (!activeChannelId || !pagination?.hasMore || loadingMore) return;
+    if (!activeChannelId || !pagination?.hasMore || loadingMore) {return;}
 
     setLoadingMore(true);
     const offset = pagination.offset;
@@ -355,7 +355,7 @@ export default function DashboardClient({
 
   // Load saved video tools state when channel changes
   useEffect(() => {
-    if (!activeChannelId) return;
+    if (!activeChannelId) {return;}
     const savedState = loadVideoToolsState(activeChannelId);
     if (savedState) {
       setSortKey(savedState.sortKey);
@@ -369,7 +369,7 @@ export default function DashboardClient({
 
   // Save video tools state when it changes
   useEffect(() => {
-    if (!activeChannelId) return;
+    if (!activeChannelId) {return;}
     saveVideoToolsState(activeChannelId, { sortKey, filters });
   }, [activeChannelId, sortKey, filters]);
 
@@ -771,6 +771,6 @@ function formatDate(dateStr: string): string {
 }
 
 function formatCompactMaybe(num: number | null | undefined): string {
-  if (num == null) return "0";
+  if (num == null) {return "0";}
   return formatCompact(num);
 }

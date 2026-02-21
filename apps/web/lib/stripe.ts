@@ -20,39 +20,39 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 // ── Date Helpers ──────────────────────────────────────────
 
 function safeDateFromUnixSeconds(sec: unknown): Date | null {
-  if (typeof sec !== "number" || !Number.isFinite(sec) || sec <= 0) return null;
+  if (typeof sec !== "number" || !Number.isFinite(sec) || sec <= 0) {return null;}
   const d = new Date(sec * 1000);
   return Number.isFinite(d.getTime()) ? d : null;
 }
 
 function minDate(a: Date | null, b: Date | null): Date | null {
-  if (a && b) return a.getTime() <= b.getTime() ? a : b;
+  if (a && b) {return a.getTime() <= b.getTime() ? a : b;}
   return a ?? b;
 }
 
 // ── Entitlement / Status Logic ────────────────────────────
 
 function computePeriodEndFromAnchor(sub: PaymentSubscription): Date | null {
-  if (typeof sub.billingCycleAnchor !== "number") return null;
+  if (typeof sub.billingCycleAnchor !== "number") {return null;}
   const d = new Date(sub.billingCycleAnchor * 1000);
-  if (!Number.isFinite(d.getTime())) return null;
+  if (!Number.isFinite(d.getTime())) {return null;}
 
   const interval = sub.plan?.interval;
   const intervalCount = sub.plan?.intervalCount ?? 1;
 
-  if (interval === "month") d.setMonth(d.getMonth() + intervalCount);
-  else if (interval === "year") d.setFullYear(d.getFullYear() + intervalCount);
-  else if (interval === "week") d.setDate(d.getDate() + 7 * intervalCount);
-  else if (interval === "day") d.setDate(d.getDate() + intervalCount);
+  if (interval === "month") {d.setMonth(d.getMonth() + intervalCount);}
+  else if (interval === "year") {d.setFullYear(d.getFullYear() + intervalCount);}
+  else if (interval === "week") {d.setDate(d.getDate() + 7 * intervalCount);}
+  else if (interval === "day") {d.setDate(d.getDate() + intervalCount);}
   return d;
 }
 
 function normalizeDbStatus(stripeStatus: string | undefined): string {
   const s = (stripeStatus ?? "").toLowerCase();
-  if (s === "active" || s === "trialing") return "active";
-  if (s === "past_due") return "past_due";
+  if (s === "active" || s === "trialing") {return "active";}
+  if (s === "past_due") {return "past_due";}
   if (s === "canceled" || s === "unpaid" || s === "incomplete_expired")
-    return "canceled";
+    {return "canceled";}
   return "inactive";
 }
 
@@ -60,8 +60,8 @@ function isEntitledFromStripe(
   sub: PaymentSubscription,
   periodEnd: Date | null,
 ): boolean {
-  if (!periodEnd) return false;
-  if (periodEnd.getTime() <= Date.now()) return false;
+  if (!periodEnd) {return false;}
+  if (periodEnd.getTime() <= Date.now()) {return false;}
   const s = (sub.status ?? "").toLowerCase();
 
   if (s === "canceled") {
@@ -346,9 +346,9 @@ export async function handleStripeWebhook(
               status: existing.status,
               plan: existing.plan,
               currentPeriodEnd: existing.currentPeriodEnd,
-              cancelAtPeriodEnd: (existing as any).cancelAtPeriodEnd,
-              cancelAt: (existing as any).cancelAt,
-              canceledAt: (existing as any).canceledAt,
+              cancelAtPeriodEnd: (existing as typeof existing & { cancelAtPeriodEnd?: boolean | null }).cancelAtPeriodEnd,
+              cancelAt: (existing as typeof existing & { cancelAt?: Date | string | null }).cancelAt,
+              canceledAt: (existing as typeof existing & { canceledAt?: Date | string | null }).canceledAt,
             }
           : null,
         computed: {

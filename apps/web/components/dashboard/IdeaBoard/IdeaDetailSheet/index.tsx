@@ -20,6 +20,22 @@ type AiRemix = {
   angle: string;
 };
 
+type IdeaDetailsResponse = {
+  titles?: Array<string | { text?: string }>;
+  hooks?: Array<string | { text?: string }>;
+  keywords?: Array<string | { text?: string }>;
+  packaging?: {
+    titleAngles?: unknown[];
+    hookSetups?: unknown[];
+    visualMoments?: unknown[];
+  };
+  remixes?: Array<{
+    title?: string;
+    hook?: string;
+    angle?: string;
+  }>;
+};
+
 type IdeaDetailSheetProps = {
   idea: Idea;
   onCopy: (text: string, id: string) => void;
@@ -87,7 +103,7 @@ export function IdeaDetailSheet({
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {onClose();}
     };
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
@@ -97,22 +113,22 @@ export function IdeaDetailSheet({
   useEffect(() => {
     setDetailsError(null);
     setDetailTitles(
-      Array.isArray((idea as any)?.titles)
-        ? ((idea as any).titles as any[])
+      Array.isArray(idea.titles)
+        ? idea.titles
             .map((t) => String(t?.text ?? "").trim())
             .filter(Boolean)
         : []
     );
     setDetailHooks(
-      Array.isArray((idea as any)?.hooks)
-        ? ((idea as any).hooks as any[])
+      Array.isArray(idea.hooks)
+        ? idea.hooks
             .map((h) => String(h?.text ?? "").trim())
             .filter(Boolean)
         : []
     );
     setDetailKeywords(
-      Array.isArray((idea as any)?.keywords)
-        ? ((idea as any).keywords as any[])
+      Array.isArray(idea.keywords)
+        ? idea.keywords
             .map((k) => String(k?.text ?? "").trim())
             .filter(Boolean)
         : []
@@ -128,8 +144,8 @@ export function IdeaDetailSheet({
   }, [idea.id]);
 
   const fetchDetails = useCallback(async () => {
-    if (!channelId) return;
-    if (detailsLoading) return;
+    if (!channelId) {return;}
+    if (detailsLoading) {return;}
     setDetailsError(null);
 
     const controller = new AbortController();
@@ -155,16 +171,16 @@ export function IdeaDetailSheet({
         return;
       }
 
-      const data = await res.json();
+      const data: IdeaDetailsResponse = await res.json();
 
       const titles = Array.isArray(data.titles)
-        ? data.titles.map((t: any) => String(t ?? "").trim()).filter(Boolean)
+        ? data.titles.map((t) => String(t ?? "").trim()).filter(Boolean)
         : [];
       const hooks = Array.isArray(data.hooks)
-        ? data.hooks.map((h: any) => String(h ?? "").trim()).filter(Boolean)
+        ? data.hooks.map((h) => String(h ?? "").trim()).filter(Boolean)
         : [];
       const keywords = Array.isArray(data.keywords)
-        ? data.keywords.map((k: any) => String(k ?? "").trim()).filter(Boolean)
+        ? data.keywords.map((k) => String(k ?? "").trim()).filter(Boolean)
         : [];
 
       setDetailTitles(titles);
@@ -186,14 +202,14 @@ export function IdeaDetailSheet({
       }
       const remixes = Array.isArray(data.remixes)
         ? data.remixes
-            .map((r: any) => ({
+            .map((r) => ({
               title: String(r?.title ?? "").trim(),
               hook: String(r?.hook ?? "").trim(),
               angle: String(r?.angle ?? "").trim(),
             }))
-            .filter((r: any) => r.title || r.hook || r.angle)
+            .filter((r) => r.title || r.hook || r.angle)
         : [];
-      if (remixes.length) setAiRemixes(remixes.slice(0, 6));
+      if (remixes.length) {setAiRemixes(remixes.slice(0, 6));}
 
       onDetailsGenerated?.({
         titles,
@@ -202,8 +218,8 @@ export function IdeaDetailSheet({
         creativeDirections: directions,
         remixes,
       });
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") {return;}
       setDetailsError("Failed to generate suggestions. Please try again.");
     } finally {
       setDetailsLoading(false);
@@ -220,20 +236,20 @@ export function IdeaDetailSheet({
 
   // Check if idea already has embedded data (from initial generation)
   const ideaHasEmbeddedData =
-    Array.isArray((idea as any)?.titles) && (idea as any).titles.length > 0 ||
-    Array.isArray((idea as any)?.hooks) && (idea as any).hooks.length > 0 ||
-    Array.isArray((idea as any)?.keywords) && (idea as any).keywords.length > 0;
+    (Array.isArray(idea.titles) && idea.titles.length > 0) ||
+    (Array.isArray(idea.hooks) && idea.hooks.length > 0) ||
+    (Array.isArray(idea.keywords) && idea.keywords.length > 0);
 
   // Auto-fetch details on open (separate LLM call from initial idea generation)
   // Only fetch if the idea doesn't already have embedded data
   useEffect(() => {
-    if (!channelId) return;
-    if (detailsLoading) return;
+    if (!channelId) {return;}
+    if (detailsLoading) {return;}
     // If the idea already has embedded data, don't fetch
-    if (ideaHasEmbeddedData) return;
+    if (ideaHasEmbeddedData) {return;}
     // If we already have details from a previous fetch, don't refetch
     if (detailTitles.length || detailHooks.length || detailKeywords.length)
-      return;
+      {return;}
     fetchDetails();
   }, [
     channelId,

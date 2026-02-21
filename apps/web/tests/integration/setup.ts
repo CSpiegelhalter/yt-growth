@@ -81,7 +81,7 @@ export async function createTestSubscription(
  */
 export async function cleanupTestUser(email: string) {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return;
+  if (!user) {return;}
 
   // Delete in order of dependencies
   await prisma.usageCounter.deleteMany({ where: { userId: user.id } });

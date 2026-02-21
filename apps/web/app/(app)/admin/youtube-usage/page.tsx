@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminYoutubeUsagePage() {
   const user = await getCurrentUser();
-  if (!isAdminUser(user)) notFound();
+  if (!isAdminUser(user)) {notFound();}
   return <AdminYoutubeUsageClient />;
 }
 

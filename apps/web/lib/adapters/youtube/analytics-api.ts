@@ -36,7 +36,7 @@ export async function fetchVideoMetrics(
     rows?: Array<Array<string | number>>;
   }>(ga, url.toString());
 
-  if (!data.rows) return [];
+  if (!data.rows) {return [];}
 
   const headers = (data.columnHeaders ?? []).map((h) => h.name);
   return data.rows.map((row) => {
@@ -92,7 +92,7 @@ export async function fetchRetentionCurve(
     rows?: Array<[number, number]>;
   }>(ga, url.toString());
 
-  if (!data.rows) return [];
+  if (!data.rows) {return [];}
 
   return data.rows.map(([elapsedRatio, audienceWatchRatio]) => ({
     elapsedRatio,

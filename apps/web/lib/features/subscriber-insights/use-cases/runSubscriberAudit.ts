@@ -15,12 +15,12 @@ import type {
 // ── Pure Helpers ────────────────────────────────────────────
 
 function subsPerThousandViews(subsGained: number, views: number): number | null {
-  if (views <= 0) return null;
+  if (views <= 0) {return null;}
   return (subsGained / views) * 1000;
 }
 
 function daysSince(isoDate: string | null, nowMs: number = Date.now()): number {
-  if (!isoDate) return 0;
+  if (!isoDate) {return 0;}
   const diff = Math.floor((nowMs - new Date(isoDate).getTime()) / 86_400_000);
   return Math.max(1, diff);
 }
@@ -164,7 +164,7 @@ const FALLBACK_RESULT: PatternAnalysisJson = {
 
 function parseAnalysisResponse(content: string): PatternAnalysisJson | null {
   const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return null;
+  if (!jsonMatch) {return null;}
   return JSON.parse(jsonMatch[0]) as PatternAnalysisJson;
 }
 
@@ -200,7 +200,7 @@ async function generatePatternAnalysis(
     });
 
     const parsed = parseAnalysisResponse(result.content);
-    if (parsed) return parsed;
+    if (parsed) {return parsed;}
   } catch (err) {
     throw new SubscriberInsightError(
       "EXTERNAL_FAILURE",

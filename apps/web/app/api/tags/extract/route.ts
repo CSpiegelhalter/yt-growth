@@ -19,7 +19,7 @@ const deps: ExtractTagsDeps = {
       const item = await fetchVideoSnippetByApiKey(videoId, {
         fields: "items/snippet(title,channelTitle,tags,thumbnails/medium/url)",
       });
-      if (!item?.snippet) return null;
+      if (!item?.snippet) {return null;}
       return {
         title: item.snippet.title || "",
         description: item.snippet.description || "",

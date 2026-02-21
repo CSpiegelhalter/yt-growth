@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./ErrorState.module.css";
@@ -87,8 +87,8 @@ function formatResetTime(resetAt: string): string {
     const now = new Date();
     const diffMs = date.getTime() - now.getTime();
 
-    if (diffMs <= 0) return "soon";
-    if (diffMs < 60000) return "less than a minute";
+    if (diffMs <= 0) {return "soon";}
+    if (diffMs < 60000) {return "less than a minute";}
     if (diffMs < 3600000) {
       const mins = Math.ceil(diffMs / 60000);
       return `${mins} minute${mins === 1 ? "" : "s"}`;

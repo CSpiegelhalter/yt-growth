@@ -192,7 +192,7 @@ function getDiagnosis(
   message: string;
   status: "success" | "warning" | "info";
 } | null {
-  if (total < 100) return null;
+  if (total < 100) {return null;}
 
   const browsePercent = ((sources.browse ?? 0) / total) * 100;
   const suggestedPercent = ((sources.suggested ?? 0) / total) * 100;

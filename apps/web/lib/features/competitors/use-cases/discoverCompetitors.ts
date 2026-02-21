@@ -144,7 +144,7 @@ async function fetchFastestGrowing(
     LIMIT ${limit * 3}
   `;
 
-  if (videos.length === 0) return [];
+  if (videos.length === 0) {return [];}
 
   const sampleVideos = videos
     .slice(0, 10)
@@ -202,7 +202,7 @@ async function fetchBreakouts(
     LIMIT ${limit * 3}
   `;
 
-  if (videos.length === 0) return [];
+  if (videos.length === 0) {return [];}
 
   const sampleVideos = videos
     .slice(0, 10)
@@ -369,7 +369,7 @@ function resolveListType(
   listType: string | undefined,
   sortBy: string | undefined,
 ): string {
-  if (listType) return listType;
+  if (listType) {return listType;}
   switch (sortBy) {
     case "breakout":
       return "breakouts";

@@ -13,7 +13,7 @@ export function timingSafeEqualHex(a: string, b: string): boolean {
   try {
     const ab = Buffer.from(a, "hex");
     const bb = Buffer.from(b, "hex");
-    if (ab.length !== bb.length) return false;
+    if (ab.length !== bb.length) {return false;}
     return crypto.timingSafeEqual(ab, bb);
   } catch {
     return false;

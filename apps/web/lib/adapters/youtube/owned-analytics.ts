@@ -24,6 +24,15 @@ import type {
   DemographicBreakdown,
 } from "@/lib/ports/YouTubePort";
 
+type AnalyticsApiError = Error & {
+  isAnalyticsPermError?: boolean;
+  isScopeError?: boolean;
+};
+
+function isAnalyticsApiError(err: unknown): err is AnalyticsApiError {
+  return err instanceof Error;
+}
+
 type AnalyticsPermissionStatus =
   | { ok: true }
   | {
@@ -154,7 +163,7 @@ export async function fetchVideoAnalyticsTotalsWithStatus(
       metrics,
     );
     if (result.ok) {
-      if (!result.totals) continue;
+      if (!result.totals) {continue;}
       const totalsRaw = result.totals;
       // Calculate days in range
       const start = new Date(startDate);
@@ -223,7 +232,7 @@ async function tryFetchAnalyticsWithStatus(
       rows?: Array<Array<string | number>>;
     }>(ga, url.toString());
 
-    if (!data.rows || data.rows.length === 0) return { ok: true, rows: [] };
+    if (!data.rows || data.rows.length === 0) {return { ok: true, rows: [] };}
 
     const headers = data.columnHeaders.map((h) => h.name);
 
@@ -309,30 +318,25 @@ async function tryFetchAnalyticsWithStatus(
         };
       }),
     };
-  } catch (err: any) {
-    // Re-throw auth errors so they trigger the reconnect prompt
+  } catch (err: unknown) {
     if (err instanceof GoogleTokenRefreshError) {
       throw err;
     }
-    // Analytics metric permission errors (e.g., requesting monetization metrics without scope)
-    // Return permission_denied so the fallback logic can try with fewer metrics
-    if (err?.isAnalyticsPermError) {
-      // Permission denied for these metrics - fallback logic will try with fewer metrics
-      return { ok: false, reason: "permission_denied", message: err?.message };
+    const errMsg = err instanceof Error ? err.message : String(err ?? "");
+    if (isAnalyticsApiError(err) && err.isAnalyticsPermError) {
+      return { ok: false, reason: "permission_denied", message: errMsg };
     }
-    // Clean error message for scope/permission issues
-    if (err?.isScopeError || err?.message?.includes("SCOPE_ERROR")) {
+    if (isAnalyticsApiError(err) && (err.isScopeError || errMsg.includes("SCOPE_ERROR"))) {
       console.warn(
         `[Analytics] Permission denied - user may have declined required scopes`,
       );
-      return { ok: false, reason: "permission_denied", message: err?.message };
-    } else {
-      console.error(
-        `[Analytics] Fetch failed for metrics ${metrics.join(",")}:`,
-        err?.message || err,
-      );
-      return { ok: false, reason: "other", message: err?.message };
+      return { ok: false, reason: "permission_denied", message: errMsg };
     }
+    console.error(
+      `[Analytics] Fetch failed for metrics ${metrics.join(",")}:`,
+      errMsg,
+    );
+    return { ok: false, reason: "other", message: errMsg };
   }
 }
 
@@ -359,10 +363,10 @@ async function tryFetchAnalyticsTotalsWithStatus(
     metrics,
     null,
   );
-  if (!result.ok) return result;
+  if (!result.ok) {return result;}
   if (!result.rows || result.rows.length === 0)
-    return { ok: true, totals: null };
-  return { ok: true, totals: result.rows[0] as any };
+    {return { ok: true, totals: null };}
+  return { ok: true, totals: result.rows[0] as Omit<DailyAnalyticsRow, "date"> };
 }
 
 /**
@@ -410,7 +414,7 @@ export async function fetchOwnedVideoMetadata(
     }>(ga, url.toString());
 
     const item = data.items?.[0];
-    if (!item) return null;
+    if (!item) {return null;}
 
     return {
       videoId: item.id,
@@ -479,24 +483,20 @@ export async function fetchOwnedVideoComments(
       likes: item.snippet.topLevelComment.snippet.likeCount,
       publishedAt: item.snippet.topLevelComment.snippet.publishedAt,
     }));
-  } catch (err: any) {
-    // Re-throw auth errors so they trigger the reconnect prompt
+  } catch (err: unknown) {
     if (err instanceof GoogleTokenRefreshError) {
       throw err;
     }
 
-    const msg = String(err?.message ?? err ?? "");
+    const msg = err instanceof Error ? err.message : String(err ?? "");
 
-    // Clean error message for scope/permission issues
-    if (err?.isScopeError || err?.message?.includes("SCOPE_ERROR")) {
+    if (isAnalyticsApiError(err) && err.isScopeError || msg.includes("SCOPE_ERROR")) {
       console.warn(
         `[Comments] Permission denied - user may have declined youtube.force-ssl scope`,
       );
       return [];
     }
 
-    // Explicit handling: comments disabled for this video (NOT a permission issue)
-    // YouTube returns 403 with reason "commentsDisabled"
     if (msg.includes("commentsDisabled") || msg.includes("disabled comments")) {
       console.info(
         `[Comments] Disabled for this video (${videoId}); skipping comments fetch`,
@@ -504,14 +504,13 @@ export async function fetchOwnedVideoComments(
       return [];
     }
 
-    // If the error is wrapped as google_api_error_403: {json}, parse it for reason=commentsDisabled
     if (msg.startsWith("google_api_error_403:")) {
       const jsonPart = msg.slice("google_api_error_403:".length).trim();
       try {
-        const parsed = JSON.parse(jsonPart) as any;
+        const parsed = JSON.parse(jsonPart) as { error?: { errors?: Array<{ reason?: string }> } };
         const reasons: string[] =
           parsed?.error?.errors
-            ?.map((e: any) => String(e?.reason ?? ""))
+            ?.map((e) => String(e?.reason ?? ""))
             .filter(Boolean) ?? [];
         if (reasons.includes("commentsDisabled")) {
           console.info(
@@ -524,7 +523,6 @@ export async function fetchOwnedVideoComments(
       }
     }
 
-    // Other errors (quota, transient, etc.)
     console.warn(`[Comments] Could not fetch (video ${videoId})`);
     return [];
   }
@@ -785,21 +783,17 @@ export async function fetchVideoDiscoveryMetrics(
       trafficSources,
       hasData: impressions != null || trafficSources != null,
     };
-  } catch (err: any) {
-    // Re-throw auth errors
+  } catch (err: unknown) {
     if (err instanceof GoogleTokenRefreshError) {
       throw err;
     }
 
-    // Permission denied - user needs to connect analytics
-    if (err?.isScopeError || err?.message?.includes("permission")) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    if (isAnalyticsApiError(err) && err.isScopeError || errMsg.includes("permission")) {
       return { ...noData, reason: "connect_analytics" };
     }
 
-    console.warn(
-      "[Discovery] Failed to fetch discovery metrics:",
-      err?.message,
-    );
+    console.warn("[Discovery] Failed to fetch discovery metrics:", errMsg);
     return noData;
   }
 }
@@ -843,7 +837,7 @@ export async function fetchChannelAuditMetrics(
         fetchChannelEndScreenMetrics(ga, channelId, startDate, endDate),
       ]);
 
-    if (!currentTotals) return null;
+    if (!currentTotals) {return null;}
 
     // Calculate trends (% change from previous period)
     const viewsTrend =
@@ -891,13 +885,13 @@ export async function fetchChannelAuditMetrics(
       videoCount: 0, // Will be populated from DB
       videosInRange: 0,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof GoogleTokenRefreshError) {
       throw err;
     }
     console.error(
       "[ChannelAudit] Failed to fetch audit metrics:",
-      err?.message,
+      err instanceof Error ? err.message : String(err),
     );
     return null;
   }
@@ -1081,7 +1075,7 @@ async function fetchChannelEndScreenMetrics(
       rows?: Array<Array<string | number>>;
     }>(ga, url.toString());
 
-    if (!data.rows || data.rows.length === 0) return null;
+    if (!data.rows || data.rows.length === 0) {return null;}
 
     const headers = data.columnHeaders.map((h) => h.name);
     const row = data.rows[0];
@@ -1215,11 +1209,11 @@ export async function fetchSubscriberBreakdown(
           : null,
       subscriberViewPct,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof GoogleTokenRefreshError) {
       throw err;
     }
-    console.warn("[SubscriberBreakdown] Failed:", err?.message);
+    console.warn("[SubscriberBreakdown] Failed:", err instanceof Error ? err.message : String(err));
     return noData;
   }
 }
@@ -1292,11 +1286,11 @@ export async function fetchGeographicBreakdown(
       topCountries,
       primaryMarket,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof GoogleTokenRefreshError) {
       throw err;
     }
-    console.warn("[GeographicBreakdown] Failed:", err?.message);
+    console.warn("[GeographicBreakdown] Failed:", err instanceof Error ? err.message : String(err));
     return noData;
   }
 }
@@ -1346,7 +1340,7 @@ export async function fetchTrafficSourceDetail(
         rows?: Array<Array<string | number>>;
       }>(ga, url.toString());
 
-      if (!data.rows || data.rows.length === 0) return [];
+      if (!data.rows || data.rows.length === 0) {return [];}
 
       const headers = data.columnHeaders.map((h) => h.name);
       const detailIdx = headers.indexOf("insightTrafficSourceDetail");
@@ -1386,11 +1380,11 @@ export async function fetchTrafficSourceDetail(
       suggestedVideos: suggestedVideos.length > 0 ? suggestedVideos : null,
       browseFeatures: browseFeatures.length > 0 ? browseFeatures : null,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof GoogleTokenRefreshError) {
       throw err;
     }
-    console.warn("[TrafficSourceDetail] Failed:", err?.message);
+    console.warn("[TrafficSourceDetail] Failed:", err instanceof Error ? err.message : String(err));
     return noData;
   }
 }
@@ -1473,11 +1467,11 @@ export async function fetchDemographicBreakdown(
       byAge,
       byGender,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof GoogleTokenRefreshError) {
       throw err;
     }
-    console.warn("[DemographicBreakdown] Failed:", err?.message);
+    console.warn("[DemographicBreakdown] Failed:", err instanceof Error ? err.message : String(err));
     return null;
   }
 }

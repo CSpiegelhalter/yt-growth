@@ -107,7 +107,7 @@ export function TagExtractorClient() {
 
   // Copy to clipboard
   const handleCopy = useCallback(async () => {
-    if (!result?.tags.length) return;
+    if (!result?.tags.length) {return;}
 
     try {
       await navigator.clipboard.writeText(result.tags.join(", "));

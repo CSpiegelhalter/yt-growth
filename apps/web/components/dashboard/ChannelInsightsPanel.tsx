@@ -82,7 +82,7 @@ export function ChannelInsightsPanel({ channelId }: Props) {
     setLoading(true);
     try {
       const res = await fetch(`/api/me/channels/${channelId}/audit?range=28d`);
-      if (!res.ok) throw new Error("Failed to fetch");
+      if (!res.ok) {throw new Error("Failed to fetch");}
       const json = await res.json();
       setData(json);
       fetchRecommendations(json);
@@ -153,7 +153,7 @@ export function ChannelInsightsPanel({ channelId }: Props) {
   };
 
   useEffect(() => {
-    if (channelId) fetchData();
+    if (channelId) {fetchData();}
   }, [channelId, fetchData]);
 
   if (loading) {
@@ -544,9 +544,9 @@ function StrategicRecommendations({ data }: { data: StrategicRecommendation }) {
   const { channel_summary, analysis_pillars, next_move } = data;
 
   const getPillarColor = (title: string) => {
-    if (title.includes("DISTRIBUTION")) return "#3b82f6";
-    if (title.includes("RETENTION")) return "#8b5cf6";
-    if (title.includes("CONVERSION")) return "#10b981";
+    if (title.includes("DISTRIBUTION")) {return "#3b82f6";}
+    if (title.includes("RETENTION")) {return "#8b5cf6";}
+    if (title.includes("CONVERSION")) {return "#10b981";}
     return "#f59e0b";
   };
 
@@ -647,8 +647,8 @@ function MetricCard({
     if (format === "percent") {
       return `${value.toFixed(1)}%`;
     }
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+    if (value >= 1_000_000) {return `${(value / 1_000_000).toFixed(1)}M`;}
+    if (value >= 1_000) {return `${(value / 1_000).toFixed(1)}K`;}
     return showSign && value > 0 ? `+${value}` : value.toString();
   };
 
@@ -672,7 +672,7 @@ function TrafficInsight({
 }: {
   trafficSources: ChannelInsightsData["trafficSources"];
 }) {
-  if (!trafficSources) return null;
+  if (!trafficSources) {return null;}
 
   const browseAndSuggested =
     (trafficSources.browse?.percentage ?? 0) +

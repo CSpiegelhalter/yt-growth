@@ -36,7 +36,7 @@ export function ActiveToc({ items, title = "In this guide" }: ActiveTocProps) {
       .map((id) => document.getElementById(id))
       .filter(Boolean) as HTMLElement[];
 
-    if (elements.length === 0) return;
+    if (elements.length === 0) {return;}
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
@@ -61,7 +61,7 @@ export function ActiveToc({ items, title = "In this guide" }: ActiveTocProps) {
     return () => observerRef.current?.disconnect();
   }, [items]);
 
-  if (items.length === 0) return null;
+  if (items.length === 0) {return null;}
 
   return (
     <>

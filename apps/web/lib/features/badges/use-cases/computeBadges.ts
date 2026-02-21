@@ -46,7 +46,7 @@ export function getDaysRemaining(window: string): number {
     const weekEnd = new Date(getWeekStart(now));
     weekEnd.setDate(weekEnd.getDate() + 7);
     return Math.ceil((weekEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  } else if (window === "monthly" || window === "28d") {
+  } if (window === "monthly" || window === "28d") {
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return Math.ceil((monthEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   }
@@ -57,7 +57,7 @@ function getWindowStartDate(window: string): Date {
   const now = new Date();
   if (window === "weekly" || window === "7d") {
     return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  } else if (window === "monthly" || window === "28d") {
+  } if (window === "monthly" || window === "28d") {
     return new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
   }
   return new Date(0);
@@ -74,7 +74,7 @@ function getVideosInWindow(videos: VideoForBadges[], window: string): VideoForBa
   const startDate = getWindowStartDate(window);
   const now = new Date();
   return videos.filter((v) => {
-    if (!v.publishedAt) return false;
+    if (!v.publishedAt) {return false;}
     const pubDate = new Date(v.publishedAt);
     return pubDate >= startDate && pubDate <= now;
   });
@@ -120,14 +120,14 @@ function calculatePostingStreak(
   windowDays: 1 | 7,
   maxPeriods: number,
 ): number {
-  if (videos.length === 0) return 0;
+  if (videos.length === 0) {return 0;}
 
   const sorted = [...videos]
     .filter((v) => v.publishedAt)
     .map((v) => new Date(v.publishedAt!))
     .sort((a, b) => b.getTime() - a.getTime());
 
-  if (sorted.length === 0) return 0;
+  if (sorted.length === 0) {return 0;}
 
   const alignStart = windowDays === 7 ? getWeekStart(new Date()) : (() => {
     const d = new Date(); d.setHours(0, 0, 0, 0); return d;
@@ -169,14 +169,14 @@ export function calculatePostingStreakWeeks(videos: VideoForBadges[]): number {
 // ============================================
 
 function median(arr: number[]): number {
-  if (arr.length === 0) return 0;
+  if (arr.length === 0) {return 0;}
   const sorted = [...arr].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
 function getViewsPerDay(video: VideoForBadges): number {
-  if (!video.publishedAt || !video.views) return 0;
+  if (!video.publishedAt || !video.views) {return 0;}
   return video.views / daysSince(video.publishedAt);
 }
 
@@ -185,7 +185,7 @@ function isInTopPercentViewsPerDay(
   targetPercentile: number
 ): boolean {
   const sorted = getLastNUploads(videos, 10);
-  if (sorted.length < 5) return false;
+  if (sorted.length < 5) {return false;}
   
   const vpds = sorted.map(getViewsPerDay);
   const threshold = vpds.sort((a, b) => b - a)[Math.floor(vpds.length * (targetPercentile / 100))];
@@ -196,7 +196,7 @@ function isInTopPercentViewsPerDay(
 
 function hasBreakoutVideo(videos: VideoForBadges[]): boolean {
   const sorted = getLastNUploads(videos, 10);
-  if (sorted.length < 5) return false;
+  if (sorted.length < 5) {return false;}
   
   const vpds = sorted.map(getViewsPerDay);
   const med = median(vpds.slice(1));
@@ -210,9 +210,9 @@ function hasEvergreenVideo(videos: VideoForBadges[]): boolean {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
   return videos.some((v) => {
-    if (!v.publishedAt || !v.views) return false;
+    if (!v.publishedAt || !v.views) {return false;}
     const pubDate = new Date(v.publishedAt);
-    if (pubDate > thirtyDaysAgo) return false;
+    if (pubDate > thirtyDaysAgo) {return false;}
     
     const vpd = getViewsPerDay(v);
     return vpd >= 10;
@@ -221,7 +221,7 @@ function hasEvergreenVideo(videos: VideoForBadges[]): boolean {
 
 function hasUpwardTrend(videos: VideoForBadges[]): boolean {
   const sorted = getLastNUploads(videos, 10);
-  if (sorted.length < 10) return false;
+  if (sorted.length < 10) {return false;}
   
   const recent5 = sorted.slice(0, 5).reduce((sum, v) => sum + (v.views ?? 0), 0) / 5;
   const prev5 = sorted.slice(5, 10).reduce((sum, v) => sum + (v.views ?? 0), 0) / 5;
@@ -242,7 +242,7 @@ function getMaxLikeRate(videos: VideoForBadges[]): number {
   for (const v of videos) {
     if (v.views && v.views >= 500 && v.likes) {
       const rate = (v.likes / v.views) * 100;
-      if (rate > max) max = rate;
+      if (rate > max) {max = rate;}
     }
   }
   return Math.round(max * 10) / 10;
@@ -250,21 +250,21 @@ function getMaxLikeRate(videos: VideoForBadges[]): number {
 
 export function avgLikeRateLastN(videos: VideoForBadges[], n: number): number {
   const lastN = getLastNUploads(videos, n).filter((v) => v.views && v.views > 0);
-  if (lastN.length < n) return 0;
+  if (lastN.length < n) {return 0;}
   const rates = lastN.map((v) => ((v.likes ?? 0) / v.views!) * 100);
   return Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 10) / 10;
 }
 
 function avgCtrLastN(videos: VideoForBadges[], n: number): number {
   const lastN = getLastNUploads(videos, n).filter((v) => v.ctr != null);
-  if (lastN.length < n) return 0;
+  if (lastN.length < n) {return 0;}
   const total = lastN.reduce((sum, v) => sum + (v.ctr ?? 0), 0);
   return Math.round((total / lastN.length) * 10) / 10;
 }
 
 export function avgRetentionLastN(videos: VideoForBadges[], n: number): number {
   const lastN = getLastNUploads(videos, n).filter((v) => v.averageViewPercentage != null);
-  if (lastN.length < n) return 0;
+  if (lastN.length < n) {return 0;}
   const total = lastN.reduce((sum, v) => sum + (v.averageViewPercentage ?? 0), 0);
   return Math.round(total / lastN.length);
 }
@@ -278,7 +278,7 @@ function hasNetPositiveSubsWeeks(videos: VideoForBadges[], weeks: number): boole
     weekEnd.setDate(weekEnd.getDate() + 7);
     
     const weekVideos = videos.filter((v) => {
-      if (!v.publishedAt) return false;
+      if (!v.publishedAt) {return false;}
       const d = new Date(v.publishedAt);
       return d >= weekStart && d < weekEnd;
     });
@@ -286,7 +286,7 @@ function hasNetPositiveSubsWeeks(videos: VideoForBadges[], weeks: number): boole
     const gained = weekVideos.reduce((sum, v) => sum + (v.subscribersGained ?? 0), 0);
     const lost = weekVideos.reduce((sum, v) => sum + (v.subscribersLost ?? 0), 0);
     
-    if (gained <= lost) return false;
+    if (gained <= lost) {return false;}
   }
   return true;
 }
@@ -296,13 +296,13 @@ function hasReturnedAfterBreak(videos: VideoForBadges[]): boolean {
     .filter((v) => v.publishedAt)
     .sort((a, b) => new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime());
   
-  if (sorted.length < 2) return false;
+  if (sorted.length < 2) {return false;}
   
   for (let i = 0; i < sorted.length - 1; i++) {
     const current = new Date(sorted[i].publishedAt!);
     const prev = new Date(sorted[i + 1].publishedAt!);
     const daysBetween = (current.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-    if (daysBetween >= 30) return true;
+    if (daysBetween >= 30) {return true;}
   }
   
   return false;
@@ -319,14 +319,14 @@ function hasDoubleUploadWeeks(videos: VideoForBadges[], weeks: number): boolean 
     weekEnd.setDate(weekEnd.getDate() + 7);
     
     const count = videos.filter((v) => {
-      if (!v.publishedAt) return false;
+      if (!v.publishedAt) {return false;}
       const d = new Date(v.publishedAt);
       return d >= weekStart && d < weekEnd;
     }).length;
     
     if (count >= 2) {
       consecutiveWeeks++;
-      if (consecutiveWeeks >= weeks) return true;
+      if (consecutiveWeeks >= weeks) {return true;}
     } else {
       consecutiveWeeks = 0;
     }
@@ -423,9 +423,9 @@ export function checkMetricAvailability(
 // ============================================
 
 function formatValue(value: number, unit?: string): string {
-  if (unit === "%") return `${Math.round(value * 10) / 10}%`;
-  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-  if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+  if (unit === "%") {return `${Math.round(value * 10) / 10}%`;}
+  if (value >= 1000000) {return `${(value / 1000000).toFixed(1)}M`;}
+  if (value >= 1000) {return `${(value / 1000).toFixed(1)}K`;}
   return value.toString();
 }
 
@@ -545,8 +545,8 @@ function computeBadgeProgress(
       for (let i = 0; i < last5.length - 1; i++) {
         const current = last5[i].ctr ?? last5[i].averageViewPercentage ?? 0;
         const prev = last5[i + 1].ctr ?? last5[i + 1].averageViewPercentage ?? 0;
-        if (current > prev) improvements++;
-        else improvements = 0;
+        if (current > prev) {improvements++;}
+        else {improvements = 0;}
       }
       return createProgress(improvements, 3, "in a row");
     }
@@ -562,7 +562,7 @@ function computeBadgeProgress(
       return createProgress(getMaxVideoComments(videos), 200, "comments");
     case "engagement-king": {
       const engagedVideos = videos.filter((v) => {
-        if (!v.views || v.views < 500 || !v.likes || !v.comments) return false;
+        if (!v.views || v.views < 500 || !v.likes || !v.comments) {return false;}
         const likeRate = (v.likes / v.views) * 100;
         return likeRate >= 5 && v.comments >= 50;
       });
@@ -749,11 +749,11 @@ export function getNextBadge(badges: BadgeWithProgress[]): BadgeWithProgress | n
 
 export function sortBadgesByClosest(badges: BadgeWithProgress[]): BadgeWithProgress[] {
   return [...badges].sort((a, b) => {
-    if (a.unlocked && !b.unlocked) return -1;
-    if (!a.unlocked && b.unlocked) return 1;
+    if (a.unlocked && !b.unlocked) {return -1;}
+    if (!a.unlocked && b.unlocked) {return 1;}
     if (!a.unlocked && !b.unlocked) {
-      if (a.progress.lockedReason && !b.progress.lockedReason) return 1;
-      if (!a.progress.lockedReason && b.progress.lockedReason) return -1;
+      if (a.progress.lockedReason && !b.progress.lockedReason) {return 1;}
+      if (!a.progress.lockedReason && b.progress.lockedReason) {return -1;}
       return b.progress.percent - a.progress.percent;
     }
     return 0;
@@ -765,8 +765,8 @@ export function sortBadgesByRecent(badges: BadgeWithProgress[]): BadgeWithProgre
     if (a.unlocked && b.unlocked) {
       return new Date(b.unlockedAt!).getTime() - new Date(a.unlockedAt!).getTime();
     }
-    if (a.unlocked) return -1;
-    if (b.unlocked) return 1;
+    if (a.unlocked) {return -1;}
+    if (b.unlocked) {return 1;}
     return 0;
   });
 }
@@ -776,7 +776,7 @@ export function sortBadgesByRarity(badges: BadgeWithProgress[]): BadgeWithProgre
   return [...badges].sort((a, b) => {
     const aOrder = rarityOrder[a.rarity];
     const bOrder = rarityOrder[b.rarity];
-    if (aOrder !== bOrder) return aOrder - bOrder;
+    if (aOrder !== bOrder) {return aOrder - bOrder;}
     return (a.order ?? 0) - (b.order ?? 0);
   });
 }

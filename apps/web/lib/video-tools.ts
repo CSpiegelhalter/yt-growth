@@ -187,7 +187,7 @@ export function daysSincePublish(publishedAt: string | null): number {
  * Calculate like rate (likes / views)
  */
 export function calcLikeRate(likes: number, views: number): number {
-  if (views === 0) return 0;
+  if (views === 0) {return 0;}
   return likes / views;
 }
 
@@ -198,7 +198,7 @@ export function calcViewsPerDay(
   views: number,
   publishedAt: string | null
 ): number {
-  if (!publishedAt) return 0;
+  if (!publishedAt) {return 0;}
   const days = daysSincePublish(publishedAt);
   return views / days;
 }
@@ -207,7 +207,7 @@ export function calcViewsPerDay(
  * Calculate comment rate (comments per 1k views)
  */
 export function calcCommentRate(comments: number, views: number): number {
-  if (views === 0) return 0;
+  if (views === 0) {return 0;}
   return (comments / views) * 1000;
 }
 
@@ -219,7 +219,7 @@ export function calcEngagementRate(
   comments: number,
   views: number
 ): number {
-  if (views === 0) return 0;
+  if (views === 0) {return 0;}
   return (likes + comments) / views;
 }
 
@@ -230,7 +230,7 @@ export function calcSubsPerThousandViews(
   subsGained: number | null | undefined,
   views: number
 ): number | null {
-  if (subsGained == null || views <= 0) return null;
+  if (subsGained == null || views <= 0) {return null;}
   return (subsGained / views) * 1000;
 }
 
@@ -243,8 +243,8 @@ export function calcSubsPerThousandViews(
 export function determineContentType(
   durationSec: number | null
 ): "short" | "long" | "live" | "unknown" {
-  if (durationSec == null) return "unknown";
-  if (durationSec <= 60) return "short";
+  if (durationSec == null) {return "unknown";}
+  if (durationSec <= 60) {return "short";}
   return "long";
 }
 
@@ -307,7 +307,7 @@ export function getAvailableSortOptions(
   videos: DashboardVideo[]
 ): SortOption[] {
   return SORT_OPTIONS.filter((opt) => {
-    if (!opt.requiresMetric) return true;
+    if (!opt.requiresMetric) {return true;}
     return hasMetric(videos, opt.requiresMetric);
   });
 }
@@ -323,7 +323,7 @@ export function filterByTimeRange(
   videos: VideoWithMetrics[],
   range: TimeRange
 ): VideoWithMetrics[] {
-  if (range === "lifetime") return videos;
+  if (range === "lifetime") {return videos;}
 
   const daysMap: Record<TimeRange, number> = {
     "7d": 7,
@@ -343,7 +343,7 @@ export function filterByContentType(
   videos: VideoWithMetrics[],
   type: ContentType
 ): VideoWithMetrics[] {
-  if (type === "all") return videos;
+  if (type === "all") {return videos;}
   return videos.filter((v) => v.computed.contentType === type);
 }
 
@@ -354,7 +354,7 @@ export function filterBySearch(
   videos: VideoWithMetrics[],
   query: string
 ): VideoWithMetrics[] {
-  if (!query.trim()) return videos;
+  if (!query.trim()) {return videos;}
   const lowerQuery = query.toLowerCase().trim();
   return videos.filter((v) => v.title?.toLowerCase().includes(lowerQuery));
 }
@@ -429,16 +429,16 @@ function filterNeedsAttention(
       v.computed.retentionPercent != null
     ) {
       if (v.computed.retentionPercent < baselines.medianRetention * 0.7)
-        return true;
+        {return true;}
     }
 
     // Low CTR (below 70% of median)
     if (baselines.medianCtr != null && v.ctr != null) {
-      if (v.ctr < baselines.medianCtr * 0.7) return true;
+      if (v.ctr < baselines.medianCtr * 0.7) {return true;}
     }
 
     // Low engagement (below 50% of median like rate)
-    if (v.computed.likeRate < baselines.medianLikeRate * 0.5) return true;
+    if (v.computed.likeRate < baselines.medianLikeRate * 0.5) {return true;}
 
     return false;
   });
@@ -451,7 +451,7 @@ function filterNeedsAttention(
 export function filterTopPerformers(
   videos: VideoWithMetrics[]
 ): VideoWithMetrics[] {
-  if (videos.length === 0) return [];
+  if (videos.length === 0) {return [];}
 
   // Sort by total views (most intuitive for "top performers")
   const sorted = [...videos].sort((a, b) => b.views - a.views);
@@ -515,16 +515,16 @@ export function sortVideos(
       return sorted.sort((a, b) => b.computed.likeRate - a.computed.likeRate);
     case "newest":
       return sorted.sort((a, b) => {
-        if (!a.publishedAt) return 1;
-        if (!b.publishedAt) return -1;
+        if (!a.publishedAt) {return 1;}
+        if (!b.publishedAt) {return -1;}
         return (
           new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
         );
       });
     case "oldest":
       return sorted.sort((a, b) => {
-        if (!a.publishedAt) return 1;
-        if (!b.publishedAt) return -1;
+        if (!a.publishedAt) {return 1;}
+        if (!b.publishedAt) {return -1;}
         return (
           new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime()
         );
@@ -585,7 +585,7 @@ function getStorageKey(channelId: string): string {
  */
 export function loadVideoToolsState(channelId: string): VideoToolsState | null {
   const stored = safeGetItem(getStorageKey(channelId));
-  if (!stored) return null;
+  if (!stored) {return null;}
   try {
     return JSON.parse(stored) as VideoToolsState;
   } catch {
@@ -754,7 +754,7 @@ export function formatContextMetric(
  * Return a "Short" label for YouTube Shorts (≤60s), null otherwise.
  */
 export function shortFormBadge(durationSec: number | null): string | null {
-  if (durationSec == null) return null;
-  if (durationSec <= 60) return "Short";
+  if (durationSec == null) {return null;}
+  if (durationSec <= 60) {return "Short";}
   return null;
 }

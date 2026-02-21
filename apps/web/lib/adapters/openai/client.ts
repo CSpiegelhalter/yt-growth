@@ -37,7 +37,7 @@ class OpenAiError extends Error {
   ) {
     super(message);
     this.name = "OpenAiError";
-    if (cause) this.cause = cause;
+    if (cause) {this.cause = cause;}
   }
 }
 
@@ -68,7 +68,7 @@ function sleep(ms: number): Promise<void> {
 function retryDelay(attempt: number, retryAfterHeader: string | null): number {
   if (retryAfterHeader) {
     const seconds = parseInt(retryAfterHeader, 10);
-    if (!Number.isNaN(seconds) && seconds > 0) return seconds * 1000;
+    if (!Number.isNaN(seconds) && seconds > 0) {return seconds * 1000;}
   }
   return BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
 }
@@ -148,7 +148,7 @@ async function fetchChatCompletion(
         model,
       };
     } catch (err) {
-      if (err instanceof OpenAiError) throw err;
+      if (err instanceof OpenAiError) {throw err;}
 
       if (attempt < MAX_RETRIES) {
         const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);

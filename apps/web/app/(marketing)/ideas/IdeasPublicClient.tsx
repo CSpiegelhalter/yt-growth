@@ -86,13 +86,13 @@ export function IdeasPublicClient() {
 
   // Check if user has used their free generation (only for FREE users)
   const hasReachedLimit = useMemo(() => {
-    if (!usageInfo) return false;
+    if (!usageInfo) {return false;}
     return usageInfo.remaining <= 0;
   }, [usageInfo]);
 
   // Check if user is on FREE plan (limit <= FREE_PLAN_LIMIT)
   const isFreePlan = useMemo(() => {
-    if (!usageInfo) return true; // Assume free until we know
+    if (!usageInfo) {return true;} // Assume free until we know
     return usageInfo.limit <= FREE_PLAN_LIMIT;
   }, [usageInfo]);
 

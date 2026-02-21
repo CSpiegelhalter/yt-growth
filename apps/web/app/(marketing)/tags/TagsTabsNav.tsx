@@ -52,7 +52,7 @@ export function TagsTabsNav() {
   const pathname = usePathname();
 
   const getActiveTab = () => {
-    if (pathname === "/tags/generator") return "generator";
+    if (pathname === "/tags/generator") {return "generator";}
     return "extractor";
   };
 

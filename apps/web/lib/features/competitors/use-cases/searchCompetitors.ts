@@ -181,7 +181,7 @@ export async function* searchCompetitors(
     cacheKey,
     async () => {
       const cached = await getCachedSearchResults(cacheKey);
-      if (!cached) return null;
+      if (!cached) {return null;}
       return {
         results: cached.results,
         scannedCount: cached.scannedCount,

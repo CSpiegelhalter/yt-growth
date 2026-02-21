@@ -133,11 +133,11 @@ function isValidSeedKeyword(keyword: string): boolean {
   const trimmed = keyword.trim().toLowerCase();
 
   // Length constraints
-  if (trimmed.length === 0 || trimmed.length > 80) return false;
+  if (trimmed.length === 0 || trimmed.length > 80) {return false;}
 
   // Word count constraint
   const wordCount = trimmed.split(/\s+/).length;
-  if (wordCount > 10) return false;
+  if (wordCount > 10) {return false;}
 
   // No emojis
   if (/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(trimmed)) {
@@ -146,7 +146,7 @@ function isValidSeedKeyword(keyword: string): boolean {
 
   // Check forbidden categories
   for (const pattern of FORBIDDEN_PATTERNS) {
-    if (pattern.test(trimmed)) return false;
+    if (pattern.test(trimmed)) {return false;}
   }
 
   return true;
@@ -425,7 +425,7 @@ async function enrichWithSearchVolume(
   keywords: string[],
   location: string
 ): Promise<Map<string, KeywordMetrics>> {
-  if (keywords.length === 0) return new Map();
+  if (keywords.length === 0) {return new Map();}
 
   const locationInfo = validateLocation(location);
   const keywordsToEnrich = keywords.slice(0, VOLUME_ENRICHMENT_TOP_N);
@@ -699,7 +699,20 @@ Return ONLY JSON.`;
       if (retryMatch) {
         const retryParsed = JSON.parse(retryMatch[0]);
         if (Array.isArray(retryParsed.ideas)) {
-          return retryParsed.ideas.slice(0, VIDEO_IDEAS_COUNT).map((idea: any, index: number) => ({
+          type RawIdeaFromLlm = {
+            title?: string;
+            hook?: string;
+            format?: string;
+            target_keyword?: string;
+            why_it_wins?: string;
+            outline?: string[];
+            seo_notes?: {
+              primary_keyword?: string;
+              supporting_keywords?: string[];
+            };
+          };
+
+          return retryParsed.ideas.slice(0, VIDEO_IDEAS_COUNT).map((idea: RawIdeaFromLlm, index: number) => ({
             id: `idea-${index + 1}`,
             title: idea.title || `Video about ${topKeywords[index]?.keyword || "this topic"}`,
             hook: idea.hook || "Let me show you something interesting...",
@@ -743,7 +756,7 @@ function generateFallbackVideoIdeas(
 
   for (let i = 0; i < Math.min(VIDEO_IDEAS_COUNT, keywords.length); i++) {
     const kw = keywords[i];
-    if (usedKeywords.has(kw.keyword)) continue;
+    if (usedKeywords.has(kw.keyword)) {continue;}
     usedKeywords.add(kw.keyword);
 
     const template = templates[i % templates.length];
@@ -754,7 +767,7 @@ function generateFallbackVideoIdeas(
       : "longform";
 
     const title = template.prefix
-      ? `${template.prefix} ${kw.keyword}${template.suffix ? " " + template.suffix : ""}`
+      ? `${template.prefix} ${kw.keyword}${template.suffix ? ` ${  template.suffix}` : ""}`
       : `${kw.keyword} ${template.suffix}`;
 
     ideas.push({

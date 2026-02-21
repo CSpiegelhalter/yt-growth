@@ -26,7 +26,7 @@ export function ArrowLayer({ obj, isSelected, onSelect, onChange }: ArrowLayerPr
 
   // Calculate arrowhead geometry
   const arrowhead = useMemo(() => {
-    if (points.length < 4) return null;
+    if (points.length < 4) {return null;}
     
     const endX = points[points.length - 2];
     const endY = points[points.length - 1];
@@ -97,12 +97,12 @@ export function ArrowLayer({ obj, isSelected, onSelect, onChange }: ArrowLayerPr
   // Store initial pointer position and points when drag starts
   const handleDragStart = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
     const stage = e.target.getStage();
-    if (!stage) return;
+    if (!stage) {return;}
     
     // Get pointer position in canvas coordinates (accounting for stage transform)
     const transform = stage.getAbsoluteTransform().copy().invert();
     const pos = stage.getPointerPosition();
-    if (!pos) return;
+    if (!pos) {return;}
     
     const canvasPos = transform.point(pos);
     dragStartRef.current = { 
@@ -203,7 +203,7 @@ export function ArrowLayer({ obj, isSelected, onSelect, onChange }: ArrowLayerPr
       {isTapered ? (
         <Shape
           sceneFunc={(ctx, shape) => {
-            if (points.length < 4) return;
+            if (points.length < 4) {return;}
 
             ctx.beginPath();
 

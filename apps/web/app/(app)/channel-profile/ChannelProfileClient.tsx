@@ -6,6 +6,7 @@ import Link from "next/link";
 import s from "./style.module.css";
 import { ProfileEditor } from "@/components/channel-profile";
 import { useChannelProfile } from "@/lib/hooks/use-channel-profile";
+import type { ChannelProfileInput } from "@/lib/features/channels/schemas";
 
 export default function ChannelProfileClient() {
   const searchParams = useSearchParams();
@@ -25,8 +26,7 @@ export default function ChannelProfileClient() {
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Handle successful save + generate
-  const handleSave = async (input: any) => {
+  const handleSave = async (input: ChannelProfileInput) => {
     const saved = await saveProfile(input);
     if (saved) {
       // Auto-generate AI profile after saving if it's new or input changed

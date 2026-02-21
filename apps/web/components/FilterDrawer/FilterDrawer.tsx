@@ -38,7 +38,7 @@ export default function FilterDrawer({
   useFocusTrap(drawerRef, isOpen, { autoFocus: false });
 
   useEffect(() => {
-    if (isOpen) closeButtonRef.current?.focus();
+    if (isOpen) {closeButtonRef.current?.focus();}
   }, [isOpen]);
 
   const handleBackdropClick = useCallback(
@@ -50,7 +50,7 @@ export default function FilterDrawer({
     [onClose]
   );
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   const content = (
     <div
@@ -119,6 +119,6 @@ export default function FilterDrawer({
     </div>
   );
 
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined") {return null;}
   return createPortal(content, document.body);
 }

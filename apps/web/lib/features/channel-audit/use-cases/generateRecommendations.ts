@@ -376,7 +376,7 @@ function getChannelLenses(
   traffic: AuditTrafficSources,
   trends: AuditTrends,
 ): string {
-  if (!metrics || !traffic) return "";
+  if (!metrics || !traffic) {return "";}
 
   const subChurn =
     metrics.subscribersGained > 0
@@ -397,41 +397,41 @@ function getChannelLenses(
   const find = (id: string) => CHANNEL_ARCHETYPES.find((a) => a.id === id);
 
   // GROUP 1: DISTRIBUTION & TRAFFIC
-  if (searchPct > 50 && browsePct < 20) lenses.push(find("SEARCH_PRISON"));
+  if (searchPct > 50 && browsePct < 20) {lenses.push(find("SEARCH_PRISON"));}
   if (browsePct > 60 && trends.views.direction === "up")
-    lenses.push(find("ALGO_FAVORITE"));
+    {lenses.push(find("ALGO_FAVORITE"));}
   if (suggestedPct > 40 && metrics.totalWatchTimeMin > 0)
-    lenses.push(find("SUGGESTED_LEECH"));
+    {lenses.push(find("SUGGESTED_LEECH"));}
   if (externalPct > 30 && browsePct < 20)
-    lenses.push(find("EXTERNAL_DEPENDENT"));
+    {lenses.push(find("EXTERNAL_DEPENDENT"));}
 
   // GROUP 2: LOYALTY & CHURN
   if (metrics.netSubscribers < 0 || subChurn > 0.3)
-    lenses.push(find("LEAKY_BUCKET"));
+    {lenses.push(find("LEAKY_BUCKET"));}
   if (
     trends.views.direction === "up" &&
     Math.abs(metrics.netSubscribers) < metrics.totalViews * 0.001
   )
-    lenses.push(find("PASSERBY_CHANNEL"));
+    {lenses.push(find("PASSERBY_CHANNEL"));}
   if (
     trends.views.direction === "flat" &&
     metrics.netSubscribers > 0 &&
     avgRetention > 50
   )
-    lenses.push(find("THE_CULT_LEADER"));
+    {lenses.push(find("THE_CULT_LEADER"));}
   if (
     trends.subscribers.direction === "down" &&
     trends.watchTime.direction === "down"
   )
-    lenses.push(find("BRAND_BURN_OUT"));
+    {lenses.push(find("BRAND_BURN_OUT"));}
 
   // GROUP 3: BINGE-ABILITY
   if (endScreenCtr < 1 && avgRetention > 30)
-    lenses.push(find("THE_DEAD_END"));
+    {lenses.push(find("THE_DEAD_END"));}
   if (endScreenCtr > 5 && trends.watchTime.direction === "up")
-    lenses.push(find("THE_BINGE_MASTER"));
+    {lenses.push(find("THE_BINGE_MASTER"));}
   if (trends.views.direction === "up" && avgRetention < 20)
-    lenses.push(find("SHALLOW_HOOKS"));
+    {lenses.push(find("SHALLOW_HOOKS"));}
 
   // GROUP 4: TRENDS & MOMENTUM
   if (
@@ -439,74 +439,74 @@ function getChannelLenses(
     trends.watchTime.direction === "up" &&
     trends.subscribers.direction === "up"
   )
-    lenses.push(find("THE_RECOVERY"));
+    {lenses.push(find("THE_RECOVERY"));}
   if (
     trends.views.direction === "flat" &&
     trends.watchTime.direction === "down" &&
     trends.subscribers.direction === "down"
   )
-    lenses.push(find("THE_SLOW_DEATH"));
+    {lenses.push(find("THE_SLOW_DEATH"));}
   if (trends.views.direction === "up" && trends.watchTime.direction === "flat")
-    lenses.push(find("THE_VERTICAL_LIMIT"));
+    {lenses.push(find("THE_VERTICAL_LIMIT"));}
 
   // GROUP 5: SPECIFIC PERMUTATIONS
   if (searchPct > 40 && endScreenCtr < 2 && subConversionRate < 0.5)
-    lenses.push(find("UTILITY_OBLIVION"));
+    {lenses.push(find("UTILITY_OBLIVION"));}
   if (
     trends.views.direction === "down" &&
     trends.subscribers.direction === "up"
   )
-    lenses.push(find("VIRAL_AFTERSHOCK"));
+    {lenses.push(find("VIRAL_AFTERSHOCK"));}
   if (browsePct > 40 && avgRetention < 30)
-    lenses.push(find("CONTENT_MISMATCH"));
+    {lenses.push(find("CONTENT_MISMATCH"));}
   if (avgRetention > 60 && trends.views.direction === "down")
-    lenses.push(find("HIDDEN_GEMS"));
+    {lenses.push(find("HIDDEN_GEMS"));}
   if (
     trends.views.direction === "flat" &&
     trends.watchTime.direction === "up" &&
     trends.subscribers.direction === "flat"
   )
-    lenses.push(find("THE_WALL"));
+    {lenses.push(find("THE_WALL"));}
   if (browsePct > 20 && searchPct > 20 && suggestedPct > 20)
-    lenses.push(find("DIVERSIFIED_STRENGTH"));
+    {lenses.push(find("DIVERSIFIED_STRENGTH"));}
   if (externalPct < 10 && browsePct < 20 && searchPct > 40)
-    lenses.push(find("BROAD_APPEAL_STRUGGLE"));
+    {lenses.push(find("BROAD_APPEAL_STRUGGLE"));}
   if (
     trends.views.direction === "down" &&
     trends.subscribers.direction === "down"
   )
-    lenses.push(find("AUDIENCE_FATIGUE"));
+    {lenses.push(find("AUDIENCE_FATIGUE"));}
   if (
     (trends.watchTime.value ?? 0) > (trends.views.value ?? 0) &&
     trends.watchTime.direction === "up"
   )
-    lenses.push(find("THE_CLIMBER"));
+    {lenses.push(find("THE_CLIMBER"));}
   if (
     (trends.watchTime.value ?? 0) < (trends.views.value ?? 0) &&
     trends.views.direction === "up"
   )
-    lenses.push(find("THE_DIVE"));
-  if (subConversionRate > 5) lenses.push(find("THE_CONVERTER"));
-  if (subConversionRate < 0.1) lenses.push(find("THE_SKEPTIC_AUDIENCE"));
+    {lenses.push(find("THE_DIVE"));}
+  if (subConversionRate > 5) {lenses.push(find("THE_CONVERTER"));}
+  if (subConversionRate < 0.1) {lenses.push(find("THE_SKEPTIC_AUDIENCE"));}
   if (
     metrics.netSubscribers > 0 &&
     trends.views.direction === "up" &&
     trends.subscribers.direction === "up"
   )
-    lenses.push(find("THE_REVIVAL"));
+    {lenses.push(find("THE_REVIVAL"));}
   if (searchPct > 30 && metrics.subscribersGained > metrics.totalViews * 0.01)
-    lenses.push(find("SEARCH_SUCCESS_STORY"));
+    {lenses.push(find("SEARCH_SUCCESS_STORY"));}
   if (
     externalPct > 40 &&
     metrics.subscribersGained > metrics.totalViews * 0.02
   )
-    lenses.push(find("THE_INFLUENCER_START"));
+    {lenses.push(find("THE_INFLUENCER_START"));}
   if (
     Math.abs(trends.views.value ?? 0) < 10 &&
     Math.abs(trends.watchTime.value ?? 0) < 10 &&
     Math.abs(trends.subscribers.value ?? 0) < 10
   )
-    lenses.push(find("THE_GHOST_CHANNEL"));
+    {lenses.push(find("THE_GHOST_CHANNEL"));}
 
   const validLenses = lenses.filter(
     (l): l is ChannelArchetype => l !== undefined,
@@ -532,7 +532,7 @@ function buildRecommendationsPrompt(
   trafficSources: AuditTrafficSources,
   trends: AuditTrends,
 ): string {
-  if (!metrics) return "";
+  if (!metrics) {return "";}
 
   const subChurnRatio = (
     (metrics.subscribersLost / metrics.subscribersGained) *
@@ -680,7 +680,7 @@ function parseRecommendationsJson(content: string): unknown | null {
       let braceCount = 0;
       let lastValidIndex = -1;
       for (let i = 0; i < jsonStr.length; i++) {
-        if (jsonStr[i] === "{") braceCount++;
+        if (jsonStr[i] === "{") {braceCount++;}
         if (jsonStr[i] === "}") {
           braceCount--;
           if (braceCount === 0) {

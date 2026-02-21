@@ -76,7 +76,7 @@ export function withValidation<
     const validated: Validated<POut, QOut, BOut> = {};
 
     if (schemas.params) {
-      const paramsRaw = await (ctx as any).params;
+      const paramsRaw = await (ctx as NextRouteContext<Record<string, string>>).params;
       const parsed = schemas.params.safeParse(paramsRaw);
       if (!parsed.success) {
         throw new ApiError({

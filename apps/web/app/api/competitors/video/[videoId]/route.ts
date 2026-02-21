@@ -37,7 +37,7 @@ export const GET = createApiRoute(
             featureKey: "competitor_video_analysis",
             increment: true,
           });
-          if (!ent.ok) return entitlementErrorResponse(ent.error);
+          if (!ent.ok) {return entitlementErrorResponse(ent.error);}
 
           const result = await analyzeVideo({
             userId: api.userId!,

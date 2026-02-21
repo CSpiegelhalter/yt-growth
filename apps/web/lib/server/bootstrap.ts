@@ -32,7 +32,7 @@ const getCurrentUserServerCached = cache(async (): Promise<BootstrapUser | null>
     id?: string | number;
     email?: string;
   } | null;
-  if (!sessionUser) return null;
+  if (!sessionUser) {return null;}
 
   let user = null;
 
@@ -120,7 +120,7 @@ const getChannelsServerCached = cache(async (userId: number): Promise<Channel[]>
 const getAppBootstrapOptionalCached = cache(
   async (channelIdParam: string | null): Promise<BootstrapData | null> => {
     const user = await getCurrentUserServer();
-    if (!user) return null;
+    if (!user) {return null;}
 
     const [me, channels] = await Promise.all([
       getMeServer(user),
@@ -185,7 +185,7 @@ export function resolveActiveChannelId(
   channels: Channel[],
   searchParams?: { channelId?: string } | string | null
 ): string | null {
-  if (channels.length === 0) return null;
+  if (channels.length === 0) {return null;}
 
   // Handle string param (direct channelId)
   const channelIdParam =
@@ -196,7 +196,7 @@ export function resolveActiveChannelId(
   // Check if the requested channelId is valid
   if (channelIdParam) {
     const found = channels.find((c) => c.channel_id === channelIdParam);
-    if (found) return found.channel_id;
+    if (found) {return found.channel_id;}
   }
 
   // Fallback to first channel
@@ -244,8 +244,8 @@ type AppPlan = "FREE" | "PRO" | "ENTERPRISE";
 
 export function normalizePlan(plan: string): AppPlan {
   const upper = plan.toUpperCase();
-  if (upper === "PRO") return "PRO";
-  if (upper === "ENTERPRISE" || upper === "TEAM") return "ENTERPRISE";
+  if (upper === "PRO") {return "PRO";}
+  if (upper === "ENTERPRISE" || upper === "TEAM") {return "ENTERPRISE";}
   return "FREE";
 }
 

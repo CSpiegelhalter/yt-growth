@@ -1,10 +1,10 @@
-import type { CommentInsights, LlmCallFn } from "../types";
+import type { CommentInsights, LlmCallFn, GoogleAccount, GoogleAccountResult, RawComment } from "../types";
 import { VideoInsightError } from "../errors";
 import { analyzeComments } from "./analyzeComments";
 
 type GetCommentInsightsDeps = {
-  getGoogleAccount: (userId: number, channelId: string) => Promise<any>;
-  fetchComments: (ga: any, videoId: string, limit: number) => Promise<any[]>;
+  getGoogleAccount: (userId: number, channelId: string) => Promise<GoogleAccountResult>;
+  fetchComments: (ga: GoogleAccount, videoId: string, limit: number) => Promise<RawComment[]>;
   callLlm: LlmCallFn;
 };
 
@@ -36,7 +36,7 @@ export async function getCommentInsights(
   return analyzeComments(
     {
       videoTitle,
-      comments: rawComments.map((c: any) => ({
+      comments: rawComments.map((c) => ({
         text: c.text,
         likes: c.likes ?? 0,
       })),

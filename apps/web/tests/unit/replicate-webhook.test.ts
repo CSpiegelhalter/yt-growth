@@ -4,7 +4,7 @@ import { verifyReplicateWebhook } from "@/lib/replicate/webhook";
 
 function makeHeaders(obj: Record<string, string>): Headers {
   const h = new Headers();
-  for (const [k, v] of Object.entries(obj)) h.set(k, v);
+  for (const [k, v] of Object.entries(obj)) {h.set(k, v);}
   return h;
 }
 

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import JSZip from "jszip";
 import { createApiRoute } from "@/lib/api/route";
@@ -53,13 +53,13 @@ async function cleanupFailedModel(modelId: string): Promise<void> {
 
 function getTrainerVersionId(): string {
   const v = process.env.REPLICATE_IDENTITY_TRAINER_VERSION_ID;
-  if (!v) throw new Error("REPLICATE_IDENTITY_TRAINER_VERSION_ID not configured");
+  if (!v) {throw new Error("REPLICATE_IDENTITY_TRAINER_VERSION_ID not configured");}
   return v;
 }
 
 function getModelOwner(): string {
   const o = process.env.REPLICATE_MODEL_OWNER;
-  if (!o) throw new Error("REPLICATE_MODEL_OWNER not configured");
+  if (!o) {throw new Error("REPLICATE_MODEL_OWNER not configured");}
   return o;
 }
 
@@ -93,7 +93,7 @@ export const POST = createApiRoute(
             log.warn("Cleaning up stuck training model", { 
               modelId: existing.id, 
               trainingId: existing.trainingId,
-              trainingAge: Math.round(trainingAge / 60000) + " minutes"
+              trainingAge: `${Math.round(trainingAge / 60000)  } minutes`
             });
             // Reset any committed assets
             await prisma.userTrainingAsset.updateMany({
@@ -236,7 +236,7 @@ export const POST = createApiRoute(
         log.info("Verifying trainer model", { 
           trainerOwner, 
           trainerModel, 
-          trainerVersionId: trainerVersionId.slice(0, 20) + "..." 
+          trainerVersionId: `${trainerVersionId.slice(0, 20)  }...` 
         });
         
         const verification = await verifyModelVersion(trainerOwner, trainerModel, trainerVersionId);

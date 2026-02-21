@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Image as KonvaImage } from "react-konva";
+import type Konva from "konva";
 import type { ImageObject } from "../types";
 
 interface ImageLayerProps {
@@ -85,7 +86,7 @@ export function ImageLayer({ obj, isSelected: _isSelected, onSelect, onChange }:
         });
       }}
       onTransformEnd={(e) => {
-        const node = e.target as any;
+        const node = e.target as Konva.Node;
         const scaleX = node.scaleX();
         const scaleY = node.scaleY();
         // Reset scale and bake into width/height

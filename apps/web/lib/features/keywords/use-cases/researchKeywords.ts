@@ -92,11 +92,11 @@ export async function researchKeywords(
   try {
     if (mode === "combined") {
       return await fetchCombined(userId, cleanPhrase, locationInfo.region, displayLimit, usageInfo);
-    } else if (mode === "overview") {
+    } if (mode === "overview") {
       return await fetchOverview(userId, cleanPhrase, locationInfo.region, usageInfo);
-    } else {
+    } 
       return await fetchRelated(userId, cleanPhrase, cleanPhrases, locationInfo.region, displayLimit, usageInfo);
-    }
+    
   } catch (err) {
     if (err instanceof DataForSEOError) {
       logger.error("keywords.dataforseo_error", {
@@ -153,7 +153,7 @@ function buildCachedResult(
       },
       usage,
     };
-  } else if (mode === "overview") {
+  } if (mode === "overview") {
     const rows = (data as KeywordOverviewResponse).rows.map(mapToLegacyOverviewRow);
     return {
       type: "success",
@@ -168,7 +168,7 @@ function buildCachedResult(
       },
       usage,
     };
-  } else {
+  } 
     const rows = (data as KeywordRelatedResponse).rows.map(mapToLegacyRelatedRow);
     return {
       type: "success",
@@ -184,7 +184,7 @@ function buildCachedResult(
       },
       usage,
     };
-  }
+  
 }
 
 async function fetchCombined(

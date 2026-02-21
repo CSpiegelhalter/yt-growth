@@ -81,7 +81,7 @@ export async function resolveSubscription(
         },
       });
     } catch (err) {
-      if (err instanceof SubscriptionError) throw err;
+      if (err instanceof SubscriptionError) {throw err;}
       console.warn(
         `[Subscription] Failed to normalize expired row for user ${userId}:`,
         err,

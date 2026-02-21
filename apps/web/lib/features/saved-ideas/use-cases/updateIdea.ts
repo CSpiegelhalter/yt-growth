@@ -40,7 +40,7 @@ export async function updateIdea(input: UpdateIdeaInput): Promise<UpdateIdeaResu
       updatedAt: updated.updatedAt.toISOString(),
     };
   } catch (err) {
-    if (err instanceof SavedIdeaError) throw err;
+    if (err instanceof SavedIdeaError) {throw err;}
     throw new SavedIdeaError("EXTERNAL_FAILURE", "Failed to update saved idea", err);
   }
 }

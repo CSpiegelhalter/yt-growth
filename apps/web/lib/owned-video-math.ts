@@ -527,11 +527,11 @@ export function compareToBaseline(
  * Compute mean and standard deviation
  */
 function computeMeanStd(values: number[]): { mean: number; std: number } {
-  if (values.length === 0) return { mean: 0, std: 0 };
+  if (values.length === 0) {return { mean: 0, std: 0 };}
 
   const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
 
-  if (values.length === 1) return { mean, std: 0 };
+  if (values.length === 1) {return { mean, std: 0 };}
 
   const squaredDiffs = values.map((v) => Math.pow(v - mean, 2));
   const variance =
@@ -617,11 +617,11 @@ function normalCDF(z: number): number {
   const p = 0.3275911;
 
   const sign = z < 0 ? -1 : 1;
-  z = Math.abs(z) / Math.sqrt(2);
+  const absZ = Math.abs(z) / Math.sqrt(2);
 
-  const t = 1.0 / (1.0 + p * z);
+  const t = 1.0 / (1.0 + p * absZ);
   const y =
-    1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-z * z);
+    1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-absZ * absZ);
 
   return 0.5 * (1.0 + sign * y);
 }
@@ -633,10 +633,10 @@ export function getRetentionGrade(avdRatio: number | null): {
   grade: "Great" | "Good" | "OK" | "Needs Work";
   color: "green" | "lime" | "yellow" | "red";
 } {
-  if (avdRatio == null) return { grade: "OK", color: "yellow" };
-  if (avdRatio >= 0.5) return { grade: "Great", color: "green" };
-  if (avdRatio >= 0.35) return { grade: "Good", color: "lime" };
-  if (avdRatio >= 0.2) return { grade: "OK", color: "yellow" };
+  if (avdRatio == null) {return { grade: "OK", color: "yellow" };}
+  if (avdRatio >= 0.5) {return { grade: "Great", color: "green" };}
+  if (avdRatio >= 0.35) {return { grade: "Good", color: "lime" };}
+  if (avdRatio >= 0.2) {return { grade: "OK", color: "yellow" };}
   return { grade: "Needs Work", color: "red" };
 }
 
@@ -647,10 +647,10 @@ export function getConversionGrade(subsPer1k: number | null): {
   grade: "Great" | "Good" | "OK" | "Needs Work";
   color: "green" | "lime" | "yellow" | "red";
 } {
-  if (subsPer1k == null) return { grade: "OK", color: "yellow" };
-  if (subsPer1k >= 5) return { grade: "Great", color: "green" };
-  if (subsPer1k >= 2) return { grade: "Good", color: "lime" };
-  if (subsPer1k >= 0.5) return { grade: "OK", color: "yellow" };
+  if (subsPer1k == null) {return { grade: "OK", color: "yellow" };}
+  if (subsPer1k >= 5) {return { grade: "Great", color: "green" };}
+  if (subsPer1k >= 2) {return { grade: "Good", color: "lime" };}
+  if (subsPer1k >= 0.5) {return { grade: "OK", color: "yellow" };}
   return { grade: "Needs Work", color: "red" };
 }
 
@@ -661,10 +661,10 @@ export function getEngagementGrade(engagementPerView: number | null): {
   grade: "Great" | "Good" | "OK" | "Needs Work";
   color: "green" | "lime" | "yellow" | "red";
 } {
-  if (engagementPerView == null) return { grade: "OK", color: "yellow" };
-  if (engagementPerView >= 0.05) return { grade: "Great", color: "green" };
-  if (engagementPerView >= 0.02) return { grade: "Good", color: "lime" };
-  if (engagementPerView >= 0.01) return { grade: "OK", color: "yellow" };
+  if (engagementPerView == null) {return { grade: "OK", color: "yellow" };}
+  if (engagementPerView >= 0.05) {return { grade: "Great", color: "green" };}
+  if (engagementPerView >= 0.02) {return { grade: "Good", color: "lime" };}
+  if (engagementPerView >= 0.01) {return { grade: "OK", color: "yellow" };}
   return { grade: "Needs Work", color: "red" };
 }
 
@@ -875,13 +875,13 @@ function getDiscoveryConfidence(
   hasTrafficSources: boolean,
 ): ConfidenceLevel {
   // No impressions data at all -> always Low
-  if (!hasImpressions) return "Low";
+  if (!hasImpressions) {return "Low";}
   // Very low views -> Low regardless of impressions
-  if (views < 10) return "Low";
+  if (views < 10) {return "Low";}
   // High confidence requires significant sample
-  if (impressions >= 10000 && hasTrafficSources) return "High";
+  if (impressions >= 10000 && hasTrafficSources) {return "High";}
   // Medium requires meaningful impressions (200+)
-  if (impressions >= 200) return "Medium";
+  if (impressions >= 200) {return "Medium";}
   return "Low";
 }
 
@@ -890,13 +890,13 @@ function getRetentionConfidenceLevel(
   hasRetention: boolean,
 ): ConfidenceLevel {
   // No retention data -> Low
-  if (!hasRetention) return "Low";
+  if (!hasRetention) {return "Low";}
   // Very low views -> Low (retention % is not meaningful)
-  if (views < 10) return "Low";
+  if (views < 10) {return "Low";}
   // High confidence requires significant sample
-  if (views >= 1000) return "High";
+  if (views >= 1000) {return "High";}
   // Medium requires some meaningful data
-  if (views >= 100) return "Medium";
+  if (views >= 100) {return "Medium";}
   return "Low";
 }
 
@@ -906,13 +906,13 @@ function getConversionConfidenceLevel(
   hasEndScreen: boolean,
 ): ConfidenceLevel {
   // No conversion data -> Low
-  if (!hasConversion) return "Low";
+  if (!hasConversion) {return "Low";}
   // Very low views -> Low (conversion % is not meaningful)
-  if (views < 10) return "Low";
+  if (views < 10) {return "Low";}
   // High confidence requires significant sample
-  if (views >= 1000 && hasEndScreen) return "High";
+  if (views >= 1000 && hasEndScreen) {return "High";}
   // Medium requires meaningful data
-  if (views >= 500) return "Medium";
+  if (views >= 500) {return "Medium";}
   return "Low";
 }
 
@@ -923,13 +923,13 @@ function getPackagingConfidence(
 ): ConfidenceLevel {
   // CTR-based confidence requires impressions
   // Without impressions, packaging analysis is based on content only -> Low
-  if (!hasImpressions) return "Low";
+  if (!hasImpressions) {return "Low";}
   // Very low views -> Low
-  if (views < 10) return "Low";
+  if (views < 10) {return "Low";}
   // High confidence requires significant CTR data
-  if (impressions >= 5000) return "High";
+  if (impressions >= 5000) {return "High";}
   // Medium requires some impressions (200+)
-  if (impressions >= 200) return "Medium";
+  if (impressions >= 200) {return "Medium";}
   return "Low";
 }
 

@@ -41,7 +41,7 @@ const PLATFORM_KEYWORDS = new Set([
  * Extract hashtags from text (these are high-value context keywords).
  */
 function extractHashtags(text: string): string[] {
-  if (!text) return [];
+  if (!text) {return [];}
   const matches = text.match(/#[\w]+/g) || [];
   return matches
     .map((h) => h.slice(1).toLowerCase()) // Remove # prefix
@@ -67,14 +67,14 @@ function cleanTitle(title: string): string {
  * Extract keywords from video tags, preserving multi-word tags.
  */
 function extractTagKeywords(tags: string[]): { phrases: string[]; words: string[] } {
-  if (!tags || !Array.isArray(tags)) return { phrases: [], words: [] };
+  if (!tags || !Array.isArray(tags)) {return { phrases: [], words: [] };}
 
   const phrases: string[] = [];
   const words: string[] = [];
 
   for (const tag of tags) {
     const normalized = tag.toLowerCase().trim();
-    if (normalized.length < 2 || normalized.length > 50) continue;
+    if (normalized.length < 2 || normalized.length > 50) {continue;}
 
     // Multi-word tags are valuable phrases
     if (normalized.includes(" ") && normalized.length >= 5) {
@@ -227,7 +227,7 @@ function generateQueryTerms(
  * Determine suggested content type from video duration.
  */
 function suggestContentType(durationSec?: number): ContentTypeFilter {
-  if (durationSec === undefined) return "both";
+  if (durationSec === undefined) {return "both";}
   return durationSec < 60 ? "shorts" : "long";
 }
 

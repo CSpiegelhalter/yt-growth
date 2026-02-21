@@ -48,7 +48,7 @@ export async function withTimeout<T>(
     const result = await Promise.race([promise, timeoutPromise]);
     return result;
   } finally {
-    if (timeoutId) clearTimeout(timeoutId);
+    if (timeoutId) {clearTimeout(timeoutId);}
   }
 }
 

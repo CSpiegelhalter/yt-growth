@@ -59,8 +59,8 @@ export default function ProfileClient({
       if (activeChannelId === channelId) {
         localStorage.removeItem("activeChannelId");
       }
-    } catch (e: any) {
-      setErr(e.message || "Failed to remove channel");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Failed to remove channel");
     } finally {
       setRemovingChannelId(null);
     }

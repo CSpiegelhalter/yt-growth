@@ -18,11 +18,12 @@ const fakeSessionStorage = {
 };
 
 const hadWindow = typeof globalThis.window !== "undefined";
+const globalThisMutable = globalThis as typeof globalThis & { window?: unknown };
 
 beforeEach(() => {
   store.clear();
   if (!hadWindow) {
-    (globalThis as any).window = { sessionStorage: fakeSessionStorage };
+    globalThisMutable.window = { sessionStorage: fakeSessionStorage };
   } else {
     Object.defineProperty(globalThis.window, "sessionStorage", {
       value: fakeSessionStorage,
@@ -35,7 +36,7 @@ beforeEach(() => {
 afterEach(() => {
   store.clear();
   if (!hadWindow) {
-    delete (globalThis as any).window;
+    delete globalThisMutable.window;
   }
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, ReactNode } from "react";
+import { useRef, useState, useEffect, type ReactNode } from "react";
 import styles from "./AnalysisTabs.module.css";
 
 export type TabId = "overview" | "retention" | "seo" | "comments" | "ideas";
@@ -41,7 +41,7 @@ export function AnalysisTabs({
   // Track sticky state for visual treatment
   useEffect(() => {
     const tabs = tabsRef.current;
-    if (!tabs) return;
+    if (!tabs) {return;}
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -100,7 +100,7 @@ type TabPanelProps = {
  * TabPanel - Container for tab content
  */
 export function TabPanel({ id, activeTab, children }: TabPanelProps) {
-  if (id !== activeTab) return null;
+  if (id !== activeTab) {return null;}
 
   return (
     <div role="tabpanel" aria-labelledby={`tab-${id}`} className={styles.panel}>

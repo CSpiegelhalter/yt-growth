@@ -112,7 +112,7 @@ export default function SubscriberInsightsClient({
 
   // Filter and sort videos (always by subscribers gained)
   const filteredVideos = useMemo(() => {
-    if (!auditData?.videos) return [];
+    if (!auditData?.videos) {return [];}
     let videos = [...auditData.videos];
 
     // Search filter
@@ -484,14 +484,14 @@ function VideoCard({
 
 /* ---------- Helpers ---------- */
 function formatNumber(num: number): string {
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
+  if (num >= 1_000_000) {return `${(num / 1_000_000).toFixed(1)}M`;}
+  if (num >= 1_000) {return `${(num / 1_000).toFixed(1)}K`;}
   return num.toLocaleString();
 }
 
 
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "";
+  if (!dateStr) {return "";}
   const date = new Date(dateStr);
   return date.toLocaleDateString("en-US", {
     month: "short",

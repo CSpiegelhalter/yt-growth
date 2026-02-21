@@ -8,7 +8,7 @@
  * IMPORTANT: This is an externally-invoked webhook endpoint.
  * Do not wrap with createApiRoute/withAuth — Replicate calls this directly.
  */
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma";
 import { verifyReplicateWebhook } from "@/lib/replicate/webhook";
 import { processTrainingWebhook } from "@/lib/features/identity";

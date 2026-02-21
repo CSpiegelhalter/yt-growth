@@ -59,7 +59,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         // Headed mode helps with Stripe checkout debugging
-        headless: process.env.CI ? true : false,
+        headless: !!process.env.CI,
       },
       dependencies: ["setup"],
     },

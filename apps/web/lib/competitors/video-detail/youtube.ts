@@ -82,7 +82,7 @@ export async function fetchVideoDetailsWithTimeout(
 
     return videoDetails as VideoDetailsResult;
   } catch (err) {
-    if (err instanceof VideoDetailError) throw err;
+    if (err instanceof VideoDetailError) {throw err;}
     if (err instanceof TimeoutError) {
       throw new VideoDetailError(
         "YouTube API timed out fetching video details",

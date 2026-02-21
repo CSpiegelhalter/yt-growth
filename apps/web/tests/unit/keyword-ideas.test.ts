@@ -80,11 +80,11 @@ function isValidSeedKeyword(keyword: string): boolean {
   const trimmed = keyword.trim().toLowerCase();
 
   // Length constraints
-  if (trimmed.length === 0 || trimmed.length > 80) return false;
+  if (trimmed.length === 0 || trimmed.length > 80) {return false;}
 
   // Word count constraint
   const wordCount = trimmed.split(/\s+/).length;
-  if (wordCount > 10) return false;
+  if (wordCount > 10) {return false;}
 
   // No emojis
   if (/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(trimmed)) {
@@ -93,7 +93,7 @@ function isValidSeedKeyword(keyword: string): boolean {
 
   // Check forbidden categories
   for (const pattern of FORBIDDEN_PATTERNS) {
-    if (pattern.test(trimmed)) return false;
+    if (pattern.test(trimmed)) {return false;}
   }
 
   return true;

@@ -1,5 +1,5 @@
 export const runtime = "nodejs";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma";
 import { syncUserChannels } from "@/lib/sync-youtube";
 import { checkChannelLimit } from "@/lib/with-entitlements";

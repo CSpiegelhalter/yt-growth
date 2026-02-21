@@ -43,7 +43,7 @@ const deps: GenerateTagsDeps = {
       const item = await fetchVideoSnippetByApiKey(videoId, {
         fields: "items/snippet(title,description,tags,channelTitle)",
       });
-      if (!item?.snippet) return null;
+      if (!item?.snippet) {return null;}
       return {
         title: item.snippet.title || "",
         description: item.snippet.description || "",

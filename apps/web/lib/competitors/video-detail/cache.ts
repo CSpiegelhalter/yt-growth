@@ -101,7 +101,7 @@ export async function readCachesParallel(
 export function isCommentsCacheFresh(
   cachedComments: CachedComments | null
 ): boolean {
-  if (!cachedComments) return false;
+  if (!cachedComments) {return false;}
 
   const now = Date.now();
   const capturedAt = cachedComments.capturedAt.getTime();

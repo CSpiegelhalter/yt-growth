@@ -45,7 +45,7 @@ export function VideoInsightsError({ error, channelId, backLink }: Props) {
     : "/api/integrations/google/start";
 
   useEffect(() => {
-    if (error.kind !== "youtube_permissions") return;
+    if (error.kind !== "youtube_permissions") {return;}
 
     const urlParams = new URLSearchParams(window.location.search);
     const justReconnected = urlParams.get("reconnected") === "1";
@@ -76,9 +76,9 @@ export function VideoInsightsError({ error, channelId, backLink }: Props) {
   };
 
   const getErrorTitle = () => {
-    if (error.kind === "limit_reached") return "Daily limit reached";
-    if (error.kind === "youtube_permissions") return "Permissions needed";
-    if (error.kind === "upgrade_required") return "Upgrade required";
+    if (error.kind === "limit_reached") {return "Daily limit reached";}
+    if (error.kind === "youtube_permissions") {return "Permissions needed";}
+    if (error.kind === "upgrade_required") {return "Upgrade required";}
     return "Couldn't load insights";
   };
 

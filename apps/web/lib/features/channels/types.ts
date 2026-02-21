@@ -77,8 +77,8 @@ export function createFallbackAIProfile(
     })),
     targetAudience:
       input.audience ||
-      "General audience interested in " +
-        (input.categories[0] || "diverse content"),
+      `General audience interested in ${ 
+        input.categories[0] || "diverse content"}`,
     channelValueProposition: `Quality ${input.categories[0] || "content"} videos`,
     keywords: [
       ...input.categories.map((c) => c.toLowerCase()),

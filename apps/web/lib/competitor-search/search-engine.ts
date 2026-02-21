@@ -202,7 +202,7 @@ async function* searchCompetitors(
       const newMatches: CompetitorVideoResult[] = [];
 
       for (const video of videos) {
-        if (seenVideoIds.has(video.videoId)) continue;
+        if (seenVideoIds.has(video.videoId)) {continue;}
         seenVideoIds.add(video.videoId);
         scannedCount++;
 

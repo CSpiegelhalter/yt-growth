@@ -47,7 +47,7 @@ function verifySigned(payload: string, signatureHeader: string) {
 
     const provided = v1Parts.map((p) => p.slice(3)).filter(Boolean);
     const ok = provided.some((sig) => timingSafeEqualHex(sig, expected));
-    if (!ok) throw new Error("Invalid Replicate webhook signature");
+    if (!ok) {throw new Error("Invalid Replicate webhook signature");}
     return;
   }
 
@@ -89,9 +89,9 @@ export function verifyReplicateWebhook(input: WebhookVerificationInput) {
   }
 
   if (SHARED_SECRET) {
-    if (!shared) throw new Error("Missing webhook secret header");
+    if (!shared) {throw new Error("Missing webhook secret header");}
     if (shared !== SHARED_SECRET)
-      throw new Error("Invalid webhook secret header");
+      {throw new Error("Invalid webhook secret header");}
     return;
   }
 

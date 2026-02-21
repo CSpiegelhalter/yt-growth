@@ -39,9 +39,9 @@ export function ShortsMetricsPanel({
     target: number,
     good: number,
   ) => {
-    if (value == null) return "neutral";
-    if (value >= target) return "strong";
-    if (value >= good) return "mixed";
+    if (value == null) {return "neutral";}
+    if (value >= target) {return "strong";}
+    if (value >= good) {return "mixed";}
     return "needs-work";
   };
 
@@ -155,8 +155,8 @@ function MetricIndicator({
   good: number;
 }) {
   let status: "strong" | "mixed" | "needs-work" = "needs-work";
-  if (value >= target) status = "strong";
-  else if (value >= good) status = "mixed";
+  if (value >= target) {status = "strong";}
+  else if (value >= good) {status = "mixed";}
 
   return (
     <span className={`${styles.metricIndicator} ${styles[status]}`}>

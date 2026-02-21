@@ -42,10 +42,10 @@ class LocalStorageAdapter implements StoragePort {
     try {
       const metaContent = await fs.readFile(`${filePath}.meta.json`, "utf-8");
       const meta = JSON.parse(metaContent);
-      if (meta.contentType) return meta.contentType as string;
+      if (meta.contentType) {return meta.contentType as string;}
     } catch {
       const ext = path.extname(key).slice(1);
-      if (ext) return extToMime(ext);
+      if (ext) {return extToMime(ext);}
     }
     return "application/octet-stream";
   }
@@ -152,7 +152,7 @@ class LocalStorageAdapter implements StoragePort {
         if (entry.isFile() && !entry.name.endsWith(".meta.json")) {
           const key = path.join(prefix, entry.name);
           const meta = await this.getMetadata(key);
-          if (meta) results.push(meta);
+          if (meta) {results.push(meta);}
         }
       }
     } catch (err) {

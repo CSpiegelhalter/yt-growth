@@ -529,7 +529,7 @@ async function main() {
   const totalErrors = results.reduce((sum, r) => sum + r.errors.length, 0);
   const totalWarnings = results.reduce((sum, r) => sum + r.warnings.length, 0);
 
-  console.log("\n" + "=".repeat(50));
+  console.log(`\n${  "=".repeat(50)}`);
   console.log(
     `Results: ${GREEN}${passed} passed${RESET}, ${failed > 0 ? RED : ""}${failed} failed${RESET}`
   );

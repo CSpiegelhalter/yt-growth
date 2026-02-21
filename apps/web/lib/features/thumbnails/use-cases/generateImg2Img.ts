@@ -5,6 +5,8 @@ import { ThumbnailError } from "../errors";
 
 const log = createLogger({ subsystem: "thumbnails/generate-img2img" });
 
+type OutputImage = { url?: string; [key: string]: unknown };
+
 type GenerateImg2ImgInput = {
   userId: number;
   inputImageUrl: string;
@@ -56,7 +58,7 @@ export async function generateImg2Img(
     );
   }
 
-  const outputImages = (parentJob.outputImages as any[]) ?? [];
+  const outputImages = (parentJob.outputImages as OutputImage[]) ?? [];
   const isFromParent = outputImages.some(
     (img) => img?.url === inputImageUrl,
   );
@@ -66,7 +68,7 @@ export async function generateImg2Img(
     select: { exports: true },
   });
 
-  const exports = (project?.exports as any[]) ?? [];
+  const exports = (project?.exports as OutputImage[]) ?? [];
   const isFromExport = exports.some(
     (exp) => exp?.url === inputImageUrl,
   );
@@ -106,7 +108,7 @@ export async function generateImg2Img(
   log.info("Creating img2img prediction", {
     jobId: job.id,
     parentJobId: parentJob.id,
-    inputImageUrl: inputImageUrl.slice(0, 50) + "...",
+    inputImageUrl: `${inputImageUrl.slice(0, 50)  }...`,
     strength,
   });
 

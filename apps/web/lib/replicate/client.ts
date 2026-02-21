@@ -19,11 +19,20 @@ export {
 // ── Backward-compat wrappers ─────────────────────────────
 // These translate old parameter/return shapes to the port-aligned adapter.
 
+type TrainingOutput = {
+  version?: string;
+  weights?: string;
+  lora_weights?: string;
+  lora?: string;
+  model_weights?: string;
+  [key: string]: unknown;
+};
+
 type LegacyTraining = {
   id: string;
   status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
   error?: string | null;
-  output?: any;
+  output?: TrainingOutput | null;
   created_at?: string;
   started_at?: string | null;
   completed_at?: string | null;
@@ -48,7 +57,7 @@ export async function createTraining(input: {
     id: result.id,
     status: result.status,
     error: result.error,
-    output: result.output,
+    output: result.output as LegacyTraining["output"],
     created_at: result.createdAt,
     started_at: result.startedAt,
     completed_at: result.completedAt,
@@ -64,7 +73,7 @@ export async function getTraining(
     id: result.id,
     status: result.status,
     error: result.error,
-    output: result.output,
+    output: result.output as LegacyTraining["output"],
     created_at: result.createdAt,
     started_at: result.startedAt,
     completed_at: result.completedAt,

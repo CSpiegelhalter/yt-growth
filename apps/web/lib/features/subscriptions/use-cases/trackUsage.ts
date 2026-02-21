@@ -14,7 +14,7 @@ import { getTodayDateKey, getResetAt } from "./checkEntitlement";
 
 function getTodayDate(): Date {
   const dateKey = getTodayDateKey();
-  return new Date(dateKey + "T00:00:00.000Z");
+  return new Date(`${dateKey  }T00:00:00.000Z`);
 }
 
 // ── Read operations ──────────────────────────────────────────

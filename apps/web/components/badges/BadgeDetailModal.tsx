@@ -31,7 +31,7 @@ export default function BadgeDetailModal({ badge, onClose }: Props) {
 
   // Focus trap and escape handler
   useEffect(() => {
-    if (!badge) return;
+    if (!badge) {return;}
 
     // Store current focus
     previousFocus.current = document.activeElement as HTMLElement;
@@ -81,14 +81,14 @@ export default function BadgeDetailModal({ badge, onClose }: Props) {
   );
 
   const handleShare = useCallback(() => {
-    if (!badge) return;
+    if (!badge) {return;}
     const text = badge.unlocked
       ? `I just unlocked the "${badge.name}" badge! 🏆`
       : `Working toward the "${badge.name}" badge...`;
     navigator.clipboard.writeText(text);
   }, [badge]);
 
-  if (!badge) return null;
+  if (!badge) {return null;}
 
   const chain = getBadgeChain(badge.id);
   const relatedGoals = getGoalsForBadge(badge.id);

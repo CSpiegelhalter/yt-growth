@@ -48,7 +48,7 @@ function checkAnonymousRateLimit(ip: string): { allowed: boolean; remaining: num
 
   // Evict stale entries for this check
   for (const [key, entry] of anonymousUsage.entries()) {
-    if (entry.date !== today) anonymousUsage.delete(key);
+    if (entry.date !== today) {anonymousUsage.delete(key);}
   }
 
   const usage = anonymousUsage.get(ip);
@@ -259,9 +259,9 @@ function parseTagResponse(content: string): { tags: string[]; notes: string[] } 
       .filter((t): t is string => typeof t === "string")
       .map((t) => t.trim().replace(/^#/, ""))
       .filter((t) => {
-        if (!t || t.length > 100) return false;
+        if (!t || t.length > 100) {return false;}
         const lower = t.toLowerCase();
-        if (seen.has(lower)) return false;
+        if (seen.has(lower)) {return false;}
         seen.add(lower);
         return true;
       })

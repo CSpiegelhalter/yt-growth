@@ -56,7 +56,7 @@ export async function getFilteredNavItems(): Promise<{
     items
       .filter((item) => {
         // If no feature flag, always include
-        if (!item.featureFlag) return true;
+        if (!item.featureFlag) {return true;}
         // Include only if flag is enabled
         return flags[item.featureFlag] === true;
       })

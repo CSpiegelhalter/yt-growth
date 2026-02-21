@@ -30,7 +30,7 @@ function createEventStream(
       const encoder = new TextEncoder();
       try {
         for await (const event of generator) {
-          controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+          controller.enqueue(encoder.encode(`${JSON.stringify(event)  }\n`));
         }
         controller.close();
       } catch (err) {
@@ -39,7 +39,7 @@ function createEventStream(
           error: err instanceof Error ? err.message : "Stream error",
           code: "STREAM_ERROR",
         };
-        controller.enqueue(encoder.encode(JSON.stringify(errorEvent) + "\n"));
+        controller.enqueue(encoder.encode(`${JSON.stringify(errorEvent)  }\n`));
         controller.close();
       }
     },

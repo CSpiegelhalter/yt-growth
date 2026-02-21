@@ -450,8 +450,8 @@ describe("Competitor Search - Niche Inference", () => {
     });
 
     it("handles null/undefined gracefully", () => {
-      expect(parseYouTubeVideoId(null as any)).toBeNull();
-      expect(parseYouTubeVideoId(undefined as any)).toBeNull();
+      expect(parseYouTubeVideoId(null as unknown as string)).toBeNull();
+      expect(parseYouTubeVideoId(undefined as unknown as string)).toBeNull();
     });
   });
 
@@ -481,8 +481,8 @@ describe("Competitor Search - Niche Inference", () => {
     });
 
     it("handles null/undefined gracefully", () => {
-      expect(sanitizeNicheText(null as any)).toBe("");
-      expect(sanitizeNicheText(undefined as any)).toBe("");
+      expect(sanitizeNicheText(null as unknown as string)).toBe("");
+      expect(sanitizeNicheText(undefined as unknown as string)).toBe("");
     });
   });
 

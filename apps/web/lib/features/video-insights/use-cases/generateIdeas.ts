@@ -8,7 +8,7 @@
 import type { IdeasAnalysis, LlmCallFn } from "../types";
 import { VideoInsightError } from "../errors";
 
-type ChannelProfileForIdeas = {
+export type ChannelProfileForIdeas = {
   nicheLabel: string;
   nicheDescription: string;
   targetAudience: string;

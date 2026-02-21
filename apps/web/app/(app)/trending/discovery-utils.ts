@@ -51,14 +51,14 @@ export function getActiveAdvancedFilterKeys(
   > = [];
 
   // Only show pills for non-defaults (keeps summary compact)
-  if (queryText.trim().length > 0) keys.push("queryText");
-  if (filters.category !== defaults.category) keys.push("category");
-  if (filters.timeWindow !== defaults.timeWindow) keys.push("timeWindow");
-  if (filters.minViewsPerDay !== defaults.minViewsPerDay) keys.push("minViewsPerDay");
-  if (filters.channelSize !== defaults.channelSize) keys.push("channelSize");
-  if (filters.channelAge !== defaults.channelAge) keys.push("channelAge");
-  if (filters.contentType !== defaults.contentType) keys.push("contentType");
-  if (filters.sortBy !== defaults.sortBy) keys.push("sortBy");
+  if (queryText.trim().length > 0) {keys.push("queryText");}
+  if (filters.category !== defaults.category) {keys.push("category");}
+  if (filters.timeWindow !== defaults.timeWindow) {keys.push("timeWindow");}
+  if (filters.minViewsPerDay !== defaults.minViewsPerDay) {keys.push("minViewsPerDay");}
+  if (filters.channelSize !== defaults.channelSize) {keys.push("channelSize");}
+  if (filters.channelAge !== defaults.channelAge) {keys.push("channelAge");}
+  if (filters.contentType !== defaults.contentType) {keys.push("contentType");}
+  if (filters.sortBy !== defaults.sortBy) {keys.push("sortBy");}
 
   return keys;
 }

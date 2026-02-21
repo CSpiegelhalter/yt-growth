@@ -19,7 +19,7 @@
  * 12. Data Limitations
  * 13. More from Channel
  */
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { CompetitorVideoAnalysis } from "@/types/api";
@@ -451,7 +451,7 @@ function generateWaysToOutperform(
   return recommendations
     .filter((r) => {
       const key = r.action.slice(0, 50);
-      if (seen.has(key)) return false;
+      if (seen.has(key)) {return false;}
       seen.add(key);
       return true;
     })
@@ -459,8 +459,8 @@ function generateWaysToOutperform(
 }
 
 function truncate(text: string, maxLen: number): string {
-  if (text.length <= maxLen) return text;
-  return text.slice(0, maxLen - 3) + "...";
+  if (text.length <= maxLen) {return text;}
+  return `${text.slice(0, maxLen - 3)  }...`;
 }
 
 /**

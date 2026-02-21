@@ -21,12 +21,12 @@ import type {
 export function computeChannelBaseline(
   videoMetrics: VideoMetricsRecord[],
 ): AuditBaseline {
-  if (!videoMetrics.length) return null;
+  if (!videoMetrics.length) {return null;}
 
   const withViews = videoMetrics.filter(
     (v) => v.viewCount && v.viewCount > 100,
   );
-  if (!withViews.length) return null;
+  if (!withViews.length) {return null;}
 
   const avgViewPercentage =
     withViews
@@ -60,7 +60,7 @@ export function computeChannelBaseline(
 export function computeTrafficSourcePercentages(
   sources: RawTrafficSources,
 ): AuditTrafficSources {
-  if (!sources || !sources.total) return null;
+  if (!sources || !sources.total) {return null;}
 
   const total = sources.total;
 
@@ -86,9 +86,9 @@ export function computeTrends(
   metrics: ChannelMetricsSnapshot | null,
 ): AuditTrends {
   const getDirection = (val: number | null): "up" | "down" | "flat" => {
-    if (val == null) return "flat";
-    if (val > 5) return "up";
-    if (val < -5) return "down";
+    if (val == null) {return "flat";}
+    if (val > 5) {return "up";}
+    if (val < -5) {return "down";}
     return "flat";
   };
 

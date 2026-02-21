@@ -39,7 +39,7 @@ export function normalizeCanonicalOrigin(input?: string): string {
   const FALLBACK = "https://www.getchannelboost.com";
 
   const raw = (input ?? "").trim();
-  if (!raw) return FALLBACK;
+  if (!raw) {return FALLBACK;}
 
   // Ensure it has a scheme so URL() can parse it
   const withScheme =

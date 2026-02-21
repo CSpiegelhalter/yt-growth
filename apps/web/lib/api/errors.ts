@@ -33,6 +33,15 @@ function isZodError(err: unknown): err is z.ZodError {
   return err instanceof z.ZodError;
 }
 
+interface LegacyErrorLike {
+  status?: unknown;
+  message?: unknown;
+}
+
+interface ErrorWithCode {
+  code?: string;
+}
+
 const DOMAIN_CODE_MAP: Record<string, { code: ApiErrorCode; status: number }> = {
   NOT_FOUND: { code: "NOT_FOUND", status: 404 },
   UNAUTHORIZED: { code: "UNAUTHORIZED", status: 401 },
@@ -45,7 +54,7 @@ const DOMAIN_CODE_MAP: Record<string, { code: ApiErrorCode; status: number }> = 
 };
 
 export function toApiError(err: unknown): ApiError {
-  if (err instanceof ApiError) return err;
+  if (err instanceof ApiError) {return err;}
 
   if (err instanceof DomainError) {
     const mapping = DOMAIN_CODE_MAP[err.code];
@@ -56,12 +65,12 @@ export function toApiError(err: unknown): ApiError {
     });
   }
 
-  // Legacy helper used in older parts of this repo
-  if (err && typeof err === "object" && (err as any).status && (err as any).message) {
-    const status = Number((err as any).status);
-    if (status === 401) return new ApiError({ code: "UNAUTHORIZED", status: 401, message: "Unauthorized" });
-    if (status === 403) return new ApiError({ code: "FORBIDDEN", status: 403, message: "Forbidden" });
-    if (status === 404) return new ApiError({ code: "NOT_FOUND", status: 404, message: "Not found" });
+  const errObj = err as LegacyErrorLike;
+  if (err && typeof err === "object" && errObj.status && errObj.message) {
+    const status = Number(errObj.status);
+    if (status === 401) {return new ApiError({ code: "UNAUTHORIZED", status: 401, message: "Unauthorized" });}
+    if (status === 403) {return new ApiError({ code: "FORBIDDEN", status: 403, message: "Forbidden" });}
+    if (status === 404) {return new ApiError({ code: "NOT_FOUND", status: 404, message: "Not found" });}
   }
 
   if (isZodError(err)) {
@@ -73,18 +82,18 @@ export function toApiError(err: unknown): ApiError {
     });
   }
 
-  // Prisma "record not found" during update/delete
-  const prismaCode = (err as any)?.code;
+  const errWithCode = err as ErrorWithCode | null | undefined;
+  const prismaCode = errWithCode?.code;
   if (prismaCode === "P2025") {
     return new ApiError({ code: "NOT_FOUND", status: 404, message: "Not found" });
   }
 
   // Common auth messages thrown in older helpers
   const msg = err instanceof Error ? err.message : String(err);
-  if (/unauthorized/i.test(msg)) return new ApiError({ code: "UNAUTHORIZED", status: 401, message: "Unauthorized" });
-  if (/forbidden/i.test(msg)) return new ApiError({ code: "FORBIDDEN", status: 403, message: "Forbidden" });
+  if (/unauthorized/i.test(msg)) {return new ApiError({ code: "UNAUTHORIZED", status: 401, message: "Unauthorized" });}
+  if (/forbidden/i.test(msg)) {return new ApiError({ code: "FORBIDDEN", status: 403, message: "Forbidden" });}
   if (/subscription required/i.test(msg))
-    return new ApiError({ code: "LIMIT_REACHED", status: 402, message: "Subscription required" });
+    {return new ApiError({ code: "LIMIT_REACHED", status: 402, message: "Subscription required" });}
 
   return new ApiError({ code: "INTERNAL", status: 500, message: "Internal error" });
 }

@@ -109,7 +109,7 @@ const EMOJI_PATTERN = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u
  * - Lowercased and normalized
  */
 export function validatePhrase(phrase: string): string {
-  let cleaned = phrase.trim().replace(/\s+/g, " ");
+  const cleaned = phrase.trim().replace(/\s+/g, " ");
 
   if (cleaned.length === 0) {
     throw new DataForSEOError("Keyword phrase is required", "VALIDATION_ERROR");
@@ -286,13 +286,13 @@ export function calculateDifficultyHeuristic(params: {
 // ============================================
 
 export function parseNumeric(value: unknown, fallback: number = 0): number {
-  if (value === null || value === undefined) return fallback;
+  if (value === null || value === undefined) {return fallback;}
   const num = typeof value === "number" ? value : parseFloat(String(value));
   return isNaN(num) ? fallback : num;
 }
 
 export function parseInteger(value: unknown, fallback: number = 0): number {
-  if (value === null || value === undefined) return fallback;
+  if (value === null || value === undefined) {return fallback;}
   const num = typeof value === "number" ? Math.round(value) : parseInt(String(value), 10);
   return isNaN(num) ? fallback : num;
 }
@@ -309,7 +309,7 @@ export function parseMonthlyTrend(
 
   const sorted = [...monthlySearches]
     .sort((a, b) => {
-      if (a.year !== b.year) return a.year - b.year;
+      if (a.year !== b.year) {return a.year - b.year;}
       return a.month - b.month;
     })
     .slice(-12);
@@ -321,7 +321,7 @@ export function parseMonthlyTrend(
  * Parse competition level string to competition index value.
  */
 export function parseCompetitionLevel(level: string | null | undefined): number {
-  if (!level) return 0;
+  if (!level) {return 0;}
 
   switch (level.toUpperCase()) {
     case "HIGH":

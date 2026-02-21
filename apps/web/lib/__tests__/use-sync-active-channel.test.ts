@@ -20,11 +20,12 @@ const fakeLocalStorage = {
 };
 
 const hadWindow = typeof globalThis.window !== "undefined";
+const globalThisMutable = globalThis as typeof globalThis & { window?: unknown };
 
 beforeEach(() => {
   store.clear();
   if (!hadWindow) {
-    (globalThis as any).window = { localStorage: fakeLocalStorage };
+    globalThisMutable.window = { localStorage: fakeLocalStorage };
   } else {
     Object.defineProperty(globalThis.window, "localStorage", {
       value: fakeLocalStorage,
@@ -37,7 +38,7 @@ beforeEach(() => {
 afterEach(() => {
   store.clear();
   if (!hadWindow) {
-    delete (globalThis as any).window;
+    delete globalThisMutable.window;
   }
 });
 

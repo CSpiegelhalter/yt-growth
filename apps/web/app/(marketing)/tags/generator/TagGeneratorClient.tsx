@@ -127,7 +127,7 @@ export function TagGeneratorClient() {
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      if (!validate()) return;
+      if (!validate()) {return;}
 
       setLoading(true);
       setTags([]);

@@ -109,7 +109,7 @@ async function pollTrendsTask(
   const result = await getGoogleTrendsTask(taskId);
   const ctx = { userId, taskId, mode: "trends" };
   const earlyReturn = checkTaskStatus(result, ctx);
-  if (earlyReturn) return earlyReturn;
+  if (earlyReturn) {return earlyReturn;}
 
   if (!result.data) {
     return {
@@ -157,7 +157,7 @@ async function pollOverviewTask(
   const result = await getSearchVolumeTask(taskId);
   const ctx = { userId, taskId, mode: "overview" };
   const earlyReturn = checkTaskStatus(result, ctx);
-  if (earlyReturn) return earlyReturn;
+  if (earlyReturn) {return earlyReturn;}
 
   const response: KeywordOverviewResponse = {
     rows: result.data ?? [],
@@ -199,7 +199,7 @@ async function pollRelatedTask(
   const result = await getKeywordsForKeywordsTask(taskId);
   const ctx = { userId, taskId, mode: "related" };
   const earlyReturn = checkTaskStatus(result, ctx);
-  if (earlyReturn) return earlyReturn;
+  if (earlyReturn) {return earlyReturn;}
 
   const response: KeywordRelatedResponse = {
     rows: result.data ?? [],
