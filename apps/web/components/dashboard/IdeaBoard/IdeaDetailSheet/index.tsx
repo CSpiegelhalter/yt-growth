@@ -283,11 +283,18 @@ export function IdeaDetailSheet({
     allTags.length === 0;
 
   return (
-    <div className={s.sheetOverlay} onClick={onClose}>
+    <div
+      className={s.sheetOverlay}
+      role="presentation"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div
         ref={panelRef}
         className={s.sheetPanel}
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

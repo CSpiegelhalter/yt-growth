@@ -78,7 +78,21 @@ function ColorInput({ value, onChange }: { value: string; onChange: (v: string) 
   
   return (
     <div className={s.colorInputWrapper} ref={wrapperRef}>
-      <div className={s.colorPickerTrigger} onClick={() => setShowPicker(!showPicker)}>
+      <div
+        className={s.colorPickerTrigger}
+        onClick={() => setShowPicker(!showPicker)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) {
+            return;
+          }
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setShowPicker(!showPicker);
+          }
+        }}
+      >
         <div 
           className={s.colorSwatch} 
           style={{ backgroundColor: value.startsWith("rgba") ? rgbaToHex(value) : value }}

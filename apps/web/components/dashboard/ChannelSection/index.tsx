@@ -103,8 +103,21 @@ export default function ChannelsSection({
 
       {/* Channel Limit Modal */}
       {showLimitModal && (
-        <div className={s.modalOverlay} onClick={() => setShowLimitModal(false)}>
-          <div className={s.modal} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={s.modalOverlay}
+          role="presentation"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowLimitModal(false);
+            }
+          }}
+        >
+          <div
+            className={s.modal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="channel-limit-title"
+          >
             <button
               className={s.modalClose}
               onClick={() => setShowLimitModal(false)}
@@ -119,7 +132,7 @@ export default function ChannelsSection({
                 <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h3 className={s.modalTitle}>Channel Limit Reached</h3>
+            <h3 id="channel-limit-title" className={s.modalTitle}>Channel Limit Reached</h3>
             <p className={s.modalText}>
               You've reached the maximum number of channels on your current plan.
               Upgrade to Pro to connect up to {LIMITS.PRO_MAX_CONNECTED_CHANNELS} channels.

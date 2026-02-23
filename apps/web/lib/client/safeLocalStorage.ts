@@ -1,3 +1,5 @@
+import "client-only";
+
 /**
  * Safe localStorage utilities that handle:
  * - Server-side rendering (localStorage unavailable)

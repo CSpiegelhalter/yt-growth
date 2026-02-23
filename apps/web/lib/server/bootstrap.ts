@@ -4,12 +4,14 @@
  * Use these to fetch user/channel data server-side instead of client-side useEffects.
  * This eliminates flicker and removes duplicate /api/me + /api/me/channels calls.
  */
+import "server-only";
+
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { cache } from "react";
 
+import { CHANNEL_LIST_ORDER_BY, CHANNEL_LIST_SELECT } from "@/lib/features/channels/channel-query";
 import { authOptions } from "@/lib/server/auth";
-import { CHANNEL_LIST_ORDER_BY,CHANNEL_LIST_SELECT } from "@/lib/server/channel-query";
 import { getSubscriptionStatus } from "@/lib/stripe";
 import { prisma } from "@/prisma";
 import type { Channel,Me } from "@/types/api";

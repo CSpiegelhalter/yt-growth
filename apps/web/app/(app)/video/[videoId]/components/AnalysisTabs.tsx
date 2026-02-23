@@ -61,7 +61,7 @@ export function AnalysisTabs({
       className={`${styles.tabsContainer} ${isSticky ? styles.sticky : ""}`}
     >
       <div className={styles.tabsInner}>
-        <nav className={styles.tabs} role="tablist">
+        <div className={styles.tabs} role="tablist">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             const isDisabled = disabledTabs.includes(tab.id);
@@ -85,7 +85,7 @@ export function AnalysisTabs({
               </button>
             );
           })}
-        </nav>
+        </div>
       </div>
     </div>
   );

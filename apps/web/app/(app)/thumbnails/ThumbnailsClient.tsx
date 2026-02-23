@@ -511,9 +511,9 @@ function IdentityFormSection({
 }) {
   return (
     <div className={`${s.formGroup} ${s.fullWidth}`}>
-      <label className={s.label}>
+      <span className={s.label}>
         Put yourself in the thumbnail (optional)
-      </label>
+      </span>
       <div className={s.identityRow}>
         <IdentityStatusLine
           photoCount={photoCount}
@@ -568,7 +568,7 @@ function IdentityFormSection({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={photo.url}
-                    alt="Uploaded training photo"
+                    alt="Uploaded training reference"
                     className={s.uploadedPhotoImg}
                   />
                 ) : (
@@ -1218,7 +1218,7 @@ export default function ThumbnailsClient({ initialUser }: Props) {
       <div className={s.formCard}>
         <div className={s.formGrid}>
           <div className={`${s.formGroup} ${s.fullWidth}`}>
-            <label className={s.label}>1) Choose a Style</label>
+            <span className={s.label}>1) Choose a Style</span>
             <div className={s.styleGrid}>
               {STYLE_CARDS.map((card) => (
                 <button

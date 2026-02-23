@@ -1,3 +1,5 @@
+import "client-only";
+
 class ApiClientError extends Error {
   status: number;
   code: string;

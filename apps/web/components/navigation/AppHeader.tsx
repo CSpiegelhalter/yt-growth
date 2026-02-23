@@ -250,7 +250,7 @@ function UserDropdown({
 
       {open && (
         <>
-          <div className={s.backdrop} onClick={() => setOpen(false)} />
+          <div className={s.backdrop} role="presentation" onClick={() => setOpen(false)} />
           <div className={s.dropdown}>
             <div className={s.dropdownEmail}>{userEmail}</div>
 
@@ -310,8 +310,8 @@ function UpgradePromptModal({
     : `You've reached the maximum of ${channelLimit} channels for your plan.`;
 
   return (
-    <div className={s.modalOverlay} onClick={onClose}>
-      <div className={s.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={s.modalOverlay} role="presentation" onClick={onClose}>
+      <div className={s.modal} role="presentation" onClick={(e) => e.stopPropagation()}>
         <button
           className={s.modalClose}
           onClick={onClose}

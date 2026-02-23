@@ -189,19 +189,20 @@ function IdeasForm({
           </p>
         </div>
         <div className={s.controlsRow}>
-          <label className={s.toggleLabel}>
-            <span className={s.toggleText}>Shorts only</span>
+          <div className={s.toggleLabel}>
+            <span id="shorts-toggle-label" className={s.toggleText}>Shorts only</span>
             <button
               type="button"
               role="switch"
               aria-checked={formatPreference === "shorts"}
+              aria-labelledby="shorts-toggle-label"
               className={`${s.toggle} ${formatPreference === "shorts" ? s.toggleActive : ""}`}
               onClick={onToggleShorts}
               disabled={isBusy}
             >
               <span className={s.toggleThumb} />
             </button>
-          </label>
+          </div>
           <div className={s.actionGroup}>
             {!isAuthenticated && !isAuthLoading && (
               <p className={s.signInHint}>

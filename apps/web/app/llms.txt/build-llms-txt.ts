@@ -9,10 +9,7 @@
  */
 
 import { LEARN_ARTICLES, learnArticles } from "@/app/(marketing)/learn/articles";
-import { BRAND,  } from "@/lib/shared/brand";
-
-// Re-export for convenience
-
+import { BRAND } from "@/lib/shared/brand";
 
 /**
  * Core product information for LLMs
@@ -254,4 +251,4 @@ Our content is written by YouTube growth experts and updated regularly.
   return sections.join("\n\n---\n\n");
 }
 
-export {CANONICAL_ORIGIN} from "@/lib/shared/brand";
+export { CANONICAL_ORIGIN } from "@/lib/shared/brand";

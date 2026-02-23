@@ -120,15 +120,19 @@ export function AuthModal({
   return (
     <div 
       className={s.overlay} 
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="auth-modal-title"
+      role="presentation"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
       <div 
         ref={modalRef}
         className={s.modal} 
-        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
         tabIndex={-1}
       >
         <button

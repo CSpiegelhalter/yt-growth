@@ -219,9 +219,9 @@ export default function GoalsClient({
       />
 
       {error && (
-        <div className={s.errorBanner} onClick={() => setError(null)}>
+        <button type="button" className={s.errorBanner} onClick={() => setError(null)}>
           {error}
-        </div>
+        </button>
       )}
 
       {loading && <div className={s.loading}>Loading badges...</div>}
@@ -298,8 +298,9 @@ function GoalsDataContent({
 
         <div className={s.filtersRow}>
           <div className={s.filterGroup}>
-            <label className={s.filterLabel}>Category</label>
+            <label className={s.filterLabel} htmlFor="filter-category">Category</label>
             <select
+              id="filter-category"
               className={s.filterSelect}
               value={categoryFilter}
               onChange={(e) => onCategoryFilter(e.target.value as BadgeCategory | "all")}
@@ -310,8 +311,9 @@ function GoalsDataContent({
             </select>
           </div>
           <div className={s.filterGroup}>
-            <label className={s.filterLabel}>Rarity</label>
+            <label className={s.filterLabel} htmlFor="filter-rarity">Rarity</label>
             <select
+              id="filter-rarity"
               className={s.filterSelect}
               value={rarityFilter}
               onChange={(e) => onRarityFilter(e.target.value as BadgeRarity | "all")}
@@ -322,8 +324,9 @@ function GoalsDataContent({
             </select>
           </div>
           <div className={s.filterGroup}>
-            <label className={s.filterLabel}>Sort</label>
+            <label className={s.filterLabel} htmlFor="filter-sort">Sort</label>
             <select
+              id="filter-sort"
               className={s.filterSelect}
               value={sortKey}
               onChange={(e) => onSortKey(e.target.value as BadgeSortKey)}
@@ -335,8 +338,9 @@ function GoalsDataContent({
             </select>
           </div>
           <div className={`${s.filterGroup} ${s.searchGroup}`}>
-            <label className={s.filterLabel}>Search</label>
+            <label className={s.filterLabel} htmlFor="filter-search">Search</label>
             <input
+              id="filter-search"
               type="text"
               className={s.searchInput}
               placeholder="Search badges..."
@@ -425,6 +429,13 @@ function BadgesSummary({
           <div
             className={`${s.summaryCard} ${s.nextBadgeCard}`}
             onClick={() => onBadgeClick(data.summary.nextBadge!)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                onBadgeClick(data.summary.nextBadge!);
+              }
+            }}
           >
             <div className={s.nextBadgePreview}>
               <BadgeArt
@@ -470,6 +481,13 @@ function RecentUnlocksSection({
               key={unlock.badgeId}
               className={s.recentItem}
               onClick={() => onBadgeClick(badge)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  onBadgeClick(badge);
+                }
+              }}
             >
               <BadgeArt
                 badgeId={badge.id}

@@ -1,4 +1,6 @@
-import { type RefObject,useEffect } from "react";
+import "client-only";
+
+import { type RefObject, useEffect } from "react";
 
 const FOCUSABLE_SELECTOR =
   'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"]), [href]';

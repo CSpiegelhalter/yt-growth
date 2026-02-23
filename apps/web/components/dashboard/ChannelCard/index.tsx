@@ -174,9 +174,22 @@ export default function ChannelCard({
 
       {/* Confirm dialog */}
       {showConfirm && (
-        <div className={s.confirmOverlay} onClick={() => setShowConfirm(false)}>
-          <div className={s.confirmDialog} onClick={(e) => e.stopPropagation()}>
-            <h4 className={s.confirmTitle}>Remove Channel?</h4>
+        <div
+          className={s.confirmOverlay}
+          role="presentation"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowConfirm(false);
+            }
+          }}
+        >
+          <div
+            className={s.confirmDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-remove-title"
+          >
+            <h4 id="confirm-remove-title" className={s.confirmTitle}>Remove Channel?</h4>
             <p className={s.confirmText}>
               This will remove {channel.title ?? "this channel"} from your
               account. Your YouTube channel won't be affected.

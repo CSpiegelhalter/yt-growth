@@ -161,7 +161,7 @@ export function MobileNav({
         <nav className={s.nav}>
           <div className={s.navSection}>
             <span className={s.navSectionLabel}>Growth</span>
-            <ul className={s.navList} role="list">
+            <ul className={s.navList}>
               {primaryNavItems.map((item) => (
                 <MobileNavItem
                   key={item.id}
@@ -176,7 +176,7 @@ export function MobileNav({
 
           <div className={s.navSection}>
             <span className={s.navSectionLabel}>Resources</span>
-            <ul className={s.navList} role="list">
+            <ul className={s.navList}>
               {secondaryNavItems.map((item) => (
                 <MobileNavItem
                   key={item.id}

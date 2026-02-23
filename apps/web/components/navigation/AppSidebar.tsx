@@ -67,7 +67,7 @@ export function AppSidebar({
       <nav className={s.nav}>
         <div className={s.navSection}>
           {!collapsed && <span className={s.navSectionLabel}>Growth</span>}
-          <ul className={s.navList} role="list">
+          <ul className={s.navList}>
             {primaryNavItems.map((item) => (
               <NavItemLink
                 key={item.id}
@@ -82,7 +82,7 @@ export function AppSidebar({
 
         <div className={s.navSection}>
           {!collapsed && <span className={s.navSectionLabel}>Resources</span>}
-          <ul className={s.navList} role="list">
+          <ul className={s.navList}>
             {secondaryNavItems.map((item) => (
               <NavItemLink
                 key={item.id}

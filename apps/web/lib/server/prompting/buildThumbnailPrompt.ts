@@ -4,6 +4,7 @@
  * This wrapper preserves the original callLLM-based signature so existing
  * callers (routes, tests) continue to work without changes.
  */
+import "server-only";
 
 import { buildPrompt } from "@/lib/features/thumbnails";
 import type { BuildPromptInput, BuildPromptOutput } from "@/lib/features/thumbnails/types";

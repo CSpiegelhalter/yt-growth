@@ -410,7 +410,7 @@ export default function DashboardClient({
     <main className={s.page}>
       {/* Alerts */}
       {success && (
-        <div className={s.successAlert} onClick={() => setSuccess(null)}>
+        <button type="button" className={s.successAlert} onClick={() => setSuccess(null)}>
           <svg
             width="16"
             height="16"
@@ -423,7 +423,7 @@ export default function DashboardClient({
             <path d="M22 4L12 14.01l-3-3" />
           </svg>
           {success}
-        </div>
+        </button>
       )}
       {err && <ErrorAlert message={err} />}
 

@@ -1,10 +1,19 @@
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import boundaries from "eslint-plugin-boundaries";
 import importX from "eslint-plugin-import-x";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 import promise from "eslint-plugin-promise";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import sonarjs from "eslint-plugin-sonarjs";
 import unicorn from "eslint-plugin-unicorn";
 import unusedImports from "eslint-plugin-unused-imports";
+
+// Reuse the jsx-a11y plugin instance registered by next/core-web-vitals
+// so we can add recommended rules without a "Cannot redefine plugin" error.
+const nextJsxA11yPlugin =
+  nextCoreWebVitals.find((c) => c.plugins?.["jsx-a11y"])?.plugins?.[
+    "jsx-a11y"
+  ] ?? jsxA11y;
 
 /** @type {import("eslint").Linter.FlatConfig[]} */
 const config = [
@@ -14,6 +23,12 @@ const config = [
 
   // ── Promise correctness ─────────────────────────────────────────────
   promise.configs["flat/recommended"],
+
+  // ── Accessibility (jsx-a11y recommended) ────────────────────────────
+  {
+    plugins: { "jsx-a11y": nextJsxA11yPlugin },
+    rules: jsxA11y.flatConfigs.recommended.rules,
+  },
 
   // ── Unicorn (modern JS best practices) ──────────────────────────────
   {
@@ -199,6 +214,64 @@ const config = [
         afterEach: "readonly",
         vi: "readonly",
       },
+    },
+  },
+
+  // ── Architecture boundaries ──────────────────────────────────────────
+  {
+    plugins: { boundaries },
+    settings: {
+      "boundaries/elements": [
+        { type: "server", pattern: ["lib/server/**"] },
+        { type: "shared", pattern: ["lib/shared/**"] },
+        { type: "client-lib", pattern: ["lib/client/**"] },
+        { type: "features", pattern: ["lib/features/**"] },
+        { type: "adapters", pattern: ["lib/adapters/**"] },
+        { type: "ports", pattern: ["lib/ports/**"] },
+        { type: "api", pattern: ["lib/api/**"] },
+        { type: "components", pattern: ["components/**"] },
+        { type: "app", pattern: ["app/**"] },
+        { type: "legacy-lib", pattern: ["lib/**"] },
+      ],
+      "boundaries/ignore": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "tests/**",
+        "**/__tests__/**",
+        "scripts/**",
+        "*.config.*",
+        "prisma/**",
+      ],
+    },
+    rules: {
+      "boundaries/element-types": [
+        "error",
+        {
+          default: "allow",
+          rules: [
+            { from: ["client-lib"], disallow: ["server"] },
+            {
+              from: ["shared"],
+              disallow: ["server", "client-lib", "app", "components"],
+            },
+            {
+              from: ["ports"],
+              disallow: [
+                "features",
+                "adapters",
+                "server",
+                "client-lib",
+                "components",
+                "app",
+                "api",
+                "legacy-lib",
+              ],
+            },
+            { from: ["features"], disallow: ["server", "app"] },
+            { from: ["adapters"], disallow: ["features", "components", "app"] },
+          ],
+        },
+      ],
     },
   },
 

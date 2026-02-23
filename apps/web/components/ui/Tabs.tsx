@@ -30,7 +30,7 @@ type TabsProps = {
  */
 export function Tabs({ items, activeId, onTabChange, ariaLabel }: TabsProps) {
   return (
-    <nav className={s.tabNav} aria-label={ariaLabel || "Tabs"} role="tablist">
+    <div className={s.tabNav} aria-label={ariaLabel || "Tabs"} role="tablist">
       {items.map((item) => {
         const isActive = item.id === activeId;
         const className = `${s.tabItem} ${isActive ? s.active : ""}`;
@@ -79,6 +79,6 @@ export function Tabs({ items, activeId, onTabChange, ariaLabel }: TabsProps) {
           </button>
         );
       })}
-    </nav>
+    </div>
   );
 }

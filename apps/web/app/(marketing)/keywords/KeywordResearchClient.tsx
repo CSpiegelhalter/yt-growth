@@ -343,8 +343,9 @@ function KeywordEmptyState({ onAddKeyword }: { onAddKeyword: (kw: string) => voi
 
 function KeywordPaywall({ onClose }: { onClose: () => void }) {
   return (
-    <div className={s.paywallOverlay} onClick={onClose}>
-      <div className={s.paywallCard} onClick={(e) => e.stopPropagation()}>
+    <div className={s.paywallOverlay}>
+      <button className={s.paywallBackdrop} onClick={onClose} type="button" aria-label="Close dialog" />
+      <div className={s.paywallCard}>
         <button className={s.paywallClose} onClick={onClose} type="button" aria-label="Close">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6L6 18M6 6l12 12" />

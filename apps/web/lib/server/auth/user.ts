@@ -1,6 +1,8 @@
 /**
  * User authentication and authorization helpers
  */
+import "server-only";
+
 import { getServerSession } from "next-auth/next";
 
 import { prisma } from "@/prisma";

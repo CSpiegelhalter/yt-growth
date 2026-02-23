@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { Account, NextAuthOptions, Profile, User } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";

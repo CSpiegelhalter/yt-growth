@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo,useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { IdeaDetailSheet } from "@/components/dashboard/IdeaBoard";
 import { copyToClipboard } from "@/components/ui/Toast";
@@ -363,44 +363,28 @@ export default function SavedIdeasClient() {
                     className={s.notesSection}
                     onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
+                    role="presentation"
                   >
                     <div className={s.notesLabel}>Notes</div>
                     {editingNotes === idea.ideaId ? (
-                      <div>
-                        <textarea
-                          className={s.notesInput}
-                          value={notesValue}
-                          onChange={(e) => setNotesValue(e.target.value)}
-                          placeholder="Add your notes about this idea..."
-                          autoFocus
-                        />
-                        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                          <button
-                            className={s.actionBtnPrimary}
-                            onClick={() => updateNotes(idea.ideaId, notesValue)}
-                          >
-                            Save
-                          </button>
-                          <button
-                            className={s.actionBtn}
-                            onClick={() => setEditingNotes(null)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
+                      <NotesEditor
+                        notesValue={notesValue}
+                        onNotesChange={setNotesValue}
+                        onSave={() => updateNotes(idea.ideaId, notesValue)}
+                        onCancel={() => setEditingNotes(null)}
+                      />
                     ) : (idea.notes ? (
-                      <p
-                        className={s.notesText}
+                      <button
+                        type="button"
+                        className={`${s.notesText} ${s.notesTextBtn}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingNotes(idea.ideaId);
                           setNotesValue(idea.notes || "");
                         }}
-                        style={{ cursor: "pointer" }}
                       >
                         {idea.notes}
-                      </p>
+                      </button>
                     ) : (
                       <button
                         className={s.actionBtn}
@@ -475,6 +459,44 @@ export default function SavedIdeasClient() {
         {/* Toast */}
         {toast && <div className={s.toast}>{toast}</div>}
     </main>
+  );
+}
+
+function NotesEditor({
+  notesValue,
+  onNotesChange,
+  onSave,
+  onCancel,
+}: {
+  notesValue: string;
+  onNotesChange: (v: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
+  return (
+    <div>
+      <textarea
+        ref={textareaRef}
+        className={s.notesInput}
+        value={notesValue}
+        onChange={(e) => onNotesChange(e.target.value)}
+        placeholder="Add your notes about this idea..."
+      />
+      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <button className={s.actionBtnPrimary} onClick={onSave}>
+          Save
+        </button>
+        <button className={s.actionBtn} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 

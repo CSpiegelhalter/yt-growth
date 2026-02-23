@@ -15,7 +15,6 @@ import {
   type FormatPreference,
   generateVideoIdeasFromTopic,
 } from "@/lib/keywords/ideasService";
-import { getCurrentUserWithSubscription } from "@/lib/server/auth";
 import { logger } from "@/lib/shared/logger";
 import { checkEntitlement, entitlementErrorResponse } from "@/lib/with-entitlements";
 
@@ -23,18 +22,22 @@ import { KeywordError } from "../errors";
 import { toUsageInfo } from "../quota";
 import type { GenerateKeywordIdeasInput, GenerateKeywordIdeasResult } from "../types";
 
+type GenerateKeywordIdeasDeps = {
+  getUser: () => Promise<{ id: number } | null>;
+};
+
 /**
  * Orchestrate video idea generation from a topic description.
  *
- * This use-case handles its own auth (auth-on-action pattern) and entitlement
- * checks because the ideas route operates differently from the other keyword
- * routes — it was not built on createApiRoute/withAuth.
+ * Auth is checked via the injected `deps.getUser` callback (auth-on-action
+ * pattern). The route handler wires the concrete auth implementation.
  *
  * Returns discriminated union so the route can map to the correct response
  * shape without containing domain logic.
  */
 export async function generateKeywordIdeas(
   input: GenerateKeywordIdeasInput,
+  deps: GenerateKeywordIdeasDeps,
 ): Promise<
   | GenerateKeywordIdeasResult
   | { type: "needs_auth" }
@@ -51,7 +54,7 @@ export async function generateKeywordIdeas(
   }
 
   // Auth check (auth-on-action)
-  const user = await getCurrentUserWithSubscription();
+  const user = await deps.getUser();
   if (!user) {
     return { type: "needs_auth" };
   }

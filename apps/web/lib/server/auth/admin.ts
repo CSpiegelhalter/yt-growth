@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { AuthUser } from "./user";
 
 function parseCsv(envVal: string | undefined): string[] {

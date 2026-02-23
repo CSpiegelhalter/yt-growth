@@ -1,3 +1,5 @@
+import "client-only";
+
 /**
  * Centralized OAuth attempt tracking via sessionStorage.
  *

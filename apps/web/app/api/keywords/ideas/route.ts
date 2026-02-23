@@ -15,6 +15,7 @@ import {
   generateKeywordIdeas,
   KeywordIdeasBodySchema,
 } from "@/lib/features/keywords";
+import { getCurrentUserWithSubscription } from "@/lib/server/auth";
 
 export const POST = createApiRoute(
   { route: "/api/keywords/ideas" },
@@ -22,12 +23,15 @@ export const POST = createApiRoute(
     const { topicDescription, locationCode, audienceLevel, formatPreference } =
       validated.body!;
 
-    const result = await generateKeywordIdeas({
-      topicDescription,
-      locationCode,
-      audienceLevel: audienceLevel as AudienceLevel,
-      formatPreference: formatPreference as FormatPreference,
-    });
+    const result = await generateKeywordIdeas(
+      {
+        topicDescription,
+        locationCode,
+        audienceLevel: audienceLevel as AudienceLevel,
+        formatPreference: formatPreference as FormatPreference,
+      },
+      { getUser: getCurrentUserWithSubscription },
+    );
 
     switch (result.type) {
       case "needs_auth": {
