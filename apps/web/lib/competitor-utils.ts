@@ -199,7 +199,7 @@ export function analyzeNumberInTitle(title: string): NumberAnalysis {
     /(?:#\s*(\d+)|ranked?\s*#?\s*(\d+)|top\s*(\d+)|best\s*(\d+)|worst\s*(\d+)|number\s*(\d+))/i
   );
   if (rankingMatch) {
-    const value = rankingMatch.slice(1).find((v) => v) ?? null;
+    const value = rankingMatch.slice(1).find(Boolean) ?? null;
     return {
       hasNumber: true,
       type: "ranking",
@@ -524,25 +524,25 @@ export function computePublicSignals(input: {
   // Like rate: likes per 100 views
   const likeRate =
     input.likeCount != null && input.viewCount > 0
-      ? Math.round((input.likeCount / input.viewCount) * 10000) / 100
+      ? Math.round((input.likeCount / input.viewCount) * 10_000) / 100
       : null;
 
   // Comments per 1000 views
   const commentsPer1k =
     input.commentCount != null && input.viewCount > 0
-      ? Math.round((input.commentCount / input.viewCount) * 10000) / 10
+      ? Math.round((input.commentCount / input.viewCount) * 10_000) / 10
       : null;
 
   // Engagement rate: (likes + comments) / views
   const engagementRate =
     input.likeCount != null && input.commentCount != null && input.viewCount > 0
-      ? Math.round(((input.likeCount + input.commentCount) / input.viewCount) * 10000) / 100
+      ? Math.round(((input.likeCount + input.commentCount) / input.viewCount) * 10_000) / 100
       : null;
 
   // Description word count
   const descriptionWordCount = input.description
     ? input.description
-        .replace(/https?:\/\/\S+/gi, "")
+        .replaceAll(/https?:\/\/\S+/gi, "")
         .split(/\s+/)
         .filter(Boolean).length
     : 0;
@@ -657,7 +657,7 @@ export function detectEngagementOutlier(input: {
     // Outlier thresholds (standard IQR rule, anchored to Q3)
     // Use strict ">" comparisons below so "at median" is never an outlier,
     // especially when IQR is 0 (many channels have flat engagement rates).
-    const highThreshold = q3 + iqr * 1.0;
+    const highThreshold = q3 + iqr * 1;
     const exceptionalThreshold = q3 + iqr * 1.5;
     
     const medianPct = (median * 100).toFixed(2);

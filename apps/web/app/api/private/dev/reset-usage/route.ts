@@ -7,9 +7,10 @@
  * Auth: Required
  */
 import type { NextRequest } from "next/server";
+
 import { createApiRoute } from "@/lib/api/route";
+import { getAllUsage,resetUserUsage } from "@/lib/features/subscriptions/use-cases/trackUsage";
 import { getCurrentUser } from "@/lib/server/auth";
-import { resetUserUsage, getAllUsage } from "@/lib/features/subscriptions/use-cases/trackUsage";
 
 function devOnly(): Response | null {
   if (process.env.NODE_ENV === "production") {
@@ -43,9 +44,9 @@ async function POSTHandler(req: NextRequest) {
       before: beforeUsage,
       after: afterUsage,
     });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Reset usage error:", err);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Reset usage error:", error);
     return Response.json(
       { error: "Failed to reset usage", detail: message },
       { status: 500 }
@@ -93,9 +94,9 @@ async function GETHandler(req: NextRequest) {
       usage,
       resetAt: resetAt.toISOString(),
     });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Get usage error:", err);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Get usage error:", error);
     return Response.json(
       { error: "Failed to get usage", detail: message },
       { status: 500 }

@@ -1,16 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect,it } from "vitest";
+
 import {
-  runDescriptionSeoAudit,
+  type DescriptionCheck,
   type DescriptionSeoInput,
   type DescriptionSeoResult,
-  type DescriptionCheck,
+  runDescriptionSeoAudit,
 } from "../../lib/youtube/descriptionSeoAudit";
 
-describe("runDescriptionSeoAudit", () => {
-  // Helper to find a check by id
-  const findCheck = (result: DescriptionSeoResult, id: string): DescriptionCheck | undefined =>
-    result.checks.find((c) => c.id === id);
+const findCheck = (result: DescriptionSeoResult, id: string): DescriptionCheck | undefined =>
+  result.checks.find((c) => c.id === id);
 
+describe("runDescriptionSeoAudit", () => {
   describe("focus keyword detection", () => {
     it("detects keyword with high confidence when in title and tags", () => {
       const input: DescriptionSeoInput = {
@@ -167,7 +167,7 @@ describe("runDescriptionSeoAudit", () => {
     });
 
     it("marks 80-199 words as needs_work", () => {
-      const words = Array(100).fill("word").join(" ");
+      const words = Array.from({length: 100}).fill("word").join(" ");
       const input: DescriptionSeoInput = {
         title: "Test",
         description: words,
@@ -181,7 +181,7 @@ describe("runDescriptionSeoAudit", () => {
     });
 
     it("marks 200+ words as strong", () => {
-      const words = Array(250).fill("word").join(" ");
+      const words = Array.from({length: 250}).fill("word").join(" ");
       const input: DescriptionSeoInput = {
         title: "Test",
         description: words,
@@ -545,7 +545,7 @@ In this YouTube SEO guide, we'll explore:
 - Description best practices
 - And much more!
 
-${Array(150).fill("content").join(" ")}
+${Array.from({length: 150}).fill("content").join(" ")}
 
 Check out my website: https://example.com
 Subscribe for more videos like this!

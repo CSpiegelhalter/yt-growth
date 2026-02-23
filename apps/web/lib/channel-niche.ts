@@ -14,13 +14,14 @@
  */
 
 import crypto from "crypto";
-import { prisma } from "@/prisma";
-import { generateNicheQueries, type ChannelProfileContext } from "@/lib/llm";
+
 import type {
   ChannelProfileAI,
   ChannelProfileInput,
 } from "@/lib/features/channels";
+import { type ChannelProfileContext,generateNicheQueries } from "@/lib/llm";
 import { YOUTUBE_CATEGORIES } from "@/lib/youtube/constants";
+import { prisma } from "@/prisma";
 
 const NICHE_VIDEO_COUNT = 15;
 

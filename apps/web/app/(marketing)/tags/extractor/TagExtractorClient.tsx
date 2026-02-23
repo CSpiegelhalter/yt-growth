@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import Image from "next/image";
-import s from "../tags.module.css";
+import { useCallback,useState } from "react";
+
 import { useToast } from "@/components/ui/Toast";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
+
+import s from "../tags.module.css";
 
 // ============================================
 // TYPES
@@ -89,11 +91,11 @@ export function TagExtractorClient() {
         if (data.hasTags) {
           toast(`Found ${data.tags.length} tags!`, "success");
         }
-      } catch (err) {
-        console.error("Extract error:", err);
+      } catch (error_) {
+        console.error("Extract error:", error_);
 
-        if (isApiClientError(err)) {
-          setError(err.message || "Failed to extract tags");
+        if (isApiClientError(error_)) {
+          setError(error_.message || "Failed to extract tags");
           return;
         }
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/prisma";
+
 import { ThumbnailError } from "../errors";
 
 type GetProjectInput = {

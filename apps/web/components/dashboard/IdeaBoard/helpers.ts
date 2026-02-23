@@ -24,6 +24,6 @@ export function formatRemixLabel(key: string): string {
  * Return unique strings from an array
  */
 export function uniqStrings(arr: string[]): string[] {
-  return Array.from(new Set(arr));
+  return [...new Set(arr)];
 }
 

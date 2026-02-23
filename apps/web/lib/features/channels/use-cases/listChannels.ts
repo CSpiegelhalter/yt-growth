@@ -1,8 +1,8 @@
-import { prisma } from "@/prisma";
 import {
-  CHANNEL_LIST_SELECT,
   CHANNEL_LIST_ORDER_BY,
+  CHANNEL_LIST_SELECT,
 } from "@/lib/server/channel-query";
+import { prisma } from "@/prisma";
 
 export type ListChannelsInput = {
   userId: number;

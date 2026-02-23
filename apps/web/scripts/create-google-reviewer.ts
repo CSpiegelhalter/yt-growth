@@ -11,6 +11,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+
 import { LIMITS } from "@/lib/shared/product";
 
 const prisma = new PrismaClient();
@@ -90,10 +91,10 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
-    console.error("❌ Failed to create reviewer account:", e);
-    process.exit(1);
-  })
   .finally(async () => {
     await prisma.$disconnect();
+  })
+  .catch((error) => {
+    console.error("❌ Failed to create reviewer account:", error);
+    process.exit(1);
   });

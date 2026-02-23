@@ -1,14 +1,89 @@
-import type { NextAuthOptions } from "next-auth";
+import type { Account, NextAuthOptions, Profile, User } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { prisma } from "@/prisma";
-import { compare } from "@/lib/shared/crypto";
-import { verifyEmailToken } from "./jwt";
-import { logger } from "@/lib/shared/logger";
 import Google from "next-auth/providers/google";
+
+import { compare } from "@/lib/shared/crypto";
+import { logger } from "@/lib/shared/logger";
+import { prisma } from "@/prisma";
+
+import { verifyEmailToken } from "./jwt";
 
 // Determine if we're in development (localhost)
 const isDev = process.env.NODE_ENV === "development";
 const useSecureCookies = !isDev;
+
+async function findOrCreateGoogleUser(
+  email: string,
+  name: string | null | undefined,
+  profileName: string | null | undefined,
+) {
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) { return existing; }
+
+  try {
+    const created = await prisma.user.create({
+      data: { email, name: name ?? profileName ?? null },
+    });
+    logger.info("auth.google.new_user", { userId: created.id });
+    return created;
+  } catch (error: unknown) {
+    const prismaError = error as Error & { code?: string };
+    if (prismaError?.code !== "P2002") { throw error; }
+
+    const raceWinner = await prisma.user.findUnique({ where: { email } });
+    if (!raceWinner) { throw new Error("Failed to create or find user"); }
+    logger.info("auth.google.user_found_after_race", { userId: raceWinner.id });
+    return raceWinner;
+  }
+}
+
+async function upsertGoogleAccount(
+  dbUserId: number,
+  providerAccountId: string,
+  refreshToken: string | null,
+  scopes: string,
+  tokenExpiresAt: Date | null,
+) {
+  await prisma.googleAccount.upsert({
+    where: {
+      provider_providerAccountId: {
+        provider: "google",
+        providerAccountId,
+      },
+    },
+    update: {
+      userId: dbUserId,
+      tokenExpiresAt,
+      scopes,
+      ...(refreshToken ? { refreshTokenEnc: refreshToken } : {}),
+      updatedAt: new Date(),
+    },
+    create: {
+      userId: dbUserId,
+      provider: "google",
+      providerAccountId,
+      refreshTokenEnc: refreshToken,
+      scopes,
+      tokenExpiresAt,
+    },
+  });
+}
+
+async function handleGoogleSignIn(
+  user: User,
+  account: Account,
+  profile: Profile | undefined,
+) {
+  const providerAccountId = account.providerAccountId ?? profile?.sub ?? "";
+  const refreshToken = account.refresh_token ?? null;
+  const scopes = (account.scope as string | undefined) ?? "";
+  const tokenExpiresAt = account.expires_at
+    ? new Date(account.expires_at * 1000)
+    : null;
+
+  const dbUser = await findOrCreateGoogleUser(user.email!, user.name, profile?.name);
+  await upsertGoogleAccount(dbUser.id, providerAccountId, refreshToken, scopes, tokenExpiresAt);
+}
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 }, // 30d
@@ -161,76 +236,8 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async signIn({ user, account, profile }) {
-      // For Google OAuth, persist (or update) tokens for later worker use.
       if (account?.provider === "google" && user?.email) {
-        const providerAccountId =
-          account.providerAccountId ?? profile?.sub ?? "";
-        // Note: refresh_token is only returned on first consent or if revoked/expired.
-        const refreshToken = account.refresh_token ?? null;
-        const scopes = (account.scope as string | undefined) ?? "";
-        const tokenExpiresAt = account.expires_at
-          ? new Date(account.expires_at * 1000)
-          : null;
-
-        // Find or create the user
-        let dbUser = await prisma.user.findUnique({
-          where: { email: user.email },
-        });
-
-        if (!dbUser) {
-          // Create new user for Google OAuth sign-in
-          try {
-            dbUser = await prisma.user.create({
-              data: {
-                email: user.email,
-                name: user.name ?? profile?.name ?? null,
-              },
-            });
-            logger.info("auth.google.new_user", { userId: dbUser.id });
-          } catch (error: unknown) {
-            const prismaError = error as Error & { code?: string };
-            if (prismaError?.code === "P2002") {
-              dbUser = await prisma.user.findUnique({
-                where: { email: user.email },
-              });
-              if (!dbUser) {
-                throw new Error("Failed to create or find user");
-              }
-              logger.info("auth.google.user_found_after_race", {
-                userId: dbUser.id,
-              });
-            } else {
-              throw error;
-            }
-          }
-        }
-
-        // Upsert into GoogleAccount table
-        await prisma.googleAccount.upsert({
-          where: {
-            // unique on (provider, providerAccountId)
-            provider_providerAccountId: {
-              provider: "google",
-              providerAccountId,
-            },
-          },
-          update: {
-            userId: dbUser.id,
-            tokenExpiresAt,
-            scopes,
-            // store refreshToken only if present to avoid overwriting a good one with null
-            ...(refreshToken ? { refreshTokenEnc: refreshToken } : {}),
-            updatedAt: new Date(),
-          },
-          create: {
-            userId: dbUser.id,
-            provider: "google",
-            providerAccountId,
-            refreshTokenEnc: refreshToken,
-            scopes,
-            tokenExpiresAt,
-          },
-        });
+        await handleGoogleSignIn(user, account, profile);
       }
       return true;
     },

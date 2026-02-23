@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import styles from "./panels.module.css";
+import { useCallback,useMemo, useState } from "react";
+
+import { copyToClipboard } from "@/components/ui/Toast";
 import {
-  runDescriptionSeoAudit,
-  type DescriptionSeoInput,
   type DescriptionCheck,
   type DescriptionCheckStatus,
+  type DescriptionSeoInput,
+  runDescriptionSeoAudit,
 } from "@/lib/youtube/descriptionSeoAudit";
-import { copyToClipboard } from "@/components/ui/Toast";
+
+import styles from "./panels.module.css";
 
 // ============================================
 // Types
@@ -94,7 +96,7 @@ function generateSuggestedTags(
   // Extract key terms from title
   const titleWords = title
     .toLowerCase()
-    .replace(/[^\w\s]/g, "")
+    .replaceAll(/[^\w\s]/g, "")
     .split(/\s+/)
     .filter(
       (w) =>
@@ -560,9 +562,9 @@ function StatusDot({ status }: { status: DescriptionCheckStatus }) {
       aria-label={
         status === "strong"
           ? "Passing"
-          : status === "needs_work"
+          : (status === "needs_work"
           ? "Needs work"
-          : "Missing"
+          : "Missing")
       }
     />
   );

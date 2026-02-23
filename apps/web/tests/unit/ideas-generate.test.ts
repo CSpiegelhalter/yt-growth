@@ -3,7 +3,7 @@
  *
  * Tests that entitlement limits for idea_generate are configured correctly.
  */
-import { describe, it, expect } from "bun:test";
+import { describe, expect,it } from "bun:test";
 
 describe("Ideas Generate Entitlement Limits", () => {
   it("FREE plan has idea_generate limit", async () => {

@@ -1,26 +1,27 @@
 import "server-only";
 
-import { prisma } from "@/prisma";
+import { getOrGenerateNiche } from "@/lib/channel-niche";
 import {
-  inferNiche,
-  searchCompetitorsWithCache,
+  DEFAULT_FILTERS,
   getCachedSearchResults,
-  setCachedSearchResults,
+  hashNicheForLogging,
+  inferNiche,
   makeCacheKey,
   sanitizeNicheText,
-  hashNicheForLogging,
-  DEFAULT_FILTERS,
+  searchCompetitorsWithCache,
+  setCachedSearchResults,
 } from "@/lib/competitor-search";
-import { getOrGenerateNiche } from "@/lib/channel-niche";
 import { parseYouTubeVideoId } from "@/lib/shared/youtube-video-id";
 import type { GoogleAccount } from "@/lib/youtube/types";
+import { prisma } from "@/prisma";
+
+import { assertActiveSubscription,CompetitorError } from "../errors";
 import type {
+  CompetitorSearchFilters,
+  InferredNiche,
   SearchCompetitorsInput,
   SearchEvent,
-  InferredNiche,
-  CompetitorSearchFilters,
 } from "../types";
-import { CompetitorError, assertActiveSubscription } from "../errors";
 
 // ── Google-account resolution ───────────────────────────────────
 
@@ -100,15 +101,14 @@ async function resolveGoogleAccount(
   channelId: string | undefined,
   getGoogleAccount: GetGoogleAccountFn,
 ): Promise<GoogleAccount> {
+  const channelRecord = await prisma.channel.findFirst({
+    where: { userId },
+    select: { youtubeChannelId: true },
+  });
   const ytChannelId =
     mode === "search_my_niche" && channelId
       ? channelId
-      : (
-          await prisma.channel.findFirst({
-            where: { userId },
-            select: { youtubeChannelId: true },
-          })
-        )?.youtubeChannelId;
+      : channelRecord?.youtubeChannelId;
 
   if (!ytChannelId) {
     throw new CompetitorError(

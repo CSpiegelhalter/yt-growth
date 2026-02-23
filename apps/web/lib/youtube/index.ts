@@ -5,8 +5,8 @@
  * This file preserves the existing import paths for consumers.
  */
 export {
-  getGoogleAccount,
   fetchVideoDetails,
-  searchNicheVideos,
   fetchVideosStatsBatch,
+  getGoogleAccount,
+  searchNicheVideos,
 } from "@/lib/adapters/youtube/index";

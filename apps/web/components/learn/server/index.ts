@@ -3,7 +3,7 @@
  * These components must NOT use "use client" or import client-only modules.
  */
 
-export { StructuredData } from "./StructuredData";
-export { LearnTopicsNav } from "./LearnTopicsNav";
 export { LearnFAQ } from "./LearnFAQ";
+export { LearnTopicsNav } from "./LearnTopicsNav";
 export { RelatedArticles } from "./RelatedArticles";
+export { StructuredData } from "./StructuredData";

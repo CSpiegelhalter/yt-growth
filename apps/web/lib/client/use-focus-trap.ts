@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from "react";
+import { type RefObject,useEffect } from "react";
 
 const FOCUSABLE_SELECTOR =
   'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"]), [href]';
@@ -18,7 +18,7 @@ export function useFocusTrap(
     const container = ref.current;
     const focusableElements = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
     const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
+    const lastElement = [...focusableElements].at(-1);
 
     if (options?.autoFocus !== false) {
       firstElement?.focus();

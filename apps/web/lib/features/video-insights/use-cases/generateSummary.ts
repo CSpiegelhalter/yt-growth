@@ -5,8 +5,8 @@
  * combining metrics, competitive context, and viewer journey insights.
  */
 
-import type { CoreAnalysis, LlmCallFn } from "../types";
 import { VideoInsightError } from "../errors";
+import type { CoreAnalysis, LlmCallFn } from "../types";
 
 // ── Input Types ─────────────────────────────────────────────
 
@@ -136,6 +136,74 @@ const ARCHETYPE_LIBRARY = [
   { id: "PERFECT_STORM", label: "The Perfect Storm", logic: "High CTR + High Retention + High Conversion", conditions: { ctr: "HIGH", retention: "HIGH", subConversion: "HIGH" } },
 ] as const;
 
+// ── Archetype State Resolvers ────────────────────────────────
+
+function resolvePerformanceStates(
+  derived: DerivedData,
+  comparison: ComparisonData,
+): Record<string, string> {
+  return {
+    ctr: (derived.impressionsCtr ?? 0) > 5 ? "HIGH" : "LOW",
+    views: comparison.viewsPerDay?.vsBaseline === "above" ? "HIGH" : "LOW",
+    retention: (derived.avdRatio ?? 0) > 0.4 ? "HIGH" : "LOW",
+    engagement: comparison.engagementPerView?.vsBaseline === "above" ? "HIGH" : "LOW",
+  };
+}
+
+function resolveConversionStates(
+  derived: DerivedData,
+  video: VideoData,
+): Record<string, string | boolean> {
+  const subsPer1k = derived.subsPer1k ?? 0;
+  let subConversion: string;
+  if (subsPer1k === 0) {
+    subConversion = "NONE";
+  } else if (subsPer1k > 2) {
+    subConversion = "HIGH";
+  } else {
+    subConversion = "LOW";
+  }
+
+  return {
+    subConversion,
+    isLongForm: (video.durationSec ?? 0) > 1800,
+  };
+}
+
+function resolveSubscriberStates(
+  sub: SubscriberBreakdownData | undefined,
+): Record<string, string> {
+  const subViewPct = sub?.subscriberViewPct ?? 0;
+  const subAvgView = sub?.subscribers?.avgViewPct ?? 0;
+  const nonSubAvgView = sub?.nonSubscribers?.avgViewPct ?? 0;
+
+  return {
+    subViewsPct: subViewPct > 40 ? "HIGH" : "LOW",
+    subRetention: subAvgView > nonSubAvgView + 10 ? "HIGH" : "LOW",
+    nonSubRetention: nonSubAvgView > 20 ? "HIGH" : "LOW",
+  };
+}
+
+function resolveDiscoveryStates(
+  ctx: CompetitiveContextData | undefined,
+): Record<string, string> {
+  const position = ctx?.searchRankings?.[0]?.position;
+  let rank: string;
+  if (position == null) {
+    rank = "NONE";
+  } else if (position <= 5) {
+    rank = "HIGH";
+  } else {
+    rank = "LOW";
+  }
+
+  const interest = ctx?.topicTrends?.recentInterest ?? 0;
+  return {
+    rank,
+    trend: interest > 60 ? "HIGH" : "LOW",
+  };
+}
+
 // ── Archetype Matching ──────────────────────────────────────
 
 function getRelevantArchetypes(
@@ -146,40 +214,10 @@ function getRelevantArchetypes(
   competitiveContext: CompetitiveContextData | undefined,
 ) {
   const states: Record<string, string | boolean> = {
-    ctr: (derived.impressionsCtr || 0) > 5 ? "HIGH" : "LOW",
-    views: comparison.viewsPerDay?.vsBaseline === "above" ? "HIGH" : "LOW",
-    retention: (derived.avdRatio || 0) > 0.4 ? "HIGH" : "LOW",
-    rank:
-      (competitiveContext?.searchRankings?.[0]?.position || 99) <= 5
-        ? "HIGH"
-        : competitiveContext?.searchRankings?.[0]?.position
-          ? "LOW"
-          : "NONE",
-    subConversion:
-      (derived.subsPer1k || 0) === 0
-        ? "NONE"
-        : (derived.subsPer1k || 0) > 2
-          ? "HIGH"
-          : "LOW",
-    isLongForm: (video.durationSec || 0) > 1800,
-    subViewsPct:
-      (subscriberBreakdown?.subscriberViewPct || 0) > 40 ? "HIGH" : "LOW",
-    subRetention:
-      (subscriberBreakdown?.subscribers?.avgViewPct || 0) >
-      (subscriberBreakdown?.nonSubscribers?.avgViewPct || 0) + 10
-        ? "HIGH"
-        : "LOW",
-    nonSubRetention:
-      (subscriberBreakdown?.nonSubscribers?.avgViewPct || 0) > 20
-        ? "HIGH"
-        : "LOW",
-    engagement:
-      comparison.engagementPerView?.vsBaseline === "above" ? "HIGH" : "LOW",
-    trend:
-      competitiveContext?.topicTrends?.recentInterest &&
-      competitiveContext.topicTrends.recentInterest > 60
-        ? "HIGH"
-        : "LOW",
+    ...resolvePerformanceStates(derived, comparison),
+    ...resolveConversionStates(derived, video),
+    ...resolveSubscriberStates(subscriberBreakdown),
+    ...resolveDiscoveryStates(competitiveContext),
   };
 
   return ARCHETYPE_LIBRARY.filter((arch) => {
@@ -193,54 +231,141 @@ function getRelevantArchetypes(
   }).slice(0, 6);
 }
 
+// ── Section Builders ─────────────────────────────────────────
+
+function formatComparison(
+  comp: { vsBaseline: string; delta?: number | null },
+  label: string,
+): string {
+  if (comp.vsBaseline === "unknown") {
+    return "";
+  }
+  return `(${comp.delta?.toFixed(0)}% vs ${label})`;
+}
+
+function buildSubscriberSection(sub: SubscriberBreakdownData | undefined): string {
+  if (!sub) {
+    return "\nSUBSCRIBER BEHAVIOR:\n• Subscriber data not available";
+  }
+
+  const viewPct = sub.subscriberViewPct?.toFixed(0) ?? "N/A";
+  const subRet = sub.subscribers?.avgViewPct?.toFixed(1) ?? "N/A";
+  const nonSubRet = sub.nonSubscribers?.avgViewPct?.toFixed(1) ?? "N/A";
+  const ctrLine = sub.subscribers?.ctr
+    ? `\n• Subscriber CTR: ${sub.subscribers.ctr.toFixed(1)}%`
+    : "";
+
+  return `\nSUBSCRIBER BEHAVIOR:\n• ${viewPct}% of views from subscribers\n• Subscriber retention: ${subRet}%\n• Non-subscriber retention: ${nonSubRet}%${ctrLine}`;
+}
+
+function buildGeoSection(geo: GeoBreakdownData | undefined): string {
+  if (!geo?.topCountries?.length) {
+    return "\nGEOGRAPHIC PERFORMANCE:\n• Geographic data not available";
+  }
+
+  const countryLines = geo.topCountries.slice(0, 5).map((c) => {
+    const retNote = c.avgViewPct ? ` (${c.avgViewPct.toFixed(1)}% retention)` : "";
+    return `• ${c.countryName}: ${c.viewsPct.toFixed(0)}% of views${retNote}`;
+  });
+  const marketLine = geo.primaryMarket ? `\n• Primary market: ${geo.primaryMarket}` : "";
+
+  return `\nGEOGRAPHIC PERFORMANCE:\n${countryLines.join("\n")}${marketLine}`;
+}
+
+function buildTrafficSection(detail: TrafficDetailData | undefined): string {
+  if (!detail) {
+    return "\nTRAFFIC SOURCE DETAIL:\n• Traffic detail not available";
+  }
+
+  const parts: string[] = [];
+
+  if (detail.searchTerms?.length) {
+    const terms = detail.searchTerms.slice(0, 5).map((t) => `"${t.term}" (${t.views} views)`);
+    parts.push(`• Search Terms: ${terms.join(", ")}`);
+  }
+  if (detail.suggestedVideos?.length) {
+    const top = detail.suggestedVideos[0];
+    parts.push(`• Top Suggested Video: ${top.videoId} (${top.views} views)`);
+  }
+  if (detail.browseFeatures?.length) {
+    const features = detail.browseFeatures.slice(0, 3).map((b) => `${b.feature} (${b.views} views)`);
+    parts.push(`• Browse Features: ${features.join(", ")}`);
+  }
+  if (parts.length === 0) {
+    parts.push("• Traffic detail not available");
+  }
+
+  return `\nTRAFFIC SOURCE DETAIL:\n${parts.join("\n")}`;
+}
+
+function buildDemoSection(demo: DemographicData | undefined): string {
+  if (!demo?.hasData) {
+    return "\nDEMOGRAPHIC BREAKDOWN:\n• Demographic data not available (needs more views)";
+  }
+  const ageStr = demo.byAge.map((a) => `${a.ageGroup} (${a.viewsPct.toFixed(0)}%)`).join(", ");
+  const genderStr = demo.byGender.map((g) => `${g.gender} (${g.viewsPct.toFixed(0)}%)`).join(", ");
+  return `\nDEMOGRAPHIC BREAKDOWN:\n• By Age: ${ageStr}\n• By Gender: ${genderStr}`;
+}
+
+function buildCompetitiveSection(ctx: CompetitiveContextData | undefined): string {
+  if (!ctx) {
+    return "";
+  }
+
+  const parts: string[] = [];
+
+  if (ctx.searchRankings?.length) {
+    const rankings = ctx.searchRankings.map((r) => {
+      if (!r.position) {
+        return `"${r.term}" → not ranking top 20`;
+      }
+      return `"${r.term}" → #${r.position} (expected ${r.expectedCtr.toFixed(1)}% CTR, actual ${r.actualCtr.toFixed(1)}%)`;
+    });
+    parts.push(`• Search Rankings: ${rankings.join(" | ")}`);
+  }
+  if (ctx.topicTrends) {
+    parts.push(`• Topic Trend: ${ctx.topicTrends.trend} (interest: ${ctx.topicTrends.recentInterest}/100)`);
+  }
+  if (ctx.similarVideos?.length) {
+    parts.push(`• Similar Videos: Found ${ctx.similarVideos.length} competitors ranking for main search term`);
+  }
+
+  return parts.length > 0 ? `\nCOMPETITIVE CONTEXT:\n${parts.join("\n")}` : "";
+}
+
 // ── Prompt Building ─────────────────────────────────────────
 
 function buildVideoContext(input: GenerateSummaryInput): string {
   const { video, derived, comparison, bottleneck } = input;
-  const { subscriberBreakdown, geoBreakdown, trafficDetail, demographicBreakdown, competitiveContext } = input;
 
   const durationMin = Math.round(video.durationSec / 60);
-  const descriptionSnippet = video.description?.slice(0, 300) || "No description";
+  const descSnippet = video.description?.slice(0, 300) ?? "No description";
 
-  const subscriberSection = subscriberBreakdown
-    ? `\nSUBSCRIBER BEHAVIOR:\n• ${subscriberBreakdown.subscriberViewPct?.toFixed(0) ?? "N/A"}% of views from subscribers\n• Subscriber retention: ${subscriberBreakdown.subscribers?.avgViewPct?.toFixed(1) ?? "N/A"}%\n• Non-subscriber retention: ${subscriberBreakdown.nonSubscribers?.avgViewPct?.toFixed(1) ?? "N/A"}%${subscriberBreakdown.subscribers?.ctr ? `\n• Subscriber CTR: ${subscriberBreakdown.subscribers.ctr.toFixed(1)}%` : ""}`
-    : "\nSUBSCRIBER BEHAVIOR:\n• Subscriber data not available";
+  const avdDisplay = derived.avdRatio != null ? (derived.avdRatio * 100).toFixed(1) : "N/A";
+  const engDisplay = derived.engagementPerView != null ? (derived.engagementPerView * 100).toFixed(2) : "N/A";
+  const subsDisplay = derived.subsPer1k?.toFixed(2) ?? "N/A";
+  const bottleneckLine = bottleneck ? `\nBOTTLENECK: ${bottleneck.bottleneck} - ${bottleneck.evidence}` : "";
 
-  const geoSection =
-    geoBreakdown?.topCountries && geoBreakdown.topCountries.length > 0
-      ? `\nGEOGRAPHIC PERFORMANCE:\n${geoBreakdown.topCountries.slice(0, 5).map((c) => `• ${c.countryName}: ${c.viewsPct.toFixed(0)}% of views${c.avgViewPct ? ` (${c.avgViewPct.toFixed(1)}% retention)` : ""}`).join("\n")}${geoBreakdown.primaryMarket ? `\n• Primary market: ${geoBreakdown.primaryMarket}` : ""}`
-      : "\nGEOGRAPHIC PERFORMANCE:\n• Geographic data not available";
-
-  const trafficSection = trafficDetail
-    ? `\nTRAFFIC SOURCE DETAIL:\n${trafficDetail.searchTerms?.length ? `• Search Terms: ${trafficDetail.searchTerms.slice(0, 5).map((t) => `"${t.term}" (${t.views} views)`).join(", ")}` : ""}${trafficDetail.suggestedVideos?.length ? `\n• Top Suggested Video: ${trafficDetail.suggestedVideos[0].videoId} (${trafficDetail.suggestedVideos[0].views} views)` : ""}${trafficDetail.browseFeatures?.length ? `\n• Browse Features: ${trafficDetail.browseFeatures.slice(0, 3).map((b) => `${b.feature} (${b.views} views)`).join(", ")}` : ""}${!trafficDetail.searchTerms && !trafficDetail.suggestedVideos && !trafficDetail.browseFeatures ? "\n• Traffic detail not available" : ""}`.trim()
-    : "\nTRAFFIC SOURCE DETAIL:\n• Traffic detail not available";
-
-  const demoSection = demographicBreakdown?.hasData
-    ? `\nDEMOGRAPHIC BREAKDOWN:\n• By Age: ${demographicBreakdown.byAge.map((a) => `${a.ageGroup} (${a.viewsPct.toFixed(0)}%)`).join(", ")}\n• By Gender: ${demographicBreakdown.byGender.map((g) => `${g.gender} (${g.viewsPct.toFixed(0)}%)`).join(", ")}`
-    : "\nDEMOGRAPHIC BREAKDOWN:\n• Demographic data not available (needs more views)";
-
-  const competitiveSection = competitiveContext
-    ? `\nCOMPETITIVE CONTEXT:\n${competitiveContext.searchRankings?.length ? `• Search Rankings: ${competitiveContext.searchRankings.map((r) => `"${r.term}" → ${r.position ? `#${r.position} (expected ${r.expectedCtr.toFixed(1)}% CTR, actual ${r.actualCtr.toFixed(1)}%)` : "not ranking top 20"}`).join(" | ")}` : ""}${competitiveContext.topicTrends ? `\n• Topic Trend: ${competitiveContext.topicTrends.trend} (interest: ${competitiveContext.topicTrends.recentInterest}/100)` : ""}${competitiveContext.similarVideos?.length ? `\n• Similar Videos: Found ${competitiveContext.similarVideos.length} competitors ranking for main search term` : ""}`.trim()
-    : "";
+  const competitive = buildCompetitiveSection(input.competitiveContext);
 
   return `VIDEO INFO:
 TITLE: "${video.title}"
-DESCRIPTION (first 300 chars): "${descriptionSnippet}"
+DESCRIPTION (first 300 chars): "${descSnippet}"
 TAGS: [${video.tags.slice(0, 10).map((t) => `"${t}"`).join(", ")}]
 DURATION: ${durationMin} minutes
 
 PERFORMANCE DATA (${derived.daysInRange} day period):
 • Total Views: ${derived.totalViews.toLocaleString()}
-• Views/Day: ${derived.viewsPerDay.toFixed(0)} ${comparison.viewsPerDay.vsBaseline !== "unknown" ? `(${comparison.viewsPerDay.delta?.toFixed(0)}% vs your channel avg)` : ""}
-• Avg % Viewed: ${derived.avdRatio != null ? (derived.avdRatio * 100).toFixed(1) : "N/A"}% ${comparison.avgViewPercentage.vsBaseline !== "unknown" ? `(${comparison.avgViewPercentage.delta?.toFixed(0)}% vs avg)` : ""}
-• Engagement Rate: ${derived.engagementPerView != null ? (derived.engagementPerView * 100).toFixed(2) : "N/A"}% ${comparison.engagementPerView.vsBaseline !== "unknown" ? `(${comparison.engagementPerView.delta?.toFixed(0)}% vs avg)` : ""}
-• Subs/1K Views: ${derived.subsPer1k?.toFixed(2) ?? "N/A"} ${comparison.subsPer1k.vsBaseline !== "unknown" ? `(${comparison.subsPer1k.delta?.toFixed(0)}% vs avg)` : ""}
-${bottleneck ? `\nBOTTLENECK: ${bottleneck.bottleneck} - ${bottleneck.evidence}` : ""}
-${subscriberSection}
-${geoSection}
-${trafficSection}
-${demoSection}
-${competitiveSection ? `\n${  competitiveSection}` : ""}`;
+• Views/Day: ${derived.viewsPerDay.toFixed(0)} ${formatComparison(comparison.viewsPerDay, "your channel avg")}
+• Avg % Viewed: ${avdDisplay}% ${formatComparison(comparison.avgViewPercentage, "avg")}
+• Engagement Rate: ${engDisplay}% ${formatComparison(comparison.engagementPerView, "avg")}
+• Subs/1K Views: ${subsDisplay} ${formatComparison(comparison.subsPer1k, "avg")}
+${bottleneckLine}
+${buildSubscriberSection(input.subscriberBreakdown)}
+${buildGeoSection(input.geoBreakdown)}
+${buildTrafficSection(input.trafficDetail)}
+${buildDemoSection(input.demographicBreakdown)}
+${competitive ? `\n${competitive}` : ""}`;
 }
 
 // ── Main Use-Case ───────────────────────────────────────────
@@ -305,11 +430,11 @@ ${archetypeString}
       { maxTokens: 800, temperature: 0.3, responseFormat: "json_object" },
     );
     return JSON.parse(result.content);
-  } catch (err) {
+  } catch (error) {
     throw new VideoInsightError(
       "EXTERNAL_FAILURE",
       "Failed to generate AI summary",
-      err,
+      error,
     );
   }
 }

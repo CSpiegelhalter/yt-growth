@@ -1,5 +1,7 @@
-import { prisma } from "@/prisma";
 import type { Prisma } from "@prisma/client";
+
+import { prisma } from "@/prisma";
+
 import { ThumbnailError } from "../errors";
 
 type UpdateProjectInput = {

@@ -14,7 +14,7 @@
  *   bun run test:e2e
  */
 
-import { spawn, execSync, type ChildProcess } from "child_process";
+import { type ChildProcess,execSync, spawn } from "child_process";
 
 const PORT = process.env.TEST_PORT || "3000";
 const BASE_URL = `http://localhost:${PORT}`;
@@ -131,7 +131,7 @@ async function waitForServer(): Promise<void> {
     }
 
     process.stdout.write(".");
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
   throw new Error(
@@ -158,7 +158,7 @@ async function cleanup(): Promise<void> {
     serverProcess.kill("SIGTERM");
 
     // Wait a moment for graceful shutdown
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Force kill if still running
     if (!serverProcess.killed) {
@@ -172,17 +172,21 @@ async function cleanup(): Promise<void> {
 }
 
 // Handle signals
-process.on("SIGINT", async () => {
-  console.log("\nReceived SIGINT, cleaning up...");
-  await cleanup();
-  process.exit(130);
+process.on("SIGINT", () => {
+  void (async () => {
+    console.log("\nReceived SIGINT, cleaning up...");
+    await cleanup();
+    process.exit(130);
+  })();
 });
 
-process.on("SIGTERM", async () => {
-  console.log("\nReceived SIGTERM, cleaning up...");
-  await cleanup();
-  process.exit(143);
+process.on("SIGTERM", () => {
+  void (async () => {
+    console.log("\nReceived SIGTERM, cleaning up...");
+    await cleanup();
+    process.exit(143);
+  })();
 });
 
 // Run
-main();
+void main();

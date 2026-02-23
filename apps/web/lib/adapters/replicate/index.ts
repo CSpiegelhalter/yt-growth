@@ -1,12 +1,11 @@
 export {
-  createPrediction,
-  getPrediction,
-  createTraining,
-  getTraining,
   createModel,
-  verifyModelVersion,
+  createPrediction,
+  createTraining,
   deleteModel,
+  getPrediction,
+  getTraining,
   uploadFile,
+  verifyModelVersion,
 } from "./client";
-
 export { verifyReplicateWebhook } from "./webhook";

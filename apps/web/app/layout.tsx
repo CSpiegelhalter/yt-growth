@@ -1,9 +1,11 @@
+import "@/app/globals.css";
+
+import { Analytics } from "@vercel/analytics/next";
+import type { Metadata, Viewport } from "next";
 import { Fustat, Inter } from "next/font/google";
+
 import { Providers } from "@/components/Providers";
 import { BRAND, CANONICAL_ORIGIN, STRUCTURED_DATA } from "@/lib/shared/brand";
-import { Analytics } from "@vercel/analytics/next";
-import "@/app/globals.css";
-import type { Metadata, Viewport } from "next";
 
 /**
  * next/font ensures fonts are self-hosted and preloaded,
@@ -106,7 +108,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
+      { url: "/logo.svg", type: "image/svg+xml", sizes: "any" },
+      { url: "/logo.png", type: "image/png", sizes: "512x512" },
     ],
     apple: "/apple-touch-icon.svg",
   },

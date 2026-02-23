@@ -9,10 +9,11 @@
 import "server-only";
 
 import { prisma } from "@/prisma";
+
 import type {
-  InferredNiche,
   CachedSearchResults,
   CompetitorVideoResult,
+  InferredNiche,
 } from "./types";
 
 // Cache TTLs
@@ -45,8 +46,8 @@ export async function getCachedSearchResults(
     }
 
     return cached.responseJson as unknown as CachedSearchResults;
-  } catch (err) {
-    console.warn("[SearchCache] Get error:", err);
+  } catch (error) {
+    console.warn("[SearchCache] Get error:", error);
     return null;
   }
 }
@@ -89,8 +90,8 @@ export async function setCachedSearchResults(
         cachedUntil,
       },
     });
-  } catch (err) {
-    console.warn("[SearchCache] Set error:", err);
+  } catch (error) {
+    console.warn("[SearchCache] Set error:", error);
     // Cache errors are not fatal
   }
 }

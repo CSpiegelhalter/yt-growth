@@ -12,19 +12,20 @@
  */
 
 import "server-only";
+
 import { z } from "zod";
 
-import { callLLM } from "@/lib/llm";
-import { logger } from "@/lib/shared/logger";
 import {
-  postKeywordsForKeywordsTask,
   getKeywordsForKeywordsTask,
-  postSearchVolumeTask,
   getSearchVolumeTask,
-  type RelatedKeywordRow,
   type KeywordMetrics,
+  postKeywordsForKeywordsTask,
+  postSearchVolumeTask,
+  type RelatedKeywordRow,
 } from "@/lib/dataforseo/client";
 import { validateLocation } from "@/lib/dataforseo/utils";
+import { callLLM } from "@/lib/llm";
+import { logger } from "@/lib/shared/logger";
 
 // ============================================
 // TYPES
@@ -86,7 +87,7 @@ const SEED_KEYWORD_COUNT_MAX = 20;
 const K4K_LIMIT = 500; // Max keywords from Keywords For Keywords
 const VOLUME_ENRICHMENT_TOP_N = 500; // Enrich top N candidates with search volume
 const VIDEO_IDEAS_COUNT = 12; // Number of video ideas to generate
-const TASK_POLL_MAX_WAIT_MS = 12000;
+const TASK_POLL_MAX_WAIT_MS = 12_000;
 const TASK_POLL_INTERVALS_MS = [500, 1000, 2000, 3000, 4000];
 
 // Forbidden categories for seed keywords (safety)
@@ -112,10 +113,10 @@ function sleep(ms: number): Promise<void> {
 function sanitizeTopicDescription(topic: string): string {
   // Remove potential prompt injection attempts
   let sanitized = topic
-    .replace(/```[\s\S]*?```/g, "") // Remove code blocks
-    .replace(/system:|user:|assistant:/gi, "") // Remove role markers
-    .replace(/ignore previous|forget everything|new instructions/gi, "") // Common injection patterns
-    .replace(/[<>{}[\]]/g, "") // Remove brackets that might be used for injection
+    .replaceAll(/```[\s\S]*?```/g, "") // Remove code blocks
+    .replaceAll(/system:|user:|assistant:/gi, "") // Remove role markers
+    .replaceAll(/ignore previous|forget everything|new instructions/gi, "") // Common injection patterns
+    .replaceAll(/[<>{}[\]]/g, "") // Remove brackets that might be used for injection
     .trim();
 
   // Limit length
@@ -160,7 +161,7 @@ function normalizeKeywords(keywords: string[]): string[] {
   const result: string[] = [];
 
   for (const kw of keywords) {
-    const normalized = kw.trim().toLowerCase().replace(/\s+/g, " ");
+    const normalized = kw.trim().toLowerCase().replaceAll(/\s+/g, " ");
     if (normalized && !seen.has(normalized)) {
       seen.add(normalized);
       result.push(normalized);
@@ -236,9 +237,9 @@ async function generateSeedKeywordsFromTopic(input: {
 
   const formatContext = formatPreference === "shorts"
     ? "Focus on topics suitable for short-form vertical video (under 60 seconds)."
-    : formatPreference === "longform"
+    : (formatPreference === "longform"
     ? "Focus on topics suitable for long-form content (8-20+ minutes)."
-    : "Include a mix of topics for both short-form and long-form content.";
+    : "Include a mix of topics for both short-form and long-form content.");
 
   const systemPrompt = `You are a YouTube keyword research expert. Generate seed keywords for discovering video ideas.
 
@@ -293,75 +294,81 @@ Return ONLY JSON: {"seed_keywords": [...]}`;
       }
     );
 
-    // Parse and validate
-    const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      logger.warn("keywords.ideas.seed_parse_failed", { response: response.content.slice(0, 200) });
-      return generateFallbackSeeds(sanitizedTopic);
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
-    const validated = SeedKeywordsSchema.safeParse(parsed);
-
-    if (!validated.success) {
-      logger.warn("keywords.ideas.seed_validation_failed", { error: validated.error.message });
-      return generateFallbackSeeds(sanitizedTopic);
-    }
-
-    // Filter valid keywords and normalize
-    const validKeywords = validated.data.seed_keywords
-      .filter(isValidSeedKeyword)
-      .map((k) => k.trim().toLowerCase());
-
-    const normalized = normalizeKeywords(validKeywords);
-
-    if (normalized.length < SEED_KEYWORD_COUNT_MIN) {
-      logger.warn("keywords.ideas.insufficient_seeds", { count: normalized.length });
-      // Supplement with fallback seeds
-      const fallback = generateFallbackSeeds(sanitizedTopic);
-      return normalizeKeywords([...normalized, ...fallback]).slice(0, SEED_KEYWORD_COUNT_MAX);
-    }
-
-    logger.info("keywords.ideas.seeds_generated", { count: normalized.length });
-    return normalized.slice(0, SEED_KEYWORD_COUNT_MAX);
-
-  } catch (err) {
-    logger.error("keywords.ideas.seed_generation_error", { error: String(err) });
-    // Retry once with stricter prompt
-    try {
-      const retryResponse = await callLLM(
-        [
-          {
-            role: "system",
-            content: `You are a keyword generator. Output ONLY a JSON object with seed_keywords array. No other text.
-Example: {"seed_keywords": ["how to cook pasta", "best budget camera", "photography tips"]}`,
-          },
-          {
-            role: "user",
-            content: `Generate 12 keyword phrases for: "${sanitizedTopic}"
-Output: {"seed_keywords": [...]}`,
-          },
-        ],
-        { temperature: 0.3, maxTokens: 500, responseFormat: "json_object" }
-      );
-
-      const retryMatch = retryResponse.content.match(/\{[\s\S]*\}/);
-      if (retryMatch) {
-        const retryParsed = JSON.parse(retryMatch[0]);
-        if (Array.isArray(retryParsed.seed_keywords)) {
-          const retryValid = retryParsed.seed_keywords
-            .filter(isValidSeedKeyword)
-            .map((k: string) => k.trim().toLowerCase());
-          if (retryValid.length >= 5) {
-            return normalizeKeywords(retryValid).slice(0, SEED_KEYWORD_COUNT_MAX);
-          }
-        }
-      }
-    } catch {
-      // Retry also failed
-    }
+    const result = parseSeedKeywordsResponse(response.content, sanitizedTopic);
+    if (result) {return result;}
 
     return generateFallbackSeeds(sanitizedTopic);
+  } catch (error) {
+    logger.error("keywords.ideas.seed_generation_error", { error: String(error) });
+
+    const retryResult = await retrySeedKeywordsGeneration(sanitizedTopic);
+    return retryResult ?? generateFallbackSeeds(sanitizedTopic);
+  }
+}
+
+function parseSeedKeywordsResponse(content: string, topic: string): string[] | null {
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    logger.warn("keywords.ideas.seed_parse_failed", { response: content.slice(0, 200) });
+    return null;
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]);
+  const validated = SeedKeywordsSchema.safeParse(parsed);
+
+  if (!validated.success) {
+    logger.warn("keywords.ideas.seed_validation_failed", { error: validated.error.message });
+    return null;
+  }
+
+  const validKeywords = validated.data.seed_keywords
+    .filter(isValidSeedKeyword)
+    .map((k) => k.trim().toLowerCase());
+  const normalized = normalizeKeywords(validKeywords);
+
+  if (normalized.length < SEED_KEYWORD_COUNT_MIN) {
+    logger.warn("keywords.ideas.insufficient_seeds", { count: normalized.length });
+    const fallback = generateFallbackSeeds(topic);
+    return normalizeKeywords([...normalized, ...fallback]).slice(0, SEED_KEYWORD_COUNT_MAX);
+  }
+
+  logger.info("keywords.ideas.seeds_generated", { count: normalized.length });
+  return normalized.slice(0, SEED_KEYWORD_COUNT_MAX);
+}
+
+async function retrySeedKeywordsGeneration(topic: string): Promise<string[] | null> {
+  try {
+    const retryResponse = await callLLM(
+      [
+        {
+          role: "system",
+          content: `You are a keyword generator. Output ONLY a JSON object with seed_keywords array. No other text.
+Example: {"seed_keywords": ["how to cook pasta", "best budget camera", "photography tips"]}`,
+        },
+        {
+          role: "user",
+          content: `Generate 12 keyword phrases for: "${topic}"
+Output: {"seed_keywords": [...]}`,
+        },
+      ],
+      { temperature: 0.3, maxTokens: 500, responseFormat: "json_object" }
+    );
+
+    const retryMatch = retryResponse.content.match(/\{[\s\S]*\}/);
+    if (!retryMatch) {return null;}
+
+    const retryParsed = JSON.parse(retryMatch[0]);
+    if (!Array.isArray(retryParsed.seed_keywords)) {return null;}
+
+    const retryValid = retryParsed.seed_keywords
+      .filter(isValidSeedKeyword)
+      .map((k: string) => k.trim().toLowerCase());
+
+    return retryValid.length >= 5
+      ? normalizeKeywords(retryValid).slice(0, SEED_KEYWORD_COUNT_MAX)
+      : null;
+  } catch {
+    return null;
   }
 }
 
@@ -470,8 +477,8 @@ async function enrichWithSearchVolume(
 
         attemptIndex++;
       }
-    } catch (err) {
-      logger.warn("keywords.ideas.volume_chunk_failed", { error: String(err) });
+    } catch (error) {
+      logger.warn("keywords.ideas.volume_chunk_failed", { error: String(error) });
     }
   }
 
@@ -561,8 +568,10 @@ async function generateVideoIdeasFromKeywordData(input: {
     .map((k) => {
       const volumeStr = k.searchVolume > 0 ? `vol: ${k.searchVolume.toLocaleString()}` : "vol: unknown";
       const compStr = k.competitionIndex > 0 ? `comp: ${k.competitionIndex}` : "";
-      const trendStr = k.trend.length > 0
-        ? (k.trend[k.trend.length - 1] > k.trend[0] ? "↑ rising" : k.trend[k.trend.length - 1] < k.trend[0] ? "↓ declining" : "→ stable")
+      const lastTrend = k.trend.at(-1);
+      const firstTrend = k.trend[0];
+      const trendStr = k.trend.length > 0 && lastTrend !== undefined && firstTrend !== undefined
+        ? (lastTrend > firstTrend ? "↑ rising" : lastTrend < firstTrend ? "↓ declining" : "→ stable")
         : "";
       return `- "${k.keyword}" (${[volumeStr, compStr, trendStr].filter(Boolean).join(", ")})`;
     })
@@ -570,9 +579,9 @@ async function generateVideoIdeasFromKeywordData(input: {
 
   const formatInstructions = formatPreference === "shorts"
     ? "Generate ALL ideas for YouTube Shorts format (under 60 seconds, vertical video)."
-    : formatPreference === "longform"
+    : (formatPreference === "longform"
     ? "Generate ALL ideas for long-form format (8-20+ minutes)."
-    : "Generate a MIX of ideas: about half for Shorts, half for long-form.";
+    : "Generate a MIX of ideas: about half for Shorts, half for long-form.");
 
   const audienceInstructions = audienceLevel !== "all"
     ? `Target audience: ${audienceLevel} level. Adjust complexity and depth accordingly.`
@@ -676,62 +685,75 @@ Return ONLY JSON.`;
     logger.info("keywords.ideas.video_ideas_generated", { count: ideas.length });
     return ideas;
 
-  } catch (err) {
-    logger.error("keywords.ideas.video_ideas_error", { error: String(err) });
+  } catch (error) {
+    logger.error("keywords.ideas.video_ideas_error", { error: String(error) });
 
-    // Retry with simpler prompt
-    try {
-      const retryResponse = await callLLM(
-        [
-          {
-            role: "system",
-            content: `Generate video ideas. Output ONLY JSON: {"ideas": [{title, hook, format, target_keyword, why_it_wins, outline, seo_notes}]}`,
-          },
-          {
-            role: "user",
-            content: `Topic: "${sanitizedTopic}". Keywords: ${topKeywords.slice(0, 10).map(k => k.keyword).join(", ")}. Generate 6 ideas.`,
-          },
-        ],
-        { temperature: 0.5, maxTokens: 2000, responseFormat: "json_object" }
+    const retryResult = await retryVideoIdeasGeneration(sanitizedTopic, topKeywords);
+    return retryResult ?? generateFallbackVideoIdeas(topKeywords, formatPreference);
+  }
+}
+
+type RawIdeaFromLlm = {
+  title?: string;
+  hook?: string;
+  format?: string;
+  target_keyword?: string;
+  why_it_wins?: string;
+  outline?: string[];
+  seo_notes?: {
+    primary_keyword?: string;
+    supporting_keywords?: string[];
+  };
+};
+
+function mapRawIdeaToVideoIdea(idea: RawIdeaFromLlm, index: number, fallbackKeyword: string): VideoIdea {
+  return {
+    id: `idea-${index + 1}`,
+    title: idea.title || `Video about ${fallbackKeyword}`,
+    hook: idea.hook || "Let me show you something interesting...",
+    format: idea.format === "shorts" ? "shorts" : "longform",
+    targetKeyword: idea.target_keyword || fallbackKeyword,
+    whyItWins: idea.why_it_wins || "Targets a relevant keyword with search demand",
+    outline: Array.isArray(idea.outline) ? idea.outline : ["Introduction", "Main content", "Conclusion"],
+    seoNotes: {
+      primaryKeyword: idea.seo_notes?.primary_keyword || idea.target_keyword || "",
+      supportingKeywords: Array.isArray(idea.seo_notes?.supporting_keywords) ? idea.seo_notes.supporting_keywords : [],
+    },
+  };
+}
+
+async function retryVideoIdeasGeneration(
+  topic: string,
+  topKeywords: EnrichedKeyword[],
+): Promise<VideoIdea[] | null> {
+  try {
+    const retryResponse = await callLLM(
+      [
+        {
+          role: "system",
+          content: `Generate video ideas. Output ONLY JSON: {"ideas": [{title, hook, format, target_keyword, why_it_wins, outline, seo_notes}]}`,
+        },
+        {
+          role: "user",
+          content: `Topic: "${topic}". Keywords: ${topKeywords.slice(0, 10).map(k => k.keyword).join(", ")}. Generate 6 ideas.`,
+        },
+      ],
+      { temperature: 0.5, maxTokens: 2000, responseFormat: "json_object" }
+    );
+
+    const retryMatch = retryResponse.content.match(/\{[\s\S]*\}/);
+    if (!retryMatch) {return null;}
+
+    const retryParsed = JSON.parse(retryMatch[0]);
+    if (!Array.isArray(retryParsed.ideas)) {return null;}
+
+    return retryParsed.ideas
+      .slice(0, VIDEO_IDEAS_COUNT)
+      .map((idea: RawIdeaFromLlm, index: number) =>
+        mapRawIdeaToVideoIdea(idea, index, topKeywords[index]?.keyword || "this topic")
       );
-
-      const retryMatch = retryResponse.content.match(/\{[\s\S]*\}/);
-      if (retryMatch) {
-        const retryParsed = JSON.parse(retryMatch[0]);
-        if (Array.isArray(retryParsed.ideas)) {
-          type RawIdeaFromLlm = {
-            title?: string;
-            hook?: string;
-            format?: string;
-            target_keyword?: string;
-            why_it_wins?: string;
-            outline?: string[];
-            seo_notes?: {
-              primary_keyword?: string;
-              supporting_keywords?: string[];
-            };
-          };
-
-          return retryParsed.ideas.slice(0, VIDEO_IDEAS_COUNT).map((idea: RawIdeaFromLlm, index: number) => ({
-            id: `idea-${index + 1}`,
-            title: idea.title || `Video about ${topKeywords[index]?.keyword || "this topic"}`,
-            hook: idea.hook || "Let me show you something interesting...",
-            format: idea.format === "shorts" ? "shorts" : "longform",
-            targetKeyword: idea.target_keyword || topKeywords[index]?.keyword || "",
-            whyItWins: idea.why_it_wins || "Targets a relevant keyword with search demand",
-            outline: Array.isArray(idea.outline) ? idea.outline : ["Introduction", "Main content", "Conclusion"],
-            seoNotes: {
-              primaryKeyword: idea.seo_notes?.primary_keyword || idea.target_keyword || "",
-              supportingKeywords: Array.isArray(idea.seo_notes?.supporting_keywords) ? idea.seo_notes.supporting_keywords : [],
-            },
-          }));
-        }
-      }
-    } catch {
-      // Retry also failed
-    }
-
-    return generateFallbackVideoIdeas(topKeywords, formatPreference);
+  } catch {
+    return null;
   }
 }
 
@@ -762,9 +784,9 @@ function generateFallbackVideoIdeas(
     const template = templates[i % templates.length];
     const format = formatPreference === "mixed"
       ? template.format
-      : formatPreference === "shorts"
+      : (formatPreference === "shorts"
       ? "shorts"
-      : "longform";
+      : "longform");
 
     const title = template.prefix
       ? `${template.prefix} ${kw.keyword}${template.suffix ? ` ${  template.suffix}` : ""}`
@@ -829,8 +851,8 @@ export async function generateVideoIdeasFromTopic(
   let k4kResults: RelatedKeywordRow[] = [];
   try {
     k4kResults = await fetchKeywordsForKeywords(seedKeywords, locationCode);
-  } catch (err) {
-    logger.error("keywords.ideas.k4k_failed", { error: String(err) });
+  } catch (error) {
+    logger.error("keywords.ideas.k4k_failed", { error: String(error) });
     // Continue with seed keywords only
   }
 
@@ -844,8 +866,8 @@ export async function generateVideoIdeasFromTopic(
   let volumeData = new Map<string, KeywordMetrics>();
   try {
     volumeData = await enrichWithSearchVolume(keywordsToEnrich, locationCode);
-  } catch (err) {
-    logger.error("keywords.ideas.volume_failed", { error: String(err) });
+  } catch (error) {
+    logger.error("keywords.ideas.volume_failed", { error: String(error) });
     // Continue without volume data
   }
 

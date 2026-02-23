@@ -1,9 +1,11 @@
 /**
  * Unit tests for fetchVideoSnippetByApiKey (API-key-based video snippet fetcher)
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchVideoSnippetByApiKey } from "../youtube/data-api";
+import { afterEach,beforeEach, describe, expect, it, vi } from "vitest";
+
 import { ApiError } from "@/lib/api/errors";
+
+import { fetchVideoSnippetByApiKey } from "../youtube/data-api";
 
 const FAKE_API_KEY = "test-api-key-123";
 

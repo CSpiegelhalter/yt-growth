@@ -1,16 +1,57 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
-import { Group, Line, Circle, Shape } from "react-konva";
 import type Konva from "konva";
-import type { ArrowObject } from "../types";
+import { useCallback, useMemo, useRef } from "react";
+import { Circle, Group, Line, Shape } from "react-konva";
+
 import { MIN_HIT_STROKE_WIDTH } from "../constants";
+import type { ArrowObject } from "../types";
 
 interface ArrowLayerProps {
   obj: ArrowObject;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (patch: Partial<ArrowObject>) => void;
+}
+
+function ArrowControlPoints({
+  points,
+  onPointDrag,
+}: {
+  points: number[];
+  onPointDrag: (index: number, x: number, y: number) => void;
+}) {
+  return (
+    <>
+      {points.map((_, i) =>
+        i % 2 === 0 ? (
+          <Circle
+            key={`pt-${i}`}
+            x={points[i]}
+            y={points[i + 1]}
+            radius={i === 0 || i === points.length - 2 ? 12 : 9}
+            fill={i === 0 || i === points.length - 2 ? "#fff" : "#93c5fd"}
+            stroke="#3b82f6"
+            strokeWidth={2}
+            draggable
+            onDragMove={(e) => {
+              e.cancelBubble = true;
+              onPointDrag(i / 2, e.target.x(), e.target.y());
+            }}
+            onDragEnd={(e) => {
+              e.cancelBubble = true;
+            }}
+          />
+        ) : null
+      )}
+    </>
+  );
+}
+
+function getArrowShadowProps(obj: ArrowObject) {
+  return obj.shadowEnabled
+    ? { shadowEnabled: true, shadowColor: obj.shadowColor, shadowBlur: obj.shadowBlur }
+    : { shadowEnabled: false, shadowColor: undefined, shadowBlur: undefined };
 }
 
 /**
@@ -28,14 +69,14 @@ export function ArrowLayer({ obj, isSelected, onSelect, onChange }: ArrowLayerPr
   const arrowhead = useMemo(() => {
     if (points.length < 4) {return null;}
     
-    const endX = points[points.length - 2];
-    const endY = points[points.length - 1];
-    const prevX = points[points.length - 4];
-    const prevY = points[points.length - 3];
+    const endX = points.at(-2) ?? 0;
+    const endY = points.at(-1) ?? 0;
+    const prevX = points.at(-4) ?? 0;
+    const prevY = points.at(-3) ?? 0;
     
     const dx = endX - prevX;
     const dy = endY - prevY;
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const len = Math.hypot(dx, dy) || 1;
     const dirX = dx / len;
     const dirY = dy / len;
     
@@ -221,7 +262,7 @@ export function ArrowLayer({ obj, isSelected, onSelect, onChange }: ArrowLayerPr
 
               const segDx = x2 - x1;
               const segDy = y2 - y1;
-              const segLen = Math.sqrt(segDx * segDx + segDy * segDy) || 1;
+              const segLen = Math.hypot(segDx, segDy) || 1;
               const perpSegX = -segDy / segLen;
               const perpSegY = segDx / segLen;
 
@@ -244,7 +285,7 @@ export function ArrowLayer({ obj, isSelected, onSelect, onChange }: ArrowLayerPr
 
               const segDx = x2 - x1;
               const segDy = y2 - y1;
-              const segLen = Math.sqrt(segDx * segDx + segDy * segDy) || 1;
+              const segLen = Math.hypot(segDx, segDy) || 1;
               const perpSegX = -segDy / segLen;
               const perpSegY = segDx / segLen;
 
@@ -259,9 +300,7 @@ export function ArrowLayer({ obj, isSelected, onSelect, onChange }: ArrowLayerPr
           }}
           fill={obj.color}
           opacity={obj.opacity}
-          shadowColor={obj.shadowEnabled ? obj.shadowColor : undefined}
-          shadowBlur={obj.shadowEnabled ? obj.shadowBlur : undefined}
-          shadowEnabled={obj.shadowEnabled}
+          {...getArrowShadowProps(obj)}
           hitStrokeWidth={hitStrokeWidth}
         />
       ) : (
@@ -274,9 +313,7 @@ export function ArrowLayer({ obj, isSelected, onSelect, onChange }: ArrowLayerPr
           tension={curveTension}
           dash={dash}
           opacity={obj.opacity}
-          shadowColor={obj.shadowEnabled ? obj.shadowColor : undefined}
-          shadowBlur={obj.shadowEnabled ? obj.shadowBlur : undefined}
-          shadowEnabled={obj.shadowEnabled}
+          {...getArrowShadowProps(obj)}
           hitStrokeWidth={hitStrokeWidth}
         />
       )}
@@ -292,36 +329,15 @@ export function ArrowLayer({ obj, isSelected, onSelect, onChange }: ArrowLayerPr
           closed
           fill={obj.color}
           opacity={obj.opacity}
-          shadowColor={obj.shadowEnabled ? obj.shadowColor : undefined}
-          shadowBlur={obj.shadowEnabled ? obj.shadowBlur : undefined}
-          shadowEnabled={obj.shadowEnabled}
+          {...getArrowShadowProps(obj)}
           listening={false}
         />
       )}
 
       {/* Control points when selected */}
-      {isSelected &&
-        points.map((_, i) =>
-          i % 2 === 0 ? (
-            <Circle
-              key={`pt-${i}`}
-              x={points[i]}
-              y={points[i + 1]}
-              radius={i === 0 || i === points.length - 2 ? 12 : 9}
-              fill={i === 0 || i === points.length - 2 ? "#fff" : "#93c5fd"}
-              stroke="#3b82f6"
-              strokeWidth={2}
-              draggable
-              onDragMove={(e) => {
-                e.cancelBubble = true; // Prevent group drag
-                handlePointDrag(i / 2, e.target.x(), e.target.y());
-              }}
-              onDragEnd={(e) => {
-                e.cancelBubble = true;
-              }}
-            />
-          ) : null
-        )}
+      {isSelected && (
+        <ArrowControlPoints points={points} onPointDrag={handlePointDrag} />
+      )}
     </Group>
   );
 }

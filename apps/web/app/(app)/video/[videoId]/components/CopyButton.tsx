@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+
 import s from "../style.module.css";
 
 type CopyButtonProps = {

@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
+
 import { CANONICAL_ORIGIN } from "@/lib/shared/brand";
+
 import { LEARN_ARTICLES } from "./(marketing)/learn/articles";
 
 /**
@@ -38,7 +40,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: baseUrl,
       lastModified: new Date("2026-01-02"),
       changeFrequency: "weekly",
-      priority: 1.0,
+      priority: 1,
     },
     // Learn hub - high priority for SEO
     {

@@ -1,7 +1,7 @@
 "use client";
 
+import { BulletList, InsightCard, NextSteps } from "../ui";
 import styles from "./panels.module.css";
-import { InsightCard, BulletList, NextSteps } from "../ui";
 
 type CommentsData = {
   noComments?: boolean;
@@ -33,111 +33,31 @@ export function CommentsPanel({
   error,
   channelId,
 }: CommentsPanelProps) {
-  if (loading) {
-    return (
-      <InsightCard title="Comment insights">
-        <div className={styles.loadingState}>
-          <div className={styles.loadingSpinner} />
-          <p>Analyzing viewer comments</p>
-        </div>
-      </InsightCard>
-    );
+  if (loading) {return <CommentsLoading />;}
+  if (isPermissionError(error)) {
+    return <CommentsPermissionError channelId={channelId} />;
   }
+  if (error) {return <CommentsError error={error} />;}
+  if (!data || data.noComments) {return <CommentsEmpty />;}
 
-  // Check for permission error
-  if (error?.toLowerCase().includes("google access")) {
-    return (
-      <InsightCard title="Comment insights">
-        <div className={styles.permissionError}>
-          <p className={styles.permissionTitle}>Google connection issue</p>
-          <p className={styles.permissionDesc}>
-            We tried to refresh your connection automatically. 
-            Please reconnect with the Google account that owns this channel.
-          </p>
-          <a
-            href={`/api/integrations/google/start?channelId=${encodeURIComponent(channelId)}`}
-            className={styles.reconnectBtn}
-          >
-            Connect Google Account
-          </a>
-        </div>
-      </InsightCard>
-    );
-  }
+  return <CommentsContent data={data} />;
+}
 
-  if (error) {
-    return (
-      <InsightCard title="Comment insights">
-        <div className={styles.errorState}>
-          <p>{error}</p>
-        </div>
-      </InsightCard>
-    );
-  }
+function isPermissionError(error: string | null): boolean {
+  return error != null && error.toLowerCase().includes("google access");
+}
 
-  if (!data || data.noComments) {
-    return (
-      <InsightCard title="Comment insights">
-        <div className={styles.emptyState}>
-          <p className={styles.emptyTitle}>No comments available</p>
-          <p className={styles.emptyDesc}>
-            This video doesn&apos;t have comments yet, or comments may be disabled.
-          </p>
-        </div>
-      </InsightCard>
-    );
-  }
-
+function CommentsContent({ data }: { data: CommentsData }) {
   const sentiment = data.sentiment;
   const themes = data.themes ?? [];
   const viewerLoved = data.viewerLoved ?? [];
   const viewerAskedFor = data.viewerAskedFor ?? [];
   const hookInspiration = data.hookInspiration ?? [];
 
-  // Determine overall sentiment status
-  const sentimentStatus = sentiment
-    ? sentiment.positive > 60 ? "strong"
-    : sentiment.negative > 30 ? "needs-work"
-    : "mixed"
-    : "neutral";
-
   return (
     <div className={styles.panelStack}>
-      {/* Sentiment Overview */}
-      {sentiment && (
-        <InsightCard
-          title="Audience sentiment"
-          status={sentimentStatus as "strong" | "mixed" | "needs-work"}
-        >
-          <div className={styles.sentimentBar}>
-            <div
-              className={styles.sentimentPos}
-              style={{ width: `${sentiment.positive}%` }}
-            />
-            <div
-              className={styles.sentimentNeutral}
-              style={{ width: `${sentiment.neutral}%` }}
-            />
-            <div
-              className={styles.sentimentNeg}
-              style={{ width: `${sentiment.negative}%` }}
-            />
-          </div>
-          <div className={styles.sentimentLabels}>
-            <span className={styles.sentimentLabelPos}>
-              Positive {sentiment.positive}%
-            </span>
-            <span className={styles.sentimentLabelNeutral}>
-              Neutral {sentiment.neutral}%
-            </span>
-            <span className={styles.sentimentLabelNeg}>
-              Negative {sentiment.negative}%
-            </span>
-          </div>
-        </InsightCard>
-      )}
+      {sentiment && <SentimentCard sentiment={sentiment} />}
 
-      {/* Common Themes */}
       {themes.length > 0 && (
         <InsightCard title="Common themes">
           <div className={styles.themeChips}>
@@ -151,14 +71,12 @@ export function CommentsPanel({
         </InsightCard>
       )}
 
-      {/* What Viewers Loved */}
       {viewerLoved.length > 0 && (
         <InsightCard title="What resonated">
           <BulletList type="positive" items={viewerLoved} />
         </InsightCard>
       )}
 
-      {/* Content Requests */}
       {viewerAskedFor.length > 0 && (
         <InsightCard title="Audience requests">
           <BulletList type="neutral" items={viewerAskedFor} />
@@ -171,7 +89,6 @@ export function CommentsPanel({
         </InsightCard>
       )}
 
-      {/* Hook-Worthy Quotes */}
       {hookInspiration.length > 0 && (
         <InsightCard title="Quotable moments">
           <div className={styles.quoteList}>
@@ -184,5 +101,105 @@ export function CommentsPanel({
         </InsightCard>
       )}
     </div>
+  );
+}
+
+function getSentimentStatus(sentiment: NonNullable<CommentsData["sentiment"]>) {
+  if (sentiment.positive > 60) {return "strong" as const;}
+  if (sentiment.negative > 30) {return "needs-work" as const;}
+  return "mixed" as const;
+}
+
+function SentimentCard({
+  sentiment,
+}: {
+  sentiment: NonNullable<CommentsData["sentiment"]>;
+}) {
+  return (
+    <InsightCard
+      title="Audience sentiment"
+      status={getSentimentStatus(sentiment)}
+    >
+      <div className={styles.sentimentBar}>
+        <div
+          className={styles.sentimentPos}
+          style={{ width: `${sentiment.positive}%` }}
+        />
+        <div
+          className={styles.sentimentNeutral}
+          style={{ width: `${sentiment.neutral}%` }}
+        />
+        <div
+          className={styles.sentimentNeg}
+          style={{ width: `${sentiment.negative}%` }}
+        />
+      </div>
+      <div className={styles.sentimentLabels}>
+        <span className={styles.sentimentLabelPos}>
+          Positive {sentiment.positive}%
+        </span>
+        <span className={styles.sentimentLabelNeutral}>
+          Neutral {sentiment.neutral}%
+        </span>
+        <span className={styles.sentimentLabelNeg}>
+          Negative {sentiment.negative}%
+        </span>
+      </div>
+    </InsightCard>
+  );
+}
+
+function CommentsLoading() {
+  return (
+    <InsightCard title="Comment insights">
+      <div className={styles.loadingState}>
+        <div className={styles.loadingSpinner} />
+        <p>Analyzing viewer comments</p>
+      </div>
+    </InsightCard>
+  );
+}
+
+function CommentsPermissionError({ channelId }: { channelId: string }) {
+  return (
+    <InsightCard title="Comment insights">
+      <div className={styles.permissionError}>
+        <p className={styles.permissionTitle}>Google connection issue</p>
+        <p className={styles.permissionDesc}>
+          We tried to refresh your connection automatically. Please reconnect
+          with the Google account that owns this channel.
+        </p>
+        <a
+          href={`/api/integrations/google/start?channelId=${encodeURIComponent(channelId)}`}
+          className={styles.reconnectBtn}
+        >
+          Connect Google Account
+        </a>
+      </div>
+    </InsightCard>
+  );
+}
+
+function CommentsError({ error }: { error: string }) {
+  return (
+    <InsightCard title="Comment insights">
+      <div className={styles.errorState}>
+        <p>{error}</p>
+      </div>
+    </InsightCard>
+  );
+}
+
+function CommentsEmpty() {
+  return (
+    <InsightCard title="Comment insights">
+      <div className={styles.emptyState}>
+        <p className={styles.emptyTitle}>No comments available</p>
+        <p className={styles.emptyDesc}>
+          This video doesn&apos;t have comments yet, or comments may be
+          disabled.
+        </p>
+      </div>
+    </InsightCard>
   );
 }

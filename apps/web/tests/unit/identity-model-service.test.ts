@@ -1,5 +1,15 @@
-import { describe, test, expect, beforeEach, mock } from "bun:test";
+import { beforeEach, describe, expect, mock,test } from "bun:test";
 import crypto from "crypto";
+
+// Import after mocks are set up
+import {
+  canTrain,
+  checkNeedsInvalidation,
+  computeDatasetHash,
+  handleDatasetChange,
+  handleTrainingComplete,
+  MIN_TRAINING_PHOTOS,
+} from "@/lib/features/identity";
 
 /**
  * Tests for the identity model service.
@@ -46,31 +56,21 @@ const mockPrisma = {
 const mockDeleteModel = mock<() => Promise<void>>(() => Promise.resolve());
 
 // Mock modules
-mock.module("@/prisma", () => ({
+void mock.module("@/prisma", () => ({
   prisma: mockPrisma,
 }));
 
-mock.module("@/lib/replicate/client", () => ({
+void mock.module("@/lib/replicate/client", () => ({
   deleteModel: mockDeleteModel,
 }));
 
-mock.module("@/lib/shared/logger", () => ({
+void mock.module("@/lib/shared/logger", () => ({
   createLogger: () => ({
     info: () => {},
     warn: () => {},
     error: () => {},
   }),
 }));
-
-// Import after mocks are set up
-import {
-  computeDatasetHash,
-  checkNeedsInvalidation,
-  handleDatasetChange,
-  handleTrainingComplete,
-  canTrain,
-  MIN_TRAINING_PHOTOS,
-} from "@/lib/features/identity";
 
 describe("computeDatasetHash", () => {
   beforeEach(() => {

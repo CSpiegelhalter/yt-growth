@@ -1,4 +1,4 @@
-import type { ChannelProfileInput, ChannelProfileAI } from "./schemas";
+import type { ChannelProfileAI,ChannelProfileInput } from "./schemas";
 
 // ── Constants ───────────────────────────────────────────────────
 

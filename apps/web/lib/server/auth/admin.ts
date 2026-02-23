@@ -17,7 +17,7 @@ export function isAdminUser(user: AuthUser | null): boolean {
     {return true;}
 
   const adminIds = new Set(
-    parseCsv(process.env.ADMIN_USER_IDS).map((id) => Number(id)).filter(Number.isFinite)
+    parseCsv(process.env.ADMIN_USER_IDS).map(Number).filter(Number.isFinite)
   );
   if (adminIds.size > 0 && adminIds.has(user.id)) {return true;}
 

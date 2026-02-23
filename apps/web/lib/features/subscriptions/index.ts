@@ -1,15 +1,15 @@
 // Types (only what's currently consumed by feature callers)
 export type {
-  Plan,
-  FeatureKey,
   EntitlementError,
+  FeatureKey,
+  Plan,
   UsageCheckResult,
 } from "./types";
 
 // Use-cases — checkEntitlement
 export {
-  checkEntitlement,
   checkChannelLimit,
+  checkEntitlement,
 } from "./use-cases/checkEntitlement";
 
 // Use-cases — getUserProfile

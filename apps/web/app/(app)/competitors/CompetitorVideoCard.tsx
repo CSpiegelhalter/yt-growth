@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+
 import { formatCompact, formatCompactFloored } from "@/lib/shared/format";
 import type { CompetitorVideo } from "@/types/api";
-import { formatDate } from "./utils";
+
 import s from "./style.module.css";
+import { formatDate } from "./utils";
 
 type Props = {
   video: CompetitorVideo;

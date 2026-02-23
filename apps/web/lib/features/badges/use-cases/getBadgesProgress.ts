@@ -1,49 +1,100 @@
 import { prisma } from "@/prisma";
-import {
-  computeAllBadgesProgress,
-  computeAllGoalsProgress,
-  calculatePostingStreakWeeks,
-  checkMetricAvailability,
-  getNextBadge,
-  getBadgeSummary,
-} from "./computeBadges";
+
 import type {
-  VideoForBadges,
+  BadgesApiResponse,
   ChannelStatsForBadges,
   UnlockedBadge,
-  BadgesApiResponse,
+  VideoForBadges,
 } from "../types";
+import {
+  calculatePostingStreakWeeks,
+  checkMetricAvailability,
+  computeAllBadgesProgress,
+  computeAllGoalsProgress,
+  getBadgeSummary,
+  getNextBadge,
+} from "./computeBadges";
 
 type GetBadgesInput = {
   userId: number;
   channelId?: string;
 };
 
+async function resolveChannelDbId(
+  userId: number,
+  channelId: string,
+): Promise<number | null> {
+  const channel = await prisma.channel.findFirst({
+    where: { userId, youtubeChannelId: channelId },
+    select: { id: true },
+  });
+  return channel?.id ?? null;
+}
+
+async function loadChannelStats(
+  channelDbId: number,
+): Promise<ChannelStatsForBadges> {
+  const channel = await prisma.channel.findUnique({
+    where: { id: channelDbId },
+    select: { totalVideoCount: true, subscriberCount: true },
+  });
+  return {
+    totalVideoCount: channel?.totalVideoCount ?? null,
+    subscriberCount: channel?.subscriberCount ?? null,
+  };
+}
+
+type VideoMetricsInput = {
+  views: number | null;
+  likes: number | null;
+  comments: number | null;
+  shares: number | null;
+  subscribersGained: number | null;
+  subscribersLost: number | null;
+  estimatedMinutesWatched: number | null;
+  averageViewDuration: number | null;
+  averageViewPercentage: number | null;
+};
+
+function mapVideoMetrics(m: VideoMetricsInput | null | undefined) {
+  if (!m) {
+    return {
+      views: null,
+      likes: null,
+      comments: null,
+      shares: null,
+      subscribersGained: null,
+      subscribersLost: null,
+      estimatedMinutesWatched: null,
+      averageViewDuration: null,
+      averageViewPercentage: null,
+    };
+  }
+  return {
+    views: m.views ?? null,
+    likes: m.likes ?? null,
+    comments: m.comments ?? null,
+    shares: m.shares ?? null,
+    subscribersGained: m.subscribersGained ?? null,
+    subscribersLost: m.subscribersLost ?? null,
+    estimatedMinutesWatched: m.estimatedMinutesWatched ?? null,
+    averageViewDuration: m.averageViewDuration ?? null,
+    averageViewPercentage: m.averageViewPercentage ?? null,
+  };
+}
+
 export async function getBadgesProgress(
   input: GetBadgesInput,
 ): Promise<BadgesApiResponse> {
   const { userId, channelId: channelIdParam } = input;
 
-  let channelDbId: number | null = null;
-  if (channelIdParam) {
-    const channel = await prisma.channel.findFirst({
-      where: { userId, youtubeChannelId: channelIdParam },
-      select: { id: true },
-    });
-    channelDbId = channel?.id ?? null;
-  }
+  const channelDbId = channelIdParam
+    ? await resolveChannelDbId(userId, channelIdParam)
+    : null;
 
-  let channelStats: ChannelStatsForBadges | undefined;
-  if (channelDbId) {
-    const channel = await prisma.channel.findUnique({
-      where: { id: channelDbId },
-      select: { totalVideoCount: true, subscriberCount: true },
-    });
-    channelStats = {
-      totalVideoCount: channel?.totalVideoCount ?? null,
-      subscriberCount: channel?.subscriberCount ?? null,
-    };
-  }
+  const channelStats = channelDbId
+    ? await loadChannelStats(channelDbId)
+    : undefined;
 
   let videos: VideoForBadges[] = [];
   if (channelDbId) {
@@ -56,15 +107,7 @@ export async function getBadgesProgress(
     videos = dbVideos.map((v) => ({
       publishedAt: v.publishedAt?.toISOString() ?? null,
       durationSec: v.durationSec,
-      views: v.VideoMetrics?.views ?? null,
-      likes: v.VideoMetrics?.likes ?? null,
-      comments: v.VideoMetrics?.comments ?? null,
-      shares: v.VideoMetrics?.shares ?? null,
-      subscribersGained: v.VideoMetrics?.subscribersGained ?? null,
-      subscribersLost: v.VideoMetrics?.subscribersLost ?? null,
-      estimatedMinutesWatched: v.VideoMetrics?.estimatedMinutesWatched ?? null,
-      averageViewDuration: v.VideoMetrics?.averageViewDuration ?? null,
-      averageViewPercentage: v.VideoMetrics?.averageViewPercentage ?? null,
+      ...mapVideoMetrics(v.VideoMetrics),
       impressions: null,
       ctr: null,
     }));
@@ -91,7 +134,7 @@ export async function getBadgesProgress(
   for (const badge of badgesWithProgress) {
     if (
       badge.progress.isUnlocked &&
-      !unlockedBadges.find((b) => b.badgeId === badge.id)
+      !unlockedBadges.some((b) => b.badgeId === badge.id)
     ) {
       newUnlocks.push(badge.id);
     }

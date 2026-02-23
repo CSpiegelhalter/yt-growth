@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect, type FormEvent } from "react";
-import { validateYouTubeUrl, validateNicheText } from "./utils";
+import { type FormEvent,useCallback, useEffect, useState } from "react";
+
 import s from "./style.module.css";
+import { validateNicheText,validateYouTubeUrl } from "./utils";
 
 type Props = {
   onSearch: (nicheText: string, referenceVideoUrl: string) => void;

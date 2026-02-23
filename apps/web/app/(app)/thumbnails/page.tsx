@@ -5,9 +5,11 @@
  * Protected by the "thumbnail_generation" feature flag.
  */
 
-import { redirect, notFound } from "next/navigation";
+import { notFound,redirect } from "next/navigation";
+
 import { getCurrentUserWithSubscription } from "@/lib/server/auth";
 import { getFeatureFlag } from "@/lib/shared/feature-flags";
+
 import ThumbnailsClient from "./ThumbnailsClient";
 
 export const metadata = {

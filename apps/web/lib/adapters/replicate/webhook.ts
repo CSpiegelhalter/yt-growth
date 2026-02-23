@@ -9,9 +9,11 @@
  */
 
 import "server-only";
+
 import crypto from "crypto";
-import { timingSafeEqualHex } from "@/lib/shared/crypto";
+
 import type { WebhookVerificationInput } from "@/lib/ports/ReplicatePort";
+import { timingSafeEqualHex } from "@/lib/shared/crypto";
 
 const TOLERANCE_SECONDS = 5 * 60;
 

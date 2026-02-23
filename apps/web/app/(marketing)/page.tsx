@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND, FEATURES } from "@/lib/shared/brand";
-import { HOME_CONTENT } from "@/lib/content/home";
+
 import { HeroStaticCTAs } from "@/components/HeroStaticCTAs";
+import { HOME_CONTENT } from "@/lib/content/home";
+import { BRAND, FEATURES } from "@/lib/shared/brand";
+
 import { LEARN_ARTICLES } from "./learn/articles";
 
 export const metadata: Metadata = {

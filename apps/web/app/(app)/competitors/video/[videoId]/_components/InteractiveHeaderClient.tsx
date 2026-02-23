@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback, memo, useMemo } from "react";
+import { memo, useCallback, useMemo,useState } from "react";
+
 import { copyToClipboard } from "@/components/ui/Toast";
 import type { CompetitorCommentsAnalysis } from "@/types/api";
+
 import s from "../style.module.css";
 
 /* ============================================
@@ -138,6 +140,65 @@ export const TagsSection = memo(function TagsSection({
 });
 
 /* ============================================
+   COMMENTS SUMMARY
+   ============================================ */
+
+function CommentsSummary({ comments }: { comments: CompetitorCommentsAnalysis }) {
+  return (
+    <div className={s.commentsSummary}>
+      <div className={s.sentimentSection}>
+        <div className={s.sentimentBar}>
+          <div className={s.sentimentPositive} style={{ width: `${comments.sentiment.positive}%` }} />
+          <div className={s.sentimentNeutral} style={{ width: `${comments.sentiment.neutral}%` }} />
+          <div className={s.sentimentNegative} style={{ width: `${comments.sentiment.negative}%` }} />
+        </div>
+        <div className={s.sentimentLabels}>
+          <span className={s.sentimentLabelPos}>{comments.sentiment.positive}% Positive</span>
+          <span className={s.sentimentLabelNeu}>{comments.sentiment.neutral}% Neutral</span>
+          <span className={s.sentimentLabelNeg}>{comments.sentiment.negative}% Negative</span>
+        </div>
+      </div>
+
+      {comments.themes && comments.themes.length > 0 && (
+        <div className={s.themesCompact}>
+          <span className={s.themesLabel}>Recurring themes:</span>
+          <div className={s.themeChips}>
+            {comments.themes.slice(0, 6).map((theme, i) => (
+              <span key={i} className={s.themeChip}>
+                {theme.theme} <span className={s.themeCount}>({theme.count})</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className={s.highlightsGrid}>
+        {comments.viewerLoved && comments.viewerLoved.length > 0 && (
+          <div className={s.highlightBox}>
+            <h4 className={s.highlightTitle}>What viewers loved</h4>
+            <ul className={s.highlightList}>
+              {comments.viewerLoved.slice(0, 3).map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {comments.viewerAskedFor && comments.viewerAskedFor.length > 0 && (
+          <div className={s.highlightBox}>
+            <h4 className={s.highlightTitle}>Questions &amp; requests</h4>
+            <ul className={s.highlightList}>
+              {comments.viewerAskedFor.slice(0, 3).map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================
    COMMENTS SECTION WITH FILTERS
    ============================================ */
 
@@ -198,78 +259,7 @@ export const CommentsSection = memo(function CommentsSection({
         </span>
       </h2>
 
-      {/* Summary Section */}
-      {hasAnalysis && (
-        <div className={s.commentsSummary}>
-          {/* Sentiment Bar */}
-          <div className={s.sentimentSection}>
-            <div className={s.sentimentBar}>
-              <div
-                className={s.sentimentPositive}
-                style={{ width: `${comments.sentiment.positive}%` }}
-              />
-              <div
-                className={s.sentimentNeutral}
-                style={{ width: `${comments.sentiment.neutral}%` }}
-              />
-              <div
-                className={s.sentimentNegative}
-                style={{ width: `${comments.sentiment.negative}%` }}
-              />
-            </div>
-            <div className={s.sentimentLabels}>
-              <span className={s.sentimentLabelPos}>
-                {comments.sentiment.positive}% Positive
-              </span>
-              <span className={s.sentimentLabelNeu}>
-                {comments.sentiment.neutral}% Neutral
-              </span>
-              <span className={s.sentimentLabelNeg}>
-                {comments.sentiment.negative}% Negative
-              </span>
-            </div>
-          </div>
-
-          {/* Themes */}
-          {comments.themes && comments.themes.length > 0 && (
-            <div className={s.themesCompact}>
-              <span className={s.themesLabel}>Recurring themes:</span>
-              <div className={s.themeChips}>
-                {comments.themes.slice(0, 6).map((theme, i) => (
-                  <span key={i} className={s.themeChip}>
-                    {theme.theme}{" "}
-                    <span className={s.themeCount}>({theme.count})</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Highlights Grid */}
-          <div className={s.highlightsGrid}>
-            {comments.viewerLoved && comments.viewerLoved.length > 0 && (
-              <div className={s.highlightBox}>
-                <h4 className={s.highlightTitle}>What viewers loved</h4>
-                <ul className={s.highlightList}>
-                  {comments.viewerLoved.slice(0, 3).map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {comments.viewerAskedFor && comments.viewerAskedFor.length > 0 && (
-              <div className={s.highlightBox}>
-                <h4 className={s.highlightTitle}>Questions &amp; requests</h4>
-                <ul className={s.highlightList}>
-                  {comments.viewerAskedFor.slice(0, 3).map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {hasAnalysis && <CommentsSummary comments={comments} />}
 
       {/* Filter Tabs */}
       <div className={s.commentFilters}>

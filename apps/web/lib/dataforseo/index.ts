@@ -1,10 +1,10 @@
-import { ApiError } from "@/lib/api/errors";
 import {
-  validatePhrase,
-  validateLocation,
   DataForSEOError,
   type LocationCode,
+  validateLocation,
+  validatePhrase,
 } from "@/lib/adapters/dataforseo/utils";
+import { ApiError } from "@/lib/api/errors";
 
 // ============================================
 // CENTRALIZED VALIDATION + ERROR MAPPING
@@ -32,15 +32,15 @@ export function prepareDataForSeoRequest(input: {
     }
     const locationInfo = validateLocation(input.location ?? "us");
     return { cleanPhrases, locationInfo };
-  } catch (err) {
-    if (err instanceof DataForSEOError) {
+  } catch (error) {
+    if (error instanceof DataForSEOError) {
       throw new ApiError({
         code: "VALIDATION_ERROR",
         status: 400,
-        message: err.message,
+        message: error.message,
       });
     }
-    throw err;
+    throw error;
   }
 }
 
@@ -49,66 +49,67 @@ export function prepareDataForSeoRequest(input: {
  */
 export function mapDataForSEOError(err: DataForSEOError): ApiError {
   switch (err.code) {
-    case "RATE_LIMITED":
+    case "RATE_LIMITED": {
       return new ApiError({
         code: "RATE_LIMITED",
         status: 429,
         message: "Service is busy. Please try again in a moment.",
       });
+    }
     case "QUOTA_EXCEEDED":
+    case "AUTH_ERROR": {
       return new ApiError({
         code: "SERVICE_UNAVAILABLE",
         status: 503,
         message: "Keyword service is temporarily unavailable.",
       });
-    case "TIMEOUT":
+    }
+    case "TIMEOUT": {
       return new ApiError({
         code: "TIMEOUT",
         status: 504,
         message: "Request timed out. Please try again.",
       });
-    case "VALIDATION_ERROR":
+    }
+    case "VALIDATION_ERROR": {
       return new ApiError({
         code: "VALIDATION_ERROR",
         status: 400,
         message: err.message,
       });
-    case "AUTH_ERROR":
-      return new ApiError({
-        code: "SERVICE_UNAVAILABLE",
-        status: 503,
-        message: "Keyword service is temporarily unavailable.",
-      });
-    case "RESTRICTED_CATEGORY":
+    }
+    case "RESTRICTED_CATEGORY": {
       return new ApiError({
         code: "RESTRICTED_CONTENT",
         status: 400,
         message: "Some keywords can't return data due to Google Ads restrictions.",
       });
-    default:
+    }
+    default: {
       return new ApiError({
         code: "INTERNAL",
         status: 500,
         message: err.message,
       });
+    }
   }
 }
 
 // Re-export from adapter (server-only)
 export {
-  fetchKeywordOverview,
-  fetchRelatedKeywords,
   fetchCombinedKeywordData,
   fetchGoogleTrends,
-  getSearchVolumeTask,
-  getKeywordsForKeywordsTask,
+  fetchKeywordOverview,
+  fetchRelatedKeywords,
   getGoogleTrendsTask,
-  parseGoogleTrendsResult,
+  getKeywordsForKeywordsTask,
+  getSearchVolumeTask,
+  type KeywordCombinedResponse,
   type KeywordMetrics,
-  type RelatedKeywordRow,
   type KeywordOverviewResponse,
   type KeywordRelatedResponse,
-  type KeywordCombinedResponse,
+  parseGoogleTrendsResult,
+  type RelatedKeywordRow,
 } from "@/lib/adapters/dataforseo/client";
 
 // Re-export YouTube SERP client (server-only)
@@ -119,8 +120,8 @@ export {
 
 // Re-export competitive context — barrel delegates to lib/features/video-insights/
 export {
-  fetchCompetitiveContext,
   type CompetitiveContext,
+  fetchCompetitiveContext,
 } from "./competitive-context";
 
 // Re-export utilities

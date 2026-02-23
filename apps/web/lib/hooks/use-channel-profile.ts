@@ -7,8 +7,9 @@
  * Provides loading, saving, and AI generation functionality.
  */
 
-import { useState, useEffect, useCallback } from "react";
-import type { ChannelProfileInput, ChannelProfileAI } from "@/lib/features/channels/schemas";
+import { useCallback,useEffect, useState } from "react";
+
+import type { ChannelProfileAI,ChannelProfileInput } from "@/lib/features/channels/schemas";
 import type { ChannelProfile } from "@/lib/features/channels/types";
 
 type UseChannelProfileResult = {
@@ -56,8 +57,8 @@ export function useChannelProfile(channelId: string | null): UseChannelProfileRe
 
       const data = await res.json();
       setProfile(data.profile);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch profile");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Failed to fetch profile");
       setProfile(null);
     } finally {
       setLoading(false);
@@ -65,7 +66,7 @@ export function useChannelProfile(channelId: string | null): UseChannelProfileRe
   }, [channelId]);
 
   useEffect(() => {
-    fetchProfile();
+    void fetchProfile();
   }, [fetchProfile]);
 
   // Save profile input
@@ -94,8 +95,8 @@ export function useChannelProfile(channelId: string | null): UseChannelProfileRe
         const data = await res.json();
         setProfile(data.profile);
         return true;
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to save profile");
+      } catch (error_) {
+        setError(error_ instanceof Error ? error_.message : "Failed to save profile");
         return false;
       } finally {
         setSaving(false);
@@ -144,8 +145,8 @@ export function useChannelProfile(channelId: string | null): UseChannelProfileRe
         );
 
         return data.aiProfile;
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to generate AI profile");
+      } catch (error_) {
+        setError(error_ instanceof Error ? error_.message : "Failed to generate AI profile");
         return null;
       } finally {
         setGenerating(false);

@@ -1,5 +1,5 @@
-import { defineConfig } from "vitest/config";
 import path from "path";
+import { defineConfig } from "vitest/config";
 
 /**
  * Vitest Integration Tests Configuration
@@ -16,8 +16,8 @@ export default defineConfig({
     include: ["tests/integration/**/*.test.ts"],
     exclude: ["node_modules", ".next", "e2e"],
     setupFiles: ["./tests/integration/setup.ts"],
-    testTimeout: 30000, // 30 seconds for DB operations
-    hookTimeout: 30000,
+    testTimeout: 30_000, // 30 seconds for DB operations
+    hookTimeout: 30_000,
     // Run tests serially to avoid DB conflicts
     pool: "forks",
     poolOptions: {

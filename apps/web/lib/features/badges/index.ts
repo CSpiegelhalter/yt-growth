@@ -6,16 +6,16 @@
 
 // Types
 export type {
-  BadgeRarity,
   BadgeCategory,
   BadgeIcon,
-  BadgeWithProgress,
-  UnlockedBadge,
-  GoalWithProgress,
-  VideoForBadges,
-  ChannelStatsForBadges,
-  BadgeSortKey,
+  BadgeRarity,
   BadgesApiResponse,
+  BadgeSortKey,
+  BadgeWithProgress,
+  ChannelStatsForBadges,
+  GoalWithProgress,
+  UnlockedBadge,
+  VideoForBadges,
 } from "./types";
 
 // Schemas
@@ -27,31 +27,31 @@ export {
   BADGE_RARITIES,
   BADGES,
   DEFAULT_GOALS,
-  getGoalsForBadge,
   getBadgeChain,
+  getGoalsForBadge,
 } from "./registry";
 
 // Computation
 export {
-  getWeekStart,
-  getMonthStart,
-  getDaysRemaining,
-  countVideosInWindow,
-  countShortsInWindow,
-  sumViewsInWindow,
-  sumSubsGainedInWindow,
-  avgRetentionLastN,
   avgLikeRateLastN,
+  avgRetentionLastN,
   calculatePostingStreakDays,
   calculatePostingStreakWeeks,
   checkMetricAvailability,
   computeAllBadgesProgress,
   computeAllGoalsProgress,
-  getNextBadge,
-  sortBadgesByClosest,
-  sortBadgesByRecent,
-  sortBadgesByRarity,
+  countShortsInWindow,
+  countVideosInWindow,
   getBadgeSummary,
+  getDaysRemaining,
+  getMonthStart,
+  getNextBadge,
+  getWeekStart,
+  sortBadgesByClosest,
+  sortBadgesByRarity,
+  sortBadgesByRecent,
+  sumSubsGainedInWindow,
+  sumViewsInWindow,
 } from "./use-cases/computeBadges";
 
 // Use-cases

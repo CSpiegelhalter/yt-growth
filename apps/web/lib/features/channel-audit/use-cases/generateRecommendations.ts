@@ -37,7 +37,7 @@ export function generateActions(
   const actions: AuditAction[] = [];
 
   switch (bottleneck.type) {
-    case "CTR":
+    case "CTR": {
       actions.push(
         {
           title: "Simplify your thumbnails",
@@ -62,8 +62,9 @@ export function generateActions(
         },
       );
       break;
+    }
 
-    case "RETENTION":
+    case "RETENTION": {
       actions.push(
         {
           title: "Strengthen your first 15 seconds",
@@ -88,8 +89,9 @@ export function generateActions(
         },
       );
       break;
+    }
 
-    case "DISTRIBUTION":
+    case "DISTRIBUTION": {
       actions.push(
         {
           title: "Create topic clusters",
@@ -114,8 +116,9 @@ export function generateActions(
         },
       );
       break;
+    }
 
-    case "CONVERSION":
+    case "CONVERSION": {
       actions.push(
         {
           title: "Add a clear subscribe CTA",
@@ -140,8 +143,9 @@ export function generateActions(
         },
       );
       break;
+    }
 
-    default:
+    default: {
       actions.push(
         {
           title: "Experiment with a new format",
@@ -165,6 +169,7 @@ export function generateActions(
           effort: "low",
         },
       );
+    }
   }
 
   return actions.slice(0, 3);
@@ -366,6 +371,93 @@ const CHANNEL_ARCHETYPES: ChannelArchetype[] = [
 
 // ── Channel Lens Classification ─────────────────────────────
 
+type LensContext = {
+  searchPct: number;
+  browsePct: number;
+  suggestedPct: number;
+  externalPct: number;
+  endScreenCtr: number;
+  avgRetention: number;
+  subChurn: number;
+  subConversionRate: number;
+  metrics: RecommendationsMetrics;
+  trends: AuditTrends;
+};
+
+type ArchetypeMatcher = {
+  id: string;
+  match: (ctx: LensContext) => boolean;
+};
+
+function findArchetype(id: string): ChannelArchetype | undefined {
+  return CHANNEL_ARCHETYPES.find((a) => a.id === id);
+}
+
+const ARCHETYPE_MATCHERS: ArchetypeMatcher[] = [
+  // GROUP 1: DISTRIBUTION & TRAFFIC
+  { id: "SEARCH_PRISON", match: (c) => c.searchPct > 50 && c.browsePct < 20 },
+  { id: "ALGO_FAVORITE", match: (c) => c.browsePct > 60 && c.trends.views.direction === "up" },
+  { id: "SUGGESTED_LEECH", match: (c) => c.suggestedPct > 40 && c.metrics.totalWatchTimeMin > 0 },
+  { id: "EXTERNAL_DEPENDENT", match: (c) => c.externalPct > 30 && c.browsePct < 20 },
+
+  // GROUP 2: LOYALTY & CHURN
+  { id: "LEAKY_BUCKET", match: (c) => c.metrics.netSubscribers < 0 || c.subChurn > 0.3 },
+  { id: "PASSERBY_CHANNEL", match: (c) => c.trends.views.direction === "up" && Math.abs(c.metrics.netSubscribers) < c.metrics.totalViews * 0.001 },
+  { id: "THE_CULT_LEADER", match: (c) => c.trends.views.direction === "flat" && c.metrics.netSubscribers > 0 && c.avgRetention > 50 },
+  { id: "BRAND_BURN_OUT", match: (c) => c.trends.subscribers.direction === "down" && c.trends.watchTime.direction === "down" },
+
+  // GROUP 3: BINGE-ABILITY
+  { id: "THE_DEAD_END", match: (c) => c.endScreenCtr < 1 && c.avgRetention > 30 },
+  { id: "THE_BINGE_MASTER", match: (c) => c.endScreenCtr > 5 && c.trends.watchTime.direction === "up" },
+  { id: "SHALLOW_HOOKS", match: (c) => c.trends.views.direction === "up" && c.avgRetention < 20 },
+
+  // GROUP 4: TRENDS & MOMENTUM
+  { id: "THE_RECOVERY", match: (c) => c.trends.views.direction === "up" && c.trends.watchTime.direction === "up" && c.trends.subscribers.direction === "up" },
+  { id: "THE_SLOW_DEATH", match: (c) => c.trends.views.direction === "flat" && c.trends.watchTime.direction === "down" && c.trends.subscribers.direction === "down" },
+  { id: "THE_VERTICAL_LIMIT", match: (c) => c.trends.views.direction === "up" && c.trends.watchTime.direction === "flat" },
+
+  // GROUP 5: SPECIFIC PERMUTATIONS
+  { id: "UTILITY_OBLIVION", match: (c) => c.searchPct > 40 && c.endScreenCtr < 2 && c.subConversionRate < 0.5 },
+  { id: "VIRAL_AFTERSHOCK", match: (c) => c.trends.views.direction === "down" && c.trends.subscribers.direction === "up" },
+  { id: "CONTENT_MISMATCH", match: (c) => c.browsePct > 40 && c.avgRetention < 30 },
+  { id: "HIDDEN_GEMS", match: (c) => c.avgRetention > 60 && c.trends.views.direction === "down" },
+  { id: "THE_WALL", match: (c) => c.trends.views.direction === "flat" && c.trends.watchTime.direction === "up" && c.trends.subscribers.direction === "flat" },
+  { id: "DIVERSIFIED_STRENGTH", match: (c) => c.browsePct > 20 && c.searchPct > 20 && c.suggestedPct > 20 },
+  { id: "BROAD_APPEAL_STRUGGLE", match: (c) => c.externalPct < 10 && c.browsePct < 20 && c.searchPct > 40 },
+  { id: "AUDIENCE_FATIGUE", match: (c) => c.trends.views.direction === "down" && c.trends.subscribers.direction === "down" },
+  { id: "THE_CLIMBER", match: (c) => (c.trends.watchTime.value ?? 0) > (c.trends.views.value ?? 0) && c.trends.watchTime.direction === "up" },
+  { id: "THE_DIVE", match: (c) => (c.trends.watchTime.value ?? 0) < (c.trends.views.value ?? 0) && c.trends.views.direction === "up" },
+  { id: "THE_CONVERTER", match: (c) => c.subConversionRate > 5 },
+  { id: "THE_SKEPTIC_AUDIENCE", match: (c) => c.subConversionRate < 0.1 },
+  { id: "THE_REVIVAL", match: (c) => c.metrics.netSubscribers > 0 && c.trends.views.direction === "up" && c.trends.subscribers.direction === "up" },
+  { id: "SEARCH_SUCCESS_STORY", match: (c) => c.searchPct > 30 && c.metrics.subscribersGained > c.metrics.totalViews * 0.01 },
+  { id: "THE_INFLUENCER_START", match: (c) => c.externalPct > 40 && c.metrics.subscribersGained > c.metrics.totalViews * 0.02 },
+  { id: "THE_GHOST_CHANNEL", match: (c) => Math.abs(c.trends.views.value ?? 0) < 10 && Math.abs(c.trends.watchTime.value ?? 0) < 10 && Math.abs(c.trends.subscribers.value ?? 0) < 10 },
+];
+
+function buildLensContext(
+  metrics: RecommendationsMetrics,
+  traffic: NonNullable<AuditTrafficSources>,
+  trends: AuditTrends,
+): LensContext {
+  return {
+    searchPct: traffic.search?.percentage ?? 0,
+    browsePct: traffic.browse?.percentage ?? 0,
+    suggestedPct: traffic.suggested?.percentage ?? 0,
+    externalPct: traffic.external?.percentage ?? 0,
+    endScreenCtr: metrics.endScreenCtr ?? 0,
+    avgRetention: metrics.avgViewPercentage ?? 0,
+    subChurn: metrics.subscribersGained > 0
+      ? metrics.subscribersLost / metrics.subscribersGained
+      : 0,
+    subConversionRate: metrics.totalViews > 0
+      ? (metrics.subscribersGained / metrics.totalViews) * 100
+      : 0,
+    metrics,
+    trends,
+  };
+}
+
 /**
  * Classify the channel into one or more strategic archetypes
  * based on metrics, traffic distribution, and trend direction.
@@ -378,145 +470,18 @@ function getChannelLenses(
 ): string {
   if (!metrics || !traffic) {return "";}
 
-  const subChurn =
-    metrics.subscribersGained > 0
-      ? metrics.subscribersLost / metrics.subscribersGained
-      : 0;
-  const searchPct = traffic.search?.percentage ?? 0;
-  const browsePct = traffic.browse?.percentage ?? 0;
-  const suggestedPct = traffic.suggested?.percentage ?? 0;
-  const externalPct = traffic.external?.percentage ?? 0;
-  const endScreenCtr = metrics.endScreenCtr ?? 0;
-  const avgRetention = metrics.avgViewPercentage ?? 0;
-  const subConversionRate =
-    metrics.totalViews > 0
-      ? (metrics.subscribersGained / metrics.totalViews) * 100
-      : 0;
+  const ctx = buildLensContext(metrics, traffic, trends);
 
-  const lenses: (ChannelArchetype | undefined)[] = [];
-  const find = (id: string) => CHANNEL_ARCHETYPES.find((a) => a.id === id);
+  const matched = ARCHETYPE_MATCHERS
+    .filter((m) => m.match(ctx))
+    .map((m) => findArchetype(m.id))
+    .filter((a): a is ChannelArchetype => a !== undefined);
 
-  // GROUP 1: DISTRIBUTION & TRAFFIC
-  if (searchPct > 50 && browsePct < 20) {lenses.push(find("SEARCH_PRISON"));}
-  if (browsePct > 60 && trends.views.direction === "up")
-    {lenses.push(find("ALGO_FAVORITE"));}
-  if (suggestedPct > 40 && metrics.totalWatchTimeMin > 0)
-    {lenses.push(find("SUGGESTED_LEECH"));}
-  if (externalPct > 30 && browsePct < 20)
-    {lenses.push(find("EXTERNAL_DEPENDENT"));}
-
-  // GROUP 2: LOYALTY & CHURN
-  if (metrics.netSubscribers < 0 || subChurn > 0.3)
-    {lenses.push(find("LEAKY_BUCKET"));}
-  if (
-    trends.views.direction === "up" &&
-    Math.abs(metrics.netSubscribers) < metrics.totalViews * 0.001
-  )
-    {lenses.push(find("PASSERBY_CHANNEL"));}
-  if (
-    trends.views.direction === "flat" &&
-    metrics.netSubscribers > 0 &&
-    avgRetention > 50
-  )
-    {lenses.push(find("THE_CULT_LEADER"));}
-  if (
-    trends.subscribers.direction === "down" &&
-    trends.watchTime.direction === "down"
-  )
-    {lenses.push(find("BRAND_BURN_OUT"));}
-
-  // GROUP 3: BINGE-ABILITY
-  if (endScreenCtr < 1 && avgRetention > 30)
-    {lenses.push(find("THE_DEAD_END"));}
-  if (endScreenCtr > 5 && trends.watchTime.direction === "up")
-    {lenses.push(find("THE_BINGE_MASTER"));}
-  if (trends.views.direction === "up" && avgRetention < 20)
-    {lenses.push(find("SHALLOW_HOOKS"));}
-
-  // GROUP 4: TRENDS & MOMENTUM
-  if (
-    trends.views.direction === "up" &&
-    trends.watchTime.direction === "up" &&
-    trends.subscribers.direction === "up"
-  )
-    {lenses.push(find("THE_RECOVERY"));}
-  if (
-    trends.views.direction === "flat" &&
-    trends.watchTime.direction === "down" &&
-    trends.subscribers.direction === "down"
-  )
-    {lenses.push(find("THE_SLOW_DEATH"));}
-  if (trends.views.direction === "up" && trends.watchTime.direction === "flat")
-    {lenses.push(find("THE_VERTICAL_LIMIT"));}
-
-  // GROUP 5: SPECIFIC PERMUTATIONS
-  if (searchPct > 40 && endScreenCtr < 2 && subConversionRate < 0.5)
-    {lenses.push(find("UTILITY_OBLIVION"));}
-  if (
-    trends.views.direction === "down" &&
-    trends.subscribers.direction === "up"
-  )
-    {lenses.push(find("VIRAL_AFTERSHOCK"));}
-  if (browsePct > 40 && avgRetention < 30)
-    {lenses.push(find("CONTENT_MISMATCH"));}
-  if (avgRetention > 60 && trends.views.direction === "down")
-    {lenses.push(find("HIDDEN_GEMS"));}
-  if (
-    trends.views.direction === "flat" &&
-    trends.watchTime.direction === "up" &&
-    trends.subscribers.direction === "flat"
-  )
-    {lenses.push(find("THE_WALL"));}
-  if (browsePct > 20 && searchPct > 20 && suggestedPct > 20)
-    {lenses.push(find("DIVERSIFIED_STRENGTH"));}
-  if (externalPct < 10 && browsePct < 20 && searchPct > 40)
-    {lenses.push(find("BROAD_APPEAL_STRUGGLE"));}
-  if (
-    trends.views.direction === "down" &&
-    trends.subscribers.direction === "down"
-  )
-    {lenses.push(find("AUDIENCE_FATIGUE"));}
-  if (
-    (trends.watchTime.value ?? 0) > (trends.views.value ?? 0) &&
-    trends.watchTime.direction === "up"
-  )
-    {lenses.push(find("THE_CLIMBER"));}
-  if (
-    (trends.watchTime.value ?? 0) < (trends.views.value ?? 0) &&
-    trends.views.direction === "up"
-  )
-    {lenses.push(find("THE_DIVE"));}
-  if (subConversionRate > 5) {lenses.push(find("THE_CONVERTER"));}
-  if (subConversionRate < 0.1) {lenses.push(find("THE_SKEPTIC_AUDIENCE"));}
-  if (
-    metrics.netSubscribers > 0 &&
-    trends.views.direction === "up" &&
-    trends.subscribers.direction === "up"
-  )
-    {lenses.push(find("THE_REVIVAL"));}
-  if (searchPct > 30 && metrics.subscribersGained > metrics.totalViews * 0.01)
-    {lenses.push(find("SEARCH_SUCCESS_STORY"));}
-  if (
-    externalPct > 40 &&
-    metrics.subscribersGained > metrics.totalViews * 0.02
-  )
-    {lenses.push(find("THE_INFLUENCER_START"));}
-  if (
-    Math.abs(trends.views.value ?? 0) < 10 &&
-    Math.abs(trends.watchTime.value ?? 0) < 10 &&
-    Math.abs(trends.subscribers.value ?? 0) < 10
-  )
-    {lenses.push(find("THE_GHOST_CHANNEL"));}
-
-  const validLenses = lenses.filter(
-    (l): l is ChannelArchetype => l !== undefined,
-  );
-
-  if (validLenses.length === 0) {
+  if (matched.length === 0) {
     return "No specific archetypes detected. Channel shows mixed signals.";
   }
 
-  return validLenses
+  return matched
     .map((l) => `[${l.logic}] - Meaning: ${l.meaning}`)
     .join("\n");
 }
@@ -675,13 +640,13 @@ function parseRecommendationsJson(content: string): unknown | null {
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       let jsonStr = jsonMatch[0];
-      jsonStr = jsonStr.replace(/,(\s*[}\]])/g, "$1");
+      jsonStr = jsonStr.replaceAll(/,(\s*[}\]])/g, "$1");
 
       let braceCount = 0;
       let lastValidIndex = -1;
-      for (let i = 0; i < jsonStr.length; i++) {
-        if (jsonStr[i] === "{") {braceCount++;}
-        if (jsonStr[i] === "}") {
+      for (const [i, element] of [...jsonStr].entries()) {
+        if (element === "{") {braceCount++;}
+        if (element === "}") {
           braceCount--;
           if (braceCount === 0) {
             lastValidIndex = i;
@@ -691,7 +656,7 @@ function parseRecommendationsJson(content: string): unknown | null {
       }
 
       if (lastValidIndex > 0) {
-        jsonStr = jsonStr.substring(0, lastValidIndex + 1);
+        jsonStr = jsonStr.slice(0, Math.max(0, lastValidIndex + 1));
       }
 
       return JSON.parse(jsonStr);

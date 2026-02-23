@@ -8,10 +8,10 @@
  */
 
 import type {
-  DescriptionSeoInput,
   DescriptionCheck,
-  DescriptionSeoResult,
+  DescriptionSeoInput,
   DescriptionSeoOptions,
+  DescriptionSeoResult,
   FocusKeywordConfidence,
 } from "../types";
 
@@ -68,8 +68,8 @@ const GOOGLE_SUGGESTIONS = [
 function normalizeText(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .replace(/\s+/g, " ")
+    .replaceAll(/[^\p{L}\p{N}\s]/gu, " ")
+    .replaceAll(/\s+/g, " ")
     .trim();
 }
 
@@ -147,9 +147,9 @@ function parseChapters(description: string): Chapter[] {
     const trimmed = line.trim();
     const match = trimmed.match(timestampRegex);
     if (match) {
-      const hours = match[2] ? parseInt(match[2], 10) : 0;
-      const minutes = parseInt(match[3], 10);
-      const seconds = parseInt(match[4], 10);
+      const hours = match[2] ? Number.parseInt(match[2], 10) : 0;
+      const minutes = Number.parseInt(match[3], 10);
+      const seconds = Number.parseInt(match[4], 10);
       const title = match[5].trim();
       const totalSeconds = hours * 3600 + minutes * 60 + seconds;
 
@@ -457,7 +457,7 @@ function checkLinksPresent(description: string): DescriptionCheck {
   const label = "Links to related content";
   const links = extractLinks(description);
 
-  if (links.length >= 1) {
+  if (links.length > 0) {
     return {
       id,
       label,
@@ -486,7 +486,7 @@ function checkCTAPresent(description: string): DescriptionCheck {
   const label = "Call-to-action present";
   const ctas = detectCTAs(description);
 
-  if (ctas.length >= 1) {
+  if (ctas.length > 0) {
     return {
       id,
       label,
@@ -612,7 +612,7 @@ function checkHashtagContent(description: string, focusKeyword: string | null): 
   const generalHashtags = hashtags.filter((h) => h.replace("#", "").split(/(?=[A-Z])/).length <= 2);
   const specificHashtags = hashtags.filter((h) => h.replace("#", "").split(/(?=[A-Z])/).length > 2);
 
-  if (hasKeywordHashtag && generalHashtags.length >= 1 && specificHashtags.length >= 1) {
+  if (hasKeywordHashtag && generalHashtags.length > 0 && specificHashtags.length > 0) {
     return {
       id,
       label,
@@ -633,7 +633,7 @@ function checkHashtagContent(description: string, focusKeyword: string | null): 
     status: "needs_work",
     evidence: issues.length > 0 ? issues.join(", ") : "Hashtag variety could be improved",
     recommendation: focusKeyword
-      ? `Add #${focusKeyword.replace(/\s+/g, "")} plus one general and one specific hashtag.`
+      ? `Add #${focusKeyword.replaceAll(/\s+/g, "")} plus one general and one specific hashtag.`
       : "Add a mix of general (broad topic) and specific (niche) hashtags.",
     quickFix: { label: "Improve hashtags", action: "generate_hashtags", payload: { focusKeyword } },
   };
@@ -689,7 +689,7 @@ function checkTagsKeywordCoverage(tags: string[], focusKeyword: string | null): 
     };
   }
 
-  if (hasExactMatch || closeVariations.length >= 1) {
+  if (hasExactMatch || closeVariations.length > 0) {
     return {
       id,
       label,

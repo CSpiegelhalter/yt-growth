@@ -7,14 +7,14 @@
  * Caching: 7-day TTL on full results (cache hits don't consume quota)
  */
 
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
-import {
-  KeywordIdeasBodySchema,
-  generateKeywordIdeas,
-} from "@/lib/features/keywords";
 import type { AudienceLevel, FormatPreference } from "@/lib/features/keywords";
+import {
+  generateKeywordIdeas,
+  KeywordIdeasBodySchema,
+} from "@/lib/features/keywords";
 
 export const POST = createApiRoute(
   { route: "/api/keywords/ideas" },
@@ -30,20 +30,24 @@ export const POST = createApiRoute(
     });
 
     switch (result.type) {
-      case "needs_auth":
+      case "needs_auth": {
         return jsonOk(
           { needsAuth: true },
           { requestId: api.requestId },
         );
+      }
 
-      case "entitlement_error":
+      case "entitlement_error": {
         return result.response;
+      }
 
-      case "needs_upgrade":
+      case "needs_upgrade": {
         return jsonOk(result.body, { requestId: api.requestId });
+      }
 
-      case "success":
+      case "success": {
         return jsonOk(result.body, { requestId: api.requestId });
+      }
     }
   }),
 );

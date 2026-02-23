@@ -9,10 +9,10 @@
  * Subscription: NOT required (free feature)
  */
 
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
 import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 import {
   getProfile,

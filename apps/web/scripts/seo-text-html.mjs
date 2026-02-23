@@ -25,7 +25,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, "..");
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
-const THRESHOLD = parseFloat(process.env.THRESHOLD || "0.12");
+const THRESHOLD = Number.parseFloat(process.env.THRESHOLD || "0.12");
 const PATH_PREFIX = process.env.PATH_PREFIX || "/learn";
 
 /**
@@ -53,7 +53,7 @@ async function discoverLearnRoutes() {
     // Extract all links matching /learn/{slug} pattern
     // This regex finds href="/learn/some-slug" patterns
     const linkRegex = new RegExp(
-      `href=["']${PATH_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/([a-z0-9-]+)["']`,
+      `href=["']${PATH_PREFIX.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}/([a-z0-9-]+)["']`,
       "gi"
     );
 
@@ -69,7 +69,7 @@ async function discoverLearnRoutes() {
 
     const routes = [
       PATH_PREFIX, // Hub page
-      ...Array.from(slugs)
+      ...[...slugs]
         .sort()
         .map((slug) => `${PATH_PREFIX}/${slug}`),
     ];
@@ -91,44 +91,44 @@ function extractText(html) {
   let text = html;
 
   // Remove script content (including inline scripts and JSON-LD)
-  text = text.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ");
+  text = text.replaceAll(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ");
 
   // Remove style content
-  text = text.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ");
+  text = text.replaceAll(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ");
 
   // Remove noscript content
-  text = text.replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, " ");
+  text = text.replaceAll(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, " ");
 
   // Remove SVG content (icons/graphics don't count as text)
-  text = text.replace(/<svg\b[^>]*>[\s\S]*?<\/svg>/gi, " ");
+  text = text.replaceAll(/<svg\b[^>]*>[\s\S]*?<\/svg>/gi, " ");
 
   // Remove HTML comments
-  text = text.replace(/<!--[\s\S]*?-->/g, " ");
+  text = text.replaceAll(/<!--[\s\S]*?-->/g, " ");
 
   // Remove all HTML tags
-  text = text.replace(/<[^>]+>/g, " ");
+  text = text.replaceAll(/<[^>]+>/g, " ");
 
   // Decode common HTML entities
   text = text
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/&#x27;/gi, "'")
-    .replace(/&#x2F;/gi, "/")
-    .replace(/&mdash;/gi, "—")
-    .replace(/&ndash;/gi, "–")
-    .replace(/&rsquo;/gi, "'")
-    .replace(/&lsquo;/gi, "'")
-    .replace(/&rdquo;/gi, '"')
-    .replace(/&ldquo;/gi, '"')
-    .replace(/&hellip;/gi, "…")
-    .replace(/&#\d+;/gi, " "); // Numeric entities
+    .replaceAll(/&nbsp;/gi, " ")
+    .replaceAll(/&amp;/gi, "&")
+    .replaceAll(/&lt;/gi, "<")
+    .replaceAll(/&gt;/gi, ">")
+    .replaceAll(/&quot;/gi, '"')
+    .replaceAll(/&#39;/gi, "'")
+    .replaceAll(/&#x27;/gi, "'")
+    .replaceAll(/&#x2F;/gi, "/")
+    .replaceAll(/&mdash;/gi, "—")
+    .replaceAll(/&ndash;/gi, "–")
+    .replaceAll(/&rsquo;/gi, "'")
+    .replaceAll(/&lsquo;/gi, "'")
+    .replaceAll(/&rdquo;/gi, '"')
+    .replaceAll(/&ldquo;/gi, '"')
+    .replaceAll(/&hellip;/gi, "…")
+    .replaceAll(/&#\d+;/gi, " "); // Numeric entities
 
   // Collapse whitespace
-  text = text.replace(/\s+/g, " ").trim();
+  text = text.replaceAll(/\s+/g, " ").trim();
 
   return text;
 }
@@ -145,7 +145,7 @@ function calculateRatio(html) {
     textLength,
     htmlLength,
     ratio: htmlLength > 0 ? textLength / htmlLength : 0,
-    textPreview: text.substring(0, 150) + (text.length > 150 ? "..." : ""),
+    textPreview: text.slice(0, 150) + (text.length > 150 ? "..." : ""),
   };
 }
 

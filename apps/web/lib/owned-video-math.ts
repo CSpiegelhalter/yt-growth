@@ -182,6 +182,107 @@ type ExtendedAnalyticsTotals = AnalyticsTotals & {
   trafficSources?: TrafficSourceBreakdown | null;
 };
 
+// ── Derived Metric Helpers ────────────────────────────────
+
+function per1k(value: number | null | undefined, viewsPer1k: number): number | null {
+  return value != null ? value / viewsPer1k : null;
+}
+
+function computeNormalizedPer1k(totals: AnalyticsTotals, viewsPer1k: number) {
+  return {
+    subsPer1k: per1k(totals.subscribersGained, viewsPer1k),
+    sharesPer1k: per1k(totals.shares, viewsPer1k),
+    commentsPer1k: per1k(totals.comments, viewsPer1k),
+    likesPer1k: per1k(totals.likes, viewsPer1k),
+    playlistAddsPer1k: per1k(totals.videosAddedToPlaylists, viewsPer1k),
+  };
+}
+
+function computeAdvancedEngagement(totals: AnalyticsTotals, viewsPer1k: number) {
+  const netSubsPer1k =
+    totals.subscribersGained != null && totals.subscribersLost != null
+      ? (totals.subscribersGained - totals.subscribersLost) / viewsPer1k
+      : null;
+
+  const netSavesPer1k =
+    totals.videosAddedToPlaylists != null &&
+    totals.videosRemovedFromPlaylists != null
+      ? (totals.videosAddedToPlaylists - totals.videosRemovedFromPlaylists) / viewsPer1k
+      : null;
+
+  const likes = totals.likes ?? 0;
+  const dislikes = totals.dislikes ?? 0;
+  const likeRatio =
+    likes + dislikes > 0 ? (likes / (likes + dislikes)) * 100 : null;
+
+  return { netSubsPer1k, netSavesPer1k, likeRatio };
+}
+
+function computeRetention(totals: AnalyticsTotals, views: number, videoDurationSec: number) {
+  return {
+    watchTimePerViewSec:
+      totals.estimatedMinutesWatched != null
+        ? (totals.estimatedMinutesWatched * 60) / views
+        : null,
+    avdRatio:
+      totals.averageViewDuration != null && videoDurationSec > 0
+        ? totals.averageViewDuration / videoDurationSec
+        : null,
+    avgWatchTimeMin:
+      totals.estimatedMinutesWatched != null
+        ? totals.estimatedMinutesWatched / views
+        : null,
+    avgViewDuration: totals.averageViewDuration ?? null,
+    avgViewPercentage: totals.averageViewPercentage ?? null,
+  };
+}
+
+function computeEngagement(totals: AnalyticsTotals, views: number) {
+  const engagementSum =
+    (totals.likes ?? 0) + (totals.comments ?? 0) + (totals.shares ?? 0);
+  return {
+    engagementPerView: engagementSum / views,
+    engagedViewRate: totals.engagedViews != null ? totals.engagedViews / views : null,
+  };
+}
+
+function computeClickRates(totals: AnalyticsTotals) {
+  const cardClickRate =
+    totals.cardClickRate ??
+    (totals.cardClicks != null && totals.cardImpressions != null && totals.cardImpressions > 0
+      ? (totals.cardClicks / totals.cardImpressions) * 100
+      : null);
+
+  const endScreenClickRate =
+    totals.annotationClickThroughRate ??
+    (totals.annotationClicks != null && totals.annotationImpressions != null && totals.annotationImpressions > 0
+      ? (totals.annotationClicks / totals.annotationImpressions) * 100
+      : null);
+
+  return { cardClickRate, endScreenClickRate };
+}
+
+function computeAudienceQuality(totals: AnalyticsTotals, views: number) {
+  return {
+    premiumViewRate: totals.redViews != null ? (totals.redViews / views) * 100 : null,
+    watchTimePerSub:
+      totals.estimatedMinutesWatched != null &&
+      totals.subscribersGained != null &&
+      totals.subscribersGained > 0
+        ? totals.estimatedMinutesWatched / totals.subscribersGained
+        : null,
+  };
+}
+
+function computeMonetization(totals: AnalyticsTotals, views: number, viewsPer1k: number) {
+  return {
+    rpm: totals.estimatedRevenue != null ? totals.estimatedRevenue / viewsPer1k : null,
+    monetizedPlaybackRate: totals.monetizedPlaybacks != null ? totals.monetizedPlaybacks / views : null,
+    adImpressionsPerView: totals.adImpressions != null ? totals.adImpressions / views : null,
+    cpm: totals.cpm ?? null,
+  };
+}
+
 /**
  * Compute derived metrics from analytics totals and daily series
  */
@@ -191,174 +292,28 @@ export function computeDerivedMetrics(
   videoDurationSec: number,
   publishedAt?: string | null,
 ): DerivedMetrics {
-  const views = totals.views || 1; // Avoid division by zero
+  const views = totals.views || 1;
   const viewsPer1k = views / 1000;
   const daysInRange = totals.daysInRange || 1;
 
-  // Basic metrics
-  const viewsPerDay = views / daysInRange;
-
-  // Normalized per 1K views
-  const subsPer1k =
-    totals.subscribersGained != null
-      ? totals.subscribersGained / viewsPer1k
-      : null;
-  const sharesPer1k = totals.shares != null ? totals.shares / viewsPer1k : null;
-  const commentsPer1k =
-    totals.comments != null ? totals.comments / viewsPer1k : null;
-  const likesPer1k = totals.likes != null ? totals.likes / viewsPer1k : null;
-  const playlistAddsPer1k =
-    totals.videosAddedToPlaylists != null
-      ? totals.videosAddedToPlaylists / viewsPer1k
-      : null;
-
-  // Advanced engagement metrics
-  // Net subs (gained - lost) per 1K views - the TRUE conversion metric
-  const netSubsPer1k =
-    totals.subscribersGained != null && totals.subscribersLost != null
-      ? (totals.subscribersGained - totals.subscribersLost) / viewsPer1k
-      : null;
-
-  // Net saves per 1K (added - removed) - critical for algorithm favorability
-  const netSavesPer1k =
-    totals.videosAddedToPlaylists != null &&
-    totals.videosRemovedFromPlaylists != null
-      ? (totals.videosAddedToPlaylists - totals.videosRemovedFromPlaylists) /
-        viewsPer1k
-      : null;
-
-  // Like ratio: likes / (likes + dislikes) as percentage
-  const likes = totals.likes ?? 0;
-  const dislikes = totals.dislikes ?? 0;
-  const likeRatio =
-    likes + dislikes > 0 ? (likes / (likes + dislikes)) * 100 : null;
-
-  // Retention efficiency
-  const watchTimePerViewSec =
-    totals.estimatedMinutesWatched != null
-      ? (totals.estimatedMinutesWatched * 60) / views
-      : null;
-  const avdRatio =
-    totals.averageViewDuration != null && videoDurationSec > 0
-      ? totals.averageViewDuration / videoDurationSec
-      : null;
-  const avgWatchTimeMin =
-    totals.estimatedMinutesWatched != null
-      ? totals.estimatedMinutesWatched / views
-      : null;
-  const avgViewDuration = totals.averageViewDuration ?? null;
-  const avgViewPercentage = totals.averageViewPercentage ?? null;
-
-  // Engagement
-  const engagementSum =
-    (totals.likes ?? 0) + (totals.comments ?? 0) + (totals.shares ?? 0);
-  const engagementPerView = engagementSum / views;
-  const engagedViewRate =
-    totals.engagedViews != null ? totals.engagedViews / views : null;
-
-  // Card & End Screen performance
-  // If cardClickRate is directly available, use it; otherwise compute
-  let cardClickRate: number | null = null;
-  if (totals.cardClickRate != null) {
-    cardClickRate = totals.cardClickRate;
-  } else if (
-    totals.cardClicks != null &&
-    totals.cardImpressions != null &&
-    totals.cardImpressions > 0
-  ) {
-    cardClickRate = (totals.cardClicks / totals.cardImpressions) * 100;
-  }
-
-  // End screen CTR
-  let endScreenClickRate: number | null = null;
-  if (totals.annotationClickThroughRate != null) {
-    endScreenClickRate = totals.annotationClickThroughRate;
-  } else if (
-    totals.annotationClicks != null &&
-    totals.annotationImpressions != null &&
-    totals.annotationImpressions > 0
-  ) {
-    endScreenClickRate =
-      (totals.annotationClicks / totals.annotationImpressions) * 100;
-  }
-
-  // Audience quality metrics
-  const premiumViewRate =
-    totals.redViews != null ? (totals.redViews / views) * 100 : null;
-
-  // Watch time efficiency: how much watch time does it take to gain 1 subscriber?
-  const watchTimePerSub =
-    totals.estimatedMinutesWatched != null &&
-    totals.subscribersGained != null &&
-    totals.subscribersGained > 0
-      ? totals.estimatedMinutesWatched / totals.subscribersGained
-      : null;
-
-  // Monetization
-  const rpm =
-    totals.estimatedRevenue != null
-      ? totals.estimatedRevenue / viewsPer1k
-      : null;
-  const monetizedPlaybackRate =
-    totals.monetizedPlaybacks != null
-      ? totals.monetizedPlaybacks / views
-      : null;
-  const adImpressionsPerView =
-    totals.adImpressions != null ? totals.adImpressions / views : null;
-  const cpm = totals.cpm != null ? totals.cpm : null;
-
-  // Trend metrics from daily series
-  const { velocity24h, velocity7d, acceleration24h } =
-    computeTrendMetrics(dailySeries);
-
-  // NEW: Discovery metrics (may not be available)
   const extTotals = totals as ExtendedAnalyticsTotals;
-  const impressions = extTotals.impressions ?? null;
-  const impressionsCtr = extTotals.impressionsCtr ?? null;
-  const trafficSources = extTotals.trafficSources ?? null;
-
-  // Compute first 24h/48h views from daily series if available
-  const { first24hViews, first48hViews } = computeEarlyViews(
-    dailySeries,
-    publishedAt,
-  );
 
   return {
-    viewsPerDay,
+    viewsPerDay: views / daysInRange,
     totalViews: views,
     daysInRange,
-    subsPer1k,
-    sharesPer1k,
-    commentsPer1k,
-    likesPer1k,
-    playlistAddsPer1k,
-    netSubsPer1k,
-    netSavesPer1k,
-    likeRatio,
-    watchTimePerViewSec,
-    avdRatio,
-    avgWatchTimeMin,
-    avgViewDuration,
-    avgViewPercentage,
-    engagementPerView,
-    engagedViewRate,
-    cardClickRate,
-    endScreenClickRate,
-    premiumViewRate,
-    watchTimePerSub,
-    rpm,
-    monetizedPlaybackRate,
-    adImpressionsPerView,
-    cpm,
-    velocity24h,
-    velocity7d,
-    acceleration24h,
-    // New discovery metrics
-    impressions,
-    impressionsCtr,
-    first24hViews,
-    first48hViews,
-    trafficSources,
+    ...computeNormalizedPer1k(totals, viewsPer1k),
+    ...computeAdvancedEngagement(totals, viewsPer1k),
+    ...computeRetention(totals, views, videoDurationSec),
+    ...computeEngagement(totals, views),
+    ...computeClickRates(totals),
+    ...computeAudienceQuality(totals, views),
+    ...computeMonetization(totals, views, viewsPer1k),
+    ...computeTrendMetrics(dailySeries),
+    impressions: extTotals.impressions ?? null,
+    impressionsCtr: extTotals.impressionsCtr ?? null,
+    ...computeEarlyViews(dailySeries, publishedAt),
+    trafficSources: extTotals.trafficSources ?? null,
   };
 }
 
@@ -541,6 +496,39 @@ function computeMeanStd(values: number[]): { mean: number; std: number } {
   return { mean, std };
 }
 
+const UNKNOWN_ZSCORE: Omit<ZScoreResult, "value"> = {
+  zScore: null,
+  percentile: null,
+  vsBaseline: "unknown",
+  delta: null,
+};
+
+function deltaFromMean(value: number, mean: number): number | null {
+  return mean !== 0 ? ((value - mean) / mean) * 100 : null;
+}
+
+function classifyVsBaseline(zScore: number): "above" | "at" | "below" {
+  if (zScore > 0.5) {return "above";}
+  if (zScore < -0.5) {return "below";}
+  return "at";
+}
+
+function zScoreForZeroStd(
+  value: number,
+  mean: number,
+): Omit<ZScoreResult, "value"> {
+  if (value === mean) {
+    return { zScore: 0, percentile: 50, vsBaseline: "at", delta: deltaFromMean(value, mean) };
+  }
+  const above = value > mean;
+  return {
+    zScore: above ? 1 : -1,
+    percentile: above ? 84 : 16,
+    vsBaseline: above ? "above" : "below",
+    delta: deltaFromMean(value, mean),
+  };
+}
+
 /**
  * Compute z-score and percentile for a value against baseline
  */
@@ -549,56 +537,21 @@ function computeZScore(
   baseline: { mean: number; std: number },
 ): ZScoreResult {
   if (value == null || (baseline.mean === 0 && baseline.std === 0)) {
-    return {
-      value,
-      zScore: null,
-      percentile: null,
-      vsBaseline: "unknown",
-      delta: null,
-    };
+    return { value, ...UNKNOWN_ZSCORE };
   }
 
-  // Handle zero std (all values same)
   if (baseline.std === 0) {
-    return {
-      value,
-      zScore: value === baseline.mean ? 0 : value > baseline.mean ? 1 : -1,
-      percentile:
-        value === baseline.mean ? 50 : value > baseline.mean ? 84 : 16,
-      vsBaseline:
-        value > baseline.mean
-          ? "above"
-          : value < baseline.mean
-            ? "below"
-            : "at",
-      delta:
-        baseline.mean !== 0
-          ? ((value - baseline.mean) / baseline.mean) * 100
-          : null,
-    };
+    return { value, ...zScoreForZeroStd(value, baseline.mean) };
   }
 
   const zScore = (value - baseline.mean) / baseline.std;
-  const percentile = normalCDF(zScore) * 100;
-  const delta =
-    baseline.mean !== 0
-      ? ((value - baseline.mean) / baseline.mean) * 100
-      : null;
-
-  let vsBaseline: "above" | "at" | "below";
-  if (zScore > 0.5) {
-    vsBaseline = "above";
-  } else if (zScore < -0.5) {
-    vsBaseline = "below";
-  } else {
-    vsBaseline = "at";
-  }
+  const delta = deltaFromMean(value, baseline.mean);
 
   return {
     value,
     zScore: Math.round(zScore * 100) / 100,
-    percentile: Math.round(percentile),
-    vsBaseline,
+    percentile: Math.round(normalCDF(zScore) * 100),
+    vsBaseline: classifyVsBaseline(zScore),
     delta: delta != null ? Math.round(delta * 10) / 10 : null,
   };
 }
@@ -609,21 +562,21 @@ function computeZScore(
  */
 function normalCDF(z: number): number {
   // Constants for approximation
-  const a1 = 0.254829592;
-  const a2 = -0.284496736;
-  const a3 = 1.421413741;
-  const a4 = -1.453152027;
-  const a5 = 1.061405429;
-  const p = 0.3275911;
+  const a1 = 0.254_829_592;
+  const a2 = -0.284_496_736;
+  const a3 = 1.421_413_741;
+  const a4 = -1.453_152_027;
+  const a5 = 1.061_405_429;
+  const p = 0.327_591_1;
 
   const sign = z < 0 ? -1 : 1;
   const absZ = Math.abs(z) / Math.sqrt(2);
 
-  const t = 1.0 / (1.0 + p * absZ);
+  const t = 1 / (1 + p * absZ);
   const y =
-    1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-absZ * absZ);
+    1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-absZ * absZ);
 
-  return 0.5 * (1.0 + sign * y);
+  return 0.5 * (1 + sign * y);
 }
 
 /**
@@ -673,6 +626,154 @@ export function getEngagementGrade(engagementPerView: number | null): {
 // BOTTLENECK DETECTION
 // ============================================
 
+// ── Bottleneck Check Helpers ─────────────────────────────
+
+function checkInsufficientData(derived: DerivedMetrics): BottleneckResult | null {
+  if (derived.totalViews >= 100 || (derived.impressions ?? 0) >= 500) {
+    return null;
+  }
+  return {
+    bottleneck: "NOT_ENOUGH_DATA",
+    evidence: `Only ${derived.totalViews} views and ${derived.impressions ?? 0} impressions. Need ~100 views or ~500 impressions for reliable analysis.`,
+    metrics: [
+      { label: "Views", value: derived.totalViews.toLocaleString() },
+      { label: "Impressions", value: derived.impressions?.toLocaleString() ?? "N/A" },
+    ],
+  };
+}
+
+function checkDiscoveryImpressions(
+  derived: DerivedMetrics,
+  baseline: ChannelBaseline,
+): BottleneckResult | null {
+  if (derived.impressions == null || baseline.sampleSize <= 0) {return null;}
+
+  const expectedDaily =
+    (baseline.viewsPerDay.mean / (baseline.viewsPerDay.mean * 0.05 || 1)) * 100;
+
+  if (derived.impressions >= expectedDaily * 0.5 || derived.daysInRange <= 3) {
+    return null;
+  }
+
+  return {
+    bottleneck: "DISCOVERY_IMPRESSIONS",
+    evidence: `Impressions (${derived.impressions.toLocaleString()}) are low. YouTube isn't showing this video to many people. Focus on discoverability: title, thumbnail, and initial engagement.`,
+    metrics: [{
+      label: "Impressions",
+      value: derived.impressions.toLocaleString(),
+      comparison: "Below expected for your channel",
+    }],
+  };
+}
+
+function checkDiscoveryCtr(
+  derived: DerivedMetrics,
+  baseline: ChannelBaseline,
+): BottleneckResult | null {
+  if (
+    derived.impressionsCtr == null ||
+    baseline.impressionsCtr?.mean == null ||
+    baseline.impressionsCtr.mean <= 0
+  ) {
+    return null;
+  }
+
+  const ctrRatio = derived.impressionsCtr / baseline.impressionsCtr.mean;
+  if (ctrRatio >= 0.7) {return null;}
+
+  const belowPct = ((1 - ctrRatio) * 100).toFixed(0);
+  return {
+    bottleneck: "DISCOVERY_CTR",
+    evidence: `CTR (${derived.impressionsCtr.toFixed(1)}%) is ${belowPct}% below your channel median. People see the video but don't click. Improve title/thumbnail packaging.`,
+    metrics: [{
+      label: "CTR",
+      value: `${derived.impressionsCtr.toFixed(1)}%`,
+      comparison: `${belowPct}% below your median`,
+    }],
+  };
+}
+
+function checkRetentionBottleneck(
+  derived: DerivedMetrics,
+  comparison: BaselineComparison,
+  baseline: ChannelBaseline,
+): BottleneckResult | null {
+  const avdPct = derived.avgViewPercentage ?? (derived.avdRatio ?? 0) * 100;
+  if (avdPct <= 0 || baseline.avgViewPercentage.mean <= 0) {return null;}
+  if (comparison.avgViewPercentage.vsBaseline !== "below") {return null;}
+
+  const retentionDelta = comparison.avgViewPercentage.delta ?? 0;
+  if (retentionDelta >= -15) {return null;}
+
+  const absDelta = Math.abs(retentionDelta).toFixed(0);
+  return {
+    bottleneck: "RETENTION",
+    evidence: `Retention (${avdPct.toFixed(1)}% avg viewed) is ${absDelta}% below your channel median. Viewers click but don't stay. Check hook, pacing, and content delivery.`,
+    metrics: [{
+      label: "Avg % Viewed",
+      value: `${avdPct.toFixed(1)}%`,
+      comparison: `${absDelta}% below your median`,
+    }],
+  };
+}
+
+function checkConversionBottleneck(
+  derived: DerivedMetrics,
+  comparison: BaselineComparison,
+  baseline: ChannelBaseline,
+): BottleneckResult | null {
+  if (
+    derived.subsPer1k == null ||
+    baseline.subsPer1k.mean <= 0 ||
+    comparison.subsPer1k.vsBaseline !== "below"
+  ) {
+    return null;
+  }
+
+  const subsDelta = comparison.subsPer1k.delta ?? 0;
+  const endScreenWeak =
+    derived.endScreenClickRate != null &&
+    baseline.endScreenCtr?.mean != null &&
+    derived.endScreenClickRate < baseline.endScreenCtr.mean * 0.7;
+
+  if (subsDelta >= -20 && !endScreenWeak) {return null;}
+
+  const metrics: Array<{ label: string; value: string; comparison?: string }> = [{
+    label: "Subs/1K Views",
+    value: derived.subsPer1k.toFixed(2),
+    comparison: subsDelta < 0
+      ? `${Math.abs(subsDelta).toFixed(0)}% below your median`
+      : undefined,
+  }];
+
+  if (derived.endScreenClickRate != null) {
+    metrics.push({
+      label: "End Screen CTR",
+      value: `${derived.endScreenClickRate.toFixed(1)}%`,
+      comparison: endScreenWeak ? "Below baseline" : undefined,
+    });
+  }
+
+  return {
+    bottleneck: "CONVERSION",
+    evidence: `Subscriber conversion (${derived.subsPer1k.toFixed(2)}/1K) is below your channel average. Viewers watch but don't subscribe. Add/improve CTAs and end screens.`,
+    metrics,
+  };
+}
+
+function buildDefaultBottleneck(derived: DerivedMetrics): BottleneckResult {
+  const avdPct = derived.avgViewPercentage ?? (derived.avdRatio ?? 0) * 100;
+  return {
+    bottleneck: "NOT_ENOUGH_DATA",
+    evidence: "Metrics are within normal range or insufficient data for clear diagnosis.",
+    metrics: [
+      { label: "Views", value: derived.totalViews.toLocaleString() },
+      { label: "Avg % Viewed", value: avdPct > 0 ? `${avdPct.toFixed(1)}%` : "N/A" },
+      { label: "Subs/1K", value: derived.subsPer1k?.toFixed(2) ?? "N/A" },
+    ],
+  };
+}
+
 /**
  * Detect the primary bottleneck limiting video performance
  * Uses evidence-based rules comparing video metrics to baseline
@@ -682,148 +783,14 @@ export function detectBottleneck(
   comparison: BaselineComparison,
   baseline: ChannelBaseline,
 ): BottleneckResult {
-  const metrics: Array<{ label: string; value: string; comparison?: string }> =
-    [];
-
-  // Check if we have enough data
-  const hasEnoughViews = derived.totalViews >= 100;
-  const hasEnoughImpressions = (derived.impressions ?? 0) >= 500;
-
-  if (!hasEnoughViews && !hasEnoughImpressions) {
-    return {
-      bottleneck: "NOT_ENOUGH_DATA",
-      evidence: `Only ${derived.totalViews} views and ${derived.impressions ?? 0} impressions. Need ~100 views or ~500 impressions for reliable analysis.`,
-      metrics: [
-        { label: "Views", value: derived.totalViews.toLocaleString() },
-        {
-          label: "Impressions",
-          value: derived.impressions?.toLocaleString() ?? "N/A",
-        },
-      ],
-    };
-  }
-
-  // 1. DISCOVERY_IMPRESSIONS: Low impressions relative to baseline
-  if (derived.impressions != null && baseline.sampleSize > 0) {
-    // If impressions are significantly below what we'd expect for this channel
-    const expectedDailyImpressions =
-      (baseline.viewsPerDay.mean / (baseline.viewsPerDay.mean * 0.05 || 1)) *
-      100;
-    if (
-      derived.impressions < expectedDailyImpressions * 0.5 &&
-      derived.daysInRange > 3
-    ) {
-      metrics.push({
-        label: "Impressions",
-        value: derived.impressions.toLocaleString(),
-        comparison: "Below expected for your channel",
-      });
-      return {
-        bottleneck: "DISCOVERY_IMPRESSIONS",
-        evidence: `Impressions (${derived.impressions.toLocaleString()}) are low. YouTube isn't showing this video to many people. Focus on discoverability: title, thumbnail, and initial engagement.`,
-        metrics,
-      };
-    }
-  }
-
-  // 2. DISCOVERY_CTR: Impressions exist but CTR is low vs baseline
-  if (
-    derived.impressionsCtr != null &&
-    baseline.impressionsCtr?.mean != null &&
-    baseline.impressionsCtr.mean > 0
-  ) {
-    const ctrRatio = derived.impressionsCtr / baseline.impressionsCtr.mean;
-    if (ctrRatio < 0.7) {
-      // CTR is 30%+ below baseline
-      metrics.push({
-        label: "CTR",
-        value: `${derived.impressionsCtr.toFixed(1)}%`,
-        comparison: `${((1 - ctrRatio) * 100).toFixed(0)}% below your median`,
-      });
-      return {
-        bottleneck: "DISCOVERY_CTR",
-        evidence: `CTR (${derived.impressionsCtr.toFixed(1)}%) is ${((1 - ctrRatio) * 100).toFixed(0)}% below your channel median. People see the video but don't click. Improve title/thumbnail packaging.`,
-        metrics,
-      };
-    }
-  }
-
-  // 3. RETENTION: CTR is okay but avg view duration/percentage is low
-  const avdPct = derived.avgViewPercentage ?? (derived.avdRatio ?? 0) * 100;
-  if (
-    avdPct > 0 &&
-    baseline.avgViewPercentage.mean > 0 &&
-    comparison.avgViewPercentage.vsBaseline === "below"
-  ) {
-    const retentionDelta = comparison.avgViewPercentage.delta ?? 0;
-    if (retentionDelta < -15) {
-      // More than 15% below baseline
-      metrics.push({
-        label: "Avg % Viewed",
-        value: `${avdPct.toFixed(1)}%`,
-        comparison: `${Math.abs(retentionDelta).toFixed(0)}% below your median`,
-      });
-      return {
-        bottleneck: "RETENTION",
-        evidence: `Retention (${avdPct.toFixed(1)}% avg viewed) is ${Math.abs(retentionDelta).toFixed(0)}% below your channel median. Viewers click but don't stay. Check hook, pacing, and content delivery.`,
-        metrics,
-      };
-    }
-  }
-
-  // 4. CONVERSION: Views/watch are decent but subs per 1K and end screen CTR are weak
-  if (
-    derived.subsPer1k != null &&
-    baseline.subsPer1k.mean > 0 &&
-    comparison.subsPer1k.vsBaseline === "below"
-  ) {
-    const subsDelta = comparison.subsPer1k.delta ?? 0;
-    const endScreenWeak =
-      derived.endScreenClickRate != null &&
-      baseline.endScreenCtr?.mean != null &&
-      derived.endScreenClickRate < baseline.endScreenCtr.mean * 0.7;
-
-    if (subsDelta < -20 || endScreenWeak) {
-      metrics.push({
-        label: "Subs/1K Views",
-        value: derived.subsPer1k.toFixed(2),
-        comparison:
-          subsDelta < 0
-            ? `${Math.abs(subsDelta).toFixed(0)}% below your median`
-            : undefined,
-      });
-      if (derived.endScreenClickRate != null) {
-        metrics.push({
-          label: "End Screen CTR",
-          value: `${derived.endScreenClickRate.toFixed(1)}%`,
-          comparison: endScreenWeak ? "Below baseline" : undefined,
-        });
-      }
-      return {
-        bottleneck: "CONVERSION",
-        evidence: `Subscriber conversion (${derived.subsPer1k.toFixed(2)}/1K) is below your channel average. Viewers watch but don't subscribe. Add/improve CTAs and end screens.`,
-        metrics,
-      };
-    }
-  }
-
-  // Default: Not enough data to determine bottleneck with confidence
-  return {
-    bottleneck: "NOT_ENOUGH_DATA",
-    evidence:
-      "Metrics are within normal range or insufficient data for clear diagnosis.",
-    metrics: [
-      { label: "Views", value: derived.totalViews.toLocaleString() },
-      {
-        label: "Avg % Viewed",
-        value: avdPct > 0 ? `${avdPct.toFixed(1)}%` : "N/A",
-      },
-      {
-        label: "Subs/1K",
-        value: derived.subsPer1k?.toFixed(2) ?? "N/A",
-      },
-    ],
-  };
+  return (
+    checkInsufficientData(derived) ??
+    checkDiscoveryImpressions(derived, baseline) ??
+    checkDiscoveryCtr(derived, baseline) ??
+    checkRetentionBottleneck(derived, comparison, baseline) ??
+    checkConversionBottleneck(derived, comparison, baseline) ??
+    buildDefaultBottleneck(derived)
+  );
 }
 
 // ============================================
@@ -879,7 +846,7 @@ function getDiscoveryConfidence(
   // Very low views -> Low regardless of impressions
   if (views < 10) {return "Low";}
   // High confidence requires significant sample
-  if (impressions >= 10000 && hasTrafficSources) {return "High";}
+  if (impressions >= 10_000 && hasTrafficSources) {return "High";}
   // Medium requires meaningful impressions (200+)
   if (impressions >= 200) {return "Medium";}
   return "Low";

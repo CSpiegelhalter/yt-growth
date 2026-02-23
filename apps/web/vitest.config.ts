@@ -1,5 +1,5 @@
-import { defineConfig } from "vitest/config";
 import path from "path";
+import { defineConfig } from "vitest/config";
 
 /**
  * Vitest Unit Tests Configuration
@@ -27,8 +27,8 @@ export default defineConfig({
         singleFork: true,
       },
     },
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    testTimeout: 10_000,
+    hookTimeout: 10_000,
     coverage: {
       reporter: ["text", "html"],
       include: ["lib/**/*.ts"],

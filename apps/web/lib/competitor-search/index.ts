@@ -13,9 +13,9 @@ export { DEFAULT_FILTERS } from "./types";
 
 // Export pure utilities (can be used in tests)
 export {
-  sanitizeNicheText,
   hashNicheForLogging,
   makeCacheKey,
+  sanitizeNicheText,
 } from "./utils";
 
 // Export server-only niche inference (with API calls)

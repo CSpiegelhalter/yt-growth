@@ -1,14 +1,15 @@
 /**
  * YouTube API Utils Unit Tests
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect,it } from "vitest";
+
 import {
-  decodeHtmlEntities,
-  parseDuration,
   chunk,
-  mapLimit,
-  yyyyMmDd,
   daysSince,
+  decodeHtmlEntities,
+  mapLimit,
+  parseDuration,
+  yyyyMmDd,
 } from "../utils";
 
 describe("decodeHtmlEntities", () => {
@@ -108,7 +109,7 @@ describe("mapLimit", () => {
     await mapLimit(items, 2, async (n) => {
       concurrent++;
       maxConcurrent = Math.max(maxConcurrent, concurrent);
-      await new Promise((r) => setTimeout(r, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       concurrent--;
       return n;
     });
@@ -129,7 +130,7 @@ describe("mapLimit", () => {
     await mapLimit(items, 1, async (n) => {
       concurrent++;
       maxConcurrent = Math.max(maxConcurrent, concurrent);
-      await new Promise((r) => setTimeout(r, 5));
+      await new Promise((resolve) => setTimeout(resolve, 5));
       concurrent--;
       return n;
     });

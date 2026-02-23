@@ -1,5 +1,5 @@
-import path from "path";
 import fs from "fs";
+import path from "path";
 
 type Result = {
   cssFile: string;
@@ -15,7 +15,7 @@ function read(file: string) {
 }
 
 function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return s.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 /**
@@ -71,7 +71,7 @@ function findImportNames(code: string, moduleCssBaseName: string): string[] {
 function detectDynamicIndexedAccess(code: string, importName: string): boolean {
   // s[ <anything not starting with quote> ... ]
   const re = new RegExp(
-    `\\b${escapeRegExp(importName)}\\s*\\[\\s*[^"'\\s]`,
+    String.raw`\b${escapeRegExp(importName)}\s*\[\s*[^"'\s]`,
     "m",
   );
   return re.test(code);
@@ -83,15 +83,15 @@ function countUsages(
   className: string,
 ): number {
   const dot = new RegExp(
-    `\\b${escapeRegExp(importName)}\\.${escapeRegExp(className)}\\b`,
+    String.raw`\b${escapeRegExp(importName)}\.${escapeRegExp(className)}\b`,
     "g",
   );
   const bracketDq = new RegExp(
-    `\\b${escapeRegExp(importName)}\\s*\\[\\s*"${escapeRegExp(className)}"\\s*\\]`,
+    String.raw`\b${escapeRegExp(importName)}\s*\[\s*"${escapeRegExp(className)}"\s*\]`,
     "g",
   );
   const bracketSq = new RegExp(
-    `\\b${escapeRegExp(importName)}\\s*\\[\\s*'${escapeRegExp(className)}'\\s*\\]`,
+    String.raw`\b${escapeRegExp(importName)}\s*\[\s*'${escapeRegExp(className)}'\s*\]`,
     "g",
   );
 
@@ -115,8 +115,69 @@ function isLikelyImporter(code: string, cssBaseName: string): boolean {
   );
 }
 
+function findImporterCandidates(codeFiles: string[], cssBase: string): string[] {
+  return codeFiles.filter((f) => isLikelyImporter(read(f), cssBase));
+}
+
+function collectUsages(
+  importerCandidates: string[],
+  cssBase: string,
+  classes: Set<string>,
+): { used: Set<string>; suspiciousDynamicAccess: boolean } {
+  const used = new Set<string>();
+  let suspiciousDynamicAccess = false;
+
+  for (const importer of importerCandidates) {
+    const code = read(importer);
+    const importNames = findImportNames(code, cssBase);
+
+    for (const importName of importNames) {
+      if (detectDynamicIndexedAccess(code, importName)) {
+        suspiciousDynamicAccess = true;
+      }
+      for (const cls of classes) {
+        if (countUsages(code, importName, cls) > 0) {used.add(cls);}
+      }
+    }
+  }
+
+  return { used, suspiciousDynamicAccess };
+}
+
+function analyzeCssModule(cssFile: string, codeFiles: string[]): Result | null {
+  const css = read(cssFile);
+  const classes = extractCssModuleClasses(css);
+  if (classes.size === 0) {return null;}
+
+  const cssBase = path.basename(cssFile);
+  const importerCandidates = findImporterCandidates(codeFiles, cssBase);
+
+  if (importerCandidates.length === 0) {
+    return {
+      cssFile,
+      unused: [...classes].sort(),
+      suspiciousDynamicAccess: true,
+      importers: [],
+    };
+  }
+
+  const { used, suspiciousDynamicAccess } = collectUsages(importerCandidates, cssBase, classes);
+
+  const unused = [...classes]
+    .filter((c) => !used.has(c))
+    .sort();
+
+  if (unused.length === 0) {return null;}
+
+  return {
+    cssFile,
+    unused,
+    suspiciousDynamicAccess,
+    importers: importerCandidates,
+  };
+}
+
 async function main() {
-  // Scan within apps/web only
   const cssFiles = await bunGlob("**/*.module.css", APPS_WEB);
   const codeFiles = [
     ...(await bunGlob("**/*.ts", APPS_WEB)),
@@ -128,60 +189,8 @@ async function main() {
   const results: Result[] = [];
 
   for (const cssFile of cssFiles) {
-    const css = read(cssFile);
-    const classes = extractCssModuleClasses(css);
-    if (classes.size === 0) {continue;}
-
-    const cssBase = path.basename(cssFile);
-
-    // First pass: filter likely importers cheaply
-    const importerCandidates: string[] = [];
-    for (const f of codeFiles) {
-      const code = read(f);
-      if (isLikelyImporter(code, cssBase)) {importerCandidates.push(f);}
-    }
-
-    if (importerCandidates.length === 0) {
-      // Nobody imports it (or import path doesn’t include base name). Flag everything as unused,
-      // but you should treat this as "needs review" rather than auto-delete.
-      results.push({
-        cssFile,
-        unused: Array.from(classes).sort(),
-        suspiciousDynamicAccess: true, // mark true to force manual review
-        importers: [],
-      });
-      continue;
-    }
-
-    const used = new Set<string>();
-    let suspiciousDynamicAccess = false;
-
-    for (const importer of importerCandidates) {
-      const code = read(importer);
-      const importNames = findImportNames(code, cssBase);
-      if (importNames.length === 0) {continue;}
-
-      for (const importName of importNames) {
-        if (detectDynamicIndexedAccess(code, importName))
-          {suspiciousDynamicAccess = true;}
-
-        for (const cls of classes) {
-          if (countUsages(code, importName, cls) > 0) {used.add(cls);}
-        }
-      }
-    }
-
-    const unused = Array.from(classes)
-      .filter((c) => !used.has(c))
-      .sort();
-    if (unused.length > 0) {
-      results.push({
-        cssFile,
-        unused,
-        suspiciousDynamicAccess,
-        importers: importerCandidates,
-      });
-    }
+    const result = analyzeCssModule(cssFile, codeFiles);
+    if (result) {results.push(result);}
   }
 
   const reportPath = path.join(APPS_WEB, ".css-modules-unused.json");
@@ -190,7 +199,7 @@ async function main() {
   console.log(`Files with unused classes: ${results.length}`);
 }
 
-main().catch((e) => {
-  console.error(e);
+main().catch((error) => {
+  console.error(error);
   process.exit(1);
 });

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+
+import { getCurrentUser, isAdminUser  } from "@/lib/server/auth";
+
 import AdminYoutubeUsageClient from "./AdminYoutubeUsageClient";
-import { getCurrentUser } from "@/lib/server/auth";
-import { isAdminUser } from "@/lib/server/auth";
 
 export const metadata: Metadata = {
   title: "Admin · YouTube API Usage",

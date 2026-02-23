@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { type ReactNode,useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useFocusTrap } from "@/lib/client/use-focus-trap";
-import { useEscapeKey } from "@/lib/client/use-escape-key";
+
 import { useBodyScrollLock } from "@/lib/client/use-body-scroll-lock";
+import { useEscapeKey } from "@/lib/client/use-escape-key";
+import { useFocusTrap } from "@/lib/client/use-focus-trap";
+
 import s from "./style.module.css";
 
 type Props = {

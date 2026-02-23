@@ -21,12 +21,12 @@ import type {
 export function computeChannelBaseline(
   videoMetrics: VideoMetricsRecord[],
 ): AuditBaseline {
-  if (!videoMetrics.length) {return null;}
+  if (videoMetrics.length === 0) {return null;}
 
   const withViews = videoMetrics.filter(
     (v) => v.viewCount && v.viewCount > 100,
   );
-  if (!withViews.length) {return null;}
+  if (withViews.length === 0) {return null;}
 
   const avgViewPercentage =
     withViews
@@ -78,6 +78,13 @@ export function computeTrafficSourcePercentages(
   };
 }
 
+function getDirection(val: number | null): "up" | "down" | "flat" {
+  if (val == null) {return "flat";}
+  if (val > 5) {return "up";}
+  if (val < -5) {return "down";}
+  return "flat";
+}
+
 /**
  * Derive trend direction from percentage-change values.
  * ±5% threshold separates "up"/"down" from "flat".
@@ -85,13 +92,6 @@ export function computeTrafficSourcePercentages(
 export function computeTrends(
   metrics: ChannelMetricsSnapshot | null,
 ): AuditTrends {
-  const getDirection = (val: number | null): "up" | "down" | "flat" => {
-    if (val == null) {return "flat";}
-    if (val > 5) {return "up";}
-    if (val < -5) {return "down";}
-    return "flat";
-  };
-
   return {
     views: {
       value: metrics?.viewsTrend ?? null,

@@ -1,8 +1,9 @@
 import "server-only";
 
 import { prisma } from "@/prisma";
-import type { ChannelProfile } from "../types";
+
 import { ChannelError } from "../errors";
+import type { ChannelProfile } from "../types";
 import { dbToProfile, type ProfileRow } from "./profile-helpers";
 
 type GetProfileInput = {
@@ -33,11 +34,11 @@ export async function getProfile(
       WHERE "channelId" = ${channel.id}
       LIMIT 1
     `;
-  } catch (err) {
+  } catch (error) {
     throw new ChannelError(
       "EXTERNAL_FAILURE",
       "Profile system not available",
-      err,
+      error,
     );
   }
 

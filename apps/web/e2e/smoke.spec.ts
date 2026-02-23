@@ -4,7 +4,8 @@
  * Quick regression tests that verify main pages load without errors.
  * These tests should be fast and catch obvious breakage.
  */
-import { test, expect } from "@playwright/test";
+import { expect,test } from "@playwright/test";
+
 import {
   signIn,
   TEST_USER,

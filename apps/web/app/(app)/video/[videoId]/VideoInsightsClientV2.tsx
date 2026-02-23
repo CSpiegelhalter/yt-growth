@@ -12,42 +12,44 @@
  * Summary and deep dives are fetched client-side progressively.
  */
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef,useState } from "react";
+
 import {
   canAttemptOAuth,
   recordOAuthAttempt,
 } from "@/lib/client/oauthAttemptTracker";
-import styles from "./VideoInsightsV2.module.css";
-import { VideoHeaderCompact } from "./components/VideoHeaderCompact";
-import { AnalysisTabs, TabPanel, type TabId } from "./components/AnalysisTabs";
-import {
-  OverviewPanel,
-  RetentionPanel,
-  SeoPanel,
-  CommentsPanel,
-  IdeasPanel,
-  TrafficSourcePanel,
-  PostWatchPanel,
-  ShortsMetricsPanel,
-  DimensionalInsightsPanel,
-} from "./components/panels";
-import type { CoreAnalysis } from "./components/AiSummaryCard";
 import type {
-  BottleneckResult,
-  DerivedMetrics,
+  DemographicBreakdown,
+  GeographicBreakdown,
+  SubscriberBreakdown,
+  TrafficSourceDetail,
+  VideoMetadata,
+} from "@/lib/ports/YouTubePort";
+import type {
   AnalyticsTotals,
-  DailyAnalyticsRow,
-  ChannelBaseline,
   BaselineComparison,
+  BottleneckResult,
+  ChannelBaseline,
+  DailyAnalyticsRow,
+  DerivedMetrics,
   SectionConfidence,
 } from "@/types/api";
-import type {
-  VideoMetadata,
-  SubscriberBreakdown,
-  GeographicBreakdown,
-  TrafficSourceDetail,
-  DemographicBreakdown,
-} from "@/lib/ports/YouTubePort";
+
+import type { CoreAnalysis } from "./components/AiSummaryCard";
+import { AnalysisTabs, type TabId,TabPanel } from "./components/AnalysisTabs";
+import {
+  CommentsPanel,
+  DimensionalInsightsPanel,
+  IdeasPanel,
+  OverviewPanel,
+  PostWatchPanel,
+  RetentionPanel,
+  SeoPanel,
+  ShortsMetricsPanel,
+  TrafficSourcePanel,
+} from "./components/panels";
+import { VideoHeaderCompact } from "./components/VideoHeaderCompact";
+import styles from "./VideoInsightsV2.module.css";
 
 // Types for deep dive data
 type SeoData = {
@@ -148,13 +150,7 @@ export default function VideoInsightsClientV2({
   from,
   analytics,
 }: Props) {
-  // Navigation
-  const backLinkBase =
-    from === "subscriber-insights" ? "/subscriber-insights" : "/dashboard";
-  const backLink = {
-    href: `${backLinkBase}?channelId=${encodeURIComponent(channelId)}`,
-    label: from === "subscriber-insights" ? "Subscriber Insights" : "Dashboard",
-  };
+  const backLink = buildBackLink(from, channelId);
 
   // State
   const [range] = useState(initialRange);
@@ -182,8 +178,8 @@ export default function VideoInsightsClientV2({
       }
       const data = (await res.json()) as SummaryResponse;
       setSummary(data.summary);
-    } catch (err) {
-      console.warn("Summary fetch error:", err);
+    } catch (error) {
+      console.warn("Summary fetch error:", error);
     } finally {
       setSummaryLoading(false);
     }
@@ -215,13 +211,13 @@ export default function VideoInsightsClientV2({
           ...prev,
           seo: { data: result.seo, loading: false, error: null },
         }));
-      } catch (err) {
+      } catch (error) {
         setDeepDive((prev) => ({
           ...prev,
           seo: {
             data: null,
             loading: false,
-            error: err instanceof Error ? err.message : "Failed",
+            error: error instanceof Error ? error.message : "Failed",
           },
         }));
       }
@@ -237,13 +233,11 @@ export default function VideoInsightsClientV2({
           const errData = await res.json().catch(() => ({}));
           const errorCode =
             errData.details?.code || errData.code || errData.error?.code;
-          if (errorCode === "youtube_permissions") {
-            if (canAttemptOAuth()) {
+          if (errorCode === "youtube_permissions" && canAttemptOAuth()) {
               recordOAuthAttempt();
               window.location.href = `/api/integrations/google/start?channelId=${encodeURIComponent(channelId)}`;
               return;
             }
-          }
           throw new Error(
             errData.error?.message ||
               errData.error ||
@@ -255,13 +249,13 @@ export default function VideoInsightsClientV2({
           ...prev,
           comments: { data: result.comments, loading: false, error: null },
         }));
-      } catch (err) {
+      } catch (error) {
         setDeepDive((prev) => ({
           ...prev,
           comments: {
             data: null,
             loading: false,
-            error: err instanceof Error ? err.message : "Failed",
+            error: error instanceof Error ? error.message : "Failed",
           },
         }));
       }
@@ -284,87 +278,37 @@ export default function VideoInsightsClientV2({
           ...prev,
           ideas: { data: result.ideas, loading: false, error: null },
         }));
-      } catch (err) {
+      } catch (error) {
         setDeepDive((prev) => ({
           ...prev,
           ideas: {
             data: null,
             loading: false,
-            error: err instanceof Error ? err.message : "Failed",
+            error: error instanceof Error ? error.message : "Failed",
           },
         }));
       }
     };
 
-    // Fire all in parallel (non-blocking)
-    fetchSeo();
-    fetchComments();
-    fetchIdeas();
+    void fetchSeo();
+    void fetchComments();
+    void fetchIdeas();
   }, [channelId, videoId, range]);
 
-  // Fetch summary and deep dives on mount
   useEffect(() => {
     if (fetchedRef.current) {return;}
     fetchedRef.current = true;
 
-    fetchSummary();
-    prefetchDeepDives();
+    void fetchSummary();
+    void prefetchDeepDives();
   }, [fetchSummary, prefetchDeepDives]);
 
-  // Destructure analytics
   const { video, derived, baseline, bottleneck, retention } = analytics;
-
-  // KPIs for header
   const avgViewed = analytics.analytics.totals.averageViewPercentage ?? 0;
-  const netSubs =
-    (analytics.analytics.totals.subscribersGained ?? 0) -
-    (analytics.analytics.totals.subscribersLost ?? 0);
 
-  const kpis = {
-    views: derived.totalViews,
-    watchTimeMin: analytics.analytics.totals.estimatedMinutesWatched,
-    avgViewedPct: avgViewed,
-    ctr: derived.impressionsCtr,
-    subsGained: netSubs,
-  };
-
-  // Engagement stats for display next to thumbnail
-  const engagement = {
-    likes: analytics.analytics.totals.likes ?? video.likeCount ?? 0,
-    comments: analytics.analytics.totals.comments ?? video.commentCount ?? 0,
-  };
-
-  // Format views/day - show decimal for low values
-  const viewsPerDayDisplay =
-    derived.viewsPerDay != null
-      ? derived.viewsPerDay >= 10
-        ? Math.round(derived.viewsPerDay).toString()
-        : derived.viewsPerDay >= 1
-          ? derived.viewsPerDay.toFixed(1)
-          : derived.viewsPerDay > 0
-            ? `< 1`
-            : "0"
-      : null;
-
-  const allMetrics = [
-    { label: "Shares", value: analytics.analytics.totals.shares ?? 0 },
-    ...(viewsPerDayDisplay
-      ? [{ label: "Views/day", value: viewsPerDayDisplay }]
-      : []),
-    ...(derived.engagementPerView != null
-      ? [
-          {
-            label: "Engagement rate",
-            value: `${(derived.engagementPerView * 100).toFixed(1)}%`,
-          },
-        ]
-      : []),
-    ...(derived.subsPer1k != null
-      ? [{ label: "Subs/1K views", value: derived.subsPer1k.toFixed(2) }]
-      : []),
-  ];
-
-  // Discovery stats for the chart panel
+  const kpis = computeKpis(analytics, derived, avgViewed);
+  const engagement = computeEngagement(analytics, video);
+  const allMetrics = computeAllMetrics(analytics, derived);
   const discoveryStats = {
     impressions: derived.impressions,
     ctr: derived.impressionsCtr,
@@ -401,59 +345,17 @@ export default function VideoInsightsClientV2({
       {/* Tab Content */}
       <div className={styles.tabContent}>
         <TabPanel id="overview" activeTab={activeTab}>
-          {/* Shorts-specific metrics (show for videos <= 60 seconds) */}
-          {video.durationSec <= 60 && (
-            <ShortsMetricsPanel
-              durationSec={video.durationSec}
-              avgViewPercentage={avgViewed}
-              avgViewDuration={
-                avgViewed && video.durationSec
-                  ? (avgViewed / 100) * video.durationSec
-                  : null
-              }
-            />
-          )}
-
-          <OverviewPanel
+          <OverviewTabContent
+            analytics={analytics}
+            video={video}
+            derived={derived}
+            baseline={baseline}
+            bottleneck={bottleneck}
+            avgViewed={avgViewed}
             summary={summary}
             summaryLoading={summaryLoading}
-            bottleneck={bottleneck}
-            metrics={allMetrics}
+            allMetrics={allMetrics}
             discoveryStats={discoveryStats}
-            publishedAt={video.publishedAt}
-          />
-
-          {/* Dimensional Insights - Subscriber, Geo, Traffic Detail, Demographics */}
-          <DimensionalInsightsPanel
-            subscriberBreakdown={analytics.subscriberBreakdown}
-            geoBreakdown={analytics.geoBreakdown}
-            trafficDetail={analytics.trafficDetail}
-            demographicBreakdown={analytics.demographicBreakdown}
-            impressionsCtr={derived.impressionsCtr}
-          />
-
-          {/* Traffic Sources */}
-          <TrafficSourcePanel
-            trafficSources={derived.trafficSources ?? null}
-            totalViews={derived.totalViews}
-          />
-
-          {/* Post-Watch Behavior */}
-          <PostWatchPanel
-            endScreenClicks={
-              analytics.analytics.totals.annotationClicks ?? null
-            }
-            endScreenImpressions={
-              analytics.analytics.totals.annotationImpressions ?? null
-            }
-            endScreenCtr={derived.endScreenClickRate ?? null}
-            avgViewPercentage={avgViewed}
-            shares={analytics.analytics.totals.shares ?? null}
-            playlistAdds={
-              analytics.analytics.totals.videosAddedToPlaylists ?? null
-            }
-            totalViews={derived.totalViews}
-            baselineEndScreenCtr={baseline?.endScreenCtr?.mean ?? null}
           />
         </TabPanel>
 
@@ -502,4 +404,148 @@ export default function VideoInsightsClientV2({
       </div>
     </main>
   );
+}
+
+function buildBackLink(from: string | undefined, channelId: string) {
+  const base =
+    from === "subscriber-insights" ? "/subscriber-insights" : "/dashboard";
+  return {
+    href: `${base}?channelId=${encodeURIComponent(channelId)}`,
+    label: from === "subscriber-insights" ? "Subscriber Insights" : "Dashboard",
+  };
+}
+
+function computeAvgViewDuration(
+  avgViewed: number,
+  durationSec: number,
+): number | null {
+  if (avgViewed && durationSec) {return (avgViewed / 100) * durationSec;}
+  return null;
+}
+
+function OverviewTabContent({
+  analytics,
+  video,
+  derived,
+  baseline,
+  bottleneck,
+  avgViewed,
+  summary,
+  summaryLoading,
+  allMetrics,
+  discoveryStats,
+}: {
+  analytics: AnalyticsResponse;
+  video: AnalyticsResponse["video"];
+  derived: AnalyticsResponse["derived"];
+  baseline: AnalyticsResponse["baseline"];
+  bottleneck: AnalyticsResponse["bottleneck"];
+  avgViewed: number;
+  summary: CoreAnalysis | null;
+  summaryLoading: boolean;
+  allMetrics: Array<{ label: string; value: string | number }>;
+  discoveryStats: { impressions?: number | null; ctr?: number | null; dailySeries: Array<{ date: string; views: number; [key: string]: unknown }> };
+}) {
+  return (
+    <>
+      {video.durationSec <= 60 && (
+        <ShortsMetricsPanel
+          durationSec={video.durationSec}
+          avgViewPercentage={avgViewed}
+          avgViewDuration={computeAvgViewDuration(avgViewed, video.durationSec)}
+        />
+      )}
+
+      <OverviewPanel
+        summary={summary}
+        summaryLoading={summaryLoading}
+        bottleneck={bottleneck}
+        metrics={allMetrics}
+        discoveryStats={discoveryStats}
+        publishedAt={video.publishedAt}
+      />
+
+      <DimensionalInsightsPanel
+        subscriberBreakdown={analytics.subscriberBreakdown}
+        geoBreakdown={analytics.geoBreakdown}
+        trafficDetail={analytics.trafficDetail}
+        demographicBreakdown={analytics.demographicBreakdown}
+        impressionsCtr={derived.impressionsCtr}
+      />
+
+      <TrafficSourcePanel
+        trafficSources={derived.trafficSources ?? null}
+        totalViews={derived.totalViews}
+      />
+
+      <PostWatchPanel
+        endScreenClicks={analytics.analytics.totals.annotationClicks ?? null}
+        endScreenImpressions={analytics.analytics.totals.annotationImpressions ?? null}
+        endScreenCtr={derived.endScreenClickRate ?? null}
+        avgViewPercentage={avgViewed}
+        shares={analytics.analytics.totals.shares ?? null}
+        playlistAdds={analytics.analytics.totals.videosAddedToPlaylists ?? null}
+        totalViews={derived.totalViews}
+        baselineEndScreenCtr={baseline?.endScreenCtr?.mean ?? null}
+      />
+    </>
+  );
+}
+
+function computeKpis(
+  analytics: AnalyticsResponse,
+  derived: AnalyticsResponse["derived"],
+  avgViewed: number,
+) {
+  const netSubs =
+    (analytics.analytics.totals.subscribersGained ?? 0) -
+    (analytics.analytics.totals.subscribersLost ?? 0);
+  return {
+    views: derived.totalViews,
+    watchTimeMin: analytics.analytics.totals.estimatedMinutesWatched,
+    avgViewedPct: avgViewed,
+    ctr: derived.impressionsCtr,
+    subsGained: netSubs,
+  };
+}
+
+function computeEngagement(
+  analytics: AnalyticsResponse,
+  video: AnalyticsResponse["video"],
+) {
+  return {
+    likes: analytics.analytics.totals.likes ?? video.likeCount ?? 0,
+    comments: analytics.analytics.totals.comments ?? video.commentCount ?? 0,
+  };
+}
+
+function formatViewsPerDay(viewsPerDay: number | null | undefined): string | null {
+  if (viewsPerDay == null) {return null;}
+  if (viewsPerDay >= 10) {return Math.round(viewsPerDay).toString();}
+  if (viewsPerDay >= 1) {return viewsPerDay.toFixed(1);}
+  if (viewsPerDay > 0) {return "< 1";}
+  return "0";
+}
+
+function computeAllMetrics(
+  analytics: AnalyticsResponse,
+  derived: AnalyticsResponse["derived"],
+) {
+  const viewsPerDayDisplay = formatViewsPerDay(derived.viewsPerDay);
+  const metrics: Array<{ label: string; value: string | number }> = [
+    { label: "Shares", value: analytics.analytics.totals.shares ?? 0 },
+  ];
+  if (viewsPerDayDisplay) {
+    metrics.push({ label: "Views/day", value: viewsPerDayDisplay });
+  }
+  if (derived.engagementPerView != null) {
+    metrics.push({
+      label: "Engagement rate",
+      value: `${(derived.engagementPerView * 100).toFixed(1)}%`,
+    });
+  }
+  if (derived.subsPer1k != null) {
+    metrics.push({ label: "Subs/1K views", value: derived.subsPer1k.toFixed(2) });
+  }
+  return metrics;
 }

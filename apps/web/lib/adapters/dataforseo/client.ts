@@ -17,17 +17,23 @@
  */
 
 import "server-only";
+
 import { logger } from "@/lib/shared/logger";
+
 import {
-  validatePhrase,
-  validateLocation,
-  validateKeywords,
   calculateDifficultyHeuristic,
-  parseNumeric,
+  classifyApiStatusError,
+  classifyHttpError,
+  DataForSEOError,
+  isNonRetryableError,
+  isQueuedStatus,
+  isRestrictedCategoryError,
   parseInteger,
   parseMonthlyTrend,
-  isRestrictedCategoryError,
-  DataForSEOError,
+  parseNumeric,
+  validateKeywords,
+  validateLocation,
+  validatePhrase,
 } from "./utils";
 
 
@@ -36,14 +42,14 @@ import {
 // ============================================
 
 const DEFAULT_BASE_URL = "https://api.dataforseo.com/v3";
-const DEFAULT_TIMEOUT_MS = 30000;
+const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 1000;
 
 const TASK_POLL_MAX_WAIT_MS = 8000;
 const TASK_POLL_INTERVALS_MS = [500, 1000, 2000, 3000];
 
-const TRENDS_POLL_MAX_WAIT_MS = 30000;
+const TRENDS_POLL_MAX_WAIT_MS = 30_000;
 const TRENDS_POLL_INTERVALS_MS = [1000, 2000, 3000, 4000, 5000];
 
 // ============================================
@@ -440,37 +446,20 @@ export async function getSearchVolumeTask(
   try {
     const response = await fetchWithRetry<SearchVolumeResult>(endpoint, null, MAX_RETRIES, "GET");
 
-    if (
-      response.status_code === 40601 ||
-      response.status_message?.toLowerCase().includes("queue")
-    ) {
-      return {
-        status: "pending",
-        taskId,
-      };
+    if (isQueuedStatus(response.status_code, response.status_message)) {
+      return { status: "pending", taskId };
     }
 
     const task = response.tasks?.[0];
-
     if (!task) {
-      return {
-        status: "error",
-        error: "Task not found",
-        taskId,
-      };
+      return { status: "error", error: "Task not found", taskId };
     }
 
-    if (
-      task.status_code === 40601 ||
-      task.status_message?.toLowerCase().includes("queue")
-    ) {
-      return {
-        status: "pending",
-        taskId,
-      };
+    if (isQueuedStatus(task.status_code, task.status_message)) {
+      return { status: "pending", taskId };
     }
 
-    if (task.status_code !== 20000) {
+    if (task.status_code !== 20_000) {
       if (isRestrictedCategoryError(task.status_code, task.status_message)) {
         return {
           status: "error",
@@ -478,7 +467,6 @@ export async function getSearchVolumeTask(
           taskId,
         };
       }
-
       return {
         status: "error",
         error: task.status_message || `Task failed with code ${task.status_code}`,
@@ -488,30 +476,19 @@ export async function getSearchVolumeTask(
 
     const results = task.result;
     if (!results || results.length === 0) {
-      return {
-        status: "completed",
-        data: [],
-        taskId,
-      };
+      return { status: "completed", data: [], taskId };
     }
 
     const parsedResults = results.map((item, index) =>
       parseSearchVolumeResult(item, `keyword_${index}`)
     );
 
-    return {
-      status: "completed",
-      data: parsedResults,
-      taskId,
-    };
-  } catch (err) {
-    if (err instanceof DataForSEOError && err.message.includes("not ready")) {
-      return {
-        status: "pending",
-        taskId,
-      };
+    return { status: "completed", data: parsedResults, taskId };
+  } catch (error) {
+    if (error instanceof DataForSEOError && error.message.includes("not ready")) {
+      return { status: "pending", taskId };
     }
-    throw err;
+    throw error;
   }
 }
 
@@ -579,37 +556,20 @@ export async function getKeywordsForKeywordsTask(
       "GET"
     );
 
-    if (
-      response.status_code === 40601 ||
-      response.status_message?.toLowerCase().includes("queue")
-    ) {
-      return {
-        status: "pending",
-        taskId,
-      };
+    if (isQueuedStatus(response.status_code, response.status_message)) {
+      return { status: "pending", taskId };
     }
 
     const task = response.tasks?.[0];
-
     if (!task) {
-      return {
-        status: "error",
-        error: "Task not found",
-        taskId,
-      };
+      return { status: "error", error: "Task not found", taskId };
     }
 
-    if (
-      task.status_code === 40601 ||
-      task.status_message?.toLowerCase().includes("queue")
-    ) {
-      return {
-        status: "pending",
-        taskId,
-      };
+    if (isQueuedStatus(task.status_code, task.status_message)) {
+      return { status: "pending", taskId };
     }
 
-    if (task.status_code !== 20000) {
+    if (task.status_code !== 20_000) {
       if (isRestrictedCategoryError(task.status_code, task.status_message)) {
         return {
           status: "error",
@@ -617,7 +577,6 @@ export async function getKeywordsForKeywordsTask(
           taskId,
         };
       }
-
       return {
         status: "error",
         error: task.status_message || `Task failed with code ${task.status_code}`,
@@ -627,30 +586,19 @@ export async function getKeywordsForKeywordsTask(
 
     const results = task.result;
     if (!results || results.length === 0) {
-      return {
-        status: "completed",
-        data: [],
-        taskId,
-      };
+      return { status: "completed", data: [], taskId };
     }
 
     const parsedResults = results.map((item, index) =>
       parseKeywordsForKeywordsResult(item as KeywordsForKeywordsResult, index)
     );
 
-    return {
-      status: "completed",
-      data: parsedResults,
-      taskId,
-    };
-  } catch (err) {
-    if (err instanceof DataForSEOError && err.message.includes("not ready")) {
-      return {
-        status: "pending",
-        taskId,
-      };
+    return { status: "completed", data: parsedResults, taskId };
+  } catch (error) {
+    if (error instanceof DataForSEOError && error.message.includes("not ready")) {
+      return { status: "pending", taskId };
     }
-    throw err;
+    throw error;
   }
 }
 
@@ -676,7 +624,7 @@ export async function fetchKeywordOverview(options: {
   let attemptIndex = 0;
 
   while (Date.now() - startTime < TASK_POLL_MAX_WAIT_MS) {
-    const waitTime = TASK_POLL_INTERVALS_MS[attemptIndex] ?? TASK_POLL_INTERVALS_MS[TASK_POLL_INTERVALS_MS.length - 1];
+    const waitTime = TASK_POLL_INTERVALS_MS[attemptIndex] ?? TASK_POLL_INTERVALS_MS.at(-1);
     await sleep(waitTime ?? 1000);
 
     const result = await getSearchVolumeTask(taskId);
@@ -753,7 +701,7 @@ export async function fetchRelatedKeywords(options: {
   let attemptIndex = 0;
 
   while (Date.now() - startTime < TASK_POLL_MAX_WAIT_MS) {
-    const waitTime = TASK_POLL_INTERVALS_MS[attemptIndex] ?? TASK_POLL_INTERVALS_MS[TASK_POLL_INTERVALS_MS.length - 1];
+    const waitTime = TASK_POLL_INTERVALS_MS[attemptIndex] ?? TASK_POLL_INTERVALS_MS.at(-1);
     await sleep(waitTime ?? 1000);
 
     const result = await getKeywordsForKeywordsTask(taskId);
@@ -811,6 +759,85 @@ export async function fetchRelatedKeywords(options: {
 // COMBINED KEYWORD RESEARCH (OPTIMIZED)
 // ============================================
 
+function throwOnTaskError<T>(
+  result: TaskGetResult<T>,
+  fallbackMessage: string,
+  taskId: string
+): void {
+  if (result.status === "error") {
+    throw new DataForSEOError(result.error || fallbackMessage, "API_ERROR", taskId);
+  }
+}
+
+async function pollDualTasks<A, B>(
+  taskA: { id: string; poll: (id: string) => Promise<TaskGetResult<A>> },
+  taskB: { id: string; poll: (id: string) => Promise<TaskGetResult<B>> },
+  maxWaitMs: number,
+  intervals: number[]
+): Promise<{ a: TaskGetResult<A>; b: TaskGetResult<B> }> {
+  const startTime = Date.now();
+  let attemptIndex = 0;
+  let a: TaskGetResult<A> | undefined;
+  let b: TaskGetResult<B> | undefined;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const waitTime = intervals[attemptIndex] ?? intervals.at(-1) ?? 1000;
+    await sleep(waitTime);
+
+    [a, b] = await Promise.all([
+      !a || a.status === "pending" ? taskA.poll(taskA.id) : Promise.resolve(a),
+      !b || b.status === "pending" ? taskB.poll(taskB.id) : Promise.resolve(b),
+    ]);
+
+    if (a.status !== "pending" && b.status !== "pending") {
+      break;
+    }
+    attemptIndex++;
+  }
+
+  return {
+    a: a ?? { status: "pending", taskId: taskA.id },
+    b: b ?? { status: "pending", taskId: taskB.id },
+  };
+}
+
+function buildCombinedResponse(
+  pollResults: { a: TaskGetResult<KeywordMetrics[]>; b: TaskGetResult<RelatedKeywordRow[]> },
+  ctx: { phrase: string; region: string; seedTaskId: string; relatedTaskId: string }
+): KeywordCombinedResponse {
+  const { a: seedResult, b: relatedResult } = pollResults;
+
+  throwOnTaskError(seedResult, "Seed keyword task failed", ctx.seedTaskId);
+  throwOnTaskError(relatedResult, "Related keywords task failed", ctx.relatedTaskId);
+
+  const seedCompleted = seedResult.status === "completed";
+  const relatedCompleted = relatedResult.status === "completed";
+
+  const meta = {
+    location: ctx.region,
+    phrase: ctx.phrase,
+    fetchedAt: new Date().toISOString(),
+    seedTaskId: ctx.seedTaskId,
+    relatedTaskId: ctx.relatedTaskId,
+  };
+
+  const seedMetrics = seedCompleted && seedResult.data ? seedResult.data[0] ?? null : null;
+  const relatedKeywords = relatedCompleted && relatedResult.data ? relatedResult.data : [];
+
+  const response: KeywordCombinedResponse = { seedMetrics, relatedKeywords, meta };
+
+  if (!seedCompleted || !relatedCompleted) {
+    response.pending = {
+      seed: !seedCompleted,
+      related: !relatedCompleted,
+      seedTaskId: !seedCompleted ? ctx.seedTaskId : undefined,
+      relatedTaskId: !relatedCompleted ? ctx.relatedTaskId : undefined,
+    };
+  }
+
+  return response;
+}
+
 export async function fetchCombinedKeywordData(options: {
   phrase: string;
   location?: string;
@@ -821,15 +848,8 @@ export async function fetchCombinedKeywordData(options: {
   const limit = Math.min(options.limit ?? 50, 1000);
 
   const [seedPostResult, relatedPostResult] = await Promise.all([
-    postSearchVolumeTask({
-      keywords: [phrase],
-      location: locationInfo.region,
-    }),
-    postKeywordsForKeywordsTask({
-      keywords: [phrase],
-      location: locationInfo.region,
-      limit,
-    }),
+    postSearchVolumeTask({ keywords: [phrase], location: locationInfo.region }),
+    postKeywordsForKeywordsTask({ keywords: [phrase], location: locationInfo.region, limit }),
   ]);
 
   const seedTaskId = seedPostResult.taskId;
@@ -843,94 +863,30 @@ export async function fetchCombinedKeywordData(options: {
   });
 
   const startTime = Date.now();
-  let attemptIndex = 0;
-  let seedResult: TaskGetResult<KeywordMetrics[]> | undefined;
-  let relatedResult: TaskGetResult<RelatedKeywordRow[]> | undefined;
+  const pollResults = await pollDualTasks(
+    { id: seedTaskId, poll: getSearchVolumeTask },
+    { id: relatedTaskId, poll: getKeywordsForKeywordsTask },
+    TASK_POLL_MAX_WAIT_MS,
+    TASK_POLL_INTERVALS_MS
+  );
 
-  while (Date.now() - startTime < TASK_POLL_MAX_WAIT_MS) {
-    const waitTime = TASK_POLL_INTERVALS_MS[attemptIndex] ?? TASK_POLL_INTERVALS_MS[TASK_POLL_INTERVALS_MS.length - 1];
-    await sleep(waitTime ?? 1000);
-
-    const [newSeedResult, newRelatedResult] = await Promise.all([
-      !seedResult || seedResult.status === "pending"
-        ? getSearchVolumeTask(seedTaskId)
-        : Promise.resolve(seedResult),
-      !relatedResult || relatedResult.status === "pending"
-        ? getKeywordsForKeywordsTask(relatedTaskId)
-        : Promise.resolve(relatedResult),
-    ]);
-
-    seedResult = newSeedResult;
-    relatedResult = newRelatedResult;
-
-    if (seedResult.status === "completed" && relatedResult.status === "completed") {
-      logger.info("dataforseo.combined_completed", {
-        seedTaskId,
-        relatedTaskId,
-        seedKeywordCount: seedResult.data?.length ?? 0,
-        relatedKeywordCount: relatedResult.data?.length ?? 0,
-        waitTimeMs: Date.now() - startTime,
-      });
-
-      return {
-        seedMetrics: seedResult.data?.[0] ?? null,
-        relatedKeywords: relatedResult.data ?? [],
-        meta: {
-          location: locationInfo.region,
-          phrase,
-          fetchedAt: new Date().toISOString(),
-          seedTaskId,
-          relatedTaskId,
-        },
-      };
-    }
-
-    if (seedResult.status === "error") {
-      throw new DataForSEOError(
-        seedResult.error || "Seed keyword task failed",
-        "API_ERROR",
-        seedTaskId
-      );
-    }
-    if (relatedResult.status === "error") {
-      throw new DataForSEOError(
-        relatedResult.error || "Related keywords task failed",
-        "API_ERROR",
-        relatedTaskId
-      );
-    }
-
-    attemptIndex++;
-  }
-
-  const finalSeedStatus = seedResult?.status ?? "pending";
-  const finalRelatedStatus = relatedResult?.status ?? "pending";
-  
-  logger.info("dataforseo.combined_partial", {
+  const result = buildCombinedResponse(pollResults, {
+    phrase,
+    region: locationInfo.region,
     seedTaskId,
     relatedTaskId,
-    seedCompleted: finalSeedStatus === "completed",
-    relatedCompleted: finalRelatedStatus === "completed",
+  });
+
+  const logEvent = result.pending
+    ? "dataforseo.combined_partial"
+    : "dataforseo.combined_completed";
+  logger.info(logEvent, {
+    seedTaskId,
+    relatedTaskId,
     waitTimeMs: Date.now() - startTime,
   });
 
-  return {
-    seedMetrics: finalSeedStatus === "completed" && seedResult?.data ? seedResult.data[0] ?? null : null,
-    relatedKeywords: finalRelatedStatus === "completed" && relatedResult?.data ? relatedResult.data : [],
-    meta: {
-      location: locationInfo.region,
-      phrase,
-      fetchedAt: new Date().toISOString(),
-      seedTaskId,
-      relatedTaskId,
-    },
-    pending: {
-      seed: finalSeedStatus !== "completed",
-      related: finalRelatedStatus !== "completed",
-      seedTaskId: finalSeedStatus !== "completed" ? seedTaskId : undefined,
-      relatedTaskId: finalRelatedStatus !== "completed" ? relatedTaskId : undefined,
-    },
-  };
+  return result;
 }
 
 // ============================================
@@ -1034,37 +990,20 @@ export async function getGoogleTrendsTask(
       "GET"
     );
 
-    if (
-      response.status_code === 40601 ||
-      response.status_message?.toLowerCase().includes("queue")
-    ) {
-      return {
-        status: "pending",
-        taskId,
-      };
+    if (isQueuedStatus(response.status_code, response.status_message)) {
+      return { status: "pending", taskId };
     }
 
     const task = response.tasks?.[0];
-
     if (!task) {
-      return {
-        status: "error",
-        error: "Task not found",
-        taskId,
-      };
+      return { status: "error", error: "Task not found", taskId };
     }
 
-    if (
-      task.status_code === 40601 ||
-      task.status_message?.toLowerCase().includes("queue")
-    ) {
-      return {
-        status: "pending",
-        taskId,
-      };
+    if (isQueuedStatus(task.status_code, task.status_message)) {
+      return { status: "pending", taskId };
     }
 
-    if (task.status_code !== 20000) {
+    if (task.status_code !== 20_000) {
       return {
         status: "error",
         error: task.status_message || "Unknown error",
@@ -1074,28 +1013,109 @@ export async function getGoogleTrendsTask(
 
     const result = task.result?.[0];
     if (!result) {
-      return {
-        status: "completed",
-        data: undefined,
-        taskId,
-      };
+      return { status: "completed", data: undefined, taskId };
     }
 
-    return {
-      status: "completed",
-      data: result,
-      taskId,
-    };
-  } catch (err) {
-    if (err instanceof DataForSEOError) {
-      throw err;
+    return { status: "completed", data: result, taskId };
+  } catch (error) {
+    if (error instanceof DataForSEOError) {
+      throw error;
     }
     throw new DataForSEOError(
-      `Failed to get Google Trends task: ${err instanceof Error ? err.message : "Unknown error"}`,
+      `Failed to get Google Trends task: ${error instanceof Error ? error.message : "Unknown error"}`,
       "API_ERROR",
       taskId
     );
   }
+}
+
+type TrendsItem = GoogleTrendsResult["items"][number];
+
+type ParsedGraphData = {
+  interestOverTime: GoogleTrendsTimePoint[];
+  dateFrom: string;
+  dateTo: string;
+  averageInterest: number;
+};
+
+function parseTrendsGraphItem(item: TrendsItem, keyword: string): ParsedGraphData {
+  const graphData = item.data as Array<{
+    date_from?: string;
+    date_to?: string;
+    timestamp?: number;
+    missing_data?: boolean;
+    values?: number[];
+  }>;
+
+  if (!Array.isArray(graphData)) {
+    return { interestOverTime: [], dateFrom: "", dateTo: "", averageInterest: 0 };
+  }
+
+  const keywordIndex = item.keywords?.indexOf(keyword) ?? 0;
+
+  const interestOverTime = graphData.map((point) => ({
+    dateFrom: point.date_from ?? "",
+    dateTo: point.date_to ?? "",
+    timestamp: point.timestamp ?? 0,
+    value: point.values?.[keywordIndex] ?? 0,
+    missingData: point.missing_data ?? false,
+  }));
+
+  const dateFrom = graphData[0]?.date_from ?? "";
+  const dateTo = graphData.at(-1)?.date_to ?? "";
+
+  let averageInterest = 0;
+  if (item.averages && item.averages.length > 0) {
+    averageInterest = item.averages[keywordIndex] ?? 0;
+  }
+
+  return { interestOverTime, dateFrom, dateTo, averageInterest };
+}
+
+function parseTrendsMapItem(item: TrendsItem, keyword: string): GoogleTrendsRegion[] {
+  const mapData = item.data as Array<{
+    geo_id?: string;
+    geo_name?: string;
+    values?: number[];
+    max_value_index?: number;
+  }>;
+
+  if (!Array.isArray(mapData)) {
+    return [];
+  }
+
+  const keywordIndex = item.keywords?.indexOf(keyword) ?? 0;
+
+  return mapData
+    .filter((region) => region.values?.[keywordIndex] != null)
+    .map((region) => ({
+      geoId: region.geo_id ?? "",
+      geoName: region.geo_name ?? "",
+      value: region.values?.[keywordIndex] ?? 0,
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 20);
+}
+
+function parseTrendsQueriesItem(
+  item: TrendsItem
+): { topQueries: Array<{ query: string; value: number }>; risingQueries: GoogleTrendsRisingQuery[] } {
+  const queriesData = item.data as {
+    top?: Array<{ query: string; value: number }>;
+    rising?: Array<{ query: string; value: number }>;
+  };
+
+  if (!queriesData) {
+    return { topQueries: [], risingQueries: [] };
+  }
+
+  const topQueries = queriesData.top?.slice(0, 15) ?? [];
+  const risingQueries = (queriesData.rising ?? []).map((q) => ({
+    query: q.query,
+    value: q.value,
+  }));
+
+  return { topQueries, risingQueries };
 }
 
 export function parseGoogleTrendsResult(
@@ -1104,101 +1124,33 @@ export function parseGoogleTrendsResult(
   location: string,
   taskId: string
 ): GoogleTrendsResponse {
-  let interestOverTime: GoogleTrendsTimePoint[] = [];
-  let risingQueries: GoogleTrendsRisingQuery[] = [];
-  let topQueries: Array<{ query: string; value: number }> = [];
+  let graphData: ParsedGraphData = { interestOverTime: [], dateFrom: "", dateTo: "", averageInterest: 0 };
   let regionBreakdown: GoogleTrendsRegion[] = [];
-  let averageInterest = 0;
-  let dateFrom = "";
-  let dateTo = "";
+  let queriesData = { topQueries: [] as Array<{ query: string; value: number }>, risingQueries: [] as GoogleTrendsRisingQuery[] };
 
   for (const item of result.items || []) {
     if (item.type === "google_trends_graph") {
-      const graphData = item.data as Array<{
-        date_from?: string;
-        date_to?: string;
-        timestamp?: number;
-        missing_data?: boolean;
-        values?: number[];
-      }>;
-      
-      if (Array.isArray(graphData)) {
-        const keywordIndex = item.keywords?.indexOf(keyword) ?? 0;
-        
-        interestOverTime = graphData.map((point) => ({
-          dateFrom: point.date_from ?? "",
-          dateTo: point.date_to ?? "",
-          timestamp: point.timestamp ?? 0,
-          value: point.values?.[keywordIndex] ?? 0,
-          missingData: point.missing_data ?? false,
-        }));
-
-        if (graphData.length > 0) {
-          dateFrom = graphData[0]?.date_from ?? "";
-          dateTo = graphData[graphData.length - 1]?.date_to ?? "";
-        }
-      }
-
-      if (item.averages && item.averages.length > 0) {
-        const keywordIndex = item.keywords?.indexOf(keyword) ?? 0;
-        averageInterest = item.averages[keywordIndex] ?? 0;
-      }
+      graphData = parseTrendsGraphItem(item, keyword);
     }
-
     if (item.type === "google_trends_map") {
-      const mapData = item.data as Array<{
-        geo_id?: string;
-        geo_name?: string;
-        values?: number[];
-        max_value_index?: number;
-      }>;
-      
-      if (Array.isArray(mapData)) {
-        const keywordIndex = item.keywords?.indexOf(keyword) ?? 0;
-        
-        regionBreakdown = mapData
-          .filter((region) => region.values?.[keywordIndex] != null)
-          .map((region) => ({
-            geoId: region.geo_id ?? "",
-            geoName: region.geo_name ?? "",
-            value: region.values?.[keywordIndex] ?? 0,
-          }))
-          .sort((a, b) => b.value - a.value)
-          .slice(0, 20);
-      }
+      regionBreakdown = parseTrendsMapItem(item, keyword);
     }
-
     if (item.type === "google_trends_queries_list") {
-      const queriesData = item.data as {
-        top?: Array<{ query: string; value: number }>;
-        rising?: Array<{ query: string; value: number }>;
-      };
-
-      if (queriesData) {
-        if (queriesData.top) {
-          topQueries = queriesData.top.slice(0, 15);
-        }
-        if (queriesData.rising) {
-          risingQueries = queriesData.rising.map((q) => ({
-            query: q.query,
-            value: q.value,
-          }));
-        }
-      }
+      queriesData = parseTrendsQueriesItem(item);
     }
   }
 
   return {
     keyword,
-    interestOverTime,
-    risingQueries,
-    topQueries,
+    interestOverTime: graphData.interestOverTime,
+    risingQueries: queriesData.risingQueries,
+    topQueries: queriesData.topQueries,
     regionBreakdown,
-    averageInterest,
+    averageInterest: graphData.averageInterest,
     meta: {
       location,
-      dateFrom,
-      dateTo,
+      dateFrom: graphData.dateFrom,
+      dateTo: graphData.dateTo,
       fetchedAt: new Date().toISOString(),
       taskId,
     },
@@ -1227,7 +1179,7 @@ export async function fetchGoogleTrends(options: {
   let attemptIndex = 0;
 
   while (Date.now() - startTime < TRENDS_POLL_MAX_WAIT_MS) {
-    const waitTime = TRENDS_POLL_INTERVALS_MS[attemptIndex] ?? TRENDS_POLL_INTERVALS_MS[TRENDS_POLL_INTERVALS_MS.length - 1];
+    const waitTime = TRENDS_POLL_INTERVALS_MS[attemptIndex] ?? TRENDS_POLL_INTERVALS_MS.at(-1);
     await sleep(waitTime ?? 2000);
 
     const result = await getGoogleTrendsTask(taskId);
@@ -1281,6 +1233,62 @@ export async function fetchGoogleTrends(options: {
 // LOW-LEVEL FETCH
 // ============================================
 
+async function executeApiRequest<T>(
+  url: string,
+  body: unknown,
+  credentials: { login: string; password: string },
+  method: "POST" | "GET"
+): Promise<DataForSEOApiResponse<T>> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
+  const fetchOptions: RequestInit = {
+    method,
+    signal: controller.signal,
+    headers: {
+      Authorization: createAuthHeader(credentials.login, credentials.password),
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+  };
+
+  if (method === "POST" && body !== null) {
+    fetchOptions.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(url, fetchOptions);
+  clearTimeout(timeoutId);
+
+  let data: DataForSEOApiResponse<T>;
+  try {
+    data = await response.json();
+  } catch {
+    throw new DataForSEOError("Invalid JSON response from API", "PARSE_ERROR");
+  }
+
+  if (!response.ok) {
+    throw classifyHttpError(response.status, data.status_message);
+  }
+
+  if (!isQueuedStatus(data.status_code, data.status_message) && data.status_code !== 20_000) {
+    throw classifyApiStatusError(data.status_code, data.status_message);
+  }
+
+  return data;
+}
+
+function logTaskErrors<T>(data: DataForSEOApiResponse<T>): void {
+  if (data.tasks_error > 0) {
+    const taskError = data.tasks?.find((t) => t.status_code !== 20_000);
+    if (taskError) {
+      logger.warn("dataforseo.task_error", {
+        status_code: taskError.status_code,
+        status_message: taskError.status_message,
+      });
+    }
+  }
+}
+
 async function fetchWithRetry<T>(
   endpoint: string,
   body: unknown,
@@ -1288,107 +1296,21 @@ async function fetchWithRetry<T>(
   method: "POST" | "GET" = "POST"
 ): Promise<DataForSEOApiResponse<T>> {
   const credentials = getCredentials();
-  const baseUrl = getBaseUrl();
-  const url = `${baseUrl}${endpoint}`;
-
+  const url = `${getBaseUrl()}${endpoint}`;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
-
-      const fetchOptions: RequestInit = {
-        method,
-        signal: controller.signal,
-        headers: {
-          Authorization: createAuthHeader(credentials.login, credentials.password),
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      };
-
-      if (method === "POST" && body !== null) {
-        fetchOptions.body = JSON.stringify(body);
-      }
-
-      const response = await fetch(url, fetchOptions);
-
-      clearTimeout(timeoutId);
-
-      let data: DataForSEOApiResponse<T>;
-      try {
-        data = await response.json();
-      } catch {
-        throw new DataForSEOError("Invalid JSON response from API", "PARSE_ERROR");
-      }
-
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          throw new DataForSEOError("Invalid API credentials", "AUTH_ERROR");
-        }
-
-        if (response.status === 429) {
-          throw new DataForSEOError("Rate limited by DataForSEO API", "RATE_LIMITED");
-        }
-
-        if (
-          response.status === 402 ||
-          data.status_message?.toLowerCase().includes("balance")
-        ) {
-          throw new DataForSEOError("DataForSEO API balance exceeded", "QUOTA_EXCEEDED");
-        }
-
-        throw new DataForSEOError(
-          `DataForSEO API error: ${response.status} - ${data.status_message || "Unknown error"}`,
-          "API_ERROR"
-        );
-      }
-
-      const isTaskInQueue =
-        data.status_code === 40601 ||
-        data.status_message?.toLowerCase().includes("queue");
-
-      if (data.status_code !== 20000 && !isTaskInQueue) {
-        if (data.status_code === 40001) {
-          throw new DataForSEOError("Invalid request parameters", "VALIDATION_ERROR");
-        }
-        if (data.status_code === 40201) {
-          throw new DataForSEOError("Insufficient balance", "QUOTA_EXCEEDED");
-        }
-
-        throw new DataForSEOError(
-          `DataForSEO error: ${data.status_message || "Unknown error"}`,
-          "API_ERROR"
-        );
-      }
-
-      if (data.tasks_error > 0) {
-        const taskError = data.tasks?.find((t) => t.status_code !== 20000);
-        if (taskError) {
-          logger.warn("dataforseo.task_error", {
-            status_code: taskError.status_code,
-            status_message: taskError.status_message,
-          });
-        }
-      }
-
+      const data = await executeApiRequest<T>(url, body, credentials, method);
+      logTaskErrors(data);
       return data;
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-
-      if (err instanceof DataForSEOError) {
-        if (
-          err.code === "VALIDATION_ERROR" ||
-          err.code === "QUOTA_EXCEEDED" ||
-          err.code === "CONFIG_ERROR" ||
-          err.code === "AUTH_ERROR"
-        ) {
-          throw err;
-        }
+    } catch (error) {
+      if (isNonRetryableError(error)) {
+        throw error;
       }
 
-      if (err instanceof Error && err.name === "AbortError") {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (error instanceof Error && error.name === "AbortError") {
         lastError = new DataForSEOError("Request timed out", "TIMEOUT");
       }
 

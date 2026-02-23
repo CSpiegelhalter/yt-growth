@@ -6,9 +6,9 @@
  *
  * Auth: Required
  */
-import { createApiRoute } from "@/lib/api/route";
-import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
 import { jsonOk } from "@/lib/api/response";
+import { createApiRoute } from "@/lib/api/route";
+import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
 import { listChannels } from "@/lib/features/channels";
 import { resolveSubscription } from "@/lib/features/subscriptions/use-cases/resolveSubscription";
 

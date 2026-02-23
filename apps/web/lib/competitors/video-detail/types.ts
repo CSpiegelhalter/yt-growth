@@ -6,10 +6,10 @@
  * is defined in types/api.d.ts.
  */
 
+import type { VideoDetails, YouTubeComment } from "@/lib/youtube/types";
 import type {
   CompetitorVideoAnalysis,
 } from "@/types/api";
-import type { VideoDetails, YouTubeComment } from "@/lib/youtube/types";
 
 // ============================================
 // TIMING & LOGGING
@@ -143,11 +143,11 @@ export const TIMEOUTS = {
   CHANNEL_VIDEOS_MS: 5000,
 
   // LLM calls
-  COMMENTS_LLM_MS: 15000,
-  MAIN_ANALYSIS_MS: 25000,
+  COMMENTS_LLM_MS: 15_000,
+  MAIN_ANALYSIS_MS: 25_000,
 
   // Total route budget (leave headroom for response building)
-  TOTAL_ROUTE_MS: 50000,
+  TOTAL_ROUTE_MS: 50_000,
 } as const;
 
 // ============================================

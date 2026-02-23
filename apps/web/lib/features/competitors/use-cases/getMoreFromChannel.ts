@@ -2,8 +2,9 @@ import "server-only";
 
 import { prisma } from "@/prisma";
 import type { CompetitorVideo } from "@/types/api";
-import type { GetMoreFromChannelInput } from "../types";
+
 import { CompetitorError } from "../errors";
+import type { GetMoreFromChannelInput } from "../types";
 
 const MORE_FROM_CHANNEL_RANGE_DAYS = 28;
 

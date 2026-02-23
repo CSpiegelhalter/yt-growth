@@ -5,6 +5,7 @@
  */
 
 import { prisma } from "@/prisma";
+
 import { SavedIdeaError } from "../errors";
 import type { UpdateIdeaInput, UpdateIdeaResult } from "../types";
 
@@ -39,8 +40,8 @@ export async function updateIdea(input: UpdateIdeaInput): Promise<UpdateIdeaResu
       status: updated.status,
       updatedAt: updated.updatedAt.toISOString(),
     };
-  } catch (err) {
-    if (err instanceof SavedIdeaError) {throw err;}
-    throw new SavedIdeaError("EXTERNAL_FAILURE", "Failed to update saved idea", err);
+  } catch (error) {
+    if (error instanceof SavedIdeaError) {throw error;}
+    throw new SavedIdeaError("EXTERNAL_FAILURE", "Failed to update saved idea", error);
   }
 }

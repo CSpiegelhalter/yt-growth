@@ -27,9 +27,9 @@ export async function assertActiveSubscription(userId: number): Promise<void> {
 
   const effectiveEnd =
     sub.cancelAt && sub.currentPeriodEnd
-      ? sub.cancelAt.getTime() <= sub.currentPeriodEnd.getTime()
+      ? (sub.cancelAt.getTime() <= sub.currentPeriodEnd.getTime()
         ? sub.cancelAt
-        : sub.currentPeriodEnd
+        : sub.currentPeriodEnd)
       : (sub.cancelAt ?? sub.currentPeriodEnd);
 
   if (effectiveEnd && effectiveEnd.getTime() <= Date.now()) {

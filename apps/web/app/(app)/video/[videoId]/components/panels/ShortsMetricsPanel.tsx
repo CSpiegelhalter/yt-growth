@@ -1,7 +1,7 @@
 "use client";
 
-import styles from "./panels.module.css";
 import { InsightCard } from "../ui";
+import styles from "./panels.module.css";
 
 type ShortsMetricsPanelProps = {
   durationSec: number;
@@ -21,29 +21,27 @@ const SHORTS_BENCHMARKS = {
  * ShortsMetricsPanel - Specialized metrics for YouTube Shorts
  * Shows benchmarks specific to short-form content
  */
+function getPerformanceStatus(
+  value: number | null,
+  target: number,
+  good: number,
+): "strong" | "mixed" | "needs-work" | "neutral" {
+  if (value == null) {return "neutral";}
+  if (value >= target) {return "strong";}
+  if (value >= good) {return "mixed";}
+  return "needs-work";
+}
+
 export function ShortsMetricsPanel({
   durationSec,
   avgViewPercentage,
   avgViewDuration,
   stayedToWatch,
 }: ShortsMetricsPanelProps) {
-  // Determine which benchmark to use
   const isVeryShort = durationSec <= 30;
   const benchmark = isVeryShort
     ? SHORTS_BENCHMARKS.avgViewDurationShort
     : SHORTS_BENCHMARKS.avgViewDurationLong;
-
-  // Calculate performance status
-  const getPerformanceStatus = (
-    value: number | null,
-    target: number,
-    good: number,
-  ) => {
-    if (value == null) {return "neutral";}
-    if (value >= target) {return "strong";}
-    if (value >= good) {return "mixed";}
-    return "needs-work";
-  };
 
   const avgViewStatus = getPerformanceStatus(
     avgViewPercentage,
@@ -162,9 +160,9 @@ function MetricIndicator({
     <span className={`${styles.metricIndicator} ${styles[status]}`}>
       {status === "strong"
         ? "On target"
-        : status === "mixed"
+        : (status === "mixed"
           ? "Close"
-          : "Below target"}
+          : "Below target")}
     </span>
   );
 }

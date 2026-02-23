@@ -1,4 +1,5 @@
 import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
+
 import s from "./style.module.css";
 
 /**

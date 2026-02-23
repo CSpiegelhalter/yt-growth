@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
-import s from "./style.module.css";
+import Link from "next/link";
+import { useState } from "react";
+
 import type { Channel } from "@/types/api";
+
+import s from "./style.module.css";
 
 type ChannelCardProps = {
   channel: Channel;
@@ -226,7 +228,7 @@ function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
+  const diffMins = Math.floor(diffMs / 60_000);
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 

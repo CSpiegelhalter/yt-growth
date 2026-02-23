@@ -15,12 +15,12 @@ import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withRateLimit } from "@/lib/api/withRateLimit";
 import { withValidation } from "@/lib/api/withValidation";
-import { getGoogleAccount } from "@/lib/youtube";
 import {
   SearchBodySchema,
   searchCompetitors,
   type SearchEvent,
 } from "@/lib/features/competitors";
+import { getGoogleAccount } from "@/lib/youtube";
 
 function createEventStream(
   generator: AsyncGenerator<SearchEvent, void, unknown>,
@@ -33,10 +33,10 @@ function createEventStream(
           controller.enqueue(encoder.encode(`${JSON.stringify(event)  }\n`));
         }
         controller.close();
-      } catch (err) {
+      } catch (error) {
         const errorEvent: SearchEvent = {
           type: "error",
-          error: err instanceof Error ? err.message : "Stream error",
+          error: error instanceof Error ? error.message : "Stream error",
           code: "STREAM_ERROR",
         };
         controller.enqueue(encoder.encode(`${JSON.stringify(errorEvent)  }\n`));

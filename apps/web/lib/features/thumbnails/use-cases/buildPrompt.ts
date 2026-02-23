@@ -7,7 +7,9 @@
  */
 
 import { z } from "zod";
+
 import type { LlmCompletionParams, LlmCompletionResult } from "@/lib/ports/LlmPort";
+
 import { ThumbnailError } from "../errors";
 import type { BuildPromptInput, BuildPromptOutput, BuiltVariant } from "../types";
 
@@ -40,7 +42,7 @@ const LLM_SCHEMA = z.object({
 });
 
 function stripControlChars(s: string): string {
-  return s.replace(/[\u0000-\u001F\u007F]/g, " ");
+  return s.replaceAll(/[\u0000-\u001F\u007F]/g, " ");
 }
 
 function clampPrompt(s: string, maxChars: number, opts?: { suffix?: string }) {
@@ -181,7 +183,7 @@ Return JSON only.`;
         mustNoText,
       ]
         .join(", ")
-        .replace(/\s+/g, " ")
+        .replaceAll(/\s+/g, " ")
         .trim();
 
       const raw = `${prefix} ${body}${suffix ? ` ${suffix}` : ""}`.trim();

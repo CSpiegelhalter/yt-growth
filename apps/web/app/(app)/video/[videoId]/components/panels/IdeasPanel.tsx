@@ -1,8 +1,8 @@
 "use client";
 
-import styles from "./panels.module.css";
-import { InsightCard, BulletList } from "../ui";
 import { CopyButton } from "../index";
+import { BulletList,InsightCard } from "../ui";
+import styles from "./panels.module.css";
 
 type Idea = {
   title: string;

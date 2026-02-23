@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useCallback, useEffect, useMemo,useRef, useState } from "react";
+
 import {
   safeGetItem,
-  safeSetItem,
   safeRemoveItem,
+  safeSetItem,
 } from "@/lib/client/safeLocalStorage";
 
 const ACTIVE_CHANNEL_STORAGE_KEY = "activeChannelId";

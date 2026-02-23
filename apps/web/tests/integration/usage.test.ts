@@ -3,24 +3,26 @@
  *
  * Tests the usage tracking module against real database.
  */
-import { describe, it, expect, beforeEach, afterEach, afterAll } from "bun:test";
+import { afterAll,afterEach, beforeEach, describe, expect, it } from "bun:test";
+
+import type { FeatureKey } from "@/lib/features/subscriptions/types";
 import {
-  prisma,
-  createTestUser,
-  cleanupTestUser,
-  cleanupUsageCounters,
-} from "./setup";
-import {
-  getUsageInfo,
   checkAndIncrement,
   checkUsage,
-  resetUserUsage,
   getAllUsage,
+  getUsageInfo,
+  resetUserUsage,
 } from "@/lib/features/subscriptions/use-cases/trackUsage";
-import type { FeatureKey } from "@/lib/features/subscriptions/types";
+
+import {
+  cleanupTestUser,
+  cleanupUsageCounters,
+  createTestUser,
+  prisma,
+} from "./setup";
 
 async function getUsage(userId: number, featureKey: FeatureKey): Promise<number> {
-  const info = await getUsageInfo(userId, featureKey, 999999);
+  const info = await getUsageInfo(userId, featureKey, 999_999);
   return info.used;
 }
 

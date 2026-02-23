@@ -1,7 +1,9 @@
 import crypto from "crypto";
 import sharp from "sharp";
-import { prisma } from "@/prisma";
+
 import type { StoragePort } from "@/lib/ports/StoragePort";
+import { prisma } from "@/prisma";
+
 import { ThumbnailError } from "../errors";
 
 const MAX_BYTES = 5 * 1024 * 1024;

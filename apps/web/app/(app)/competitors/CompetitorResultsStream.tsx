@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import CompetitorVideoCard from "./CompetitorVideoCard";
+import { useCallback,useEffect, useRef, useState } from "react";
+
 import { AlertCircleIcon, SearchIcon } from "@/components/icons";
-import s from "./style.module.css";
 import type { CompetitorVideo } from "@/types/api";
+
+import CompetitorVideoCard from "./CompetitorVideoCard";
+import s from "./style.module.css";
 
 // Types matching the server's SearchEvent types
 type SearchStatusEvent = {
@@ -243,14 +245,15 @@ export default function CompetitorResultsStream({
   const processEvent = useCallback(
     (event: SearchEvent) => {
       switch (event.type) {
-        case "status":
+        case "status": {
           setStatusMessage(event.message);
           if (event.status === "searching" || event.status === "filtering") {
             setState("streaming");
           }
           break;
+        }
 
-        case "items":
+        case "items": {
           setVideos((prev) => {
             const existingIds = new Set(prev.map((v) => v.videoId));
             const newItems = event.items
@@ -259,8 +262,9 @@ export default function CompetitorResultsStream({
             return [...prev, ...newItems];
           });
           break;
+        }
 
-        case "done":
+        case "done": {
           setSummary(event.summary);
           setNextCursor(event.nextCursor ?? null);
           setState("done");
@@ -268,14 +272,16 @@ export default function CompetitorResultsStream({
           setIsLoadingMore(false);
           onSearchComplete();
           break;
+        }
 
-        case "error":
+        case "error": {
           setState("error");
           onError(event.error);
           if (!event.partial) {
             setVideos([]);
           }
           break;
+        }
       }
     },
     [mapToCompetitorVideo, onSearchComplete, onError]
@@ -309,66 +315,24 @@ export default function CompetitorResultsStream({
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMsg = typeof errorData.error === 'string' 
-          ? errorData.error 
-          : typeof errorData.message === 'string'
-            ? errorData.message
-            : `HTTP ${response.status}`;
-        throw new Error(errorMsg);
+        throw new Error(await parseStreamErrorMessage(response));
       }
 
       if (!response.body) {
         throw new Error("No response body");
       }
 
-      // Read NDJSON stream
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) {break;}
-
-        buffer += decoder.decode(value, { stream: true });
-
-        // Process complete lines
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-        for (const line of lines) {
-          if (!line.trim()) {continue;}
-
-          try {
-            const event = JSON.parse(line) as SearchEvent;
-            processEvent(event);
-          } catch {
-            console.warn("[Stream] Failed to parse event:", line);
-          }
-        }
-      }
-
-      // Process any remaining data
-      if (buffer.trim()) {
-        try {
-          const event = JSON.parse(buffer) as SearchEvent;
-          processEvent(event);
-        } catch {
-          // Ignore incomplete final chunk
-        }
-      }
-    } catch (err) {
-      if ((err as Error).name === "AbortError") {
+      await readNdjsonStream(response.body, processEvent);
+    } catch (error) {
+      if ((error as Error).name === "AbortError") {
         // Request was cancelled, ignore
         return;
       }
 
-      console.error("[Stream] Search error:", err);
+      console.error("[Stream] Search error:", error);
       setState("error");
       setIsLoadingMore(false);
-      onError(err instanceof Error ? err.message : "Search failed");
+      onError(error instanceof Error ? error.message : "Search failed");
     }
   }, [mode, nicheText, referenceVideoUrl, channelId, filters, processEvent, onError]);
 
@@ -383,7 +347,7 @@ export default function CompetitorResultsStream({
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    performSearch(controller, nextCursor);
+    void performSearch(controller, nextCursor);
   }, [nextCursor, isLoadingMore, performSearch]);
 
   // Perform initial search when searchKey changes
@@ -413,77 +377,190 @@ export default function CompetitorResultsStream({
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    performSearch(controller);
+    void performSearch(controller);
 
     return () => {
       controller.abort();
     };
   }, [searchKey, performSearch, onSearchComplete, initialVideos]);
 
-  // Loading skeleton
+  return (
+    <CompetitorResultsView
+      state={state}
+      videos={videos}
+      statusMessage={statusMessage}
+      summary={summary}
+      nextCursor={nextCursor}
+      isLoadingMore={isLoadingMore}
+      onLoadMore={handleLoadMore}
+      onVideoClick={onVideoClick}
+      channelId={channelId}
+    />
+  );
+}
+
+/* ---------- Extracted stream helpers ---------- */
+
+async function parseStreamErrorMessage(response: Response): Promise<string> {
+  const errorData = await response.json().catch(() => ({}));
+  if (typeof errorData.error === "string") { return errorData.error; }
+  if (typeof errorData.message === "string") { return errorData.message; }
+  return `HTTP ${response.status}`;
+}
+
+async function readNdjsonStream(
+  body: ReadableStream<Uint8Array>,
+  onEvent: (event: SearchEvent) => void,
+): Promise<void> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) { break; }
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (!line.trim()) { continue; }
+      try {
+        onEvent(JSON.parse(line) as SearchEvent);
+      } catch {
+        console.warn("[Stream] Failed to parse event:", line);
+      }
+    }
+  }
+
+  if (buffer.trim()) {
+    try {
+      onEvent(JSON.parse(buffer) as SearchEvent);
+    } catch {
+      // Ignore incomplete final chunk
+    }
+  }
+}
+
+/* ---------- Extracted render component ---------- */
+
+type CompetitorResultsViewProps = {
+  state: StreamState;
+  videos: CompetitorVideo[];
+  statusMessage: string;
+  summary: SearchDoneEvent["summary"] | null;
+  nextCursor: SearchCursor | null;
+  isLoadingMore: boolean;
+  onLoadMore: () => void;
+  onVideoClick?: (videoId: string) => void;
+  channelId: string | null;
+};
+
+function CompetitorResultsView({
+  state,
+  videos,
+  statusMessage,
+  summary,
+  nextCursor,
+  isLoadingMore,
+  onLoadMore,
+  onVideoClick,
+  channelId,
+}: CompetitorResultsViewProps) {
   if (state === "loading" && videos.length === 0) {
-    return (
-      <div className={s.resultsContainer}>
-        <div className={s.loadingStatus}>
-          <span className={s.spinner} />
-          <p>{statusMessage || "Starting search..."}</p>
-        </div>
-        <div className={s.videoGrid}>
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className={s.videoCardSkeleton}>
-              <div className={s.skeletonThumb} />
-              <div className={s.skeletonContent}>
-                <div className={s.skeletonTitle} />
-                <div className={s.skeletonMeta} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <ResultsLoadingSkeleton statusMessage={statusMessage} />;
   }
 
-  // Idle state (no search yet)
-  if (state === "idle") {
-    return null;
-  }
+  if (state === "idle") { return null; }
 
-  // Error state with no results
   if (state === "error" && videos.length === 0) {
     return (
       <div className={s.emptyVideos}>
         <AlertCircleIcon size={48} strokeWidth={1.5} />
-        <p>
-          Something went wrong. Please try again or adjust your search criteria.
-        </p>
+        <p>Something went wrong. Please try again or adjust your search criteria.</p>
       </div>
     );
   }
 
-  // No results found
   if (state === "done" && videos.length === 0) {
     return (
       <div className={s.emptyVideos}>
         <SearchIcon size={48} strokeWidth={1.5} />
-        <p>
-          No competitor videos found. Try broadening your filters or adjusting
-          your niche description.
-        </p>
+        <p>No competitor videos found. Try broadening your filters or adjusting your niche description.</p>
       </div>
     );
   }
 
   return (
+    <ResultsVideoGrid
+      state={state}
+      videos={videos}
+      statusMessage={statusMessage}
+      summary={summary}
+      nextCursor={nextCursor}
+      isLoadingMore={isLoadingMore}
+      onLoadMore={onLoadMore}
+      onVideoClick={onVideoClick}
+      channelId={channelId}
+    />
+  );
+}
+
+function ResultsLoadingSkeleton({ statusMessage }: { statusMessage: string }) {
+  return (
     <div className={s.resultsContainer}>
-      {/* Streaming status */}
-      {(state === "streaming" || state === "loading") && statusMessage && (
+      <div className={s.loadingStatus}>
+        <span className={s.spinner} />
+        <p>{statusMessage || "Starting search..."}</p>
+      </div>
+      <div className={s.videoGrid}>
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className={s.videoCardSkeleton}>
+            <div className={s.skeletonThumb} />
+            <div className={s.skeletonContent}>
+              <div className={s.skeletonTitle} />
+              <div className={s.skeletonMeta} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function getLoadMoreLabel(
+  isLoadingMore: boolean,
+  nextCursor: SearchCursor | null,
+  exhausted: boolean | undefined,
+): string {
+  if (isLoadingMore) { return "Loading..."; }
+  if (!nextCursor || exhausted) { return "No more results"; }
+  return "Load More";
+}
+
+function ResultsVideoGrid({
+  state,
+  videos,
+  statusMessage,
+  summary,
+  nextCursor,
+  isLoadingMore,
+  onLoadMore,
+  onVideoClick,
+  channelId,
+}: Omit<CompetitorResultsViewProps, "state"> & { state: StreamState }) {
+  const showStreamingStatus = (state === "streaming" || state === "loading") && statusMessage;
+
+  return (
+    <div className={s.resultsContainer}>
+      {showStreamingStatus && (
         <div className={s.streamingStatus}>
           <span className={s.spinnerSmall} />
           <p>{statusMessage}</p>
         </div>
       )}
 
-      {/* Video grid */}
       <div className={s.videoGrid}>
         {videos.map((video) => (
           <div key={video.videoId} id={`video-${video.videoId}`}>
@@ -496,29 +573,19 @@ export default function CompetitorResultsStream({
         ))}
       </div>
 
-      {/* Load More button - always visible when done */}
       {state === "done" && (
         <div className={s.loadMoreContainer}>
           <button
-            onClick={handleLoadMore}
+            onClick={onLoadMore}
             className={s.loadMoreButton}
             disabled={isLoadingMore || !nextCursor || summary?.exhausted}
           >
-            {isLoadingMore ? (
-              <>
-                <span className={s.spinnerSmall} />
-                Loading...
-              </>
-            ) : !nextCursor || summary?.exhausted ? (
-              "No more results"
-            ) : (
-              "Load More"
-            )}
+            {isLoadingMore && <span className={s.spinnerSmall} />}
+            {getLoadMoreLabel(isLoadingMore, nextCursor, summary?.exhausted)}
           </button>
         </div>
       )}
-      
-      {/* Loading more indicator (when streaming after Load More) */}
+
       {isLoadingMore && state === "streaming" && (
         <div className={s.loadingMore}>
           <span className={s.spinnerSmall} />

@@ -8,13 +8,13 @@
  * Rate Limited: Same as keyword research
  */
 
-import { createApiRoute } from "@/lib/api/route";
-import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
-import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
 import { quotaExceededResponse } from "@/lib/api/quota";
+import { jsonOk } from "@/lib/api/response";
+import { createApiRoute } from "@/lib/api/route";
+import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
+import { getKeywordTrends,KeywordTrendsBodySchema } from "@/lib/features/keywords";
 import { hasActiveSubscription } from "@/lib/server/auth";
-import { KeywordTrendsBodySchema, getKeywordTrends } from "@/lib/features/keywords";
 
 export const POST = createApiRoute(
   { route: "/api/keywords/trends" },
@@ -36,7 +36,7 @@ export const POST = createApiRoute(
       });
 
       switch (result.type) {
-        case "quota_exceeded":
+        case "quota_exceeded": {
           return quotaExceededResponse({
             logEvent: "keywords.trends_quota_exceeded",
             userId: user.id,
@@ -46,12 +46,15 @@ export const POST = createApiRoute(
             resetAt: result.usage.resetAt,
             requestId: api.requestId,
           });
+        }
 
-        case "pending":
+        case "pending": {
           return jsonOk(result.body, { requestId: api.requestId });
+        }
 
-        case "success":
+        case "success": {
           return jsonOk(result.body, { requestId: api.requestId });
+        }
       }
     }),
   ),

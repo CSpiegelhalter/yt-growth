@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect,it } from "vitest";
+
 import { parseYouTubeVideoId } from "@/lib/shared/youtube-video-id";
 
 describe("parseYouTubeVideoId", () => {
@@ -139,7 +140,7 @@ describe("parseYouTubeVideoId", () => {
       // @ts-expect-error - testing runtime behavior
       expect(parseYouTubeVideoId(null)).toBeNull();
       // @ts-expect-error - testing runtime behavior
-      expect(parseYouTubeVideoId(undefined)).toBeNull();
+      expect(parseYouTubeVideoId()).toBeNull();
     });
 
     it("returns null for non-YouTube URLs", () => {

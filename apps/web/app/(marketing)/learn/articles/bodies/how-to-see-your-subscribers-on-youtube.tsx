@@ -25,8 +25,9 @@
  * 10. Sample-not-census stamp
  */
 
-import React from "react";
 import Link from "next/link";
+import React from "react";
+
 import { LEARN_ARTICLES } from "../../articles";
 import type { BodyProps } from "./_shared";
 import { articleExports } from "./_shared";
@@ -381,7 +382,7 @@ type InlineFigureProps = {
 };
 
 function InlineFigure({ align = "center", children }: InlineFigureProps) {
-  const alignClass = align === "left" ? "floatLeft" : align === "right" ? "floatRight" : "inlineIllustration";
+  const alignClass = align === "left" ? "floatLeft" : (align === "right" ? "floatRight" : "inlineIllustration");
 
   return (
     <figure className={alignClass}>

@@ -5,15 +5,17 @@
  * Uses Prisma $transaction for parallel reads where possible.
  */
 
-import { prisma } from "@/prisma";
+import type { Prisma } from "@prisma/client";
+
 import { createLogger } from "@/lib/shared/logger";
+import { prisma } from "@/prisma";
+
 import type {
-  CachedCompetitorVideo,
   CachedComments,
+  CachedCompetitorVideo,
   RequestContext,
 } from "./types";
 import { CACHE_CONFIG as CONFIG } from "./types";
-import type { Prisma } from "@prisma/client";
 
 const logger = createLogger({ module: "video-detail.cache" });
 
@@ -204,10 +206,10 @@ export async function saveAnalysisCache(
     });
 
     logger.info("Analysis cache saved", { videoId, contentHash });
-  } catch (err) {
+  } catch (error) {
     logger.warn("Failed to save analysis cache", {
       videoId,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 }
@@ -233,10 +235,10 @@ export async function backfillBeatChecklist(
     });
 
     logger.info("Beat checklist backfilled", { videoId });
-  } catch (err) {
+  } catch (error) {
     logger.warn("Failed to backfill beat checklist", {
       videoId,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 }
@@ -288,10 +290,10 @@ export async function saveCommentsCache(
     });
 
     logger.info("Comments cache saved", { videoId, contentHash: data.contentHash });
-  } catch (err) {
+  } catch (error) {
     logger.warn("Failed to save comments cache", {
       videoId,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 }

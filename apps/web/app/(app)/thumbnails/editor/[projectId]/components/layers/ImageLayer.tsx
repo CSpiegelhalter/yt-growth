@@ -1,8 +1,9 @@
 "use client";
 
+import type Konva from "konva";
 import { useEffect, useState } from "react";
 import { Image as KonvaImage } from "react-konva";
-import type Konva from "konva";
+
 import type { ImageObject } from "../types";
 
 interface ImageLayerProps {
@@ -28,19 +29,19 @@ function useHtmlImage(src: string) {
 
     const i = new window.Image();
     i.crossOrigin = "anonymous";
-    i.onload = () => {
+    i.addEventListener('load', () => {
       setImg(i);
       setNaturalSize({ width: i.naturalWidth, height: i.naturalHeight });
       setError(null);
-    };
+    });
     i.onerror = () => {
       // Retry without crossOrigin for external URLs that don't support CORS
       const retry = new window.Image();
-      retry.onload = () => {
+      retry.addEventListener('load', () => {
         setImg(retry);
         setNaturalSize({ width: retry.naturalWidth, height: retry.naturalHeight });
         setError(null);
-      };
+      });
       retry.onerror = () => {
         setError(`Failed to load image`);
       };

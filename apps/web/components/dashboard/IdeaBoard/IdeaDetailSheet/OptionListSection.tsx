@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckIcon, CopyIcon } from "@/components/icons";
+
 import s from "../style.module.css";
 
 type OptionListSectionProps = {
@@ -50,14 +51,14 @@ export function OptionListSection({
         <button
           className={s.copyAllBtn}
           onClick={() => onCopy(items.join("\n"), copyAllId)}
-          disabled={!items.length}
+          disabled={items.length === 0}
         >
           {copiedId === copyAllId ? "Copied" : "Copy all"}
         </button>
       </div>
       <p className={s.sectionIntro}>{intro}</p>
 
-      {isLoading && !items.length && (
+      {isLoading && items.length === 0 && (
         <div className={s.skeletonList} aria-hidden="true">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className={s.skeletonRow}>
@@ -71,7 +72,7 @@ export function OptionListSection({
         </div>
       )}
 
-      {hasError && !items.length && (
+      {hasError && items.length === 0 && (
         <div className={s.errorCallout} role="alert">
           <div className={s.errorText}>{errorLabel}</div>
           <button className={s.retryBtn} onClick={onRetry}>

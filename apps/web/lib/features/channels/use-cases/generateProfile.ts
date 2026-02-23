@@ -1,11 +1,12 @@
 import "server-only";
 
-import { prisma } from "@/prisma";
-import { checkRateLimit } from "@/lib/shared/rate-limit";
 import { generateChannelProfileAI } from "@/lib/channel-profile/generate";
-import type { ChannelProfileInput, ChannelProfileAI } from "../schemas";
-import { computeProfileInputHash, isProfileCacheValid } from "../utils";
+import { checkRateLimit } from "@/lib/shared/rate-limit";
+import { prisma } from "@/prisma";
+
 import { ChannelError } from "../errors";
+import type { ChannelProfileAI,ChannelProfileInput } from "../schemas";
+import { computeProfileInputHash, isProfileCacheValid } from "../utils";
 import type { ProfileRow } from "./profile-helpers";
 
 type GenerateProfileInput = {
@@ -53,11 +54,11 @@ export async function generateProfile(
       WHERE "channelId" = ${channel.id}
       LIMIT 1
     `;
-  } catch (err) {
+  } catch (error) {
     throw new ChannelError(
       "EXTERNAL_FAILURE",
       "Profile system not available. Please run database migrations.",
-      err,
+      error,
     );
   }
 
@@ -112,11 +113,11 @@ export async function generateProfile(
     `;
 
     return { aiProfile, cached: false };
-  } catch (err) {
+  } catch (error) {
     throw new ChannelError(
       "EXTERNAL_FAILURE",
       "Failed to generate AI profile. Please try again.",
-      err,
+      error,
     );
   }
 }

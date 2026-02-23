@@ -2,8 +2,10 @@
  * User authentication and authorization helpers
  */
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "./nextauth";
+
 import { prisma } from "@/prisma";
+
+import { authOptions } from "./nextauth";
 
 export type AuthUser = {
   id: number;
@@ -51,9 +53,9 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     const idAsNumber =
       typeof sessionUser.id === "string"
         ? Number(sessionUser.id)
-        : typeof sessionUser.id === "number"
+        : (typeof sessionUser.id === "number"
         ? sessionUser.id
-        : undefined;
+        : undefined);
 
     if (
       idAsNumber !== undefined &&
@@ -107,10 +109,10 @@ export function hasActiveSubscription(
   // user remains entitled until `currentPeriodEnd`, even if they canceled in the portal.
   const effectiveEnd =
     subscription.cancelAt && subscription.currentPeriodEnd
-      ? subscription.cancelAt.getTime() <=
+      ? (subscription.cancelAt.getTime() <=
         subscription.currentPeriodEnd.getTime()
         ? subscription.cancelAt
-        : subscription.currentPeriodEnd
+        : subscription.currentPeriodEnd)
       : subscription.cancelAt ?? subscription.currentPeriodEnd;
 
   if (effectiveEnd) {

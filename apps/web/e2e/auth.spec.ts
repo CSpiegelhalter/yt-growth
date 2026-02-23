@@ -7,7 +7,8 @@
  * 3. Sign in works
  * 4. Sign out works
  */
-import { test, expect } from "@playwright/test";
+import { expect,test } from "@playwright/test";
+
 import {
   signIn,
 } from "./fixtures/test-helpers";
@@ -48,7 +49,7 @@ test.describe("Authentication", () => {
 
     // Should redirect to dashboard or show success
     // (might go to login first if email verification is required)
-    await expect(page).toHaveURL(/dashboard|login/, { timeout: 15000 });
+    await expect(page).toHaveURL(/dashboard|login/, { timeout: 15_000 });
 
     // If redirected to login, sign in
     if (page.url().includes("/login")) {
@@ -79,7 +80,7 @@ test.describe("Authentication", () => {
     // Should show an error message
     await expect(
       page.locator('[role="alert"], [class*="error"], [class*="Error"]').first()
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible({ timeout: 10_000 });
 
     // Should NOT redirect to dashboard
     await expect(page).not.toHaveURL(/dashboard/);
@@ -101,7 +102,7 @@ test.describe("Authentication", () => {
     await page.click('button[type="submit"]');
 
     // Should redirect to dashboard
-    await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+    await expect(page).toHaveURL(/dashboard/, { timeout: 15_000 });
 
     // Verify dashboard content loads (use .first() since there may be nested mains)
     await expect(page.locator("main").first()).toBeVisible();
@@ -126,7 +127,7 @@ test.describe("Authentication", () => {
     await page.click('a[href*="signout"], button:has-text("Sign out")');
 
     // Should sign out immediately and land on the homepage
-    await expect(page).toHaveURL(/\/($|\?)/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/($|\?)/, { timeout: 15_000 });
 
     // Verify we're signed out - dashboard shows logged-out preview (no redirect)
     await page.goto("/dashboard");
@@ -153,7 +154,7 @@ test.describe("Authentication", () => {
     // Should show error message
     await expect(
       page.locator('[role="alert"], [class*="error"], [class*="Error"]').first()
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible({ timeout: 10_000 });
 
     // Should stay on login page
     await expect(page).toHaveURL(/login/);

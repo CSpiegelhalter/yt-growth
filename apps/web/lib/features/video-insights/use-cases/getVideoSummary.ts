@@ -1,9 +1,11 @@
 import type { Prisma } from "@prisma/client";
-import { prisma } from "@/prisma";
-import type { CoreAnalysis, LlmCallFn } from "../types";
-import { VideoInsightError } from "../errors";
-import { generateSummary, type CompetitiveContextData } from "./generateSummary";
+
 import { hashVideoContent } from "@/lib/shared/content-hash";
+import { prisma } from "@/prisma";
+
+import { VideoInsightError } from "../errors";
+import type { CoreAnalysis, LlmCallFn } from "../types";
+import { type CompetitiveContextData,generateSummary } from "./generateSummary";
 
 type InsightDerivedData = {
   video: {
@@ -89,18 +91,63 @@ type GetVideoSummaryDeps = {
   }) => Promise<{ ok: boolean; error?: unknown }>;
 };
 
+function extractCachedSummary(llmJson: unknown): CoreAnalysis | null {
+  const data = llmJson as CachedLlmData;
+  if (data.headline) {
+    return data as CoreAnalysis;
+  }
+  if (data.summary?.headline) {
+    return data.summary as CoreAnalysis;
+  }
+  return null;
+}
+
+function tryResolveFromCache(
+  cached: InsightContext["cached"],
+  currentHash: string,
+): CoreAnalysis | null {
+  if (cached.llmJson && cached.cachedUntil > new Date()) {
+    const hit = extractCachedSummary(cached.llmJson);
+    if (hit) {
+      return hit;
+    }
+  }
+  if (cached.contentHash === currentHash && cached.llmJson) {
+    const hit = extractCachedSummary(cached.llmJson);
+    if (hit) {
+      return hit;
+    }
+  }
+  return null;
+}
+
+async function fetchCompetitiveContextIfAvailable(
+  videoId: string,
+  derivedData: InsightDerivedData,
+  deps: GetVideoSummaryDeps,
+): Promise<unknown> {
+  const searchTerms = derivedData.trafficDetail?.searchTerms;
+  if (!searchTerms?.length) {
+    return null;
+  }
+
+  return deps
+    .fetchCompetitiveContext({
+      videoId,
+      title: derivedData.video.title,
+      tags: derivedData.video.tags ?? [],
+      searchTerms: searchTerms.slice(0, 3),
+      totalViews: derivedData.derived.totalViews,
+    })
+    .catch(() => null);
+}
+
 export async function getVideoSummary(
   input: { userId: number; videoId: string; range: string; context: InsightContext },
   deps: GetVideoSummaryDeps,
 ): Promise<{ summary: CoreAnalysis; cached: boolean }> {
   const { userId, videoId, range, context } = input;
   const { derivedData, cached, channel } = context;
-
-  if (cached.llmJson && cached.cachedUntil > new Date()) {
-    const llmData = cached.llmJson as CachedLlmData;
-    if (llmData.headline) {return { summary: llmData as CoreAnalysis, cached: true };}
-    if (llmData.summary?.headline) {return { summary: llmData.summary as CoreAnalysis, cached: true };}
-  }
 
   const currentHash = hashVideoContent({
     title: derivedData.video?.title,
@@ -110,10 +157,9 @@ export async function getVideoSummary(
     categoryId: derivedData.video?.categoryId,
   });
 
-  if (cached.contentHash === currentHash && cached.llmJson) {
-    const llmData = cached.llmJson as CachedLlmData;
-    if (llmData.headline) {return { summary: llmData as CoreAnalysis, cached: true };}
-    if (llmData.summary?.headline) {return { summary: llmData.summary as CoreAnalysis, cached: true };}
+  const cachedSummary = tryResolveFromCache(cached, currentHash);
+  if (cachedSummary) {
+    return { summary: cachedSummary, cached: true };
   }
 
   const entResult = await deps.checkEntitlement({
@@ -124,18 +170,7 @@ export async function getVideoSummary(
     throw new VideoInsightError("LIMIT_REACHED", "Entitlement limit reached", entResult.error);
   }
 
-  let competitiveContext = null;
-  if ((derivedData.trafficDetail?.searchTerms?.length ?? 0) > 0) {
-    competitiveContext = await deps
-      .fetchCompetitiveContext({
-        videoId,
-        title: derivedData.video.title,
-        tags: derivedData.video.tags || [],
-        searchTerms: derivedData.trafficDetail!.searchTerms!.slice(0, 3),
-        totalViews: derivedData.derived.totalViews,
-      })
-      .catch(() => null);
-  }
+  const competitiveContext = await fetchCompetitiveContextIfAvailable(videoId, derivedData, deps);
 
   const summary = await generateSummary(
     {

@@ -13,7 +13,9 @@
  */
 
 import Link from "next/link";
+
 import { BRAND } from "@/lib/shared/brand";
+
 import { LEARN_ARTICLES } from "../../articles";
 import type { BodyProps } from "./_shared";
 import { articleExports } from "./_shared";
@@ -444,9 +446,9 @@ function InlineFigure({ children, position = "center" }: InlineFigureProps) {
   const className =
     position === "left"
       ? "floatLeft"
-      : position === "right"
+      : (position === "right"
         ? "floatRight"
-        : "inlineIllustration";
+        : "inlineIllustration");
   return <div className={className}>{children}</div>;
 }
 

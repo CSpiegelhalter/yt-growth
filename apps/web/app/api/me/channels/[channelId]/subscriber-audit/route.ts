@@ -1,16 +1,16 @@
+import { ApiError } from "@/lib/api/errors";
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
-import { ApiError } from "@/lib/api/errors";
-import { hasActiveSubscription } from "@/lib/server/auth";
-import { callLLM } from "@/lib/llm";
-import type { LlmPort } from "@/lib/ports/LlmPort";
 import {
+  runSubscriberAudit,
   SubscriberAuditParamsSchema,
   SubscriberAuditQuerySchema,
-  runSubscriberAudit,
 } from "@/lib/features/subscriber-insights";
+import { callLLM } from "@/lib/llm";
+import type { LlmPort } from "@/lib/ports/LlmPort";
+import { hasActiveSubscription } from "@/lib/server/auth";
 
 const llmAdapter: LlmPort = {
   complete: (p) =>

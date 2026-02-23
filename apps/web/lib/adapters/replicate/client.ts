@@ -8,19 +8,21 @@
  */
 
 import "server-only";
+
 import Replicate from "replicate";
-import { createLogger } from "@/lib/shared/logger";
+
 import type {
-  Prediction,
-  CreatePredictionParams,
-  Training,
-  CreateTrainingParams,
-  ModelInfo,
   CreateModelParams,
-  ModelVersionCheck,
+  CreatePredictionParams,
+  CreateTrainingParams,
   FileUploadParams,
+  ModelInfo,
+  ModelVersionCheck,
+  Prediction,
+  Training,
   UploadedFile,
 } from "@/lib/ports/ReplicatePort";
+import { createLogger } from "@/lib/shared/logger";
 
 const log = createLogger({ subsystem: "replicate" });
 
@@ -50,7 +52,7 @@ async function replicateFetch<T>(
 
   const headers: Record<string, string> = {
     Authorization: `Token ${apiKey}`,
-    ...(options.headers ?? {}),
+    ...options.headers,
   };
 
   const requestBody = options.body ? JSON.parse(options.body) : undefined;
@@ -246,16 +248,16 @@ export async function createTraining(
       completedAt: training.completed_at ?? null,
       webhookUrl: training.webhook ?? null,
     };
-  } catch (err) {
+  } catch (error) {
     log.error("Training creation failed", {
-      errorMessage: err instanceof Error ? err.message : String(err),
+      errorMessage: error instanceof Error ? error.message : String(error),
       modelOwner,
       modelName,
       versionId,
       destination: params.destination,
-      errorStack: err instanceof Error ? err.stack : undefined,
+      errorStack: error instanceof Error ? error.stack : undefined,
     });
-    throw err;
+    throw error;
   }
 }
 
@@ -298,8 +300,8 @@ export async function verifyModelVersion(
   try {
     await replicateFetch<unknown>(url);
     return { valid: true };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
     if (msg.includes("404")) {
       return {
         valid: false,
@@ -328,11 +330,11 @@ export async function deleteModel(
       method: "DELETE",
     });
     log.info("Model deleted from Replicate", { owner, name });
-  } catch (err) {
+  } catch (error) {
     log.warn("Failed to delete model from Replicate (continuing)", {
       owner,
       name,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 }

@@ -1,19 +1,62 @@
-import unusedImports from "eslint-plugin-unused-imports";
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import importX from "eslint-plugin-import-x";
+import promise from "eslint-plugin-promise";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
 import sonarjs from "eslint-plugin-sonarjs";
+import unicorn from "eslint-plugin-unicorn";
+import unusedImports from "eslint-plugin-unused-imports";
 
 /** @type {import("eslint").Linter.FlatConfig[]} */
 const config = [
-  { ignores: [".jscpd-report/**"] },
+  { ignores: [".jscpd-report/**", ".next/**"] },
 
   ...nextCoreWebVitals,
 
-  // ── Unused imports ──────────────────────────────────────────────────
+  // ── Promise correctness ─────────────────────────────────────────────
+  promise.configs["flat/recommended"],
+
+  // ── Unicorn (modern JS best practices) ──────────────────────────────
+  {
+    ...unicorn.configs["flat/recommended"],
+    rules: {
+      ...unicorn.configs["flat/recommended"].rules,
+      "unicorn/prefer-node-protocol": "off",
+      "unicorn/no-null": "off",
+      "unicorn/prevent-abbreviations": "off",
+      "unicorn/no-array-reduce": "off",
+      "unicorn/no-array-for-each": "off",
+      "unicorn/filename-case": "off",
+      "unicorn/prefer-global-this": "off",
+      "unicorn/no-negated-condition": "off",
+      "unicorn/no-array-callback-reference": "off",
+      "unicorn/no-nested-ternary": "off",
+      "unicorn/prefer-top-level-await": "off",
+      "unicorn/consistent-function-scoping": "warn",
+      "unicorn/text-encoding-identifier-case": "off",
+      "unicorn/no-process-exit": "off",
+      "unicorn/prefer-code-point": "off",
+      "unicorn/import-style": "off",
+      "unicorn/prefer-single-call": "off",
+      "unicorn/prefer-query-selector": "off",
+      "unicorn/prefer-add-event-listener": "off",
+      "unicorn/no-array-sort": "off",
+      "unicorn/numeric-separators-style": "off",
+    },
+  },
+
+  // ── Import sorting & hygiene ────────────────────────────────────────
   {
     plugins: {
+      "simple-import-sort": simpleImportSort,
+      "import-x": importX,
       "unused-imports": unusedImports,
     },
     rules: {
+      "simple-import-sort/imports": "error",
+      "simple-import-sort/exports": "error",
+      "import-x/first": "error",
+      "import-x/newline-after-import": "error",
+      "import-x/no-duplicates": "error",
       "unused-imports/no-unused-imports": "error",
       "unused-imports/no-unused-vars": [
         "error",
@@ -24,17 +67,18 @@ const config = [
           argsIgnorePattern: "^_",
         },
       ],
-      "react/no-unescaped-entities": "off",
-      "react-hooks/exhaustive-deps": "off",
-      "react-hooks/set-state-in-effect": "off",
-      "react-hooks/preserve-manual-memoization": "off",
-      "react-hooks/static-components": "off",
     },
   },
 
   // ── TypeScript strict rules ─────────────────────────────────────────
   {
     files: ["**/*.ts", "**/*.tsx"],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/ban-ts-comment": [
@@ -55,6 +99,14 @@ const config = [
       "@typescript-eslint/no-duplicate-enum-values": "error",
       "@typescript-eslint/no-unnecessary-type-constraint": "error",
       "@typescript-eslint/no-useless-empty-export": "error",
+
+      // Type-checked rules (require projectService above)
+      "@typescript-eslint/no-misused-promises": [
+        "error",
+        { checksVoidReturn: { attributes: false } },
+      ],
+      "@typescript-eslint/await-thenable": "error",
+      "@typescript-eslint/no-floating-promises": "error",
     },
   },
 
@@ -78,6 +130,57 @@ const config = [
       "no-lonely-if": "error",
       "prefer-arrow-callback": ["error", { allowNamedFunctions: true }],
       "no-param-reassign": ["error", { props: false }],
+      complexity: ["error", 15],
+    },
+  },
+
+  // ── SonarJS (code smells + complexity) ──────────────────────────────
+  {
+    plugins: { sonarjs },
+    rules: {
+      "sonarjs/no-duplicated-branches": "warn",
+      "sonarjs/cognitive-complexity": ["error", 20],
+    },
+  },
+
+  // ── React overrides ─────────────────────────────────────────────────
+  {
+    rules: {
+      "react/no-unescaped-entities": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+      "react-hooks/static-components": "off",
+    },
+  },
+
+  // ── Server component guardrails ─────────────────────────────────────
+  {
+    files: [
+      "app/**/page.tsx",
+      "app/**/layout.tsx",
+      "app/**/loading.tsx",
+      "app/**/error.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "react",
+              importNames: [
+                "useState",
+                "useEffect",
+                "useMemo",
+                "useCallback",
+              ],
+              message:
+                "Server components must not use client hooks. Move interactivity into a small 'use client' component.",
+            },
+          ],
+        },
+      ],
     },
   },
 
@@ -99,11 +202,17 @@ const config = [
     },
   },
 
-  // ── SonarJS (code smells) ──────────────────────────────────────────
+  // ── Relax some rules for config & scripts ───────────────────────────
   {
-    plugins: { sonarjs },
+    files: [
+      "*.config.{js,mjs,cjs,ts}",
+      "next.config.js",
+      "scripts/**/*",
+      "prisma/**/*",
+    ],
     rules: {
-      "sonarjs/no-duplicated-branches": "warn",
+      "unicorn/prefer-module": "off",
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 ];

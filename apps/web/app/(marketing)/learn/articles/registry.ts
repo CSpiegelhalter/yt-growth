@@ -14,7 +14,7 @@
  *   }
  */
 
-import type { BodyProps, ArticleMeta, TocEntry } from "./bodies/_shared";
+import type { ArticleMeta, BodyProps, TocEntry } from "./bodies/_shared";
 
 interface ArticleModule {
   Body: React.ComponentType<BodyProps>;

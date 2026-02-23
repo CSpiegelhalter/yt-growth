@@ -3,16 +3,16 @@ export type { AudienceLevel, FormatPreference } from "./types";
 
 // Schemas
 export {
-  ResearchKeywordsBodySchema,
-  KeywordTrendsBodySchema,
-  YoutubeSerpBodySchema,
   KeywordIdeasBodySchema,
+  KeywordTrendsBodySchema,
+  ResearchKeywordsBodySchema,
   TaskIdParamsSchema,
+  YoutubeSerpBodySchema,
 } from "./schemas";
 
 // Use-cases
-export { researchKeywords } from "./use-cases/researchKeywords";
+export { generateKeywordIdeas } from "./use-cases/generateKeywordIdeas";
 export { getKeywordTrends } from "./use-cases/getKeywordTrends";
 export { getYoutubeSerp } from "./use-cases/getYoutubeSerp";
-export { generateKeywordIdeas } from "./use-cases/generateKeywordIdeas";
 export { pollKeywordTask } from "./use-cases/pollKeywordTask";
+export { researchKeywords } from "./use-cases/researchKeywords";

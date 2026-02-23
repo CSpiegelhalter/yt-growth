@@ -7,12 +7,14 @@
  */
 
 import Link from "next/link";
+
 import { BRAND } from "@/lib/shared/brand";
+
+import { Callout } from "../../_components";
 import { LEARN_ARTICLES } from "../../articles";
+import { ArticleCta } from "./_ArticleCta";
 import type { BodyProps } from "./_shared";
 import { articleExports } from "./_shared";
-import { ArticleCta } from "./_ArticleCta";
-import { Callout } from "../../_components";
 
 export const { meta, toc } = articleExports(LEARN_ARTICLES["youtube-channel-audit"]);
 

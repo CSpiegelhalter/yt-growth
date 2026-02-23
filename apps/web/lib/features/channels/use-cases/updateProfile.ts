@@ -1,10 +1,11 @@
 import "server-only";
 
 import { prisma } from "@/prisma";
+
+import { ChannelError } from "../errors";
 import type { ChannelProfileInput } from "../schemas";
 import type { ChannelProfile } from "../types";
 import { computeProfileInputHash, sanitizeProfileInput } from "../utils";
-import { ChannelError } from "../errors";
 import { dbToProfile, type ProfileRow } from "./profile-helpers";
 
 type UpdateProfileInput = {
@@ -46,19 +47,18 @@ export async function updateProfile(
       LIMIT 1
     `;
     existing = existingProfiles[0] || null;
-  } catch (err) {
+  } catch (error) {
     throw new ChannelError(
       "EXTERNAL_FAILURE",
       "Profile system not available. Please run database migrations.",
-      err,
+      error,
     );
   }
 
   const shouldClearAI = existing !== null && existing.inputHash !== inputHash;
 
   if (existing) {
-    if (shouldClearAI) {
-      await prisma.$executeRaw`
+    await (shouldClearAI ? prisma.$executeRaw`
         UPDATE "ChannelProfile"
         SET "inputJson" = ${inputJson},
             "inputHash" = ${inputHash},
@@ -66,16 +66,13 @@ export async function updateProfile(
             "lastGeneratedAt" = NULL,
             "updatedAt" = NOW()
         WHERE "channelId" = ${channel.id}
-      `;
-    } else {
-      await prisma.$executeRaw`
+      ` : prisma.$executeRaw`
         UPDATE "ChannelProfile"
         SET "inputJson" = ${inputJson},
             "inputHash" = ${inputHash},
             "updatedAt" = NOW()
         WHERE "channelId" = ${channel.id}
-      `;
-    }
+      `);
   } else {
     await prisma.$executeRaw`
       INSERT INTO "ChannelProfile" ("id", "channelId", "inputJson", "inputHash", "createdAt", "updatedAt")

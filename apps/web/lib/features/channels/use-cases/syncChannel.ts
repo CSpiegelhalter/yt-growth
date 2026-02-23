@@ -1,13 +1,14 @@
 import "server-only";
 
-import { prisma } from "@/prisma";
+import type { ChannelVideo, VideoMetrics } from "@/lib/ports/YouTubePort";
 import {
   checkRateLimit,
-  rateLimitKey,
   RATE_LIMITS,
+  rateLimitKey,
 } from "@/lib/shared/rate-limit";
+import { prisma } from "@/prisma";
+
 import { ChannelError } from "../errors";
-import type { ChannelVideo, VideoMetrics } from "@/lib/ports/YouTubePort";
 
 const SYNC_VIDEO_COUNT = 96;
 const METRICS_CACHE_HOURS = 12;
@@ -72,39 +73,28 @@ export type SyncChannelDeps<A = unknown> = {
   }>;
 };
 
-// ── Use-case ────────────────────────────────────────────────
+// ── Internal helpers ─────────────────────────────────────────
 
-export async function syncChannel<A>(
-  input: SyncChannelInput,
+function checkRecentSync(
+  lastSyncedAt: Date | null,
+): SyncChannelResult | null {
+  if (!lastSyncedAt) { return null; }
+  const minsSinceSync = (Date.now() - lastSyncedAt.getTime()) / 60_000;
+  if (minsSinceSync >= MIN_SYNC_INTERVAL_MINS) { return null; }
+  return {
+    status: "skipped",
+    lastSyncedAt,
+    nextSyncAvailableAt: new Date(
+      lastSyncedAt.getTime() + MIN_SYNC_INTERVAL_MINS * 60_000,
+    ),
+  };
+}
+
+async function enforceUsageAndRateLimits<A>(
+  userId: number,
+  dbChannelId: number,
   deps: SyncChannelDeps<A>,
-): Promise<SyncChannelResult> {
-  const { userId, channelId } = input;
-
-  // Verify channel ownership
-  const channel = await prisma.channel.findFirst({
-    where: { youtubeChannelId: channelId, userId },
-  });
-  if (!channel) {
-    throw new ChannelError("NOT_FOUND", "Channel not found");
-  }
-
-  // Short-circuit if recently synced (doesn't burn a usage credit)
-  if (channel.lastSyncedAt) {
-    const minsSinceSync =
-      (Date.now() - channel.lastSyncedAt.getTime()) / 60_000;
-    if (minsSinceSync < MIN_SYNC_INTERVAL_MINS) {
-      return {
-        status: "skipped",
-        lastSyncedAt: channel.lastSyncedAt,
-        nextSyncAvailableAt: new Date(
-          channel.lastSyncedAt.getTime() +
-            MIN_SYNC_INTERVAL_MINS * 60_000,
-        ),
-      };
-    }
-  }
-
-  // Check and increment daily usage limit
+): Promise<void> {
   const { limit } = await deps.resolveUsageLimit(userId);
   const usageResult = await deps.checkAndIncrement({
     userId,
@@ -118,141 +108,145 @@ export async function syncChannel<A>(
     );
   }
 
-  // Per-hour rate limit for API protection
-  const rateKey = rateLimitKey("videoSync", channel.id);
+  const rateKey = rateLimitKey("videoSync", dbChannelId);
   const rateResult = checkRateLimit(rateKey, RATE_LIMITS.videoSync);
   if (!rateResult.success) {
     throw new ChannelError("RATE_LIMITED", "Rate limit exceeded");
   }
+}
 
-  // Resolve authenticated Google account
-  const ga = await deps.getGoogleAccount(userId, channelId);
-  if (!ga) {
-    throw new ChannelError(
-      "EXTERNAL_FAILURE",
-      "Google account not connected",
-    );
+async function upsertVideos(
+  dbChannelId: number,
+  videos: ChannelVideo[],
+): Promise<void> {
+  for (const v of videos) {
+    await prisma.video.upsert({
+      where: {
+        channelId_youtubeVideoId: {
+          channelId: dbChannelId,
+          youtubeVideoId: v.videoId,
+        },
+      },
+      update: {
+        title: v.title,
+        description: v.description,
+        publishedAt: new Date(v.publishedAt),
+        durationSec: v.durationSec,
+        tags: v.tags,
+        thumbnailUrl: v.thumbnailUrl,
+      },
+      create: {
+        channelId: dbChannelId,
+        youtubeVideoId: v.videoId,
+        title: v.title,
+        description: v.description,
+        publishedAt: new Date(v.publishedAt),
+        durationSec: v.durationSec,
+        tags: v.tags,
+        thumbnailUrl: v.thumbnailUrl,
+      },
+    });
+  }
+}
+
+function buildMetricsData(
+  dataStats: { views: number; likes: number; comments: number },
+  analytics: VideoMetrics | undefined,
+  cachedUntil: Date,
+) {
+  return {
+    views: dataStats.views,
+    likes: dataStats.likes,
+    comments: dataStats.comments,
+    shares: analytics?.shares ?? 0,
+    subscribersGained: analytics?.subscribersGained ?? 0,
+    subscribersLost: analytics?.subscribersLost ?? 0,
+    estimatedMinutesWatched: analytics?.estimatedMinutesWatched ?? 0,
+    averageViewDuration: analytics?.averageViewDuration ?? 0,
+    averageViewPercentage: analytics?.averageViewPercentage ?? 0,
+    cachedUntil,
+  };
+}
+
+async function upsertAllMetrics<A>(
+  dbChannelId: number,
+  videos: ChannelVideo[],
+  ga: A,
+  channelId: string,
+  deps: SyncChannelDeps<A>,
+): Promise<number> {
+  const videoIds = videos.map((v) => v.videoId);
+  const endDate = new Date().toISOString().split("T")[0];
+
+  const analyticsMetrics = await deps.fetchVideoMetrics(
+    ga, channelId, videoIds, LIFETIME_START_DATE, endDate,
+  );
+  const analyticsMap = new Map(analyticsMetrics.map((m) => [m.videoId, m]));
+
+  const dataApiStatsMap = new Map(
+    videos.map((v) => [v.videoId, { views: v.views, likes: v.likes, comments: v.comments }]),
+  );
+
+  const dbVideos = await prisma.video.findMany({
+    where: { channelId: dbChannelId, youtubeVideoId: { in: videoIds } },
+    select: { id: true, youtubeVideoId: true },
+  });
+  const videoIdMap = new Map(dbVideos.map((v) => [v.youtubeVideoId, v.id]));
+
+  const cachedUntil = new Date(Date.now() + METRICS_CACHE_HOURS * 60 * 60 * 1000);
+
+  for (const videoId of videoIds) {
+    const videoDbId = videoIdMap.get(videoId);
+    if (!videoDbId) { continue; }
+
+    const dataStats = dataApiStatsMap.get(videoId) ?? { views: 0, likes: 0, comments: 0 };
+    const metricsData = buildMetricsData(dataStats, analyticsMap.get(videoId), cachedUntil);
+
+    await prisma.videoMetrics.upsert({
+      where: { videoId: videoDbId },
+      update: { ...metricsData, fetchedAt: new Date() },
+      create: { videoId: videoDbId, channelId: dbChannelId, ...metricsData },
+    });
   }
 
-  // Mark channel as syncing
+  return videoIds.length;
+}
+
+// ── Use-case ────────────────────────────────────────────────
+
+export async function syncChannel<A>(
+  input: SyncChannelInput,
+  deps: SyncChannelDeps<A>,
+): Promise<SyncChannelResult> {
+  const { userId, channelId } = input;
+
+  const channel = await prisma.channel.findFirst({
+    where: { youtubeChannelId: channelId, userId },
+  });
+  if (!channel) {
+    throw new ChannelError("NOT_FOUND", "Channel not found");
+  }
+
+  const skipped = checkRecentSync(channel.lastSyncedAt);
+  if (skipped) { return skipped; }
+
+  await enforceUsageAndRateLimits(userId, channel.id, deps);
+
+  const ga = await deps.getGoogleAccount(userId, channelId);
+  if (!ga) {
+    throw new ChannelError("EXTERNAL_FAILURE", "Google account not connected");
+  }
+
   await prisma.channel.update({
     where: { id: channel.id },
     data: { syncStatus: "running" },
   });
 
   try {
-    const videos = await deps.fetchChannelVideos(
-      ga,
-      channelId,
-      SYNC_VIDEO_COUNT,
-    );
+    const videos = await deps.fetchChannelVideos(ga, channelId, SYNC_VIDEO_COUNT);
+    await upsertVideos(channel.id, videos);
+    const metricsCount = await upsertAllMetrics(channel.id, videos, ga, channelId, deps);
 
-    // Upsert videos
-    for (const v of videos) {
-      await prisma.video.upsert({
-        where: {
-          channelId_youtubeVideoId: {
-            channelId: channel.id,
-            youtubeVideoId: v.videoId,
-          },
-        },
-        update: {
-          title: v.title,
-          description: v.description,
-          publishedAt: new Date(v.publishedAt),
-          durationSec: v.durationSec,
-          tags: v.tags,
-          thumbnailUrl: v.thumbnailUrl,
-        },
-        create: {
-          channelId: channel.id,
-          youtubeVideoId: v.videoId,
-          title: v.title,
-          description: v.description,
-          publishedAt: new Date(v.publishedAt),
-          durationSec: v.durationSec,
-          tags: v.tags,
-          thumbnailUrl: v.thumbnailUrl,
-        },
-      });
-    }
-
-    // Fetch analytics metrics (lifetime range to capture all-time subscriber data)
-    const videoIds = videos.map((v) => v.videoId);
-    const endDate = new Date().toISOString().split("T")[0];
-    const analyticsMetrics = await deps.fetchVideoMetrics(
-      ga,
-      channelId,
-      videoIds,
-      LIFETIME_START_DATE,
-      endDate,
-    );
-    const analyticsMap = new Map(
-      analyticsMetrics.map((m) => [m.videoId, m]),
-    );
-
-    // Data API stats (total lifetime views, likes, comments)
-    const dataApiStatsMap = new Map(
-      videos.map((v) => [
-        v.videoId,
-        { views: v.views, likes: v.likes, comments: v.comments },
-      ]),
-    );
-
-    // Resolve internal DB IDs for upserted videos
-    const dbVideos = await prisma.video.findMany({
-      where: {
-        channelId: channel.id,
-        youtubeVideoId: { in: videoIds },
-      },
-      select: { id: true, youtubeVideoId: true },
-    });
-    const videoIdMap = new Map(
-      dbVideos.map((v) => [v.youtubeVideoId, v.id]),
-    );
-
-    // Upsert metrics: Data API for view/like/comment totals, Analytics API for engagement
-    const cachedUntil = new Date(
-      Date.now() + METRICS_CACHE_HOURS * 60 * 60 * 1000,
-    );
-    for (const videoId of videoIds) {
-      const videoDbId = videoIdMap.get(videoId);
-      if (!videoDbId) {continue;}
-
-      const dataStats = dataApiStatsMap.get(videoId) ?? {
-        views: 0,
-        likes: 0,
-        comments: 0,
-      };
-      const analytics = analyticsMap.get(videoId);
-
-      const metricsData = {
-        views: dataStats.views,
-        likes: dataStats.likes,
-        comments: dataStats.comments,
-        shares: analytics?.shares ?? 0,
-        subscribersGained: analytics?.subscribersGained ?? 0,
-        subscribersLost: analytics?.subscribersLost ?? 0,
-        estimatedMinutesWatched:
-          analytics?.estimatedMinutesWatched ?? 0,
-        averageViewDuration: analytics?.averageViewDuration ?? 0,
-        averageViewPercentage:
-          analytics?.averageViewPercentage ?? 0,
-        cachedUntil,
-      };
-
-      await prisma.videoMetrics.upsert({
-        where: { videoId: videoDbId },
-        update: { ...metricsData, fetchedAt: new Date() },
-        create: {
-          videoId: videoDbId,
-          channelId: channel.id,
-          ...metricsData,
-        },
-      });
-    }
-
-    // Mark sync complete
     const now = new Date();
     await prisma.channel.update({
       where: { id: channel.id },
@@ -262,17 +256,17 @@ export async function syncChannel<A>(
     return {
       status: "synced",
       videosCount: videos.length,
-      metricsCount: videoIds.length,
+      metricsCount,
       lastSyncedAt: now,
     };
-  } catch (err: unknown) {
+  } catch (error: unknown) {
     await prisma.channel.update({
       where: { id: channel.id },
       data: {
         syncStatus: "error",
-        syncError: err instanceof Error ? err.message : String(err),
+        syncError: error instanceof Error ? error.message : String(error),
       },
     });
-    throw err;
+    throw error;
   }
 }

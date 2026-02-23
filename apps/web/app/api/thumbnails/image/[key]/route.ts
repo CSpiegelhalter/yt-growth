@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createApiRoute } from "@/lib/api/route";
-import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
-import { getImage } from "@/lib/features/thumbnails";
+
 import { getStorage } from "@/lib/adapters/storage";
+import { createApiRoute } from "@/lib/api/route";
+import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
+import { getImage } from "@/lib/features/thumbnails";
 
 export const GET = createApiRoute(
   { route: "/api/thumbnails/image/[key]" },
@@ -14,7 +15,7 @@ export const GET = createApiRoute(
 
       const url = new URL(req.url);
       const pathParts = url.pathname.split("/");
-      const encodedKey = pathParts[pathParts.length - 1] ?? "";
+      const encodedKey = pathParts.at(-1) ?? "";
 
       const result = await getImage(
         { encodedKey },

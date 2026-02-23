@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+
 import { BRAND } from "@/lib/shared/brand";
 import { generateBreadcrumbSchema } from "@/lib/shared/seo";
+
 import {
-  type LearnArticle,
-  generateLearnArticleSchema,
   generateFaqSchema,
+  generateLearnArticleSchema,
+  type LearnArticle,
 } from "../articles";
 
 /**

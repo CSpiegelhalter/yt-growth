@@ -6,6 +6,43 @@
 
 const YOUTUBE_VIDEO_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
 
+const YOUTUBE_DOMAINS = new Set([
+  "youtube.com",
+  "www.youtube.com",
+  "m.youtube.com",
+  "youtu.be",
+  "www.youtu.be",
+]);
+
+const SHORTLINK_HOSTS = new Set(["youtu.be", "www.youtu.be"]);
+
+const PATH_PREFIX_PATTERNS = ["/shorts/", "/embed/", "/v/"];
+
+function extractIdFromUrl(parsed: URL): string | null {
+  const hostname = parsed.hostname.toLowerCase();
+
+  if (SHORTLINK_HOSTS.has(hostname)) {
+    return parsed.pathname.slice(1).split("/")[0] || null;
+  }
+
+  if (parsed.pathname === "/watch") {
+    return parsed.searchParams.get("v");
+  }
+
+  for (const prefix of PATH_PREFIX_PATTERNS) {
+    if (parsed.pathname.startsWith(prefix)) {
+      const pathParts = parsed.pathname.split("/");
+      return pathParts.length >= 3 ? (pathParts[2] ?? null) : null;
+    }
+  }
+
+  return null;
+}
+
+function validateVideoId(id: string | null): string | null {
+  return id && YOUTUBE_VIDEO_ID_REGEX.test(id) ? id : null;
+}
+
 /**
  * Parse a YouTube video ID from a URL.
  *
@@ -26,13 +63,11 @@ export function parseYouTubeVideoId(url: string): string | null {
     return null;
   }
 
-  // Trim whitespace
   const trimmed = url.trim();
   if (!trimmed) {
     return null;
   }
 
-  // If it's already just a video ID (11 characters), return it
   if (YOUTUBE_VIDEO_ID_REGEX.test(trimmed)) {
     return trimmed;
   }
@@ -44,59 +79,9 @@ export function parseYouTubeVideoId(url: string): string | null {
     return null;
   }
 
-  // Check if it's a YouTube domain
-  const hostname = parsed.hostname.toLowerCase();
-  const isYouTubeDomain =
-    hostname === "youtube.com" ||
-    hostname === "www.youtube.com" ||
-    hostname === "m.youtube.com" ||
-    hostname === "youtu.be" ||
-    hostname === "www.youtu.be";
-
-  if (!isYouTubeDomain) {
+  if (!YOUTUBE_DOMAINS.has(parsed.hostname.toLowerCase())) {
     return null;
   }
 
-  let videoId: string | null = null;
-
-  // youtu.be/VIDEOID
-  if (hostname === "youtu.be" || hostname === "www.youtu.be") {
-    // The video ID is the path without the leading slash
-    const pathVideoId = parsed.pathname.slice(1).split("/")[0];
-    if (pathVideoId) {
-      videoId = pathVideoId;
-    }
-  }
-  // youtube.com/watch?v=VIDEOID
-  else if (parsed.pathname === "/watch") {
-    videoId = parsed.searchParams.get("v");
-  }
-  // youtube.com/shorts/VIDEOID
-  else if (parsed.pathname.startsWith("/shorts/")) {
-    const pathParts = parsed.pathname.split("/");
-    if (pathParts.length >= 3) {
-      videoId = pathParts[2];
-    }
-  }
-  // youtube.com/embed/VIDEOID
-  else if (parsed.pathname.startsWith("/embed/")) {
-    const pathParts = parsed.pathname.split("/");
-    if (pathParts.length >= 3) {
-      videoId = pathParts[2];
-    }
-  }
-  // youtube.com/v/VIDEOID (old embed format)
-  else if (parsed.pathname.startsWith("/v/")) {
-    const pathParts = parsed.pathname.split("/");
-    if (pathParts.length >= 3) {
-      videoId = pathParts[2];
-    }
-  }
-
-  // Validate the video ID format (11 alphanumeric characters, underscores, and hyphens)
-  if (videoId && YOUTUBE_VIDEO_ID_REGEX.test(videoId)) {
-    return videoId;
-  }
-
-  return null;
+  return validateVideoId(extractIdFromUrl(parsed));
 }

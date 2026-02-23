@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import s from "./style.module.css";
-import type { Channel } from "@/types/api";
+import { useState } from "react";
+
 import ChannelCard from "@/components/dashboard/ChannelCard";
 import EmptyState from "@/components/dashboard/EmptyState";
 import { LIMITS } from "@/lib/shared/product";
+import type { Channel } from "@/types/api";
+
+import s from "./style.module.css";
 
 type ChannelsSectionProps = {
   channels: Channel[];

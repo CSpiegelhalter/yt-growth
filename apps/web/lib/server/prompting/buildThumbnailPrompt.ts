@@ -5,9 +5,9 @@
  * callers (routes, tests) continue to work without changes.
  */
 
-import { callLLM } from "@/lib/llm";
 import { buildPrompt } from "@/lib/features/thumbnails";
 import type { BuildPromptInput, BuildPromptOutput } from "@/lib/features/thumbnails/types";
+import { callLLM } from "@/lib/llm";
 
 export async function buildThumbnailPrompt(
   input: BuildPromptInput,

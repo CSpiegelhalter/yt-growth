@@ -37,7 +37,7 @@ export async function withTimeout<T>(
 ): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-  const timeoutPromise = new Promise<never>((_, reject) => {
+  const timeoutPromise = new Promise<never>((_resolve, reject) => {
     timeoutId = setTimeout(() => {
       logger.warn(`Timeout triggered`, { operation, timeoutMs: ms });
       reject(new TimeoutError(operation, ms));
@@ -78,12 +78,12 @@ export async function withTimeoutOptional<T>(
 ): Promise<T | null> {
   try {
     return await withTimeout(promise, ms, operation);
-  } catch (err) {
-    const isTimeout = err instanceof TimeoutError;
+  } catch (error) {
+    const isTimeout = error instanceof TimeoutError;
     logger.warn(`Optional operation failed`, {
       operation,
       isTimeout,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
     });
     return null;
   }

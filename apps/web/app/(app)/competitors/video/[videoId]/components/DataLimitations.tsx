@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+
 import s from "./DataLimitations.module.css";
 
 type Props = {

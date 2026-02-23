@@ -1,6 +1,8 @@
 import "server-only";
 
 import { prisma } from "@/prisma";
+
+import { assertActiveSubscription } from "../errors";
 import type {
   DiscoverCompetitorsInput,
   DiscoverCompetitorsResult,
@@ -8,7 +10,6 @@ import type {
   DiscoveryFilters,
   SampleVideo,
 } from "../types";
-import { assertActiveSubscription } from "../errors";
 
 // ── Internal DB row types ───────────────────────────────────────
 
@@ -327,9 +328,9 @@ async function fetchLowCompetition(
 
     const avgSubs = cluster.avg_channel_subs;
     const competitionLevel = avgSubs
-      ? avgSubs < 10000
+      ? avgSubs < 10_000
         ? "low"
-        : avgSubs < 100000
+        : avgSubs < 100_000
           ? "medium"
           : "high"
       : "unknown";
@@ -371,12 +372,15 @@ function resolveListType(
 ): string {
   if (listType) {return listType;}
   switch (sortBy) {
-    case "breakout":
+    case "breakout": {
       return "breakouts";
-    case "opportunity":
+    }
+    case "opportunity": {
       return "low_competition";
-    default:
+    }
+    default: {
       return "emerging_niches";
+    }
   }
 }
 
@@ -401,19 +405,22 @@ export async function discoverCompetitors(
   let niches: DiscoveredNiche[];
 
   switch (listType) {
-    case "fastest_growing":
+    case "fastest_growing": {
       niches = await fetchFastestGrowing(window, limit);
       break;
-    case "breakouts":
+    }
+    case "breakouts": {
       niches = await fetchBreakouts(window, limit);
       break;
-    case "low_competition":
+    }
+    case "low_competition": {
       niches = await fetchLowCompetition(window, limit);
       break;
-    case "emerging_niches":
-    default:
+    }
+    default: {
       niches = await fetchEmergingNiches(window, limit);
       break;
+    }
   }
 
   return {

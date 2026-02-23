@@ -1,4 +1,4 @@
-import { stableHash, sha256Short } from "@/lib/shared/stable-hash";
+import { sha256Short,stableHash } from "@/lib/shared/stable-hash";
 
 /**
  * Creates a stable hash of video content for cache invalidation.
@@ -13,13 +13,13 @@ export function hashVideoContent(video: {
 }): string {
   const tagsArray = Array.isArray(video.tags)
     ? video.tags
-    : typeof video.tags === "string"
+    : (typeof video.tags === "string"
     ? video.tags.split(",").map((t) => t.trim())
-    : [];
+    : []);
 
   return stableHash({
     title: (video.title ?? "").toLowerCase().trim(),
-    description: (video.description ?? "").substring(0, 500).toLowerCase().trim(),
+    description: (video.description ?? "").slice(0, 500).toLowerCase().trim(),
     tags: tagsArray.map((t) => t.toLowerCase().trim()).sort(),
     durationBucket: video.durationSec
       ? Math.floor(video.durationSec / 60)
@@ -56,7 +56,7 @@ export function hashCommentsContent(
 ): string {
   const content = comments
     .slice(0, 50)
-    .map((c) => (c.text ?? "").substring(0, 200))
+    .map((c) => (c.text ?? "").slice(0, 200))
     .join("|");
 
   return sha256Short(content);

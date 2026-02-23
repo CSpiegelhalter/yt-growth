@@ -6,8 +6,8 @@
 
 import { YOUTUBE_ANALYTICS_API } from "./constants";
 import { youtubeFetch } from "./transport";
+import type { GoogleAccount, RetentionPoint,VideoMetricsData } from "./types";
 import { yyyyMmDd } from "./utils";
-import type { GoogleAccount, VideoMetricsData, RetentionPoint } from "./types";
 
 /**
  * Fetch video metrics from YouTube Analytics API.
@@ -73,9 +73,9 @@ export async function fetchRetentionCurve(
 ): Promise<RetentionPoint[]> {
   // Default to 90 days ago if no start date provided
   const start = startDate
-    ? typeof startDate === "string"
+    ? (typeof startDate === "string"
       ? startDate
-      : yyyyMmDd(startDate)
+      : yyyyMmDd(startDate))
     : yyyyMmDd(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000));
 
   const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);

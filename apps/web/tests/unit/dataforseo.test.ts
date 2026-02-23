@@ -4,21 +4,22 @@
  * Tests for validation, hashing, difficulty heuristic, parsing, and rate limiting.
  * These are pure unit tests with no external dependencies.
  */
-import { describe, it, expect } from "bun:test";
+import { describe, expect,it } from "bun:test";
+
 import {
-  validatePhrase,
-  validateKeywords,
-  validateLocation,
-  generateRequestHash,
   calculateDifficultyHeuristic,
-  parseNumeric,
+  DataForSEOError,
+  generateRequestHash,
+  isRestrictedCategoryError,
+  LOCATION_MAP,
+  parseCompetitionLevel,
   parseInteger,
   parseMonthlyTrend,
-  parseCompetitionLevel,
-  isRestrictedCategoryError,
-  DataForSEOError,
+  parseNumeric,
   SUPPORTED_LOCATIONS,
-  LOCATION_MAP,
+  validateKeywords,
+  validateLocation,
+  validatePhrase,
 } from "@/lib/dataforseo/utils";
 
 describe("DataForSEO Client Unit Tests", () => {
@@ -290,8 +291,8 @@ describe("DataForSEO Client Unit Tests", () => {
       const veryLow = calculateDifficultyHeuristic({ searchVolume: 50 });
       const low = calculateDifficultyHeuristic({ searchVolume: 500 });
       const medium = calculateDifficultyHeuristic({ searchVolume: 5000 });
-      const high = calculateDifficultyHeuristic({ searchVolume: 50000 });
-      const veryHigh = calculateDifficultyHeuristic({ searchVolume: 500000 });
+      const high = calculateDifficultyHeuristic({ searchVolume: 50_000 });
+      const veryHigh = calculateDifficultyHeuristic({ searchVolume: 500_000 });
       
       // Each tier should be progressively harder
       expect(low).toBeGreaterThan(veryLow);
@@ -306,15 +307,15 @@ describe("DataForSEO Client Unit Tests", () => {
     });
 
     it("factors in CPC as secondary signal", () => {
-      const lowCpc = calculateDifficultyHeuristic({ searchVolume: 10000, cpc: 0.5 });
-      const highCpc = calculateDifficultyHeuristic({ searchVolume: 10000, cpc: 5.0 });
+      const lowCpc = calculateDifficultyHeuristic({ searchVolume: 10_000, cpc: 0.5 });
+      const highCpc = calculateDifficultyHeuristic({ searchVolume: 10_000, cpc: 5 });
 
       expect(highCpc).toBeGreaterThan(lowCpc);
     });
 
     it("factors in high top of page bid", () => {
-      const lowBid = calculateDifficultyHeuristic({ searchVolume: 10000, highTopOfPageBid: 1 });
-      const highBid = calculateDifficultyHeuristic({ searchVolume: 10000, highTopOfPageBid: 10 });
+      const lowBid = calculateDifficultyHeuristic({ searchVolume: 10_000, highTopOfPageBid: 1 });
+      const highBid = calculateDifficultyHeuristic({ searchVolume: 10_000, highTopOfPageBid: 10 });
 
       expect(highBid).toBeGreaterThan(lowBid);
     });
@@ -324,7 +325,7 @@ describe("DataForSEO Client Unit Tests", () => {
       const maxDifficulty = calculateDifficultyHeuristic({
         cpc: 100, // Very high
         highTopOfPageBid: 100, // Very high
-        searchVolume: 100000000, // Very high
+        searchVolume: 100_000_000, // Very high
       });
 
       expect(maxDifficulty).toBeLessThanOrEqual(100);
@@ -334,7 +335,7 @@ describe("DataForSEO Client Unit Tests", () => {
     it("returns rounded integer", () => {
       const difficulty = calculateDifficultyHeuristic({
         cpc: 1.5,
-        searchVolume: 12345,
+        searchVolume: 12_345,
       });
 
       expect(Number.isInteger(difficulty)).toBe(true);
@@ -356,7 +357,7 @@ describe("DataForSEO Client Unit Tests", () => {
     it("returns realistic difficulty for known keywords", () => {
       // "youtube shorts" - 450K volume, $0.04 CPC = should be HARD (70+)
       const youtubeShorts = calculateDifficultyHeuristic({
-        searchVolume: 450000,
+        searchVolume: 450_000,
         cpc: 0.04,
       });
       expect(youtubeShorts).toBeGreaterThan(70);
@@ -364,7 +365,7 @@ describe("DataForSEO Client Unit Tests", () => {
       // Long-tail low volume keyword = should be EASY (<30)
       const longTail = calculateDifficultyHeuristic({
         searchVolume: 50,
-        cpc: 0.10,
+        cpc: 0.1,
       });
       expect(longTail).toBeLessThan(30);
     });
@@ -379,7 +380,7 @@ describe("DataForSEO Client Unit Tests", () => {
 
     it("returns fallback for null/undefined", () => {
       expect(parseNumeric(null)).toBe(0);
-      expect(parseNumeric(undefined)).toBe(0);
+      expect(parseNumeric()).toBe(0);
       expect(parseNumeric(null, 999)).toBe(999);
     });
 
@@ -403,7 +404,7 @@ describe("DataForSEO Client Unit Tests", () => {
 
     it("returns fallback for null/undefined", () => {
       expect(parseInteger(null)).toBe(0);
-      expect(parseInteger(undefined)).toBe(0);
+      expect(parseInteger()).toBe(0);
       expect(parseInteger(null, 999)).toBe(999);
     });
 
@@ -454,7 +455,7 @@ describe("DataForSEO Client Unit Tests", () => {
     });
 
     it("returns empty array for undefined/null", () => {
-      expect(parseMonthlyTrend(undefined)).toEqual([]);
+      expect(parseMonthlyTrend()).toEqual([]);
       expect(parseMonthlyTrend(null as unknown as undefined)).toEqual([]);
     });
 
@@ -493,15 +494,15 @@ describe("DataForSEO Client Unit Tests", () => {
 
     it("returns 0 for null/undefined/unknown", () => {
       expect(parseCompetitionLevel(null)).toBe(0);
-      expect(parseCompetitionLevel(undefined)).toBe(0);
+      expect(parseCompetitionLevel()).toBe(0);
       expect(parseCompetitionLevel("unknown")).toBe(0);
     });
   });
 
   describe("isRestrictedCategoryError", () => {
     it("returns true for restricted status codes", () => {
-      expect(isRestrictedCategoryError(40501)).toBe(true);
-      expect(isRestrictedCategoryError(40502)).toBe(true);
+      expect(isRestrictedCategoryError(40_501)).toBe(true);
+      expect(isRestrictedCategoryError(40_502)).toBe(true);
     });
 
     it("returns true for restriction-related messages", () => {
@@ -565,7 +566,7 @@ describe("DataForSEO Standard Task Flow Fixtures", () => {
   describe("search_volume task_get response parsing", () => {
     const mockTaskGetResponse = {
       version: "0.1.20240101",
-      status_code: 20000,
+      status_code: 20_000,
       status_message: "Ok.",
       time: "1.234 sec.",
       cost: 0.1,
@@ -574,7 +575,7 @@ describe("DataForSEO Standard Task Flow Fixtures", () => {
       tasks: [
         {
           id: "12345678-1234-1234-1234-123456789012",
-          status_code: 20000,
+          status_code: 20_000,
           status_message: "Ok.",
           time: "0.567 sec.",
           cost: 0.1,
@@ -601,23 +602,23 @@ describe("DataForSEO Standard Task Flow Fixtures", () => {
                 competition_level: "HIGH",
                 competition_index: 78,
                 cpc: 3.45,
-                search_volume: 74000,
+                search_volume: 74_000,
                 low_top_of_page_bid: 1.23,
                 high_top_of_page_bid: 5.67,
-                categories: [10001, 10002],
+                categories: [10_001, 10_002],
                 monthly_searches: [
-                  { year: 2024, month: 1, search_volume: 74000 },
-                  { year: 2023, month: 12, search_volume: 81000 },
-                  { year: 2023, month: 11, search_volume: 67000 },
-                  { year: 2023, month: 10, search_volume: 61000 },
-                  { year: 2023, month: 9, search_volume: 55000 },
-                  { year: 2023, month: 8, search_volume: 60000 },
-                  { year: 2023, month: 7, search_volume: 64000 },
-                  { year: 2023, month: 6, search_volume: 59000 },
-                  { year: 2023, month: 5, search_volume: 57000 },
-                  { year: 2023, month: 4, search_volume: 53000 },
-                  { year: 2023, month: 3, search_volume: 49000 },
-                  { year: 2023, month: 2, search_volume: 51000 },
+                  { year: 2024, month: 1, search_volume: 74_000 },
+                  { year: 2023, month: 12, search_volume: 81_000 },
+                  { year: 2023, month: 11, search_volume: 67_000 },
+                  { year: 2023, month: 10, search_volume: 61_000 },
+                  { year: 2023, month: 9, search_volume: 55_000 },
+                  { year: 2023, month: 8, search_volume: 60_000 },
+                  { year: 2023, month: 7, search_volume: 64_000 },
+                  { year: 2023, month: 6, search_volume: 59_000 },
+                  { year: 2023, month: 5, search_volume: 57_000 },
+                  { year: 2023, month: 4, search_volume: 53_000 },
+                  { year: 2023, month: 3, search_volume: 49_000 },
+                  { year: 2023, month: 2, search_volume: 51_000 },
                 ],
               },
               search_intent_info: {
@@ -640,23 +641,23 @@ describe("DataForSEO Standard Task Flow Fixtures", () => {
                 competition_level: "HIGH",
                 competition_index: 92,
                 cpc: 8.21,
-                search_volume: 135000,
+                search_volume: 135_000,
                 low_top_of_page_bid: 4.56,
                 high_top_of_page_bid: 12.34,
-                categories: [10003],
+                categories: [10_003],
                 monthly_searches: [
-                  { year: 2024, month: 1, search_volume: 135000 },
-                  { year: 2023, month: 12, search_volume: 140000 },
-                  { year: 2023, month: 11, search_volume: 125000 },
-                  { year: 2023, month: 10, search_volume: 118000 },
-                  { year: 2023, month: 9, search_volume: 110000 },
-                  { year: 2023, month: 8, search_volume: 105000 },
-                  { year: 2023, month: 7, search_volume: 100000 },
-                  { year: 2023, month: 6, search_volume: 98000 },
-                  { year: 2023, month: 5, search_volume: 95000 },
-                  { year: 2023, month: 4, search_volume: 92000 },
-                  { year: 2023, month: 3, search_volume: 90000 },
-                  { year: 2023, month: 2, search_volume: 88000 },
+                  { year: 2024, month: 1, search_volume: 135_000 },
+                  { year: 2023, month: 12, search_volume: 140_000 },
+                  { year: 2023, month: 11, search_volume: 125_000 },
+                  { year: 2023, month: 10, search_volume: 118_000 },
+                  { year: 2023, month: 9, search_volume: 110_000 },
+                  { year: 2023, month: 8, search_volume: 105_000 },
+                  { year: 2023, month: 7, search_volume: 100_000 },
+                  { year: 2023, month: 6, search_volume: 98_000 },
+                  { year: 2023, month: 5, search_volume: 95_000 },
+                  { year: 2023, month: 4, search_volume: 92_000 },
+                  { year: 2023, month: 3, search_volume: 90_000 },
+                  { year: 2023, month: 2, search_volume: 88_000 },
                 ],
               },
               search_intent_info: {
@@ -673,7 +674,7 @@ describe("DataForSEO Standard Task Flow Fixtures", () => {
 
     it("correctly parses search_volume from task_get response", () => {
       const result = mockTaskGetResponse.tasks[0]?.result?.[0];
-      expect(result?.keyword_info?.search_volume).toBe(74000);
+      expect(result?.keyword_info?.search_volume).toBe(74_000);
     });
 
     it("correctly parses competition_index from task_get response", () => {
@@ -691,7 +692,7 @@ describe("DataForSEO Standard Task Flow Fixtures", () => {
       const monthly = result?.keyword_info?.monthly_searches;
 
       expect(monthly).toHaveLength(12);
-      expect(monthly?.[0]).toEqual({ year: 2024, month: 1, search_volume: 74000 });
+      expect(monthly?.[0]).toEqual({ year: 2024, month: 1, search_volume: 74_000 });
     });
 
     it("correctly parses bid estimates from task_get response", () => {
@@ -716,12 +717,12 @@ describe("DataForSEO Standard Task Flow Fixtures", () => {
   describe("pending task response", () => {
     const mockPendingResponse = {
       version: "0.1.20240101",
-      status_code: 20000,
+      status_code: 20_000,
       status_message: "Ok.",
       tasks: [
         {
           id: "12345678-1234-1234-1234-123456789012",
-          status_code: 40601, // Not ready yet
+          status_code: 40_601, // Not ready yet
           status_message: "Task is in the queue",
           result: null,
         },
@@ -730,7 +731,7 @@ describe("DataForSEO Standard Task Flow Fixtures", () => {
 
     it("correctly identifies pending status", () => {
       const task = mockPendingResponse.tasks[0];
-      expect(task?.status_code).toBe(40601);
+      expect(task?.status_code).toBe(40_601);
       expect(task?.result).toBeNull();
     });
   });
@@ -740,28 +741,25 @@ describe("DataForSEO Standard Task Flow Fixtures", () => {
 // YouTube SERP Tests
 // ============================================
 
+function formatViews(views: number | null): string {
+  if (views === null || views === undefined) {return "—";}
+  if (views >= 1_000_000) {return `${(views / 1_000_000).toFixed(1)}M`;}
+  if (views >= 1000) {return `${(views / 1000).toFixed(1)}K`;}
+  return views.toString();
+}
+
 describe("YouTube SERP Client Unit Tests", () => {
   describe("formatViews helper", () => {
-    // We test the formatViews function logic here
-    // The actual function is in youtube-serp.ts but we test the logic
-
-    function formatViews(views: number | null): string {
-      if (views === null || views === undefined) {return "—";}
-      if (views >= 1000000) {return `${(views / 1000000).toFixed(1)}M`;}
-      if (views >= 1000) {return `${(views / 1000).toFixed(1)}K`;}
-      return views.toString();
-    }
-
     it("formats millions correctly", () => {
-      expect(formatViews(1000000)).toBe("1.0M");
-      expect(formatViews(1500000)).toBe("1.5M");
-      expect(formatViews(12345678)).toBe("12.3M");
+      expect(formatViews(1_000_000)).toBe("1.0M");
+      expect(formatViews(1_500_000)).toBe("1.5M");
+      expect(formatViews(12_345_678)).toBe("12.3M");
     });
 
     it("formats thousands correctly", () => {
       expect(formatViews(1000)).toBe("1.0K");
       expect(formatViews(1500)).toBe("1.5K");
-      expect(formatViews(999000)).toBe("999.0K");
+      expect(formatViews(999_000)).toBe("999.0K");
     });
 
     it("formats small numbers correctly", () => {
@@ -779,7 +777,7 @@ describe("YouTube SERP Client Unit Tests", () => {
     // Mock YouTube SERP API response
     const mockYouTubeSerpResponse = {
       version: "0.1.20240101",
-      status_code: 20000,
+      status_code: 20_000,
       status_message: "Ok.",
       time: "1.234 sec.",
       cost: 0.002,
@@ -788,7 +786,7 @@ describe("YouTube SERP Client Unit Tests", () => {
       tasks: [
         {
           id: "task-id-123",
-          status_code: 20000,
+          status_code: 20_000,
           status_message: "Ok.",
           time: "0.567 sec.",
           cost: 0.002,
@@ -828,7 +826,7 @@ describe("YouTube SERP Client Unit Tests", () => {
                   channel_name: "Creator Academy",
                   channel_url: "https://www.youtube.com/channel/UC123",
                   description: "Learn how to create viral YouTube Shorts...",
-                  views_count: 1234567,
+                  views_count: 1_234_567,
                   timestamp: "2024-01-10T10:00:00Z",
                   publication_date: "2024-01-10",
                   duration: "PT10M30S",
@@ -847,7 +845,7 @@ describe("YouTube SERP Client Unit Tests", () => {
                   channel_name: "Tech Tips",
                   channel_url: "https://www.youtube.com/channel/UC456",
                   description: null,
-                  views_count: 890000,
+                  views_count: 890_000,
                   timestamp: null,
                   publication_date: "2024-01-08",
                   duration: "PT5M15S",
@@ -873,7 +871,7 @@ describe("YouTube SERP Client Unit Tests", () => {
       expect(video.title).toBe("How to Make YouTube Shorts in 2024");
       expect(video.channel_name).toBe("Creator Academy");
       expect(video.video_id).toBe("abc123");
-      expect(video.views_count).toBe(1234567);
+      expect(video.views_count).toBe(1_234_567);
     });
 
     it("handles null thumbnail gracefully", () => {

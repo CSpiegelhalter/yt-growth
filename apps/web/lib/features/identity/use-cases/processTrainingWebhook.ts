@@ -1,5 +1,6 @@
-import { prisma } from "@/prisma";
 import { createLogger } from "@/lib/shared/logger";
+import { prisma } from "@/prisma";
+
 import { handleTrainingComplete } from "./manageModel";
 
 const log = createLogger({ subsystem: "identity-webhook" });
@@ -58,7 +59,8 @@ export async function processTrainingWebhook(
     return { ok: true, type: "training" };
   }
 
-  if (status === "succeeded") {
+  switch (status) {
+  case "succeeded": {
     log.info("Training succeeded, examining output", {
       modelId: model.id,
       trainingId,
@@ -85,7 +87,10 @@ export async function processTrainingWebhook(
       action: result.action,
       needsRetrain: result.needsRetrain,
     });
-  } else if (status === "failed") {
+  
+  break;
+  }
+  case "failed": {
     await prisma.userModel.update({
       where: { id: model.id },
       data: {
@@ -94,7 +99,10 @@ export async function processTrainingWebhook(
         errorMessage: error ?? "Training failed",
       },
     });
-  } else if (status === "canceled") {
+  
+  break;
+  }
+  case "canceled": {
     await prisma.userModel.update({
       where: { id: model.id },
       data: {
@@ -103,11 +111,15 @@ export async function processTrainingWebhook(
         errorMessage: error ?? null,
       },
     });
-  } else {
+  
+  break;
+  }
+  default: {
     await prisma.userModel.update({
       where: { id: model.id },
       data: { status: "training" },
     });
+  }
   }
 
   return { ok: true, type: "training" };

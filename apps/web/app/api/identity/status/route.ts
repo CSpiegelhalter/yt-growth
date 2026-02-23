@@ -5,9 +5,9 @@
  *
  * Auth: Required
  */
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
-import { jsonOk } from "@/lib/api/response";
 import { getIdentityStatus } from "@/lib/features/identity";
 
 export const runtime = "nodejs";

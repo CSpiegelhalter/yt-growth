@@ -8,8 +8,9 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import type { EditorDocument, HistoryEntry, HistoryState } from "../types";
+
 import { MAX_HISTORY_SIZE } from "../constants";
+import type { EditorDocument, HistoryEntry, HistoryState } from "../types";
 
 interface UseEditorHistoryReturn {
   document: EditorDocument;
@@ -181,7 +182,8 @@ export function historyReducer(state: HistoryState, action: HistoryAction): Hist
       };
     }
 
-    default:
+    default: {
       return state;
+    }
   }
 }

@@ -14,8 +14,9 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-import { execSync } from "child_process";
 import bcrypt from "bcryptjs";
+import { execSync } from "child_process";
+
 import { LIMITS } from "@/lib/shared/product";
 
 const prisma = new PrismaClient();
@@ -98,10 +99,10 @@ async function seedTestFixtures() {
 }
 
 main()
+  .finally(async () => {
+    await prisma.$disconnect();
+  })
   .catch((error) => {
     console.error("Error:", error);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });

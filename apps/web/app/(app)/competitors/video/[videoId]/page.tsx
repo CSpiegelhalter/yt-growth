@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+
+import { ErrorState } from "@/components/ui/ErrorState";
 import { getAppBootstrap } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
+
 import {
-  VideoDetailShell,
-  MoreFromChannel,
   fetchCompetitorVideoAnalysis,
+  MoreFromChannel,
+  VideoDetailShell,
 } from "./_components";
-import { ErrorState } from "@/components/ui/ErrorState";
 import s from "./style.module.css";
 
 export const dynamic = "force-dynamic";

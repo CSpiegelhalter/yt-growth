@@ -6,6 +6,7 @@
 
 import { BRAND } from "@/lib/shared/brand";
 import { logger } from "@/lib/shared/logger";
+
 import { ContactError } from "../errors";
 import type { ContactMessageInput, ContactMessageResult, ContactSubject } from "../types";
 
@@ -38,28 +39,28 @@ const SUBJECT_MAP: Record<ContactSubject, string> = {
 
 function sanitizeField(text: string): string {
   return text
-    .replace(/<[^>]*>/g, "")
-    .replace(/\r\n|\r|\n/g, " ")
-    .replace(/Content-Type:/gi, "")
-    .replace(/MIME-Version:/gi, "")
-    .replace(/Content-Transfer-Encoding:/gi, "")
-    .replace(/bcc:/gi, "")
-    .replace(/cc:/gi, "")
-    .replace(/to:/gi, "")
-    .replace(/from:/gi, "")
-    .replace(/\s+/g, " ")
+    .replaceAll(/<[^>]*>/g, "")
+    .replaceAll(/\r\n|\r|\n/g, " ")
+    .replaceAll(/Content-Type:/gi, "")
+    .replaceAll(/MIME-Version:/gi, "")
+    .replaceAll(/Content-Transfer-Encoding:/gi, "")
+    .replaceAll(/bcc:/gi, "")
+    .replaceAll(/cc:/gi, "")
+    .replaceAll(/to:/gi, "")
+    .replaceAll(/from:/gi, "")
+    .replaceAll(/\s+/g, " ")
     .trim();
 }
 
 function sanitizeBody(text: string): string {
   return text
-    .replace(/<[^>]*>/g, "")
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    .replace(/javascript:/gi, "")
-    .replace(/^(Content-Type:|MIME-Version:|bcc:|cc:|to:|from:)/gim, "")
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
+    .replaceAll(/<[^>]*>/g, "")
+    .replaceAll(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replaceAll(/javascript:/gi, "")
+    .replaceAll(/^(Content-Type:|MIME-Version:|bcc:|cc:|to:|from:)/gim, "")
+    .replaceAll('\r\n', "\n")
+    .replaceAll('\r', "\n")
+    .replaceAll(/\n{3,}/g, "\n\n")
     .trim();
 }
 
@@ -125,7 +126,7 @@ function buildHtmlContent(
     
     <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
       <p style="margin: 0 0 12px; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Message:</p>
-      <div style="white-space: pre-wrap; color: #1e293b;">${sanitizedMessage.replace(/\n/g, "<br>")}</div>
+      <div style="white-space: pre-wrap; color: #1e293b;">${sanitizedMessage.replaceAll('\n', "<br>")}</div>
     </div>
     
     <p style="margin: 20px 0 0; font-size: 12px; color: #94a3b8;">

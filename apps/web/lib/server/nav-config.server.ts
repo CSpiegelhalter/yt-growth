@@ -7,11 +7,11 @@
 
 import "server-only";
 
-import { getFeatureFlags, type FeatureFlagKey } from "@/lib/shared/feature-flags";
+import { type FeatureFlagKey,getFeatureFlags } from "@/lib/shared/feature-flags";
 import {
+  type NavItem,
   primaryNavItems,
   secondaryNavItems,
-  type NavItem,
 } from "@/lib/shared/nav-config";
 
 /**
@@ -71,16 +71,33 @@ export async function getFilteredNavItems(): Promise<{
         };
 
         // Encode match patterns as identifiers
-        if (item.id === "dashboard") {
+        switch (item.id) {
+        case "dashboard": {
           serializable.matchPattern = "dashboard";
-        } else if (item.id === "competitors") {
+        
+        break;
+        }
+        case "competitors": {
           serializable.matchPattern = "competitors";
-        } else if (item.id === "trending") {
+        
+        break;
+        }
+        case "trending": {
           serializable.matchPattern = "trending";
-        } else if (item.id === "tags") {
+        
+        break;
+        }
+        case "tags": {
           serializable.matchPattern = "tags";
-        } else if (item.id === "keywords") {
+        
+        break;
+        }
+        case "keywords": {
           serializable.matchPattern = "keywords";
+        
+        break;
+        }
+        // No default
         }
 
         return serializable;

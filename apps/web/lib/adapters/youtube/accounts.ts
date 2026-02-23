@@ -6,6 +6,7 @@
 import "server-only";
 
 import { prisma } from "@/prisma";
+
 import type { GoogleAccount } from "./types";
 
 /**

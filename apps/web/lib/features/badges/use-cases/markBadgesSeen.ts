@@ -1,4 +1,5 @@
 import { prisma } from "@/prisma";
+
 import { BadgeError } from "../errors";
 
 type MarkBadgesSeenInput = {

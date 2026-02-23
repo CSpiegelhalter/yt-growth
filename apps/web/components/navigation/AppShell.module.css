@@ -3,28 +3,29 @@
    ================================ */
 
 .shell {
+  background: var(--bg);
   display: flex;
   min-height: 100vh;
   min-height: 100dvh; /* Use dynamic viewport on mobile */
-  background: var(--bg);
 }
 
 .main {
-  flex: 1;
   display: flex;
+  flex: 1;
   flex-direction: column;
-  min-width: 0; /* Prevent flex child overflow */
   min-height: 0; /* Allow proper scrolling in flex context - fixes Safari bug */
+  min-width: 0; /* Prevent flex child overflow */
 }
 
 .content {
   flex: 1;
   min-height: 0; /* Allow proper scrolling in flex context */
+
   /* Content padding is handled by individual pages */
 }
 
 /* Responsive adjustments */
-@media (max-width: 767px) {
+@media (width <= 767px) {
   .shell {
     flex-direction: column;
   }

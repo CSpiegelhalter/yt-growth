@@ -8,7 +8,7 @@
  * - Fallback generation
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, expect,it } from "bun:test";
 import { z } from "zod";
 
 // ============================================
@@ -293,10 +293,10 @@ describe("Video Ideas Schema Validation", () => {
 
 function sanitizeTopicDescription(topic: string): string {
   let sanitized = topic
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/system:|user:|assistant:/gi, "")
-    .replace(/ignore previous|forget everything|new instructions/gi, "")
-    .replace(/[<>{}[\]]/g, "")
+    .replaceAll(/```[\s\S]*?```/g, "")
+    .replaceAll(/system:|user:|assistant:/gi, "")
+    .replaceAll(/ignore previous|forget everything|new instructions/gi, "")
+    .replaceAll(/[<>{}[\]]/g, "")
     .trim();
 
   if (sanitized.length > 500) {

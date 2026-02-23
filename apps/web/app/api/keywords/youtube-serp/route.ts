@@ -8,11 +8,11 @@
  * Cached: 24 hours
  */
 
-import { createApiRoute } from "@/lib/api/route";
-import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
-import { withValidation } from "@/lib/api/withValidation";
 import { jsonOk } from "@/lib/api/response";
-import { YoutubeSerpBodySchema, getYoutubeSerp } from "@/lib/features/keywords";
+import { createApiRoute } from "@/lib/api/route";
+import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
+import { getYoutubeSerp,YoutubeSerpBodySchema } from "@/lib/features/keywords";
 
 export const POST = createApiRoute(
   { route: "/api/keywords/youtube-serp" },

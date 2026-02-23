@@ -1,7 +1,8 @@
 "use client";
 
-import { Rect, Ellipse, RegularPolygon } from "react-konva";
 import type Konva from "konva";
+import { Ellipse, Rect, RegularPolygon } from "react-konva";
+
 import type { ShapeObject } from "../types";
 
 interface ShapeLayerProps {
@@ -64,7 +65,7 @@ export function ShapeLayer({ obj, isSelected: _isSelected, onSelect, onChange }:
   };
 
   switch (obj.shapeType) {
-    case "ellipse":
+    case "ellipse": {
       return (
         <Ellipse
           {...commonProps}
@@ -73,8 +74,9 @@ export function ShapeLayer({ obj, isSelected: _isSelected, onSelect, onChange }:
           onTransformEnd={handleTransformEnd}
         />
       );
+    }
 
-    case "rectangle":
+    case "rectangle": {
       return (
         <Rect
           {...commonProps}
@@ -87,8 +89,9 @@ export function ShapeLayer({ obj, isSelected: _isSelected, onSelect, onChange }:
           onTransformEnd={handleTransformEnd}
         />
       );
+    }
 
-    case "triangle":
+    case "triangle": {
       return (
         <RegularPolygon
           {...commonProps}
@@ -97,8 +100,10 @@ export function ShapeLayer({ obj, isSelected: _isSelected, onSelect, onChange }:
           onTransformEnd={handleTransformEnd}
         />
       );
+    }
 
-    default:
+    default: {
       return null;
+    }
   }
 }

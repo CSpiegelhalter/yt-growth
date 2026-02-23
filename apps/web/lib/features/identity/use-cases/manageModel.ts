@@ -5,11 +5,13 @@
  * training coalescing, and status transitions.
  */
 
+import type { UserModelStatus } from "@prisma/client";
 import crypto from "crypto";
-import { prisma } from "@/prisma";
+
 import { deleteModel } from "@/lib/replicate/client";
 import { createLogger } from "@/lib/shared/logger";
-import type { UserModelStatus } from "@prisma/client";
+import { prisma } from "@/prisma";
+
 import type {
   DatasetChangeResult,
   InvalidationCheck,
@@ -154,10 +156,10 @@ async function invalidateModel(
 
   try {
     await deleteModel(model.replicateModelOwner, model.replicateModelName);
-  } catch (err) {
+  } catch (error) {
     log.warn("Failed to delete remote model (continuing)", {
       modelId: model.id,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 

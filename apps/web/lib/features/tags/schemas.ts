@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { parseYouTubeVideoId } from "@/lib/shared/youtube-video-id";
 
 export const GenerateTagsBodySchema = z.object({

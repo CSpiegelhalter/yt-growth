@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import s from "./style.module.css";
-import { formatResetAt } from "./components/helpers";
-import { SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
+import { useEffect, useState } from "react";
+
 import { ErrorState } from "@/components/ui/ErrorState";
 import {
   canAttemptOAuth,
   recordOAuthAttempt,
 } from "@/lib/client/oauthAttemptTracker";
+import { formatUsd,SUBSCRIPTION } from "@/lib/shared/product";
+
+import { formatResetAt } from "./components/helpers";
+import s from "./style.module.css";
 
 type InsightsError =
   | {

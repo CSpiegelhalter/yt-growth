@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useRef } from "react";
-import type { ToolMode } from "./types";
+
 import s from "./editor.module.css";
+import type { ToolMode } from "./types";
 
 interface ToolbarProps {
   activeTool: ToolMode;

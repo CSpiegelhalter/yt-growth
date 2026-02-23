@@ -9,12 +9,13 @@
  * - Empty description detection
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect,it } from "vitest";
+
 import {
-  formatDuration,
-  getDurationBucket,
   analyzeHashtags,
   detectChapters,
+  formatDuration,
+  getDurationBucket,
 } from "@/lib/competitor-utils";
 
 describe("Competitor Analysis Correctness", () => {
@@ -51,7 +52,7 @@ describe("Competitor Analysis Correctness", () => {
     it("handles edge cases gracefully", () => {
       expect(formatDuration(0)).toBe("0s");
       expect(formatDuration(-1)).toBe("—");
-      expect(formatDuration(NaN)).toBe("—");
+      expect(formatDuration(Number.NaN)).toBe("—");
       expect(formatDuration(Infinity)).toBe("—");
     });
   });

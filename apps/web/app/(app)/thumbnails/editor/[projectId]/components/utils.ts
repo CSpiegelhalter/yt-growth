@@ -2,9 +2,9 @@
  * Thumbnail Editor Utility Functions
  */
 
-import type { EditorObject, EditorDocument, ArrowObject, ImageObject } from "./types";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, SNAP_THRESHOLD } from "./constants";
+import type { ArrowObject, EditorDocument, EditorObject, ImageObject } from "./types";
 import { DEFAULT_DOCUMENT } from "./types";
-import { CANVAS_WIDTH, CANVAS_HEIGHT, SNAP_THRESHOLD } from "./constants";
 
 // ============================================================================
 // ID GENERATION
@@ -125,6 +125,128 @@ export function centerInCanvas(width: number, height: number): { x: number; y: n
 // STATE MIGRATION
 // ============================================================================
 
+function numOr(value: unknown, fallback: number): number {
+  return Number(value) || fallback;
+}
+
+function strOr(value: unknown, fallback: string): string {
+  return String(value || fallback);
+}
+
+function migrateV1Text(o: Record<string, unknown>): EditorObject {
+  return {
+    id: strOr(o.id, generateId()),
+    type: "text",
+    x: numOr(o.x, 0),
+    y: numOr(o.y, 0),
+    rotation: numOr(o.rotation, 0),
+    zIndex: numOr(o.zIndex, 0),
+    opacity: 1,
+    text: strOr(o.text, ""),
+    fontFamily: strOr(o.fontFamily, "Inter, sans-serif"),
+    fontSize: numOr(o.fontSize, 64),
+    fontWeight: strOr(o.fontWeight, "800"),
+    letterSpacing: 0,
+    lineHeight: 1.1,
+    textAlign: "left",
+    fill: strOr(o.fill, "#FFFFFF"),
+    stroke: strOr(o.stroke, "#000000"),
+    strokeWidth: numOr(o.strokeWidth, 0),
+    shadowEnabled: Boolean(o.shadowColor),
+    shadowColor: strOr(o.shadowColor, "rgba(0,0,0,0.5)"),
+    shadowBlur: numOr(o.shadowBlur, 10),
+    shadowOffsetX: numOr(o.shadowOffsetX, 4),
+    shadowOffsetY: numOr(o.shadowOffsetY, 4),
+    backgroundEnabled: false,
+    backgroundColor: "#000000",
+    backgroundPadding: 16,
+    backgroundRadius: 8,
+  };
+}
+
+function migrateV1Arrow(o: Record<string, unknown>): EditorObject {
+  return {
+    id: String(o.id || generateId()),
+    type: "arrow",
+    x: Number(o.x) || 0,
+    y: Number(o.y) || 0,
+    rotation: Number(o.rotation) || 0,
+    zIndex: Number(o.zIndex) || 0,
+    opacity: 1,
+    points: Array.isArray(o.points) ? o.points.map(Number) : [300, 360, 980, 360],
+    isCurved: o.mode === "curved",
+    style: "classic",
+    color: String(o.color || "#FFCC00"),
+    thickness: Number(o.thickness) || 16,
+    arrowheadSize: 1.5,
+    arrowheadAtStart: false,
+    arrowheadAtEnd: true,
+    outlineEnabled: false,
+    outlineColor: "#000000",
+    outlineWidth: 4,
+    shadowEnabled: false,
+    shadowColor: "rgba(0,0,0,0.5)",
+    shadowBlur: 10,
+    dashed: Boolean(o.dashed),
+    dashLength: 20,
+    dashGap: 10,
+  } as ArrowObject;
+}
+
+function migrateV1Ellipse(o: Record<string, unknown>): EditorObject {
+  return {
+    id: String(o.id || generateId()),
+    type: "shape",
+    x: Number(o.x) || 0,
+    y: Number(o.y) || 0,
+    rotation: Number(o.rotation) || 0,
+    zIndex: Number(o.zIndex) || 0,
+    opacity: 1,
+    shapeType: "ellipse",
+    width: Number(o.radiusX) * 2 || 200,
+    height: Number(o.radiusY) * 2 || 200,
+    fill: String(o.fill || "transparent"),
+    fillEnabled: Boolean(o.fill && o.fill !== "transparent" && o.fill !== "rgba(0,0,0,0)"),
+    stroke: String(o.stroke || "#FFCC00"),
+    strokeWidth: Number(o.strokeWidth) || 8,
+    strokeEnabled: true,
+    cornerRadius: 0,
+    shadowEnabled: false,
+    shadowColor: "rgba(0,0,0,0.5)",
+    shadowBlur: 10,
+    shadowOffsetX: 4,
+    shadowOffsetY: 4,
+  };
+}
+
+function migrateV1Image(o: Record<string, unknown>): EditorObject {
+  return {
+    id: String(o.id || generateId()),
+    type: "image",
+    x: Number(o.x) || 0,
+    y: Number(o.y) || 0,
+    rotation: Number(o.rotation) || 0,
+    zIndex: Number(o.zIndex) || 0,
+    opacity: Number(o.opacity) ?? 1,
+    srcUrl: String(o.srcUrl || ""),
+    originalWidth: Number(o.width) || 300,
+    originalHeight: Number(o.height) || 300,
+    width: Number(o.width) || 300,
+    height: Number(o.height) || 300,
+    cropX: 0,
+    cropY: 0,
+    cropWidth: 0,
+    cropHeight: 0,
+  } as ImageObject;
+}
+
+const V1_MIGRATORS: Record<string, (o: Record<string, unknown>) => EditorObject> = {
+  text: migrateV1Text,
+  arrow: migrateV1Arrow,
+  ellipse: migrateV1Ellipse,
+  image: migrateV1Image,
+};
+
 /**
  * Migrate from V1 editor state to V2 document format
  */
@@ -134,127 +256,20 @@ export function migrateFromV1(v1State: unknown): EditorDocument {
   }
 
   const state = v1State as Record<string, unknown>;
-  
-  // Check if it's already V2
+
   if (state.version === 2) {
     return state as unknown as EditorDocument;
   }
 
-  // V1 migration
-  const objects: EditorObject[] = [];
   const v1Objects = Array.isArray(state.objects) ? state.objects : [];
+  const objects: EditorObject[] = [];
 
   for (const obj of v1Objects) {
     if (!obj || typeof obj !== "object") {continue;}
     const o = obj as Record<string, unknown>;
-
-    switch (o.type) {
-      case "text":
-        objects.push({
-          id: String(o.id || generateId()),
-          type: "text",
-          x: Number(o.x) || 0,
-          y: Number(o.y) || 0,
-          rotation: Number(o.rotation) || 0,
-          zIndex: Number(o.zIndex) || 0,
-          opacity: 1,
-          text: String(o.text || ""),
-          fontFamily: String(o.fontFamily || "Inter, sans-serif"),
-          fontSize: Number(o.fontSize) || 64,
-          fontWeight: String(o.fontWeight || "800"),
-          letterSpacing: 0,
-          lineHeight: 1.1,
-          textAlign: "left",
-          fill: String(o.fill || "#FFFFFF"),
-          stroke: String(o.stroke || "#000000"),
-          strokeWidth: Number(o.strokeWidth) || 0,
-          shadowEnabled: Boolean(o.shadowColor),
-          shadowColor: String(o.shadowColor || "rgba(0,0,0,0.5)"),
-          shadowBlur: Number(o.shadowBlur) || 10,
-          shadowOffsetX: Number(o.shadowOffsetX) || 4,
-          shadowOffsetY: Number(o.shadowOffsetY) || 4,
-          backgroundEnabled: false,
-          backgroundColor: "#000000",
-          backgroundPadding: 16,
-          backgroundRadius: 8,
-        });
-        break;
-
-      case "arrow":
-        objects.push({
-          id: String(o.id || generateId()),
-          type: "arrow",
-          x: Number(o.x) || 0,
-          y: Number(o.y) || 0,
-          rotation: Number(o.rotation) || 0,
-          zIndex: Number(o.zIndex) || 0,
-          opacity: 1,
-          points: Array.isArray(o.points) ? o.points.map(Number) : [300, 360, 980, 360],
-          isCurved: o.mode === "curved",
-          style: "classic",
-          color: String(o.color || "#FFCC00"),
-          thickness: Number(o.thickness) || 16,
-          arrowheadSize: 1.5,
-          arrowheadAtStart: false,
-          arrowheadAtEnd: true,
-          outlineEnabled: false,
-          outlineColor: "#000000",
-          outlineWidth: 4,
-          shadowEnabled: false,
-          shadowColor: "rgba(0,0,0,0.5)",
-          shadowBlur: 10,
-          dashed: Boolean(o.dashed),
-          dashLength: 20,
-          dashGap: 10,
-        } as ArrowObject);
-        break;
-
-      case "ellipse":
-        objects.push({
-          id: String(o.id || generateId()),
-          type: "shape",
-          x: Number(o.x) || 0,
-          y: Number(o.y) || 0,
-          rotation: Number(o.rotation) || 0,
-          zIndex: Number(o.zIndex) || 0,
-          opacity: 1,
-          shapeType: "ellipse",
-          width: Number(o.radiusX) * 2 || 200,
-          height: Number(o.radiusY) * 2 || 200,
-          fill: String(o.fill || "transparent"),
-          fillEnabled: Boolean(o.fill && o.fill !== "transparent" && o.fill !== "rgba(0,0,0,0)"),
-          stroke: String(o.stroke || "#FFCC00"),
-          strokeWidth: Number(o.strokeWidth) || 8,
-          strokeEnabled: true,
-          cornerRadius: 0,
-          shadowEnabled: false,
-          shadowColor: "rgba(0,0,0,0.5)",
-          shadowBlur: 10,
-          shadowOffsetX: 4,
-          shadowOffsetY: 4,
-        });
-        break;
-
-      case "image":
-        objects.push({
-          id: String(o.id || generateId()),
-          type: "image",
-          x: Number(o.x) || 0,
-          y: Number(o.y) || 0,
-          rotation: Number(o.rotation) || 0,
-          zIndex: Number(o.zIndex) || 0,
-          opacity: Number(o.opacity) ?? 1,
-          srcUrl: String(o.srcUrl || ""),
-          originalWidth: Number(o.width) || 300,
-          originalHeight: Number(o.height) || 300,
-          width: Number(o.width) || 300,
-          height: Number(o.height) || 300,
-          cropX: 0,
-          cropY: 0,
-          cropWidth: 0,
-          cropHeight: 0,
-        } as ImageObject);
-        break;
+    const migrator = V1_MIGRATORS[o.type as string];
+    if (migrator) {
+      objects.push(migrator(o));
     }
   }
 
@@ -281,7 +296,7 @@ export function convertToV1(doc: EditorDocument): unknown {
     canvas: { width: 1280, height: 720 },
     objects: doc.objects.map((obj) => {
       switch (obj.type) {
-        case "text":
+        case "text": {
           return {
             id: obj.id,
             type: "text",
@@ -301,6 +316,7 @@ export function convertToV1(doc: EditorDocument): unknown {
             shadowOffsetX: obj.shadowEnabled ? obj.shadowOffsetX : undefined,
             shadowOffsetY: obj.shadowEnabled ? obj.shadowOffsetY : undefined,
           };
+        }
 
         case "arrow": {
           // Determine mode based on points count and curved flag
@@ -325,7 +341,7 @@ export function convertToV1(doc: EditorDocument): unknown {
           };
         }
 
-        case "shape":
+        case "shape": {
           if (obj.shapeType === "ellipse") {
             return {
               id: obj.id,
@@ -344,8 +360,9 @@ export function convertToV1(doc: EditorDocument): unknown {
           }
           // Other shapes not in V1, skip or convert to generic
           return null;
+        }
 
-        case "image":
+        case "image": {
           return {
             id: obj.id,
             type: "image",
@@ -358,9 +375,11 @@ export function convertToV1(doc: EditorDocument): unknown {
             srcUrl: obj.srcUrl,
             opacity: obj.opacity,
           };
+        }
 
-        default:
+        default: {
           return null;
+        }
       }
     }).filter(Boolean),
   };

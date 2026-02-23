@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { afterEach,beforeEach, describe, expect, it } from "vitest";
+
 import {
-  getLastOAuthAttempt,
   canAttemptOAuth,
+  getLastOAuthAttempt,
   recordOAuthAttempt,
 } from "../client/oauthAttemptTracker";
 
@@ -17,7 +18,7 @@ const fakeSessionStorage = {
   },
 };
 
-const hadWindow = typeof globalThis.window !== "undefined";
+const hadWindow = globalThis.window !== undefined;
 const globalThisMutable = globalThis as typeof globalThis & { window?: unknown };
 
 beforeEach(() => {

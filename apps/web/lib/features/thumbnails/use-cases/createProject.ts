@@ -1,6 +1,7 @@
 import { prisma } from "@/prisma";
-import { ThumbnailError } from "../errors";
+
 import { defaultEditorState } from "../editor/editorState";
+import { ThumbnailError } from "../errors";
 
 type OutputImage = { url?: string; [key: string]: unknown };
 

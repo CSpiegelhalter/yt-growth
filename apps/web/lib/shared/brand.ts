@@ -161,7 +161,7 @@ export const STRUCTURED_DATA = {
     "@type": "Organization",
     name: BRAND.name,
     url: BRAND.url,
-    logo: `${BRAND.url}/logo.svg`,
+    logo: `${BRAND.url}/logo.png`,
     sameAs: [`https://twitter.com/${BRAND.twitterHandle.replace("@", "")}`],
     description: BRAND.description,
   },

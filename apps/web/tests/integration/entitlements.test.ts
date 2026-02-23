@@ -3,19 +3,21 @@
  *
  * Tests the entitlements module against real database data.
  */
-import { describe, it, expect, beforeEach, afterEach, afterAll } from "bun:test";
+import { afterAll,afterEach, beforeEach, describe, expect, it } from "bun:test";
+
 import {
-  prisma,
-  createTestUser,
-  createTestSubscription,
-  cleanupTestUser,
-} from "./setup";
-import {
-  getPlanFromSubscription,
-  getLimits,
   featureLocked,
+  getLimits,
+  getPlanFromSubscription,
 } from "@/lib/features/subscriptions/use-cases/checkEntitlement";
 import { LIMITS } from "@/lib/shared/product";
+
+import {
+  cleanupTestUser,
+  createTestSubscription,
+  createTestUser,
+  prisma,
+} from "./setup";
 
 const TEST_EMAIL = "entitlements-test@example.com";
 

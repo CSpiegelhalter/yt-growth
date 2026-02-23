@@ -10,33 +10,33 @@
  */
 import "server-only";
 
-import { CACHE_TTL_MS } from "./constants";
-import { getCache, setCache } from "./cache";
 import {
-  getUploadsPlaylistId,
-  listUploadsVideoIds,
-  fetchVideosDetailsBatch,
-  fetchVideoDetails as fetchVideoDetailsCore,
-  fetchVideosStatsBatch as fetchVideosStatsBatchCore,
-  searchVideos,
+  fetchRetentionCurve as fetchRetentionCurveCore,
+  fetchVideoMetrics as fetchVideoMetricsCore,
+} from "./analytics-api";
+import { getCache, setCache } from "./cache";
+import { CACHE_TTL_MS } from "./constants";
+import {
   fetchRecentChannelVideosCore,
   fetchVideoComments as   fetchVideoCommentsCore,
+  fetchVideoDetails as fetchVideoDetailsCore,
+  fetchVideosDetailsBatch,
+  fetchVideosStatsBatch as fetchVideosStatsBatchCore,
+  getUploadsPlaylistId,
+  listUploadsVideoIds,
+  searchVideos,
 } from "./data-api";
-import {
-  fetchVideoMetrics as fetchVideoMetricsCore,
-  fetchRetentionCurve as fetchRetentionCurveCore,
-} from "./analytics-api";
 import type {
+  FetchCommentsResult,
   GoogleAccount,
-  YouTubeVideo,
-  VideoDetails,
-  VideoMetricsData,
+  RecentVideoResult,
   RetentionPoint,
   SimilarChannelResult,
-  RecentVideoResult,
+  VideoDetails,
   VideoDurationFilter,
-  FetchCommentsResult,
+  VideoMetricsData,
   VideoStats,
+  YouTubeVideo,
 } from "./types";
 
 // Re-export account lookup
@@ -109,7 +109,7 @@ export async function searchNicheVideos(
   maxVideos: number = 25,
   pageToken?: string,
   videoDuration: VideoDurationFilter = "any",
-  publishedAfterDays?: number
+  publishedAfterDays: number = 180
 ): Promise<{
   videos: Array<{
     videoId: string;
@@ -123,7 +123,7 @@ export async function searchNicheVideos(
   nextPageToken?: string;
 }> {
   const now = new Date();
-  const daysAgo = publishedAfterDays ?? 180;
+  const daysAgo = publishedAfterDays;
   const publishedAfterDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
 
   const result = await searchVideos(ga, {
@@ -156,7 +156,7 @@ export async function searchNicheVideos(
 
   return {
     videos,
-    uniqueChannels: Array.from(channelMap.values()),
+    uniqueChannels: [...channelMap.values()],
     nextPageToken: result.nextPageToken,
   };
 }

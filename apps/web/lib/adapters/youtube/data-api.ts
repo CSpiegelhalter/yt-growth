@@ -5,37 +5,38 @@
  * Each function is responsible for a single API operation.
  */
 
+import { ApiError } from "@/lib/api/errors";
+
 import {
-  YOUTUBE_DATA_API,
-  VIDEO_BATCH_SIZE,
   DEFAULT_CONCURRENCY_LIMIT,
   MAX_PLAYLIST_PAGES,
+  VIDEO_BATCH_SIZE,
+  YOUTUBE_DATA_API,
 } from "./constants";
-import { youtubeFetch } from "./transport";
-import {
-  decodeHtmlEntities,
-  parseDuration,
-  chunk,
-  mapLimit,
-  daysSince,
-} from "./utils";
 import {
   isCommentsDisabled,
-  isQuotaExceeded,
   isInsufficientScope,
+  isQuotaExceeded,
   MISSING_COMMENTS_SCOPE_ERROR,
 } from "./errors";
-import { ApiError } from "@/lib/api/errors";
+import { youtubeFetch } from "./transport";
 import type {
-  GoogleAccount,
-  YouTubeVideo,
-  VideoDetails,
-  RecentVideoResult,
-  VideoDurationFilter,
-  YouTubeComment,
   FetchCommentsResult,
+  GoogleAccount,
+  RecentVideoResult,
+  VideoDetails,
+  VideoDurationFilter,
   VideoStats,
+  YouTubeComment,
+  YouTubeVideo,
 } from "./types";
+import {
+  chunk,
+  daysSince,
+  decodeHtmlEntities,
+  mapLimit,
+  parseDuration,
+} from "./utils";
 
 // ============================================
 // API-Key Video Snippet (public/unauthenticated routes)
@@ -91,7 +92,7 @@ export async function fetchVideoSnippetByApiKey(
     url.searchParams.set("fields", options.fields);
   }
 
-  const timeoutMs = options?.timeoutMs ?? 10000;
+  const timeoutMs = options?.timeoutMs ?? 10_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -127,9 +128,9 @@ export async function fetchVideoSnippetByApiKey(
     const data = await response.json();
     const item = data.items?.[0];
     return (item as YouTubeVideoSnippetItem) ?? null;
-  } catch (err) {
+  } catch (error) {
     clearTimeout(timeoutId);
-    if (err instanceof ApiError) {throw err;}
+    if (error instanceof ApiError) {throw error;}
     throw new ApiError({
       code: "INTERNAL",
       status: 500,
@@ -272,15 +273,34 @@ export async function fetchVideosDetailsBatch(
           v.snippet.thumbnails?.high?.url ??
           v.snippet.thumbnails?.default?.url ??
           null,
-        views: parseInt(v.statistics.viewCount ?? "0", 10),
-        likes: parseInt(v.statistics.likeCount ?? "0", 10),
-        comments: parseInt(v.statistics.commentCount ?? "0", 10),
+        views: Number.parseInt(v.statistics.viewCount ?? "0", 10),
+        likes: Number.parseInt(v.statistics.likeCount ?? "0", 10),
+        comments: Number.parseInt(v.statistics.commentCount ?? "0", 10),
       }));
     }
   );
 
   // Flatten results - order is preserved because mapLimit preserves order
   return batchResults.flat();
+}
+
+function pickBestThumbnail(thumbnails?: {
+  maxres?: { url: string };
+  high?: { url: string };
+  medium?: { url: string };
+  default?: { url: string };
+}): string | null {
+  return (
+    thumbnails?.maxres?.url ??
+    thumbnails?.high?.url ??
+    thumbnails?.medium?.url ??
+    thumbnails?.default?.url ??
+    null
+  );
+}
+
+function parseIntStat(value: string | undefined): number {
+  return Number.parseInt(value ?? "0", 10);
 }
 
 /**
@@ -332,15 +352,11 @@ export async function fetchVideoDetails(
     channelTitle: decodeHtmlEntities(item.snippet.channelTitle),
     tags: item.snippet.tags ?? [],
     category: item.snippet.categoryId,
-    thumbnailUrl:
-      item.snippet.thumbnails?.maxres?.url ??
-      item.snippet.thumbnails?.high?.url ??
-      item.snippet.thumbnails?.default?.url ??
-      null,
+    thumbnailUrl: pickBestThumbnail(item.snippet.thumbnails),
     durationSec: parseDuration(item.contentDetails.duration),
-    viewCount: parseInt(item.statistics.viewCount ?? "0", 10),
-    likeCount: parseInt(item.statistics.likeCount ?? "0", 10),
-    commentCount: parseInt(item.statistics.commentCount ?? "0", 10),
+    viewCount: parseIntStat(item.statistics.viewCount),
+    likeCount: parseIntStat(item.statistics.likeCount),
+    commentCount: parseIntStat(item.statistics.commentCount),
   };
 }
 
@@ -377,17 +393,17 @@ export async function fetchVideosStatsBatch(
 
       for (const item of data.items ?? []) {
         results.set(item.id, {
-          viewCount: parseInt(item.statistics.viewCount ?? "0", 10),
+          viewCount: Number.parseInt(item.statistics.viewCount ?? "0", 10),
           likeCount: item.statistics.likeCount
-            ? parseInt(item.statistics.likeCount, 10)
+            ? Number.parseInt(item.statistics.likeCount, 10)
             : undefined,
           commentCount: item.statistics.commentCount
-            ? parseInt(item.statistics.commentCount, 10)
+            ? Number.parseInt(item.statistics.commentCount, 10)
             : undefined,
         });
       }
-    } catch (err) {
-      console.warn(`Failed to fetch stats batch:`, err);
+    } catch (error) {
+      console.warn(`Failed to fetch stats batch:`, error);
     }
 
     return null; // mapLimit requires a return value
@@ -494,54 +510,29 @@ export async function searchVideos(
 // Recent Channel Videos (Core Logic)
 // ============================================
 
-/**
- * Fetch recent videos from a channel using the uploads playlist.
- * Falls back to search.list if uploads playlist is not available.
- * This is the core logic without caching.
- */
-export async function fetchRecentChannelVideosCore(
+type PlaylistCandidate = {
+  videoId: string;
+  title: string;
+  publishedAt: string;
+  thumbnailUrl: string | null;
+};
+
+async function fetchCandidatesFromPlaylist(
   ga: GoogleAccount,
-  channelId: string,
-  publishedAfterIso: string,
-  maxResults: number
-): Promise<RecentVideoResult[]> {
-  const publishedAfterMs = new Date(publishedAfterIso).getTime();
-
-  // Try to get uploads playlist ID
-  let uploadsPlaylistId: string | null = null;
-  try {
-    uploadsPlaylistId = await getUploadsPlaylistId(ga, channelId);
-  } catch {
-    // Playlist lookup failed, will use search fallback
-  }
-
-  // If no uploads playlist, fall back to expensive search.list
-  if (!uploadsPlaylistId) {
-    return fetchRecentVideosViaSearch(
-      ga,
-      channelId,
-      publishedAfterIso,
-      maxResults
-    );
-  }
-
-  // Read uploads pages (reverse-chronological)
-  const candidates: Array<{
-    videoId: string;
-    title: string;
-    publishedAt: string;
-    thumbnailUrl: string | null;
-  }> = [];
-
+  uploadsPlaylistId: string,
+  publishedAfterMs: number,
+): Promise<PlaylistCandidate[]> {
+  const candidates: PlaylistCandidate[] = [];
   let pageToken: string | undefined;
-  let crossedCutoff = false;
 
   for (let page = 0; page < MAX_PLAYLIST_PAGES; page++) {
     const url = new URL(`${YOUTUBE_DATA_API}/playlistItems`);
     url.searchParams.set("part", "snippet,contentDetails");
     url.searchParams.set("playlistId", uploadsPlaylistId);
     url.searchParams.set("maxResults", "50");
-    if (pageToken) {url.searchParams.set("pageToken", pageToken);}
+    if (pageToken) {
+      url.searchParams.set("pageToken", pageToken);
+    }
 
     const data = await youtubeFetch<{
       items?: Array<{
@@ -556,10 +547,11 @@ export async function fetchRecentChannelVideosCore(
     }>(ga, url.toString());
 
     const items = data.items ?? [];
+    let crossedCutoff = false;
+
     for (const i of items) {
       const publishedAt = i.snippet.publishedAt;
       if (new Date(publishedAt).getTime() < publishedAfterMs) {
-        // Playlist is reverse-chronological, so rest is too old
         crossedCutoff = true;
         break;
       }
@@ -567,30 +559,48 @@ export async function fetchRecentChannelVideosCore(
         videoId: i.contentDetails.videoId,
         title: decodeHtmlEntities(i.snippet.title),
         publishedAt,
-        thumbnailUrl:
-          i.snippet.thumbnails?.medium?.url ??
-          i.snippet.thumbnails?.default?.url ??
-          null,
+        thumbnailUrl: pickBestThumbnail(i.snippet.thumbnails),
       });
     }
 
-    if (crossedCutoff) {break;}
-    if (!data.nextPageToken) {break;}
-    if (candidates.length >= 50) {break;}
+    if (crossedCutoff || !data.nextPageToken || candidates.length >= 50) { break; }
     pageToken = data.nextPageToken;
   }
 
-  if (candidates.length === 0) {
-    return [];
+  return candidates;
+}
+
+/**
+ * Fetch recent videos from a channel using the uploads playlist.
+ * Falls back to search.list if uploads playlist is not available.
+ * This is the core logic without caching.
+ */
+export async function fetchRecentChannelVideosCore(
+  ga: GoogleAccount,
+  channelId: string,
+  publishedAfterIso: string,
+  maxResults: number
+): Promise<RecentVideoResult[]> {
+  let uploadsPlaylistId: string | null = null;
+  try {
+    uploadsPlaylistId = await getUploadsPlaylistId(ga, channelId);
+  } catch {
+    // Playlist lookup failed, will use search fallback
   }
 
-  // Fetch view counts for candidates (single videos.list call, up to 50 IDs)
+  if (!uploadsPlaylistId) {
+    return fetchRecentVideosViaSearch(ga, channelId, publishedAfterIso, maxResults);
+  }
+
+  const publishedAfterMs = new Date(publishedAfterIso).getTime();
+  const candidates = await fetchCandidatesFromPlaylist(ga, uploadsPlaylistId, publishedAfterMs);
+  if (candidates.length === 0) { return []; }
+
   const ids = candidates.slice(0, 50).map((v) => v.videoId);
   const statsMap = await fetchVideosStatsBatch(ga, ids);
 
   const withViews = candidates.map((v) => {
-    const stats = statsMap.get(v.videoId);
-    const views = stats?.viewCount ?? 0;
+    const views = statsMap.get(v.videoId)?.viewCount ?? 0;
     return {
       ...v,
       views,
@@ -598,9 +608,7 @@ export async function fetchRecentChannelVideosCore(
     };
   });
 
-  // Sort by views (descending) to match prior behavior
   withViews.sort((a, b) => b.views - a.views);
-
   return withViews.slice(0, maxResults);
 }
 
@@ -725,16 +733,16 @@ export async function fetchVideoComments(
     }));
 
     return { comments };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
 
-    if (isCommentsDisabled(err)) {
+    if (isCommentsDisabled(error)) {
       return { comments: [], commentsDisabled: true };
     }
-    if (isQuotaExceeded(err)) {
+    if (isQuotaExceeded(error)) {
       return { comments: [], error: "YouTube API quota exceeded" };
     }
-    if (isInsufficientScope(err)) {
+    if (isInsufficientScope(error)) {
       return { comments: [], error: MISSING_COMMENTS_SCOPE_ERROR };
     }
 

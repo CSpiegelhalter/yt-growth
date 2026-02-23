@@ -1,12 +1,13 @@
 import type { NextRequest } from "next/server";
+
+import { createPrediction } from "@/lib/adapters/replicate";
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
-import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
+import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
 import { withRateLimit } from "@/lib/api/withRateLimit";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
-import { GenerateImg2ImgBodySchema } from "@/lib/features/thumbnails/schemas";
 import { generateImg2Img } from "@/lib/features/thumbnails";
-import { createPrediction } from "@/lib/adapters/replicate";
+import { GenerateImg2ImgBodySchema } from "@/lib/features/thumbnails/schemas";
 import { getAppBaseUrl } from "@/lib/server/url";
 
 export const runtime = "nodejs";

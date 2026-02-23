@@ -1,18 +1,45 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { AuthPageShell } from "@/components/auth/AuthPageShell";
-import { VerifyLoginSection } from "@/components/auth/VerifyLoginSection";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { useState } from "react";
+
 import { shouldShowVerifyButton } from "@/components/auth/auth-helpers";
+import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { VerifyLoginSection } from "@/components/auth/VerifyLoginSection";
+
 import s from "./style.module.css";
 
-/**
- * SignupForm - Client component with interactive signup functionality
- */
+type SignupFields = { name: string; email: string; password: string };
+
+function extractFormFields(formData: FormData): SignupFields {
+  return {
+    name: String(formData.get("name") || "").trim(),
+    email: String(formData.get("email") || "").trim(),
+    password: String(formData.get("password") || ""),
+  };
+}
+
+function validateSignupFields(fields: SignupFields): string | null {
+  if (!fields.name) {return "Please enter your name";}
+  if (!fields.email) {return "Please enter your email address";}
+  if (!fields.password) {return "Please create a password";}
+  if (fields.password.length < 12) {return "Password must be at least 12 characters";}
+  return null;
+}
+
+function parseSignupError(status: number, body: Record<string, unknown>): string {
+  const message = (body.error as { message?: string })?.message
+    || (body.error as string)
+    || "Something went wrong. Please try again.";
+  if (status === 409 || message === "Email already registered") {
+    return "This email is already registered. Please sign in instead.";
+  }
+  return message;
+}
+
 export default function SignupForm() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -26,31 +53,10 @@ export default function SignupForm() {
     setErr(null);
     setLoading(true);
 
-    const form = new FormData(e.currentTarget);
-    const name = String(form.get("name") || "").trim();
-    const email = String(form.get("email") || "").trim();
-    const password = String(form.get("password") || "");
-
-    if (!name) {
-      setErr("Please enter your name");
-      setLoading(false);
-      return;
-    }
-
-    if (!email) {
-      setErr("Please enter your email address");
-      setLoading(false);
-      return;
-    }
-
-    if (!password) {
-      setErr("Please create a password");
-      setLoading(false);
-      return;
-    }
-
-    if (password.length < 12) {
-      setErr("Password must be at least 12 characters");
+    const fields = extractFormFields(new FormData(e.currentTarget));
+    const validationError = validateSignupFields(fields);
+    if (validationError) {
+      setErr(validationError);
       setLoading(false);
       return;
     }
@@ -58,17 +64,16 @@ export default function SignupForm() {
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify(fields),
         headers: { "Content-Type": "application/json" },
       });
 
       if (res.ok) {
         const signInRes = await signIn("credentials", {
-          email,
-          password,
+          email: fields.email,
+          password: fields.password,
           redirect: false,
         });
-
         if (signInRes?.ok) {
           window.location.href = "/dashboard";
         } else {
@@ -76,13 +81,7 @@ export default function SignupForm() {
         }
       } else {
         const j = await res.json().catch(() => ({}));
-        const message = j.error?.message || j.error || "Something went wrong. Please try again.";
-        
-        if (res.status === 409 || message === "Email already registered") {
-          setErr("This email is already registered. Please sign in instead.");
-        } else {
-          setErr(message);
-        }
+        setErr(parseSignupError(res.status, j));
         setLoading(false);
       }
     } catch {

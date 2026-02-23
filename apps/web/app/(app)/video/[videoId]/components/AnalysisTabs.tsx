@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useEffect, type ReactNode } from "react";
+import { type ReactNode,useEffect, useRef, useState } from "react";
+
 import styles from "./AnalysisTabs.module.css";
 
 export type TabId = "overview" | "retention" | "seo" | "comments" | "ideas";

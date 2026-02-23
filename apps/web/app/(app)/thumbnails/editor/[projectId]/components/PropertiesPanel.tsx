@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef,useState } from "react";
+
+import { COLOR_PRESETS } from "./constants";
+import s from "./editor.module.css";
 import type {
-  EditorObject,
-  TextObject,
   ArrowObject,
+  ArrowStyle,
+  DocumentSettings,
+  EditorObject,
   ImageObject,
   ShapeObject,
-  DocumentSettings,
-  ArrowStyle,
+  TextObject,
 } from "./types";
-import { FONT_OPTIONS, ARROW_PRESETS } from "./types";
-import { COLOR_PRESETS } from "./constants";
-import { fitImageContain, fitImageCover, centerInCanvas } from "./utils";
-import s from "./editor.module.css";
+import { ARROW_PRESETS,FONT_OPTIONS } from "./types";
+import { centerInCanvas,fitImageContain, fitImageCover } from "./utils";
 
 interface PropertiesPanelProps {
   selectedObject: EditorObject | null;
@@ -323,7 +324,7 @@ function rgbaToHex(rgba: string): string {
   const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (!match) {return "#000000";}
   const [, r, g, b] = match;
-  return `#${[r, g, b].map((x) => parseInt(x).toString(16).padStart(2, "0")).join("")}`;
+  return `#${[r, g, b].map((x) => Number.parseInt(x).toString(16).padStart(2, "0")).join("")}`;
 }
 
 // ============================================================================

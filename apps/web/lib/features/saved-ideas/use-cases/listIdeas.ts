@@ -5,6 +5,7 @@
  */
 
 import { prisma } from "@/prisma";
+
 import { SavedIdeaError } from "../errors";
 import type { ListIdeasInput, ListIdeasResult, SavedIdea } from "../types";
 
@@ -18,15 +19,13 @@ export async function listIdeas(input: ListIdeasInput): Promise<ListIdeasResult>
       orderBy: { createdAt: "desc" },
     });
 
-    const channelIds = Array.from(
-      new Set(
+    const channelIds = [...new Set(
         savedIdeas
           .map((i) => i.channelId)
           .filter((id): id is number => typeof id === "number"),
-      ),
-    );
+      )];
 
-    const channels = channelIds.length
+    const channels = channelIds.length > 0
       ? await prisma.channel.findMany({
           where: { userId: input.userId, id: { in: channelIds } },
           select: { id: true, youtubeChannelId: true },
@@ -56,8 +55,8 @@ export async function listIdeas(input: ListIdeasInput): Promise<ListIdeasResult>
     }));
 
     return { savedIdeas: mapped, total: mapped.length };
-  } catch (err) {
-    if (err instanceof SavedIdeaError) {throw err;}
-    throw new SavedIdeaError("EXTERNAL_FAILURE", "Failed to fetch saved ideas", err);
+  } catch (error) {
+    if (error instanceof SavedIdeaError) {throw error;}
+    throw new SavedIdeaError("EXTERNAL_FAILURE", "Failed to fetch saved ideas", error);
   }
 }

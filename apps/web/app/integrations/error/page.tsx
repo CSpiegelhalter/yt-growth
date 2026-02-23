@@ -1,4 +1,5 @@
 import Link from "next/link";
+
 import { EmptyState } from "@/components/ui/EmptyState";
 
 type SearchParams = Promise<{ m?: string; rid?: string }>;

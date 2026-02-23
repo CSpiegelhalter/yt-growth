@@ -7,23 +7,23 @@
  * - viewsPerDay calculation edge cases
  * - Niche inference
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect,it } from "vitest";
 
-// Import pure functions from utils (no server-only dependency)
-import {
-  makeCacheKey,
-  normalizeFilters,
-  calculateDerivedMetrics,
-  passesFilters,
-  sortVideos,
-  sanitizeNicheText,
-  inferNicheFromText,
-} from "@/lib/competitor-search/utils";
-import { parseYouTubeVideoId } from "@/lib/shared/youtube-video-id";
 import type {
   CompetitorSearchFilters,
   CompetitorVideoResult,
 } from "@/lib/competitor-search/types";
+// Import pure functions from utils (no server-only dependency)
+import {
+  calculateDerivedMetrics,
+  inferNicheFromText,
+  makeCacheKey,
+  normalizeFilters,
+  passesFilters,
+  sanitizeNicheText,
+  sortVideos,
+} from "@/lib/competitor-search/utils";
+import { parseYouTubeVideoId } from "@/lib/shared/youtube-video-id";
 
 describe("Competitor Search - Cache Key Stability", () => {
   describe("makeCacheKey", () => {
@@ -237,7 +237,7 @@ describe("Competitor Search - viewsPerDay Calculation", () => {
         Date.now() - 24 * 60 * 60 * 1000
       ).toISOString();
 
-      const result = calculateDerivedMetrics(10000, yesterday, 500, 100);
+      const result = calculateDerivedMetrics(10_000, yesterday, 500, 100);
 
       expect(result.engagementPerView).toBe(0.06); // (500 + 100) / 10000
     });
@@ -247,7 +247,7 @@ describe("Competitor Search - viewsPerDay Calculation", () => {
         Date.now() - 24 * 60 * 60 * 1000
       ).toISOString();
 
-      const result = calculateDerivedMetrics(10000, yesterday);
+      const result = calculateDerivedMetrics(10_000, yesterday);
 
       expect(result.engagementPerView).toBeUndefined();
     });
@@ -258,7 +258,7 @@ describe("Competitor Search - Filter Application", () => {
   describe("passesFilters", () => {
     const baseVideo = {
       publishedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      viewCount: 10000,
+      viewCount: 10_000,
       derived: {
         viewsPerDay: 333,
         daysSincePublished: 30,
@@ -281,11 +281,11 @@ describe("Competitor Search - Filter Application", () => {
 
     it("filters by minTotalViews", () => {
       expect(passesFilters(baseVideo, { minTotalViews: 5000 })).toBe(true);
-      expect(passesFilters(baseVideo, { minTotalViews: 20000 })).toBe(false);
+      expect(passesFilters(baseVideo, { minTotalViews: 20_000 })).toBe(false);
     });
 
     it("filters by maxTotalViews", () => {
-      expect(passesFilters(baseVideo, { maxTotalViews: 20000 })).toBe(true);
+      expect(passesFilters(baseVideo, { maxTotalViews: 20_000 })).toBe(true);
       expect(passesFilters(baseVideo, { maxTotalViews: 5000 })).toBe(false);
     });
 
@@ -367,7 +367,7 @@ describe("Competitor Search - Filter Application", () => {
         channelThumbnailUrl: null,
         thumbnailUrl: null,
         publishedAt: "2024-01-15T00:00:00Z",
-        stats: { viewCount: 10000 },
+        stats: { viewCount: 10_000 },
         derived: { viewsPerDay: 500, daysSincePublished: 20, engagementPerView: 0.01 },
       },
       {
@@ -467,7 +467,7 @@ describe("Competitor Search - Niche Inference", () => {
     });
 
     it("removes control characters", () => {
-      expect(sanitizeNicheText("diy\x00espresso\x1F")).toBe("diy espresso");
+      expect(sanitizeNicheText("diy\u0000espresso\u001F")).toBe("diy espresso");
     });
 
     it("limits length to 500 characters", () => {

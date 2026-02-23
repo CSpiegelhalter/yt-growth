@@ -1,5 +1,6 @@
-import { prisma } from "@/prisma";
 import { createLogger } from "@/lib/shared/logger";
+import { prisma } from "@/prisma";
+
 import { ChannelError } from "../errors";
 
 const log = createLogger({ subsystem: "channel-delete" });

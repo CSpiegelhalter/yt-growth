@@ -8,14 +8,14 @@
  * callbacks), so unit tests can import them freely.
  */
 import type {
-  Plan,
-  FeatureKey,
-  PlanLimits,
-  EntitlementCheckResult,
-  UsageCheckResult,
   ChannelLimitResult,
+  EntitlementCheckResult,
+  FeatureKey,
+  Plan,
+  PlanLimits,
+  UsageCheckResult,
 } from "../types";
-import { FREE_LIMITS, PRO_LIMITS, LOCKED_FEATURES } from "../types";
+import { FREE_LIMITS, LOCKED_FEATURES,PRO_LIMITS } from "../types";
 
 // ── Pure helpers (no I/O) ────────────────────────────────────
 
@@ -85,9 +85,9 @@ export function getResetAt(): Date {
   const getPart = (type: string) =>
     parts.find((p) => p.type === type)?.value ?? "0";
 
-  const chicagoYear = parseInt(getPart("year"), 10);
-  const chicagoMonth = parseInt(getPart("month"), 10) - 1;
-  const chicagoDay = parseInt(getPart("day"), 10);
+  const chicagoYear = Number.parseInt(getPart("year"), 10);
+  const chicagoMonth = Number.parseInt(getPart("month"), 10) - 1;
+  const chicagoDay = Number.parseInt(getPart("day"), 10);
 
   const tomorrowChicago = new Date(
     Date.UTC(chicagoYear, chicagoMonth, chicagoDay + 1, 6, 0, 0),
@@ -187,17 +187,12 @@ export async function checkEntitlement(options: {
     };
   }
 
-  let usage: UsageCheckResult;
-  if (increment) {
-    usage = await checkAndIncrement({
+  const usage: UsageCheckResult = await (increment ? checkAndIncrement({
       userId: user.id,
       featureKey,
       limit,
       amount,
-    });
-  } else {
-    usage = await getUsageInfo(user.id, featureKey, limit);
-  }
+    }) : getUsageInfo(user.id, featureKey, limit));
 
   if (!usage.allowed) {
     return {

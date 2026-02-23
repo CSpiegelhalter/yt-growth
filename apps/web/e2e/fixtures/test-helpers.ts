@@ -6,7 +6,7 @@
  * - API helpers for test-only routes
  * - Common page interactions
  */
-import { type Page, expect } from "@playwright/test";
+import { expect,type Page } from "@playwright/test";
 
 // Standard test user credentials
 export const TEST_USER = {
@@ -40,7 +40,7 @@ export async function signUp(
   await page.click('button[type="submit"]');
 
   // Wait for redirect to dashboard or success state
-  await expect(page).toHaveURL(/dashboard|login/, { timeout: 15000 });
+  await expect(page).toHaveURL(/dashboard|login/, { timeout: 15_000 });
 }
 
 /**
@@ -58,7 +58,7 @@ export async function signIn(
 
   // Wait for form to be visible
   const emailInput = page.locator('input#email, input[name="email"]').first();
-  await emailInput.waitFor({ state: "visible", timeout: 10000 });
+  await emailInput.waitFor({ state: "visible", timeout: 10_000 });
 
   // Fill login form
   await emailInput.fill(user.email);
@@ -69,7 +69,7 @@ export async function signIn(
 
   // Wait for redirect to dashboard (or check for error)
   try {
-    await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+    await expect(page).toHaveURL(/dashboard/, { timeout: 15_000 });
   } catch {
     // Check if there's a login error
     const errorAlert = page.locator('[role="alert"], [class*="error"]');
@@ -92,7 +92,7 @@ export async function signOut(page: Page): Promise<void> {
 
   if (await signOutControl.isVisible().catch(() => false)) {
     await signOutControl.click();
-    await page.waitForURL(/\/($|\?)|login|auth/i, { timeout: 15000 });
+    await page.waitForURL(/\/($|\?)|login|auth/i, { timeout: 15_000 });
     return;
   }
 
@@ -155,7 +155,7 @@ export async function waitForToast(
   textPattern: RegExp | string
 ): Promise<void> {
   const toast = page.locator('[role="alert"], [class*="toast"], [class*="notification"]');
-  await expect(toast.filter({ hasText: textPattern })).toBeVisible({ timeout: 10000 });
+  await expect(toast.filter({ hasText: textPattern })).toBeVisible({ timeout: 10_000 });
 }
 
 /**

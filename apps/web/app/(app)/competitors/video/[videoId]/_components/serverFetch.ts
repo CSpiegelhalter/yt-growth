@@ -3,7 +3,8 @@
  * These run only on the server and should not be imported in client components.
  */
 import { headers } from "next/headers";
-import type { CompetitorVideoAnalysis, CompetitorVideo } from "@/types/api";
+
+import type { CompetitorVideo,CompetitorVideoAnalysis } from "@/types/api";
 
 /**
  * Get the base URL for internal API calls.
@@ -105,9 +106,9 @@ export async function fetchCompetitorVideoAnalysis(
 
     const data = (await res.json()) as CompetitorVideoAnalysis;
     return { ok: true, data };
-  } catch (err) {
+  } catch (error) {
     const message =
-      err instanceof Error ? err.message : "Failed to load analysis";
+      error instanceof Error ? error.message : "Failed to load analysis";
     return { ok: false, error: message };
   }
 }

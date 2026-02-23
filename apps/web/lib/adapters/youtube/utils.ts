@@ -10,15 +10,15 @@
  */
 export function decodeHtmlEntities(text: string): string {
   return text
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) =>
-      String.fromCharCode(parseInt(hex, 16))
+    .replaceAll(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number.parseInt(dec, 10)))
+    .replaceAll(/&#x([0-9a-fA-F]+);/g, (_, hex) =>
+      String.fromCharCode(Number.parseInt(hex, 16))
     )
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'");
+    .replaceAll('&amp;', "&")
+    .replaceAll('&lt;', "<")
+    .replaceAll('&gt;', ">")
+    .replaceAll('&quot;', '"')
+    .replaceAll('&apos;', "'");
 }
 
 /**
@@ -27,9 +27,9 @@ export function decodeHtmlEntities(text: string): string {
 export function parseDuration(iso: string): number {
   const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) {return 0;}
-  const hours = parseInt(match[1] ?? "0", 10);
-  const minutes = parseInt(match[2] ?? "0", 10);
-  const seconds = parseInt(match[3] ?? "0", 10);
+  const hours = Number.parseInt(match[1] ?? "0", 10);
+  const minutes = Number.parseInt(match[2] ?? "0", 10);
+  const seconds = Number.parseInt(match[3] ?? "0", 10);
   return hours * 3600 + minutes * 60 + seconds;
 }
 
@@ -62,7 +62,7 @@ export async function mapLimit<T, R>(
   if (items.length === 0) {return [];}
   const effectiveLimit = limit <= 0 ? 1 : limit;
 
-  const results: R[] = new Array(items.length);
+  const results: R[] = Array.from({length: items.length});
   let nextIndex = 0;
 
   async function worker(): Promise<void> {

@@ -7,13 +7,13 @@ export {
 
 // Types
 export type {
-  RunAuditDeps,
   RecommendationsDeps,
+  RunAuditDeps,
 } from "./types";
 
 // Errors
 export { ChannelAuditError } from "./errors";
 
 // Use-cases
-export { runChannelAudit } from "./use-cases/runChannelAudit";
 export { generateLlmRecommendations } from "./use-cases/generateRecommendations";
+export { runChannelAudit } from "./use-cases/runChannelAudit";

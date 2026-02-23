@@ -6,19 +6,19 @@
  * Auth: Required
  * Entitlements: idea_generate
  */
-import { createApiRoute } from "@/lib/api/route";
-import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
-import { withValidation } from "@/lib/api/withValidation";
 import { jsonOk } from "@/lib/api/response";
+import { createApiRoute } from "@/lib/api/route";
+import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
+import {
+  generateMoreIdeas,
+  MoreIdeasBodySchema,
+  MoreIdeasParamsSchema,
+} from "@/lib/features/saved-ideas";
 import {
   checkEntitlement,
   entitlementErrorResponse,
 } from "@/lib/with-entitlements";
-import {
-  MoreIdeasParamsSchema,
-  MoreIdeasBodySchema,
-  generateMoreIdeas,
-} from "@/lib/features/saved-ideas";
 
 export const POST = createApiRoute(
   { route: "/api/me/channels/[channelId]/ideas/more" },

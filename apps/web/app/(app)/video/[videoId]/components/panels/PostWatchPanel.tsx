@@ -1,8 +1,9 @@
 "use client";
 
-import styles from "./panels.module.css";
-import { InsightCard } from "../ui";
 import { formatCompactRounded as formatCompact } from "@/lib/shared/format";
+
+import { InsightCard } from "../ui";
+import styles from "./panels.module.css";
 
 type PostWatchPanelProps = {
   endScreenClicks: number | null;
@@ -29,32 +30,19 @@ export function PostWatchPanel({
   totalViews,
   baselineEndScreenCtr,
 }: PostWatchPanelProps) {
-  // Check if we have meaningful data
   const hasEndScreenData =
     endScreenImpressions != null && endScreenImpressions > 0;
   const hasEngagementData = (shares ?? 0) > 0 || (playlistAdds ?? 0) > 0;
 
   if (!hasEndScreenData && !hasEngagementData) {
-    return (
-      <InsightCard title="Post-watch behavior">
-        <div className={styles.emptyState}>
-          <p className={styles.emptyTitle}>Limited data available</p>
-          <p className={styles.emptyDesc}>
-            Add end screens to your video to track how well you're driving
-            viewers to watch more content.
-          </p>
-        </div>
-      </InsightCard>
-    );
+    return <PostWatchEmpty />;
   }
 
-  // Determine end screen performance
   const endScreenPerformance = getEndScreenPerformance(
     endScreenCtr,
     baselineEndScreenCtr,
   );
 
-  // Generate recommendation
   const recommendation = getRecommendation(
     endScreenCtr,
     avgViewPercentage,
@@ -69,46 +57,14 @@ export function PostWatchPanel({
       subtitle="Do viewers watch more after this video?"
       status={endScreenPerformance?.status}
     >
-      {/* Stats Grid */}
-      <div className={styles.postWatchStats}>
-        {hasEndScreenData && (
-          <>
-            <div className={styles.postWatchStat}>
-              <span className={styles.postWatchStatValue}>
-                {endScreenCtr != null ? `${endScreenCtr.toFixed(1)}%` : "–"}
-              </span>
-              <span className={styles.postWatchStatLabel}>End Screen CTR</span>
-              <span className={styles.postWatchStatTarget}>Target: 3%+</span>
-            </div>
-            <div className={styles.postWatchStat}>
-              <span className={styles.postWatchStatValue}>
-                {endScreenClicks != null && endScreenClicks > 0
-                  ? formatCompact(endScreenClicks)
-                  : "–"}
-              </span>
-              <span className={styles.postWatchStatLabel}>
-                End Screen Clicks
-              </span>
-            </div>
-          </>
-        )}
-        <div className={styles.postWatchStat}>
-          <span className={styles.postWatchStatValue}>
-            {shares != null && shares > 0 ? formatCompact(shares) : "–"}
-          </span>
-          <span className={styles.postWatchStatLabel}>Shares</span>
-        </div>
-        <div className={styles.postWatchStat}>
-          <span className={styles.postWatchStatValue}>
-            {playlistAdds != null && playlistAdds > 0
-              ? formatCompact(playlistAdds)
-              : "–"}
-          </span>
-          <span className={styles.postWatchStatLabel}>Playlist Saves</span>
-        </div>
-      </div>
+      <PostWatchStatsGrid
+        hasEndScreenData={hasEndScreenData}
+        endScreenCtr={endScreenCtr}
+        endScreenClicks={endScreenClicks}
+        shares={shares}
+        playlistAdds={playlistAdds}
+      />
 
-      {/* Performance indicator */}
       {endScreenPerformance && (
         <div
           className={`${styles.trafficDiagnosis} ${styles[endScreenPerformance.status]}`}
@@ -120,7 +76,6 @@ export function PostWatchPanel({
         </div>
       )}
 
-      {/* Recommendation */}
       {recommendation && (
         <div className={styles.postWatchRecommendation}>
           <h4 className={styles.postWatchRecommendationTitle}>
@@ -130,6 +85,74 @@ export function PostWatchPanel({
         </div>
       )}
     </InsightCard>
+  );
+}
+
+function PostWatchEmpty() {
+  return (
+    <InsightCard title="Post-watch behavior">
+      <div className={styles.emptyState}>
+        <p className={styles.emptyTitle}>Limited data available</p>
+        <p className={styles.emptyDesc}>
+          Add end screens to your video to track how well you&apos;re driving
+          viewers to watch more content.
+        </p>
+      </div>
+    </InsightCard>
+  );
+}
+
+function PostWatchStatsGrid({
+  hasEndScreenData,
+  endScreenCtr,
+  endScreenClicks,
+  shares,
+  playlistAdds,
+}: {
+  hasEndScreenData: boolean;
+  endScreenCtr: number | null;
+  endScreenClicks: number | null;
+  shares: number | null;
+  playlistAdds: number | null;
+}) {
+  return (
+    <div className={styles.postWatchStats}>
+      {hasEndScreenData && (
+        <>
+          <div className={styles.postWatchStat}>
+            <span className={styles.postWatchStatValue}>
+              {endScreenCtr != null ? `${endScreenCtr.toFixed(1)}%` : "\u2013"}
+            </span>
+            <span className={styles.postWatchStatLabel}>End Screen CTR</span>
+            <span className={styles.postWatchStatTarget}>Target: 3%+</span>
+          </div>
+          <div className={styles.postWatchStat}>
+            <span className={styles.postWatchStatValue}>
+              {endScreenClicks != null && endScreenClicks > 0
+                ? formatCompact(endScreenClicks)
+                : "\u2013"}
+            </span>
+            <span className={styles.postWatchStatLabel}>
+              End Screen Clicks
+            </span>
+          </div>
+        </>
+      )}
+      <div className={styles.postWatchStat}>
+        <span className={styles.postWatchStatValue}>
+          {shares != null && shares > 0 ? formatCompact(shares) : "\u2013"}
+        </span>
+        <span className={styles.postWatchStatLabel}>Shares</span>
+      </div>
+      <div className={styles.postWatchStat}>
+        <span className={styles.postWatchStatValue}>
+          {playlistAdds != null && playlistAdds > 0
+            ? formatCompact(playlistAdds)
+            : "\u2013"}
+        </span>
+        <span className={styles.postWatchStatLabel}>Playlist Saves</span>
+      </div>
+    </div>
   );
 }
 

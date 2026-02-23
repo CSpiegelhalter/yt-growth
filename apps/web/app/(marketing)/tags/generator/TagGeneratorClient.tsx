@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import s from "../tags.module.css";
+import { useCallback,useEffect, useState } from "react";
+
 import { useToast } from "@/components/ui/Toast";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
+
+import s from "../tags.module.css";
 
 function CopyTagsButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
@@ -153,19 +155,19 @@ export function TagGeneratorClient() {
         setCopyLines(data.copyLines);
 
         toast(`Generated ${data.tags.length} tags!`, "success");
-      } catch (err) {
-        console.error("Generate error:", err);
+      } catch (error) {
+        console.error("Generate error:", error);
 
-        if (isApiClientError(err)) {
-          if (err.status === 429 || err.code === "LIMIT_REACHED") {
+        if (isApiClientError(error)) {
+          if (error.status === 429 || error.code === "LIMIT_REACHED") {
             toast(
-              err.message || "You've reached the daily limit. Sign up for more.",
+              error.message || "You've reached the daily limit. Sign up for more.",
               "error"
             );
             return;
           }
 
-          toast(err.message || "Failed to generate tags", "error");
+          toast(error.message || "Failed to generate tags", "error");
           return;
         }
 

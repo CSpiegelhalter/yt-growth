@@ -73,6 +73,14 @@ interface Summary {
   csvPath: string;
 }
 
+interface VideoItemDetails {
+  channelId: string;
+  title: string;
+  publishedAt: string;
+  durationSeconds: number;
+  viewCount: number;
+}
+
 // ============================================================================
 // Constants
 // ============================================================================
@@ -98,9 +106,9 @@ export function parseISO8601Duration(duration: string): number {
   const match = duration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
   if (!match) {return 0;}
 
-  const hours = parseInt(match[1] || "0", 10);
-  const minutes = parseInt(match[2] || "0", 10);
-  const seconds = parseInt(match[3] || "0", 10);
+  const hours = Number.parseInt(match[1] || "0", 10);
+  const minutes = Number.parseInt(match[2] || "0", 10);
+  const seconds = Number.parseInt(match[3] || "0", 10);
 
   return hours * 3600 + minutes * 60 + seconds;
 }
@@ -131,17 +139,17 @@ function parseArgs(argv: string[]): CliArgs {
     } else if (arg === "--selfTest") {
       args.selfTest = true;
     } else if (arg.startsWith("--days=")) {
-      args.days = parseInt(arg.slice(7), 10);
+      args.days = Number.parseInt(arg.slice(7), 10);
     } else if (arg.startsWith("--maxChannelVideos=")) {
-      args.maxChannelVideos = parseInt(arg.slice(19), 10);
+      args.maxChannelVideos = Number.parseInt(arg.slice(19), 10);
     } else if (arg.startsWith("--minViews=")) {
-      args.minViews = parseInt(arg.slice(11), 10);
+      args.minViews = Number.parseInt(arg.slice(11), 10);
     } else if (arg.startsWith("--region=")) {
       args.region = arg.slice(9);
     } else if (arg.startsWith("--pagesPerQuery=")) {
-      args.pagesPerQuery = parseInt(arg.slice(16), 10);
+      args.pagesPerQuery = Number.parseInt(arg.slice(16), 10);
     } else if (arg.startsWith("--maxQueries=")) {
-      args.maxQueries = parseInt(arg.slice(13), 10);
+      args.maxQueries = Number.parseInt(arg.slice(13), 10);
     } else if (arg.startsWith("--q=")) {
       args.queries.push(arg.slice(4));
     } else if (arg.startsWith("--useTrends=")) {
@@ -231,18 +239,16 @@ async function fetchWithRetry(
       }
 
       // Retry on 429 or 5xx
-      if (response.status === 429 || response.status >= 500) {
-        if (attempt < maxRetries) {
+      if ((response.status === 429 || response.status >= 500) && attempt < maxRetries) {
           const backoff = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
           console.error(`  [Retry] Status ${response.status}, waiting ${backoff}ms...`);
           await sleep(backoff);
           continue;
         }
-      }
 
       return response;
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
       if (attempt < maxRetries) {
         const backoff = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
         console.error(`  [Retry] Network error, waiting ${backoff}ms...`);
@@ -296,8 +302,8 @@ async function fetchTrendingKeywords(geo: string, maxKeywords: number): Promise<
     }
 
     return keywords.slice(0, maxKeywords);
-  } catch (err) {
-    console.error(`  [Trends] Error: ${err instanceof Error ? err.message : err}`);
+  } catch (error) {
+    console.error(`  [Trends] Error: ${error instanceof Error ? error.message : error}`);
     return getFallbackKeywords();
   }
 }
@@ -365,13 +371,35 @@ async function searchVideos(
   return { videoIds, nextPageToken: data.nextPageToken };
 }
 
+interface VideoApiItem {
+  id?: string;
+  snippet?: { channelId?: string; title?: string; publishedAt?: string };
+  contentDetails?: { duration?: string };
+  statistics?: { viewCount?: string };
+}
+
+function parseVideoItem(item: VideoApiItem): [string, VideoItemDetails] | null {
+  const videoId = item.id;
+  const channelId = item.snippet?.channelId;
+  if (!videoId || !channelId) {return null;}
+  return [
+    videoId,
+    {
+      channelId,
+      title: item.snippet?.title || "",
+      publishedAt: item.snippet?.publishedAt || "",
+      durationSeconds: parseISO8601Duration(item.contentDetails?.duration || ""),
+      viewCount: Number.parseInt(item.statistics?.viewCount || "0", 10),
+    },
+  ];
+}
+
 async function getVideoDetails(
   apiKey: string,
   videoIds: string[]
-): Promise<Map<string, { channelId: string; title: string; publishedAt: string; durationSeconds: number; viewCount: number }>> {
-  const results = new Map<string, { channelId: string; title: string; publishedAt: string; durationSeconds: number; viewCount: number }>();
+): Promise<Map<string, VideoItemDetails>> {
+  const results = new Map<string, VideoItemDetails>();
 
-  // Batch in groups of 50
   for (let i = 0; i < videoIds.length; i += MAX_BATCH_SIZE) {
     const batch = videoIds.slice(i, i + MAX_BATCH_SIZE);
     const params = new URLSearchParams({
@@ -390,23 +418,9 @@ async function getVideoDetails(
 
     const data = await response.json();
 
-    for (const item of data.items || []) {
-      const videoId = item.id;
-      const channelId = item.snippet?.channelId;
-      const title = item.snippet?.title || "";
-      const publishedAt = item.snippet?.publishedAt || "";
-      const duration = item.contentDetails?.duration || "";
-      const viewCount = parseInt(item.statistics?.viewCount || "0", 10);
-
-      if (videoId && channelId) {
-        results.set(videoId, {
-          channelId,
-          title,
-          publishedAt,
-          durationSeconds: parseISO8601Duration(duration),
-          viewCount,
-        });
-      }
+    for (const item of (data.items || []) as VideoApiItem[]) {
+      const parsed = parseVideoItem(item);
+      if (parsed) {results.set(parsed[0], parsed[1]);}
     }
   }
 
@@ -442,7 +456,7 @@ async function getChannelDetails(
       const channelId = item.id;
       const title = item.snippet?.title || "";
       const publishedAt = item.snippet?.publishedAt || "";
-      const videoCount = parseInt(item.statistics?.videoCount || "0", 10);
+      const videoCount = Number.parseInt(item.statistics?.videoCount || "0", 10);
 
       if (channelId) {
         results.set(channelId, {
@@ -471,7 +485,7 @@ function calculateAgeDays(publishedAt: string): number {
 
 function escapeCSV(value: string): string {
   if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
+    return `"${value.replaceAll('"', '""')}"`;
   }
   return value;
 }
@@ -516,6 +530,137 @@ function generateCSV(channels: QualifiedChannel[]): string {
   return rows.join("\n");
 }
 
+// ─── Extracted orchestration helpers ──────────────────────────
+
+async function resolveQueries(args: CliArgs): Promise<string[]> {
+  let queries = [...args.queries];
+
+  if (args.useTrends && queries.length === 0) {
+    console.log(`Fetching trending keywords for ${args.trendsGeo}...`);
+    queries = await fetchTrendingKeywords(args.trendsGeo, args.maxQueries);
+    console.log(`  Found ${queries.length} keywords`);
+  }
+
+  if (queries.length === 0) {
+    throw new Error("No search queries available. Provide --q or use --useTrends=true");
+  }
+
+  return queries.slice(0, args.maxQueries);
+}
+
+async function collectVideoIds(
+  apiKey: string,
+  queries: string[],
+  publishedAfterISO: string,
+  args: CliArgs,
+): Promise<Map<string, string>> {
+  const videoToQuery = new Map<string, string>();
+
+  for (const query of queries) {
+    console.log(`Searching: "${query}"`);
+    let pageToken: string | undefined;
+
+    for (let page = 0; page < args.pagesPerQuery; page++) {
+      try {
+        const result = await searchVideos(
+          apiKey, query, publishedAfterISO, args.region, 50, pageToken,
+        );
+
+        for (const videoId of result.videoIds) {
+          if (!videoToQuery.has(videoId)) {
+            videoToQuery.set(videoId, query);
+          }
+        }
+
+        console.log(`  Page ${page + 1}: ${result.videoIds.length} videos`);
+
+        pageToken = result.nextPageToken;
+        if (!pageToken) {break;}
+      } catch (error) {
+        console.error(`  Error: ${error instanceof Error ? error.message : error}`);
+        break;
+      }
+    }
+  }
+
+  return videoToQuery;
+}
+
+function filterQualifyingVideos(
+  videoDetails: Map<string, VideoItemDetails>,
+  videoToQuery: Map<string, string>,
+  minViews: number,
+): { videos: VideoDetails[]; channelIds: Set<string> } {
+  const videos: VideoDetails[] = [];
+  const channelIds = new Set<string>();
+
+  for (const [videoId, details] of videoDetails) {
+    if (details.durationSeconds <= 60 && details.viewCount >= minViews) {
+      videos.push({
+        videoId,
+        ...details,
+        query: videoToQuery.get(videoId) || "",
+      });
+      channelIds.add(details.channelId);
+    }
+  }
+
+  return { videos, channelIds };
+}
+
+function buildQualifiedChannels(
+  qualifyingVideos: VideoDetails[],
+  channelDetails: Map<string, ChannelDetails>,
+  args: CliArgs,
+): QualifiedChannel[] {
+  const qualified: QualifiedChannel[] = [];
+  const seen = new Set<string>();
+
+  qualifyingVideos.sort((a, b) => b.viewCount - a.viewCount);
+
+  for (const video of qualifyingVideos) {
+    if (seen.has(video.channelId)) {continue;}
+
+    const channel = channelDetails.get(video.channelId);
+    if (!channel) {continue;}
+
+    const channelAgeDays = calculateAgeDays(channel.publishedAt);
+
+    if (channelAgeDays <= args.days && channel.videoCount < args.maxChannelVideos) {
+      seen.add(video.channelId);
+      qualified.push({
+        channelId: channel.channelId,
+        channelTitle: channel.title,
+        channelUrl: `https://www.youtube.com/channel/${channel.channelId}`,
+        channelCreatedAt: channel.publishedAt,
+        channelAgeDays,
+        channelVideoCount: channel.videoCount,
+        breakoutVideoId: video.videoId,
+        breakoutVideoUrl: `https://www.youtube.com/shorts/${video.videoId}`,
+        breakoutTitle: video.title,
+        breakoutPublishedAt: video.publishedAt,
+        breakoutViews: video.viewCount,
+        queryMatched: video.query,
+      });
+    }
+  }
+
+  return qualified;
+}
+
+function printTopResults(channels: QualifiedChannel[]): void {
+  if (channels.length === 0) {return;}
+
+  console.log("\n--- Top Results ---");
+  for (const ch of channels.slice(0, 5)) {
+    console.log(`${ch.channelTitle} (${ch.channelAgeDays}d old, ${ch.channelVideoCount} videos)`);
+    console.log(`  Breakout: ${ch.breakoutViews.toLocaleString()} views - ${ch.breakoutTitle.slice(0, 50)}`);
+    console.log(`  ${ch.breakoutVideoUrl}`);
+  }
+}
+
+// ─── Main ─────────────────────────────────────────────────────
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
 
@@ -537,8 +682,8 @@ async function main(): Promise<void> {
 
   try {
     validateArgs(args);
-  } catch (err) {
-    console.error(`Error: ${err instanceof Error ? err.message : err}`);
+  } catch (error) {
+    console.error(`Error: ${error instanceof Error ? error.message : error}`);
     process.exit(1);
   }
 
@@ -553,104 +698,30 @@ async function main(): Promise<void> {
   console.log(`Output: ${args.out}`);
   console.log("");
 
-  // Determine search queries
-  let queries = [...args.queries];
-
-  if (args.useTrends && queries.length === 0) {
-    console.log(`Fetching trending keywords for ${args.trendsGeo}...`);
-    queries = await fetchTrendingKeywords(args.trendsGeo, args.maxQueries);
-    console.log(`  Found ${queries.length} keywords`);
-  }
-
-  if (queries.length === 0) {
-    console.error("Error: No search queries available. Provide --q or use --useTrends=true");
-    process.exit(1);
-  }
-
-  queries = queries.slice(0, args.maxQueries);
+  const queries = await resolveQueries(args);
   console.log(`Running ${queries.length} queries: ${queries.slice(0, 5).join(", ")}${queries.length > 5 ? "..." : ""}`);
   console.log("");
 
-  // Calculate publishedAfter date
   const publishedAfter = new Date();
   publishedAfter.setDate(publishedAfter.getDate() - args.days);
-  const publishedAfterISO = publishedAfter.toISOString();
 
-  // Collect video IDs from search
-  const videoToQuery = new Map<string, string>();
-  let totalSearches = 0;
-
-  for (const query of queries) {
-    console.log(`Searching: "${query}"`);
-    let pageToken: string | undefined;
-
-    for (let page = 0; page < args.pagesPerQuery; page++) {
-      try {
-        const result = await searchVideos(
-          apiKey,
-          query,
-          publishedAfterISO,
-          args.region,
-          50,
-          pageToken
-        );
-
-        // Track searches for debugging (unused but kept for potential logging)
-        void totalSearches++;
-
-        for (const videoId of result.videoIds) {
-          if (!videoToQuery.has(videoId)) {
-            videoToQuery.set(videoId, query);
-          }
-        }
-
-        console.log(`  Page ${page + 1}: ${result.videoIds.length} videos`);
-
-        pageToken = result.nextPageToken;
-        if (!pageToken) {break;}
-      } catch (err) {
-        console.error(`  Error: ${err instanceof Error ? err.message : err}`);
-        break;
-      }
-    }
-  }
-
+  const videoToQuery = await collectVideoIds(apiKey, queries, publishedAfter.toISOString(), args);
   console.log("");
   console.log(`Total unique videos found: ${videoToQuery.size}`);
 
   if (videoToQuery.size === 0) {
     console.log("No videos found. Try different queries or region.");
     await writeCSV(args.out, []);
-    printSummary({
-      totalQueries: queries.length,
-      videosScanned: 0,
-      shortsQualified: 0,
-      channelsQualified: 0,
-      csvPath: args.out,
-    });
+    printSummary({ totalQueries: queries.length, videosScanned: 0, shortsQualified: 0, channelsQualified: 0, csvPath: args.out });
     return;
   }
 
-  // Get video details
   console.log("Fetching video details...");
-  const videoIds = Array.from(videoToQuery.keys());
-  const videoDetails = await getVideoDetails(apiKey, videoIds);
+  const videoDetails = await getVideoDetails(apiKey, [...videoToQuery.keys()]);
   console.log(`  Retrieved details for ${videoDetails.size} videos`);
 
-  // Filter to actual Shorts (<=60s) with minimum views
-  const qualifyingVideos: VideoDetails[] = [];
-  const channelIdsSet = new Set<string>();
-
-  for (const [videoId, details] of videoDetails) {
-    if (details.durationSeconds <= 60 && details.viewCount >= args.minViews) {
-      qualifyingVideos.push({
-        videoId,
-        ...details,
-        query: videoToQuery.get(videoId) || "",
-      });
-      channelIdsSet.add(details.channelId);
-    }
-  }
+  const { videos: qualifyingVideos, channelIds: channelIdsSet } =
+    filterQualifyingVideos(videoDetails, videoToQuery, args.minViews);
 
   console.log(`  Shorts <=60s with >=${args.minViews.toLocaleString()} views: ${qualifyingVideos.length}`);
   console.log(`  Unique channels: ${channelIdsSet.size}`);
@@ -658,66 +729,22 @@ async function main(): Promise<void> {
   if (channelIdsSet.size === 0) {
     console.log("No qualifying Shorts found.");
     await writeCSV(args.out, []);
-    printSummary({
-      totalQueries: queries.length,
-      videosScanned: videoDetails.size,
-      shortsQualified: 0,
-      channelsQualified: 0,
-      csvPath: args.out,
-    });
+    printSummary({ totalQueries: queries.length, videosScanned: videoDetails.size, shortsQualified: 0, channelsQualified: 0, csvPath: args.out });
     return;
   }
 
-  // Get channel details
   console.log("Fetching channel details...");
-  const channelIds = Array.from(channelIdsSet);
-  const channelDetails = await getChannelDetails(apiKey, channelIds);
+  const channelDetails = await getChannelDetails(apiKey, [...channelIdsSet]);
   console.log(`  Retrieved details for ${channelDetails.size} channels`);
 
-  // Filter channels by age and video count
-  const qualifiedChannels: QualifiedChannel[] = [];
-  const seenChannels = new Set<string>();
-
-  // Sort videos by views descending to pick best breakout per channel
-  qualifyingVideos.sort((a, b) => b.viewCount - a.viewCount);
-
-  for (const video of qualifyingVideos) {
-    if (seenChannels.has(video.channelId)) {continue;}
-
-    const channel = channelDetails.get(video.channelId);
-    if (!channel) {continue;}
-
-    const channelAgeDays = calculateAgeDays(channel.publishedAt);
-
-    if (channelAgeDays <= args.days && channel.videoCount < args.maxChannelVideos) {
-      seenChannels.add(video.channelId);
-      qualifiedChannels.push({
-        channelId: channel.channelId,
-        channelTitle: channel.title,
-        channelUrl: `https://www.youtube.com/channel/${channel.channelId}`,
-        channelCreatedAt: channel.publishedAt,
-        channelAgeDays,
-        channelVideoCount: channel.videoCount,
-        breakoutVideoId: video.videoId,
-        breakoutVideoUrl: `https://www.youtube.com/shorts/${video.videoId}`,
-        breakoutTitle: video.title,
-        breakoutPublishedAt: video.publishedAt,
-        breakoutViews: video.viewCount,
-        queryMatched: video.query,
-      });
-    }
-  }
-
+  const qualifiedChannels = buildQualifiedChannels(qualifyingVideos, channelDetails, args);
   console.log(`  Channels meeting all criteria: ${qualifiedChannels.length}`);
   console.log("");
 
-  // Sort by views descending
   qualifiedChannels.sort((a, b) => b.breakoutViews - a.breakoutViews);
 
-  // Write CSV
   await writeCSV(args.out, qualifiedChannels);
 
-  // Print summary
   printSummary({
     totalQueries: queries.length,
     videosScanned: videoDetails.size,
@@ -726,15 +753,7 @@ async function main(): Promise<void> {
     csvPath: args.out,
   });
 
-  // Print top results
-  if (qualifiedChannels.length > 0) {
-    console.log("\n--- Top Results ---");
-    for (const ch of qualifiedChannels.slice(0, 5)) {
-      console.log(`${ch.channelTitle} (${ch.channelAgeDays}d old, ${ch.channelVideoCount} videos)`);
-      console.log(`  Breakout: ${ch.breakoutViews.toLocaleString()} views - ${ch.breakoutTitle.slice(0, 50)}`);
-      console.log(`  ${ch.breakoutVideoUrl}`);
-    }
-  }
+  printTopResults(qualifiedChannels);
 }
 
 async function writeCSV(path: string, channels: QualifiedChannel[]): Promise<void> {
@@ -771,8 +790,8 @@ function runSelfTests(): void {
         console.log(`✗ ${name}`);
         failed++;
       }
-    } catch (err) {
-      console.log(`✗ ${name}: ${err}`);
+    } catch (error) {
+      console.log(`✗ ${name}: ${error}`);
       failed++;
     }
   }
@@ -814,12 +833,12 @@ function runSelfTests(): void {
   // Argument parsing tests
   test("parseArgs: defaults", () => {
     const args = parseArgs([]);
-    return args.days === 15 && args.minViews === 300000 && args.useTrends === true;
+    return args.days === 15 && args.minViews === 300_000 && args.useTrends === true;
   });
 
   test("parseArgs: custom values", () => {
     const args = parseArgs(["--days=30", "--minViews=100000", "--q=test", "--q=test2"]);
-    return args.days === 30 && args.minViews === 100000 && args.queries.length === 2;
+    return args.days === 30 && args.minViews === 100_000 && args.queries.length === 2;
   });
 
   console.log(`\n${passed} passed, ${failed} failed`);
@@ -833,7 +852,7 @@ function runSelfTests(): void {
 // Entry Point
 // ============================================================================
 
-main().catch((err) => {
-  console.error("Fatal error:", err instanceof Error ? err.message : err);
+main().catch((error) => {
+  console.error("Fatal error:", error instanceof Error ? error.message : error);
   process.exit(1);
 });

@@ -1,13 +1,14 @@
 import type { NextRequest } from "next/server";
-import { createApiRoute } from "@/lib/api/route";
-import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
-import { withValidation } from "@/lib/api/withValidation";
+
 import { jsonOk } from "@/lib/api/response";
+import { createApiRoute } from "@/lib/api/route";
+import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
+import { getProject, updateProject } from "@/lib/features/thumbnails";
 import {
   ProjectParamsSchema,
   UpdateProjectBodySchema,
 } from "@/lib/features/thumbnails/schemas";
-import { getProject, updateProject } from "@/lib/features/thumbnails";
 
 export const runtime = "nodejs";
 

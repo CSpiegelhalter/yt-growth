@@ -1,26 +1,27 @@
 import "server-only";
 
-import { logger } from "@/lib/shared/logger";
 import {
-  prepareDataForSeoRequest,
-  mapDataForSEOError,
   DataForSEOError,
+  mapDataForSEOError,
+  prepareDataForSeoRequest,
 } from "@/lib/dataforseo";
 import {
+  generateVideoIdeasCacheKey,
   getCachedVideoIdeas,
   setCachedVideoIdeas,
-  generateVideoIdeasCacheKey,
 } from "@/lib/dataforseo/cache";
 import {
-  generateVideoIdeasFromTopic,
   type AudienceLevel,
   type FormatPreference,
+  generateVideoIdeasFromTopic,
 } from "@/lib/keywords/ideasService";
-import { checkEntitlement, entitlementErrorResponse } from "@/lib/with-entitlements";
 import { getCurrentUserWithSubscription } from "@/lib/server/auth";
-import type { GenerateKeywordIdeasInput, GenerateKeywordIdeasResult } from "../types";
+import { logger } from "@/lib/shared/logger";
+import { checkEntitlement, entitlementErrorResponse } from "@/lib/with-entitlements";
+
 import { KeywordError } from "../errors";
 import { toUsageInfo } from "../quota";
+import type { GenerateKeywordIdeasInput, GenerateKeywordIdeasResult } from "../types";
 
 /**
  * Orchestrate video idea generation from a topic description.
@@ -115,16 +116,16 @@ export async function generateKeywordIdeas(
       audienceLevel: audienceLevel as AudienceLevel,
       formatPreference: formatPreference as FormatPreference,
     });
-  } catch (err) {
-    if (err instanceof DataForSEOError) {
+  } catch (error) {
+    if (error instanceof DataForSEOError) {
       logger.error("keywords.ideas.dataforseo_error", {
         userId: user.id,
-        code: err.code,
-        message: err.message,
+        code: error.code,
+        message: error.message,
       });
-      throw mapDataForSEOError(err);
+      throw mapDataForSEOError(error);
     }
-    throw err;
+    throw error;
   }
 
   await setCachedVideoIdeas(cacheKey, topicDescription, locationInfo.region, result);

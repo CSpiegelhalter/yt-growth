@@ -10,12 +10,12 @@
  */
 
 import type {
-  DataForSeoPort,
   CompetitiveContextInput,
   CompetitiveContextResult,
+  DataForSeoPort,
   SearchRanking,
-  TopicTrend,
   SimilarVideo,
+  TopicTrend,
 } from "@/lib/ports/DataForSeoPort";
 import { logger } from "@/lib/shared/logger";
 
@@ -28,33 +28,33 @@ import { logger } from "@/lib/shared/logger";
  * Based on YouTube search behavior studies
  */
 const EXPECTED_CTR_BY_POSITION: Record<number, number> = {
-  1: 20.0,
-  2: 15.0,
-  3: 12.0,
-  4: 10.0,
-  5: 8.0,
+  1: 20,
+  2: 15,
+  3: 12,
+  4: 10,
+  5: 8,
   6: 6.5,
   7: 5.5,
   8: 4.5,
-  9: 4.0,
+  9: 4,
   10: 3.5,
-  11: 3.0,
+  11: 3,
   12: 2.5,
   13: 2.2,
-  14: 2.0,
+  14: 2,
   15: 1.8,
   16: 1.6,
   17: 1.4,
   18: 1.2,
   19: 1.1,
-  20: 1.0,
+  20: 1,
 };
 
 function getExpectedCtr(position: number): number {
   if (position <= 20) {
-    return EXPECTED_CTR_BY_POSITION[position] ?? 1.0;
+    return EXPECTED_CTR_BY_POSITION[position] ?? 1;
   }
-  return Math.max(0.5, 1.0 - (position - 20) * 0.05);
+  return Math.max(0.5, 1 - (position - 20) * 0.05);
 }
 
 // ============================================
@@ -75,7 +75,7 @@ const STOPWORDS = new Set([
 function extractMainTopicFromTitle(title: string): string {
   const words = title
     .toLowerCase()
-    .replace(/[^\w\s]/g, " ")
+    .replaceAll(/[^\w\s]/g, " ")
     .split(/\s+/)
     .filter((w) => w.length > 2 && !STOPWORDS.has(w));
 
@@ -150,17 +150,17 @@ export async function fetchCompetitiveContext(
 
   const [searchRankings, topicTrends, similarVideos] = await Promise.all([
     fetchSearchRankings(videoId, searchTerms.slice(0, 3), totalViews, port).catch(
-      (err) => {
-        logger.warn("[CompetitiveContext] Search rankings failed:", err);
+      (error) => {
+        logger.warn("[CompetitiveContext] Search rankings failed:", error);
         return null;
       },
     ),
-    fetchTopicTrends(title, tags, port).catch((err) => {
-      logger.warn("[CompetitiveContext] Topic trends failed:", err);
+    fetchTopicTrends(title, tags, port).catch((error) => {
+      logger.warn("[CompetitiveContext] Topic trends failed:", error);
       return null;
     }),
-    fetchSimilarVideos(searchTerms[0]?.term, videoId, port).catch((err) => {
-      logger.warn("[CompetitiveContext] Similar videos failed:", err);
+    fetchSimilarVideos(searchTerms[0]?.term, videoId, port).catch((error) => {
+      logger.warn("[CompetitiveContext] Similar videos failed:", error);
       return null;
     }),
   ]);
@@ -206,8 +206,8 @@ async function fetchSearchRankings(
           expectedCtr,
           actualCtr,
         };
-      } catch (err) {
-        logger.warn("[SearchRankings] Failed:", { term, error: err });
+      } catch (error) {
+        logger.warn("[SearchRankings] Failed:", { term, error });
         return {
           term,
           position: null,
@@ -239,8 +239,8 @@ async function fetchTopicTrends(
     });
 
     return analyzeTrendDirection(trends.interestOverTime);
-  } catch (err) {
-    logger.warn("[TopicTrends] Failed:", { topic: mainTopic, error: err });
+  } catch (error) {
+    logger.warn("[TopicTrends] Failed:", { topic: mainTopic, error });
     return null;
   }
 }
@@ -272,8 +272,8 @@ async function fetchSimilarVideos(
       }));
 
     return similar.length > 0 ? similar : null;
-  } catch (err) {
-    logger.warn("[SimilarVideos] Failed:", { term: topSearchTerm, error: err });
+  } catch (error) {
+    logger.warn("[SimilarVideos] Failed:", { term: topSearchTerm, error });
     return null;
   }
 }

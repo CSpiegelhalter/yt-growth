@@ -1,15 +1,16 @@
 import type { NextRequest } from "next/server";
-import { createApiRoute } from "@/lib/api/route";
-import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
-import { withRateLimit } from "@/lib/api/withRateLimit";
-import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
-import { GenerateThumbnailBodySchema } from "@/lib/features/thumbnails/schemas";
-import { generateThumbnail } from "@/lib/features/thumbnails";
+
 import {
   createPrediction,
   verifyModelVersion,
 } from "@/lib/adapters/replicate";
+import { jsonOk } from "@/lib/api/response";
+import { createApiRoute } from "@/lib/api/route";
+import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
+import { withRateLimit } from "@/lib/api/withRateLimit";
+import { withValidation } from "@/lib/api/withValidation";
+import { generateThumbnail } from "@/lib/features/thumbnails";
+import { GenerateThumbnailBodySchema } from "@/lib/features/thumbnails/schemas";
 import { callLLM } from "@/lib/llm";
 import { getAppBaseUrl } from "@/lib/server/url";
 

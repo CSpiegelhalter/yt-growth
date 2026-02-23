@@ -5,12 +5,13 @@
  * computeStrategicInsights (basic integration).
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect,it } from "vitest";
+
 import {
+  commonWords,
+  computeStrategicInsights,
   deriveKeywordsFromText,
   fallbackWhatItsAbout,
-  computeStrategicInsights,
-  commonWords,
 } from "@/lib/competitors/video-detail/strategic";
 import type { CompetitorVideo } from "@/types/api";
 
@@ -52,7 +53,7 @@ describe("deriveKeywordsFromText", () => {
   });
 
   it("returns top 10 keywords by frequency", () => {
-    const text = Array(20)
+    const text = Array.from({length: 20})
       .fill("keyword1 keyword2 keyword3")
       .join(" ")
       .concat(" unique1 unique2 unique3 unique4 unique5 unique6 unique7 unique8");
@@ -170,7 +171,7 @@ describe("computeStrategicInsights", () => {
     publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     durationSec: 600,
     stats: {
-      viewCount: 50000,
+      viewCount: 50_000,
       likeCount: 2000,
       commentCount: 150,
     },
@@ -183,7 +184,7 @@ describe("computeStrategicInsights", () => {
     title: "10 Tips for Better Code",
     description: "Learn 10 essential tips to write cleaner code.",
     tags: ["coding", "programming", "tips"],
-    viewCount: 50000,
+    viewCount: 50_000,
     likeCount: 2000,
     commentCount: 150,
     publishedAt: baseVideo.publishedAt,
@@ -232,11 +233,11 @@ describe("computeStrategicInsights", () => {
   it("handles viral videos (1M+ views)", () => {
     const viralVideo = {
       ...baseVideo,
-      stats: { ...baseVideo.stats, viewCount: 2000000 },
+      stats: { ...baseVideo.stats, viewCount: 2_000_000 },
     };
     const viralDetails = {
       ...baseVideoDetails,
-      viewCount: 2000000,
+      viewCount: 2_000_000,
     };
 
     const insights = computeStrategicInsights({

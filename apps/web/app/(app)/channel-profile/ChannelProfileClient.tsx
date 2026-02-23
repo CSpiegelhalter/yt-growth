@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import s from "./style.module.css";
+import { useRouter,useSearchParams } from "next/navigation";
+import { useEffect,useState } from "react";
+
 import { ProfileEditor } from "@/components/channel-profile";
-import { useChannelProfile } from "@/lib/hooks/use-channel-profile";
 import type { ChannelProfileInput } from "@/lib/features/channels/schemas";
+import { useChannelProfile } from "@/lib/hooks/use-channel-profile";
+
+import s from "./style.module.css";
 
 export default function ChannelProfileClient() {
   const searchParams = useSearchParams();

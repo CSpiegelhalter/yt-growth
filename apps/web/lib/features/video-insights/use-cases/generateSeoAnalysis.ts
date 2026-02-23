@@ -5,8 +5,8 @@
  * title/description/tag analysis with actionable suggestions.
  */
 
-import type { SeoAnalysis, FocusKeywordResult, LlmCallFn } from "../types";
 import { VideoInsightError } from "../errors";
+import type { FocusKeywordResult, LlmCallFn,SeoAnalysis } from "../types";
 
 type GenerateSeoAnalysisInput = {
   video: {
@@ -61,8 +61,8 @@ TAGS: [${video.tags
       { maxTokens: 200, temperature: 0.2, responseFormat: "json_object" },
     );
     return JSON.parse(result.content);
-  } catch (err) {
-    console.error("Focus keyword detection failed:", err);
+  } catch (error) {
+    console.error("Focus keyword detection failed:", error);
     return null;
   }
 }
@@ -142,11 +142,11 @@ VIEWS: ${totalViews.toLocaleString()}`;
     }
 
     return analysis;
-  } catch (err) {
+  } catch (error) {
     throw new VideoInsightError(
       "EXTERNAL_FAILURE",
       "Failed to generate SEO analysis",
-      err,
+      error,
     );
   }
 }

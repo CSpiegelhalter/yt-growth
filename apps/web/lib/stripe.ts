@@ -5,14 +5,14 @@
  * Entitlement calculation and subscription status normalization live here
  * and will move to lib/features/subscriptions/ in a future phase.
  */
-import { prisma } from "@/prisma";
-import { LIMITS } from "@/lib/shared/product";
-import type { PaymentSubscription } from "@/lib/ports/StripePort";
 import * as stripe from "@/lib/adapters/stripe";
+import type { PaymentSubscription } from "@/lib/ports/StripePort";
+import { LIMITS } from "@/lib/shared/product";
+import { prisma } from "@/prisma";
 
 // Re-export for backward compatibility (used by sync route)
-export { stripeRequest } from "@/lib/adapters/stripe";
 export type { RawStripeSubscription as StripeSubscription } from "@/lib/adapters/stripe";
+export { stripeRequest } from "@/lib/adapters/stripe";
 
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -40,10 +40,21 @@ function computePeriodEndFromAnchor(sub: PaymentSubscription): Date | null {
   const interval = sub.plan?.interval;
   const intervalCount = sub.plan?.intervalCount ?? 1;
 
-  if (interval === "month") {d.setMonth(d.getMonth() + intervalCount);}
-  else if (interval === "year") {d.setFullYear(d.getFullYear() + intervalCount);}
-  else if (interval === "week") {d.setDate(d.getDate() + 7 * intervalCount);}
-  else if (interval === "day") {d.setDate(d.getDate() + intervalCount);}
+  switch (interval) {
+  case "month": {d.setMonth(d.getMonth() + intervalCount);
+  break;
+  }
+  case "year": {d.setFullYear(d.getFullYear() + intervalCount);
+  break;
+  }
+  case "week": {d.setDate(d.getDate() + 7 * intervalCount);
+  break;
+  }
+  case "day": {d.setDate(d.getDate() + intervalCount);
+  break;
+  }
+  // No default
+  }
   return d;
 }
 
@@ -159,6 +170,253 @@ export async function createPortalSession(
   return { url: session.url };
 }
 
+// ── Webhook Event Handlers ───────────────────────────────
+
+function buildSubscriptionFields(sub: PaymentSubscription) {
+  const periodEndDate =
+    safeDateFromUnixSeconds(sub.currentPeriodEnd) ??
+    computePeriodEndFromAnchor(sub);
+  const cancelAt = safeDateFromUnixSeconds(sub.cancelAt ?? undefined);
+  const canceledAt = safeDateFromUnixSeconds(sub.canceledAt ?? undefined);
+  const effectiveEnd = minDate(cancelAt, periodEndDate);
+  const entitled = isEntitledFromStripe(sub, effectiveEnd);
+  const dbStatus = normalizeDbStatus(sub.status);
+
+  return {
+    periodEndDate,
+    cancelAt,
+    canceledAt,
+    cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+    effectiveEnd,
+    entitled,
+    dbStatus,
+  };
+}
+
+function buildSubscriptionData(
+  fields: ReturnType<typeof buildSubscriptionFields>,
+) {
+  return {
+    status: fields.dbStatus,
+    plan: fields.entitled ? "pro" : "free",
+    channelLimit: fields.entitled
+      ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
+      : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
+    currentPeriodEnd: fields.periodEndDate,
+    cancelAtPeriodEnd: fields.cancelAtPeriodEnd,
+    cancelAt: fields.cancelAt,
+    canceledAt: fields.canceledAt,
+  } as const;
+}
+
+async function resolveUserIdFromCheckout(
+  metadata: Record<string, string> | undefined,
+  customerId: string | undefined,
+): Promise<number | null> {
+  const parsed = Number.parseInt(metadata?.userId ?? "", 10);
+  if (parsed && !Number.isNaN(parsed)) {
+    return parsed;
+  }
+
+  console.log(
+    `[Stripe Webhook] No userId in metadata, looking up by customer ID: ${customerId}`,
+  );
+  const existingSub = await prisma.subscription.findFirst({
+    where: { stripeCustomerId: customerId ?? "" },
+    select: { userId: true },
+  });
+
+  if (existingSub) {
+    console.log(
+      `[Stripe Webhook] Found userId by customer ID: ${existingSub.userId}`,
+    );
+    return existingSub.userId;
+  }
+
+  return null;
+}
+
+async function handleCheckoutCompleted(
+  session: Record<string, unknown>,
+): Promise<void> {
+  const subscriptionId = session.subscription as string | undefined;
+  const customerId = session.customer as string | undefined;
+  const metadata = session.metadata as Record<string, string> | undefined;
+
+  console.log(`[Stripe Webhook] checkout.session.completed:`, {
+    subscriptionId,
+    customerId,
+    metadata,
+  });
+
+  if (!subscriptionId) {
+    console.log(
+      `[Stripe Webhook] No subscription ID in session, skipping`,
+    );
+    return;
+  }
+
+  const userId = await resolveUserIdFromCheckout(metadata, customerId);
+  if (!userId) {
+    console.error(
+      `[Stripe Webhook] Could not determine userId for subscription ${subscriptionId}`,
+    );
+    return;
+  }
+
+  const sub = await stripe.getSubscription(subscriptionId);
+  console.log(`[Stripe Webhook] Fetched subscription from Stripe:`, {
+    id: sub.id,
+    status: sub.status,
+    customerId: sub.customerId,
+    billingCycleAnchor: sub.billingCycleAnchor,
+    plan: sub.plan,
+    cancelAt: sub.cancelAt,
+    currentPeriodEnd: sub.currentPeriodEnd,
+    cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+  });
+
+  const fields = buildSubscriptionFields(sub);
+  if (!fields.periodEndDate) {
+    console.error(
+      `[Stripe Webhook] Could not compute period end for subscription ${sub.id}`,
+    );
+    return;
+  }
+
+  console.log(`[Stripe Webhook] Period end:`, fields.periodEndDate, {
+    entitled: fields.entitled,
+    dbStatus: fields.dbStatus,
+    cancelAtPeriodEnd: fields.cancelAtPeriodEnd,
+    cancelAt: fields.cancelAt,
+    effectiveEnd: fields.effectiveEnd,
+  });
+
+  const data = {
+    stripeCustomerId: sub.customerId,
+    stripeSubscriptionId: subscriptionId,
+    ...buildSubscriptionData(fields),
+  };
+
+  const result = await prisma.subscription.upsert({
+    where: { userId },
+    update: data,
+    create: { userId, ...data },
+  });
+
+  console.log(
+    `[Stripe Webhook] Subscription activated for user ${userId}:`,
+    { status: result.status, plan: result.plan },
+  );
+}
+
+async function handleSubscriptionChange(
+  eventType: string,
+  eventData: Record<string, unknown>,
+): Promise<void> {
+  const sub = stripe.toPaymentSubscription(eventData);
+  const customerId = sub.customerId;
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("sub", sub);
+  }
+  console.log(`[Stripe Webhook] ${eventType}:`, {
+    stripeSubscriptionId: sub.id,
+    stripeStatus: sub.status,
+    stripeCustomerId: customerId,
+    cancelAt: sub.cancelAt,
+    cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+    canceledAt: sub.canceledAt,
+    currentPeriodEnd: sub.currentPeriodEnd,
+    billingCycleAnchor: sub.billingCycleAnchor,
+    plan: sub.plan,
+  });
+
+  const existing = await prisma.subscription.findFirst({
+    where: {
+      OR: [
+        { stripeCustomerId: String(customerId) },
+        { stripeSubscriptionId: String(sub.id) },
+      ],
+    },
+  });
+
+  const fields = buildSubscriptionFields(sub);
+
+  console.log(`[Stripe Webhook] ${eventType} computed:`, {
+    foundDbRow: Boolean(existing),
+    dbRow: existing
+      ? {
+          id: existing.id,
+          userId: existing.userId,
+          stripeCustomerId: existing.stripeCustomerId,
+          stripeSubscriptionId: existing.stripeSubscriptionId,
+          status: existing.status,
+          plan: existing.plan,
+          currentPeriodEnd: existing.currentPeriodEnd,
+          cancelAtPeriodEnd: (existing as typeof existing & { cancelAtPeriodEnd?: boolean | null }).cancelAtPeriodEnd,
+          cancelAt: (existing as typeof existing & { cancelAt?: Date | string | null }).cancelAt,
+          canceledAt: (existing as typeof existing & { canceledAt?: Date | string | null }).canceledAt,
+        }
+      : null,
+    computed: {
+      dbStatus: fields.dbStatus,
+      entitled: fields.entitled,
+      periodEndIso: fields.periodEndDate ? fields.periodEndDate.toISOString() : null,
+      cancelAtPeriodEnd: fields.cancelAtPeriodEnd,
+      cancelAtIso: fields.cancelAt ? fields.cancelAt.toISOString() : null,
+      effectiveEndIso: fields.effectiveEnd ? fields.effectiveEnd.toISOString() : null,
+      canceledAtIso: fields.canceledAt ? fields.canceledAt.toISOString() : null,
+    },
+  });
+
+  if (!existing) {
+    console.log(
+      `[Stripe Webhook] subscription update/delete: no matching DB row`,
+      { customerId, stripeSubscriptionId: sub.id, dbStatus: fields.dbStatus },
+    );
+    return;
+  }
+
+  await prisma.subscription.update({
+    where: { id: existing.id },
+    data: {
+      ...buildSubscriptionData(fields),
+      currentPeriodEnd: fields.periodEndDate ?? existing.currentPeriodEnd,
+      stripeSubscriptionId:
+        existing.stripeSubscriptionId ?? String(sub.id),
+    },
+  });
+}
+
+async function handleInvoicePaymentFailed(
+  invoice: Record<string, unknown>,
+): Promise<void> {
+  const customerId = invoice.customer as string;
+
+  console.log(`[Stripe Webhook] invoice.payment_failed:`, {
+    invoiceId: invoice.id,
+    customerId,
+    subscriptionId: invoice.subscription,
+    attemptCount: invoice.attempt_count,
+    amountDue: invoice.amount_due,
+  });
+
+  const result = await prisma.subscription.updateMany({
+    where: { stripeCustomerId: customerId },
+    data: {
+      status: "canceled",
+      plan: "free",
+      channelLimit: LIMITS.FREE_MAX_CONNECTED_CHANNELS,
+    },
+  });
+
+  console.log(
+    `[Stripe Webhook] Revoked pro access for customer ${customerId} due to payment failure:`,
+    { updatedCount: result.count },
+  );
+}
+
 /**
  * Handle Stripe webhook events
  */
@@ -173,246 +431,18 @@ export async function handleStripeWebhook(
 
   switch (eventType) {
     case "checkout.session.completed": {
-      const session = event.data.object;
-      const subscriptionId = session.subscription as string | undefined;
-      const customerId = session.customer as string | undefined;
-      const metadata = session.metadata as
-        | Record<string, string>
-        | undefined;
-
-      console.log(`[Stripe Webhook] checkout.session.completed:`, {
-        subscriptionId,
-        customerId,
-        metadata,
-      });
-
-      if (!subscriptionId) {
-        console.log(
-          `[Stripe Webhook] No subscription ID in session, skipping`,
-        );
-        break;
-      }
-
-      let userId = parseInt(metadata?.userId ?? "", 10);
-
-      if (!userId || isNaN(userId)) {
-        console.log(
-          `[Stripe Webhook] No userId in metadata, looking up by customer ID: ${customerId}`,
-        );
-        const existingSub = await prisma.subscription.findFirst({
-          where: { stripeCustomerId: customerId ?? "" },
-          select: { userId: true },
-        });
-        if (existingSub) {
-          userId = existingSub.userId;
-          console.log(
-            `[Stripe Webhook] Found userId by customer ID: ${userId}`,
-          );
-        }
-      }
-
-      if (!userId || isNaN(userId)) {
-        console.error(
-          `[Stripe Webhook] Could not determine userId for subscription ${subscriptionId}`,
-        );
-        break;
-      }
-
-      const sub = await stripe.getSubscription(subscriptionId);
-      console.log(`[Stripe Webhook] Fetched subscription from Stripe:`, {
-        id: sub.id,
-        status: sub.status,
-        customerId: sub.customerId,
-        billingCycleAnchor: sub.billingCycleAnchor,
-        plan: sub.plan,
-        cancelAt: sub.cancelAt,
-        currentPeriodEnd: sub.currentPeriodEnd,
-        cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
-      });
-
-      const periodEndDate =
-        safeDateFromUnixSeconds(sub.currentPeriodEnd) ??
-        computePeriodEndFromAnchor(sub);
-
-      if (!periodEndDate) {
-        console.error(
-          `[Stripe Webhook] Could not compute period end for subscription ${sub.id}`,
-        );
-        break;
-      }
-
-      const cancelAtPeriodEnd = sub.cancelAtPeriodEnd;
-      const cancelAt = safeDateFromUnixSeconds(sub.cancelAt ?? undefined);
-      const canceledAt = safeDateFromUnixSeconds(sub.canceledAt ?? undefined);
-      const effectiveEnd = minDate(cancelAt, periodEndDate);
-      const entitled = isEntitledFromStripe(sub, effectiveEnd);
-      const dbStatus = normalizeDbStatus(sub.status);
-
-      console.log(`[Stripe Webhook] Period end:`, periodEndDate, {
-        entitled,
-        dbStatus,
-        cancelAtPeriodEnd,
-        cancelAt,
-        effectiveEnd,
-      });
-
-      const result = await prisma.subscription.upsert({
-        where: { userId },
-        update: {
-          stripeCustomerId: sub.customerId,
-          stripeSubscriptionId: subscriptionId,
-          status: dbStatus,
-          plan: entitled ? "pro" : "free",
-          channelLimit: entitled
-            ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
-            : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
-          currentPeriodEnd: periodEndDate,
-          cancelAtPeriodEnd,
-          cancelAt,
-          canceledAt,
-        },
-        create: {
-          userId,
-          stripeCustomerId: sub.customerId,
-          stripeSubscriptionId: subscriptionId,
-          status: dbStatus,
-          plan: entitled ? "pro" : "free",
-          channelLimit: entitled
-            ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
-            : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
-          currentPeriodEnd: periodEndDate,
-          cancelAtPeriodEnd,
-          cancelAt,
-          canceledAt,
-        },
-      });
-
-      console.log(
-        `[Stripe Webhook] Subscription activated for user ${userId}:`,
-        {
-          status: result.status,
-          plan: result.plan,
-        },
-      );
+      await handleCheckoutCompleted(event.data.object as Record<string, unknown>);
       break;
     }
 
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
-      const sub = stripe.toPaymentSubscription(event.data.object);
-      const customerId = sub.customerId;
-      if (process.env.NODE_ENV !== "production") {
-        console.log("sub", sub);
-      }
-      console.log(`[Stripe Webhook] ${eventType}:`, {
-        stripeSubscriptionId: sub.id,
-        stripeStatus: sub.status,
-        stripeCustomerId: customerId,
-        cancelAt: sub.cancelAt,
-        cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
-        canceledAt: sub.canceledAt,
-        currentPeriodEnd: sub.currentPeriodEnd,
-        billingCycleAnchor: sub.billingCycleAnchor,
-        plan: sub.plan,
-      });
-
-      const existing = await prisma.subscription.findFirst({
-        where: {
-          OR: [
-            { stripeCustomerId: String(customerId) },
-            { stripeSubscriptionId: String(sub.id) },
-          ],
-        },
-      });
-
-      const periodEndDate =
-        safeDateFromUnixSeconds(sub.currentPeriodEnd) ??
-        computePeriodEndFromAnchor(sub);
-      const cancelAt = safeDateFromUnixSeconds(sub.cancelAt ?? undefined);
-      const cancelAtPeriodEnd = sub.cancelAtPeriodEnd;
-      const canceledAt = safeDateFromUnixSeconds(sub.canceledAt ?? undefined);
-      const effectiveEnd = minDate(cancelAt, periodEndDate);
-      const entitled = isEntitledFromStripe(sub, effectiveEnd);
-      const dbStatus = normalizeDbStatus(sub.status);
-
-      console.log(`[Stripe Webhook] ${eventType} computed:`, {
-        foundDbRow: Boolean(existing),
-        dbRow: existing
-          ? {
-              id: existing.id,
-              userId: existing.userId,
-              stripeCustomerId: existing.stripeCustomerId,
-              stripeSubscriptionId: existing.stripeSubscriptionId,
-              status: existing.status,
-              plan: existing.plan,
-              currentPeriodEnd: existing.currentPeriodEnd,
-              cancelAtPeriodEnd: (existing as typeof existing & { cancelAtPeriodEnd?: boolean | null }).cancelAtPeriodEnd,
-              cancelAt: (existing as typeof existing & { cancelAt?: Date | string | null }).cancelAt,
-              canceledAt: (existing as typeof existing & { canceledAt?: Date | string | null }).canceledAt,
-            }
-          : null,
-        computed: {
-          dbStatus,
-          entitled,
-          periodEndIso: periodEndDate ? periodEndDate.toISOString() : null,
-          cancelAtPeriodEnd,
-          cancelAtIso: cancelAt ? cancelAt.toISOString() : null,
-          effectiveEndIso: effectiveEnd ? effectiveEnd.toISOString() : null,
-          canceledAtIso: canceledAt ? canceledAt.toISOString() : null,
-        },
-      });
-
-      if (existing) {
-        await prisma.subscription.update({
-          where: { id: existing.id },
-          data: {
-            status: dbStatus,
-            plan: entitled ? "pro" : "free",
-            channelLimit: entitled
-              ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
-              : LIMITS.FREE_MAX_CONNECTED_CHANNELS,
-            currentPeriodEnd: periodEndDate ?? existing.currentPeriodEnd,
-            cancelAtPeriodEnd,
-            cancelAt,
-            canceledAt,
-            stripeSubscriptionId:
-              existing.stripeSubscriptionId ?? String(sub.id),
-          },
-        });
-      } else {
-        console.log(
-          `[Stripe Webhook] subscription update/delete: no matching DB row`,
-          { customerId, stripeSubscriptionId: sub.id, dbStatus },
-        );
-      }
+      await handleSubscriptionChange(eventType, event.data.object as Record<string, unknown>);
       break;
     }
 
     case "invoice.payment_failed": {
-      const invoice = event.data.object;
-      const customerId = invoice.customer as string;
-
-      console.log(`[Stripe Webhook] invoice.payment_failed:`, {
-        invoiceId: invoice.id,
-        customerId,
-        subscriptionId: invoice.subscription,
-        attemptCount: invoice.attempt_count,
-        amountDue: invoice.amount_due,
-      });
-
-      const result = await prisma.subscription.updateMany({
-        where: { stripeCustomerId: customerId },
-        data: {
-          status: "canceled",
-          plan: "free",
-          channelLimit: LIMITS.FREE_MAX_CONNECTED_CHANNELS,
-        },
-      });
-
-      console.log(
-        `[Stripe Webhook] Revoked pro access for customer ${customerId} due to payment failure:`,
-        { updatedCount: result.count },
-      );
+      await handleInvoicePaymentFailed(event.data.object as Record<string, unknown>);
       break;
     }
   }

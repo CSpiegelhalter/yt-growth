@@ -7,6 +7,7 @@
 import "server-only";
 
 import { prisma } from "@/prisma";
+
 import { CACHE_TTL_MS } from "./constants";
 
 type YouTubeSearchCacheModel = {

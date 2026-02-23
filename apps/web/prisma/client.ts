@@ -15,8 +15,8 @@ function getDatabaseUrl(): string {
     if (!url.searchParams.has("pool_timeout")) {
       url.searchParams.set("pool_timeout", "20");
     }
-    const limit = parseInt(url.searchParams.get("connection_limit") ?? "", 10);
-    if (!isNaN(limit) && limit < 3) {
+    const limit = Number.parseInt(url.searchParams.get("connection_limit") ?? "", 10);
+    if (!Number.isNaN(limit) && limit < 3) {
       url.searchParams.set("connection_limit", "3");
     }
     return url.toString();

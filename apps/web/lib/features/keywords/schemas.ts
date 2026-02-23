@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { SUPPORTED_LOCATIONS } from "@/lib/dataforseo/utils";
 
 const locationField = z

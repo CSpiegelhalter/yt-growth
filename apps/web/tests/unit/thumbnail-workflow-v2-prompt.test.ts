@@ -1,4 +1,5 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect,test } from "bun:test";
+
 import { buildThumbnailPrompt } from "@/lib/server/prompting/buildThumbnailPrompt";
 
 describe("buildThumbnailPrompt (workflow v2)", () => {

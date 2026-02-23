@@ -1,4 +1,5 @@
 import { prisma } from "@/prisma";
+
 import { ChannelError } from "../errors";
 
 const DEFAULT_PAGE_SIZE = 24;

@@ -3,15 +3,16 @@
  *
  * Pure unit tests for entitlements logic - no database required.
  */
-import { describe, it, expect } from "bun:test";
+import { describe, expect,it } from "bun:test";
+
 import {
-  getPlanFromSubscription,
-  getLimits,
-  getLimit,
   featureLocked,
+  getFeatureDisplayName,
+  getLimit,
+  getLimits,
+  getPlanFromSubscription,
   getResetAt,
   getTodayDateKey,
-  getFeatureDisplayName,
 } from "@/lib/features/subscriptions/use-cases/checkEntitlement";
 import { LIMITS } from "@/lib/shared/product";
 
@@ -133,7 +134,7 @@ describe("Entitlements Unit Tests", () => {
     it("returns a valid Date object", () => {
       const resetAt = getResetAt();
       expect(resetAt).toBeInstanceOf(Date);
-      expect(isNaN(resetAt.getTime())).toBe(false);
+      expect(Number.isNaN(resetAt.getTime())).toBe(false);
     });
   });
 
@@ -146,7 +147,7 @@ describe("Entitlements Unit Tests", () => {
     it("returns a valid date", () => {
       const key = getTodayDateKey();
       const date = new Date(key);
-      expect(isNaN(date.getTime())).toBe(false);
+      expect(Number.isNaN(date.getTime())).toBe(false);
     });
   });
 

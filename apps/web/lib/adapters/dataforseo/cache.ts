@@ -11,14 +11,16 @@
  */
 
 import "server-only";
+
 import { prisma } from "@/prisma";
-import { generateRequestHash } from "./utils";
+
 import type {
+  GoogleTrendsResponse,
+  KeywordCombinedResponse,
   KeywordOverviewResponse,
   KeywordRelatedResponse,
-  KeywordCombinedResponse,
-  GoogleTrendsResponse,
 } from "./client";
+import { generateRequestHash } from "./utils";
 import type { YouTubeSerpResponse } from "./youtube-serp";
 
 // ============================================

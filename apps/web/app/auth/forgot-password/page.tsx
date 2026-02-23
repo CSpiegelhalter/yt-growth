@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import ForgotPasswordForm from "./ForgotPasswordForm";
+
 import { BRAND } from "@/lib/shared/brand";
+
+import ForgotPasswordForm from "./ForgotPasswordForm";
 
 export const metadata: Metadata = {
   title: `Forgot Password | ${BRAND.name}`,

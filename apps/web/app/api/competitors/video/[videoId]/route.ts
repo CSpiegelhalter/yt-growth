@@ -9,20 +9,20 @@
  * Auth: Required
  * Entitlements: competitor_video_analysis (5/day FREE, 100/day PRO)
  */
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withRateLimit } from "@/lib/api/withRateLimit";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
+import {
+  analyzeVideo,
+  VideoParamsSchema,
+  VideoQuerySchema,
+} from "@/lib/features/competitors";
 import {
   checkEntitlement,
   entitlementErrorResponse,
 } from "@/lib/with-entitlements";
-import {
-  VideoParamsSchema,
-  VideoQuerySchema,
-  analyzeVideo,
-} from "@/lib/features/competitors";
 
 export const GET = createApiRoute(
   { route: "/api/competitors/video/[videoId]" },

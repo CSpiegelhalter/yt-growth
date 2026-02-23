@@ -4,14 +4,14 @@
  * Uses LLM to generate a structured channel profile from user input.
  */
 
-import { callLLM } from "@/lib/llm";
 import {
-  type ChannelProfileInput,
   type ChannelProfileAI,
   ChannelProfileAISchema,
+  type ChannelProfileInput,
   createFallbackAIProfile,
   formatInputForLLM,
 } from "@/lib/features/channels";
+import { callLLM } from "@/lib/llm";
 
 const SYSTEM_PROMPT = `You are an expert YouTube strategist and taxonomy builder. Your job is to analyze a creator's channel description and categorize it into a structured profile that can be used for:
 - Generating video ideas
@@ -88,8 +88,8 @@ export async function generateChannelProfileAI(
 
     console.log(`[generateChannelProfileAI] Generated profile: "${validated.data.nicheLabel}"`);
     return validated.data;
-  } catch (err) {
-    console.error("[generateChannelProfileAI] Error:", err);
+  } catch (error) {
+    console.error("[generateChannelProfileAI] Error:", error);
     // Return fallback on any error
     return createFallbackAIProfile(input);
   }

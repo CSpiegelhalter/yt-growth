@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
-import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
-import s from "./ideas.module.css";
-import { useToast } from "@/components/ui/Toast";
+import { usePathname,useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useCallback, useMemo,useState } from "react";
+
 import { ErrorState } from "@/components/ui/ErrorState";
+import { useToast } from "@/components/ui/Toast";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
-import { SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
+import { formatUsd,SUBSCRIPTION } from "@/lib/shared/product";
+
+import s from "./ideas.module.css";
 
 // ============================================
 // TYPES
@@ -57,6 +59,256 @@ type UsageInfo = {
 const FREE_PLAN_LIMIT = 10;
 
 // ============================================
+// HELPERS
+// ============================================
+
+function redirectToLogin(pathname: string, router: ReturnType<typeof useRouter>) {
+  const returnUrl = encodeURIComponent(pathname);
+  router.push(`/auth/login?redirect=${returnUrl}`);
+}
+
+function mergeNewIdeas(existing: VideoIdea[], incoming: VideoIdea[]): VideoIdea[] {
+  const existingTitles = new Set(existing.map((i) => i.title.toLowerCase()));
+  return incoming.filter((i) => !existingTitles.has(i.title.toLowerCase()));
+}
+
+function toUsageInfo(usage: NonNullable<GenerateResponse["usage"]>): UsageInfo {
+  return {
+    used: usage.used,
+    limit: usage.limit,
+    remaining: usage.remaining,
+    resetAt: usage.resetAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  };
+}
+
+function handleGenerateError(
+  error: unknown,
+  pathname: string,
+  router: ReturnType<typeof useRouter>,
+  setError: (msg: string) => void,
+) {
+  console.error("Generate error:", error);
+
+  if (isApiClientError(error)) {
+    if (error.status === 401) {
+      redirectToLogin(pathname, router);
+      return;
+    }
+    setError(error.message || "Failed to generate ideas");
+    return;
+  }
+
+  setError("Failed to generate ideas. Please try again.");
+}
+
+// ============================================
+// SUB-COMPONENTS
+// ============================================
+
+function IdeaCard({ idea }: { idea: VideoIdea }) {
+  return (
+    <article className={s.ideaCard}>
+      <div className={s.ideaCardHeader}>
+        <span className={`${s.formatBadge} ${idea.format === "shorts" ? s.formatBadgeShorts : ""}`}>
+          {idea.format === "shorts" ? "Short" : "Long-form"}
+        </span>
+        {idea.targetKeyword && (
+          <span className={s.keywordBadge} title="Target keyword">
+            {idea.targetKeyword}
+          </span>
+        )}
+      </div>
+      <h4 className={s.ideaCardTitle}>{idea.title}</h4>
+      {idea.hook && (
+        <p className={s.ideaCardHook}>&ldquo;{idea.hook}&rdquo;</p>
+      )}
+      {idea.whyItWins && (
+        <p className={s.ideaCardWhy}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          {idea.whyItWins}
+        </p>
+      )}
+      {idea.outline && idea.outline.length > 0 && (
+        <details className={s.outlineDetails}>
+          <summary className={s.outlineSummary}>
+            View outline ({idea.outline.length} points)
+          </summary>
+          <ul className={s.outlineList}>
+            {idea.outline.map((point, idx) => (
+              <li key={idx}>{point}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </article>
+  );
+}
+
+function IdeasForm({
+  topic, setTopic, formatPreference, loading, loadingMore,
+  isAuthenticated, isAuthLoading, hasReachedLimit, pathname,
+  onToggleShorts, onGenerate,
+}: {
+  topic: string;
+  setTopic: (v: string) => void;
+  formatPreference: string;
+  loading: boolean;
+  loadingMore: boolean;
+  isAuthenticated: boolean;
+  isAuthLoading: boolean;
+  hasReachedLimit: boolean;
+  pathname: string;
+  onToggleShorts: () => void;
+  onGenerate: () => void;
+}) {
+  const isBusy = loading || loadingMore;
+  const isDisabled = isBusy || isAuthLoading || (hasReachedLimit && isAuthenticated);
+
+  return (
+    <section className={s.toolCard}>
+      <div className={s.formSection}>
+        <div className={s.field}>
+          <label htmlFor="topic" className={s.label}>
+            What kind of videos do you want ideas for?
+          </label>
+          <textarea
+            id="topic"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="e.g., Tech reviews for budget smartphones, cooking tutorials for college students, fitness tips for busy professionals..."
+            className={s.textarea}
+            disabled={isBusy}
+            rows={3}
+            aria-describedby="topic-hint"
+          />
+          <p id="topic-hint" className={s.fieldHint}>
+            Be specific about your niche, audience, or content style for better ideas
+          </p>
+        </div>
+        <div className={s.controlsRow}>
+          <label className={s.toggleLabel}>
+            <span className={s.toggleText}>Shorts only</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={formatPreference === "shorts"}
+              className={`${s.toggle} ${formatPreference === "shorts" ? s.toggleActive : ""}`}
+              onClick={onToggleShorts}
+              disabled={isBusy}
+            >
+              <span className={s.toggleThumb} />
+            </button>
+          </label>
+          <div className={s.actionGroup}>
+            {!isAuthenticated && !isAuthLoading && (
+              <p className={s.signInHint}>
+                <Link href={`/auth/login?redirect=${encodeURIComponent(pathname)}`} className={s.signInLink}>
+                  Sign in
+                </Link>
+                {" "}to generate
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={onGenerate}
+              disabled={isDisabled}
+              className={s.generateBtn}
+            >
+              {loading ? (
+                <>
+                  <span className={s.spinner} aria-hidden="true" />
+                  Analyzing keywords...
+                </>
+              ) : (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  Generate Ideas
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function IdeasResults({
+  ideas, isAuthenticated, hasReachedLimit, hasGenerated, isFreePlan,
+  loadingMore, loading, usageInfo, onGenerateMore,
+}: {
+  ideas: VideoIdea[];
+  isAuthenticated: boolean;
+  hasReachedLimit: boolean;
+  hasGenerated: boolean;
+  isFreePlan: boolean;
+  loadingMore: boolean;
+  loading: boolean;
+  usageInfo: UsageInfo | null;
+  onGenerateMore: () => void;
+}) {
+  const showGenerateMore = isAuthenticated && !hasReachedLimit;
+  const showUpgradeBanner = isAuthenticated && hasGenerated && isFreePlan && hasReachedLimit;
+
+  return (
+    <section className={s.resultsSection}>
+      <div className={s.resultsHeader}>
+        <h3 className={s.resultsTitle}>Your Video Ideas</h3>
+        <span className={s.resultsCount}>{ideas.length} ideas</span>
+      </div>
+      <div className={s.ideaGrid}>
+        {ideas.map((idea) => (
+          <IdeaCard key={idea.id} idea={idea} />
+        ))}
+      </div>
+      {showGenerateMore && (
+        <div className={s.generateMoreArea}>
+          <button
+            type="button"
+            onClick={onGenerateMore}
+            disabled={loadingMore || loading}
+            className={s.generateMoreBtn}
+          >
+            {loadingMore ? (
+              <><span className={s.spinner} aria-hidden="true" />Generating more...</>
+            ) : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Generate More Ideas
+              </>
+            )}
+          </button>
+          {usageInfo && usageInfo.remaining > 0 && (
+            <span className={s.usageHint}>
+              {usageInfo.remaining} generation{usageInfo.remaining !== 1 ? "s" : ""} remaining today
+            </span>
+          )}
+        </div>
+      )}
+      {showUpgradeBanner && (
+        <div className={s.upgradeBanner}>
+          <div className={s.upgradeBannerContent}>
+            <h3>You&apos;ve used your daily free generations</h3>
+            <p>Upgrade to Pro for 200 generations per day, plus channel analysis and more.</p>
+          </div>
+          <a href="/api/integrations/stripe/checkout" className={s.upgradeBtn}>
+            Upgrade to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
+          </a>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ============================================
 // COMPONENT
 // ============================================
 
@@ -84,26 +336,21 @@ export function IdeasPublicClient() {
   const isAuthenticated = authStatus === "authenticated";
   const isAuthLoading = authStatus === "loading";
 
-  // Check if user has used their free generation (only for FREE users)
   const hasReachedLimit = useMemo(() => {
     if (!usageInfo) {return false;}
     return usageInfo.remaining <= 0;
   }, [usageInfo]);
 
-  // Check if user is on FREE plan (limit <= FREE_PLAN_LIMIT)
   const isFreePlan = useMemo(() => {
-    if (!usageInfo) {return true;} // Assume free until we know
+    if (!usageInfo) {return true;}
     return usageInfo.limit <= FREE_PLAN_LIMIT;
   }, [usageInfo]);
 
-  // Toggle shorts format
   const toggleShorts = useCallback(() => {
     setFormatPreference((prev) => (prev === "shorts" ? "mixed" : "shorts"));
   }, []);
 
-  // Handle generate action
   const handleGenerate = useCallback(async (isMore = false) => {
-    // Validate topic
     const trimmedTopic = topic.trim();
     if (!trimmedTopic || trimmedTopic.length < 3) {
       setError("Please describe what kind of videos you want ideas for (at least 3 characters)");
@@ -111,11 +358,7 @@ export function IdeasPublicClient() {
     }
 
     setError(null);
-    if (isMore) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
+    if (isMore) { setLoadingMore(true); } else { setLoading(true); }
 
     try {
       const response = await apiFetchJson<GenerateResponse>(
@@ -131,32 +374,19 @@ export function IdeasPublicClient() {
         }
       );
 
-      // Handle auth-on-action response
       if (response.needsAuth) {
-        const returnUrl = encodeURIComponent(pathname);
-        router.push(`/auth/login?redirect=${returnUrl}`);
+        redirectToLogin(pathname, router);
         return;
       }
 
-      // Handle upgrade required
       if (response.needsUpgrade) {
-        setUsageInfo({
-          used: 0,
-          limit: 0,
-          remaining: 0,
-          resetAt: "",
-        });
+        setUsageInfo({ used: 0, limit: 0, remaining: 0, resetAt: "" });
         setError("You've reached your daily limit. Upgrade for more generations.");
         return;
       }
 
-      // Success - update state
       if (isMore) {
-        // Append new ideas, avoiding duplicates by title
-        const existingTitles = new Set(ideas.map((i) => i.title.toLowerCase()));
-        const newIdeas = response.ideas.filter(
-          (i) => !existingTitles.has(i.title.toLowerCase())
-        );
+        const newIdeas = mergeNewIdeas(ideas, response.ideas);
         setIdeas((prev) => [...prev, ...newIdeas]);
         toast(`Generated ${newIdeas.length} more video ideas!`, "success");
       } else {
@@ -166,28 +396,10 @@ export function IdeasPublicClient() {
       }
 
       if (response.usage) {
-        setUsageInfo({
-          used: response.usage.used,
-          limit: response.usage.limit,
-          remaining: response.usage.remaining,
-          resetAt: response.usage.resetAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        });
+        setUsageInfo(toUsageInfo(response.usage));
       }
-    } catch (err) {
-      console.error("Generate error:", err);
-
-      if (isApiClientError(err)) {
-        if (err.status === 401) {
-          const returnUrl = encodeURIComponent(pathname);
-          router.push(`/auth/login?redirect=${returnUrl}`);
-          return;
-        }
-
-        setError(err.message || "Failed to generate ideas");
-        return;
-      }
-
-      setError("Failed to generate ideas. Please try again.");
+    } catch (error_) {
+      handleGenerateError(error_, pathname, router, setError);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -196,13 +408,13 @@ export function IdeasPublicClient() {
 
   // Generate more ideas
   const handleGenerateMore = useCallback(() => {
-    handleGenerate(true);
+    void handleGenerate(true);
   }, [handleGenerate]);
 
   // Handle retry
   const handleRetry = useCallback(() => {
     setError(null);
-    handleGenerate(false);
+    void handleGenerate(false);
   }, [handleGenerate]);
 
   return (
@@ -217,80 +429,19 @@ export function IdeasPublicClient() {
         </p>
       </header>
 
-      {/* Tool Card */}
-      <section className={s.toolCard}>
-        <div className={s.formSection}>
-          {/* Topic Input */}
-          <div className={s.field}>
-            <label htmlFor="topic" className={s.label}>
-              What kind of videos do you want ideas for?
-            </label>
-            <textarea
-              id="topic"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g., Tech reviews for budget smartphones, cooking tutorials for college students, fitness tips for busy professionals..."
-              className={s.textarea}
-              disabled={loading || loadingMore}
-              rows={3}
-              aria-describedby="topic-hint"
-            />
-            <p id="topic-hint" className={s.fieldHint}>
-              Be specific about your niche, audience, or content style for better ideas
-            </p>
-          </div>
-
-          {/* Controls Row: Toggle + Button */}
-          <div className={s.controlsRow}>
-            {/* Shorts Toggle */}
-            <label className={s.toggleLabel}>
-              <span className={s.toggleText}>Shorts only</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={formatPreference === "shorts"}
-                className={`${s.toggle} ${formatPreference === "shorts" ? s.toggleActive : ""}`}
-                onClick={toggleShorts}
-                disabled={loading || loadingMore}
-              >
-                <span className={s.toggleThumb} />
-              </button>
-            </label>
-
-            {/* Generate Button */}
-            <div className={s.actionGroup}>
-              {!isAuthenticated && !isAuthLoading && (
-                <p className={s.signInHint}>
-                  <Link href={`/auth/login?redirect=${encodeURIComponent(pathname)}`} className={s.signInLink}>
-                    Sign in
-                  </Link>
-                  {" "}to generate
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={() => handleGenerate(false)}
-                disabled={loading || loadingMore || isAuthLoading || (hasReachedLimit && isAuthenticated)}
-                className={s.generateBtn}
-              >
-                {loading ? (
-                  <>
-                    <span className={s.spinner} aria-hidden="true" />
-                    Analyzing keywords...
-                  </>
-                ) : (
-                  <>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                    Generate Ideas
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+      <IdeasForm
+        topic={topic}
+        setTopic={setTopic}
+        formatPreference={formatPreference}
+        loading={loading}
+        loadingMore={loadingMore}
+        isAuthenticated={isAuthenticated}
+        isAuthLoading={isAuthLoading}
+        hasReachedLimit={hasReachedLimit}
+        pathname={pathname}
+        onToggleShorts={toggleShorts}
+        onGenerate={() => handleGenerate(false)}
+      />
 
       {/* Error State */}
       {error && (
@@ -314,101 +465,18 @@ export function IdeasPublicClient() {
         </div>
       )}
 
-      {/* Results */}
       {!loading && !error && ideas.length > 0 && (
-        <section className={s.resultsSection}>
-          <div className={s.resultsHeader}>
-            <h3 className={s.resultsTitle}>Your Video Ideas</h3>
-            <span className={s.resultsCount}>{ideas.length} ideas</span>
-          </div>
-
-          <div className={s.ideaGrid}>
-            {ideas.map((idea) => (
-              <article key={idea.id} className={s.ideaCard}>
-                <div className={s.ideaCardHeader}>
-                  <span className={`${s.formatBadge} ${idea.format === "shorts" ? s.formatBadgeShorts : ""}`}>
-                    {idea.format === "shorts" ? "Short" : "Long-form"}
-                  </span>
-                  {idea.targetKeyword && (
-                    <span className={s.keywordBadge} title="Target keyword">
-                      {idea.targetKeyword}
-                    </span>
-                  )}
-                </div>
-                <h4 className={s.ideaCardTitle}>{idea.title}</h4>
-                {idea.hook && (
-                  <p className={s.ideaCardHook}>&ldquo;{idea.hook}&rdquo;</p>
-                )}
-                {idea.whyItWins && (
-                  <p className={s.ideaCardWhy}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                      <polyline points="22 4 12 14.01 9 11.01" />
-                    </svg>
-                    {idea.whyItWins}
-                  </p>
-                )}
-                {idea.outline && idea.outline.length > 0 && (
-                  <details className={s.outlineDetails}>
-                    <summary className={s.outlineSummary}>
-                      View outline ({idea.outline.length} points)
-                    </summary>
-                    <ul className={s.outlineList}>
-                      {idea.outline.map((point, idx) => (
-                        <li key={idx}>{point}</li>
-                      ))}
-                    </ul>
-                  </details>
-                )}
-              </article>
-            ))}
-          </div>
-
-          {/* Generate More Button */}
-          {isAuthenticated && !hasReachedLimit && (
-            <div className={s.generateMoreArea}>
-              <button
-                type="button"
-                onClick={handleGenerateMore}
-                disabled={loadingMore || loading}
-                className={s.generateMoreBtn}
-              >
-                {loadingMore ? (
-                  <>
-                    <span className={s.spinner} aria-hidden="true" />
-                    Generating more...
-                  </>
-                ) : (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="12" y1="5" x2="12" y2="19" />
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
-                    Generate More Ideas
-                  </>
-                )}
-              </button>
-              {usageInfo && usageInfo.remaining > 0 && (
-                <span className={s.usageHint}>
-                  {usageInfo.remaining} generation{usageInfo.remaining !== 1 ? "s" : ""} remaining today
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Upgrade Banner */}
-          {isAuthenticated && hasGenerated && isFreePlan && hasReachedLimit && (
-            <div className={s.upgradeBanner}>
-              <div className={s.upgradeBannerContent}>
-                <h3>You&apos;ve used your daily free generations</h3>
-                <p>Upgrade to Pro for 200 generations per day, plus channel analysis and more.</p>
-              </div>
-              <a href="/api/integrations/stripe/checkout" className={s.upgradeBtn}>
-                Upgrade to Pro — {formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}/{SUBSCRIPTION.PRO_INTERVAL}
-              </a>
-            </div>
-          )}
-        </section>
+        <IdeasResults
+          ideas={ideas}
+          isAuthenticated={isAuthenticated}
+          hasReachedLimit={hasReachedLimit}
+          hasGenerated={hasGenerated}
+          isFreePlan={isFreePlan}
+          loadingMore={loadingMore}
+          loading={loading}
+          usageInfo={usageInfo}
+          onGenerateMore={handleGenerateMore}
+        />
       )}
 
       {/* FAQ - More prominent, useful for both users and SEO */}

@@ -5,13 +5,14 @@
  * This eliminates flicker and removes duplicate /api/me + /api/me/channels calls.
  */
 import { redirect } from "next/navigation";
-import { cache } from "react";
 import { getServerSession } from "next-auth/next";
+import { cache } from "react";
+
 import { authOptions } from "@/lib/server/auth";
-import { prisma } from "@/prisma";
+import { CHANNEL_LIST_ORDER_BY,CHANNEL_LIST_SELECT } from "@/lib/server/channel-query";
 import { getSubscriptionStatus } from "@/lib/stripe";
-import { CHANNEL_LIST_SELECT, CHANNEL_LIST_ORDER_BY } from "@/lib/server/channel-query";
-import type { Me, Channel } from "@/types/api";
+import { prisma } from "@/prisma";
+import type { Channel,Me } from "@/types/api";
 
 type BootstrapUser = {
   id: number;
@@ -50,9 +51,9 @@ const getCurrentUserServerCached = cache(async (): Promise<BootstrapUser | null>
     const idAsNumber =
       typeof sessionUser.id === "string"
         ? Number(sessionUser.id)
-        : typeof sessionUser.id === "number"
+        : (typeof sessionUser.id === "number"
           ? sessionUser.id
-          : undefined;
+          : undefined);
 
     // Only query by ID if it's within safe integer range for the database
     if (

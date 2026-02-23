@@ -1,6 +1,7 @@
 "use client";
 
-import { Text, Rect, Group } from "react-konva";
+import { Group,Rect, Text } from "react-konva";
+
 import type { TextObject } from "../types";
 
 interface TextLayerProps {

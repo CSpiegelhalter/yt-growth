@@ -5,20 +5,20 @@
    ===================================== */
 
 .tag {
-  position: relative;
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 20px;
   background: transparent;
+  border-radius: 20px;
+  color: var(--text);
+  display: inline-flex;
   font-family: var(--font-sans);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
-  color: var(--text);
-  white-space: nowrap;
+  height: 40px;
   isolation: isolate;
+  justify-content: center;
+  padding: 0 16px;
+  position: relative;
+  white-space: nowrap;
 }
 
 /*
@@ -27,19 +27,19 @@
  * then ::after masks the interior to keep bg transparent.
  */
 .tag::before {
-  content: "";
-  position: absolute;
-  inset: 0;
   border-radius: 20px;
+  content: "";
+  inset: 0;
+  position: absolute;
   z-index: -2;
 }
 
 .tag::after {
-  content: "";
-  position: absolute;
-  inset: 2px;
-  border-radius: 18px;
   background: var(--bg, #fafafa);
+  border-radius: 18px;
+  content: "";
+  inset: 2px;
+  position: absolute;
   z-index: -1;
 }
 

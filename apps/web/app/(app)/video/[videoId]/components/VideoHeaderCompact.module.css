@@ -5,14 +5,14 @@
 }
 
 .backLink {
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  color: var(--color-text-muted);
+  display: inline-flex;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--color-text-muted);
-  text-decoration: none;
+  gap: 6px;
   margin-bottom: 16px;
+  text-decoration: none;
   transition: color 0.15s;
 }
 
@@ -21,10 +21,10 @@
 }
 
 .headerMain {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 16px;
   align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: auto 1fr;
   margin-bottom: 16px;
 }
 
@@ -33,12 +33,12 @@
 }
 
 .engagementStatLarge {
-  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  color: var(--color-text);
+  display: inline-flex;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--color-text);
+  gap: 5px;
 }
 
 .engagementStatLarge svg {
@@ -46,15 +46,15 @@
 }
 
 .thumbnail {
-  position: relative;
-  width: 100px;
   aspect-ratio: 16 / 9;
+  background: var(--color-surface-2);
   border-radius: 8px;
   overflow: hidden;
-  background: var(--color-surface-2);
+  position: relative;
+  width: 100px;
 }
 
-@media (min-width: 640px) {
+@media (width >= 640px) {
   .thumbnail {
     width: 120px;
   }
@@ -65,24 +65,24 @@
 }
 
 .thumbnailPlaceholder {
-  display: flex;
   align-items: center;
+  color: var(--color-text-muted);
+  display: flex;
+  height: 100%;
   justify-content: center;
   width: 100%;
-  height: 100%;
-  color: var(--color-text-muted);
 }
 
 .duration {
-  position: absolute;
+  background: rgb(0 0 0 / 80%);
+  border-radius: 4px;
   bottom: 4px;
-  right: 4px;
-  padding: 2px 5px;
+  color: white;
   font-size: 0.6875rem;
   font-weight: 600;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  border-radius: 4px;
+  padding: 2px 5px;
+  position: absolute;
+  right: 4px;
 }
 
 .titleSection {
@@ -90,8 +90,8 @@
 }
 
 .titleLink {
-  text-decoration: none;
   display: block;
+  text-decoration: none;
 }
 
 .titleLink:hover .title {
@@ -99,32 +99,32 @@
 }
 
 .title {
+  -webkit-box-orient: vertical;
+  color: var(--color-text);
+  display: -webkit-box;
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--color-text);
+  -webkit-line-clamp: 2;
   line-height: 1.35;
   margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
   transition: color 0.15s;
 }
 
-@media (min-width: 640px) {
+@media (width >= 640px) {
   .title {
     font-size: 1.25rem;
   }
 }
 
 .meta {
-  display: flex;
   align-items: center;
+  color: var(--color-text-muted);
+  display: flex;
   flex-wrap: wrap;
+  font-size: 0.8125rem;
   gap: 4px;
   margin-top: 6px;
-  font-size: 0.8125rem;
-  color: var(--color-text-muted);
 }
 
 .metaDot {
@@ -133,22 +133,22 @@
 
 /* KPI Strip */
 .kpiStrip {
-  display: flex;
-  gap: 1px;
   background: var(--color-border);
   border-radius: 10px;
+  display: flex;
+  gap: 1px;
   overflow: hidden;
 }
 
 .kpi {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 12px 8px;
   background: var(--color-surface);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
+  padding: 12px 8px;
 }
 
 .kpi:first-child {
@@ -160,32 +160,32 @@
 }
 
 .kpiValue {
+  color: var(--color-text);
   font-size: 1rem;
   font-weight: 700;
-  color: var(--color-text);
   white-space: nowrap;
 }
 
-@media (min-width: 480px) {
+@media (width >= 480px) {
   .kpiValue {
     font-size: 1.125rem;
   }
 }
 
 .kpiLabel {
+  color: var(--color-text-muted);
   font-size: 0.6875rem;
   font-weight: 500;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
   letter-spacing: 0.02em;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .kpiStrip {
     flex-wrap: wrap;
   }
@@ -209,8 +209,8 @@
   }
   
   .kpi:last-child:nth-child(even) {
+    border-radius: 0 0 10px;
     flex: 1 1 calc(50% - 0.5px);
-    border-radius: 0 0 10px 0;
   }
 }
 
@@ -218,54 +218,54 @@
 .kpiRating {
   font-size: 0.625rem;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.02em;
   margin-top: 2px;
+  text-transform: uppercase;
 }
 
 /* Tooltip */
 .tooltip {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 260px;
-  padding: 12px 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 100;
+  box-shadow: 0 4px 20px rgb(0 0 0 / 15%);
+  left: 50%;
+  padding: 12px 14px;
+  position: absolute;
   text-align: left;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  width: 260px;
+  z-index: 100;
 }
 
 .tooltipTitle {
+  color: var(--color-text);
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--color-text);
   margin-bottom: 6px;
 }
 
 .tooltipDesc {
-  font-size: 0.75rem;
   color: var(--color-text-secondary);
+  font-size: 0.75rem;
   line-height: 1.45;
   margin: 0 0 10px;
 }
 
 .tooltipBenchmarks {
+  background: var(--color-surface-2);
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px 10px;
-  background: var(--color-surface-2);
-  border-radius: 6px;
   margin-bottom: 8px;
+  padding: 8px 10px;
 }
 
 .tooltipBenchmark {
-  font-size: 0.6875rem;
   color: var(--color-text-secondary);
+  font-size: 0.6875rem;
 }
 
 .tooltipBenchmark span {
@@ -274,9 +274,9 @@
 }
 
 .tooltipNote {
-  font-size: 0.6875rem;
   color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  font-style: italic;
   line-height: 1.4;
   margin: 0;
-  font-style: italic;
 }

@@ -1,10 +1,10 @@
+import { AppShellServer } from "@/components/navigation/AppShellServer";
 import {
   getAppBootstrapOptional,
-  normalizePlan,
-  isAdminEmail,
   GUEST_SHELL_PROPS,
+  isAdminEmail,
+  normalizePlan,
 } from "@/lib/server/bootstrap";
-import { AppShellServer } from "@/components/navigation/AppShellServer";
 import { getFilteredNavItems } from "@/lib/server/nav-config.server";
 
 /**

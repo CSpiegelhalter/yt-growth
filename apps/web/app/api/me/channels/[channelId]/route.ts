@@ -6,12 +6,13 @@
  *
  * Auth: Required
  */
+import { z } from "zod";
+
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
-import { z } from "zod";
-import { getChannel, deleteChannel } from "@/lib/features/channels";
+import { deleteChannel,getChannel } from "@/lib/features/channels";
 
 const ChannelParamsSchema = z.object({
   channelId: z.string().min(1),

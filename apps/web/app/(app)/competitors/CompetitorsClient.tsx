@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { SearchIcon, AlertCircleIcon } from "@/components/icons";
-import s from "./style.module.css";
-import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
-import type { Me, Channel, CompetitorVideo } from "@/types/api";
-import CompetitorSearchPanel from "./CompetitorSearchPanel";
-import CompetitorFilters, {
-  type FilterState,
-  DEFAULT_FILTER_STATE,
-} from "./CompetitorFilters";
-import CompetitorResultsStream from "./CompetitorResultsStream";
+import { useCallback, useEffect, useMemo, useRef,useState } from "react";
+
 import { ProfileTip } from "@/components/dashboard/ProfileTip";
 import { LockedFeatureGate } from "@/components/features/LockedFeatureGate";
+import { AlertCircleIcon,SearchIcon } from "@/components/icons";
+import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
+import type { Channel, CompetitorVideo,Me } from "@/types/api";
+
+import CompetitorFilters, {
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+} from "./CompetitorFilters";
+import CompetitorResultsStream from "./CompetitorResultsStream";
+import CompetitorSearchPanel from "./CompetitorSearchPanel";
+import s from "./style.module.css";
 
 type Props = {
   initialMe: Me;

@@ -85,9 +85,9 @@ export function createLogger(baseFields?: LogFields): Logger {
       const normalized =
         err instanceof Error
           ? { name: err.name, message: err.message, stack: err.stack }
-          : err
+          : (err
           ? { message: String(err) }
-          : undefined;
+          : undefined);
       emit("error", message, { ...baseFields, ...fields, err: normalized });
     },
   };

@@ -5,11 +5,11 @@
  * Body: { listType?, filters?, queryText?, cursor?, limit? }
  */
 
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withRateLimit } from "@/lib/api/withRateLimit";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
 import { DiscoverBodySchema, discoverCompetitors } from "@/lib/features/competitors";
 
 export const POST = createApiRoute(

@@ -1,13 +1,55 @@
 import type { NextRequest } from "next/server";
+
 import { logger } from "@/lib/shared/logger";
-import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
-import { jsonError } from "./response";
+
 import type { ApiErrorCode } from "./errors";
+import { jsonError } from "./response";
+import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
 
 type LegacyErrorBody = {
   error?: string | { code?: string; requestId?: string; message?: string };
   message?: string;
 };
+
+// ─── Extracted helpers ────────────────────────────────────────
+
+const STATUS_TO_CODE: Partial<Record<number, ApiErrorCode>> = {
+  400: "VALIDATION_ERROR",
+  401: "UNAUTHORIZED",
+  403: "FORBIDDEN",
+  404: "NOT_FOUND",
+  429: "RATE_LIMITED",
+};
+
+function codeFromStatus(status: number): ApiErrorCode {
+  return STATUS_TO_CODE[status] ?? "INTERNAL";
+}
+
+const LEGACY_LIMIT_ERRORS = new Set([
+  "limit_reached",
+  "upgrade_required",
+  "channel_limit_reached",
+]);
+
+const LEGACY_ERROR_LABELS: Record<string, string> = {
+  limit_reached: "Limit reached",
+  upgrade_required: "Upgrade required",
+  channel_limit_reached: "Channel limit reached",
+};
+
+function resolveLegacyMessage(
+  legacyError: string | undefined,
+  bodyObj: LegacyErrorBody | undefined,
+): string {
+  if (legacyError && LEGACY_ERROR_LABELS[legacyError]) {
+    return LEGACY_ERROR_LABELS[legacyError];
+  }
+  if (typeof bodyObj?.message === "string") {return bodyObj.message;}
+  if (typeof legacyError === "string") {return legacyError;}
+  return "Request failed";
+}
+
+// ─── Middleware ────────────────────────────────────────────────
 
 export function withLogging<P>(handler: ApiHandler<P>): ApiHandler<P> {
   return async (
@@ -55,37 +97,12 @@ export function withLogging<P>(handler: ApiHandler<P>): ApiHandler<P> {
           const legacyError =
             typeof maybeErrObj === "string" ? maybeErrObj : undefined;
 
-          const codeFromStatus = (status: number): ApiErrorCode => {
-            if (status === 400) {return "VALIDATION_ERROR";}
-            if (status === 401) {return "UNAUTHORIZED";}
-            if (status === 403) {return "FORBIDDEN";}
-            if (status === 404) {return "NOT_FOUND";}
-            if (status === 429) {return "RATE_LIMITED";}
-            if (status >= 500) {return "INTERNAL";}
-            return "INTERNAL";
-          };
+          const code =
+            legacyError && LEGACY_LIMIT_ERRORS.has(legacyError)
+              ? ("LIMIT_REACHED" as ApiErrorCode)
+              : codeFromStatus(res.status);
 
-          let code = codeFromStatus(res.status);
-          if (
-            legacyError === "limit_reached" ||
-            legacyError === "upgrade_required" ||
-            legacyError === "channel_limit_reached"
-          ) {
-            code = "LIMIT_REACHED";
-          }
-
-          const message =
-            legacyError === "limit_reached"
-              ? "Limit reached"
-              : legacyError === "upgrade_required"
-              ? "Upgrade required"
-              : legacyError === "channel_limit_reached"
-              ? "Channel limit reached"
-              : typeof bodyObj?.message === "string"
-              ? bodyObj.message
-              : typeof legacyError === "string"
-              ? legacyError
-              : "Request failed";
+          const message = resolveLegacyMessage(legacyError, bodyObj);
 
           return jsonError({
             status: res.status,

@@ -7,11 +7,13 @@
  */
 
 import Link from "next/link";
+
 import { BRAND } from "@/lib/shared/brand";
+
 import { LEARN_ARTICLES } from "../../articles";
+import { ArticleCta } from "./_ArticleCta";
 import type { BodyProps } from "./_shared";
 import { articleExports } from "./_shared";
-import { ArticleCta } from "./_ArticleCta";
 
 export const { meta, toc } = articleExports(LEARN_ARTICLES["youtube-retention-analysis"]);
 

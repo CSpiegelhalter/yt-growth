@@ -1,8 +1,9 @@
 "use client";
 
-import s from "./style.module.css";
-import type { Me } from "@/types/api";
 import { LIMITS } from "@/lib/shared/product";
+import type { Me } from "@/types/api";
+
+import s from "./style.module.css";
 
 function Stat({
   label,
@@ -108,6 +109,88 @@ function UsageBar({
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Extracted helpers to reduce cyclomatic complexity                  */
+/* ------------------------------------------------------------------ */
+
+function getProStatus(me: Me | null): boolean {
+  const plan = me?.plan ?? "";
+  const isActive = me?.subscription?.isActive ?? false;
+  return plan.toLowerCase() === "pro" && isActive;
+}
+
+function getDisplayValues(me: Me | null) {
+  return {
+    email: me?.email || "—",
+    displayPlan: me?.plan || "free",
+    status: me?.status || "—",
+    statusTone: (me?.status === "active" ? "ok" : "warn") as "ok" | "warn",
+    usage: me?.usage ?? null,
+    resetAt: me?.resetAt,
+  };
+}
+
+type UsageBucket = { used: number; limit: number } | undefined | null;
+
+function bucketUsed(bucket: UsageBucket, fallbackLimit: number) {
+  return {
+    used: bucket?.used ?? 0,
+    limit: bucket?.limit ?? fallbackLimit,
+  };
+}
+
+function DailyUsageSection({
+  usage,
+  resetAt,
+}: {
+  usage: NonNullable<Me["usage"]>;
+  resetAt?: string;
+}) {
+  const videoAnalysis = bucketUsed(usage.owned_video_analysis, 5);
+  const competitorAnalysis = bucketUsed(usage.competitor_video_analysis, 5);
+  const ideaGen = bucketUsed(usage.idea_generate, 10);
+  const channelSync = bucketUsed(usage.channel_sync, 3);
+
+  return (
+    <div style={{ gridColumn: "1 / -1", marginTop: "16px" }}>
+      <h4
+        style={{
+          fontSize: "0.875rem",
+          fontWeight: 600,
+          color: "#374151",
+          marginBottom: "12px",
+        }}
+      >
+        Today&apos;s Usage
+      </h4>
+      <UsageBar label="Video Analyses" used={videoAnalysis.used} limit={videoAnalysis.limit} />
+      <UsageBar label="Competitor Analyses" used={competitorAnalysis.used} limit={competitorAnalysis.limit} />
+      <UsageBar label="Idea Generations" used={ideaGen.used} limit={ideaGen.limit} />
+      <UsageBar label="Channel Syncs" used={channelSync.used} limit={channelSync.limit} />
+      {resetAt && (
+        <p
+          style={{
+            fontSize: "0.75rem",
+            color: "#9ca3af",
+            marginTop: "8px",
+          }}
+        >
+          Resets at{" "}
+          {new Date(resetAt).toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            timeZoneName: "short",
+          })}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main component                                                    */
+/* ------------------------------------------------------------------ */
+
 export default function AccountStats({
   me,
   channelCount,
@@ -115,82 +198,28 @@ export default function AccountStats({
   me: Me | null;
   channelCount: number;
 }>) {
-  const usage = me?.usage;
-  const isPro = (me?.plan ?? "").toLowerCase() === "pro" && (me?.subscription?.isActive ?? false);
+  const { email, displayPlan, status, statusTone, usage, resetAt } =
+    getDisplayValues(me);
+  const isPro = getProStatus(me);
   const maxChannels = isPro
     ? LIMITS.PRO_MAX_CONNECTED_CHANNELS
     : LIMITS.FREE_MAX_CONNECTED_CHANNELS;
 
   return (
     <div className={s.grid}>
-      <Stat label="Email" value={me?.email || "—"} />
+      <Stat label="Email" value={email} />
       <div className={s.stat}>
         <div className={s.statLabel}>Plan</div>
         <div className={s.statValue}>
-          <PlanBadge plan={me?.plan || "free"} />
+          <PlanBadge plan={displayPlan} />
         </div>
       </div>
-      <Stat
-        label="Status"
-        value={me?.status || "—"}
-        tone={me?.status === "active" ? "ok" : "warn"}
-      />
+      <Stat label="Status" value={status} tone={statusTone} />
       <Stat
         label="Channels Used"
         value={`${channelCount}/${maxChannels}`}
       />
-
-      {/* Daily Usage Section */}
-      {usage && (
-        <div style={{ gridColumn: "1 / -1", marginTop: "16px" }}>
-          <h4
-            style={{
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              color: "#374151",
-              marginBottom: "12px",
-            }}
-          >
-            Today's Usage
-          </h4>
-          <UsageBar
-            label="Video Analyses"
-            used={usage.owned_video_analysis?.used ?? 0}
-            limit={usage.owned_video_analysis?.limit ?? 5}
-          />
-          <UsageBar
-            label="Competitor Analyses"
-            used={usage.competitor_video_analysis?.used ?? 0}
-            limit={usage.competitor_video_analysis?.limit ?? 5}
-          />
-          <UsageBar
-            label="Idea Generations"
-            used={usage.idea_generate?.used ?? 0}
-            limit={usage.idea_generate?.limit ?? 10}
-          />
-          <UsageBar
-            label="Channel Syncs"
-            used={usage.channel_sync?.used ?? 0}
-            limit={usage.channel_sync?.limit ?? 3}
-          />
-          {me?.resetAt && (
-            <p
-              style={{
-                fontSize: "0.75rem",
-                color: "#9ca3af",
-                marginTop: "8px",
-              }}
-            >
-              Resets at{" "}
-              {new Date(me.resetAt).toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                timeZoneName: "short",
-              })}
-            </p>
-          )}
-        </div>
-      )}
+      {usage && <DailyUsageSection usage={usage} resetAt={resetAt} />}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+
 import s from "./style.module.css";
 
 type Usage = {
@@ -20,6 +21,22 @@ type Usage = {
   quotaExceededSeen?: boolean;
   error?: string;
 };
+
+type ApiErrorBody = {
+  error?: string | { message?: string; requestId?: string };
+  details?: { error?: string };
+};
+
+function buildUsageApiError(body: ApiErrorBody, status: number, headers: Headers): string {
+  const err = body?.error;
+  const msg =
+    (typeof err === "object" ? err?.message : null) ??
+    body?.details?.error ??
+    (typeof err === "string" ? err : null) ??
+    `Request failed (${status})`;
+  const rid = (typeof err === "object" ? err?.requestId : null) ?? headers.get("x-request-id");
+  return rid ? `${String(msg)} (requestId: ${rid})` : String(msg);
+}
 
 function sortEntries<T extends { calls: number; estimatedUnits: number }>(
   obj: Record<string, T>
@@ -44,19 +61,13 @@ export default function AdminYoutubeUsageClient() {
     try {
       const res = await fetch("/api/dev/youtube-usage", { cache: "no-store" });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const msg =
-          body?.error?.message ??
-          body?.details?.error ??
-          body?.error ??
-          `Request failed (${res.status})`;
-        const rid = body?.error?.requestId ?? res.headers.get("x-request-id");
-        throw new Error(rid ? `${msg} (requestId: ${rid})` : msg);
+        const body: ApiErrorBody = await res.json().catch(() => ({}));
+        throw new Error(buildUsageApiError(body, res.status, res.headers));
       }
       const json = (await res.json()) as Usage;
       setData(json);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -71,8 +82,8 @@ export default function AdminYoutubeUsageClient() {
       });
       if (!res.ok) {throw new Error("Reset failed");}
       await fetchData();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Reset failed");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Reset failed");
     } finally {
       setLoading(false);
     }
@@ -91,22 +102,22 @@ export default function AdminYoutubeUsageClient() {
       if (!res.ok) {throw new Error("Clear cache failed");}
       const json = await res.json();
       alert(`Cleared: ${json.cleared?.join(", ") || "none"}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Clear cache failed");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Clear cache failed");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
      
   }, []);
 
   useEffect(() => {
     if (!autoRefresh) {return;}
     const id = setInterval(() => {
-      fetchData();
+      void fetchData();
     }, 2000);
     return () => clearInterval(id);
      
@@ -154,126 +165,124 @@ export default function AdminYoutubeUsageClient() {
 
       {error && <div className={s.error}>{error}</div>}
 
-      <div className={s.cards}>
-        <div className={s.card}>
-          <div className={s.cardLabel}>Total calls</div>
-          <div className={s.cardValue}>{data?.totalCalls ?? "-"}</div>
-          <div className={s.muted}>
-            Source: {data?.source ?? "-"}
-            {data?.window ? ` · Window: ${data.window}` : ""}
-          </div>
-        </div>
-        <div className={s.card}>
-          <div className={s.cardLabel}>Estimated quota units</div>
-          <div className={s.cardValue}>{data?.totalEstimatedUnits ?? "-"}</div>
-          <div className={s.muted}>
-            search.list≈100, most others≈1 (rough estimate)
-          </div>
-        </div>
-        <div className={s.card}>
-          <div className={s.cardLabel}>Quota exceeded seen</div>
-          <div className={s.cardValue}>
-            {data?.quotaExceededSeen ? "Yes" : "No"}
-          </div>
-          <div className={s.muted}>
-            Whether any Google API calls returned a 403 quotaExceeded error.
-          </div>
-        </div>
-      </div>
-
-      <div className={s.grid2}>
-        <section className={s.section}>
-          <h2 className={s.sectionTitle}>By host</h2>
-          <table className={s.table}>
-            <thead>
-              <tr>
-                <th>Host</th>
-                <th>Calls</th>
-                <th>Units</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hostRows.slice(0, 25).map(([host, v]) => (
-                <tr key={host}>
-                  <td className={s.mono}>{host}</td>
-                  <td>{v.calls}</td>
-                  <td>{v.estimatedUnits}</td>
-                </tr>
-              ))}
-              {hostRows.length === 0 && (
-                <tr>
-                  <td colSpan={3} className={s.muted}>
-                    No data yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </section>
-
-        <section className={s.section}>
-          <h2 className={s.sectionTitle}>By path</h2>
-          <table className={s.table}>
-            <thead>
-              <tr>
-                <th>Path</th>
-                <th>Calls</th>
-                <th>Units</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pathRows.slice(0, 25).map(([path, v]) => (
-                <tr key={path}>
-                  <td className={s.mono}>{path}</td>
-                  <td>{v.calls}</td>
-                  <td>{v.estimatedUnits}</td>
-                </tr>
-              ))}
-              {pathRows.length === 0 && (
-                <tr>
-                  <td colSpan={3} className={s.muted}>
-                    No data yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </section>
-      </div>
-
-      <section className={s.section} style={{ marginTop: 12 }}>
-        <h2 className={s.sectionTitle}>Recent calls</h2>
-        <table className={s.table}>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Status</th>
-              <th>Units</th>
-              <th>URL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(data?.lastCalls ?? []).map((c, idx) => (
-              <tr key={`${c.at}-${idx}`}>
-                <td className={s.mono}>{c.at}</td>
-                <td>{String(c.status)}</td>
-                <td>{c.estimatedUnits}</td>
-                <td className={s.mono}>{c.url}</td>
-              </tr>
-            ))}
-            {(data?.lastCalls ?? []).length === 0 && (
-              <tr>
-                <td colSpan={4} className={s.muted}>
-                  No calls recorded yet. Navigate around the app to generate
-                  traffic.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
+      <UsageSummaryCards data={data} />
+      <UsageBreakdownTables hostRows={hostRows} pathRows={pathRows} />
+      <RecentCallsTable calls={data?.lastCalls ?? []} />
     </main>
   );
 }
 
+function UsageSummaryCards({ data }: { data: Usage | null }) {
+  return (
+    <div className={s.cards}>
+      <div className={s.card}>
+        <div className={s.cardLabel}>Total calls</div>
+        <div className={s.cardValue}>{data?.totalCalls ?? "-"}</div>
+        <div className={s.muted}>
+          Source: {data?.source ?? "-"}
+          {data?.window ? ` · Window: ${data.window}` : ""}
+        </div>
+      </div>
+      <div className={s.card}>
+        <div className={s.cardLabel}>Estimated quota units</div>
+        <div className={s.cardValue}>{data?.totalEstimatedUnits ?? "-"}</div>
+        <div className={s.muted}>
+          search.list≈100, most others≈1 (rough estimate)
+        </div>
+      </div>
+      <div className={s.card}>
+        <div className={s.cardLabel}>Quota exceeded seen</div>
+        <div className={s.cardValue}>
+          {data?.quotaExceededSeen ? "Yes" : "No"}
+        </div>
+        <div className={s.muted}>
+          Whether any Google API calls returned a 403 quotaExceeded error.
+        </div>
+      </div>
+    </div>
+  );
+}
 
+function UsageBreakdownTables({
+  hostRows,
+  pathRows,
+}: {
+  hostRows: [string, { calls: number; estimatedUnits: number }][];
+  pathRows: [string, { calls: number; estimatedUnits: number }][];
+}) {
+  return (
+    <div className={s.grid2}>
+      <section className={s.section}>
+        <h2 className={s.sectionTitle}>By host</h2>
+        <table className={s.table}>
+          <thead>
+            <tr><th>Host</th><th>Calls</th><th>Units</th></tr>
+          </thead>
+          <tbody>
+            {hostRows.slice(0, 25).map(([host, v]) => (
+              <tr key={host}>
+                <td className={s.mono}>{host}</td>
+                <td>{v.calls}</td>
+                <td>{v.estimatedUnits}</td>
+              </tr>
+            ))}
+            {hostRows.length === 0 && (
+              <tr><td colSpan={3} className={s.muted}>No data yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </section>
+
+      <section className={s.section}>
+        <h2 className={s.sectionTitle}>By path</h2>
+        <table className={s.table}>
+          <thead>
+            <tr><th>Path</th><th>Calls</th><th>Units</th></tr>
+          </thead>
+          <tbody>
+            {pathRows.slice(0, 25).map(([path, v]) => (
+              <tr key={path}>
+                <td className={s.mono}>{path}</td>
+                <td>{v.calls}</td>
+                <td>{v.estimatedUnits}</td>
+              </tr>
+            ))}
+            {pathRows.length === 0 && (
+              <tr><td colSpan={3} className={s.muted}>No data yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </section>
+    </div>
+  );
+}
+
+function RecentCallsTable({ calls }: { calls: Usage["lastCalls"] }) {
+  return (
+    <section className={s.section} style={{ marginTop: 12 }}>
+      <h2 className={s.sectionTitle}>Recent calls</h2>
+      <table className={s.table}>
+        <thead>
+          <tr><th>Time</th><th>Status</th><th>Units</th><th>URL</th></tr>
+        </thead>
+        <tbody>
+          {calls.map((c, idx) => (
+            <tr key={`${c.at}-${idx}`}>
+              <td className={s.mono}>{c.at}</td>
+              <td>{String(c.status)}</td>
+              <td>{c.estimatedUnits}</td>
+              <td className={s.mono}>{c.url}</td>
+            </tr>
+          ))}
+          {calls.length === 0 && (
+            <tr>
+              <td colSpan={4} className={s.muted}>
+                No calls recorded yet. Navigate around the app to generate traffic.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </section>
+  );
+}

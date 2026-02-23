@@ -1,8 +1,9 @@
 "use client";
 
-import styles from "./panels.module.css";
-import { InsightCard } from "../ui";
 import { formatCompactRounded as formatCompact } from "@/lib/shared/format";
+
+import { InsightCard } from "../ui";
+import styles from "./panels.module.css";
 
 type TrafficSourceBreakdown = {
   browse: number | null;
@@ -154,7 +155,7 @@ export function TrafficSourcePanel({
           Browse + Suggested should be ~60%+ of traffic
         </span>
         <span
-          className={`${styles.trafficTargetStatus} ${browseAndSuggested >= 60 ? styles.good : browseAndSuggested >= 40 ? styles.fair : styles.low}`}
+          className={`${styles.trafficTargetStatus} ${browseAndSuggested >= 60 ? styles.good : (browseAndSuggested >= 40 ? styles.fair : styles.low)}`}
         >
           Currently: {browseAndSuggested.toFixed(0)}%
         </span>

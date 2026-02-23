@@ -26,7 +26,7 @@ export function getLastOAuthAttempt(): number | null {
   try {
     const raw = window.sessionStorage.getItem(STORAGE_KEY);
     if (raw === null) {return null;}
-    const ts = parseInt(raw, 10);
+    const ts = Number.parseInt(raw, 10);
     return Number.isFinite(ts) ? ts : null;
   } catch {
     return null;

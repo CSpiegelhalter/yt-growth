@@ -16,6 +16,16 @@
     "start": "next start",
     "css:unused:report": "bun run scripts/find-unused-css-modules.ts",
     "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix --max-warnings=0",
+    "check": "bun run check:types && bun run check:lint && bun run check:css && bun run check:build",
+    "check:types": "rm -rf .next/types && tsc --noEmit",
+    "check:lint": "eslint . --max-warnings=0",
+    "check:css": "stylelint '**/*.module.css'",
+    "check:css:fix": "stylelint '**/*.module.css' --fix",
+    "check:build": "rm -rf .next && next build",
+    "check:deps": "bunx knip --config ../../knip.json && bunx madge --circular --extensions ts,tsx,js,jsx app lib && bunx depcruise --config ../../dependency-cruiser.js --output-type err-long .",
+    "check:dupes": "bunx jscpd . --pattern '**/*.{ts,tsx}' --min-lines 8 --min-tokens 70",
+    "analyze": "ANALYZE=true next build",
     "db:up": "docker compose -f ../../docker-compose.yml up -d",
     "db:down": "docker compose -f ../../docker-compose.yml down",
     "db:reset": "docker compose -f ../../docker-compose.yml down -v && docker compose -f ../../docker-compose.yml up -d && sleep 3 && bunx prisma migrate reset --force",
@@ -64,6 +74,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.1.6",
     "@playwright/test": "^1.48.0",
     "@types/bcryptjs": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.10",
@@ -75,9 +86,18 @@
     "bun-types": "^1.2.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.0.0",
+    "eslint-plugin-import-x": "^4.16.1",
+    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unicorn": "^63.0.0",
     "eslint-plugin-unused-imports": "^4.3.0",
+    "stylelint": "^17.3.0",
+    "stylelint-config-css-modules": "^4.6.0",
+    "stylelint-config-standard": "^40.0.0",
+    "stylelint-order": "^7.0.1",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
+    "typescript-eslint": "^8.56.0",
     "vitest": "^2.1.0"
   }
 }

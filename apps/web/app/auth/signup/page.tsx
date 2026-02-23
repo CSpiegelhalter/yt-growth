@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import SignupForm from "./SignupForm";
+
 import { BRAND } from "@/lib/shared/brand";
+
+import SignupForm from "./SignupForm";
 
 export const metadata: Metadata = {
   title: `Create Account | ${BRAND.name}`,

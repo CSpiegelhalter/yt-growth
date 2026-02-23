@@ -12,7 +12,7 @@
  */
 export function formatCompact(num: number): string {
   if (num >= 1_000_000) {return `${(num / 1_000_000).toFixed(1)}M`;}
-  if (num >= 1_000) {return `${(num / 1_000).toFixed(1)}K`;}
+  if (num >= 1000) {return `${(num / 1000).toFixed(1)}K`;}
   return String(num);
 }
 
@@ -22,7 +22,7 @@ export function formatCompact(num: number): string {
  */
 export function formatCompactRounded(num: number): string {
   if (num >= 1_000_000) {return `${(num / 1_000_000).toFixed(1)}M`;}
-  if (num >= 1_000) {return `${(num / 1_000).toFixed(1)}K`;}
+  if (num >= 1000) {return `${(num / 1000).toFixed(1)}K`;}
   return num.toFixed(0);
 }
 
@@ -38,8 +38,8 @@ export function formatCompactFloored(num: number): string {
     const floored = Math.floor(scaled * 10) / 10;
     return `${floored.toFixed(1)}M`;
   }
-  if (num >= 1_000) {
-    const scaled = num / 1_000;
+  if (num >= 1000) {
+    const scaled = num / 1000;
     const floored = Math.floor(scaled * 10) / 10;
     return `${floored.toFixed(1)}K`;
   }

@@ -5,8 +5,8 @@
  */
 
 import type {
-  BadgeDef,
   BadgeCategory,
+  BadgeDef,
   DefaultGoal,
 } from "./types";
 
@@ -587,7 +587,7 @@ export const DEFAULT_GOALS: DefaultGoal[] = [
     category: "reach",
     badgeIds: ["10k-channel-views"],
     metricKey: "views",
-    target: 10000,
+    target: 10_000,
     window: "lifetime",
     requiredMetrics: ["views"],
     unit: "views",

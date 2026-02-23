@@ -4,7 +4,7 @@
  * Verifies that marketing page CTAs correctly link to /dashboard
  * and that the logged-out dashboard preview is accessible.
  */
-import { test, expect } from "@playwright/test";
+import { expect,test } from "@playwright/test";
 
 test.describe("Marketing CTAs - Dashboard Preview Flow", () => {
   test("homepage primary CTA links to /dashboard", async ({ page }) => {
@@ -15,7 +15,7 @@ test.describe("Marketing CTAs - Dashboard Preview Flow", () => {
     // Find the primary CTA button (should say "Open Dashboard Preview" for logged-out users)
     // Wait for the auth-aware CTAs to load (they fetch /api/me first)
     const primaryCta = page.locator('a[href="/dashboard"]').first();
-    await expect(primaryCta).toBeVisible({ timeout: 10000 });
+    await expect(primaryCta).toBeVisible({ timeout: 10_000 });
 
     // Click the primary CTA
     await primaryCta.click();

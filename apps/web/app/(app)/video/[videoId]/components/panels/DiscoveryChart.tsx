@@ -2,17 +2,19 @@
 
 import { useMemo } from "react";
 import {
-  AreaChart,
   Area,
-  XAxis,
-  YAxis,
+  AreaChart,
   ResponsiveContainer,
   Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
+
 import { ViewsGradientDef } from "@/components/ui/ChartGradients";
-import styles from "./panels.module.css";
-import { InsightCard } from "../ui";
 import { formatCompactRounded as formatCompact } from "@/lib/shared/format";
+
+import { InsightCard } from "../ui";
+import styles from "./panels.module.css";
 
 type DailySeries = {
   date: string;
@@ -162,7 +164,7 @@ export function DiscoveryChart({
                       ? [value.toLocaleString(), "Views"]
                       : ["–", "Views"]
                   }
-                  labelFormatter={(label) => String(label)}
+                  labelFormatter={String}
                   cursor={{
                     stroke: "var(--color-border)",
                     strokeDasharray: "4",

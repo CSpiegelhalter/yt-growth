@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
+
+import { FaqSection } from "@/components/ui/FaqSection";
+import { CONTACT_CONTENT } from "@/lib/content/contact";
 import { authOptions } from "@/lib/server/auth";
 import { BRAND } from "@/lib/shared/brand";
-import { CONTACT_CONTENT } from "@/lib/content/contact";
-import { FaqSection } from "@/components/ui/FaqSection";
+
 import ContactForm from "./ContactForm";
 import s from "./style.module.css";
 

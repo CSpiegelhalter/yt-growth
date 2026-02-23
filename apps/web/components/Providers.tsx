@@ -1,9 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
-import { ToastProvider } from "@/components/ui/Toast";
+import type { ReactNode } from "react";
+
 import { ClientErrorReporter } from "@/components/ClientErrorReporter";
+import { ToastProvider } from "@/components/ui/Toast";
 
 /**
  * Client-side providers wrapper

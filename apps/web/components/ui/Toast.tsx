@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, createContext, useContext, type ReactNode } from "react";
+import { createContext, type ReactNode,useCallback, useContext, useEffect, useState } from "react";
 
 type ToastType = "success" | "error" | "info";
 
@@ -137,10 +137,10 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     textarea.value = text;
     textarea.style.position = "fixed";
     textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
+    document.body.append(textarea);
     textarea.select();
     const success = document.execCommand("copy");
-    document.body.removeChild(textarea);
+    textarea.remove();
     return success;
   }
 }

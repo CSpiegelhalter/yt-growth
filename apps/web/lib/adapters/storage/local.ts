@@ -7,12 +7,14 @@
 
 import { promises as fs } from "fs";
 import * as path from "path";
+
 import type {
-  StoragePort,
+  PutObjectOptions,
   StorageObject,
   StorageObjectMetadata,
-  PutObjectOptions,
+  StoragePort,
 } from "@/lib/ports/StoragePort";
+
 import { extToMime } from "./utils";
 
 type LocalStorageConfig = {
@@ -33,14 +35,14 @@ class LocalStorageAdapter implements StoragePort {
   }
 
   private getFilePath(key: string): string {
-    const sanitized = key.replace(/\.\./g, "").replace(/^\//, "");
+    const sanitized = key.replaceAll('..', "").replace(/^\//, "");
     return path.join(this.config.basePath, sanitized);
   }
 
   /** Resolve MIME from .meta.json sidecar, falling back to file extension. */
   private async resolveMime(filePath: string, key: string): Promise<string> {
     try {
-      const metaContent = await fs.readFile(`${filePath}.meta.json`, "utf-8");
+      const metaContent = await fs.readFile(`${filePath}.meta.json`, "utf8");
       const meta = JSON.parse(metaContent);
       if (meta.contentType) {return meta.contentType as string;}
     } catch {
@@ -82,11 +84,11 @@ class LocalStorageAdapter implements StoragePort {
       const mime = await this.resolveMime(filePath, key);
 
       return { buffer, mime, size: stats.size };
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return null;
       }
-      throw err;
+      throw error;
     }
   }
 
@@ -101,11 +103,11 @@ class LocalStorageAdapter implements StoragePort {
         // No metadata file
       }
       return true;
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return false;
       }
-      throw err;
+      throw error;
     }
   }
 
@@ -128,11 +130,11 @@ class LocalStorageAdapter implements StoragePort {
       const mime = await this.resolveMime(filePath, key);
 
       return { key, mime, size: stats.size, createdAt: stats.birthtime };
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return null;
       }
-      throw err;
+      throw error;
     }
   }
 
@@ -155,11 +157,11 @@ class LocalStorageAdapter implements StoragePort {
           if (meta) {results.push(meta);}
         }
       }
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return [];
       }
-      throw err;
+      throw error;
     }
 
     return results;

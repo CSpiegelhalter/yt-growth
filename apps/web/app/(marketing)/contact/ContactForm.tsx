@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
+
 import { AlertCircleIcon } from "@/components/icons";
+
 import s from "./style.module.css";
 
 type Props = {
@@ -74,11 +76,11 @@ export default function ContactForm({ userEmail }: Props) {
       }
 
       setSubmitted(true);
-    } catch (err) {
-      console.error("Contact form error:", err);
+    } catch (error) {
+      console.error("Contact form error:", error);
       setServerError(
-        err instanceof Error
-          ? err.message
+        error instanceof Error
+          ? error.message
           : "Something went wrong. Please try again."
       );
     } finally {

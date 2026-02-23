@@ -1,6 +1,7 @@
 import { prisma } from "@/prisma";
+
 import type { IdeasAnalysis, LlmCallFn } from "../types";
-import { generateIdeas, type ChannelProfileForIdeas } from "./generateIdeas";
+import { type ChannelProfileForIdeas,generateIdeas } from "./generateIdeas";
 
 type InsightDerivedData = {
   video: {

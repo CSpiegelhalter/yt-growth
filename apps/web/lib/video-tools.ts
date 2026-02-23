@@ -5,8 +5,8 @@
  * quickly sort, filter, and find what to work on next.
  */
 
-import { daysSince } from "@/lib/youtube/utils";
 import { safeGetItem, safeSetItem } from "@/lib/client/safeLocalStorage";
+import { daysSince } from "@/lib/youtube/utils";
 
 // ============================================
 // TYPES
@@ -427,15 +427,10 @@ function filterNeedsAttention(
     if (
       baselines.medianRetention != null &&
       v.computed.retentionPercent != null
-    ) {
-      if (v.computed.retentionPercent < baselines.medianRetention * 0.7)
-        {return true;}
-    }
+     && v.computed.retentionPercent < baselines.medianRetention * 0.7) {return true;}
 
     // Low CTR (below 70% of median)
-    if (baselines.medianCtr != null && v.ctr != null) {
-      if (v.ctr < baselines.medianCtr * 0.7) {return true;}
-    }
+    if (baselines.medianCtr != null && v.ctr != null && v.ctr < baselines.medianCtr * 0.7) {return true;}
 
     // Low engagement (below 50% of median like rate)
     if (v.computed.likeRate < baselines.medianLikeRate * 0.5) {return true;}
@@ -503,17 +498,22 @@ export function sortVideos(
   const sorted = [...videos];
 
   switch (sortKey) {
-    case "views_desc":
+    case "views_desc": {
       return sorted.sort((a, b) => b.views - a.views);
-    case "views_asc":
+    }
+    case "views_asc": {
       return sorted.sort((a, b) => a.views - b.views);
-    case "comments_desc":
+    }
+    case "comments_desc": {
       return sorted.sort((a, b) => b.comments - a.comments);
-    case "likes_desc":
+    }
+    case "likes_desc": {
       return sorted.sort((a, b) => b.likes - a.likes);
-    case "like_rate_desc":
+    }
+    case "like_rate_desc": {
       return sorted.sort((a, b) => b.computed.likeRate - a.computed.likeRate);
-    case "newest":
+    }
+    case "newest": {
       return sorted.sort((a, b) => {
         if (!a.publishedAt) {return 1;}
         if (!b.publishedAt) {return -1;}
@@ -521,7 +521,8 @@ export function sortVideos(
           new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
         );
       });
-    case "oldest":
+    }
+    case "oldest": {
       return sorted.sort((a, b) => {
         if (!a.publishedAt) {return 1;}
         if (!b.publishedAt) {return -1;}
@@ -529,37 +530,45 @@ export function sortVideos(
           new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime()
         );
       });
-    case "watch_time_desc":
+    }
+    case "watch_time_desc": {
       return sorted.sort(
         (a, b) =>
           (b.computed.watchTimeMinutes ?? 0) -
           (a.computed.watchTimeMinutes ?? 0)
       );
-    case "avg_view_duration_desc":
+    }
+    case "avg_view_duration_desc": {
       return sorted.sort(
         (a, b) => (b.avgViewDuration ?? 0) - (a.avgViewDuration ?? 0)
       );
-    case "ctr_desc":
+    }
+    case "ctr_desc": {
       return sorted.sort((a, b) => (b.ctr ?? 0) - (a.ctr ?? 0));
-    case "retention_asc":
+    }
+    case "retention_asc": {
       // Worst retention first (lowest % viewed)
       return sorted.sort((a, b) => {
         const aRet = a.computed.retentionPercent ?? 100;
         const bRet = b.computed.retentionPercent ?? 100;
         return aRet - bRet;
       });
-    case "velocity_desc":
+    }
+    case "velocity_desc": {
       return sorted.sort(
         (a, b) => b.computed.viewsPerDay - a.computed.viewsPerDay
       );
-    case "sub_conversion_desc":
+    }
+    case "sub_conversion_desc": {
       return sorted.sort((a, b) => {
         const aSubs = a.computed.subsPerThousandViews ?? 0;
         const bSubs = b.computed.subsPerThousandViews ?? 0;
         return bSubs - aSubs;
       });
-    default:
+    }
+    default: {
       return sorted;
+    }
   }
 }
 
@@ -633,8 +642,7 @@ export function exportToCSV(
     headers.push("Avg View %");
   }
   if (videos.some((v) => v.subscribersGained != null)) {
-    headers.push("Subs Gained");
-    headers.push("Subs/1k Views");
+    headers.push("Subs Gained", "Subs/1k Views");
   }
   if (videos.some((v) => v.ctr != null)) {
     headers.push("CTR (%)");
@@ -642,7 +650,7 @@ export function exportToCSV(
 
   const rows = videos.map((v) => {
     const row: (string | number)[] = [
-      v.title?.replace(/,/g, ";") ?? "Untitled", // Escape commas
+      v.title?.replaceAll(',', ";") ?? "Untitled", // Escape commas
       v.videoId,
       v.publishedAt ? new Date(v.publishedAt).toISOString().split("T")[0] : "",
       v.views,
@@ -688,9 +696,9 @@ export function downloadCSV(
   link.download =
     filename ??
     `videos-${sortKey}-${new Date().toISOString().split("T")[0]}.csv`;
-  document.body.appendChild(link);
+  document.body.append(link);
   link.click();
-  document.body.removeChild(link);
+  link.remove();
   URL.revokeObjectURL(url);
 }
 
@@ -706,6 +714,34 @@ export function getSortLabel(sortKey: SortKey): string {
   return option?.label ?? "Sort";
 }
 
+type MetricFormatter = (video: VideoWithMetrics) => string | null;
+
+const CONTEXT_METRIC_FORMATTERS: Record<string, MetricFormatter> = {
+  comments_desc: (v) => `${v.comments} comments`,
+  likes_desc: (v) => `${v.likes} likes`,
+  like_rate_desc: (v) => `${(v.computed.likeRate * 100).toFixed(1)}% like rate`,
+  velocity_desc: (v) => `${v.computed.viewsPerDay.toFixed(0)} views/day`,
+  ctr_desc: (v) => (v.ctr != null ? `${v.ctr.toFixed(1)}% CTR` : null),
+  retention_asc: (v) =>
+    v.computed.retentionPercent != null
+      ? `${v.computed.retentionPercent.toFixed(0)}% avg viewed`
+      : null,
+  sub_conversion_desc: (v) =>
+    v.computed.subsPerThousandViews != null
+      ? `${v.computed.subsPerThousandViews.toFixed(1)} subs/1k views`
+      : null,
+  watch_time_desc: (v) =>
+    v.computed.watchTimeMinutes != null
+      ? `${(v.computed.watchTimeMinutes / 60).toFixed(0)}h watch time`
+      : null,
+  avg_view_duration_desc: (v) =>
+    v.avgViewDuration != null
+      ? `${Math.floor(v.avgViewDuration / 60)}:${String(
+          Math.floor(v.avgViewDuration % 60)
+        ).padStart(2, "0")} avg`
+      : null,
+};
+
 /**
  * Format context metric value for display
  */
@@ -713,41 +749,8 @@ export function formatContextMetric(
   video: VideoWithMetrics,
   sortKey: SortKey
 ): string | null {
-  switch (sortKey) {
-    case "views_desc":
-    case "views_asc":
-      return null; // Already shown
-    case "comments_desc":
-      return `${video.comments} comments`;
-    case "likes_desc":
-      return `${video.likes} likes`;
-    case "like_rate_desc":
-      return `${(video.computed.likeRate * 100).toFixed(1)}% like rate`;
-    case "velocity_desc":
-      return `${video.computed.viewsPerDay.toFixed(0)} views/day`;
-    case "ctr_desc":
-      return video.ctr != null ? `${video.ctr.toFixed(1)}% CTR` : null;
-    case "retention_asc":
-      return video.computed.retentionPercent != null
-        ? `${video.computed.retentionPercent.toFixed(0)}% avg viewed`
-        : null;
-    case "sub_conversion_desc":
-      return video.computed.subsPerThousandViews != null
-        ? `${video.computed.subsPerThousandViews.toFixed(1)} subs/1k views`
-        : null;
-    case "watch_time_desc":
-      return video.computed.watchTimeMinutes != null
-        ? `${(video.computed.watchTimeMinutes / 60).toFixed(0)}h watch time`
-        : null;
-    case "avg_view_duration_desc":
-      return video.avgViewDuration != null
-        ? `${Math.floor(video.avgViewDuration / 60)}:${String(
-            Math.floor(video.avgViewDuration % 60)
-          ).padStart(2, "0")} avg`
-        : null;
-    default:
-      return null;
-  }
+  const formatter = CONTEXT_METRIC_FORMATTERS[sortKey];
+  return formatter ? formatter(video) : null;
 }
 
 /**

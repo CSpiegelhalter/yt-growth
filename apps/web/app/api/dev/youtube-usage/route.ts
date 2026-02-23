@@ -1,12 +1,12 @@
 import type { NextRequest } from "next/server";
-import { prisma } from "@/prisma";
+
+import { createApiRoute } from "@/lib/api/route";
 import {
   getGoogleApiUsageStats,
   resetGoogleApiUsageStats,
 } from "@/lib/google-tokens";
-import { getCurrentUser } from "@/lib/server/auth";
-import { isAdminUser } from "@/lib/server/auth";
-import { createApiRoute } from "@/lib/api/route";
+import { getCurrentUser, isAdminUser  } from "@/lib/server/auth";
+import { prisma } from "@/prisma";
 
 async function GETHandler(_req: NextRequest) {
   const user = await getCurrentUser();
@@ -16,7 +16,7 @@ async function GETHandler(_req: NextRequest) {
 
   // Prefer DB-backed stats (works across Next dev workers). Fall back to in-memory.
   try {
-    const totals = (
+    const [totals] = 
       await prisma.$queryRawUnsafe<
         Array<{ totalcalls: bigint; totalunits: bigint }>
       >(
@@ -25,7 +25,7 @@ async function GETHandler(_req: NextRequest) {
        FROM "GoogleApiCallLog"
        WHERE "at" > now() - interval '6 hours'`
       )
-    )[0];
+    ;
 
     const byHost = await prisma.$queryRawUnsafe<
       Array<{ host: string; calls: bigint; units: bigint }>

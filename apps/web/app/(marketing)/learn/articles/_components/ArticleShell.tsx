@@ -15,10 +15,11 @@
  * Server component - the ActiveToc child is the only client piece.
  */
 
-import Image from "next/image";
 import type { StaticImageData } from "next/image";
-import { ActiveToc } from "./ActiveToc";
+import Image from "next/image";
+
 import styles from "../../style.module.css";
+import { ActiveToc } from "./ActiveToc";
 
 interface TocItem {
   readonly id: string;

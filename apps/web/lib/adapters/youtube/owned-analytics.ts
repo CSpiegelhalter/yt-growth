@@ -10,19 +10,20 @@ import {
   googleFetchWithAutoRefresh,
   GoogleTokenRefreshError,
 } from "@/lib/google-tokens";
-import { YOUTUBE_ANALYTICS_API, YOUTUBE_DATA_API } from "./constants";
-import { parseDuration } from "./utils";
-import type { GoogleAccount } from "./types";
-import { getDateRange } from "@/lib/shared/date-range";
 import type {
-  DailyAnalyticsRow,
   AnalyticsTotals,
-  VideoMetadata,
-  SubscriberBreakdown,
-  GeographicBreakdown,
-  TrafficSourceDetail,
+  DailyAnalyticsRow,
   DemographicBreakdown,
+  GeographicBreakdown,
+  SubscriberBreakdown,
+  TrafficSourceDetail,
+  VideoMetadata,
 } from "@/lib/ports/YouTubePort";
+import { getDateRange } from "@/lib/shared/date-range";
+
+import { YOUTUBE_ANALYTICS_API, YOUTUBE_DATA_API } from "./constants";
+import type { GoogleAccount } from "./types";
+import { parseDuration } from "./utils";
 
 type AnalyticsApiError = Error & {
   isAnalyticsPermError?: boolean;
@@ -79,6 +80,106 @@ const ENGAGEMENT_METRICS = [
 //   "adImpressions",
 //   "cpm",
 // ];
+
+// ---------------------------------------------------------------------------
+// Shared parsing helpers
+// ---------------------------------------------------------------------------
+
+function mapRowToRecord(
+  headers: string[],
+  row: Array<string | number>,
+): Record<string, string | number | null> {
+  const obj: Record<string, string | number | null> = {};
+  for (const [i, header] of headers.entries()) {
+    obj[header] = row[i] ?? null;
+  }
+  return obj;
+}
+
+function numOrNull(
+  obj: Record<string, string | number | null>,
+  key: string,
+): number | null {
+  return obj[key] != null ? Number(obj[key]) : null;
+}
+
+function mapAnalyticsRowToDaily(
+  obj: Record<string, string | number | null>,
+  fallbackDate: string,
+): DailyAnalyticsRow {
+  return {
+    date: String(obj.day ?? fallbackDate),
+    views: Number(obj.views ?? 0),
+    engagedViews: numOrNull(obj, "engagedViews"),
+    likes: numOrNull(obj, "likes"),
+    dislikes: numOrNull(obj, "dislikes"),
+    comments: numOrNull(obj, "comments"),
+    shares: numOrNull(obj, "shares"),
+    estimatedMinutesWatched: numOrNull(obj, "estimatedMinutesWatched"),
+    averageViewDuration:
+      obj.averageViewDuration != null
+        ? Math.round(Number(obj.averageViewDuration))
+        : null,
+    averageViewPercentage: numOrNull(obj, "averageViewPercentage"),
+    subscribersGained: numOrNull(obj, "subscribersGained"),
+    subscribersLost: numOrNull(obj, "subscribersLost"),
+    videosAddedToPlaylists: numOrNull(obj, "videosAddedToPlaylists"),
+    videosRemovedFromPlaylists: numOrNull(obj, "videosRemovedFromPlaylists"),
+    redViews: numOrNull(obj, "redViews"),
+    cardClicks: numOrNull(obj, "cardClicks"),
+    cardImpressions: numOrNull(obj, "cardImpressions"),
+    cardClickRate: numOrNull(obj, "cardClickRate"),
+    annotationClicks: numOrNull(obj, "annotationClicks"),
+    annotationImpressions: numOrNull(obj, "annotationImpressions"),
+    annotationClickThroughRate: numOrNull(obj, "annotationClickThroughRate"),
+    estimatedRevenue: numOrNull(obj, "estimatedRevenue"),
+    estimatedAdRevenue: numOrNull(obj, "estimatedAdRevenue"),
+    grossRevenue: numOrNull(obj, "grossRevenue"),
+    monetizedPlaybacks: numOrNull(obj, "monetizedPlaybacks"),
+    playbackBasedCpm: numOrNull(obj, "playbackBasedCpm"),
+    adImpressions: numOrNull(obj, "adImpressions"),
+    cpm: numOrNull(obj, "cpm"),
+  };
+}
+
+function pickBestThumbnail(thumbnails?: {
+  maxres?: { url: string };
+  high?: { url: string };
+  medium?: { url: string };
+  default?: { url: string };
+}): string | null {
+  return (
+    thumbnails?.maxres?.url ??
+    thumbnails?.high?.url ??
+    thumbnails?.medium?.url ??
+    thumbnails?.default?.url ??
+    null
+  );
+}
+
+function parseIntStat(value: string | undefined): number {
+  return Number.parseInt(value ?? "0", 10);
+}
+
+function isCommentsDisabledFromMsg(msg: string): boolean {
+  if (msg.includes("commentsDisabled") || msg.includes("disabled comments")) {
+    return true;
+  }
+  if (!msg.startsWith("google_api_error_403:")) { return false; }
+  const jsonPart = msg.slice("google_api_error_403:".length).trim();
+  try {
+    const parsed = JSON.parse(jsonPart) as {
+      error?: { errors?: Array<{ reason?: string }> };
+    };
+    const reasons =
+      parsed?.error?.errors
+        ?.map((e) => String(e?.reason ?? ""))
+        .filter(Boolean) ?? [];
+    return reasons.includes("commentsDisabled");
+  } catch {
+    return false;
+  }
+}
 
 // DailyAnalyticsRow and AnalyticsTotals re-exported from @/lib/ports/YouTubePort above
 
@@ -238,95 +339,19 @@ async function tryFetchAnalyticsWithStatus(
 
     return {
       ok: true,
-      rows: data.rows.map((row) => {
-        const obj: Record<string, string | number | null> = {};
-        headers.forEach((h, i) => {
-          obj[h] = row[i] ?? null;
-        });
-
-        return {
-          date: String(obj.day ?? startDate),
-          views: Number(obj.views ?? 0),
-          engagedViews:
-            obj.engagedViews != null ? Number(obj.engagedViews) : null,
-          likes: obj.likes != null ? Number(obj.likes) : null,
-          dislikes: obj.dislikes != null ? Number(obj.dislikes) : null,
-          comments: obj.comments != null ? Number(obj.comments) : null,
-          shares: obj.shares != null ? Number(obj.shares) : null,
-          estimatedMinutesWatched:
-            obj.estimatedMinutesWatched != null
-              ? Number(obj.estimatedMinutesWatched)
-              : null,
-          averageViewDuration:
-            obj.averageViewDuration != null
-              ? Math.round(Number(obj.averageViewDuration))
-              : null,
-          averageViewPercentage:
-            obj.averageViewPercentage != null
-              ? Number(obj.averageViewPercentage)
-              : null,
-          subscribersGained:
-            obj.subscribersGained != null
-              ? Number(obj.subscribersGained)
-              : null,
-          subscribersLost:
-            obj.subscribersLost != null ? Number(obj.subscribersLost) : null,
-          videosAddedToPlaylists:
-            obj.videosAddedToPlaylists != null
-              ? Number(obj.videosAddedToPlaylists)
-              : null,
-          videosRemovedFromPlaylists:
-            obj.videosRemovedFromPlaylists != null
-              ? Number(obj.videosRemovedFromPlaylists)
-              : null,
-          // YouTube Premium
-          redViews: obj.redViews != null ? Number(obj.redViews) : null,
-          // Card & End Screen
-          cardClicks: obj.cardClicks != null ? Number(obj.cardClicks) : null,
-          cardImpressions:
-            obj.cardImpressions != null ? Number(obj.cardImpressions) : null,
-          cardClickRate:
-            obj.cardClickRate != null ? Number(obj.cardClickRate) : null,
-          annotationClicks:
-            obj.annotationClicks != null ? Number(obj.annotationClicks) : null,
-          annotationImpressions:
-            obj.annotationImpressions != null
-              ? Number(obj.annotationImpressions)
-              : null,
-          annotationClickThroughRate:
-            obj.annotationClickThroughRate != null
-              ? Number(obj.annotationClickThroughRate)
-              : null,
-          // Monetization
-          estimatedRevenue:
-            obj.estimatedRevenue != null ? Number(obj.estimatedRevenue) : null,
-          estimatedAdRevenue:
-            obj.estimatedAdRevenue != null
-              ? Number(obj.estimatedAdRevenue)
-              : null,
-          grossRevenue:
-            obj.grossRevenue != null ? Number(obj.grossRevenue) : null,
-          monetizedPlaybacks:
-            obj.monetizedPlaybacks != null
-              ? Number(obj.monetizedPlaybacks)
-              : null,
-          playbackBasedCpm:
-            obj.playbackBasedCpm != null ? Number(obj.playbackBasedCpm) : null,
-          adImpressions:
-            obj.adImpressions != null ? Number(obj.adImpressions) : null,
-          cpm: obj.cpm != null ? Number(obj.cpm) : null,
-        };
-      }),
+      rows: data.rows.map((row) =>
+        mapAnalyticsRowToDaily(mapRowToRecord(headers, row), startDate),
+      ),
     };
-  } catch (err: unknown) {
-    if (err instanceof GoogleTokenRefreshError) {
-      throw err;
+  } catch (error: unknown) {
+    if (error instanceof GoogleTokenRefreshError) {
+      throw error;
     }
-    const errMsg = err instanceof Error ? err.message : String(err ?? "");
-    if (isAnalyticsApiError(err) && err.isAnalyticsPermError) {
+    const errMsg = error instanceof Error ? error.message : String(error ?? "");
+    if (isAnalyticsApiError(error) && error.isAnalyticsPermError) {
       return { ok: false, reason: "permission_denied", message: errMsg };
     }
-    if (isAnalyticsApiError(err) && (err.isScopeError || errMsg.includes("SCOPE_ERROR"))) {
+    if (isAnalyticsApiError(error) && (error.isScopeError || errMsg.includes("SCOPE_ERROR"))) {
       console.warn(
         `[Analytics] Permission denied - user may have declined required scopes`,
       );
@@ -423,23 +448,19 @@ export async function fetchOwnedVideoMetadata(
       publishedAt: item.snippet.publishedAt,
       tags: item.snippet.tags ?? [],
       categoryId: item.snippet.categoryId ?? null,
-      thumbnailUrl:
-        item.snippet.thumbnails?.maxres?.url ??
-        item.snippet.thumbnails?.high?.url ??
-        item.snippet.thumbnails?.default?.url ??
-        null,
+      thumbnailUrl: pickBestThumbnail(item.snippet.thumbnails),
       durationSec: parseDuration(item.contentDetails.duration),
-      viewCount: parseInt(item.statistics.viewCount ?? "0", 10),
-      likeCount: parseInt(item.statistics.likeCount ?? "0", 10),
-      commentCount: parseInt(item.statistics.commentCount ?? "0", 10),
+      viewCount: parseIntStat(item.statistics.viewCount),
+      likeCount: parseIntStat(item.statistics.likeCount),
+      commentCount: parseIntStat(item.statistics.commentCount),
       topicCategories: item.topicDetails?.topicCategories ?? [],
     };
-  } catch (err) {
+  } catch (error) {
     // Re-throw auth errors so they trigger the reconnect prompt
-    if (err instanceof GoogleTokenRefreshError) {
-      throw err;
+    if (error instanceof GoogleTokenRefreshError) {
+      throw error;
     }
-    console.error("Failed to fetch video metadata:", err);
+    console.error("Failed to fetch video metadata:", error);
     return null;
   }
 }
@@ -483,44 +504,21 @@ export async function fetchOwnedVideoComments(
       likes: item.snippet.topLevelComment.snippet.likeCount,
       publishedAt: item.snippet.topLevelComment.snippet.publishedAt,
     }));
-  } catch (err: unknown) {
-    if (err instanceof GoogleTokenRefreshError) {
-      throw err;
+  } catch (error: unknown) {
+    if (error instanceof GoogleTokenRefreshError) {
+      throw error;
     }
 
-    const msg = err instanceof Error ? err.message : String(err ?? "");
+    const msg = error instanceof Error ? error.message : String(error ?? "");
 
-    if (isAnalyticsApiError(err) && err.isScopeError || msg.includes("SCOPE_ERROR")) {
-      console.warn(
-        `[Comments] Permission denied - user may have declined youtube.force-ssl scope`,
-      );
+    if ((isAnalyticsApiError(error) && error.isScopeError) || msg.includes("SCOPE_ERROR")) {
+      console.warn(`[Comments] Permission denied - user may have declined youtube.force-ssl scope`);
       return [];
     }
 
-    if (msg.includes("commentsDisabled") || msg.includes("disabled comments")) {
-      console.info(
-        `[Comments] Disabled for this video (${videoId}); skipping comments fetch`,
-      );
+    if (isCommentsDisabledFromMsg(msg)) {
+      console.info(`[Comments] Disabled for this video (${videoId}); skipping comments fetch`);
       return [];
-    }
-
-    if (msg.startsWith("google_api_error_403:")) {
-      const jsonPart = msg.slice("google_api_error_403:".length).trim();
-      try {
-        const parsed = JSON.parse(jsonPart) as { error?: { errors?: Array<{ reason?: string }> } };
-        const reasons: string[] =
-          parsed?.error?.errors
-            ?.map((e) => String(e?.reason ?? ""))
-            .filter(Boolean) ?? [];
-        if (reasons.includes("commentsDisabled")) {
-          console.info(
-            `[Comments] Disabled for this video (${videoId}); skipping comments fetch`,
-          );
-          return [];
-        }
-      } catch {
-        // ignore parse failure; fall through to generic warning
-      }
     }
 
     console.warn(`[Comments] Could not fetch (video ${videoId})`);
@@ -663,7 +661,7 @@ const TRAFFIC_SOURCE_MAP: Record<
 function mapTrafficSource(
   sourceType: string,
 ): keyof Omit<TrafficSourceBreakdown, "total"> {
-  const normalized = sourceType.toUpperCase().replace(/-/g, "_");
+  const normalized = sourceType.toUpperCase().replaceAll('-', "_");
   // Check exact match first
   if (normalized in TRAFFIC_SOURCE_MAP) {
     return TRAFFIC_SOURCE_MAP[normalized];
@@ -675,6 +673,120 @@ function mapTrafficSource(
     }
   }
   return "other";
+}
+
+function parseReachMetrics(
+  reachData: {
+    columnHeaders: Array<{ name: string }>;
+    rows?: Array<Array<string | number>>;
+  } | null,
+): { impressions: number | null; impressionsCtr: number | null } {
+  if (!reachData?.rows || reachData.rows.length === 0) {
+    return { impressions: null, impressionsCtr: null };
+  }
+  const headers = reachData.columnHeaders.map((h) => h.name);
+  const row = reachData.rows[0];
+  const impIdx = headers.indexOf("videoThumbnailImpressions");
+  const ctrIdx = headers.indexOf("videoThumbnailImpressionsClickRate");
+
+  let impressions: number | null = null;
+  let impressionsCtr: number | null = null;
+
+  if (impIdx !== -1) {
+    const rawImp = Number(row[impIdx] ?? 0);
+    impressions = rawImp > 0 ? rawImp : null;
+  }
+  if (ctrIdx !== -1) {
+    const rawCtr = Number(row[ctrIdx] ?? 0);
+    impressionsCtr = rawCtr > 0 ? rawCtr * 100 : null;
+  }
+  return { impressions, impressionsCtr };
+}
+
+function parseTrafficSourceRows(
+  rows: Array<Array<string | number>>,
+): TrafficSourceBreakdown {
+  const sources: TrafficSourceBreakdown = {
+    browse: null,
+    suggested: null,
+    search: null,
+    external: null,
+    notifications: null,
+    other: null,
+    total: 0,
+  };
+  for (const row of rows) {
+    const sourceType = String(row[0] ?? "");
+    const views = Number(row[1] ?? 0);
+    sources.total = (sources.total ?? 0) + views;
+    const bucket = mapTrafficSource(sourceType);
+    sources[bucket] = (sources[bucket] ?? 0) + views;
+  }
+  return sources;
+}
+
+function viewsOrNull(v: number | null): { views: number; ctr: null } | null {
+  return v ? { views: v, ctr: null } : null;
+}
+
+function buildTrafficSourceCtr(sources: TrafficSourceBreakdown): TrafficSourceCTR {
+  return {
+    browse: viewsOrNull(sources.browse),
+    suggested: viewsOrNull(sources.suggested),
+    search: viewsOrNull(sources.search),
+    external: viewsOrNull(sources.external),
+    total: { views: sources.total ?? 1, ctr: null },
+  };
+}
+
+function calcPercentChange(current: number, previous: number): number | null {
+  if (previous === 0) { return null; }
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+function buildSubscriberBreakdown(
+  data: {
+    columnHeaders: Array<{ name: string }>;
+    rows?: Array<Array<string | number>>;
+  },
+): SubscriberBreakdown {
+  const noData: SubscriberBreakdown = {
+    subscribers: null,
+    nonSubscribers: null,
+    subscriberViewPct: null,
+  };
+
+  if (!data.rows || data.rows.length === 0) { return noData; }
+
+  const headers = data.columnHeaders.map((h) => h.name);
+  const statusIdx = headers.indexOf("subscribedStatus");
+  const viewsIdx = headers.indexOf("views");
+  const avgViewPctIdx = headers.indexOf("averageViewPercentage");
+
+  const byStatus = new Map<string, { views: number; avgViewPct: number }>();
+  let totalViews = 0;
+
+  for (const row of data.rows) {
+    const status = String(row[statusIdx] ?? "");
+    const views = Number(row[viewsIdx] ?? 0);
+    totalViews += views;
+    byStatus.set(status, { views, avgViewPct: Number(row[avgViewPctIdx] ?? 0) });
+  }
+
+  const sub = byStatus.get("SUBSCRIBED");
+  const nonSub = byStatus.get("UNSUBSCRIBED");
+  const subscriberViewPct =
+    totalViews > 0 && sub ? (sub.views / totalViews) * 100 : null;
+
+  return {
+    subscribers: sub
+      ? { views: sub.views, avgViewPct: sub.avgViewPct, ctr: null }
+      : null,
+    nonSubscribers: nonSub
+      ? { views: nonSub.views, avgViewPct: nonSub.avgViewPct, ctr: null }
+      : null,
+    subscriberViewPct,
+  };
 }
 
 /**
@@ -730,52 +842,12 @@ export async function fetchVideoDiscoveryMetrics(
       }>(ga, trafficUrl.toString()).catch(() => null),
     ]);
 
-    let impressions: number | null = null;
-    let impressionsCtr: number | null = null;
+    const { impressions, impressionsCtr } = parseReachMetrics(reachData);
 
-    // Parse official Reach metrics
-    if (reachData?.rows && reachData.rows.length > 0) {
-      const headers = reachData.columnHeaders.map((h) => h.name);
-      const row = reachData.rows[0];
-
-      const impIdx = headers.indexOf("videoThumbnailImpressions");
-      const ctrIdx = headers.indexOf("videoThumbnailImpressionsClickRate");
-
-      if (impIdx >= 0) {
-        const rawImp = Number(row[impIdx] ?? 0);
-        impressions = rawImp > 0 ? rawImp : null;
-      }
-      if (ctrIdx >= 0) {
-        const rawCtr = Number(row[ctrIdx] ?? 0);
-        // API returns CTR as a decimal (e.g., 0.05 for 5%); convert to percentage
-        impressionsCtr = rawCtr > 0 ? rawCtr * 100 : null;
-      }
-    }
-
-    // Parse traffic sources using lookup
-    let trafficSources: TrafficSourceBreakdown | null = null;
-    if (trafficData?.rows && trafficData.rows.length > 0) {
-      const sources: TrafficSourceBreakdown = {
-        browse: null,
-        suggested: null,
-        search: null,
-        external: null,
-        notifications: null,
-        other: null,
-        total: 0,
-      };
-
-      for (const row of trafficData.rows) {
-        const sourceType = String(row[0] ?? "");
-        const views = Number(row[1] ?? 0);
-        sources.total = (sources.total ?? 0) + views;
-
-        const bucket = mapTrafficSource(sourceType);
-        sources[bucket] = (sources[bucket] ?? 0) + views;
-      }
-
-      trafficSources = sources;
-    }
+    const trafficSources =
+      trafficData?.rows && trafficData.rows.length > 0
+        ? parseTrafficSourceRows(trafficData.rows)
+        : null;
 
     return {
       impressions,
@@ -783,13 +855,13 @@ export async function fetchVideoDiscoveryMetrics(
       trafficSources,
       hasData: impressions != null || trafficSources != null,
     };
-  } catch (err: unknown) {
-    if (err instanceof GoogleTokenRefreshError) {
-      throw err;
+  } catch (error: unknown) {
+    if (error instanceof GoogleTokenRefreshError) {
+      throw error;
     }
 
-    const errMsg = err instanceof Error ? err.message : String(err);
-    if (isAnalyticsApiError(err) && err.isScopeError || errMsg.includes("permission")) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    if ((isAnalyticsApiError(error) && error.isScopeError) || errMsg.includes("permission")) {
       return { ...noData, reason: "connect_analytics" };
     }
 
@@ -802,6 +874,65 @@ export async function fetchVideoDiscoveryMetrics(
 // CHANNEL-LEVEL AUDIT METRICS
 // ============================================
 
+type ChannelTotals = {
+  views: number;
+  watchTimeMin: number;
+  avgViewPercentage: number | null;
+  subscribersGained: number;
+  subscribersLost: number;
+  netSubscribers: number;
+};
+
+const RANGE_DAYS: Record<string, number> = { "7d": 7, "28d": 28, "90d": 90 };
+
+function getPreviousPeriodDates(startDate: string, range: "7d" | "28d" | "90d") {
+  const daysInRange = RANGE_DAYS[range] ?? 28;
+  const prevEndDate = new Date(startDate);
+  prevEndDate.setDate(prevEndDate.getDate() - 1);
+  const prevStartDate = new Date(prevEndDate);
+  prevStartDate.setDate(prevStartDate.getDate() - daysInRange);
+  return {
+    prevStartStr: prevStartDate.toISOString().split("T")[0],
+    prevEndStr: prevEndDate.toISOString().split("T")[0],
+  };
+}
+
+function computeAuditTrends(current: ChannelTotals, prev: ChannelTotals | null) {
+  return {
+    viewsTrend: prev ? calcPercentChange(current.views, prev.views) : null,
+    watchTimeTrend: prev ? calcPercentChange(current.watchTimeMin, prev.watchTimeMin) : null,
+    subsTrend: prev ? calcPercentChange(current.netSubscribers, prev.netSubscribers) : null,
+  };
+}
+
+function buildAuditResult(
+  current: ChannelTotals,
+  prev: ChannelTotals | null,
+  trafficData: { sources: TrafficSourceBreakdown; ctr: TrafficSourceCTR } | null,
+  endScreenData: { clicks: number; impressions: number; ctr: number | null } | null,
+): ChannelAuditMetrics {
+  const trends = computeAuditTrends(current, prev);
+  return {
+    totalViews: current.views,
+    totalWatchTimeMin: current.watchTimeMin,
+    avgViewPercentage: current.avgViewPercentage,
+    subscribersGained: current.subscribersGained,
+    subscribersLost: current.subscribersLost,
+    netSubscribers: current.netSubscribers,
+    estimatedImpressions: current.views > 0 ? Math.round(current.views / 0.05) : null,
+    estimatedCtr: 5,
+    trafficSources: trafficData?.sources ?? null,
+    trafficSourceCtr: trafficData?.ctr ?? null,
+    viewerTypes: null,
+    endScreenClicks: endScreenData?.clicks ?? null,
+    endScreenImpressions: endScreenData?.impressions ?? null,
+    endScreenCtr: endScreenData?.ctr ?? null,
+    ...trends,
+    videoCount: 0,
+    videosInRange: 0,
+  };
+}
+
 /**
  * Fetch channel-level audit metrics (aggregated across all videos)
  * Used for bottleneck detection
@@ -813,85 +944,26 @@ export async function fetchChannelAuditMetrics(
 ): Promise<ChannelAuditMetrics | null> {
   try {
     const { startDate, endDate } = getDateRange(range);
+    const { prevStartStr, prevEndStr } = getPreviousPeriodDates(startDate, range);
 
-    // Also get previous period for trend comparison
-    const daysInRange = range === "7d" ? 7 : range === "28d" ? 28 : 90;
-    const prevEndDate = new Date(startDate);
-    prevEndDate.setDate(prevEndDate.getDate() - 1);
-    const prevStartDate = new Date(prevEndDate);
-    prevStartDate.setDate(prevStartDate.getDate() - daysInRange);
-
-    const prevStartStr = prevStartDate.toISOString().split("T")[0];
-    const prevEndStr = prevEndDate.toISOString().split("T")[0];
-
-    // Fetch all metrics in parallel
     const [currentTotals, prevTotals, trafficData, endScreenData] =
       await Promise.all([
-        // Current period totals (channel-wide, no video filter)
         fetchChannelTotals(ga, channelId, startDate, endDate),
-        // Previous period totals for trend comparison
         fetchChannelTotals(ga, channelId, prevStartStr, prevEndStr),
-        // Traffic source breakdown
         fetchChannelTrafficSources(ga, channelId, startDate, endDate),
-        // End screen performance
         fetchChannelEndScreenMetrics(ga, channelId, startDate, endDate),
       ]);
 
-    if (!currentTotals) {return null;}
+    if (!currentTotals) { return null; }
 
-    // Calculate trends (% change from previous period)
-    const viewsTrend =
-      prevTotals && prevTotals.views > 0
-        ? ((currentTotals.views - prevTotals.views) / prevTotals.views) * 100
-        : null;
-    const watchTimeTrend =
-      prevTotals && prevTotals.watchTimeMin > 0
-        ? ((currentTotals.watchTimeMin - prevTotals.watchTimeMin) /
-            prevTotals.watchTimeMin) *
-          100
-        : null;
-    const subsTrend =
-      prevTotals && prevTotals.netSubscribers !== 0
-        ? ((currentTotals.netSubscribers - prevTotals.netSubscribers) /
-            Math.abs(prevTotals.netSubscribers)) *
-          100
-        : null;
-
-    return {
-      totalViews: currentTotals.views,
-      totalWatchTimeMin: currentTotals.watchTimeMin,
-      avgViewPercentage: currentTotals.avgViewPercentage,
-      subscribersGained: currentTotals.subscribersGained,
-      subscribersLost: currentTotals.subscribersLost,
-      netSubscribers: currentTotals.netSubscribers,
-
-      estimatedImpressions:
-        currentTotals.views > 0 ? Math.round(currentTotals.views / 0.05) : null,
-      estimatedCtr: 5, // Default estimate; real CTR requires YouTube Studio API
-
-      trafficSources: trafficData?.sources ?? null,
-      trafficSourceCtr: trafficData?.ctr ?? null,
-
-      viewerTypes: null, // Requires additional API calls; can be added later
-
-      endScreenClicks: endScreenData?.clicks ?? null,
-      endScreenImpressions: endScreenData?.impressions ?? null,
-      endScreenCtr: endScreenData?.ctr ?? null,
-
-      viewsTrend,
-      watchTimeTrend,
-      subsTrend,
-
-      videoCount: 0, // Will be populated from DB
-      videosInRange: 0,
-    };
-  } catch (err: unknown) {
-    if (err instanceof GoogleTokenRefreshError) {
-      throw err;
+    return buildAuditResult(currentTotals, prevTotals, trafficData, endScreenData);
+  } catch (error: unknown) {
+    if (error instanceof GoogleTokenRefreshError) {
+      throw error;
     }
     console.error(
       "[ChannelAudit] Failed to fetch audit metrics:",
-      err instanceof Error ? err.message : String(err),
+      error instanceof Error ? error.message : String(error),
     );
     return null;
   }
@@ -944,7 +1016,7 @@ async function fetchChannelTotals(
 
     const getValue = (name: string) => {
       const idx = headers.indexOf(name);
-      return idx >= 0 ? Number(row[idx] ?? 0) : 0;
+      return idx !== -1 ? Number(row[idx] ?? 0) : 0;
     };
 
     const subscribersGained = getValue("subscribersGained");
@@ -958,8 +1030,8 @@ async function fetchChannelTotals(
       subscribersLost,
       netSubscribers: subscribersGained - subscribersLost,
     };
-  } catch (err) {
-    console.warn("[ChannelTotals] Failed:", err);
+  } catch (error) {
+    console.warn("[ChannelTotals] Failed:", error);
     return null;
   }
 }
@@ -989,64 +1061,21 @@ async function fetchChannelTrafficSources(
       rows?: Array<Array<string | number>>;
     }>(ga, url.toString());
 
-    const sources: TrafficSourceBreakdown = {
-      browse: null,
-      suggested: null,
-      search: null,
-      external: null,
-      notifications: null,
-      other: null,
-      total: 0,
-    };
+    const sources = data.rows
+      ? parseTrafficSourceRows(data.rows)
+      : {
+          browse: null,
+          suggested: null,
+          search: null,
+          external: null,
+          notifications: null,
+          other: null,
+          total: 0,
+        } satisfies TrafficSourceBreakdown;
 
-    if (data.rows) {
-      for (const row of data.rows) {
-        const sourceType = String(row[0] ?? "").toUpperCase();
-        const views = Number(row[1] ?? 0);
-        sources.total = (sources.total ?? 0) + views;
-
-        if (sourceType.includes("BROWSE") || sourceType.includes("HOME")) {
-          sources.browse = (sources.browse ?? 0) + views;
-        } else if (
-          sourceType.includes("SUGGESTED") ||
-          sourceType.includes("RELATED")
-        ) {
-          sources.suggested = (sources.suggested ?? 0) + views;
-        } else if (
-          sourceType.includes("SEARCH") ||
-          sourceType.includes("YT_SEARCH")
-        ) {
-          sources.search = (sources.search ?? 0) + views;
-        } else if (
-          sourceType.includes("EXTERNAL") ||
-          sourceType.includes("EXT_URL")
-        ) {
-          sources.external = (sources.external ?? 0) + views;
-        } else if (sourceType.includes("NOTIFICATION")) {
-          sources.notifications = (sources.notifications ?? 0) + views;
-        } else {
-          sources.other = (sources.other ?? 0) + views;
-        }
-      }
-    }
-
-    // CTR by source - we estimate since real CTR requires impressions data
-    const total = sources.total ?? 1;
-    const ctr: TrafficSourceCTR = {
-      browse: sources.browse ? { views: sources.browse, ctr: null } : null,
-      suggested: sources.suggested
-        ? { views: sources.suggested, ctr: null }
-        : null,
-      search: sources.search ? { views: sources.search, ctr: null } : null,
-      external: sources.external
-        ? { views: sources.external, ctr: null }
-        : null,
-      total: { views: total, ctr: null },
-    };
-
-    return { sources, ctr };
-  } catch (err) {
-    console.warn("[ChannelTrafficSources] Failed:", err);
+    return { sources, ctr: buildTrafficSourceCtr(sources) };
+  } catch (error) {
+    console.warn("[ChannelTrafficSources] Failed:", error);
     return null;
   }
 }
@@ -1087,8 +1116,8 @@ async function fetchChannelEndScreenMetrics(
     const ctr = Number(row[headers.indexOf("annotationClickThroughRate")] ?? 0);
 
     return { clicks, impressions, ctr };
-  } catch (err) {
-    console.warn("[ChannelEndScreen] Failed:", err);
+  } catch (error) {
+    console.warn("[ChannelEndScreen] Failed:", error);
     return null;
   }
 }
@@ -1164,56 +1193,12 @@ export async function fetchSubscriberBreakdown(
       rows?: Array<Array<string | number>>;
     }>(ga, url.toString());
 
-    if (!data.rows || data.rows.length === 0) {
-      return noData;
+    return buildSubscriberBreakdown(data);
+  } catch (error: unknown) {
+    if (error instanceof GoogleTokenRefreshError) {
+      throw error;
     }
-
-    const headers = data.columnHeaders.map((h) => h.name);
-    const statusIdx = headers.indexOf("subscribedStatus");
-    const viewsIdx = headers.indexOf("views");
-    const avgViewPctIdx = headers.indexOf("averageViewPercentage");
-
-    let subViews = 0;
-    let subAvgViewPct: number | null = null;
-    let nonSubViews = 0;
-    let nonSubAvgViewPct: number | null = null;
-    let totalViews = 0;
-
-    for (const row of data.rows) {
-      const status = String(row[statusIdx] ?? "");
-      const views = Number(row[viewsIdx] ?? 0);
-      const avgViewPct = Number(row[avgViewPctIdx] ?? 0);
-
-      totalViews += views;
-
-      if (status === "SUBSCRIBED") {
-        subViews = views;
-        subAvgViewPct = avgViewPct;
-      } else if (status === "UNSUBSCRIBED") {
-        nonSubViews = views;
-        nonSubAvgViewPct = avgViewPct;
-      }
-    }
-
-    const subscriberViewPct =
-      totalViews > 0 ? (subViews / totalViews) * 100 : null;
-
-    return {
-      subscribers:
-        subViews > 0
-          ? { views: subViews, avgViewPct: subAvgViewPct ?? 0, ctr: null }
-          : null,
-      nonSubscribers:
-        nonSubViews > 0
-          ? { views: nonSubViews, avgViewPct: nonSubAvgViewPct ?? 0, ctr: null }
-          : null,
-      subscriberViewPct,
-    };
-  } catch (err: unknown) {
-    if (err instanceof GoogleTokenRefreshError) {
-      throw err;
-    }
-    console.warn("[SubscriberBreakdown] Failed:", err instanceof Error ? err.message : String(err));
+    console.warn("[SubscriberBreakdown] Failed:", error instanceof Error ? error.message : String(error));
     return noData;
   }
 }
@@ -1286,11 +1271,11 @@ export async function fetchGeographicBreakdown(
       topCountries,
       primaryMarket,
     };
-  } catch (err: unknown) {
-    if (err instanceof GoogleTokenRefreshError) {
-      throw err;
+  } catch (error: unknown) {
+    if (error instanceof GoogleTokenRefreshError) {
+      throw error;
     }
-    console.warn("[GeographicBreakdown] Failed:", err instanceof Error ? err.message : String(err));
+    console.warn("[GeographicBreakdown] Failed:", error instanceof Error ? error.message : String(error));
     return noData;
   }
 }
@@ -1380,11 +1365,11 @@ export async function fetchTrafficSourceDetail(
       suggestedVideos: suggestedVideos.length > 0 ? suggestedVideos : null,
       browseFeatures: browseFeatures.length > 0 ? browseFeatures : null,
     };
-  } catch (err: unknown) {
-    if (err instanceof GoogleTokenRefreshError) {
-      throw err;
+  } catch (error: unknown) {
+    if (error instanceof GoogleTokenRefreshError) {
+      throw error;
     }
-    console.warn("[TrafficSourceDetail] Failed:", err instanceof Error ? err.message : String(err));
+    console.warn("[TrafficSourceDetail] Failed:", error instanceof Error ? error.message : String(error));
     return noData;
   }
 }
@@ -1446,7 +1431,7 @@ export async function fetchDemographicBreakdown(
       }
     }
 
-    const byAge = Array.from(ageMap.entries())
+    const byAge = [...ageMap.entries()]
       .map(([ageGroup, views]) => ({
         ageGroup,
         views,
@@ -1454,7 +1439,7 @@ export async function fetchDemographicBreakdown(
       }))
       .sort((a, b) => b.views - a.views);
 
-    const byGender = Array.from(genderMap.entries())
+    const byGender = [...genderMap.entries()]
       .map(([gender, views]) => ({
         gender,
         views,
@@ -1467,11 +1452,11 @@ export async function fetchDemographicBreakdown(
       byAge,
       byGender,
     };
-  } catch (err: unknown) {
-    if (err instanceof GoogleTokenRefreshError) {
-      throw err;
+  } catch (error: unknown) {
+    if (error instanceof GoogleTokenRefreshError) {
+      throw error;
     }
-    console.warn("[DemographicBreakdown] Failed:", err instanceof Error ? err.message : String(err));
+    console.warn("[DemographicBreakdown] Failed:", error instanceof Error ? error.message : String(error));
     return null;
   }
 }

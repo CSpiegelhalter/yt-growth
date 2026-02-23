@@ -5,40 +5,40 @@
  */
 
 // Types used by the route handler
-export { VideoDetailError } from "./types";
 export type { RequestContext } from "./types";
+export { VideoDetailError } from "./types";
 
 // Validation (channelParamsSchema imported directly from ./validation by consumers)
 
 // YouTube fetch helpers
 export {
-  getGoogleAccountOrThrow,
-  fetchVideoDetailsWithTimeout,
   fetchCommentsWithTimeout,
   fetchRecentChannelVideosWithTimeout,
+  fetchVideoDetailsWithTimeout,
+  getGoogleAccountOrThrow,
 } from "./youtube";
 
 // Cache operations
 export {
-  readCachesParallel,
-  isCommentsCacheFresh,
-  isAnalysisCacheFresh,
-  upsertCompetitorVideo,
-  saveAnalysisCache,
   backfillBeatChecklist,
+  isAnalysisCacheFresh,
+  isCommentsCacheFresh,
+  readCachesParallel,
+  saveAnalysisCache,
+  upsertCompetitorVideo,
 } from "./cache";
 
 // LLM analysis
 export {
-  normalizeBeatChecklist,
-  normalizeAnalysis,
-  runParallelAnalysis,
   cacheCommentsInBackground,
+  normalizeAnalysis,
+  normalizeBeatChecklist,
+  runParallelAnalysis,
 } from "./analysis";
 
 // Response building
 export {
-  buildVideoObject,
   buildMoreFromChannel,
   buildResponse,
+  buildVideoObject,
 } from "./response";

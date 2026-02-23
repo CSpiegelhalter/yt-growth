@@ -9,10 +9,10 @@
  * Rate limit: 10 per hour per user (enforced in use-case)
  */
 
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
 import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 import {
   generateProfile,

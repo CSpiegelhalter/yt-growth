@@ -10,7 +10,8 @@
  * Prerequisites:
  * - Database seeded with demo user (via reset-db script)
  */
-import { test, expect } from "@playwright/test";
+import { expect,test } from "@playwright/test";
+
 import { signIn, TEST_USER } from "./fixtures/test-helpers";
 
 test.describe("Happy Path", () => {

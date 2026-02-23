@@ -81,17 +81,18 @@ function isProtectedPath(pathname: string) {
 }
 
 // Static files that should never go through proxy
-const STATIC_FILES = [
+const STATIC_FILES = new Set([
   "/manifest.json",
   "/favicon.ico",
   "/favicon.svg",
   "/icon.svg",
   "/logo.svg",
+  "/logo.png",
   "/apple-touch-icon.svg",
   "/robots.txt",
   "/sitemap.xml",
   "/llms.txt",
-];
+]);
 
 /**
  * Apply security headers to response
@@ -115,7 +116,7 @@ export default async function proxy(req: NextRequest) {
   }
 
   // Skip proxy for static files (but still apply headers on initial load)
-  if (STATIC_FILES.includes(pathname) || pathname.startsWith("/og/")) {
+  if (STATIC_FILES.has(pathname) || pathname.startsWith("/og/")) {
     const res = NextResponse.next();
     applySecurityHeaders(res, requestId);
     return res;
@@ -150,6 +151,7 @@ export const config = {
      * - _next/image (image optimization)
      * - Static files in public folder
      */
+    // eslint-disable-next-line unicorn/prefer-string-raw
     "/((?!_next/static|_next/image|favicon\\.ico|favicon\\.svg|icon\\.svg|logo\\.svg|apple-touch-icon\\.svg|robots\\.txt|sitemap\\.xml|manifest\\.json|og/).*)",
     "/api/:path*",
   ],

@@ -10,14 +10,14 @@
  *   - Cached responses don't consume quota
  */
 
-import { createApiRoute } from "@/lib/api/route";
-import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
-import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk, jsonError } from "@/lib/api/response";
 import { quotaExceededResponse } from "@/lib/api/quota";
+import { jsonError,jsonOk } from "@/lib/api/response";
+import { createApiRoute } from "@/lib/api/route";
+import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
+import { researchKeywords,ResearchKeywordsBodySchema } from "@/lib/features/keywords";
 import { hasActiveSubscription } from "@/lib/server/auth";
 import { logger } from "@/lib/shared/logger";
-import { ResearchKeywordsBodySchema, researchKeywords } from "@/lib/features/keywords";
 
 // ── IP rate limiting (abuse prevention for unauthenticated) ─────
 
@@ -97,7 +97,7 @@ export const POST = createApiRoute(
       });
 
       switch (result.type) {
-        case "quota_exceeded":
+        case "quota_exceeded": {
           return quotaExceededResponse({
             logEvent: "keywords.quota_exceeded",
             userId: user.id,
@@ -107,11 +107,13 @@ export const POST = createApiRoute(
             resetAt: result.usage.resetAt,
             requestId: api.requestId,
           });
+        }
 
-        case "pending":
+        case "pending": {
           return jsonOk(result.body, { requestId: api.requestId });
+        }
 
-        case "success":
+        case "success": {
           return jsonOk(
             {
               overview: result.overview,
@@ -121,6 +123,7 @@ export const POST = createApiRoute(
             },
             { requestId: api.requestId },
           );
+        }
       }
     }),
   ),

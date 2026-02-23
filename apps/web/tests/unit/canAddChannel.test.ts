@@ -4,7 +4,8 @@
  * Ensures FREE users CAN add their first channel even when
  * subscription.isActive is false (which is normal for FREE users)
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect,it } from "vitest";
+
 import { LIMITS } from "@/lib/shared/product";
 
 // Replicate the logic from DashboardClient.tsx
@@ -28,8 +29,8 @@ describe("canAddAnotherChannel", () => {
     });
 
     it("handles undefined channel_limit by defaulting to 1", () => {
-      expect(canAddAnotherChannel(0, undefined)).toBe(true);
-      expect(canAddAnotherChannel(1, undefined)).toBe(false);
+      expect(canAddAnotherChannel(0)).toBe(true);
+      expect(canAddAnotherChannel(1)).toBe(false);
     });
 
     it("handles null channel_limit by defaulting to 1", () => {
@@ -95,7 +96,7 @@ describe("OLD buggy canAddAnotherChannel (documenting the bug)", () => {
   });
 
   it("only worked when isActive was undefined (new users without subscription record)", () => {
-    const result = canAddAnotherChannel_OLD_BUGGY(0, 1, undefined);
+    const result = canAddAnotherChannel_OLD_BUGGY(0, 1);
     expect(result).toBe(true); // This worked by accident
   });
 });

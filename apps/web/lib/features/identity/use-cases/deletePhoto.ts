@@ -1,7 +1,8 @@
-import { prisma } from "@/prisma";
 import { getStorage } from "@/lib/storage";
-import { handleDatasetChange, MIN_TRAINING_PHOTOS } from "./manageModel";
+import { prisma } from "@/prisma";
+
 import { IdentityError } from "../errors";
+import { handleDatasetChange, MIN_TRAINING_PHOTOS } from "./manageModel";
 
 type DeletePhotoInput = {
   userId: number;
@@ -56,8 +57,8 @@ export async function deletePhoto(
     if (asset.s3KeyNormalized) {
       await storage.delete(asset.s3KeyNormalized);
     }
-  } catch (err) {
-    console.error("[identity:delete] Storage delete error:", err);
+  } catch (error) {
+    console.error("[identity:delete] Storage delete error:", error);
   }
 
   if (asset.identityModelId) {

@@ -1,29 +1,15 @@
 "use client";
 
-import styles from "./panels.module.css";
-import { InsightCard, TwoColumnInsight, NextSteps } from "../ui";
-import { DiscoveryChart } from "./DiscoveryChart";
 import type { BottleneckResult } from "@/types/api";
 
-type Win = {
-  label: string;
-  metric: string;
-  why: string;
-};
+import { InsightCard, NextSteps, TwoColumnInsight } from "../ui";
+import { DiscoveryChart } from "./DiscoveryChart";
+import styles from "./panels.module.css";
 
-type Improvement = {
-  label: string;
-  metric: string;
-  fix: string;
-};
+type Win = { label: string; metric: string; why: string };
+type Improvement = { label: string; metric: string; fix: string };
+type TopAction = { what: string; why: string; effort: "low" | "medium" | "high" };
 
-type TopAction = {
-  what: string;
-  why: string;
-  effort: "low" | "medium" | "high";
-};
-
-// Viewer Journey types (new format)
 type ViewerJourney = {
   discovery_phase: string;
   consumption_phase: string;
@@ -41,18 +27,13 @@ type Summary = {
   wins?: Win[];
   improvements?: Improvement[];
   topAction?: TopAction;
-  // New format fields
   insight_headline?: string;
   the_viewer_journey?: ViewerJourney;
   dimensional_nuance?: string;
   strategic_pivot?: StrategicPivot;
 };
 
-type DailySeries = {
-  date: string;
-  views: number;
-  [key: string]: unknown;
-};
+type DailySeries = { date: string; views: number; [key: string]: unknown };
 
 type DiscoveryStats = {
   impressions?: number | null;
@@ -71,7 +52,6 @@ type OverviewPanelProps = {
 
 /**
  * OverviewPanel - Main analysis summary tab
- * Clean two-column layout with summary, wins/improvements, next steps
  */
 export function OverviewPanel({
   summary,
@@ -81,199 +61,20 @@ export function OverviewPanel({
   discoveryStats,
   publishedAt,
 }: OverviewPanelProps) {
-  const wins = summary?.wins ?? [];
-  const improvements = summary?.improvements ?? [];
-  const topAction = summary?.topAction;
-
-  // Check if we have the new format
-  const hasNewFormat =
-    summary?.insight_headline &&
-    summary?.the_viewer_journey &&
-    summary?.strategic_pivot;
-
-  // Convert wins/improvements to bullet format
-  const workingBullets = wins.map((w) => ({
-    text: w.label,
-    detail: w.metric,
-  }));
-
-  const improveBullets = improvements.map((imp) => ({
-    text: imp.label,
-    detail: imp.fix,
-  }));
-
-  // Determine status based on bottleneck
-  const getStatus = (): "strong" | "mixed" | "needs-work" | "neutral" => {
-    if (!bottleneck) {return "neutral";}
-    // Not enough data means neutral
-    if (bottleneck.bottleneck === "NOT_ENOUGH_DATA") {return "neutral";}
-    // Major issues with discovery or retention
-    if (
-      bottleneck.bottleneck === "DISCOVERY_IMPRESSIONS" ||
-      bottleneck.bottleneck === "RETENTION"
-    )
-      {return "needs-work";}
-    return "mixed";
-  };
+  const status = getBottleneckStatus(bottleneck);
 
   return (
     <div className={styles.panelStack}>
-      {/* Loading state */}
-      {summaryLoading && (
-        <InsightCard title="Analyzing video...">
-          <div className={styles.loadingState}>
-            <div className={styles.loadingSpinner} />
-            <p>Generating insights</p>
-          </div>
-        </InsightCard>
-      )}
-
-      {/* New Format Summary Card */}
-      {hasNewFormat && !summaryLoading && (
-        <InsightCard
-          title="Performance summary"
-          subtitle={summary.insight_headline}
-          status={getStatus()}
-        >
-          <div className={styles.viewerJourneyContainer}>
-            {/* Viewer Journey Section */}
-            <div className={styles.journeySection}>
-              <h4 className={styles.journeySectionTitle}>The viewer journey</h4>
-              <div className={styles.journeySteps}>
-                <div className={styles.journeyStep}>
-                  <div className={styles.journeyStepHeader}>
-                    <div className={styles.journeyStepNumber}>1</div>
-                    <h5 className={styles.journeyStepTitle}>Discovery</h5>
-                  </div>
-                  <p className={styles.journeyStepText}>
-                    {summary.the_viewer_journey!.discovery_phase}
-                  </p>
-                </div>
-
-                <div className={styles.journeyStep}>
-                  <div className={styles.journeyStepHeader}>
-                    <div className={styles.journeyStepNumber}>2</div>
-                    <h5 className={styles.journeyStepTitle}>Consumption</h5>
-                  </div>
-                  <p className={styles.journeyStepText}>
-                    {summary.the_viewer_journey!.consumption_phase}
-                  </p>
-                </div>
-
-                <div className={styles.journeyStep}>
-                  <div className={styles.journeyStepHeader}>
-                    <div className={styles.journeyStepNumber}>3</div>
-                    <h5 className={styles.journeyStepTitle}>Conversion</h5>
-                  </div>
-                  <p className={styles.journeyStepText}>
-                    {summary.the_viewer_journey!.conversion_phase}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Dimensional Nuance */}
-            {summary.dimensional_nuance && (
-              <div className={styles.nuanceSection}>
-                <div className={styles.nuanceLabel}>Key context</div>
-                <p className={styles.nuanceText}>
-                  {summary.dimensional_nuance}
-                </p>
-              </div>
-            )}
-
-            {/* Strategic Pivot */}
-            {summary.strategic_pivot && (
-              <div className={styles.pivotSection}>
-                <h4 className={styles.pivotTitle}>Recommended action</h4>
-                <div className={styles.pivotContent}>
-                  <div className={styles.pivotRow}>
-                    <div className={styles.pivotLabel}>What to do</div>
-                    <p className={styles.pivotText}>
-                      {summary.strategic_pivot.what}
-                    </p>
-                  </div>
-                  <div className={styles.pivotRow}>
-                    <div className={styles.pivotLabel}>Why it matters</div>
-                    <p className={styles.pivotText}>
-                      {summary.strategic_pivot.why}
-                    </p>
-                  </div>
-                  <div className={styles.pivotRow}>
-                    <div className={styles.pivotLabel}>Expected impact</div>
-                    <p className={styles.pivotText}>
-                      {summary.strategic_pivot.impact_forecast}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </InsightCard>
-      )}
-
-      {/* Old Format Summary Card */}
-      {!hasNewFormat && summary && !summaryLoading && (
-        <InsightCard
-          title="Performance summary"
-          subtitle={summary.headline}
-          status={getStatus()}
-        >
-          <TwoColumnInsight working={workingBullets} improve={improveBullets} />
-          {topAction && (
-            <NextSteps
-              title="Priority action"
-              description={topAction.why}
-              actions={[
-                {
-                  label:
-                    topAction.what.length > 50
-                      ? `${topAction.what.substring(0, 50)  }...`
-                      : topAction.what,
-                  variant: "primary",
-                },
-              ]}
-            />
-          )}
-        </InsightCard>
-      )}
-
-      {/* Bottleneck diagnosis */}
-      {bottleneck &&
-        bottleneck.bottleneck !== "NOT_ENOUGH_DATA" &&
-        !summaryLoading && (
-          <InsightCard
-            title="Primary bottleneck"
-            subtitle={getBottleneckDescription(bottleneck)}
-            status={
-              bottleneck.bottleneck === "RETENTION" ||
-              bottleneck.bottleneck === "DISCOVERY_IMPRESSIONS"
-                ? "needs-work"
-                : "mixed"
-            }
-          >
-            <div className={styles.bottleneckContent}>
-              <p className={styles.bottleneckMessage}>{bottleneck.evidence}</p>
-              {bottleneck.metrics && bottleneck.metrics.length > 0 && (
-                <div className={styles.bottleneckMetrics}>
-                  {bottleneck.metrics.map((m, i) => (
-                    <div key={i} className={styles.bottleneckMetric}>
-                      <span className={styles.metricLabel}>{m.label}</span>
-                      <span className={styles.metricValue}>{m.value}</span>
-                      {m.comparison && (
-                        <span className={styles.metricComparison}>
-                          {m.comparison}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </InsightCard>
-        )}
-
-      {/* Discovery Chart - Views trend with all metrics */}
+      {summaryLoading && <LoadingCard />}
+      <SummaryCard
+        summary={summary}
+        summaryLoading={summaryLoading}
+        status={status}
+      />
+      <BottleneckCard
+        bottleneck={bottleneck}
+        summaryLoading={summaryLoading}
+      />
       {(discoveryStats || metrics.length > 0) && (
         <DiscoveryChart
           dailySeries={discoveryStats?.dailySeries ?? []}
@@ -283,6 +84,227 @@ export function OverviewPanel({
           publishedAt={publishedAt}
         />
       )}
+    </div>
+  );
+}
+
+function getBottleneckStatus(
+  bottleneck?: BottleneckResult | null,
+): "strong" | "mixed" | "needs-work" | "neutral" {
+  if (!bottleneck) {return "neutral";}
+  if (bottleneck.bottleneck === "NOT_ENOUGH_DATA") {return "neutral";}
+  if (
+    bottleneck.bottleneck === "DISCOVERY_IMPRESSIONS" ||
+    bottleneck.bottleneck === "RETENTION"
+  ) {
+    return "needs-work";
+  }
+  return "mixed";
+}
+
+function LoadingCard() {
+  return (
+    <InsightCard title="Analyzing video...">
+      <div className={styles.loadingState}>
+        <div className={styles.loadingSpinner} />
+        <p>Generating insights</p>
+      </div>
+    </InsightCard>
+  );
+}
+
+function SummaryCard({
+  summary,
+  summaryLoading,
+  status,
+}: {
+  summary: Summary | null;
+  summaryLoading?: boolean;
+  status: "strong" | "mixed" | "needs-work" | "neutral";
+}) {
+  if (!summary || summaryLoading) {return null;}
+
+  const hasNewFormat = !!(
+    summary.insight_headline &&
+    summary.the_viewer_journey &&
+    summary.strategic_pivot
+  );
+
+  if (hasNewFormat) {
+    return <ViewerJourneyCard summary={summary} status={status} />;
+  }
+  return <LegacySummaryCard summary={summary} status={status} />;
+}
+
+function ViewerJourneyCard({
+  summary,
+  status,
+}: {
+  summary: Summary;
+  status: "strong" | "mixed" | "needs-work" | "neutral";
+}) {
+  const journey = summary.the_viewer_journey!;
+
+  return (
+    <InsightCard
+      title="Performance summary"
+      subtitle={summary.insight_headline}
+      status={status}
+    >
+      <div className={styles.viewerJourneyContainer}>
+        <div className={styles.journeySection}>
+          <h4 className={styles.journeySectionTitle}>The viewer journey</h4>
+          <div className={styles.journeySteps}>
+            <JourneyStep number={1} title="Discovery" text={journey.discovery_phase} />
+            <JourneyStep number={2} title="Consumption" text={journey.consumption_phase} />
+            <JourneyStep number={3} title="Conversion" text={journey.conversion_phase} />
+          </div>
+        </div>
+
+        {summary.dimensional_nuance && (
+          <div className={styles.nuanceSection}>
+            <div className={styles.nuanceLabel}>Key context</div>
+            <p className={styles.nuanceText}>{summary.dimensional_nuance}</p>
+          </div>
+        )}
+
+        {summary.strategic_pivot && (
+          <StrategicPivotSection pivot={summary.strategic_pivot} />
+        )}
+      </div>
+    </InsightCard>
+  );
+}
+
+function JourneyStep({
+  number,
+  title,
+  text,
+}: {
+  number: number;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className={styles.journeyStep}>
+      <div className={styles.journeyStepHeader}>
+        <div className={styles.journeyStepNumber}>{number}</div>
+        <h5 className={styles.journeyStepTitle}>{title}</h5>
+      </div>
+      <p className={styles.journeyStepText}>{text}</p>
+    </div>
+  );
+}
+
+function StrategicPivotSection({ pivot }: { pivot: StrategicPivot }) {
+  return (
+    <div className={styles.pivotSection}>
+      <h4 className={styles.pivotTitle}>Recommended action</h4>
+      <div className={styles.pivotContent}>
+        <div className={styles.pivotRow}>
+          <div className={styles.pivotLabel}>What to do</div>
+          <p className={styles.pivotText}>{pivot.what}</p>
+        </div>
+        <div className={styles.pivotRow}>
+          <div className={styles.pivotLabel}>Why it matters</div>
+          <p className={styles.pivotText}>{pivot.why}</p>
+        </div>
+        <div className={styles.pivotRow}>
+          <div className={styles.pivotLabel}>Expected impact</div>
+          <p className={styles.pivotText}>{pivot.impact_forecast}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LegacySummaryCard({
+  summary,
+  status,
+}: {
+  summary: Summary;
+  status: "strong" | "mixed" | "needs-work" | "neutral";
+}) {
+  const workingBullets = (summary.wins ?? []).map((w) => ({
+    text: w.label,
+    detail: w.metric,
+  }));
+
+  const improveBullets = (summary.improvements ?? []).map((imp) => ({
+    text: imp.label,
+    detail: imp.fix,
+  }));
+
+  return (
+    <InsightCard
+      title="Performance summary"
+      subtitle={summary.headline}
+      status={status}
+    >
+      <TwoColumnInsight working={workingBullets} improve={improveBullets} />
+      <LegacyTopAction action={summary.topAction} />
+    </InsightCard>
+  );
+}
+
+function LegacyTopAction({ action }: { action?: TopAction }) {
+  if (!action) {return null;}
+  const label =
+    action.what.length > 50 ? `${action.what.slice(0, 50)}...` : action.what;
+  return (
+    <NextSteps
+      title="Priority action"
+      description={action.why}
+      actions={[{ label, variant: "primary" }]}
+    />
+  );
+}
+
+function BottleneckCard({
+  bottleneck,
+  summaryLoading,
+}: {
+  bottleneck?: BottleneckResult | null;
+  summaryLoading?: boolean;
+}) {
+  if (!bottleneck || bottleneck.bottleneck === "NOT_ENOUGH_DATA" || summaryLoading) {
+    return null;
+  }
+
+  const description = getBottleneckDescription(bottleneck);
+  const status =
+    bottleneck.bottleneck === "RETENTION" ||
+    bottleneck.bottleneck === "DISCOVERY_IMPRESSIONS"
+      ? ("needs-work" as const)
+      : ("mixed" as const);
+
+  return (
+    <InsightCard title="Primary bottleneck" subtitle={description} status={status}>
+      <div className={styles.bottleneckContent}>
+        <p className={styles.bottleneckMessage}>{bottleneck.evidence}</p>
+        <BottleneckMetrics metrics={bottleneck.metrics} />
+      </div>
+    </InsightCard>
+  );
+}
+
+function BottleneckMetrics({
+  metrics,
+}: {
+  metrics?: Array<{ label: string; value: string; comparison?: string }>;
+}) {
+  if (!metrics || metrics.length === 0) {return null;}
+  return (
+    <div className={styles.bottleneckMetrics}>
+      {metrics.map((m, i) => (
+        <div key={i} className={styles.bottleneckMetric}>
+          <span className={styles.metricLabel}>{m.label}</span>
+          <span className={styles.metricValue}>{m.value}</span>
+          {m.comparison && (
+            <span className={styles.metricComparison}>{m.comparison}</span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

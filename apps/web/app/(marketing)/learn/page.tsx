@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND } from "@/lib/shared/brand";
-import { LEARN_INDEX_CONTENT } from "@/lib/content/learn-index";
+
 import { FaqSection } from "@/components/ui/FaqSection";
+import { LEARN_INDEX_CONTENT } from "@/lib/content/learn-index";
+import { BRAND } from "@/lib/shared/brand";
+
 import { learnArticles } from "./articles";
 import s from "./style.module.css";
 

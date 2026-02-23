@@ -5,9 +5,9 @@
 
 .toolbar {
   background: var(--bg);
-  padding: var(--space-3) 0;
-  margin-bottom: var(--space-4);
   border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) 0;
 }
 
 .toolbarInner {
@@ -18,41 +18,41 @@
 
 /* Primary controls row: Sort + Search + Actions */
 .primaryRow {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: var(--space-2);
 }
 
 /* Sort dropdown */
 .sortWrap {
-  position: relative;
   flex-shrink: 0;
+  position: relative;
 }
 
 .sortButton {
-  display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
+  color: var(--text);
   cursor: pointer;
+  display: inline-flex;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   transition: all var(--transition-base);
   white-space: nowrap;
 }
 
 .sortButton:hover {
-  border-color: var(--primary);
   background: var(--surface-alt);
+  border-color: var(--primary);
 }
 
 .sortButton:focus-visible {
-  outline: none;
   box-shadow: var(--focus-ring);
+  outline: none;
 }
 
 .sortButton[aria-expanded="true"] {
@@ -69,33 +69,33 @@
 }
 
 .sortDropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  min-width: 220px;
-  max-width: calc(100vw - 32px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  z-index: 100;
+  left: 0;
   max-height: 60vh;
+  max-width: calc(100vw - 32px);
+  min-width: 220px;
   overflow-y: auto;
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 100;
 }
 
 .sortOption {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--space-3) var(--space-4);
-  width: 100%;
-  text-align: left;
-  font-size: var(--text-sm);
-  color: var(--text);
   background: transparent;
   border: none;
+  color: var(--text);
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--text-sm);
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
   transition: background var(--transition-fast);
+  width: 100%;
 }
 
 .sortOption:hover {
@@ -103,8 +103,8 @@
 }
 
 .sortOption:focus-visible {
-  outline: none;
   background: var(--surface-alt);
+  outline: none;
 }
 
 .sortOption[aria-selected="true"] {
@@ -117,28 +117,28 @@
 }
 
 .sortOptionDesc {
-  font-size: var(--text-xs);
   color: var(--text-secondary);
+  font-size: var(--text-xs);
 }
 
 /* Search input */
 .searchWrap {
-  position: relative;
   flex: 1;
   min-width: 0;
+  position: relative;
 }
 
 .searchInput {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  padding-left: 36px;
-  padding-right: 32px;
-  font-size: var(--text-sm);
-  color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
+  color: var(--text);
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+  padding-left: 36px;
+  padding-right: 32px;
   transition: all var(--transition-base);
+  width: 100%;
 }
 
 .searchInput::placeholder {
@@ -150,37 +150,37 @@
 }
 
 .searchInput:focus {
-  outline: none;
   border-color: var(--primary);
   box-shadow: var(--focus-ring);
+  outline: none;
 }
 
 .searchIcon {
-  position: absolute;
+  color: var(--text-tertiary);
   left: 12px;
+  pointer-events: none;
+  position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-tertiary);
-  pointer-events: none;
 }
 
 .searchClear {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
   background: var(--surface-alt);
   border: none;
   border-radius: 50%;
   color: var(--text-secondary);
   cursor: pointer;
+  display: flex;
+  height: 20px;
+  justify-content: center;
+  padding: 0;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   transition: all var(--transition-fast);
+  width: 20px;
 }
 
 .searchClear:hover {
@@ -189,43 +189,43 @@
 }
 
 .searchClear:focus-visible {
-  outline: none;
   box-shadow: var(--focus-ring);
+  outline: none;
 }
 
 /* Actions button (icon only on mobile) */
 .actionsWrap {
-  position: relative;
   flex-shrink: 0;
+  position: relative;
 }
 
 .actionsButton {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  color: var(--text-secondary);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--transition-base);
-  min-width: 36px;
+  display: inline-flex;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  gap: var(--space-2);
+  justify-content: center;
   min-height: 36px;
+  min-width: 36px;
+  padding: var(--space-2);
+  transition: all var(--transition-base);
 }
 
 .actionsButton:hover {
+  background: var(--surface-alt);
   border-color: var(--primary);
   color: var(--text);
-  background: var(--surface-alt);
 }
 
 .actionsButton:focus-visible {
-  outline: none;
   box-shadow: var(--focus-ring);
+  outline: none;
 }
 
 /* Hide "Actions" text on mobile */
@@ -233,7 +233,7 @@
   display: none;
 }
 
-@media (min-width: 640px) {
+@media (width >= 640px) {
   .actionsButton {
     padding: var(--space-2) var(--space-3);
   }
@@ -244,43 +244,41 @@
 }
 
 .actionsDropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  min-width: 180px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
+  min-width: 180px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
   z-index: 100;
 }
 
 /* Ensure dropdown doesn't go off screen on mobile */
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .actionsDropdown {
-    right: auto;
-    left: auto;
+    inset: auto;
+    margin-top: 4px;
+
     /* Position from the right edge of viewport with some margin */
     position: fixed;
-    top: auto;
-    bottom: auto;
-    margin-top: 4px;
   }
 }
 
 .actionItem {
-  display: flex;
   align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--text-sm);
-  color: var(--text);
   background: transparent;
   border: none;
-  text-align: left;
+  color: var(--text);
   cursor: pointer;
+  display: flex;
+  font-size: var(--text-sm);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
   transition: background var(--transition-fast);
+  width: 100%;
 }
 
 .actionItem:hover {
@@ -288,94 +286,94 @@
 }
 
 .actionItem:focus-visible {
-  outline: none;
   background: var(--surface-alt);
+  outline: none;
 }
 
 .actionItem svg {
-  flex-shrink: 0;
   color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
 /* Secondary controls row (filters) - centered on mobile */
 .secondaryRow {
-  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
+  display: flex;
   flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
 }
 
-@media (min-width: 640px) {
+@media (width >= 640px) {
   .secondaryRow {
-    justify-content: flex-start;
     gap: var(--space-3);
+    justify-content: flex-start;
   }
 }
 
 /* Reset button */
 .resetButton {
-  display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--text-xs);
-  font-weight: var(--font-medium);
-  color: var(--text-secondary);
   background: transparent;
   border: 1px dashed var(--border);
   border-radius: var(--radius-full);
+  color: var(--text-secondary);
   cursor: pointer;
+  display: inline-flex;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   transition: all var(--transition-fast);
 }
 
 .resetButton:hover {
-  color: var(--text);
   border-color: var(--text-secondary);
+  color: var(--text);
 }
 
 .resetButton:focus-visible {
-  outline: none;
   box-shadow: var(--focus-ring);
+  outline: none;
 }
 
 /* Video count - inline on larger screens */
 .videoCount {
-  font-size: var(--text-xs);
   color: var(--text-secondary);
+  font-size: var(--text-xs);
   white-space: nowrap;
 }
 
-@media (min-width: 640px) {
+@media (width >= 640px) {
   .videoCount {
-    margin-left: auto;
     font-size: var(--text-sm);
+    margin-left: auto;
   }
 }
 
 .videoCountNum {
-  font-weight: var(--font-semibold);
   color: var(--text);
+  font-weight: var(--font-semibold);
 }
 
 /* Toast notification */
 .toast {
-  position: fixed;
-  bottom: var(--space-6);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: var(--space-3) var(--space-5);
+  align-items: center;
+  animation: toastIn 0.2s ease-out;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
+  bottom: var(--space-6);
   box-shadow: var(--shadow-lg);
-  font-size: var(--text-sm);
   color: var(--text);
-  z-index: 50;
   display: flex;
-  align-items: center;
+  font-size: var(--text-sm);
   gap: var(--space-3);
-  animation: toastIn 0.2s ease-out;
+  left: 50%;
+  padding: var(--space-3) var(--space-5);
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: 50;
 }
 
 @keyframes toastIn {
@@ -383,6 +381,7 @@
     opacity: 0;
     transform: translateX(-50%) translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);

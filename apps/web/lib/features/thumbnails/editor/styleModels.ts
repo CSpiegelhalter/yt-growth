@@ -1,4 +1,4 @@
-import type { ThumbnailStyle, StyleModelConfig } from "../types";
+import type { StyleModelConfig,ThumbnailStyle } from "../types";
 
 export const STYLE_MODELS: Record<ThumbnailStyle, StyleModelConfig> = {
   object: {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import sitemap from "@/app/sitemap";
+
 import robots from "@/app/robots";
+import sitemap from "@/app/sitemap";
 import { normalizeCanonicalOrigin } from "@/lib/shared/brand";
 
 /**
@@ -124,7 +125,7 @@ describe("normalizeCanonicalOrigin", () => {
     expect(normalizeCanonicalOrigin("")).toBe(
       "https://www.getchannelboost.com"
     );
-    expect(normalizeCanonicalOrigin(undefined)).toBe(
+    expect(normalizeCanonicalOrigin()).toBe(
       "https://www.getchannelboost.com"
     );
     expect(normalizeCanonicalOrigin("   ")).toBe(

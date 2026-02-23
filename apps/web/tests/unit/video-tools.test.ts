@@ -3,27 +3,28 @@
  * Tests metric calculations, sorting, and filtering logic
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect,it } from "vitest";
+
 import {
-  daysSincePublish,
-  calcLikeRate,
-  calcViewsPerDay,
+  applyFilters,
   calcCommentRate,
   calcEngagementRate,
+  calcLikeRate,
   calcSubsPerThousandViews,
-  determineContentType,
+  calcViewsPerDay,
   computeMetrics,
-  getAvailableSortOptions,
-  filterByTimeRange,
+  type DashboardVideo,
+  daysSincePublish,
+  determineContentType,
+  exportToCSV,
   filterByContentType,
   filterBySearch,
+  filterByTimeRange,
   filterTopPerformers,
-  applyFilters,
+  getAvailableSortOptions,
   sortVideos,
-  exportToCSV,
-  type DashboardVideo,
-  type VideoWithMetrics,
   type VideoFilters,
+  type VideoWithMetrics,
 } from "@/lib/video-tools";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;

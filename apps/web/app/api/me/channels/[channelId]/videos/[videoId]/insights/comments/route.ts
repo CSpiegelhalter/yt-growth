@@ -1,16 +1,16 @@
+import { getGoogleAccount } from "@/lib/adapters/youtube";
+import { fetchOwnedVideoComments } from "@/lib/adapters/youtube/owned-analytics";
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
 import {
+  getCommentInsights,
   InsightParamsSchema,
   InsightQuerySchema,
-  getCommentInsights,
 } from "@/lib/features/video-insights";
-import { callLLM } from "@/lib/llm";
-import { getGoogleAccount } from "@/lib/adapters/youtube";
 import { GoogleTokenRefreshError } from "@/lib/google-tokens";
-import { fetchOwnedVideoComments } from "@/lib/adapters/youtube/owned-analytics";
+import { callLLM } from "@/lib/llm";
 import { resolveInsightContext } from "@/lib/server/video-insight-context";
 
 export const GET = createApiRoute(
@@ -33,14 +33,14 @@ export const GET = createApiRoute(
             { comments: result },
             { requestId: api.requestId, headers: { "Cache-Control": "private, max-age=43200" } },
           );
-        } catch (err) {
-          if (err instanceof GoogleTokenRefreshError) {
+        } catch (error) {
+          if (error instanceof GoogleTokenRefreshError) {
             return Response.json(
-              { error: err.message, code: "youtube_permissions" },
+              { error: error.message, code: "youtube_permissions" },
               { status: 403 },
             );
           }
-          throw err;
+          throw error;
         }
       },
     ),

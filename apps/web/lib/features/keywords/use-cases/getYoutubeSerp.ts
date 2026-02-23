@@ -1,17 +1,18 @@
 import "server-only";
 
-import { logger } from "@/lib/shared/logger";
 import {
-  fetchYouTubeSerp,
-  prepareDataForSeoRequest,
-  mapDataForSEOError,
   DataForSEOError,
+  fetchYouTubeSerp,
+  mapDataForSEOError,
+  prepareDataForSeoRequest,
   type YouTubeSerpResponse,
 } from "@/lib/dataforseo";
 import {
   getCachedResponse,
   setCachedResponse,
 } from "@/lib/dataforseo/cache";
+import { logger } from "@/lib/shared/logger";
+
 import type { GetYoutubeSerpInput, GetYoutubeSerpResult } from "../types";
 
 export async function getYoutubeSerp(
@@ -70,16 +71,16 @@ export async function getYoutubeSerp(
       type: "success",
       body: { ...response, cached: false },
     };
-  } catch (err) {
-    if (err instanceof DataForSEOError) {
+  } catch (error) {
+    if (error instanceof DataForSEOError) {
       logger.error("youtube_serp.dataforseo_error", {
         userId,
-        code: err.code,
-        message: err.message,
+        code: error.code,
+        message: error.message,
       });
-      throw mapDataForSEOError(err);
+      throw mapDataForSEOError(error);
     }
 
-    throw err;
+    throw error;
   }
 }

@@ -54,6 +54,24 @@ function tryGetCodeFromBody(body: unknown): string | undefined {
   return undefined;
 }
 
+function buildApiClientError(res: Response, body: unknown): ApiClientError {
+  const requestId = tryGetRequestIdFromBody(body) ?? res.headers.get("x-request-id") ?? undefined;
+  const code = tryGetCodeFromBody(body) ?? `HTTP_${res.status}`;
+  const bodyObj = body as JsonResponseBody;
+  const message =
+    tryGetMessageFromBody(body) ??
+    (typeof bodyObj?.error === "string" ? String(bodyObj.error) : undefined) ??
+    `Request failed (${res.status})`;
+
+  return new ApiClientError({
+    status: res.status,
+    code,
+    message,
+    requestId,
+    details: bodyObj?.details ?? body,
+  });
+}
+
 /**
  * Fetch JSON with consistent error handling:
  * - Parses JSON (if present)
@@ -78,24 +96,9 @@ export async function apiFetchJson<T>(
   }
 
   if (!res.ok) {
-    const requestId = tryGetRequestIdFromBody(body) ?? res.headers.get("x-request-id") ?? undefined;
-    const code = tryGetCodeFromBody(body) ?? `HTTP_${res.status}`;
-    const bodyObj = body as JsonResponseBody;
-    const message =
-      tryGetMessageFromBody(body) ??
-      (typeof bodyObj?.error === "string" ? String(bodyObj.error) : undefined) ??
-      `Request failed (${res.status})`;
-
-    throw new ApiClientError({
-      status: res.status,
-      code,
-      message,
-      requestId,
-      details: bodyObj?.details ?? body,
-    });
+    throw buildApiClientError(res, body);
   }
 
-  // Successful non-json responses are not expected in this app.
   if (!isJson) {
     throw new ApiClientError({
       status: 500,

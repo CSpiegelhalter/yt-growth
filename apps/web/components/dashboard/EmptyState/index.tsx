@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import s from "./style.module.css";
+
 import { LIMITS } from "@/lib/shared/product";
+
+import s from "./style.module.css";
 
 type Props = {
   onConnect: () => void;

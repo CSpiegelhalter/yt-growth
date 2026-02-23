@@ -10,7 +10,7 @@
   position: relative;
 }
 
-@media (min-width: 768px) {
+@media (width >= 768px) {
   .card {
     padding: 20px;
   }
@@ -18,87 +18,87 @@
 
 /* Header */
 .header {
-  display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  display: flex;
   gap: 12px;
+  justify-content: space-between;
   margin-bottom: 16px;
 }
 
 .channelInfo {
-  display: flex;
   align-items: center;
+  display: flex;
+  flex: 1;
   gap: 12px;
   min-width: 0;
-  flex: 1;
 }
 
 .avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
   border: 2px solid #f1f5f9;
+  border-radius: 50%;
+  flex-shrink: 0;
+  height: 48px;
+  object-fit: cover;
+  width: 48px;
 }
 
 .avatarPlaceholder {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #f1f5f9;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  background: #f1f5f9;
+  border-radius: 50%;
   color: #94a3b8;
+  display: flex;
+  flex-shrink: 0;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
 }
 
 .nameWrap {
-  min-width: 0;
   flex: 1;
+  min-width: 0;
 }
 
 .channelName {
+  -webkit-box-orient: vertical;
+  color: #1e293b;
+  display: -webkit-box;
   font-size: 1rem;
   font-weight: 600;
-  color: #1e293b;
+  -webkit-line-clamp: 2;
+  line-height: 1.3;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   white-space: normal;
-  line-height: 1.3;
 }
 
 .videoCount {
-  font-size: 0.8125rem;
   color: #64748b;
+  font-size: 0.8125rem;
   margin: 4px 0 0;
 }
 
 .videoCountEmpty {
-  font-size: 0.8125rem;
   color: #94a3b8;
-  margin: 4px 0 0;
+  font-size: 0.8125rem;
   font-style: italic;
+  margin: 4px 0 0;
 }
 
 /* Status Chip */
 .statusChip {
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  flex-shrink: 0;
   font-size: 0.6875rem;
   font-weight: 600;
-  text-transform: uppercase;
+  gap: 6px;
   letter-spacing: 0.02em;
-  border-radius: 20px;
-  flex-shrink: 0;
+  padding: 4px 10px;
+  text-transform: uppercase;
 }
 
 .statusConnected {
@@ -122,11 +122,11 @@
 }
 
 .statusDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
   animation: pulse 1.5s ease-in-out infinite;
+  background: currentcolor;
+  border-radius: 50%;
+  height: 6px;
+  width: 6px;
 }
 
 @keyframes pulse {
@@ -136,16 +136,16 @@
 
 /* Error Banner */
 .errorBanner {
-  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
   background: #fef2f2;
   border: 1px solid #fecaca;
   border-radius: 10px;
-  font-size: 0.8125rem;
   color: #991b1b;
+  display: flex;
+  font-size: 0.8125rem;
+  gap: 8px;
   margin-bottom: 16px;
+  padding: 10px 12px;
 }
 
 .errorBanner svg {
@@ -154,33 +154,33 @@
 
 /* Actions */
 .actions {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
+  display: flex;
   gap: 12px;
+  justify-content: space-between;
 }
 
 .primaryBtn {
-  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: white;
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   border: none;
   border-radius: 10px;
-  text-decoration: none;
+  color: white;
   cursor: pointer;
-  transition: all 0.15s ease;
+  display: inline-flex;
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 8px;
   min-height: 44px;
+  padding: 10px 18px;
+  text-decoration: none;
+  transition: all 0.15s ease;
 }
 
 .primaryBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgb(99 102 241 / 30%);
   color: white;
+  transform: translateY(-1px);
 }
 
 .primaryBtn svg {
@@ -197,17 +197,17 @@
 }
 
 .iconBtn {
-  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
   background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
   color: #64748b;
   cursor: pointer;
+  display: flex;
+  height: 44px;
+  justify-content: center;
   transition: all 0.15s ease;
+  width: 44px;
 }
 
 .iconBtn:hover:not(:disabled) {
@@ -217,8 +217,8 @@
 }
 
 .iconBtnDisabled {
-  opacity: 0.5;
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .iconBtnDanger:hover:not(:disabled) {
@@ -229,13 +229,13 @@
 
 /* Spinner */
 .spinner {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 2px solid #e2e8f0;
-  border-top-color: #6366f1;
-  border-radius: 50%;
   animation: spin 0.8s linear infinite;
+  border: 2px solid #e2e8f0;
+  border-radius: 50%;
+  border-top-color: #6366f1;
+  display: inline-block;
+  height: 18px;
+  width: 18px;
 }
 
 @keyframes spin {
@@ -244,24 +244,24 @@
 
 /* Last Updated */
 .lastUpdated {
-  font-size: 0.75rem;
   color: #94a3b8;
+  font-size: 0.75rem;
   margin: 12px 0 0;
   text-align: right;
 }
 
 /* Confirm Dialog */
 .confirmOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-  padding: 16px;
   animation: fadeIn 0.15s ease-out;
+  background: rgb(0 0 0 / 50%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 16px;
+  position: fixed;
   touch-action: none;
+  z-index: var(--z-modal);
 }
 
 @keyframes fadeIn {
@@ -270,31 +270,31 @@
 }
 
 .confirmDialog {
+  animation: scaleIn 0.15s ease-out;
   background: white;
   border-radius: 16px;
-  padding: 24px;
   max-width: 360px;
+  padding: 24px;
   width: 100%;
-  animation: scaleIn 0.15s ease-out;
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .confirmTitle {
+  color: #1e293b;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1e293b;
   margin: 0 0 8px;
 }
 
 .confirmText {
-  font-size: 0.875rem;
   color: #64748b;
-  margin: 0 0 20px;
+  font-size: 0.875rem;
   line-height: 1.5;
+  margin: 0 0 20px;
 }
 
 .confirmActions {
@@ -304,16 +304,16 @@
 }
 
 .confirmCancel {
-  padding: 10px 18px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #64748b;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
+  color: #64748b;
   cursor: pointer;
-  transition: all 0.15s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
   min-height: 44px;
+  padding: 10px 18px;
+  transition: all 0.15s ease;
 }
 
 .confirmCancel:hover {
@@ -321,16 +321,16 @@
 }
 
 .confirmRemove {
-  padding: 10px 18px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: white;
   background: #dc2626;
   border: none;
   border-radius: 10px;
+  color: white;
   cursor: pointer;
-  transition: all 0.15s ease;
+  font-size: 0.875rem;
+  font-weight: 600;
   min-height: 44px;
+  padding: 10px 18px;
+  transition: all 0.15s ease;
 }
 
 .confirmRemove:hover {

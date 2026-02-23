@@ -8,25 +8,26 @@
  * in lib/features/subscriptions/.
  */
 
-import {
-  getCurrentUserWithSubscription,
-  type AuthUserWithSubscription,
-} from "@/lib/server/auth";
-import { getSubscriptionStatus } from "./stripe";
-import {
-  checkEntitlement as checkEntitlementCore,
-  checkChannelLimit as checkChannelLimitCore,
-} from "@/lib/features/subscriptions";
 import type {
-  Plan,
-  FeatureKey,
   EntitlementError as EntitlementErrorType,
+  FeatureKey,
+  Plan,
   UsageCheckResult,
+} from "@/lib/features/subscriptions";
+import {
+  checkChannelLimit as checkChannelLimitCore,
+  checkEntitlement as checkEntitlementCore,
 } from "@/lib/features/subscriptions";
 import {
   checkAndIncrement,
   getUsageInfo,
 } from "@/lib/features/subscriptions/use-cases/trackUsage";
+import {
+  type AuthUserWithSubscription,
+  getCurrentUserWithSubscription,
+} from "@/lib/server/auth";
+
+import { getSubscriptionStatus } from "./stripe";
 
 type EntitlementContext = {
   user: AuthUserWithSubscription;

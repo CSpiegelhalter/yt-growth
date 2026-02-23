@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
+
 import {
   computeSectionConfidence,
-  isLowDataMode,
   type DerivedMetrics,
+  isLowDataMode,
 } from "@/lib/owned-video-math";
 
 // Helper to create a minimal DerivedMetrics object for testing
@@ -119,7 +120,7 @@ describe("computeSectionConfidence", () => {
     test("High with impressions >= 10000 and traffic sources", () => {
       const derived = createDerivedMetrics({
         totalViews: 5000,
-        impressions: 15000,
+        impressions: 15_000,
       });
       const result = computeSectionConfidence(derived, true, true);
       expect(result.discovery).toBe("High");
@@ -216,7 +217,7 @@ describe("computeSectionConfidence", () => {
     test("High with impressions >= 5000", () => {
       const derived = createDerivedMetrics({
         totalViews: 1000,
-        impressions: 10000,
+        impressions: 10_000,
       });
       const result = computeSectionConfidence(derived, true, false);
       expect(result.packaging).toBe("High");

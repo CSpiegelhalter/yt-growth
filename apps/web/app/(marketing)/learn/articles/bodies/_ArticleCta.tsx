@@ -4,6 +4,7 @@
  */
 
 import Link from "next/link";
+
 import { BRAND } from "@/lib/shared/brand";
 
 const ctaHeadingStyle: React.CSSProperties = {

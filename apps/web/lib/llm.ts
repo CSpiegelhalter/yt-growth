@@ -195,6 +195,46 @@ type CommentsAnalysisInput = {
   viewerAskedFor?: string[];
 };
 
+function buildCommentsContext(analysis: CommentsAnalysisInput): string {
+  const parts: string[] = [];
+
+  if (analysis.sentiment) {
+    parts.push(`Comment sentiment: ${analysis.sentiment.positive}% positive, ${analysis.sentiment.neutral}% neutral, ${analysis.sentiment.negative}% negative`);
+  }
+  if (analysis.themes && analysis.themes.length > 0) {
+    parts.push(`Top comment themes: ${analysis.themes.map((t) => t.theme).join(", ")}`);
+  }
+  if (analysis.viewerLoved && analysis.viewerLoved.length > 0) {
+    parts.push(`What viewers loved: ${analysis.viewerLoved.slice(0, 3).join("; ")}`);
+  }
+  if (analysis.viewerAskedFor && analysis.viewerAskedFor.length > 0) {
+    parts.push(`Viewers asked for: ${analysis.viewerAskedFor.slice(0, 3).join("; ")}`);
+  }
+
+  return parts.length > 0 ? `\n${parts.join("\n")}` : "";
+}
+
+function formatPreciseDuration(durationSec: number | undefined): string {
+  if (!durationSec) {return "";}
+
+  const sec = durationSec;
+  if (sec < 60) {return `Duration: ${sec}s (YouTube Shorts format)`;}
+  if (sec < 3600) {
+    return `Duration: ${Math.floor(sec / 60)}m ${sec % 60}s`;
+  }
+  return `Duration: ${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
+}
+
+function cleanDescription(description: string | undefined): string {
+  return (description ?? "")
+    .replaceAll(/https?:\/\/\S+/gi, "")
+    .replaceAll(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "")
+    .replaceAll(/#[\p{L}\p{N}_-]+/gu, "")
+    .replaceAll(/\s+/g, " ")
+    .trim()
+    .slice(0, 800);
+}
+
 /**
  * Build shared video context for competitor analysis prompts
  */
@@ -203,69 +243,16 @@ function buildCompetitorContext(
   userChannelTitle: string,
   commentsAnalysis?: CommentsAnalysisInput
 ): string {
-  let commentsContext = "";
-  if (commentsAnalysis) {
-    if (commentsAnalysis.sentiment) {
-      commentsContext += `\nComment sentiment: ${commentsAnalysis.sentiment.positive}% positive, ${commentsAnalysis.sentiment.neutral}% neutral, ${commentsAnalysis.sentiment.negative}% negative`;
-    }
-    if (commentsAnalysis.themes && commentsAnalysis.themes.length > 0) {
-      commentsContext += `\nTop comment themes: ${commentsAnalysis.themes
-        .map((t) => t.theme)
-        .join(", ")}`;
-    }
-    if (
-      commentsAnalysis.viewerLoved &&
-      commentsAnalysis.viewerLoved.length > 0
-    ) {
-      commentsContext += `\nWhat viewers loved: ${commentsAnalysis.viewerLoved
-        .slice(0, 3)
-        .join("; ")}`;
-    }
-    if (
-      commentsAnalysis.viewerAskedFor &&
-      commentsAnalysis.viewerAskedFor.length > 0
-    ) {
-      commentsContext += `\nViewers asked for: ${commentsAnalysis.viewerAskedFor
-        .slice(0, 3)
-        .join("; ")}`;
-    }
-  }
-
-  const cleanDesc = (video.description ?? "")
-    .replace(/https?:\/\/\S+/gi, "")
-    .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "")
-    .replace(/#[\p{L}\p{N}_-]+/gu, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 800);
-
-  // Compute precise duration string (never "0 minutes", always exact seconds for Shorts)
-  let durationStr = "";
-  if (video.durationSec) {
-    const sec = video.durationSec;
-    if (sec < 60) {
-      durationStr = `Duration: ${sec}s (YouTube Shorts format)`;
-    } else if (sec < 3600) {
-      const m = Math.floor(sec / 60);
-      const s = sec % 60;
-      durationStr = `Duration: ${m}m ${s}s`;
-    } else {
-      const h = Math.floor(sec / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      durationStr = `Duration: ${h}h ${m}m`;
-    }
-  }
-
-  // Count description words for context
+  const commentsContext = commentsAnalysis ? buildCommentsContext(commentsAnalysis) : "";
+  const cleanDesc = cleanDescription(video.description);
+  const durationStr = formatPreciseDuration(video.durationSec);
   const descWordCount = cleanDesc.split(/\s+/).filter(Boolean).length;
 
-  // Extract hashtags from title/description (publicly visible, unlike tags)
   const hashtagMatches =
     `${video.title} ${video.description ?? ""}`.match(/#[\p{L}\p{N}_-]+/gu) ||
     [];
   const hashtags = [...new Set(hashtagMatches.map((h) => h.toLowerCase()))];
 
-  // Compute like rate for context
   const likeRate =
     video.stats.viewCount > 0 && video.stats.likeCount
       ? ((video.stats.likeCount / video.stats.viewCount) * 100).toFixed(2)
@@ -358,8 +345,8 @@ For "whyItsWorking" (HYPOTHESES based on public signals):
       { temperature: 0.5, maxTokens: 500, responseFormat: "json_object" }
     );
     return JSON.parse(result.content);
-  } catch (err) {
-    console.error("Competitor basic analysis failed:", err);
+  } catch (error) {
+    console.error("Competitor basic analysis failed:", error);
     return null;
   }
 }
@@ -416,8 +403,8 @@ FORBIDDEN phrases (we cannot measure these):
       { temperature: 0.5, maxTokens: 500, responseFormat: "json_object" }
     );
     return JSON.parse(result.content);
-  } catch (err) {
-    console.error("Competitor themes/patterns failed:", err);
+  } catch (error) {
+    console.error("Competitor themes/patterns failed:", error);
     return null;
   }
 }
@@ -474,8 +461,8 @@ RULES:
       { temperature: 0.6, maxTokens: 600, responseFormat: "json_object" }
     );
     return JSON.parse(result.content);
-  } catch (err) {
-    console.error("Competitor remix ideas failed:", err);
+  } catch (error) {
+    console.error("Competitor remix ideas failed:", error);
     return null;
   }
 }
@@ -561,8 +548,8 @@ Good examples:
       }))
       .filter((x) => x.action.length >= 16)
       .slice(0, 8);
-  } catch (err) {
-    console.error("Competitor beat checklist failed:", err);
+  } catch (error) {
+    console.error("Competitor beat checklist failed:", error);
     return null;
   }
 }
@@ -879,9 +866,9 @@ Based on ALL the context above (including short tokens like AI, Go, F1, S3, 2.0,
         );
         // Try to clean up common JSON issues
         const cleaned = jsonMatch[0]
-          .replace(/[\u0000-\u001F]+/g, " ") // Remove control characters
-          .replace(/,\s*}/g, "}") // Remove trailing commas
-          .replace(/,\s*]/g, "]");
+          .replaceAll(/[\u0000-\u001F]+/g, " ") // Remove control characters
+          .replaceAll(/,\s*}/g, "}") // Remove trailing commas
+          .replaceAll(/,\s*]/g, "]");
         try {
           parsed = JSON.parse(cleaned);
         } catch {
@@ -912,10 +899,10 @@ Based on ALL the context above (including short tokens like AI, Go, F1, S3, 2.0,
     console.warn(
       "[generateNichePersona] Invalid response structure, using fallback"
     );
-    return getFallbackPersona(category);
-  } catch (err) {
-    console.error("[generateNichePersona] Error:", err);
-    return getFallbackPersona(category);
+    return getFallbackPersona(category ?? undefined);
+  } catch (error) {
+    console.error("[generateNichePersona] Error:", error);
+    return getFallbackPersona(category ?? undefined);
   }
 }
 
@@ -923,11 +910,10 @@ Based on ALL the context above (including short tokens like AI, Go, F1, S3, 2.0,
  * Fallback persona when Step A fails.
  * Returns a generic but reasonable system prompt.
  */
-function getFallbackPersona(category: string | null | undefined): NichePersona {
-  const categoryLabel = category || "General Content";
+function getFallbackPersona(category = "General Content"): NichePersona {
   return {
-    niche: categoryLabel,
-    systemPrompt: `You are a YouTube niche analyst specializing in the ${categoryLabel} category. Given a creator's video data, identify their specific niche and generate YouTube search queries to find POPULAR, HIGH-QUALITY channels making similar content.
+    niche: category,
+    systemPrompt: `You are a YouTube niche analyst specializing in the ${category} category. Given a creator's video data, identify their specific niche and generate YouTube search queries to find POPULAR, HIGH-QUALITY channels making similar content.
 
 Rules:
 - Be SPECIFIC about the niche (not just the broad category, but the exact sub-niche)
@@ -970,6 +956,81 @@ export type ChannelProfileContext = {
  * When channelProfile is provided, it's used as the primary context/anchor.
  * Video data is then used to refine and validate the niche.
  */
+function tryProfileQueries(
+  channelId: number,
+  profile: ChannelProfileContext,
+): { niche: string; queries: string[] } | null {
+  if (profile.competitorSearchHints && profile.competitorSearchHints.length > 0) {
+    console.log(`[generateNicheQueries] Using channel profile hints for channel ${channelId} (${profile.competitorSearchHints.length} hints)`);
+    return { niche: profile.nicheLabel, queries: profile.competitorSearchHints.slice(0, 12) };
+  }
+
+  const profileQueries: string[] = [];
+  if (profile.keywords && profile.keywords.length > 0) {
+    profileQueries.push(...profile.keywords.slice(0, 8));
+  }
+  for (const cat of profile.primaryCategories) {
+    if (!profileQueries.includes(cat.toLowerCase())) {
+      profileQueries.push(cat.toLowerCase());
+    }
+  }
+
+  if (profileQueries.length > 0) {
+    console.log(`[generateNicheQueries] Using channel profile keywords for channel ${channelId} (${profileQueries.length} queries)`);
+    return { niche: profile.nicheLabel, queries: profileQueries.slice(0, 12) };
+  }
+
+  return null;
+}
+
+function buildProfilePersona(profile: ChannelProfileContext): NichePersona {
+  return {
+    niche: profile.nicheLabel,
+    systemPrompt: `You are an expert YouTube niche analyst specializing in ${profile.nicheLabel}. 
+The creator has described their channel as: "${profile.nicheDescription}"
+Their target audience is: ${profile.targetAudience}
+Primary categories: ${profile.primaryCategories.join(", ")}
+Key keywords: ${profile.keywords.slice(0, 15).join(", ")}
+
+Given their video data, generate YouTube search queries to find POPULAR, HIGH-QUALITY channels making similar content to help them find competitors and inspiration.
+
+Rules:
+- Be SPECIFIC about the niche - use the creator's self-description as the anchor
+- Generate 8-10 search queries that would find SUCCESSFUL channels in this exact niche
+- Queries should find channels with good production quality and established audiences
+- Keep queries SHORT (2-4 words max)
+- Output valid JSON only`,
+  };
+}
+
+async function resolvePersona(
+  channelId: number,
+  videoTitles: string[],
+  topTags: string[],
+  categoryName: string | null,
+  channelProfile?: ChannelProfileContext,
+): Promise<NichePersona> {
+  if (channelProfile) {
+    console.log(`[generateNicheQueries] Using channel profile as persona anchor for channel ${channelId}`);
+    return buildProfilePersona(channelProfile);
+  }
+
+  const contentHash = computeContentHash(videoTitles, topTags, categoryName);
+  const cached = getCachedPersona(channelId, contentHash);
+  if (cached) {
+    return { niche: cached.niche, systemPrompt: cached.systemPrompt };
+  }
+
+  try {
+    const persona = await generateNichePersona(videoTitles, topTags, categoryName);
+    setCachedPersona(channelId, contentHash, persona.niche, persona.systemPrompt);
+    return persona;
+  } catch (error) {
+    console.error("[generateNicheQueries] Step A failed:", error);
+    return getFallbackPersona(categoryName ?? undefined);
+  }
+}
+
 export async function generateNicheQueries(input: {
   channelId: number;
   videoTitles: string[];
@@ -983,106 +1044,12 @@ export async function generateNicheQueries(input: {
   const { channelId, videoTitles, topTags, categoryName, channelProfile } =
     input;
 
-  // HIGHEST PRIORITY: If we have a channel profile, use it as the primary source
-  // The user's stated intent is more valuable than video-inferred data
   if (channelProfile) {
-    // If we have competitor hints from AI profile, use them directly
-    if (
-      channelProfile.competitorSearchHints &&
-      channelProfile.competitorSearchHints.length > 0
-    ) {
-      console.log(
-        `[generateNicheQueries] Using channel profile hints for channel ${channelId} (${channelProfile.competitorSearchHints.length} hints)`
-      );
-      return {
-        niche: channelProfile.nicheLabel,
-        queries: channelProfile.competitorSearchHints.slice(0, 12),
-      };
-    }
-
-    // Even without competitor hints, use profile keywords + categories
-    const profileQueries: string[] = [];
-
-    // Add keywords as search terms (first 8)
-    if (channelProfile.keywords && channelProfile.keywords.length > 0) {
-      profileQueries.push(...channelProfile.keywords.slice(0, 8));
-    }
-
-    // Add categories as search terms
-    channelProfile.primaryCategories.forEach((cat) => {
-      if (!profileQueries.includes(cat.toLowerCase())) {
-        profileQueries.push(cat.toLowerCase());
-      }
-    });
-
-    if (profileQueries.length > 0) {
-      console.log(
-        `[generateNicheQueries] Using channel profile keywords for channel ${channelId} (${profileQueries.length} queries)`
-      );
-      return {
-        niche: channelProfile.nicheLabel,
-        queries: profileQueries.slice(0, 12),
-      };
-    }
+    const profileResult = tryProfileQueries(channelId, channelProfile);
+    if (profileResult) {return profileResult;}
   }
 
-  // ============================================
-  // STEP A: Get or generate niche persona
-  // ============================================
-  let persona: NichePersona;
-
-  // If we have a channel profile, use it as the base niche
-  if (channelProfile) {
-    console.log(
-      `[generateNicheQueries] Using channel profile as persona anchor for channel ${channelId}`
-    );
-    persona = {
-      niche: channelProfile.nicheLabel,
-      systemPrompt: `You are an expert YouTube niche analyst specializing in ${
-        channelProfile.nicheLabel
-      }. 
-The creator has described their channel as: "${channelProfile.nicheDescription}"
-Their target audience is: ${channelProfile.targetAudience}
-Primary categories: ${channelProfile.primaryCategories.join(", ")}
-Key keywords: ${channelProfile.keywords.slice(0, 15).join(", ")}
-
-Given their video data, generate YouTube search queries to find POPULAR, HIGH-QUALITY channels making similar content to help them find competitors and inspiration.
-
-Rules:
-- Be SPECIFIC about the niche - use the creator's self-description as the anchor
-- Generate 8-10 search queries that would find SUCCESSFUL channels in this exact niche
-- Queries should find channels with good production quality and established audiences
-- Keep queries SHORT (2-4 words max)
-- Output valid JSON only`,
-    };
-  } else {
-    // Compute content hash for cache key
-    const contentHash = computeContentHash(videoTitles, topTags, categoryName);
-
-    const cached = getCachedPersona(channelId, contentHash);
-    if (cached) {
-      persona = { niche: cached.niche, systemPrompt: cached.systemPrompt };
-    } else {
-      // Generate new persona
-      try {
-        persona = await generateNichePersona(
-          videoTitles,
-          topTags,
-          categoryName
-        );
-        // Cache it
-        setCachedPersona(
-          channelId,
-          contentHash,
-          persona.niche,
-          persona.systemPrompt
-        );
-      } catch (err) {
-        console.error("[generateNicheQueries] Step A failed:", err);
-        persona = getFallbackPersona(categoryName);
-      }
-    }
-  }
+  const persona = await resolvePersona(channelId, videoTitles, topTags, categoryName, channelProfile);
 
   // ============================================
   // STEP B: Generate queries using the dynamic persona
@@ -1168,8 +1135,8 @@ Respond with JSON only:
       niche: parsed.niche || persona.niche,
       queries: parsed.queries.slice(0, 10),
     };
-  } catch (err) {
-    console.error("[generateNicheQueries] Step B Error:", err);
+  } catch (error) {
+    console.error("[generateNicheQueries] Step B Error:", error);
     return fallbackNicheQueries(topTags, categoryName, persona.niche);
   }
 }

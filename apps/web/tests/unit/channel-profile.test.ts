@@ -2,21 +2,22 @@
  * Unit tests for Channel Profile feature
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect,it } from "vitest";
+
 import {
-  ChannelProfileInputSchema,
   ChannelProfileAISchema,
+  ChannelProfileInputSchema,
+  CONTENT_FORMATS,
   createFallbackAIProfile,
   DEFAULT_PROFILE_INPUT,
   PROFILE_CATEGORIES,
-  CONTENT_FORMATS,
 } from "@/lib/features/channels";
 import {
   computeProfileInputHash,
-  isProfileCacheValid,
-  sanitizeUserText,
-  sanitizeProfileInput,
   formatInputForLLM,
+  isProfileCacheValid,
+  sanitizeProfileInput,
+  sanitizeUserText,
 } from "@/lib/features/channels/utils";
 
 describe("Channel Profile Types", () => {

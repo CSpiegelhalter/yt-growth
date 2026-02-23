@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import ChannelProfileClient from "./ChannelProfileClient";
 
 export const metadata: Metadata = {

@@ -1,43 +1,43 @@
 // Types (re-exported for consumers that need the DTOs)
 export type {
-  CompetitorVideo,
-  CompetitorVideoAnalysis,
+  AnalyzeVideoInput,
   CompetitorCommentsAnalysis,
   CompetitorFeedResponse,
+  CompetitorSearchFilters,
+  CompetitorVideo,
+  CompetitorVideoAnalysis,
+  CompetitorVideoResult,
   ContentTypeFilter,
   DateRangePreset,
-  SortOption,
-  CompetitorSearchFilters,
-  InferredNiche,
-  SearchDerivedMetrics,
-  CompetitorVideoResult,
-  SearchEvent,
-  SearchCursor,
-  DiscoveryListType,
-  DiscoveryFilters,
-  DiscoveredNiche,
-  SampleVideo,
-  SearchMode,
   DiscoverCompetitorsInput,
   DiscoverCompetitorsResult,
-  SearchCompetitorsInput,
-  AnalyzeVideoInput,
+  DiscoveredNiche,
+  DiscoveryFilters,
+  DiscoveryListType,
   GetMoreFromChannelInput,
+  InferredNiche,
+  SampleVideo,
+  SearchCompetitorsInput,
+  SearchCursor,
+  SearchDerivedMetrics,
+  SearchEvent,
+  SearchMode,
+  SortOption,
 } from "./types";
 
 // Schemas
 export {
   DiscoverBodySchema,
+  MoreFromChannelParamsSchema,
+  MoreFromChannelQuerySchema,
   SearchBodySchema,
   VideoParamsSchema,
   VideoQuerySchema,
-  MoreFromChannelParamsSchema,
-  MoreFromChannelQuerySchema,
 } from "./schemas";
 
 // Use-cases
-export { discoverCompetitors } from "./use-cases/discoverCompetitors";
-export { searchCompetitors } from "./use-cases/searchCompetitors";
 export { analyzeVideo } from "./use-cases/analyzeVideo";
-export { getMoreFromChannel } from "./use-cases/getMoreFromChannel";
+export { discoverCompetitors } from "./use-cases/discoverCompetitors";
 export type { GetMoreFromChannelDeps } from "./use-cases/getMoreFromChannel";
+export { getMoreFromChannel } from "./use-cases/getMoreFromChannel";
+export { searchCompetitors } from "./use-cases/searchCompetitors";

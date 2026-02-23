@@ -1,26 +1,27 @@
 import "server-only";
 
-import { logger } from "@/lib/shared/logger";
 import {
-  getSearchVolumeTask,
-  getKeywordsForKeywordsTask,
-  getGoogleTrendsTask,
-  parseGoogleTrendsResult,
-  mapDataForSEOError,
   DataForSEOError,
+  getGoogleTrendsTask,
+  getKeywordsForKeywordsTask,
+  getSearchVolumeTask,
   type KeywordOverviewResponse,
   type KeywordRelatedResponse,
+  mapDataForSEOError,
+  parseGoogleTrendsResult,
 } from "@/lib/dataforseo";
 import {
-  getPendingTask,
   completePendingTask,
+  getPendingTask,
 } from "@/lib/dataforseo/cache";
 import {
   mapToLegacyOverviewRow,
   mapToLegacyRelatedRow,
 } from "@/lib/keywords/mappers";
-import type { PollKeywordTaskInput, PollKeywordTaskResult } from "../types";
+import { logger } from "@/lib/shared/logger";
+
 import { KeywordError } from "../errors";
+import type { PollKeywordTaskInput, PollKeywordTaskResult } from "../types";
 import { mapTrendsBody } from "./trends-mapper";
 
 /**
@@ -51,18 +52,18 @@ export async function pollKeywordTask(
     }
 
     return await pollRelatedTask(userId, taskId, phrase, location);
-  } catch (err) {
-    if (err instanceof DataForSEOError) {
+  } catch (error) {
+    if (error instanceof DataForSEOError) {
       logger.error("keywords.task_dataforseo_error", {
         userId,
         taskId,
-        code: err.code,
-        message: err.message,
+        code: error.code,
+        message: error.message,
       });
-      throw mapDataForSEOError(err);
+      throw mapDataForSEOError(error);
     }
 
-    throw err;
+    throw error;
   }
 }
 

@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+
 import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
 
 function getOrCreateRequestId(req: NextRequest) {

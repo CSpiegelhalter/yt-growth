@@ -1,7 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
+
+import { formatUsd,SUBSCRIPTION } from "@/lib/shared/product";
 
 type Styles = Record<string, string>;
 

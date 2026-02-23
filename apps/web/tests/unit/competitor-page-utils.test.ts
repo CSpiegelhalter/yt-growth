@@ -6,14 +6,15 @@
  * - Niche text validation
  */
 
-import { describe, it, expect } from "vitest";
-import {
-  validateYouTubeUrl,
-  validateNicheText,
-  serializeFilters,
-  deserializeFilters,
-} from "@/app/(app)/competitors/utils";
+import { describe, expect,it } from "vitest";
+
 import type { FilterState } from "@/app/(app)/competitors/CompetitorFilters";
+import {
+  deserializeFilters,
+  serializeFilters,
+  validateNicheText,
+  validateYouTubeUrl,
+} from "@/app/(app)/competitors/utils";
 
 // ============================================
 // URL VALIDATION TESTS

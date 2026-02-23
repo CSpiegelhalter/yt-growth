@@ -1,18 +1,19 @@
 /**
  * Unit tests for competitor analysis utilities
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect,it } from "vitest";
+
 import {
+  analyzeExternalLinks,
+  analyzeHashtags,
+  analyzeNumberInTitle,
+  analyzeTitleTruncation,
+  computePublicSignals,
+  detectChapters,
+  detectEngagementOutlier,
   formatDuration,
   formatDurationBadge,
   getDurationBucket,
-  analyzeNumberInTitle,
-  analyzeTitleTruncation,
-  detectChapters,
-  analyzeExternalLinks,
-  analyzeHashtags,
-  computePublicSignals,
-  detectEngagementOutlier,
 } from "@/lib/competitor-utils";
 
 describe("formatDuration", () => {
@@ -46,7 +47,7 @@ describe("formatDuration", () => {
 
   it("handles edge cases", () => {
     expect(formatDuration(-1)).toBe("—");
-    expect(formatDuration(NaN)).toBe("—");
+    expect(formatDuration(Number.NaN)).toBe("—");
     expect(formatDuration(Infinity)).toBe("—");
   });
 });
@@ -314,14 +315,14 @@ describe("computePublicSignals", () => {
       description: "0:00 Intro\n1:00 Tip 1\n2:00 Tip 2\n3:00 Conclusion\n\nMore at https://example.com",
       publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
       durationSec: 600,
-      viewCount: 10000,
+      viewCount: 10_000,
       likeCount: 500,
       commentCount: 50,
     });
 
     // Core metrics
     expect(result.videoAgeDays).toBe(7);
-    expect(result.viewsPerDay).toBeCloseTo(10000 / 7, 0);
+    expect(result.viewsPerDay).toBeCloseTo(10_000 / 7, 0);
     expect(result.likeRate).toBe(5); // 500/10000 * 100 = 5%
     expect(result.commentsPer1k).toBe(5); // 50/10000 * 1000 = 5
 
@@ -372,7 +373,7 @@ describe("detectEngagementOutlier", () => {
   describe("heuristic threshold mode (single video)", () => {
     it("labels exceptional engagement (>6%)", () => {
       const result = detectEngagementOutlier({
-        views: 10000,
+        views: 10_000,
         likes: 600,
         comments: 50,
       });
@@ -383,7 +384,7 @@ describe("detectEngagementOutlier", () => {
 
     it("labels high engagement (4-6%)", () => {
       const result = detectEngagementOutlier({
-        views: 10000,
+        views: 10_000,
         likes: 400,
         comments: 50,
       });
@@ -393,7 +394,7 @@ describe("detectEngagementOutlier", () => {
 
     it("labels above average engagement (2.5-4%)", () => {
       const result = detectEngagementOutlier({
-        views: 10000,
+        views: 10_000,
         likes: 250,
         comments: 25,
       });
@@ -403,7 +404,7 @@ describe("detectEngagementOutlier", () => {
 
     it("labels average engagement (1-2.5%)", () => {
       const result = detectEngagementOutlier({
-        views: 10000,
+        views: 10_000,
         likes: 150,
         comments: 10,
       });
@@ -413,7 +414,7 @@ describe("detectEngagementOutlier", () => {
 
     it("labels below average engagement (<1%)", () => {
       const result = detectEngagementOutlier({
-        views: 10000,
+        views: 10_000,
         likes: 50,
         comments: 5,
       });
@@ -435,16 +436,16 @@ describe("detectEngagementOutlier", () => {
 
   describe("channel comparison mode (with channel data)", () => {
     const channelVideos = [
-      { views: 10000, likes: 200, comments: 20 }, // 2.2%
+      { views: 10_000, likes: 200, comments: 20 }, // 2.2%
       { views: 8000, likes: 160, comments: 16 }, // 2.2%
-      { views: 12000, likes: 240, comments: 24 }, // 2.2%
+      { views: 12_000, likes: 240, comments: 24 }, // 2.2%
       { views: 9000, likes: 180, comments: 18 }, // 2.2%
-      { views: 11000, likes: 220, comments: 22 }, // 2.2%
+      { views: 11_000, likes: 220, comments: 22 }, // 2.2%
     ];
 
     it("uses channel comparison when data is available", () => {
       const result = detectEngagementOutlier({
-        views: 10000,
+        views: 10_000,
         likes: 200,
         comments: 20,
         channelVideos,
@@ -454,7 +455,7 @@ describe("detectEngagementOutlier", () => {
 
     it("detects exceptional outlier above channel median", () => {
       const result = detectEngagementOutlier({
-        views: 10000,
+        views: 10_000,
         likes: 600,
         comments: 60, // 6.6% vs ~2.2% median
         channelVideos,
@@ -465,7 +466,7 @@ describe("detectEngagementOutlier", () => {
 
     it("labels above average when at channel median", () => {
       const result = detectEngagementOutlier({
-        views: 10000,
+        views: 10_000,
         likes: 200,
         comments: 20, // exactly at median
         channelVideos,
@@ -477,7 +478,7 @@ describe("detectEngagementOutlier", () => {
 
     it("labels below average when under channel median", () => {
       const result = detectEngagementOutlier({
-        views: 10000,
+        views: 10_000,
         likes: 50,
         comments: 5, // 0.55% vs ~2.2% median
         channelVideos,
@@ -488,7 +489,7 @@ describe("detectEngagementOutlier", () => {
 
     it("falls back to heuristic with insufficient channel data", () => {
       const result = detectEngagementOutlier({
-        views: 10000,
+        views: 10_000,
         likes: 600,
         comments: 50,
         channelVideos: [
@@ -502,7 +503,7 @@ describe("detectEngagementOutlier", () => {
 
   describe("determinism", () => {
     it("produces consistent results for same input", () => {
-      const input = { views: 10000, likes: 300, comments: 30 };
+      const input = { views: 10_000, likes: 300, comments: 30 };
       const result1 = detectEngagementOutlier(input);
       const result2 = detectEngagementOutlier(input);
       
@@ -513,13 +514,13 @@ describe("detectEngagementOutlier", () => {
 
     it("produces consistent results with channel data", () => {
       const channelVideos = [
-        { views: 10000, likes: 200, comments: 20 },
+        { views: 10_000, likes: 200, comments: 20 },
         { views: 8000, likes: 160, comments: 16 },
-        { views: 12000, likes: 240, comments: 24 },
+        { views: 12_000, likes: 240, comments: 24 },
         { views: 9000, likes: 180, comments: 18 },
-        { views: 11000, likes: 220, comments: 22 },
+        { views: 11_000, likes: 220, comments: 22 },
       ];
-      const input = { views: 10000, likes: 500, comments: 50, channelVideos };
+      const input = { views: 10_000, likes: 500, comments: 50, channelVideos };
       const result1 = detectEngagementOutlier(input);
       const result2 = detectEngagementOutlier(input);
       

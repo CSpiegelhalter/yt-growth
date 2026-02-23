@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { usePathname, useRouter,useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { AppSidebar } from "./AppSidebar";
-import { MobileNav } from "./MobileNav";
-import { AppHeader } from "./AppHeader";
+import { useCallback, useEffect, useRef,useState } from "react";
+
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
 import { safeGetItem, safeSetItem } from "@/lib/client/safeLocalStorage";
-import { useSyncActiveChannel } from "@/lib/use-sync-active-channel";
 import type { SerializableNavItem } from "@/lib/server/nav-config.server";
+import { useSyncActiveChannel } from "@/lib/use-sync-active-channel";
+
+import { AppHeader } from "./AppHeader";
 import s from "./AppShell.module.css";
+import { AppSidebar } from "./AppSidebar";
+import { MobileNav } from "./MobileNav";
 
 type Channel = {
   channel_id: string;
@@ -98,15 +100,13 @@ export function AppShellServer({
     if (didInitialSync.current) {return;}
     didInitialSync.current = true;
     
-    if (activeChannelId) {
-      // Sync URL if on a channel-scoped page and URL doesn't match
-      if (isChannelScopedPath(pathname) && urlChannelId !== activeChannelId) {
+    if (activeChannelId && // Sync URL if on a channel-scoped page and URL doesn't match
+      isChannelScopedPath(pathname) && urlChannelId !== activeChannelId) {
         const next = new URLSearchParams(searchParams.toString());
         next.set("channelId", activeChannelId);
         next.delete("newChannel");
         router.replace(`${pathname}?${next.toString()}`, { scroll: false });
       }
-    }
   }, [activeChannelId, pathname, searchParams, router, urlChannelId]);
 
   // Listen for channel-removed events
@@ -156,7 +156,7 @@ export function AppShellServer({
       }
     }
     
-    refreshChannels();
+    void refreshChannels();
   }, [searchParams, pathname, router, setActiveChannelId]);
 
   const handleToggleCollapse = useCallback(() => {

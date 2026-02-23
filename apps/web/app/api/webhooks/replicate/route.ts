@@ -9,11 +9,12 @@
  * Do not wrap with createApiRoute/withAuth — Replicate calls this directly.
  */
 import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/prisma";
-import { verifyReplicateWebhook } from "@/lib/replicate/webhook";
+
 import { processTrainingWebhook } from "@/lib/features/identity";
 import { processPredictionWebhook } from "@/lib/features/thumbnails";
+import { verifyReplicateWebhook } from "@/lib/replicate/webhook";
 import { createLogger } from "@/lib/shared/logger";
+import { prisma } from "@/prisma";
 
 export const runtime = "nodejs";
 
@@ -30,9 +31,9 @@ export async function POST(req: NextRequest) {
   const payloadText = await req.text();
   try {
     verifyReplicateWebhook({ payload: payloadText, headers: req.headers });
-  } catch (err) {
+  } catch (error) {
     log.warn("Webhook verification failed", {
-      err: err instanceof Error ? err.message : String(err),
+      err: error instanceof Error ? error.message : String(error),
     });
     return NextResponse.json({ ok: false }, { status: 401 });
   }

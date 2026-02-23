@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+
 import styles from "./ui.module.css";
 
 type StatusType = "strong" | "mixed" | "needs-work" | "neutral";

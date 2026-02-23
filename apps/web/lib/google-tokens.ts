@@ -1,6 +1,6 @@
 // lib/google-tokens.ts
-import { prisma } from "@/prisma";
 import { googleOAuthAdapter } from "@/lib/adapters/google";
+import { prisma } from "@/prisma";
 
 /**
  * Custom error for when Google token refresh fails (revoked access, invalid token, etc.)
@@ -208,9 +208,9 @@ export async function googleFetchWithAutoRefresh<T>(
   let accessToken = await getAccessToken(ga);
 
   let r = await fetch(url, {
-    ...(init ?? {}),
+    ...init,
     headers: {
-      ...(init?.headers ?? {}),
+      ...init?.headers,
       Authorization: `Bearer ${accessToken}`,
     },
   });
@@ -220,9 +220,9 @@ export async function googleFetchWithAutoRefresh<T>(
     await r.text(); // consume response body before retry
     accessToken = await getAccessToken(ga, true);
     r = await fetch(url, {
-      ...(init ?? {}),
+      ...init,
       headers: {
-        ...(init?.headers ?? {}),
+        ...init?.headers,
         Authorization: `Bearer ${accessToken}`,
       },
     });

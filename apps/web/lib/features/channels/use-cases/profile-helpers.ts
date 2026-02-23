@@ -1,5 +1,5 @@
+import type { ChannelProfileAI,ChannelProfileInput } from "../schemas";
 import type { ChannelProfile } from "../types";
-import type { ChannelProfileInput, ChannelProfileAI } from "../schemas";
 
 export type ProfileRow = {
   id: string;

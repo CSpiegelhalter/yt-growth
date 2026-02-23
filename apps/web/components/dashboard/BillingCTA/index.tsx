@@ -1,9 +1,20 @@
 "use client";
 
 import { useState } from "react";
+
 import { AlertCircleIcon } from "@/components/icons";
+import { formatUsd,LIMITS, SUBSCRIPTION } from "@/lib/shared/product";
+
 import s from "./style.module.css";
-import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
+
+function handleManageBilling() {
+  const portalUrl = process.env.NEXT_PUBLIC_STRIPE_PORTAL_URL;
+  if (portalUrl) {
+    window.location.href = portalUrl;
+  } else {
+    alert("Billing portal not configured. Please contact support.");
+  }
+}
 
 type Props = {
   isSubscribed: boolean;
@@ -35,20 +46,10 @@ export default function BillingCTA({
       if (data.url) {
         window.location.href = data.url;
       }
-    } catch (err) {
-      console.error("Checkout error:", err);
+    } catch (error) {
+      console.error("Checkout error:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleManageBilling = () => {
-    // Direct link to Stripe Customer Portal
-    const portalUrl = process.env.NEXT_PUBLIC_STRIPE_PORTAL_URL;
-    if (portalUrl) {
-      window.location.href = portalUrl;
-    } else {
-      alert("Billing portal not configured. Please contact support.");
     }
   };
 

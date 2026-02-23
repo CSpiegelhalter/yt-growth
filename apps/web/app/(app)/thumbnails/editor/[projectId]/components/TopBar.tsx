@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { MIN_ZOOM, MAX_ZOOM } from "./constants";
+
+import { MAX_ZOOM,MIN_ZOOM } from "./constants";
 import s from "./editor.module.css";
 
 interface TopBarProps {

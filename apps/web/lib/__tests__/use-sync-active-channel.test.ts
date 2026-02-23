@@ -2,7 +2,8 @@
  * Unit tests for resolveActiveChannelId — the pure resolution function
  * from the centralized active-channel hook.
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { afterEach,beforeEach, describe, expect, it } from "vitest";
+
 import { resolveActiveChannelId } from "../use-sync-active-channel";
 
 /* ------------------------------------------------------------------ */
@@ -19,7 +20,7 @@ const fakeLocalStorage = {
   removeItem: (k: string) => store.delete(k),
 };
 
-const hadWindow = typeof globalThis.window !== "undefined";
+const hadWindow = globalThis.window !== undefined;
 const globalThisMutable = globalThis as typeof globalThis & { window?: unknown };
 
 beforeEach(() => {

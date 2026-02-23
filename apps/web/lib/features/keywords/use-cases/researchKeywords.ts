@@ -1,16 +1,15 @@
 import "server-only";
 
-import { logger } from "@/lib/shared/logger";
 import {
+  DataForSEOError,
+  fetchCombinedKeywordData,
   fetchKeywordOverview,
   fetchRelatedKeywords,
-  fetchCombinedKeywordData,
-  prepareDataForSeoRequest,
-  mapDataForSEOError,
-  DataForSEOError,
+  type KeywordCombinedResponse,
   type KeywordOverviewResponse,
   type KeywordRelatedResponse,
-  type KeywordCombinedResponse,
+  mapDataForSEOError,
+  prepareDataForSeoRequest,
 } from "@/lib/dataforseo";
 import {
   getCachedResponse,
@@ -21,9 +20,11 @@ import {
   mapToLegacyOverviewRow,
   mapToLegacyRelatedRow,
 } from "@/lib/keywords/mappers";
-import type { ResearchKeywordsInput, UsageInfo } from "../types";
+import { logger } from "@/lib/shared/logger";
+
 import { KeywordError } from "../errors";
 import { resolveQuota } from "../quota";
+import type { ResearchKeywordsInput, UsageInfo } from "../types";
 
 type SuccessResult = {
   type: "success";
@@ -97,30 +98,30 @@ export async function researchKeywords(
     } 
       return await fetchRelated(userId, cleanPhrase, cleanPhrases, locationInfo.region, displayLimit, usageInfo);
     
-  } catch (err) {
-    if (err instanceof DataForSEOError) {
+  } catch (error) {
+    if (error instanceof DataForSEOError) {
       logger.error("keywords.dataforseo_error", {
         userId,
-        code: err.code,
-        message: err.message,
-        taskId: err.taskId,
+        code: error.code,
+        message: error.message,
+        taskId: error.taskId,
       });
 
-      if (err.code === "TASK_PENDING") {
+      if (error.code === "TASK_PENDING") {
         return {
           type: "pending",
           body: {
             pending: true,
-            taskId: err.taskId,
+            taskId: error.taskId,
             message: "Fetching keyword data...",
           },
         };
       }
 
-      throw mapDataForSEOError(err);
+      throw mapDataForSEOError(error);
     }
 
-    throw err;
+    throw error;
   }
 }
 

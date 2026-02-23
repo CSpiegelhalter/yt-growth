@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
-import s from "./style.module.css";
-import type { Idea } from "@/types/api";
-import { copyToClipboard } from "@/components/ui/Toast";
+import { useCallback, useEffect, useMemo,useState } from "react";
+
 import { IdeaDetailSheet } from "@/components/dashboard/IdeaBoard";
+import { copyToClipboard } from "@/components/ui/Toast";
+import type { Idea } from "@/types/api";
+
+import s from "./style.module.css";
 
 type Status = "saved" | "in_progress" | "filmed" | "published";
 
@@ -44,6 +46,55 @@ const FILTER_TABS: { key: Status | "all"; label: string }[] = [
   { key: "published", label: "Published" },
 ];
 
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (days === 0) {return "Today";}
+  if (days === 1) {return "Yesterday";}
+  if (days < 7) {return `${days} days ago`;}
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+type GeneratedDetailsPayload = {
+  titles: string[];
+  hooks: string[];
+  keywords: string[];
+  creativeDirections?: {
+    titleAngles: string[];
+    hookSetups: string[];
+    visualMoments: string[];
+  } | null;
+  remixes?: Array<{ title: string; hook: string; angle: string }>;
+};
+
+function isEmptyDetailsPayload(payload: GeneratedDetailsPayload): boolean {
+  return payload.titles.length === 0 && payload.hooks.length === 0 && payload.keywords.length === 0;
+}
+
+function hasExistingGeneratedDetails(ideaJson: IdeaJsonData): boolean {
+  return (
+    Boolean(ideaJson.__detailsGeneratedAt) ||
+    (Array.isArray(ideaJson.titles) && ideaJson.titles.length > 0) ||
+    (Array.isArray(ideaJson.hooks) && ideaJson.hooks.length > 0) ||
+    (Array.isArray(ideaJson.keywords) && ideaJson.keywords.length > 0)
+  );
+}
+
+function buildEnrichedIdeaJson(existing: IdeaJsonData, payload: GeneratedDetailsPayload): IdeaJsonData {
+  return {
+    ...existing,
+    titles: payload.titles.map((t) => ({ text: t, styleTags: ["specific"] })),
+    hooks: payload.hooks.map((h) => ({ text: h, typeTags: ["curiosity"] })),
+    keywords: payload.keywords.map((k) => ({ text: k, intent: "search" })),
+    __detailsGeneratedAt: new Date().toISOString(),
+    __creativeDirections: payload.creativeDirections ?? null,
+    __remixes: payload.remixes ?? [],
+  };
+}
+
 export default function SavedIdeasClient() {
   const [ideas, setIdeas] = useState<SavedIdea[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,8 +112,8 @@ export default function SavedIdeasClient() {
       if (!res.ok) {throw new Error("Failed to fetch");}
       const data = await res.json();
       setIdeas(data.savedIdeas || []);
-    } catch (err) {
-      console.error("Failed to fetch saved ideas:", err);
+    } catch (error) {
+      console.error("Failed to fetch saved ideas:", error);
       showToast("Failed to load saved ideas");
     } finally {
       setLoading(false);
@@ -70,7 +121,7 @@ export default function SavedIdeasClient() {
   }, []);
 
   useEffect(() => {
-    fetchIdeas();
+    void fetchIdeas();
   }, [fetchIdeas]);
 
   const showToast = (message: string) => {
@@ -87,55 +138,16 @@ export default function SavedIdeasClient() {
   }, []);
 
   const persistGeneratedDetails = useCallback(
-    async (
-      ideaId: string,
-      payload: {
-        titles: string[];
-        hooks: string[];
-        keywords: string[];
-        creativeDirections?: {
-          titleAngles: string[];
-          hookSetups: string[];
-          visualMoments: string[];
-        } | null;
-        remixes?: Array<{ title: string; hook: string; angle: string }>;
-      }
-    ) => {
-      // Only persist if we have something meaningful.
-      if (!payload.titles.length && !payload.hooks.length && !payload.keywords.length) {
-        return;
-      }
+    async (ideaId: string, payload: GeneratedDetailsPayload) => {
+      if (isEmptyDetailsPayload(payload)) { return; }
 
       const current = ideas.find((i) => i.ideaId === ideaId);
-      if (!current) {return;}
+      if (!current) { return; }
 
       const existing = (current.ideaJson ?? {}) as IdeaJsonData;
-      const alreadyHasDetails =
-        Boolean(existing.__detailsGeneratedAt) ||
-        (Array.isArray(existing.titles) && existing.titles.length > 0) ||
-        (Array.isArray(existing.hooks) && existing.hooks.length > 0) ||
-        (Array.isArray(existing.keywords) && existing.keywords.length > 0);
+      if (hasExistingGeneratedDetails(existing)) { return; }
 
-      if (alreadyHasDetails) {return;}
-
-      const enriched: IdeaJsonData = {
-        ...existing,
-        titles: payload.titles.map((t) => ({
-          text: t,
-          styleTags: ["specific"],
-        })),
-        hooks: payload.hooks.map((h) => ({
-          text: h,
-          typeTags: ["curiosity"],
-        })),
-        keywords: payload.keywords.map((k) => ({
-          text: k,
-          intent: "search",
-        })),
-        __detailsGeneratedAt: new Date().toISOString(),
-        __creativeDirections: payload.creativeDirections ?? null,
-        __remixes: payload.remixes ?? [],
-      };
+      const enriched = buildEnrichedIdeaJson(existing, payload);
 
       try {
         const res = await fetch(`/api/me/saved-ideas/${ideaId}`, {
@@ -143,7 +155,7 @@ export default function SavedIdeasClient() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ideaJson: enriched }),
         });
-        if (!res.ok) {return;}
+        if (!res.ok) { return; }
 
         setIdeas((prev) =>
           prev.map((i) => (i.ideaId === ideaId ? { ...i, ideaJson: enriched as unknown as Idea } : i))
@@ -174,8 +186,8 @@ export default function SavedIdeasClient() {
         )
       );
       showToast(`Status updated to "${STATUS_LABELS[status]}"`);
-    } catch (err) {
-      console.error("Failed to update status:", err);
+    } catch (error) {
+      console.error("Failed to update status:", error);
       showToast("Failed to update status");
     }
   }, []);
@@ -197,8 +209,8 @@ export default function SavedIdeasClient() {
       );
       setEditingNotes(null);
       showToast("Notes saved");
-    } catch (err) {
-      console.error("Failed to update notes:", err);
+    } catch (error) {
+      console.error("Failed to update notes:", error);
       showToast("Failed to save notes");
     }
   }, []);
@@ -215,8 +227,8 @@ export default function SavedIdeasClient() {
 
       setIdeas((prev) => prev.filter((idea) => idea.ideaId !== ideaId));
       showToast("Idea removed");
-    } catch (err) {
-      console.error("Failed to delete idea:", err);
+    } catch (error) {
+      console.error("Failed to delete idea:", error);
       showToast("Failed to remove idea");
     }
   }, []);
@@ -235,19 +247,6 @@ export default function SavedIdeasClient() {
     });
     return c;
   }, [ideas]);
-
-  // Format date
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) {return "Today";}
-    if (days === 1) {return "Yesterday";}
-    if (days < 7) {return `${days} days ago`;}
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  };
 
   if (loading) {
     return (
@@ -390,7 +389,7 @@ export default function SavedIdeasClient() {
                           </button>
                         </div>
                       </div>
-                    ) : idea.notes ? (
+                    ) : (idea.notes ? (
                       <p
                         className={s.notesText}
                         onClick={(e) => {
@@ -413,7 +412,7 @@ export default function SavedIdeasClient() {
                       >
                         + Add notes
                       </button>
-                    )}
+                    ))}
                   </div>
                 </div>
 

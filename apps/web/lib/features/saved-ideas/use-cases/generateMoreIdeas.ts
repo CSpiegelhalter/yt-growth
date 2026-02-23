@@ -1,6 +1,8 @@
 import crypto from "crypto";
-import { prisma } from "@/prisma";
+
 import { callLLM } from "@/lib/llm";
+import { prisma } from "@/prisma";
+
 import { SavedIdeaError } from "../errors";
 
 type IdeaSeed = {
@@ -153,18 +155,23 @@ Generate MORE content that complements (not duplicates) this idea.`;
   }
 
   const parsed = JSON.parse(jsonMatch[0]) as MoreIdeaResponse;
+  return normalizeMoreIdeaResponse(parsed);
+}
 
+function safeSlice<T>(value: unknown, max: number): T[] {
+  return Array.isArray(value) ? (value as T[]).slice(0, max) : [];
+}
+
+function normalizeMoreIdeaResponse(parsed: MoreIdeaResponse): MoreIdeaResponse {
   return {
-    hooks: Array.isArray(parsed.hooks) ? parsed.hooks.slice(0, 10) : [],
-    titles: Array.isArray(parsed.titles) ? parsed.titles.slice(0, 10) : [],
-    keywords: Array.isArray(parsed.keywords)
-      ? parsed.keywords.slice(0, 16)
-      : [],
+    hooks: safeSlice<string>(parsed.hooks, 10),
+    titles: safeSlice<string>(parsed.titles, 10),
+    keywords: safeSlice<string>(parsed.keywords, 16),
     packaging: {
       titleAngles: parsed.packaging?.titleAngles?.slice(0, 8) ?? [],
       hookSetups: parsed.packaging?.hookSetups?.slice(0, 8) ?? [],
       visualMoments: parsed.packaging?.visualMoments?.slice(0, 8) ?? [],
     },
-    remixes: Array.isArray(parsed.remixes) ? parsed.remixes.slice(0, 6) : [],
+    remixes: safeSlice(parsed.remixes, 6),
   };
 }

@@ -69,28 +69,33 @@ export function toggleQuickChip(
   chipId: QuickChipId
 ): DiscoveryFilters {
   switch (chipId) {
-    case "fastGrowing":
+    case "fastGrowing": {
       return { ...filters, sortBy: "velocity" };
-    case "breakout":
+    }
+    case "breakout": {
       return {
         ...filters,
         sortBy: filters.sortBy === "breakout" ? defaults.sortBy : "breakout",
       };
-    case "smallChannels":
+    }
+    case "smallChannels": {
       return {
         ...filters,
         channelSize: filters.channelSize === "small" ? defaults.channelSize : "small",
       };
-    case "newChannels":
+    }
+    case "newChannels": {
       return {
         ...filters,
         channelAge: filters.channelAge === "new" ? defaults.channelAge : "new",
       };
-    case "shorts":
+    }
+    case "shorts": {
       return {
         ...filters,
         contentType: filters.contentType === "shorts" ? defaults.contentType : "shorts",
       };
+    }
   }
 }
 

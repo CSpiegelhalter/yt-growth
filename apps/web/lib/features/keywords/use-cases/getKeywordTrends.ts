@@ -1,11 +1,10 @@
 import "server-only";
 
-import { logger } from "@/lib/shared/logger";
 import {
-  fetchGoogleTrends,
-  prepareDataForSeoRequest,
-  mapDataForSEOError,
   DataForSEOError,
+  fetchGoogleTrends,
+  mapDataForSEOError,
+  prepareDataForSeoRequest,
 } from "@/lib/dataforseo";
 import {
   getCachedResponse,
@@ -13,8 +12,10 @@ import {
   setPendingTask,
 } from "@/lib/dataforseo/cache";
 import type { GoogleTrendsResponse } from "@/lib/dataforseo/client";
-import type { GetKeywordTrendsInput, UsageInfo } from "../types";
+import { logger } from "@/lib/shared/logger";
+
 import { resolveQuota } from "../quota";
+import type { GetKeywordTrendsInput, UsageInfo } from "../types";
 import { mapTrendsBody } from "./trends-mapper";
 
 type SuccessResult = { type: "success"; body: Record<string, unknown> };
@@ -129,17 +130,17 @@ export async function getKeywordTrends(
       type: "success",
       body: { ...mapTrendsBody(response), usage: usageInfo },
     };
-  } catch (err) {
-    if (err instanceof DataForSEOError) {
+  } catch (error) {
+    if (error instanceof DataForSEOError) {
       logger.error("keywords.trends_error", {
         userId,
-        code: err.code,
-        message: err.message,
-        taskId: err.taskId,
+        code: error.code,
+        message: error.message,
+        taskId: error.taskId,
       });
-      throw mapDataForSEOError(err);
+      throw mapDataForSEOError(error);
     }
 
-    throw err;
+    throw error;
   }
 }

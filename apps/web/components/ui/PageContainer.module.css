@@ -1,12 +1,12 @@
 /* PageContainer - Consistent page wrapper */
 
 .page {
-  max-width: var(--page-max-width);
   margin: 0 auto;
+  max-width: var(--page-max-width);
   padding: var(--page-padding-mobile);
 }
 
-@media (min-width: 768px) {
+@media (width >= 768px) {
   .page {
     padding: var(--page-padding-desktop);
   }

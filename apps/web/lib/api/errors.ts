@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { logger } from "@/lib/shared/logger";
+
 import { DomainError } from "@/lib/shared/errors";
+import { logger } from "@/lib/shared/logger";
 
 export type ApiErrorCode =
   | "VALIDATION_ERROR"
@@ -53,6 +54,32 @@ const DOMAIN_CODE_MAP: Record<string, { code: ApiErrorCode; status: number }> = 
   RATE_LIMITED: { code: "RATE_LIMITED", status: 429 },
 };
 
+const LEGACY_STATUS_MAP: Record<number, { code: ApiErrorCode; status: number; message: string }> = {
+  401: { code: "UNAUTHORIZED", status: 401, message: "Unauthorized" },
+  403: { code: "FORBIDDEN", status: 403, message: "Forbidden" },
+  404: { code: "NOT_FOUND", status: 404, message: "Not found" },
+};
+
+const MESSAGE_PATTERNS: Array<[RegExp, { code: ApiErrorCode; status: number; message: string }]> = [
+  [/unauthorized/i, { code: "UNAUTHORIZED", status: 401, message: "Unauthorized" }],
+  [/forbidden/i, { code: "FORBIDDEN", status: 403, message: "Forbidden" }],
+  [/subscription required/i, { code: "LIMIT_REACHED", status: 402, message: "Subscription required" }],
+];
+
+function fromLegacyError(err: unknown): ApiError | null {
+  const errObj = err as LegacyErrorLike;
+  if (!err || typeof err !== "object" || !errObj.status || !errObj.message) {return null;}
+  const mapping = LEGACY_STATUS_MAP[Number(errObj.status)];
+  return mapping ? new ApiError(mapping) : null;
+}
+
+function matchMessagePattern(msg: string): ApiError | null {
+  for (const [pattern, props] of MESSAGE_PATTERNS) {
+    if (pattern.test(msg)) {return new ApiError(props);}
+  }
+  return null;
+}
+
 export function toApiError(err: unknown): ApiError {
   if (err instanceof ApiError) {return err;}
 
@@ -65,13 +92,8 @@ export function toApiError(err: unknown): ApiError {
     });
   }
 
-  const errObj = err as LegacyErrorLike;
-  if (err && typeof err === "object" && errObj.status && errObj.message) {
-    const status = Number(errObj.status);
-    if (status === 401) {return new ApiError({ code: "UNAUTHORIZED", status: 401, message: "Unauthorized" });}
-    if (status === 403) {return new ApiError({ code: "FORBIDDEN", status: 403, message: "Forbidden" });}
-    if (status === 404) {return new ApiError({ code: "NOT_FOUND", status: 404, message: "Not found" });}
-  }
+  const legacyResult = fromLegacyError(err);
+  if (legacyResult) {return legacyResult;}
 
   if (isZodError(err)) {
     return new ApiError({
@@ -82,20 +104,12 @@ export function toApiError(err: unknown): ApiError {
     });
   }
 
-  const errWithCode = err as ErrorWithCode | null | undefined;
-  const prismaCode = errWithCode?.code;
-  if (prismaCode === "P2025") {
+  if ((err as ErrorWithCode | null)?.code === "P2025") {
     return new ApiError({ code: "NOT_FOUND", status: 404, message: "Not found" });
   }
 
-  // Common auth messages thrown in older helpers
   const msg = err instanceof Error ? err.message : String(err);
-  if (/unauthorized/i.test(msg)) {return new ApiError({ code: "UNAUTHORIZED", status: 401, message: "Unauthorized" });}
-  if (/forbidden/i.test(msg)) {return new ApiError({ code: "FORBIDDEN", status: 403, message: "Forbidden" });}
-  if (/subscription required/i.test(msg))
-    {return new ApiError({ code: "LIMIT_REACHED", status: 402, message: "Subscription required" });}
-
-  return new ApiError({ code: "INTERNAL", status: 500, message: "Internal error" });
+  return matchMessagePattern(msg) ?? new ApiError({ code: "INTERNAL", status: 500, message: "Internal error" });
 }
 
 export function logErrorForRequest(input: {
@@ -115,5 +129,3 @@ export function logErrorForRequest(input: {
     err: input.err,
   });
 }
-
-

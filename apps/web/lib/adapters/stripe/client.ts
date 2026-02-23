@@ -9,17 +9,19 @@
  */
 
 import "server-only";
+
 import crypto from "crypto";
-import { timingSafeEqualHex } from "@/lib/shared/crypto";
+
 import type {
-  PaymentCustomer,
-  PaymentSubscription,
   CheckoutSessionParams,
   CheckoutSessionResult,
+  PaymentCustomer,
+  PaymentSubscription,
   PortalSessionParams,
   PortalSessionResult,
   WebhookEvent,
 } from "@/lib/ports/StripePort";
+import { timingSafeEqualHex } from "@/lib/shared/crypto";
 
 // ── Config ────────────────────────────────────────────────
 

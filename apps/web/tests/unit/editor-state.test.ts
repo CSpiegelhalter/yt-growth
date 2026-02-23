@@ -1,5 +1,6 @@
-import { describe, test, expect } from "bun:test";
-import { editorStateV1Schema, defaultEditorState } from "@/lib/features/thumbnails/editor/editorState";
+import { describe, expect,test } from "bun:test";
+
+import { defaultEditorState,editorStateV1Schema } from "@/lib/features/thumbnails/editor/editorState";
 
 describe("editorState schema", () => {
   test("round-trips default state", () => {

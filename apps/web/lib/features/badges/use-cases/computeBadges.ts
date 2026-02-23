@@ -4,22 +4,23 @@
  * Calculates progress for all badges based on video/channel metrics.
  */
 
+import { daysSince } from "@/lib/youtube/utils";
+
+import { BADGES, DEFAULT_GOALS, SHORTS_MAX_DURATION_SEC } from "../registry";
 import type {
-  VideoForBadges,
-  ChannelStatsForBadges,
   BadgeDef,
-  BadgeWithProgress,
   BadgeProgress,
-  GoalWithProgress,
+  BadgeWithProgress,
+  ChannelStatsForBadges,
   DefaultGoal,
   GoalStatus,
-  MetricKey,
+  GoalWithProgress,
   MetricAvailability,
   MetricAvailabilityCheck,
+  MetricKey,
   UnlockedBadge,
+  VideoForBadges,
 } from "../types";
-import { BADGES, DEFAULT_GOALS, SHORTS_MAX_DURATION_SEC } from "../registry";
-import { daysSince } from "@/lib/youtube/utils";
 
 // ============================================
 // DATE/WINDOW HELPERS
@@ -339,6 +340,10 @@ function hasDoubleUploadWeeks(videos: VideoForBadges[], weeks: number): boolean 
 // METRIC AVAILABILITY
 // ============================================
 
+function metricEntry(available: boolean, reason?: MetricAvailability["reason"]): MetricAvailability {
+  return available ? { available: true } : { available: false, reason };
+}
+
 export function checkMetricAvailability(
   videos: VideoForBadges[],
   channelStats?: ChannelStatsForBadges
@@ -359,53 +364,18 @@ export function checkMetricAvailability(
     shorts_count: { available: true },
     posting_streak_days: { available: true },
     posting_streak_weeks: { available: true },
-    subscriber_count: {
-      available: channelStats?.subscriberCount != null,
-      reason: channelStats?.subscriberCount == null ? "no_data" : undefined,
-    },
-    subscribers_gained: {
-      available: videosWithSubs >= 1,
-      reason: videosWithSubs < 1 ? "analytics_not_connected" : undefined,
-    },
-    subscribers_lost: {
-      available: videosWithSubs >= 1,
-      reason: videosWithSubs < 1 ? "analytics_not_connected" : undefined,
-    },
-    views: {
-      available: hasVideoMetrics,
-      reason: !hasVideoMetrics ? "insufficient_videos" : undefined,
-    },
-    views_per_day: {
-      available: hasVideoMetrics,
-      reason: !hasVideoMetrics ? "insufficient_videos" : undefined,
-    },
-    total_views: {
-      available: hasVideoMetrics || channelStats?.totalViews != null,
-    },
-    average_view_percentage: {
-      available: hasRetentionData,
-      reason: !hasRetentionData ? "analytics_not_connected" : undefined,
-    },
-    ctr: {
-      available: hasCtrData,
-      reason: !hasCtrData ? "analytics_not_connected" : undefined,
-    },
-    impressions: {
-      available: hasCtrData,
-      reason: !hasCtrData ? "analytics_not_connected" : undefined,
-    },
-    likes: {
-      available: hasEngagementData,
-      reason: !hasEngagementData ? "insufficient_videos" : undefined,
-    },
-    like_rate: {
-      available: hasEngagementData && hasVideoMetrics,
-      reason: !hasEngagementData ? "insufficient_videos" : undefined,
-    },
-    comments: {
-      available: hasEngagementData,
-      reason: !hasEngagementData ? "insufficient_videos" : undefined,
-    },
+    subscriber_count: metricEntry(channelStats?.subscriberCount != null, "no_data"),
+    subscribers_gained: metricEntry(videosWithSubs >= 1, "analytics_not_connected"),
+    subscribers_lost: metricEntry(videosWithSubs >= 1, "analytics_not_connected"),
+    views: metricEntry(hasVideoMetrics, "insufficient_videos"),
+    views_per_day: metricEntry(hasVideoMetrics, "insufficient_videos"),
+    total_views: { available: hasVideoMetrics || channelStats?.totalViews != null },
+    average_view_percentage: metricEntry(hasRetentionData, "analytics_not_connected"),
+    ctr: metricEntry(hasCtrData, "analytics_not_connected"),
+    impressions: metricEntry(hasCtrData, "analytics_not_connected"),
+    likes: metricEntry(hasEngagementData, "insufficient_videos"),
+    like_rate: metricEntry(hasEngagementData && hasVideoMetrics, "insufficient_videos"),
+    comments: metricEntry(hasEngagementData, "insufficient_videos"),
   };
 
   return {
@@ -424,10 +394,116 @@ export function checkMetricAvailability(
 
 function formatValue(value: number, unit?: string): string {
   if (unit === "%") {return `${Math.round(value * 10) / 10}%`;}
-  if (value >= 1000000) {return `${(value / 1000000).toFixed(1)}M`;}
+  if (value >= 1_000_000) {return `${(value / 1_000_000).toFixed(1)}M`;}
   if (value >= 1000) {return `${(value / 1000).toFixed(1)}K`;}
   return value.toString();
 }
+
+function resolveLockedReason(reason?: string): string {
+  if (reason === "analytics_not_connected") {return "Requires YouTube Analytics data";}
+  if (reason === "insufficient_videos") {return "Need more videos with metrics";}
+  return "Requires more data";
+}
+
+function buildLockedProgress(reason?: string): BadgeProgress {
+  return {
+    current: 0,
+    target: 1,
+    percent: 0,
+    isUnlocked: false,
+    lockedReason: resolveLockedReason(reason),
+  };
+}
+
+type BadgeComputeContext = {
+  videos: VideoForBadges[];
+  totalVideos: number;
+  subscriberCount: number;
+  totalViews: number;
+};
+
+function computeConverterProgress(ctx: BadgeComputeContext): BadgeProgress {
+  const maxSubsPerView = Math.max(0, ...ctx.videos
+    .filter((v) => v.views && v.views >= 100)
+    .map((v) => ((v.subscribersGained ?? 0) / v.views!) * 1000));
+  return createProgress(maxSubsPerView, 10, "subs/1K views");
+}
+
+function computeClickMagnetProgress(ctx: BadgeComputeContext): BadgeProgress {
+  const ctrVideos = ctx.videos.filter((v) => v.impressions && v.impressions >= 1000 && v.ctr);
+  const maxCtr = Math.max(0, ...ctrVideos.map((v) => v.ctr ?? 0));
+  return createProgress(maxCtr, 5, "%", true);
+}
+
+function computeStorytellerProgress(ctx: BadgeComputeContext): BadgeProgress {
+  const longVideos = ctx.videos.filter((v) => v.durationSec && v.durationSec >= 300 && v.averageViewPercentage);
+  const maxRetention = Math.max(0, ...longVideos.map((v) => v.averageViewPercentage ?? 0));
+  return createProgress(maxRetention, 50, "%", true);
+}
+
+function computeLevelingUpProgress(ctx: BadgeComputeContext): BadgeProgress {
+  const last5 = getLastNUploads(ctx.videos, 5).filter((v) => v.ctr != null || v.averageViewPercentage != null);
+  let improvements = 0;
+  for (let i = 0; i < last5.length - 1; i++) {
+    const current = last5[i].ctr ?? last5[i].averageViewPercentage ?? 0;
+    const prev = last5[i + 1].ctr ?? last5[i + 1].averageViewPercentage ?? 0;
+    if (current > prev) {improvements++;}
+    else {improvements = 0;}
+  }
+  return createProgress(improvements, 3, "in a row");
+}
+
+function computeEngagementKingProgress(ctx: BadgeComputeContext): BadgeProgress {
+  const hasEngaged = ctx.videos.some((v) => {
+    if (!v.views || v.views < 500 || !v.likes || !v.comments) {return false;}
+    const likeRate = (v.likes / v.views) * 100;
+    return likeRate >= 5 && v.comments >= 50;
+  });
+  return createProgress(hasEngaged ? 1 : 0, 1, "");
+}
+
+const BADGE_PROGRESS_MAP: Record<string, (ctx: BadgeComputeContext) => BadgeProgress> = {
+  "first-upload": (ctx) => createProgress(ctx.totalVideos, 1, "video"),
+  "consistency-builder": (ctx) => createProgress(calculatePostingStreakWeeks(ctx.videos), 4, "weeks"),
+  "machine-mode": (ctx) => createProgress(hasDoubleUploadWeeks(ctx.videos, 4) ? 4 : 0, 4, "weeks"),
+  "unstoppable": (ctx) => createProgress(calculatePostingStreakWeeks(ctx.videos), 12, "weeks"),
+  "legendary-streak": (ctx) => createProgress(calculatePostingStreakWeeks(ctx.videos), 26, "weeks"),
+  "short-sprint": (ctx) => createProgress(countShortsInWindow(ctx.videos, "weekly"), 5, "Shorts"),
+  "schedule-keeper": (ctx) => createProgress(calculatePostingStreakWeeks(ctx.videos), 8, "weeks"),
+  "the-return": (ctx) => createProgress(hasReturnedAfterBreak(ctx.videos) ? 1 : 0, 1, ""),
+  "daily-warrior": (ctx) => createProgress(calculatePostingStreakDays(ctx.videos), 7, "days"),
+  "first-1k-views": (ctx) => createProgress(getMaxVideoViews(ctx.videos), 1000, "views"),
+  "momentum": (ctx) => createProgress(isInTopPercentViewsPerDay(ctx.videos, 10) ? 1 : 0, 1, ""),
+  "breakout": (ctx) => createProgress(hasBreakoutVideo(ctx.videos) ? 1 : 0, 1, ""),
+  "evergreen-seed": (ctx) => createProgress(hasEvergreenVideo(ctx.videos) ? 1 : 0, 1, ""),
+  "upward-trend": (ctx) => createProgress(hasUpwardTrend(ctx.videos) ? 1 : 0, 1, ""),
+  "10k-channel-views": (ctx) => createProgress(ctx.totalViews, 10_000, "views"),
+  "100k-channel-views": (ctx) => createProgress(ctx.totalViews, 100_000, "views"),
+  "1m-channel-views": (ctx) => createProgress(ctx.totalViews, 1_000_000, "views"),
+  "first-10-subs": (ctx) => createProgress(ctx.subscriberCount, 10, "subs"),
+  "first-50-subs": (ctx) => createProgress(ctx.subscriberCount, 50, "subs"),
+  "first-100-subs": (ctx) => createProgress(ctx.subscriberCount, 100, "subs"),
+  "first-500-subs": (ctx) => createProgress(ctx.subscriberCount, 500, "subs"),
+  "first-1k-subs": (ctx) => createProgress(ctx.subscriberCount, 1000, "subs"),
+  "converter": computeConverterProgress,
+  "steady-growth": (ctx) => createProgress(hasNetPositiveSubsWeeks(ctx.videos, 4) ? 4 : 0, 4, "weeks"),
+  "growth-spurt": (ctx) => createProgress(sumSubsGainedInWindow(ctx.videos, "weekly"), 50, "subs"),
+  "click-magnet": computeClickMagnetProgress,
+  "ctr-master": (ctx) => createProgress(avgCtrLastN(ctx.videos, 10), 6, "%", true),
+  "storyteller": computeStorytellerProgress,
+  "retention-pro": (ctx) => createProgress(avgRetentionLastN(ctx.videos, 10), 45, "%", true),
+  "leveling-up": computeLevelingUpProgress,
+  "loved": (ctx) => createProgress(getMaxLikeRate(ctx.videos), 5, "%", true),
+  "fan-favorite": (ctx) => createProgress(avgLikeRateLastN(ctx.videos, 10), 6, "%", true),
+  "conversation-starter": (ctx) => createProgress(getMaxVideoComments(ctx.videos), 50, "comments"),
+  "community-builder": (ctx) => createProgress(getMaxVideoComments(ctx.videos), 200, "comments"),
+  "engagement-king": computeEngagementKingProgress,
+  "videos-10": (ctx) => createProgress(ctx.totalVideos, 10, "videos"),
+  "videos-25": (ctx) => createProgress(ctx.totalVideos, 25, "videos"),
+  "videos-50": (ctx) => createProgress(ctx.totalVideos, 50, "videos"),
+  "videos-100": (ctx) => createProgress(ctx.totalVideos, 100, "videos"),
+  "videos-250": (ctx) => createProgress(ctx.totalVideos, 250, "videos"),
+};
 
 function computeBadgeProgress(
   badge: BadgeDef,
@@ -438,152 +514,20 @@ function computeBadgeProgress(
   const missingMetric = badge.requiredMetrics.find(
     (m) => !metricAvailability.metrics[m]?.available
   );
-  
+
   if (missingMetric) {
-    const reason = metricAvailability.metrics[missingMetric]?.reason;
-    let lockedReason = "Requires more data";
-    if (reason === "analytics_not_connected") {
-      lockedReason = "Requires YouTube Analytics data";
-    } else if (reason === "insufficient_videos") {
-      lockedReason = "Need more videos with metrics";
-    }
-    
-    return {
-      current: 0,
-      target: 1,
-      percent: 0,
-      isUnlocked: false,
-      lockedReason,
-    };
+    return buildLockedProgress(metricAvailability.metrics[missingMetric]?.reason);
   }
 
-  const totalVideos = channelStats?.totalVideoCount ?? videos.length;
-  const subscriberCount = channelStats?.subscriberCount ?? 0;
-  const totalViews = channelStats?.totalViews ?? sumViewsInWindow(videos, "lifetime");
+  const ctx: BadgeComputeContext = {
+    videos,
+    totalVideos: channelStats?.totalVideoCount ?? videos.length,
+    subscriberCount: channelStats?.subscriberCount ?? 0,
+    totalViews: channelStats?.totalViews ?? sumViewsInWindow(videos, "lifetime"),
+  };
 
-  switch (badge.id) {
-    // Consistency badges
-    case "first-upload":
-      return createProgress(totalVideos, 1, "video");
-    case "consistency-builder":
-      return createProgress(calculatePostingStreakWeeks(videos), 4, "weeks");
-    case "machine-mode":
-      return createProgress(hasDoubleUploadWeeks(videos, 4) ? 4 : 0, 4, "weeks");
-    case "unstoppable":
-      return createProgress(calculatePostingStreakWeeks(videos), 12, "weeks");
-    case "legendary-streak":
-      return createProgress(calculatePostingStreakWeeks(videos), 26, "weeks");
-    case "short-sprint":
-      return createProgress(countShortsInWindow(videos, "weekly"), 5, "Shorts");
-    case "schedule-keeper":
-      return createProgress(calculatePostingStreakWeeks(videos), 8, "weeks");
-    case "the-return":
-      return createProgress(hasReturnedAfterBreak(videos) ? 1 : 0, 1, "");
-    case "daily-warrior":
-      return createProgress(calculatePostingStreakDays(videos), 7, "days");
-
-    // Reach badges
-    case "first-1k-views":
-      return createProgress(getMaxVideoViews(videos), 1000, "views");
-    case "momentum":
-      return createProgress(isInTopPercentViewsPerDay(videos, 10) ? 1 : 0, 1, "");
-    case "breakout":
-      return createProgress(hasBreakoutVideo(videos) ? 1 : 0, 1, "");
-    case "evergreen-seed":
-      return createProgress(hasEvergreenVideo(videos) ? 1 : 0, 1, "");
-    case "upward-trend":
-      return createProgress(hasUpwardTrend(videos) ? 1 : 0, 1, "");
-    case "10k-channel-views":
-      return createProgress(totalViews, 10000, "views");
-    case "100k-channel-views":
-      return createProgress(totalViews, 100000, "views");
-    case "1m-channel-views":
-      return createProgress(totalViews, 1000000, "views");
-
-    // Growth badges
-    case "first-10-subs":
-      return createProgress(subscriberCount, 10, "subs");
-    case "first-50-subs":
-      return createProgress(subscriberCount, 50, "subs");
-    case "first-100-subs":
-      return createProgress(subscriberCount, 100, "subs");
-    case "first-500-subs":
-      return createProgress(subscriberCount, 500, "subs");
-    case "first-1k-subs":
-      return createProgress(subscriberCount, 1000, "subs");
-    case "converter": {
-      const maxSubsPerView = Math.max(0, ...videos
-        .filter((v) => v.views && v.views >= 100)
-        .map((v) => ((v.subscribersGained ?? 0) / v.views!) * 1000));
-      return createProgress(maxSubsPerView, 10, "subs/1K views");
-    }
-    case "steady-growth":
-      return createProgress(hasNetPositiveSubsWeeks(videos, 4) ? 4 : 0, 4, "weeks");
-    case "growth-spurt": {
-      const weekSubs = sumSubsGainedInWindow(videos, "weekly");
-      return createProgress(weekSubs, 50, "subs");
-    }
-
-    // Quality badges
-    case "click-magnet": {
-      const ctrVideos = videos.filter((v) => v.impressions && v.impressions >= 1000 && v.ctr);
-      const maxCtr = Math.max(0, ...ctrVideos.map((v) => v.ctr ?? 0));
-      return createProgress(maxCtr, 5, "%", true);
-    }
-    case "ctr-master":
-      return createProgress(avgCtrLastN(videos, 10), 6, "%", true);
-    case "storyteller": {
-      const longVideos = videos.filter((v) => v.durationSec && v.durationSec >= 300 && v.averageViewPercentage);
-      const maxRetention = Math.max(0, ...longVideos.map((v) => v.averageViewPercentage ?? 0));
-      return createProgress(maxRetention, 50, "%", true);
-    }
-    case "retention-pro":
-      return createProgress(avgRetentionLastN(videos, 10), 45, "%", true);
-    case "leveling-up": {
-      const last5 = getLastNUploads(videos, 5).filter((v) => v.ctr != null || v.averageViewPercentage != null);
-      let improvements = 0;
-      for (let i = 0; i < last5.length - 1; i++) {
-        const current = last5[i].ctr ?? last5[i].averageViewPercentage ?? 0;
-        const prev = last5[i + 1].ctr ?? last5[i + 1].averageViewPercentage ?? 0;
-        if (current > prev) {improvements++;}
-        else {improvements = 0;}
-      }
-      return createProgress(improvements, 3, "in a row");
-    }
-
-    // Engagement badges
-    case "loved":
-      return createProgress(getMaxLikeRate(videos), 5, "%", true);
-    case "fan-favorite":
-      return createProgress(avgLikeRateLastN(videos, 10), 6, "%", true);
-    case "conversation-starter":
-      return createProgress(getMaxVideoComments(videos), 50, "comments");
-    case "community-builder":
-      return createProgress(getMaxVideoComments(videos), 200, "comments");
-    case "engagement-king": {
-      const engagedVideos = videos.filter((v) => {
-        if (!v.views || v.views < 500 || !v.likes || !v.comments) {return false;}
-        const likeRate = (v.likes / v.views) * 100;
-        return likeRate >= 5 && v.comments >= 50;
-      });
-      return createProgress(engagedVideos.length > 0 ? 1 : 0, 1, "");
-    }
-
-    // Milestone badges
-    case "videos-10":
-      return createProgress(totalVideos, 10, "videos");
-    case "videos-25":
-      return createProgress(totalVideos, 25, "videos");
-    case "videos-50":
-      return createProgress(totalVideos, 50, "videos");
-    case "videos-100":
-      return createProgress(totalVideos, 100, "videos");
-    case "videos-250":
-      return createProgress(totalVideos, 250, "videos");
-
-    default:
-      return createProgress(0, 1, "");
-  }
+  const compute = BADGE_PROGRESS_MAP[badge.id];
+  return compute ? compute(ctx) : createProgress(0, 1, "");
 }
 
 function createProgress(current: number, target: number, unit: string, isPercent = false): BadgeProgress {
@@ -633,6 +577,39 @@ export function computeAllBadgesProgress(
 // GOAL PROGRESS
 // ============================================
 
+function buildLockedGoal(goal: DefaultGoal, reason?: string): GoalWithProgress {
+  return {
+    ...goal,
+    progress: 0,
+    percentage: 0,
+    status: "locked",
+    lockedReason: resolveLockedReason(reason),
+  };
+}
+
+type GoalComputeContext = {
+  subscriberCount: number;
+  totalViews: number;
+};
+
+const GOAL_METRIC_MAP: Record<
+  string,
+  (videos: VideoForBadges[], goal: DefaultGoal, ctx: GoalComputeContext) => number
+> = {
+  upload_count: (videos, goal) => countVideosInWindow(videos, goal.window),
+  shorts_count: (videos, goal) => countShortsInWindow(videos, goal.window),
+  posting_streak_days: (videos) => calculatePostingStreakDays(videos),
+  posting_streak_weeks: (videos) => calculatePostingStreakWeeks(videos),
+  subscriber_count: (_v, _g, ctx) => ctx.subscriberCount,
+  subscribers_gained: (videos, goal) => sumSubsGainedInWindow(videos, goal.window),
+  views: (videos, goal, ctx) =>
+    goal.window === "lifetime" ? ctx.totalViews : sumViewsInWindow(videos, goal.window),
+  comments: (videos) => getMaxVideoComments(videos),
+  ctr: (videos, goal) => avgCtrLastN(videos, goal.uploadCount ?? 10),
+  average_view_percentage: (videos, goal) => avgRetentionLastN(videos, goal.uploadCount ?? 10),
+  like_rate: (videos) => getMaxLikeRate(videos),
+};
+
 function computeGoalProgress(
   goal: DefaultGoal,
   videos: VideoForBadges[],
@@ -644,73 +621,20 @@ function computeGoalProgress(
   );
 
   if (missingMetric) {
-    const reason = metricAvailability.metrics[missingMetric]?.reason;
-    let lockedReason = "Requires more data";
-    if (reason === "analytics_not_connected") {
-      lockedReason = "Requires YouTube Analytics";
-    } else if (reason === "insufficient_videos") {
-      lockedReason = "Need more videos";
-    }
-
-    return {
-      ...goal,
-      progress: 0,
-      percentage: 0,
-      status: "locked",
-      lockedReason,
-    };
+    return buildLockedGoal(goal, metricAvailability.metrics[missingMetric]?.reason);
   }
 
-  let progress = 0;
-  const subscriberCount = channelStats?.subscriberCount ?? 0;
-  const totalViews = channelStats?.totalViews ?? sumViewsInWindow(videos, "lifetime");
+  const ctx: GoalComputeContext = {
+    subscriberCount: channelStats?.subscriberCount ?? 0,
+    totalViews: channelStats?.totalViews ?? sumViewsInWindow(videos, "lifetime"),
+  };
 
-  switch (goal.metricKey) {
-    case "upload_count":
-      progress = countVideosInWindow(videos, goal.window);
-      break;
-    case "shorts_count":
-      progress = countShortsInWindow(videos, goal.window);
-      break;
-    case "posting_streak_days":
-      progress = calculatePostingStreakDays(videos);
-      break;
-    case "posting_streak_weeks":
-      progress = calculatePostingStreakWeeks(videos);
-      break;
-    case "subscriber_count":
-      progress = subscriberCount;
-      break;
-    case "subscribers_gained":
-      progress = sumSubsGainedInWindow(videos, goal.window);
-      break;
-    case "views":
-      if (goal.window === "lifetime") {
-        progress = totalViews;
-      } else {
-        progress = sumViewsInWindow(videos, goal.window);
-      }
-      break;
-    case "comments":
-      progress = getMaxVideoComments(videos);
-      break;
-    case "ctr":
-      progress = avgCtrLastN(videos, goal.uploadCount ?? 10);
-      break;
-    case "average_view_percentage":
-      progress = avgRetentionLastN(videos, goal.uploadCount ?? 10);
-      break;
-    case "like_rate":
-      progress = getMaxLikeRate(videos);
-      break;
-    default:
-      progress = 0;
-  }
+  const compute = GOAL_METRIC_MAP[goal.metricKey];
+  const progress = compute ? compute(videos, goal, ctx) : 0;
 
   const percentage = Math.min(100, Math.round((progress / goal.target) * 100));
   const isCompleted = progress >= goal.target;
   const daysRemaining = goal.window !== "lifetime" ? getDaysRemaining(goal.window) : undefined;
-
   const status: GoalStatus = isCompleted ? "completed" : "in_progress";
 
   return {

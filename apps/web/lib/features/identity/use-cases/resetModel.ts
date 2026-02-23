@@ -1,7 +1,8 @@
-import { prisma } from "@/prisma";
-import { getStorage } from "@/lib/storage";
 import { deleteModel } from "@/lib/replicate/client";
 import { createLogger } from "@/lib/shared/logger";
+import { getStorage } from "@/lib/storage";
+import { prisma } from "@/prisma";
+
 import { IdentityError } from "../errors";
 
 const log = createLogger({ subsystem: "identity-reset" });
@@ -16,6 +17,36 @@ type ResetModelResult = {
   photoCount: number;
   message: string;
 };
+
+async function deleteAllTrainingPhotos(userId: number): Promise<void> {
+  const storage = getStorage();
+  const allAssets = await prisma.userTrainingAsset.findMany({
+    where: { userId, identityModelId: null },
+    select: { id: true, s3KeyOriginal: true, s3KeyNormalized: true },
+  });
+
+  for (const asset of allAssets) {
+    try {
+      if (asset.s3KeyOriginal && asset.s3KeyOriginal !== "pending") {
+        await storage.delete(asset.s3KeyOriginal);
+      }
+      if (asset.s3KeyNormalized) {
+        await storage.delete(asset.s3KeyNormalized);
+      }
+    } catch (error) {
+      log.warn("Failed to delete asset from storage", {
+        assetId: asset.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  await prisma.userTrainingAsset.deleteMany({
+    where: { userId, identityModelId: null },
+  });
+
+  log.info("Deleted all training photos", { userId, count: allAssets.length });
+}
 
 export async function resetModel(
   input: ResetModelInput,
@@ -64,33 +95,7 @@ export async function resetModel(
   });
 
   if (deletePhotos) {
-    const storage = getStorage();
-    const allAssets = await prisma.userTrainingAsset.findMany({
-      where: { userId, identityModelId: null },
-      select: { id: true, s3KeyOriginal: true, s3KeyNormalized: true },
-    });
-
-    for (const asset of allAssets) {
-      try {
-        if (asset.s3KeyOriginal && asset.s3KeyOriginal !== "pending") {
-          await storage.delete(asset.s3KeyOriginal);
-        }
-        if (asset.s3KeyNormalized) {
-          await storage.delete(asset.s3KeyNormalized);
-        }
-      } catch (err) {
-        log.warn("Failed to delete asset from storage", {
-          assetId: asset.id,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      }
-    }
-
-    await prisma.userTrainingAsset.deleteMany({
-      where: { userId, identityModelId: null },
-    });
-
-    log.info("Deleted all training photos", { userId, count: allAssets.length });
+    await deleteAllTrainingPhotos(userId);
   }
 
   const photoCount = await prisma.userTrainingAsset.count({

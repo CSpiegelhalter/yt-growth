@@ -1,7 +1,9 @@
-import { describe, it, expect } from "bun:test";
-import { KeywordError } from "../errors";
-import { DomainError } from "@/lib/shared/errors";
+import { describe, expect,it } from "bun:test";
+
 import { toApiError } from "@/lib/api/errors";
+import { DomainError } from "@/lib/shared/errors";
+
+import { KeywordError } from "../errors";
 
 describe("KeywordError", () => {
   it("extends DomainError", () => {

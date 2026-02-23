@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { BRAND } from "@/lib/shared/brand";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { signIn } from "next-auth/react";
+import { useCallback, useEffect, useRef,useState } from "react";
+
 import { validateEmailPassword } from "@/components/auth/auth-helpers";
-import { useEscapeKey } from "@/lib/client/use-escape-key";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useBodyScrollLock } from "@/lib/client/use-body-scroll-lock";
+import { useEscapeKey } from "@/lib/client/use-escape-key";
+import { BRAND } from "@/lib/shared/brand";
+
 import s from "./AuthModal.module.css";
 
 type AuthModalProps = {

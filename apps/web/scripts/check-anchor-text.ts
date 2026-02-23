@@ -35,12 +35,12 @@ const BANNED_ANCHOR_TEXT = [
 // Patterns that indicate anchor text in JSX
 // Matches: >Learn More</Link>, >Learn More</a>, etc.
 const ANCHOR_PATTERNS = BANNED_ANCHOR_TEXT.map(
-  (text) => new RegExp(`>${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}</(Link|a)`, "g")
+  (text) => new RegExp(`>${text.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}</(Link|a)`, "g")
 );
 
 // Also check for label/ctaLabel config values
 const CONFIG_PATTERNS = BANNED_ANCHOR_TEXT.map(
-  (text) => new RegExp(`(label|ctaLabel|linkText):\\s*["']${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`, "gi")
+  (text) => new RegExp(String.raw`(label|ctaLabel|linkText):\s*["']${text.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}["']`, "gi")
 );
 
 interface Violation {
@@ -147,7 +147,7 @@ async function main() {
   process.exit(1);
 }
 
-main().catch((e) => {
-  console.error("Script error:", e);
+main().catch((error) => {
+  console.error("Script error:", error);
   process.exit(1);
 });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+
 import { LEARN_ARTICLES } from "../../articles";
 import type { BodyProps } from "./_shared";
 import { articleExports } from "./_shared";

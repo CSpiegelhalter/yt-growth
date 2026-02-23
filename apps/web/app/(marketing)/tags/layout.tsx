@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+
 import { BRAND, CANONICAL_ORIGIN } from "@/lib/shared/brand";
-import { TagsTabsNav } from "./TagsTabsNav";
+
 import s from "./tags.module.css";
+import { TagsTabsNav } from "./TagsTabsNav";
 
 export const metadata: Metadata = {
   title: `YouTube Tags Tools — Generator & Tag Finder | ${BRAND.name}`,

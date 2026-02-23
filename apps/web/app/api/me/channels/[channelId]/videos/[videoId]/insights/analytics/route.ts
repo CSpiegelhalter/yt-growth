@@ -1,27 +1,27 @@
+import { fetchRetentionCurve,getGoogleAccount } from "@/lib/adapters/youtube";
+import {
+  fetchDemographicBreakdown,
+  fetchGeographicBreakdown,
+  fetchOwnedVideoMetadata,
+  fetchSubscriberBreakdown,
+  fetchTrafficSourceDetail,
+  fetchVideoAnalyticsDailyWithStatus,
+  fetchVideoAnalyticsTotalsWithStatus,
+  fetchVideoDiscoveryMetrics,
+} from "@/lib/adapters/youtube/owned-analytics";
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
-import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/shared/rate-limit";
-import { getGoogleAccount, fetchRetentionCurve } from "@/lib/adapters/youtube";
-import { GoogleTokenRefreshError } from "@/lib/google-tokens";
 import {
-  fetchVideoAnalyticsDailyWithStatus,
-  fetchVideoAnalyticsTotalsWithStatus,
-  fetchOwnedVideoMetadata,
-  fetchVideoDiscoveryMetrics,
-  fetchSubscriberBreakdown,
-  fetchGeographicBreakdown,
-  fetchTrafficSourceDetail,
-  fetchDemographicBreakdown,
-} from "@/lib/adapters/youtube/owned-analytics";
-import {
+  getVideoAnalytics,
   InsightParamsSchema,
   InsightQuerySchema,
-  getVideoAnalytics,
   VideoInsightError,
 } from "@/lib/features/video-insights";
 import type { AnalyzeRetentionDeps } from "@/lib/features/video-insights/use-cases/analyzeRetention";
+import { GoogleTokenRefreshError } from "@/lib/google-tokens";
+import { checkRateLimit, RATE_LIMITS,rateLimitKey } from "@/lib/shared/rate-limit";
 
 const retentionDeps: AnalyzeRetentionDeps = {
   fetchVideoMetadata: fetchOwnedVideoMetadata as AnalyzeRetentionDeps["fetchVideoMetadata"],
@@ -62,20 +62,20 @@ export const GET = createApiRoute(
             { getGoogleAccount, retentionDeps },
           );
           return jsonOk(result, { requestId: api.requestId });
-        } catch (err) {
-          if (err instanceof VideoInsightError && err.code === "FORBIDDEN") {
+        } catch (error) {
+          if (error instanceof VideoInsightError && error.code === "FORBIDDEN") {
             return Response.json(
-              { error: err.message, code: "youtube_permissions" },
+              { error: error.message, code: "youtube_permissions" },
               { status: 403 },
             );
           }
-          if (err instanceof GoogleTokenRefreshError) {
+          if (error instanceof GoogleTokenRefreshError) {
             return Response.json(
-              { error: err.message, code: "youtube_permissions" },
+              { error: error.message, code: "youtube_permissions" },
               { status: 403 },
             );
           }
-          throw err;
+          throw error;
         }
       },
     ),

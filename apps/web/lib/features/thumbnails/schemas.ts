@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { editorStateV1Schema } from "./editor/editorState";
 
 export const GenerateThumbnailBodySchema = z.object({
@@ -13,7 +14,7 @@ export const GenerateImg2ImgBodySchema = z.object({
   inputImageUrl: z.string().url(),
   parentJobId: z.string().uuid(),
   prompt: z.string().trim().min(3).max(500).optional(),
-  strength: z.number().min(0.1).max(1.0).optional().default(0.75),
+  strength: z.number().min(0.1).max(1).optional().default(0.75),
 });
 
 export const CreateProjectBodySchema = z.object({

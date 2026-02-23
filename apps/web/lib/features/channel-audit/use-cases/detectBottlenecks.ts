@@ -59,29 +59,17 @@ export function detectChannelBottleneck(
     };
   }
 
-  if (metrics.trafficSources?.total) {
-    const total = metrics.trafficSources.total;
-    const browseAndSuggested =
-      (metrics.trafficSources.browse ?? 0) +
-      (metrics.trafficSources.suggested ?? 0);
-    const ratio = browseAndSuggested / total;
-
-    if (ratio < 0.3) {
-      return {
-        type: "CTR",
-        title: "Packaging needs improvement",
-        description:
-          "Your videos aren't getting clicked when shown. Focus on making thumbnails and titles more compelling and clear.",
-        priority: "high",
-      };
-    }
+  if (hasCtrBottleneck(metrics)) {
+    return {
+      type: "CTR",
+      title: "Packaging needs improvement",
+      description:
+        "Your videos aren't getting clicked when shown. Focus on making thumbnails and titles more compelling and clear.",
+      priority: "high",
+    };
   }
 
-  if (
-    metrics.netSubscribers != null &&
-    metrics.netSubscribers < 10 &&
-    metrics.totalViews > 1000
-  ) {
+  if (hasConversionBottleneck(metrics)) {
     return {
       type: "CONVERSION",
       title: "Viewers aren't subscribing",
@@ -98,4 +86,20 @@ export function detectChannelBottleneck(
       "Your channel metrics are in a healthy range. Focus on consistency and experimenting with new content formats.",
     priority: "low",
   };
+}
+
+function hasCtrBottleneck(metrics: ChannelMetricsSnapshot): boolean {
+  if (!metrics.trafficSources?.total) { return false; }
+  const browseAndSuggested =
+    (metrics.trafficSources.browse ?? 0) +
+    (metrics.trafficSources.suggested ?? 0);
+  return browseAndSuggested / metrics.trafficSources.total < 0.3;
+}
+
+function hasConversionBottleneck(metrics: ChannelMetricsSnapshot): boolean {
+  return (
+    metrics.netSubscribers != null &&
+    metrics.netSubscribers < 10 &&
+    metrics.totalViews > 1000
+  );
 }

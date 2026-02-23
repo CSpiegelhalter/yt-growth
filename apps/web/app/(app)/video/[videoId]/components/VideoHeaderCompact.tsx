@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
-import styles from "./VideoHeaderCompact.module.css";
-import { formatRelativeDate, formatDuration } from "./helpers";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 import { formatCompactRounded as formatCompact } from "@/lib/shared/format";
+
+import { formatDuration,formatRelativeDate } from "./helpers";
+import styles from "./VideoHeaderCompact.module.css";
 
 type VideoData = {
   title: string;

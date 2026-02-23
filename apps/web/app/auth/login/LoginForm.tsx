@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { AuthPageShell } from "@/components/auth/AuthPageShell";
-import { VerifyLoginSection } from "@/components/auth/VerifyLoginSection";
+import { useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { useState } from "react";
+
 import { shouldShowVerifyButton, validateEmailPassword } from "@/components/auth/auth-helpers";
+import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { VerifyLoginSection } from "@/components/auth/VerifyLoginSection";
+
 import s from "./style.module.css";
 
 /**

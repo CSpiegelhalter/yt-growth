@@ -1,15 +1,16 @@
+import "@/components/learn/learn-components.css";
+
+import { AppShellServer } from "@/components/navigation/AppShellServer";
 import {
+  getChannelsServer,
   getCurrentUserServer,
   getMeServer,
-  getChannelsServer,
-  resolveActiveChannelId,
-  normalizePlan,
-  isAdminEmail,
   GUEST_SHELL_PROPS,
+  isAdminEmail,
+  normalizePlan,
+  resolveActiveChannelId,
 } from "@/lib/server/bootstrap";
-import { AppShellServer } from "@/components/navigation/AppShellServer";
 import { getFilteredNavItems } from "@/lib/server/nav-config.server";
-import "@/components/learn/learn-components.css";
 
 /**
  * Marketing layout for public pages.

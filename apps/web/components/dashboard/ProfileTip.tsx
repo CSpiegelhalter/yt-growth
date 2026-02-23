@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useEffect,useState } from "react";
+
 import { useChannelProfile } from "@/lib/hooks/use-channel-profile";
 
 type Props = {

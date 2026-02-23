@@ -3,8 +3,8 @@
  * 
  * Tests for JWT token validation and security.
  */
-import { describe, it, expect } from "vitest";
 import jwt from "jsonwebtoken";
+import { describe, expect,it } from "vitest";
 
 type JwtPayload = Record<string, unknown>;
 

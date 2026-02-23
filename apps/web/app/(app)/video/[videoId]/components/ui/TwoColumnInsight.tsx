@@ -1,7 +1,7 @@
 "use client";
 
-import styles from "./ui.module.css";
 import { BulletList } from "./BulletList";
+import styles from "./ui.module.css";
 
 type BulletItem = {
   text: string;

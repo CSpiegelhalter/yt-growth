@@ -1,5 +1,5 @@
-import type { CommentInsights, LlmCallFn, GoogleAccount, GoogleAccountResult, RawComment } from "../types";
 import { VideoInsightError } from "../errors";
+import type { CommentInsights, GoogleAccount, GoogleAccountResult, LlmCallFn, RawComment } from "../types";
 import { analyzeComments } from "./analyzeComments";
 
 type GetCommentInsightsDeps = {

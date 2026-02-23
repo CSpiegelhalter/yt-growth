@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import { getJSON, setJSON } from "@/lib/client/safeLocalStorage";
 
 type UsePersistentStateOptions<T> = {

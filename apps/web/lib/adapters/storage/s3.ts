@@ -7,10 +7,10 @@
  */
 
 import type {
-  StoragePort,
+  PutObjectOptions,
   StorageObject,
   StorageObjectMetadata,
-  PutObjectOptions,
+  StoragePort,
 } from "@/lib/ports/StoragePort";
 
 type S3StorageConfig = {
@@ -27,12 +27,7 @@ async function hmacSha256(
   key: ArrayBuffer | Uint8Array,
   message: string,
 ): Promise<ArrayBuffer> {
-  let keyBuffer: ArrayBuffer;
-  if (key instanceof Uint8Array) {
-    keyBuffer = new Uint8Array(key).buffer;
-  } else {
-    keyBuffer = key;
-  }
+  const keyBuffer: ArrayBuffer = key instanceof Uint8Array ? new Uint8Array(key).buffer : key;
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
     keyBuffer,
@@ -48,13 +43,13 @@ async function sha256(message: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hashBuffer))
+  return [...new Uint8Array(hashBuffer)]
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
 
 function arrayBufferToHex(buffer: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buffer))
+  return [...new Uint8Array(buffer)]
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
@@ -88,7 +83,7 @@ class S3StorageAdapter implements StoragePort {
     payloadHash: string,
   ): Promise<Record<string, string>> {
     const parsedUrl = new URL(url);
-    const datetime = new Date().toISOString().replace(/[:-]|\.\d{3}/g, "");
+    const datetime = new Date().toISOString().replaceAll(/[:-]|\.\d{3}/g, "");
     const date = datetime.slice(0, 8);
 
     const host = parsedUrl.host;
@@ -258,7 +253,7 @@ class S3StorageAdapter implements StoragePort {
       return null;
     }
 
-    const size = parseInt(
+    const size = Number.parseInt(
       response.headers.get("content-length") ?? "0",
       10,
     );

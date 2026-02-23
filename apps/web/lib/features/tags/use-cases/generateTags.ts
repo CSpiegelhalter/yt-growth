@@ -11,6 +11,7 @@
 
 import type { LlmCompletionParams, LlmCompletionResult } from "@/lib/ports/LlmPort";
 import { parseYouTubeVideoId } from "@/lib/shared/youtube-video-id";
+
 import { TagError } from "../errors";
 import type {
   GenerateTagsInput,
@@ -154,11 +155,11 @@ export async function generateTags(
       maxTokens: 1500,
     });
     rawContent = response.content;
-  } catch (cause) {
+  } catch (error) {
     throw new TagError(
       "EXTERNAL_FAILURE",
       "Failed to generate tags. Please try again.",
-      cause,
+      error,
     );
   }
 
@@ -244,11 +245,11 @@ function parseTagResponse(content: string): { tags: string[]; notes: string[] } 
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(content);
-  } catch (cause) {
+  } catch (error) {
     throw new TagError(
       "EXTERNAL_FAILURE",
       "Failed to generate tags. Please try again.",
-      cause,
+      error,
     );
   }
 

@@ -1,12 +1,13 @@
-import { prisma } from "@/prisma";
 import { z } from "zod";
-import { createApiRoute } from "@/lib/api/route";
-import { withValidation } from "@/lib/api/withValidation";
+
 import { ApiError } from "@/lib/api/errors";
 import { jsonOk } from "@/lib/api/response";
+import { createApiRoute } from "@/lib/api/route";
+import { withValidation } from "@/lib/api/withValidation";
 import { verifyPasswordResetToken } from "@/lib/server/auth";
 import { hash } from "@/lib/shared/crypto";
 import { logger } from "@/lib/shared/logger";
+import { prisma } from "@/prisma";
 
 const BodySchema = z.object({
   token: z.string().min(1),

@@ -9,14 +9,15 @@
  * Auth: Required
  */
 import type { NextRequest } from "next/server";
+
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
 import {
-  SaveIdeaBodySchema,
   listIdeas,
   saveIdea,
+  SaveIdeaBodySchema,
 } from "@/lib/features/saved-ideas";
 
 export const GET = createApiRoute(

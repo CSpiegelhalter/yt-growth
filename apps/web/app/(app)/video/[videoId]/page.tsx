@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
+import type { ComponentProps } from "react";
+
 import { getAppBootstrap } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
+
 import VideoInsightsClientV2 from "./VideoInsightsClientV2";
 import { VideoInsightsError } from "./VideoInsightsError";
 
@@ -19,6 +22,16 @@ type Props = {
   searchParams: Promise<{ channelId?: string; range?: string; from?: string }>;
 };
 
+type BackLink = { href: string; label: string };
+
+type ParsedError =
+  | { kind: "youtube_permissions"; message: string }
+  | { kind: "generic"; message: string; status: number };
+
+type FetchResult =
+  | { ok: true; data: Record<string, unknown> }
+  | { ok: false; error: ParsedError };
+
 /**
  * Video Insights Page - Server component
  *
@@ -29,30 +42,11 @@ type Props = {
  */
 export default async function VideoPage({ params, searchParams }: Props) {
   const [{ videoId }, search] = await Promise.all([params, searchParams]);
-  const range = (
-    ["7d", "28d", "90d"].includes(search.range ?? "") ? search.range : "28d"
-  ) as "7d" | "28d" | "90d";
-
-  // Get bootstrap data (user, channels, active channel) - fast DB lookup only
+  const range = parseRange(search.range);
   const bootstrap = await getAppBootstrap({ channelId: search.channelId });
   const channelId = bootstrap.activeChannelId ?? undefined;
+  const backLink = buildBackLink(search.from, channelId);
 
-  // Build back link
-  const backLinkBase =
-    search.from === "subscriber-insights"
-      ? "/subscriber-insights"
-      : "/dashboard";
-  const backLink = {
-    href: channelId
-      ? `${backLinkBase}?channelId=${encodeURIComponent(channelId)}`
-      : backLinkBase,
-    label:
-      search.from === "subscriber-insights"
-        ? "Subscriber Insights"
-        : "Dashboard",
-  };
-
-  // No channel - show error
   if (!channelId) {
     return (
       <VideoInsightsError
@@ -67,85 +61,135 @@ export default async function VideoPage({ params, searchParams }: Props) {
     );
   }
 
-  // Fetch analytics server-side
-  try {
-    const cookieStore = await cookies();
-    const headersList = await headers();
-    const host = headersList.get("host") || "localhost:3000";
-    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+  const result = await fetchAndParseAnalytics(channelId, videoId, range);
 
-    const analyticsUrl = `${protocol}://${host}/api/me/channels/${channelId}/videos/${videoId}/insights/analytics?range=${range}`;
-
-    const res = await fetch(analyticsUrl, {
-      headers: {
-        cookie: cookieStore.toString(),
-      },
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      const errorObj = body?.error;
-      const unifiedCode = typeof errorObj === "object" ? errorObj?.code : null;
-      const detailsCode = body?.details?.code;
-      const legacyCode = body?.code;
-      const errorCode = detailsCode || legacyCode || unifiedCode;
-      const errorMessage =
-        typeof errorObj === "object"
-          ? errorObj?.message
-          : typeof errorObj === "string"
-            ? errorObj
-            : `Request failed (${res.status})`;
-
-      const isYouTubePermissionError =
-        errorCode === "youtube_permissions" ||
-        errorCode === "YOUTUBE_PERMISSIONS" ||
-        (typeof errorMessage === "string" &&
-          errorMessage.toLowerCase().includes("google access"));
-
-      if (isYouTubePermissionError) {
-        return (
-          <VideoInsightsError
-            error={{ kind: "youtube_permissions", message: errorMessage }}
-            channelId={channelId}
-            backLink={backLink}
-          />
-        );
-      }
-
-      return (
-        <VideoInsightsError
-          error={{ kind: "generic", message: errorMessage, status: res.status }}
-          channelId={channelId}
-          backLink={backLink}
-        />
-      );
-    }
-
-    const analytics = await res.json();
-
-    return (
-      <VideoInsightsClientV2
-        key={videoId}
-        videoId={videoId}
-        channelId={channelId}
-        initialRange={range}
-        from={search.from}
-        analytics={analytics}
-      />
-    );
-  } catch (err) {
-    console.error("Server-side analytics fetch failed:", err);
+  if (!result.ok) {
     return (
       <VideoInsightsError
-        error={{
-          kind: "generic",
-          message: "Failed to load video analytics. Please try again.",
-          status: 500,
-        }}
+        error={result.error}
         channelId={channelId}
         backLink={backLink}
       />
     );
   }
+
+  return (
+    <VideoInsightsClientV2
+      key={videoId}
+      videoId={videoId}
+      channelId={channelId}
+      initialRange={range}
+      from={search.from}
+      analytics={result.data as ComponentProps<typeof VideoInsightsClientV2>["analytics"]}
+    />
+  );
+}
+
+function buildBackLink(
+  from: string | undefined,
+  channelId: string | undefined,
+): BackLink {
+  const base =
+    from === "subscriber-insights" ? "/subscriber-insights" : "/dashboard";
+  return {
+    href: channelId
+      ? `${base}?channelId=${encodeURIComponent(channelId)}`
+      : base,
+    label: from === "subscriber-insights" ? "Subscriber Insights" : "Dashboard",
+  };
+}
+
+function parseRange(raw: string | undefined): "7d" | "28d" | "90d" {
+  if (raw === "7d" || raw === "28d" || raw === "90d") {return raw;}
+  return "28d";
+}
+
+async function fetchAndParseAnalytics(
+  channelId: string,
+  videoId: string,
+  range: string,
+): Promise<FetchResult> {
+  try {
+    const res = await fetchServerAnalytics(channelId, videoId, range);
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { ok: false, error: parseAnalyticsError(body, res.status) };
+    }
+
+    const data = await res.json();
+    return { ok: true, data };
+  } catch (error) {
+    console.error("Server-side analytics fetch failed:", error);
+    return {
+      ok: false,
+      error: {
+        kind: "generic",
+        message: "Failed to load video analytics. Please try again.",
+        status: 500,
+      },
+    };
+  }
+}
+
+async function fetchServerAnalytics(
+  channelId: string,
+  videoId: string,
+  range: string,
+) {
+  const cookieStore = await cookies();
+  const headersList = await headers();
+  const host = headersList.get("host") || "localhost:3000";
+  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+
+  const analyticsUrl = `${protocol}://${host}/api/me/channels/${channelId}/videos/${videoId}/insights/analytics?range=${range}`;
+
+  return fetch(analyticsUrl, {
+    headers: { cookie: cookieStore.toString() },
+    cache: "no-store",
+  });
+}
+
+function extractErrorMessage(
+  body: Record<string, unknown>,
+  status: number,
+): string {
+  const errorObj = body?.error;
+  if (typeof errorObj === "object" && errorObj != null) {
+    return ((errorObj as Record<string, string>)?.message) || `Request failed (${status})`;
+  }
+  if (typeof errorObj === "string") {return errorObj;}
+  return `Request failed (${status})`;
+}
+
+function extractErrorCode(body: Record<string, unknown>): unknown {
+  const errorObj = body?.error;
+  const unifiedCode =
+    typeof errorObj === "object" && errorObj != null
+      ? (errorObj as Record<string, unknown>)?.code
+      : null;
+  const detailsCode = (body?.details as Record<string, unknown> | undefined)
+    ?.code;
+  const legacyCode = body?.code;
+  return detailsCode || legacyCode || unifiedCode;
+}
+
+function isYouTubePermission(code: unknown, message: string): boolean {
+  if (code === "youtube_permissions" || code === "YOUTUBE_PERMISSIONS") {
+    return true;
+  }
+  return typeof message === "string" && message.toLowerCase().includes("google access");
+}
+
+function parseAnalyticsError(
+  body: Record<string, unknown>,
+  status: number,
+): ParsedError {
+  const message = extractErrorMessage(body, status);
+  const code = extractErrorCode(body);
+
+  if (isYouTubePermission(code, message)) {
+    return { kind: "youtube_permissions", message };
+  }
+  return { kind: "generic", message, status };
 }

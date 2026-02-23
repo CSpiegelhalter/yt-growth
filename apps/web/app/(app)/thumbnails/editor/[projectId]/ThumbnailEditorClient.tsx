@@ -30,45 +30,72 @@
 
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import type Konva from "konva";
+import { useCallback, useEffect, useRef, useState } from "react";
+
 import { useToast } from "@/components/ui/Toast";
+
 import {
-  TopBar,
-  Toolbar,
+  ALLOWED_IMAGE_TYPES,
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  centerInCanvas,
+  convertToV1,
+  DEFAULT_ARROW,
+  DEFAULT_IMAGE,
+  DEFAULT_SHAPE,
+  DEFAULT_TEXT,
   EditorCanvas,
   exportCanvas,
-  PropertiesPanel,
-  useEditorHistory,
-  migrateFromV1,
-  convertToV1,
+  fitImageContain,
   generateId,
   getNextZIndex,
-  fitImageContain,
-  centerInCanvas,
-  DEFAULT_TEXT,
-  DEFAULT_ARROW,
-  DEFAULT_SHAPE,
-  DEFAULT_IMAGE,
-  CANVAS_WIDTH,
-  CANVAS_HEIGHT,
-  MIN_ZOOM,
-  MAX_ZOOM,
-  ALLOWED_IMAGE_TYPES,
-  MAX_IMAGE_SIZE_MB,
   GOOGLE_FONTS,
+  MAX_IMAGE_SIZE_MB,
+  MAX_ZOOM,
+  migrateFromV1,
+  MIN_ZOOM,
+  PropertiesPanel,
+  Toolbar,
+  TopBar,
+  useEditorHistory,
 } from "./components";
+import s from "./components/editor.module.css";
 import type {
+  ArrowObject,
+  DocumentSettings,
   EditorDocument,
   EditorObject,
-  TextObject,
-  ArrowObject,
-  ShapeObject,
   ImageObject,
+  ShapeObject,
+  TextObject,
   ToolMode,
-  DocumentSettings,
 } from "./components/types";
-import s from "./components/editor.module.css";
+
+function getNudgeDelta(key: string, shift: boolean): { dx: number; dy: number } | null {
+  const step = shift ? 10 : 1;
+  switch (key) {
+    case "ArrowLeft": { return { dx: -step, dy: 0 }; }
+    case "ArrowRight": { return { dx: step, dy: 0 }; }
+    case "ArrowUp": { return { dx: 0, dy: -step }; }
+    case "ArrowDown": { return { dx: 0, dy: step }; }
+    default: { return null; }
+  }
+}
+
+function isDeleteKey(key: string): boolean {
+  return key === "Delete" || key === "Backspace";
+}
+
+function handleUndoRedoKey(e: KeyboardEvent, undo: () => void, redo: () => void): boolean {
+  const mod = e.metaKey || e.ctrlKey;
+  if (mod && e.key.toLowerCase() === "z") {
+    e.preventDefault();
+    (e.shiftKey ? redo : undo)();
+    return true;
+  }
+  return false;
+}
 
 type ExportEntry = { url: string; [key: string]: unknown };
 
@@ -113,14 +140,14 @@ export default function ThumbnailEditorClient(props: Props) {
   
   useEffect(() => {
     // Build Google Fonts URL with all fonts
-    const fontFamilies = GOOGLE_FONTS.map((f) => `${f.replace(/ /g, "+")  }:wght@400;500;600;700;800;900`).join("&family=");
+    const fontFamilies = GOOGLE_FONTS.map((f) => `${f.replaceAll(' ', "+")  }:wght@400;500;600;700;800;900`).join("&family=");
     const link = window.document.createElement("link");
     link.rel = "stylesheet";
     link.href = `https://fonts.googleapis.com/css2?family=${fontFamilies}&display=swap`;
-    window.document.head.appendChild(link);
+    window.document.head.append(link);
     
     return () => {
-      window.document.head.removeChild(link);
+      link.remove();
     };
   }, []);
 
@@ -131,103 +158,17 @@ export default function ThumbnailEditorClient(props: Props) {
   const saveTimer = useRef<number | null>(null);
   useEffect(() => {
     if (saveTimer.current) {window.clearTimeout(saveTimer.current);}
-    saveTimer.current = window.setTimeout(async () => {
-      try {
-        await fetch(`/api/thumbnails/projects/${props.projectId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ editorState: convertToV1(document) }),
-        });
-      } catch {
-        // Silently fail - user can manually save
-      }
+    saveTimer.current = window.setTimeout(() => {
+      void fetch(`/api/thumbnails/projects/${props.projectId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ editorState: convertToV1(document) }),
+      }).catch(() => {/* silently fail - user can manually save */});
     }, 1500);
     return () => {
       if (saveTimer.current) {window.clearTimeout(saveTimer.current);}
     };
   }, [document, props.projectId]);
-
-  // ============================================================================
-  // KEYBOARD SHORTCUTS
-  // ============================================================================
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const mod = e.metaKey || e.ctrlKey;
-      const target = e.target as HTMLElement;
-      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
-
-      // Spacebar for pan (but not when typing)
-      if (e.code === "Space" && !isInput) {
-        e.preventDefault();
-        setIsSpacePressed(true);
-        setIsPanning(true);
-        return;
-      }
-
-      // Escape to deselect
-      if (e.key === "Escape") {
-        setSelectedId(null);
-        return;
-      }
-
-      // Don't handle other shortcuts when typing
-      if (isInput) {return;}
-
-      // Delete/Backspace to delete selected
-      if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
-        e.preventDefault();
-        deleteSelected();
-        return;
-      }
-
-      // Undo/Redo
-      if (mod && e.key.toLowerCase() === "z" && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-        return;
-      }
-      if (mod && e.key.toLowerCase() === "z" && e.shiftKey) {
-        e.preventDefault();
-        redo();
-        return;
-      }
-
-      // Arrow keys to nudge
-      if (selectedObject && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        e.preventDefault();
-        const step = e.shiftKey ? 10 : 1;
-        const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
-        const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
-        updateObject(selectedId!, { x: selectedObject.x + dx, y: selectedObject.y + dy });
-        return;
-      }
-
-      // Tool shortcuts
-      if (e.key.toLowerCase() === "v") {setTool("select");}
-      if (e.key.toLowerCase() === "h") {setTool("pan");}
-      if (e.key.toLowerCase() === "t") {addText();}
-      if (e.key.toLowerCase() === "a") {addArrow(false);}
-      if (e.key.toLowerCase() === "o") {addShape("ellipse");}
-      if (e.key.toLowerCase() === "r") {addShape("rectangle");}
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === "Space") {
-        setIsSpacePressed(false);
-        if (tool !== "pan") {
-          setIsPanning(false);
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [selectedId, selectedObject, tool, undo, redo]);
 
   // ============================================================================
   // DOCUMENT OPERATIONS
@@ -392,6 +333,74 @@ export default function ThumbnailEditorClient(props: Props) {
   );
 
   // ============================================================================
+  // KEYBOARD SHORTCUTS
+  // ============================================================================
+
+  useEffect(() => {
+    const toolShortcuts: Record<string, () => void> = {
+      v: () => setTool("select"),
+      h: () => setTool("pan"),
+      t: addText,
+      a: () => addArrow(false),
+      o: () => addShape("ellipse"),
+      r: () => addShape("rectangle"),
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+
+      if (e.code === "Space" && !isInput) {
+        e.preventDefault();
+        setIsSpacePressed(true);
+        setIsPanning(true);
+        return;
+      }
+
+      if (e.key === "Escape") {
+        setSelectedId(null);
+        return;
+      }
+
+      if (isInput) {return;}
+
+      if (isDeleteKey(e.key) && selectedId) {
+        e.preventDefault();
+        deleteSelected();
+        return;
+      }
+
+      if (handleUndoRedoKey(e, undo, redo)) {return;}
+
+      if (selectedObject) {
+        const nudge = getNudgeDelta(e.key, e.shiftKey);
+        if (nudge) {
+          e.preventDefault();
+          updateObject(selectedId!, { x: selectedObject.x + nudge.dx, y: selectedObject.y + nudge.dy });
+          return;
+        }
+      }
+
+      const action = toolShortcuts[e.key.toLowerCase()];
+      if (action) {action();}
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        setIsSpacePressed(false);
+        if (tool !== "pan") {setIsPanning(false);}
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [selectedId, selectedObject, tool, undo, redo, deleteSelected, addText, addArrow, addShape, updateObject]);
+
+  // ============================================================================
   // IMAGE UPLOAD
   // ============================================================================
 
@@ -431,7 +440,7 @@ export default function ThumbnailEditorClient(props: Props) {
         img.crossOrigin = "anonymous";
         
         await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
+          img.addEventListener('load', () => resolve());
           img.onerror = () => reject(new Error("Failed to load image"));
           img.src = data.url;
         });
@@ -455,8 +464,8 @@ export default function ThumbnailEditorClient(props: Props) {
         
         addObject(obj);
         toast("Image added", "success");
-      } catch (err) {
-        toast(err instanceof Error ? err.message : "Upload failed", "error");
+      } catch (error) {
+        toast(error instanceof Error ? error.message : "Upload failed", "error");
       }
     },
     [props.projectId, document.objects, addObject, toast]
@@ -522,13 +531,13 @@ export default function ThumbnailEditorClient(props: Props) {
         const link = window.document.createElement("a");
         link.href = dataUrl;
         link.download = `thumbnail-${Date.now()}.${format === "jpg" ? "jpg" : "png"}`;
-        window.document.body.appendChild(link);
+        window.document.body.append(link);
         link.click();
-        window.document.body.removeChild(link);
+        link.remove();
         
         toast(`Exported ${format.toUpperCase()} successfully`, "success");
-      } catch (err) {
-        toast(err instanceof Error ? err.message : "Export failed", "error");
+      } catch (error) {
+        toast(error instanceof Error ? error.message : "Export failed", "error");
       } finally {
         setIsExporting(false);
       }

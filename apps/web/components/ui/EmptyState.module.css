@@ -1,48 +1,48 @@
 /* EmptyState - Unified empty state pattern */
 
 .empty {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: var(--space-12) var(--space-6);
   background: var(--surface);
   border: 1px dashed var(--border);
   border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+  width: 100%;
 }
 
 .icon {
-  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 80px;
-  height: 80px;
-  margin-bottom: var(--space-5);
   background: var(--surface-alt);
   border-radius: 50%;
   color: var(--primary);
+  display: flex;
+  height: 80px;
+  justify-content: center;
+  margin-bottom: var(--space-5);
+  width: 80px;
 }
 
 .icon svg {
-  width: 40px;
   height: 40px;
+  width: 40px;
 }
 
 .title {
+  color: var(--text);
   font-size: var(--text-xl);
   font-weight: var(--font-semibold);
-  color: var(--text);
   margin: 0 0 var(--space-2);
 }
 
 .description {
-  font-size: var(--page-subtitle-size);
   color: var(--text-secondary);
+  font-size: var(--page-subtitle-size);
+  line-height: var(--leading-relaxed);
   margin: 0 0 var(--space-6);
   max-width: 320px;
-  line-height: var(--leading-relaxed);
 }
 
 .action {

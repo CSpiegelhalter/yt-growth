@@ -67,8 +67,8 @@ RULES:
       { maxTokens: 600, temperature: 0.3, responseFormat: "json_object" },
     );
     return JSON.parse(result.content);
-  } catch (err) {
-    console.error("Comment insights LLM failed:", err);
+  } catch (error) {
+    console.error("Comment insights LLM failed:", error);
     return EMPTY_INSIGHTS;
   }
 }

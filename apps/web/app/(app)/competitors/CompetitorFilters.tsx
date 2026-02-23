@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useState, type ChangeEvent } from "react";
+import { type ChangeEvent,useCallback, useState } from "react";
+
 import FilterDrawer from "@/components/FilterDrawer/FilterDrawer";
+
 import s from "./style.module.css";
 
 export type ContentType = "shorts" | "long" | "both";
@@ -56,7 +58,7 @@ export default function CompetitorFilters({
 
   const handleMinViewsChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
-      onChange({ ...filters, minViewsPerDay: parseInt(e.target.value, 10) });
+      onChange({ ...filters, minViewsPerDay: Number.parseInt(e.target.value, 10) });
     },
     [filters, onChange]
   );

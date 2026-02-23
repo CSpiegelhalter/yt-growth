@@ -7,11 +7,11 @@
  */
 
 import type {
-  GoogleOAuthPort,
-  OAuthTokenSet,
-  OAuthRefreshResult,
-  OAuthUserInfo,
   AnalyticsAccessResult,
+  GoogleOAuthPort,
+  OAuthRefreshResult,
+  OAuthTokenSet,
+  OAuthUserInfo,
 } from "@/lib/ports/GoogleOAuthPort";
 
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";

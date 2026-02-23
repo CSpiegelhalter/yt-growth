@@ -1,6 +1,7 @@
+import { stableHash } from "@/lib/shared/stable-hash";
+
 import type { ChannelProfileInput } from "./schemas";
 import { PROFILE_CACHE_DAYS } from "./types";
-import { stableHash } from "@/lib/shared/stable-hash";
 
 /**
  * Compute a stable hash from the profile input for cache invalidation
@@ -46,12 +47,12 @@ export function isProfileCacheValid(
  */
 export function sanitizeUserText(text: string): string {
   return text
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, "")
-    .replace(/javascript:/gi, "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replaceAll(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replaceAll(/on\w+\s*=\s*["'][^"']*["']/gi, "")
+    .replaceAll(/javascript:/gi, "")
+    .replaceAll('&', "&amp;")
+    .replaceAll('<', "&lt;")
+    .replaceAll('>', "&gt;");
 }
 
 /**
@@ -79,10 +80,10 @@ export function sanitizeProfileInput(
  * Creates a human-readable summary without sensitive formatting.
  */
 export function formatInputForLLM(input: ChannelProfileInput): string {
-  const lines: string[] = [];
-
-  lines.push(`CHANNEL DESCRIPTION:\n${input.description}`);
-  lines.push(`\nPRIMARY CATEGORIES: ${input.categories.join(", ")}`);
+  const lines: string[] = [
+    `CHANNEL DESCRIPTION:\n${input.description}`,
+    `\nPRIMARY CATEGORIES: ${input.categories.join(", ")}`,
+  ];
 
   if (input.customCategory) {
     lines.push(`\nCUSTOM CATEGORY: ${input.customCategory}`);
@@ -100,7 +101,7 @@ export function formatInputForLLM(input: ChannelProfileInput): string {
     lines.push(`\nTONE/STYLE: ${input.tone.join(", ")}`);
   }
 
-  if (input.examples && input.examples.filter(Boolean).length > 0) {
+  if (input.examples && input.examples.some(Boolean)) {
     lines.push(
       `\nEXAMPLE VIDEO TOPICS:\n${input.examples
         .filter(Boolean)

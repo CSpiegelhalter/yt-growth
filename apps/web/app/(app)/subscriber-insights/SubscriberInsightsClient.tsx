@@ -1,20 +1,22 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
+import { useEffect, useMemo,useState } from "react";
+
 import { SearchIcon } from "@/components/icons";
-import s from "./style.module.css";
+import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
 import { formatDurationBadge } from "@/lib/competitor-utils";
+import { formatUsd,SUBSCRIPTION } from "@/lib/shared/product";
 import type {
-  Me,
   Channel,
+  Me,
   SubscriberAuditResponse,
   SubscriberMagnetVideo,
 } from "@/types/api";
-import { SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
+
+import s from "./style.module.css";
 
 type Props = {
   initialMe: Me;
@@ -97,17 +99,22 @@ export default function SubscriberInsightsClient({
     }
 
     setLoading(true);
-    fetch(`/api/me/channels/${activeChannelId}/subscriber-audit`)
-      .then((r) => r.json())
-      .then((data) => {
+    const loadData = async () => {
+      try {
+        const r = await fetch(`/api/me/channels/${activeChannelId}/subscriber-audit`);
+        const data = await r.json();
         if (data.videos) {
           setAuditData(data as SubscriberAuditResponse);
         } else {
           setAuditData(null);
         }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadData();
   }, [activeChannelId]);
 
   // Filter and sort videos (always by subscribers gained)
@@ -244,75 +251,8 @@ export default function SubscriberInsightsClient({
         </div>
       </div>
 
-      {/* View Summary (rollups from current view) */}
       {!loading && filteredVideos.length > 0 && (
-        <div className={s.summarySection}>
-          <div className={s.summaryHeader}>
-            <h2 className={s.summaryTitle}>All-time summary</h2>
-            <span className={s.summaryCount}>
-              {viewRollups.countVideos} videos
-            </span>
-          </div>
-          <div className={s.summaryGrid}>
-            <div className={s.summaryCard}>
-              <span className={s.summaryValue}>
-                {formatNumber(viewRollups.totalSubsGained)}
-              </span>
-              <span className={s.summaryLabel}>Attributed Subs</span>
-            </div>
-            <div className={s.summaryCard}>
-              <span className={s.summaryValue}>
-                {formatNumber(viewRollups.totalViews)}
-              </span>
-              <span className={s.summaryLabel}>Total Views</span>
-            </div>
-            <div className={s.summaryCard}>
-              <span className={s.summaryValue}>
-                {viewRollups.avgSubsGained.toFixed(1)}
-              </span>
-              <span className={s.summaryLabel}>Avg Subs/Video</span>
-            </div>
-            <div className={`${s.summaryCard} ${s.tiersCard}`}>
-              {insufficientData ? (
-                <div className={s.buildingBaseline}>
-                  <span className={s.buildingText}>Building baseline</span>
-                  <span className={s.buildingSubtext}>Need 8+ videos</span>
-                </div>
-              ) : (
-                <div className={s.tiersDisplay}>
-                  <div className={s.tierBar}>
-                    <div
-                      className={s.tierBarStrong}
-                      style={{ flex: viewRollups.strongCount || 0.1 }}
-                    />
-                    <div
-                      className={s.tierBarAverage}
-                      style={{ flex: viewRollups.averageCount || 0.1 }}
-                    />
-                    <div
-                      className={s.tierBarWeak}
-                      style={{ flex: viewRollups.weakCount || 0.1 }}
-                    />
-                  </div>
-                  <div className={s.tierLegend}>
-                    <span className={s.tierLegendItem}>
-                      <span className={`${s.tierDot} ${s.dotStrong}`} />
-                      {viewRollups.strongCount} strong
-                    </span>
-                    <span className={s.tierLegendItem}>
-                      <span className={`${s.tierDot} ${s.dotAverage}`} />
-                      {viewRollups.averageCount} avg
-                    </span>
-                    <span className={s.tierLegendItem}>
-                      <span className={`${s.tierDot} ${s.dotWeak}`} />
-                      {viewRollups.weakCount} weak
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <SummaryRollups rollups={viewRollups} insufficientData={insufficientData} />
       )}
 
       {/* Loading State */}
@@ -482,10 +422,79 @@ function VideoCard({
   );
 }
 
+/* ---------- Summary Rollups ---------- */
+
+function SummaryRollups({
+  rollups,
+  insufficientData,
+}: {
+  rollups: ReturnType<typeof computeRollups>;
+  insufficientData: boolean;
+}) {
+  return (
+    <div className={s.summarySection}>
+      <div className={s.summaryHeader}>
+        <h2 className={s.summaryTitle}>All-time summary</h2>
+        <span className={s.summaryCount}>{rollups.countVideos} videos</span>
+      </div>
+      <div className={s.summaryGrid}>
+        <div className={s.summaryCard}>
+          <span className={s.summaryValue}>{formatNumber(rollups.totalSubsGained)}</span>
+          <span className={s.summaryLabel}>Attributed Subs</span>
+        </div>
+        <div className={s.summaryCard}>
+          <span className={s.summaryValue}>{formatNumber(rollups.totalViews)}</span>
+          <span className={s.summaryLabel}>Total Views</span>
+        </div>
+        <div className={s.summaryCard}>
+          <span className={s.summaryValue}>{rollups.avgSubsGained.toFixed(1)}</span>
+          <span className={s.summaryLabel}>Avg Subs/Video</span>
+        </div>
+        <div className={`${s.summaryCard} ${s.tiersCard}`}>
+          {insufficientData ? (
+            <div className={s.buildingBaseline}>
+              <span className={s.buildingText}>Building baseline</span>
+              <span className={s.buildingSubtext}>Need 8+ videos</span>
+            </div>
+          ) : (
+            <TiersDisplay rollups={rollups} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TiersDisplay({ rollups }: { rollups: ReturnType<typeof computeRollups> }) {
+  return (
+    <div className={s.tiersDisplay}>
+      <div className={s.tierBar}>
+        <div className={s.tierBarStrong} style={{ flex: rollups.strongCount || 0.1 }} />
+        <div className={s.tierBarAverage} style={{ flex: rollups.averageCount || 0.1 }} />
+        <div className={s.tierBarWeak} style={{ flex: rollups.weakCount || 0.1 }} />
+      </div>
+      <div className={s.tierLegend}>
+        <span className={s.tierLegendItem}>
+          <span className={`${s.tierDot} ${s.dotStrong}`} />
+          {rollups.strongCount} strong
+        </span>
+        <span className={s.tierLegendItem}>
+          <span className={`${s.tierDot} ${s.dotAverage}`} />
+          {rollups.averageCount} avg
+        </span>
+        <span className={s.tierLegendItem}>
+          <span className={`${s.tierDot} ${s.dotWeak}`} />
+          {rollups.weakCount} weak
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- Helpers ---------- */
 function formatNumber(num: number): string {
   if (num >= 1_000_000) {return `${(num / 1_000_000).toFixed(1)}M`;}
-  if (num >= 1_000) {return `${(num / 1_000).toFixed(1)}K`;}
+  if (num >= 1000) {return `${(num / 1000).toFixed(1)}K`;}
   return num.toLocaleString();
 }
 

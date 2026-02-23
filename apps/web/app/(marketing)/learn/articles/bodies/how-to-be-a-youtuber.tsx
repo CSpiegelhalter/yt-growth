@@ -11,6 +11,7 @@
  */
 
 import Link from "next/link";
+
 import { LEARN_ARTICLES } from "../../articles";
 import type { BodyProps } from "./_shared";
 import { articleExports } from "./_shared";
@@ -759,7 +760,7 @@ function CreatorGym() {
       {/* Gym floor with rubber texture */}
       <rect x="0" y="195" width="340" height="45" fill="#1f2937" />
       <g opacity="0.15">
-        {[...Array(17)].map((_, i) => (
+        {Array.from({length: 17}).map((_, i) => (
           <line key={i} x1={i * 20} y1="195" x2={i * 20} y2="240" stroke="#475569" strokeWidth="1" />
         ))}
       </g>
@@ -1245,7 +1246,16 @@ function EditingTimeline() {
   );
 }
 
-/* Production cycle - simple and clear */
+const WEEK_DAYS = [
+  { day: "M", fill: "#dbeafe", stroke: "#3b82f6", task: "Plan" },
+  { day: "T", fill: "#dbeafe", stroke: "#3b82f6", task: "Plan" },
+  { day: "W", fill: "#fef3c7", stroke: "#f59e0b", task: "Record" },
+  { day: "T", fill: "#fef3c7", stroke: "#f59e0b", task: "Record" },
+  { day: "F", fill: "#dcfce7", stroke: "#22c55e", task: "Edit" },
+  { day: "S", fill: "#f1f5f9", stroke: "#e2e8f0", task: "Rest" },
+  { day: "S", fill: "#f1f5f9", stroke: "#e2e8f0", task: "Rest" },
+] as const;
+
 function ProductionCycle() {
   return (
     <svg
@@ -1259,8 +1269,7 @@ function ProductionCycle() {
     >
       <title id="cycle-title">Weekly production cycle</title>
       
-      {/* Days of week */}
-      {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
+      {WEEK_DAYS.map((wd, i) => (
         <g key={i}>
           <rect
             x={25 + i * 40}
@@ -1268,15 +1277,15 @@ function ProductionCycle() {
             width="32"
             height="50"
             rx="6"
-            fill={i === 0 || i === 1 ? "#dbeafe" : i === 2 || i === 3 ? "#fef3c7" : i === 4 ? "#dcfce7" : "#f1f5f9"}
-            stroke={i === 0 || i === 1 ? "#3b82f6" : i === 2 || i === 3 ? "#f59e0b" : i === 4 ? "#22c55e" : "#e2e8f0"}
+            fill={wd.fill}
+            stroke={wd.stroke}
             strokeWidth="2"
           />
           <text x={41 + i * 40} y="50" textAnchor="middle" fontSize="12" fontWeight="600" fill="#64748b">
-            {day}
+            {wd.day}
           </text>
           <text x={41 + i * 40} y="70" textAnchor="middle" fontSize="7" fill="#94a3b8">
-            {i === 0 || i === 1 ? "Plan" : i === 2 || i === 3 ? "Record" : i === 4 ? "Edit" : "Rest"}
+            {wd.task}
           </text>
         </g>
       ))}

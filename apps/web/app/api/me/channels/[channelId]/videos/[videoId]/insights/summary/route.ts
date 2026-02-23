@@ -1,21 +1,21 @@
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
+import { fetchCompetitiveContext } from "@/lib/dataforseo";
+import type { EntitlementError as EntitlementErrorType } from "@/lib/features/subscriptions";
 import {
+  getVideoSummary,
   InsightParamsSchema,
   InsightQuerySchema,
-  getVideoSummary,
   VideoInsightError,
 } from "@/lib/features/video-insights";
 import { callLLM } from "@/lib/llm";
+import { resolveInsightContext } from "@/lib/server/video-insight-context";
 import {
   checkEntitlement,
   entitlementErrorResponse,
 } from "@/lib/with-entitlements";
-import type { EntitlementError as EntitlementErrorType } from "@/lib/features/subscriptions";
-import { fetchCompetitiveContext } from "@/lib/dataforseo";
-import { resolveInsightContext } from "@/lib/server/video-insight-context";
 
 export const GET = createApiRoute(
   { route: "/api/me/channels/[channelId]/videos/[videoId]/insights/summary" },
@@ -36,11 +36,11 @@ export const GET = createApiRoute(
             { fetchCompetitiveContext, callLlm: callLLM, checkEntitlement: checkEntitlement as Parameters<typeof getVideoSummary>[1]["checkEntitlement"] },
           );
           return jsonOk(result, { requestId: api.requestId });
-        } catch (err) {
-          if (err instanceof VideoInsightError && err.code === "LIMIT_REACHED" && err.cause) {
-            return entitlementErrorResponse(err.cause as EntitlementErrorType);
+        } catch (error) {
+          if (error instanceof VideoInsightError && error.code === "LIMIT_REACHED" && error.cause) {
+            return entitlementErrorResponse(error.cause as EntitlementErrorType);
           }
-          throw err;
+          throw error;
         }
       },
     ),

@@ -1,20 +1,21 @@
 import type { NextRequest } from "next/server";
-import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
-import { jsonError } from "./response";
+
 import { logErrorForRequest, toApiError } from "./errors";
+import { jsonError } from "./response";
+import type { ApiHandler, ApiRequestContext, NextRouteContext } from "./types";
 
 export function withErrorHandling<P>(handler: ApiHandler<P>): ApiHandler<P> {
   return async (req: NextRequest, ctx: NextRouteContext<P>, api: ApiRequestContext) => {
     try {
       return await handler(req, ctx, api);
-    } catch (err: unknown) {
-      const apiErr = toApiError(err);
+    } catch (error: unknown) {
+      const apiErr = toApiError(error);
       logErrorForRequest({
         requestId: api.requestId,
         route: api.route,
         method: api.method,
         status: apiErr.status,
-        err,
+        err: error,
         userId: api.userId,
       });
 

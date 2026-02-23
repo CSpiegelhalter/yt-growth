@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import s from "../style.module.css";
+import { useCallback, useEffect,useRef, useState } from "react";
+
 import type { Idea } from "@/types/api";
+
 import { uniqStrings } from "../helpers";
-import { TitleOptionsSection } from "./TitleOptionsSection";
-import { HooksSection } from "./HooksSection";
-import { TagsSection } from "./TagsSection";
+import s from "../style.module.css";
 import {
-  CreativeDirectionsSection,
   type CreativeDirections,
+  CreativeDirectionsSection,
 } from "./CreativeDirectionsSection";
+import { HooksSection } from "./HooksSection";
 import { ScriptOutlineSection } from "./ScriptOutlineSection";
+import { TagsSection } from "./TagsSection";
+import { TitleOptionsSection } from "./TitleOptionsSection";
 import { VariationsSection } from "./VariationsSection";
 
 type AiRemix = {
@@ -209,7 +211,7 @@ export function IdeaDetailSheet({
             }))
             .filter((r) => r.title || r.hook || r.angle)
         : [];
-      if (remixes.length) {setAiRemixes(remixes.slice(0, 6));}
+      if (remixes.length > 0) {setAiRemixes(remixes.slice(0, 6));}
 
       onDetailsGenerated?.({
         titles,
@@ -218,8 +220,8 @@ export function IdeaDetailSheet({
         creativeDirections: directions,
         remixes,
       });
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === "AbortError") {return;}
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === "AbortError") {return;}
       setDetailsError("Failed to generate suggestions. Please try again.");
     } finally {
       setDetailsLoading(false);
@@ -248,9 +250,9 @@ export function IdeaDetailSheet({
     // If the idea already has embedded data, don't fetch
     if (ideaHasEmbeddedData) {return;}
     // If we already have details from a previous fetch, don't refetch
-    if (detailTitles.length || detailHooks.length || detailKeywords.length)
+    if (detailTitles.length > 0 || detailHooks.length > 0 || detailKeywords.length > 0)
       {return;}
-    fetchDetails();
+    void fetchDetails();
   }, [
     channelId,
     detailHooks.length,

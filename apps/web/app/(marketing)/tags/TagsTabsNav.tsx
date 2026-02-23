@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+
 import { Tabs } from "@/components/ui";
 
 const TABS = [

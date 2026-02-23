@@ -7,15 +7,15 @@
  * POST /api/me/badges
  * Mark badges as seen (dismiss "NEW" indicator).
  */
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
 import {
   BadgesQuerySchema,
-  MarkBadgesSeenBodySchema,
   getBadgesProgress,
   markBadgesSeen,
+  MarkBadgesSeenBodySchema,
 } from "@/lib/features/badges";
 
 export const GET = createApiRoute(

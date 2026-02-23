@@ -12,8 +12,8 @@ import {
 
 export {
   createModel,
-  verifyModelVersion,
   deleteModel,
+  verifyModelVersion,
 } from "@/lib/adapters/replicate";
 
 // ── Backward-compat wrappers ─────────────────────────────

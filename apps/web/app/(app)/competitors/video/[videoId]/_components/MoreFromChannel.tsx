@@ -4,11 +4,13 @@
  * Fetches data server-side. If fetch fails, renders nothing (non-critical section).
  * Does NOT fabricate data on failure.
  */
-import Link from "next/link";
 import Image from "next/image";
-import { fetchMoreFromChannel } from "./serverFetch";
+import Link from "next/link";
+
 import { formatCompact } from "@/lib/shared/format";
+
 import s from "../style.module.css";
+import { fetchMoreFromChannel } from "./serverFetch";
 
 type Props = {
   videoId: string;

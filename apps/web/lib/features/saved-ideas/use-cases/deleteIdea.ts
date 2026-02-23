@@ -5,6 +5,7 @@
  */
 
 import { prisma } from "@/prisma";
+
 import { SavedIdeaError } from "../errors";
 import type { DeleteIdeaInput, DeleteIdeaResult } from "../types";
 
@@ -28,7 +29,7 @@ export async function deleteIdea(input: DeleteIdeaInput): Promise<DeleteIdeaResu
     });
 
     return { success: true, ideaId: input.ideaId };
-  } catch (err) {
-    throw new SavedIdeaError("EXTERNAL_FAILURE", "Failed to delete saved idea", err);
+  } catch (error) {
+    throw new SavedIdeaError("EXTERNAL_FAILURE", "Failed to delete saved idea", error);
   }
 }

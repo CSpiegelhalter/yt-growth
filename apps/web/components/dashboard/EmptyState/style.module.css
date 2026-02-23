@@ -1,47 +1,47 @@
 /* EmptyState - Beautiful empty state for no channels */
 
 .container {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  text-align: center;
-  padding: 40px 24px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border: 2px dashed var(--color-border, #e2e8f0);
   border-radius: var(--radius-lg, 16px);
+  display: flex;
+  flex-direction: column;
+  padding: 40px 24px;
+  text-align: center;
 }
 
 .iconWrap {
-  width: 80px;
-  height: 80px;
-  display: flex;
   align-items: center;
-  justify-content: center;
   background: white;
   border-radius: 50%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 8%);
+  color: #f00;
+  display: flex;
+  height: 80px;
+  justify-content: center;
   margin-bottom: 20px;
-  color: #ff0000;
+  width: 80px;
 }
 
 .iconWrap svg {
-  width: 40px;
   height: 40px;
+  width: 40px;
 }
 
 .title {
+  color: var(--color-text, #1a1a2e);
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--color-text, #1a1a2e);
   margin: 0 0 8px;
 }
 
 .description {
-  font-size: 0.9375rem;
   color: var(--color-text-secondary, #64748b);
-  max-width: 340px;
-  margin: 0 0 24px;
+  font-size: 0.9375rem;
   line-height: 1.5;
+  margin: 0 0 24px;
+  max-width: 340px;
 }
 
 .features {
@@ -51,7 +51,7 @@
   margin-bottom: 24px;
 }
 
-@media (min-width: 480px) {
+@media (width >= 480px) {
   .features {
     flex-direction: row;
     gap: 16px;
@@ -59,45 +59,45 @@
 }
 
 .feature {
-  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 14px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-text, #1a1a2e);
   background: white;
   border-radius: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+  color: var(--color-text, #1a1a2e);
+  display: flex;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  gap: 8px;
+  justify-content: center;
+  padding: 8px 14px;
 }
 
 .btn {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  height: 48px;
-  padding: 0 24px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: white;
-  background: #ff0000;
+  background: #f00;
   border: none;
   border-radius: 10px;
+  color: white;
   cursor: pointer;
+  display: inline-flex;
+  font-size: 1rem;
+  font-weight: 600;
+  gap: 10px;
+  height: 48px;
+  justify-content: center;
+  padding: 0 24px;
   transition: all 0.15s ease;
 }
 
 .btn:hover:not(:disabled) {
-  background: #cc0000;
+  background: #c00;
+  box-shadow: 0 4px 12px rgb(255 0 0 / 30%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
 }
 
 .btn:disabled {
-  opacity: 0.5;
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .btn svg {
@@ -105,35 +105,35 @@
 }
 
 .limitNote {
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 0.875rem;
   color: var(--color-text-secondary, #64748b);
-  max-width: 340px;
+  font-size: 0.875rem;
   line-height: 1.5;
+  margin-bottom: 16px;
+  margin-top: 0;
+  max-width: 340px;
 }
 
 .upgradeBtn {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 48px;
-  padding: 0 28px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: white;
   background: linear-gradient(135deg, var(--primary, #6366f1) 0%, #8b5cf6 100%);
   border: none;
   border-radius: 10px;
-  text-decoration: none;
+  color: white;
   cursor: pointer;
+  display: inline-flex;
+  font-size: 1rem;
+  font-weight: 600;
+  gap: 8px;
+  height: 48px;
+  justify-content: center;
+  padding: 0 28px;
+  text-decoration: none;
   transition: all 0.15s ease;
 }
 
 .upgradeBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 12px rgb(99 102 241 / 40%);
   color: white;
+  transform: translateY(-1px);
 }
 

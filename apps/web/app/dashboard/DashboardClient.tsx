@@ -1,42 +1,44 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
 import Image from "next/image";
-import s from "./style.module.css";
-import { LIMITS, SUBSCRIPTION, formatUsd } from "@/lib/shared/product";
-import type { Me, Channel } from "@/types/api";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useCallback,useEffect, useMemo, useState } from "react";
+
+import { ChannelInsightsPanel } from "@/components/dashboard/ChannelInsightsPanel";
 import ChannelsSection from "@/components/dashboard/ChannelSection";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
 import VideoToolbar from "@/components/dashboard/VideoToolbar";
-import { ChannelInsightsPanel } from "@/components/dashboard/ChannelInsightsPanel";
+import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
 import { Tabs } from "@/components/ui";
-import { useSyncActiveChannel } from "@/lib/use-sync-active-channel";
-import { formatCompact } from "@/lib/shared/format";
-import {
-  type DashboardVideo,
-  type VideoWithMetrics,
-  type SortKey,
-  type VideoFilters,
-  DEFAULT_FILTERS,
-  enhanceVideosWithMetrics,
-  applyFilters,
-  sortVideos,
-  loadVideoToolsState,
-  saveVideoToolsState,
-  formatContextMetric,
-  shortFormBadge,
-} from "@/lib/video-tools";
 import { apiFetchJson } from "@/lib/client/api";
 import {
-  STORAGE_KEYS,
   getJSONWithExpiry,
-  setJSONWithExpiry,
   safeSessionGetItem,
   safeSessionRemoveItem,
+  setJSONWithExpiry,
+  STORAGE_KEYS,
 } from "@/lib/client/safeLocalStorage";
+import { formatCompact } from "@/lib/shared/format";
+import { formatUsd,LIMITS, SUBSCRIPTION } from "@/lib/shared/product";
+import { useSyncActiveChannel } from "@/lib/use-sync-active-channel";
+import {
+  applyFilters,
+  type DashboardVideo,
+  DEFAULT_FILTERS,
+  enhanceVideosWithMetrics,
+  formatContextMetric,
+  loadVideoToolsState,
+  saveVideoToolsState,
+  shortFormBadge,
+  type SortKey,
+  sortVideos,
+  type VideoFilters,
+  type VideoWithMetrics,
+} from "@/lib/video-tools";
+import type { Channel,Me } from "@/types/api";
+
+import s from "./style.module.css";
 
 type Video = DashboardVideo & {
   id?: number;
@@ -66,70 +68,274 @@ type VideosApiResponse = {
   };
 };
 
-/**
- * DashboardClient - Video-centric dashboard
- * Receives bootstrap data from server, handles interactions client-side.
- */
+function connectChannel() {
+  window.location.href = "/api/integrations/google/start";
+}
+
+function useCheckoutStatus(
+  status: string | undefined,
+  setSuccess: (msg: string | null) => void,
+  setErr: (msg: string | null) => void,
+) {
+  useEffect(() => {
+    if (status === "success") {
+      setSuccess("Subscription activated! You now have full access.");
+      window.history.replaceState({}, "", "/dashboard");
+    } else if (status === "canceled") {
+      setErr("Checkout was canceled. You can try again anytime.");
+      window.history.replaceState({}, "", "/dashboard");
+    }
+  }, [status, setSuccess, setErr]);
+}
+
+function useChannelRemovedListener(setChannels: React.Dispatch<React.SetStateAction<Channel[]>>) {
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ channelId: string }>) => {
+      setChannels((prev) => prev.filter((c) => c.channel_id !== e.detail.channelId));
+    };
+    window.addEventListener("channel-removed", handler as EventListener);
+    return () => { window.removeEventListener("channel-removed", handler as EventListener); };
+  }, [setChannels]);
+}
+
+function useVisibilityRefresh(setChannels: React.Dispatch<React.SetStateAction<Channel[]>>) {
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== "visible") {return;}
+      try {
+        const res = await fetch("/api/me/channels", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setChannels(Array.isArray(data) ? data : data.channels);
+        }
+      } catch (error) {
+        console.error("Failed to refresh channels:", error);
+      }
+    };
+    const handler = () => { void handleVisibilityChange(); };
+    document.addEventListener("visibilitychange", handler);
+    return () => { document.removeEventListener("visibilitychange", handler); };
+  }, [setChannels]);
+}
+
+function useOAuthReturnRedirect(searchParams: ReturnType<typeof useSearchParams>) {
+  useEffect(() => {
+    if (searchParams.get("reconnected") !== "1") {return;}
+    const returnTo = safeSessionGetItem("oauthReturnTo");
+    if (returnTo) {
+      safeSessionRemoveItem("oauthReturnTo");
+      window.location.href = returnTo;
+    }
+  }, [searchParams]);
+}
+
+function useVideoToolsPersistence(
+  activeChannelId: string | null,
+  sortKey: SortKey,
+  filters: VideoFilters,
+  setSortKey: (k: SortKey) => void,
+  setFilters: (f: VideoFilters) => void,
+) {
+  useEffect(() => {
+    if (!activeChannelId) {return;}
+    const savedState = loadVideoToolsState(activeChannelId);
+    if (savedState) {
+      setSortKey(savedState.sortKey);
+      setFilters(savedState.filters);
+    } else {
+      setSortKey("newest");
+      setFilters(DEFAULT_FILTERS);
+    }
+  }, [activeChannelId, setSortKey, setFilters]);
+
+  useEffect(() => {
+    if (!activeChannelId) {return;}
+    saveVideoToolsState(activeChannelId, { sortKey, filters });
+  }, [activeChannelId, sortKey, filters]);
+}
+
+function toDashboardVideo(v: Video): DashboardVideo {
+  return {
+    videoId: v.videoId || v.youtubeVideoId || `video-${v.id}`,
+    title: v.title,
+    thumbnailUrl: v.thumbnailUrl,
+    durationSec: v.durationSec ?? null,
+    publishedAt: v.publishedAt,
+    views: v.views ?? v.viewCount ?? 0,
+    likes: v.likes ?? 0,
+    comments: v.comments ?? 0,
+    avgViewDuration: v.avgViewDuration,
+    avgViewPercentage: v.avgViewPercentage,
+    subscribersGained: v.subscribersGained,
+    subscribersLost: v.subscribersLost,
+    estimatedMinutesWatched: v.estimatedMinutesWatched,
+    shares: v.shares,
+  };
+}
+
+const DASHBOARD_VIDEOS_TTL_MS = 2 * 60 * 60 * 1000;
+const DASHBOARD_VIDEOS_CACHE_VERSION = "v2";
+const PAGE_SIZE = 24;
+
+function useVideoLoader() {
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [videosLoading, setVideosLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pagination, setPagination] = useState<{ offset: number; hasMore: boolean } | null>(null);
+
+  const fetchPage = useCallback(
+    async (channelId: string, offset: number): Promise<VideosApiResponse | null> => {
+      const cacheKey = `${STORAGE_KEYS.DASHBOARD_VIDEOS}:${DASHBOARD_VIDEOS_CACHE_VERSION}:${channelId}:${PAGE_SIZE}:${offset}`;
+      const cached = getJSONWithExpiry<VideosApiResponse>(cacheKey);
+      if (cached?.pagination && typeof cached.pagination.offset === "number" && typeof cached.pagination.hasMore === "boolean") {
+        return cached;
+      }
+      const data = await apiFetchJson<VideosApiResponse>(
+        `/api/me/channels/${channelId}/videos?limit=${PAGE_SIZE}&offset=${offset}`,
+        { cache: "no-store" },
+      );
+      setJSONWithExpiry(cacheKey, data, DASHBOARD_VIDEOS_TTL_MS);
+      return data;
+    },
+    [],
+  );
+
+  const applyPageData = useCallback((data: VideosApiResponse, append: boolean) => {
+    const vids = data.videos || [];
+    setVideos(append ? (prev) => [...prev, ...vids] : vids);
+    if (data.pagination) {
+      setPagination({ offset: data.pagination.offset + vids.length, hasMore: data.pagination.hasMore });
+    }
+  }, []);
+
+  const loadVideos = useCallback(async (channelId: string) => {
+    setVideosLoading(true);
+    setPagination(null);
+    try {
+      const data = await fetchPage(channelId, 0);
+      if (data) { applyPageData(data, false); }
+    } catch (error) {
+      console.error("Failed to load videos:", error);
+    } finally {
+      setVideosLoading(false);
+    }
+  }, [fetchPage, applyPageData]);
+
+  const loadMore = useCallback(async (channelId: string) => {
+    if (!pagination?.hasMore || loadingMore) {return;}
+    setLoadingMore(true);
+    try {
+      const data = await fetchPage(channelId, pagination.offset);
+      if (data) { applyPageData(data, true); }
+    } catch (error) {
+      console.error("Failed to load more videos:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [pagination, loadingMore, fetchPage, applyPageData]);
+
+  return { videos, setVideos, videosLoading, loadingMore, pagination, loadVideos, loadMore };
+}
+function useChannelActions({
+  setMe, setChannels, setErr, setSuccess, setBusy,
+  activeChannelId, channels, setActiveChannelId, loadVideos,
+}: {
+  setMe: React.Dispatch<React.SetStateAction<Me>>;
+  setChannels: React.Dispatch<React.SetStateAction<Channel[]>>;
+  setErr: (msg: string | null) => void;
+  setSuccess: (msg: string | null) => void;
+  setBusy: (id: string | null) => void;
+  activeChannelId: string | null;
+  channels: Channel[];
+  setActiveChannelId: (id: string | null) => void;
+  loadVideos: (id: string) => Promise<void>;
+}) {
+  const refreshData = useCallback(async () => {
+    try {
+      const [mRes, cRes] = await Promise.all([
+        fetch("/api/me", { cache: "no-store" }),
+        fetch("/api/me/channels", { cache: "no-store" }),
+      ]);
+      if (mRes.ok && cRes.ok) {
+        const [m, cData] = await Promise.all([mRes.json(), cRes.json()]);
+        setMe(m);
+        setChannels(Array.isArray(cData) ? cData : cData.channels);
+      }
+    } catch (error) {
+      console.error("Failed to refresh data:", error);
+    }
+  }, [setMe, setChannels]);
+
+  const unlink = useCallback(async (channelId: string) => {
+    setBusy(channelId);
+    setErr(null);
+    try {
+      const r = await fetch(`/api/me/channels/${channelId}`, { method: "DELETE" });
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to remove channel");
+      }
+      setSuccess("Channel removed successfully");
+      setChannels((prev) => prev.filter((c) => c.channel_id !== channelId));
+      if (activeChannelId === channelId) {
+        const remaining = channels.find((c) => c.channel_id !== channelId);
+        setActiveChannelId(remaining?.channel_id ?? null);
+      }
+    } catch (error: unknown) {
+      setErr(error instanceof Error ? error.message : "Failed to remove channel");
+    } finally {
+      setBusy(null);
+    }
+  }, [activeChannelId, channels, setActiveChannelId, setBusy, setChannels, setErr, setSuccess]);
+
+  const refreshChannel = useCallback(async (channelId: string) => {
+    setBusy(channelId);
+    setErr(null);
+    try {
+      const r = await fetch(`/api/me/channels/${channelId}/sync`, { method: "POST" });
+      if (!r.ok) {
+        const data = await r.json();
+        throw new Error(data.error || "Failed to refresh channel");
+      }
+      setSuccess("Channel data refreshed!");
+      await refreshData();
+      if (activeChannelId === channelId) { await loadVideos(channelId); }
+    } catch (error: unknown) {
+      setErr(error instanceof Error ? error.message : "Failed to refresh channel");
+    } finally {
+      setBusy(null);
+    }
+  }, [refreshData, activeChannelId, loadVideos, setBusy, setErr, setSuccess]);
+
+  return { unlink, refreshChannel };
+}
+
 export default function DashboardClient({
   initialMe,
   initialChannels,
   initialActiveChannelId,
   checkoutStatus,
 }: Props) {
-  const DASHBOARD_VIDEOS_TTL_MS = 2 * 60 * 60 * 1000;
-  const DASHBOARD_VIDEOS_CACHE_VERSION = "v2";
   const searchParams = useSearchParams();
   const urlChannelId = searchParams.get("channelId");
 
-  // State initialized from server props
   const [me, setMe] = useState<Me>(initialMe);
   const [channels, setChannels] = useState<Channel[]>(initialChannels);
 
-  // Centralized active channel management
   const { activeChannelId, setActiveChannelId } = useSyncActiveChannel({
     channels,
     initialActiveChannelId,
     urlChannelId,
   });
 
-  // Keep client state in sync when server props / URL params change.
-  useEffect(() => {
-    setMe(initialMe);
-  }, [initialMe]);
+  useEffect(() => { setMe(initialMe); }, [initialMe]);
+  useEffect(() => { setChannels(initialChannels); }, [initialChannels]);
+  useOAuthReturnRedirect(searchParams);
 
-  useEffect(() => {
-    setChannels(initialChannels);
-  }, [initialChannels]);
+  const { videos, videosLoading, loadingMore, pagination, loadVideos, loadMore } = useVideoLoader();
 
-  // Handle OAuth return - redirect to original page after reconnecting
-  useEffect(() => {
-    const reconnected = searchParams.get("reconnected") === "1";
-    if (reconnected) {
-      const returnTo = safeSessionGetItem("oauthReturnTo");
-      if (returnTo) {
-        safeSessionRemoveItem("oauthReturnTo");
-        window.location.href = returnTo;
-      }
-    }
-  }, [searchParams]);
-
-  // Video loading state
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [videosLoading, setVideosLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [pagination, setPagination] = useState<{
-    offset: number;
-    hasMore: boolean;
-  } | null>(null);
-
-  // Video Tools state (sorting, filtering)
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [filters, setFilters] = useState<VideoFilters>(DEFAULT_FILTERS);
-
-  // Fixed page size for consistent grid layout (divisible by 1,2,3,4,6,8,12,24)
-  const pageSize = 24;
-
-  // Dashboard tab state - Videos is default
   const [activeTab, setActiveTab] = useState<"analytics" | "videos">("videos");
 
   // UI state
@@ -152,24 +358,8 @@ export default function DashboardClient({
     return me.subscription?.isActive ?? false;
   }, [me]);
 
-  // Convert videos to DashboardVideo format and enhance with computed metrics
   const dashboardVideos = useMemo((): DashboardVideo[] => {
-    return videos.map((v) => ({
-      videoId: v.videoId || v.youtubeVideoId || `video-${v.id}`,
-      title: v.title,
-      thumbnailUrl: v.thumbnailUrl,
-      durationSec: v.durationSec ?? null,
-      publishedAt: v.publishedAt,
-      views: v.views ?? v.viewCount ?? 0,
-      likes: v.likes ?? 0,
-      comments: v.comments ?? 0,
-      avgViewDuration: v.avgViewDuration,
-      avgViewPercentage: v.avgViewPercentage,
-      subscribersGained: v.subscribersGained,
-      subscribersLost: v.subscribersLost,
-      estimatedMinutesWatched: v.estimatedMinutesWatched,
-      shares: v.shares,
-    }));
+    return videos.map(toDashboardVideo);
   }, [videos]);
 
   // Enhance videos with computed metrics
@@ -197,252 +387,24 @@ export default function DashboardClient({
     setSortKey("newest");
   }, []);
 
-  // Handle checkout success/cancel from URL
+  useCheckoutStatus(checkoutStatus, setSuccess, setErr);
+  useChannelRemovedListener(setChannels);
+  useVisibilityRefresh(setChannels);
+
   useEffect(() => {
-    if (checkoutStatus === "success") {
-      setSuccess("Subscription activated! You now have full access.");
-      window.history.replaceState({}, "", "/dashboard");
-    } else if (checkoutStatus === "canceled") {
-      setErr("Checkout was canceled. You can try again anytime.");
-      window.history.replaceState({}, "", "/dashboard");
-    }
-  }, [checkoutStatus]);
-
-  // Listen for channel-removed events (from profile page or elsewhere)
-  useEffect(() => {
-    const handleChannelRemoved = (e: CustomEvent<{ channelId: string }>) => {
-      setChannels((prev) =>
-        prev.filter((c) => c.channel_id !== e.detail.channelId),
-      );
-      // Hook's synchronous reconciliation handles activeChannelId fallback
-    };
-
-    window.addEventListener(
-      "channel-removed",
-      handleChannelRemoved as EventListener,
-    );
-    return () => {
-      window.removeEventListener(
-        "channel-removed",
-        handleChannelRemoved as EventListener,
-      );
-    };
-  }, []);
-
-  // Refresh channels when page becomes visible (handles navigation back from profile)
-  useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === "visible") {
-        try {
-          const res = await fetch("/api/me/channels", { cache: "no-store" });
-          if (res.ok) {
-            const data = await res.json();
-            const freshChannels = Array.isArray(data) ? data : data.channels;
-            setChannels(freshChannels);
-            // Hook's reconciliation handles stale activeChannelId
-          }
-        } catch (err) {
-          console.error("Failed to refresh channels:", err);
-        }
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
-
-  // Load videos for a channel (initial load)
-  const loadVideos = useCallback(
-    async (channelId: string) => {
-      setVideosLoading(true);
-      setPagination(null);
-      const cacheKey = `${STORAGE_KEYS.DASHBOARD_VIDEOS}:${DASHBOARD_VIDEOS_CACHE_VERSION}:${channelId}:${pageSize}:0`;
-      try {
-        const cached = getJSONWithExpiry<VideosApiResponse>(cacheKey);
-        if (cached) {
-          const hasValidPagination =
-            !!cached.pagination &&
-            typeof cached.pagination.offset === "number" &&
-            typeof cached.pagination.hasMore === "boolean";
-          if (hasValidPagination) {
-            const cachedVideos = cached.videos || [];
-            setVideos(cachedVideos);
-            setPagination({
-              offset: cached.pagination!.offset + cachedVideos.length,
-              hasMore: cached.pagination!.hasMore,
-            });
-            return;
-          }
-        }
-
-        const data = await apiFetchJson<VideosApiResponse>(
-          `/api/me/channels/${channelId}/videos?limit=${pageSize}&offset=0`,
-          { cache: "no-store" },
-        );
-        const fetchedVideos = data.videos || [];
-        setVideos(fetchedVideos);
-        if (data.pagination) {
-          setPagination({
-            offset: data.pagination.offset + fetchedVideos.length,
-            hasMore: data.pagination.hasMore,
-          });
-        }
-        setJSONWithExpiry(cacheKey, data, DASHBOARD_VIDEOS_TTL_MS);
-      } catch (error) {
-        console.error("Failed to load videos:", error);
-      } finally {
-        setVideosLoading(false);
-      }
-    },
-    [pageSize],
-  );
-
-  // Load more videos (pagination)
-  const loadMoreVideos = useCallback(async () => {
-    if (!activeChannelId || !pagination?.hasMore || loadingMore) {return;}
-
-    setLoadingMore(true);
-    const offset = pagination.offset;
-    const cacheKey = `${STORAGE_KEYS.DASHBOARD_VIDEOS}:${DASHBOARD_VIDEOS_CACHE_VERSION}:${activeChannelId}:${pageSize}:${offset}`;
-    try {
-      const cached = getJSONWithExpiry<VideosApiResponse>(cacheKey);
-      if (cached) {
-        const hasValidPagination =
-          !!cached.pagination &&
-          typeof cached.pagination.offset === "number" &&
-          typeof cached.pagination.hasMore === "boolean";
-        if (hasValidPagination) {
-          const cachedVideos = cached.videos || [];
-          setVideos((prev) => [...prev, ...cachedVideos]);
-          setPagination({
-            offset: cached.pagination!.offset + cachedVideos.length,
-            hasMore: cached.pagination!.hasMore,
-          });
-          return;
-        }
-      }
-
-      const data = await apiFetchJson<VideosApiResponse>(
-        `/api/me/channels/${activeChannelId}/videos?limit=${pageSize}&offset=${offset}`,
-        { cache: "no-store" },
-      );
-      const fetchedVideos = data.videos || [];
-      setVideos((prev) => [...prev, ...fetchedVideos]);
-      if (data.pagination) {
-        setPagination({
-          offset: data.pagination.offset + fetchedVideos.length,
-          hasMore: data.pagination.hasMore,
-        });
-      }
-      setJSONWithExpiry(cacheKey, data, DASHBOARD_VIDEOS_TTL_MS);
-    } catch (error) {
-      console.error("Failed to load more videos:", error);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [activeChannelId, pagination, loadingMore, pageSize]);
-
-  // Load videos when active channel changes
-  useEffect(() => {
-    if (!activeChannelId) {
-      setVideos([]);
-      return;
-    }
-    loadVideos(activeChannelId);
+    if (activeChannelId) { void loadVideos(activeChannelId); }
   }, [activeChannelId, loadVideos]);
 
-  // Load saved video tools state when channel changes
-  useEffect(() => {
-    if (!activeChannelId) {return;}
-    const savedState = loadVideoToolsState(activeChannelId);
-    if (savedState) {
-      setSortKey(savedState.sortKey);
-      setFilters(savedState.filters);
-    } else {
-      // Reset to defaults for new channel
-      setSortKey("newest");
-      setFilters(DEFAULT_FILTERS);
-    }
-  }, [activeChannelId]);
+  const loadMoreVideos = useCallback(async () => {
+    if (activeChannelId) { await loadMore(activeChannelId); }
+  }, [activeChannelId, loadMore]);
 
-  // Save video tools state when it changes
-  useEffect(() => {
-    if (!activeChannelId) {return;}
-    saveVideoToolsState(activeChannelId, { sortKey, filters });
-  }, [activeChannelId, sortKey, filters]);
+  useVideoToolsPersistence(activeChannelId, sortKey, filters, setSortKey, setFilters);
 
-  // Refresh data (re-fetch channels)
-  const refreshData = useCallback(async () => {
-    try {
-      const [mRes, cRes] = await Promise.all([
-        fetch("/api/me", { cache: "no-store" }),
-        fetch("/api/me/channels", { cache: "no-store" }),
-      ]);
-      if (mRes.ok && cRes.ok) {
-        const [m, cData] = await Promise.all([mRes.json(), cRes.json()]);
-        // Handle both old format (array) and new format ({channels, channelLimit, plan})
-        const c = Array.isArray(cData) ? cData : cData.channels;
-        setMe(m);
-        setChannels(c);
-      }
-    } catch (e) {
-      console.error("Failed to refresh data:", e);
-    }
-  }, []);
-
-  const unlink = async (channelId: string) => {
-    setBusy(channelId);
-    setErr(null);
-    try {
-      const r = await fetch(`/api/me/channels/${channelId}`, {
-        method: "DELETE",
-      });
-      if (!r.ok) {
-        const data = await r.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to remove channel");
-      }
-      setSuccess("Channel removed successfully");
-      setChannels((prev) => prev.filter((c) => c.channel_id !== channelId));
-      if (activeChannelId === channelId) {
-        const remaining = channels.filter((c) => c.channel_id !== channelId);
-        setActiveChannelId(remaining[0]?.channel_id ?? null);
-      }
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Failed to remove channel");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const refreshChannel = async (channelId: string) => {
-    setBusy(channelId);
-    setErr(null);
-    try {
-      const r = await fetch(`/api/me/channels/${channelId}/sync`, {
-        method: "POST",
-      });
-      if (!r.ok) {
-        const data = await r.json();
-        throw new Error(data.error || "Failed to refresh channel");
-      }
-      setSuccess("Channel data refreshed!");
-      await refreshData();
-      // Also reload videos to reflect updated metrics (views, likes, etc.)
-      if (activeChannelId === channelId) {
-        await loadVideos(channelId);
-      }
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Failed to refresh channel");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const connectChannel = () => {
-    window.location.href = "/api/integrations/google/start";
-  };
+  const { unlink, refreshChannel } = useChannelActions({
+    setMe, setChannels, setErr, setSuccess, setBusy,
+    activeChannelId, channels, setActiveChannelId, loadVideos,
+  });
 
   return (
     <main className={s.page}>
@@ -535,104 +497,25 @@ export default function DashboardClient({
           <ChannelInsightsPanel channelId={activeChannelId} />
         )}
 
-        {/* Videos Tab Content */}
         {activeChannel && activeTab === "videos" && (
-          <section className={s.videosSection}>
-            {videosLoading ? (
-              <div className={s.videoList}>
-                <VideoCardSkeletons s={s} />
-              </div>
-            ) : videos.length > 0 ? (
-              <>
-                {/* Video Tools Bar */}
-                <VideoToolbar
-                  videos={dashboardVideos}
-                  filteredVideos={filteredAndSortedVideos}
-                  sortKey={sortKey}
-                  filters={filters}
-                  onSortChange={handleSortChange}
-                  onFiltersChange={handleFiltersChange}
-                  onReset={handleResetFilters}
-                  // Don't pass totalVideoCount - we only sync first page for performance
-                />
-
-                {/* Video List */}
-                {filteredAndSortedVideos.length > 0 ? (
-                  <div className={s.videoList}>
-                    {filteredAndSortedVideos.map((video) => (
-                      <VideoCard
-                        key={video.videoId}
-                        video={video}
-                        channelId={activeChannelId}
-                        sortKey={sortKey}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className={s.emptyFiltered}>
-                    <svg
-                      width="40"
-                      height="40"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                    >
-                      <circle cx="11" cy="11" r="8" />
-                      <path d="M21 21l-4.35-4.35" />
-                    </svg>
-                    <p>No videos match these filters</p>
-                    <button className={s.resetBtn} onClick={handleResetFilters}>
-                      Reset filters
-                    </button>
-                  </div>
-                )}
-
-                {/* Load More Button */}
-                {pagination?.hasMore && (
-                  <div className={s.loadMoreWrap}>
-                    <button
-                      className={s.loadMoreBtn}
-                      onClick={loadMoreVideos}
-                      disabled={loadingMore}
-                    >
-                      {loadingMore ? (
-                        <>
-                          <span className={s.spinner} />
-                          Loading...
-                        </>
-                      ) : (
-                        "Load More Videos"
-                      )}
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className={s.emptyVideos}>
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                >
-                  <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                <p>No videos found. Try refreshing your channel data.</p>
-                <button
-                  className={s.refreshBtn}
-                  onClick={() => refreshChannel(activeChannel.channel_id)}
-                  disabled={busy === activeChannel.channel_id}
-                >
-                  {busy === activeChannel.channel_id
-                    ? "Refreshing..."
-                    : "Refresh Channel"}
-                </button>
-              </div>
-            )}
-          </section>
+          <VideosTabContent
+            videosLoading={videosLoading}
+            videos={videos}
+            dashboardVideos={dashboardVideos}
+            filteredAndSortedVideos={filteredAndSortedVideos}
+            sortKey={sortKey}
+            filters={filters}
+            onSortChange={handleSortChange}
+            onFiltersChange={handleFiltersChange}
+            onResetFilters={handleResetFilters}
+            pagination={pagination}
+            loadingMore={loadingMore}
+            onLoadMore={loadMoreVideos}
+            activeChannelId={activeChannelId}
+            activeChannel={activeChannel}
+            busy={busy}
+            onRefreshChannel={refreshChannel}
+          />
         )}
 
         {/* Subscribe CTA */}
@@ -677,6 +560,94 @@ export default function DashboardClient({
   );
 }
 
+function VideosTabContent({
+  videosLoading, videos, dashboardVideos, filteredAndSortedVideos,
+  sortKey, filters, onSortChange, onFiltersChange, onResetFilters,
+  pagination, loadingMore, onLoadMore, activeChannelId, activeChannel, busy, onRefreshChannel,
+}: {
+  videosLoading: boolean;
+  videos: Video[];
+  dashboardVideos: DashboardVideo[];
+  filteredAndSortedVideos: VideoWithMetrics[];
+  sortKey: SortKey;
+  filters: VideoFilters;
+  onSortChange: (k: SortKey) => void;
+  onFiltersChange: (f: VideoFilters) => void;
+  onResetFilters: () => void;
+  pagination: { offset: number; hasMore: boolean } | null;
+  loadingMore: boolean;
+  onLoadMore: () => void;
+  activeChannelId: string | null;
+  activeChannel: Channel;
+  busy: string | null;
+  onRefreshChannel: (id: string) => void;
+}) {
+  if (videosLoading) {
+    return (
+      <section className={s.videosSection}>
+        <div className={s.videoList}><VideoCardSkeletons s={s} /></div>
+      </section>
+    );
+  }
+
+  if (videos.length === 0) {
+    return (
+      <section className={s.videosSection}>
+        <div className={s.emptyVideos}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <p>No videos found. Try refreshing your channel data.</p>
+          <button
+            className={s.refreshBtn}
+            onClick={() => onRefreshChannel(activeChannel.channel_id)}
+            disabled={busy === activeChannel.channel_id}
+          >
+            {busy === activeChannel.channel_id ? "Refreshing..." : "Refresh Channel"}
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className={s.videosSection}>
+      <VideoToolbar
+        videos={dashboardVideos}
+        filteredVideos={filteredAndSortedVideos}
+        sortKey={sortKey}
+        filters={filters}
+        onSortChange={onSortChange}
+        onFiltersChange={onFiltersChange}
+        onReset={onResetFilters}
+      />
+      {filteredAndSortedVideos.length > 0 ? (
+        <div className={s.videoList}>
+          {filteredAndSortedVideos.map((video) => (
+            <VideoCard key={video.videoId} video={video} channelId={activeChannelId} sortKey={sortKey} />
+          ))}
+        </div>
+      ) : (
+        <div className={s.emptyFiltered}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="11" cy="11" r="8" />
+            <path d="M21 21l-4.35-4.35" />
+          </svg>
+          <p>No videos match these filters</p>
+          <button className={s.resetBtn} onClick={onResetFilters}>Reset filters</button>
+        </div>
+      )}
+      {pagination?.hasMore && (
+        <div className={s.loadMoreWrap}>
+          <button className={s.loadMoreBtn} onClick={onLoadMore} disabled={loadingMore}>
+            {loadingMore ? (<><span className={s.spinner} />Loading...</>) : "Load More Videos"}
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 /* ---------- Video Card Component ---------- */
 function VideoCard({
   video,
@@ -696,9 +667,9 @@ function VideoCard({
 
   const href =
     videoId && !videoId.startsWith("video-")
-      ? channelId
+      ? (channelId
         ? `/video/${videoId}?channelId=${encodeURIComponent(channelId)}`
-        : `/video/${videoId}`
+        : `/video/${videoId}`)
       : "#";
 
   // Get context metric based on current sort

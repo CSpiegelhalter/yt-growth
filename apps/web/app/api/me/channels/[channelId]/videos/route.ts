@@ -7,14 +7,15 @@
  * Auth: Required
  */
 import type { NextRequest } from "next/server";
+import { z } from "zod";
+
+import { fetchChannelVideos,getGoogleAccount } from "@/lib/adapters/youtube";
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
-import { z } from "zod";
-import { listChannelVideos } from "@/lib/features/channels";
 import type { ListChannelVideosDeps } from "@/lib/features/channels";
-import { getGoogleAccount, fetchChannelVideos } from "@/lib/adapters/youtube";
+import { listChannelVideos } from "@/lib/features/channels";
 
 const VideosParamsSchema = z.object({
   channelId: z.string().min(1),
@@ -39,8 +40,8 @@ export const GET = createApiRoute(
           {
             userId: api.userId!,
             channelId,
-            offset: parseInt(url.searchParams.get("offset") ?? "0", 10) || 0,
-            limit: parseInt(url.searchParams.get("limit") ?? "24", 10) || 24,
+            offset: Number.parseInt(url.searchParams.get("offset") ?? "0", 10) || 0,
+            limit: Number.parseInt(url.searchParams.get("limit") ?? "24", 10) || 24,
           },
           deps,
         );

@@ -7,13 +7,14 @@
  */
 
 import "server-only";
+
+import { fetchGoogleTrends } from "@/lib/adapters/dataforseo/client";
+import { fetchYouTubeSerp } from "@/lib/adapters/dataforseo/youtube-serp";
 import type {
   CompetitiveContextInput,
   CompetitiveContextResult,
 } from "@/lib/features/video-insights";
 import { fetchCompetitiveContext as fetchCompetitiveContextUseCase } from "@/lib/features/video-insights";
-import { fetchYouTubeSerp } from "@/lib/adapters/dataforseo/youtube-serp";
-import { fetchGoogleTrends } from "@/lib/adapters/dataforseo/client";
 
 export type { CompetitiveContextResult as CompetitiveContext } from "@/lib/features/video-insights";
 

@@ -7,6 +7,7 @@
  */
 
 import { prisma } from "@/prisma";
+
 import { ChannelAuditError } from "../errors";
 import type {
   AuditPatterns,
@@ -40,7 +41,7 @@ export async function runChannelAudit(
 
   const metrics = await deps.fetchChannelMetrics(userId, channelId, range);
 
-  const daysAgo = range === "7d" ? 7 : range === "28d" ? 28 : 90;
+  const daysAgo = range === "7d" ? 7 : (range === "28d" ? 28 : 90);
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - daysAgo);
 

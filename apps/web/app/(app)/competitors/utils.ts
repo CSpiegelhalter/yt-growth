@@ -7,6 +7,11 @@
 import { parseYouTubeVideoId } from "@/lib/shared/youtube-video-id";
 
 // ============================================
+// FILTER STATE SERIALIZATION
+// ============================================
+import type { FilterState } from "./CompetitorFilters";
+
+// ============================================
 // URL VALIDATION
 // ============================================
 
@@ -122,12 +127,6 @@ export function formatDate(dateString: string): string {
   return `${Math.floor(diffDays / 365)} years ago`;
 }
 
-// ============================================
-// FILTER STATE SERIALIZATION
-// ============================================
-
-import type { FilterState } from "./CompetitorFilters";
-
 /**
  * Serialize filter state to URL search params.
  */
@@ -168,8 +167,8 @@ export function deserializeFilters(params: URLSearchParams): Partial<FilterState
   
   const minVpd = params.get("minVpd");
   if (minVpd) {
-    const parsed = parseInt(minVpd, 10);
-    if (!isNaN(parsed) && parsed >= 0) {
+    const parsed = Number.parseInt(minVpd, 10);
+    if (!Number.isNaN(parsed) && parsed >= 0) {
       filters.minViewsPerDay = parsed;
     }
   }

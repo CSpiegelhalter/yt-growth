@@ -1,48 +1,68 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import {
-  useState,
+  type FormEvent,
   useCallback,
   useEffect,
   useRef,
-  type FormEvent,
+  useState,
 } from "react";
-import { useSearchParams } from "next/navigation";
-import { CompassIcon, AlertCircleIcon, SearchIcon } from "@/components/icons";
-import NicheDiscoveryCard from "./NicheDiscoveryCard";
+
+import { ProfileTip } from "@/components/dashboard/ProfileTip";
+import { LockedFeatureGate } from "@/components/features/LockedFeatureGate";
 import FilterDrawer from "@/components/FilterDrawer/FilterDrawer";
-import type {
-  DiscoveredNiche,
-  DiscoveryFilters,
-  DiscoveryResponse,
-  ChannelSize,
-  ChannelAge,
-  DiscoverySort,
-  ContentCategory,
-  DiscoveryListType,
-} from "./types";
-import {
-  DEFAULT_DISCOVERY_FILTERS,
-  CHANNEL_SIZE_LABELS,
-  CHANNEL_AGE_LABELS,
-  SORT_OPTIONS,
-  CATEGORY_OPTIONS,
-  LIST_TYPE_OPTIONS,
-  DEFAULT_LIST_TYPE,
-} from "./types";
+import { AlertCircleIcon, CompassIcon, SearchIcon } from "@/components/icons";
+import { safeGetItem, safeSetItem } from "@/lib/client/safeLocalStorage";
+import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
+import type { Me } from "@/types/api";
+
 import {
   clearAllDiscoveryState,
   getActiveAdvancedFilterKeys,
   getActiveDiscoveryFilterCount,
-  toggleQuickChip,
   type QuickChipId,
+  toggleQuickChip,
 } from "./discovery-utils";
+import NicheDiscoveryCard from "./NicheDiscoveryCard";
 import s from "./style.module.css";
-import { safeGetItem, safeSetItem } from "@/lib/client/safeLocalStorage";
-import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
-import type { Me } from "@/types/api";
-import { LockedFeatureGate } from "@/components/features/LockedFeatureGate";
-import { ProfileTip } from "@/components/dashboard/ProfileTip";
+import type {
+  ChannelAge,
+  ChannelSize,
+  ContentCategory,
+  DiscoveredNiche,
+  DiscoveryFilters,
+  DiscoveryListType,
+  DiscoveryResponse,
+  DiscoverySort,
+} from "./types";
+import {
+  CATEGORY_OPTIONS,
+  CHANNEL_AGE_LABELS,
+  CHANNEL_SIZE_LABELS,
+  DEFAULT_DISCOVERY_FILTERS,
+  DEFAULT_LIST_TYPE,
+  LIST_TYPE_OPTIONS,
+  SORT_OPTIONS,
+} from "./types";
+
+function getFilterPillLabel(
+  key: string,
+  filters: DiscoveryFilters,
+  queryText: string,
+): string {
+  const labels: Record<string, string> = {
+    queryText: `Query: ${queryText.trim()}`,
+    minViewsPerDay: `Min ${filters.minViewsPerDay}/day`,
+    timeWindow: `Window: ${filters.timeWindow}`,
+    category: `Category: ${CATEGORY_OPTIONS[filters.category].label}`,
+    channelSize: `Size: ${CHANNEL_SIZE_LABELS[filters.channelSize].label}`,
+    channelAge: `Age: ${CHANNEL_AGE_LABELS[filters.channelAge].label}`,
+    contentType: `Type: ${filters.contentType}`,
+    sortBy: `Sort: ${SORT_OPTIONS[filters.sortBy].label}`,
+  };
+  return labels[key] ?? key;
+}
 
 type Props = {
   initialMe: Me;
@@ -158,10 +178,10 @@ export default function TrendingClient({
         setHasMore(data.hasMore);
         setTotalFound(data.totalFound);
         setNextCursor(data.nextCursor ?? null);
-      } catch (err) {
-        if ((err as Error).name === "AbortError") {return;}
+      } catch (error_) {
+        if ((error_ as Error).name === "AbortError") {return;}
         setError(
-          err instanceof Error ? err.message : "Failed to discover niches",
+          error_ instanceof Error ? error_.message : "Failed to discover niches",
         );
       } finally {
         setIsLoading(false);
@@ -172,18 +192,18 @@ export default function TrendingClient({
 
   const handleDiscover = useCallback(() => {
     setNextCursor(null);
-    fetchNiches(listType, filters, queryText, false);
+    void fetchNiches(listType, filters, queryText, false);
   }, [listType, filters, queryText, fetchNiches]);
 
   const handleLoadMore = useCallback(() => {
-    fetchNiches(listType, filters, queryText, true);
+    void fetchNiches(listType, filters, queryText, true);
   }, [listType, filters, queryText, fetchNiches]);
 
   const handleListTypeChange = useCallback(
     (newListType: DiscoveryListType) => {
       setListType(newListType);
       setNextCursor(null);
-      fetchNiches(newListType, filters, queryText, false);
+      void fetchNiches(newListType, filters, queryText, false);
     },
     [filters, queryText, fetchNiches],
   );
@@ -307,7 +327,7 @@ export default function TrendingClient({
           onChange={(e) =>
             setDraftFilters((prev) => ({
               ...prev,
-              minViewsPerDay: parseInt(e.target.value, 10),
+              minViewsPerDay: Number.parseInt(e.target.value, 10),
             }))
           }
         >
@@ -335,7 +355,7 @@ export default function TrendingClient({
     setQueryText(draftQueryText);
     // Trigger new discovery immediately
     setNextCursor(null);
-    fetchNiches(listType, draftFilters, draftQueryText, false);
+    void fetchNiches(listType, draftFilters, draftQueryText, false);
   }, [listType, draftFilters, draftQueryText, fetchNiches]);
 
   const resetAllInDrawer = useCallback(() => {
@@ -375,53 +395,12 @@ export default function TrendingClient({
 
   const removeActiveFilter = useCallback(
     (key: (typeof activeAdvancedKeys)[number]) => {
-      switch (key) {
-        case "queryText":
-          setQueryText("");
-          return;
-        case "category":
-          setFilters((p) => ({
-            ...p,
-            category: DEFAULT_DISCOVERY_FILTERS.category,
-          }));
-          return;
-        case "timeWindow":
-          setFilters((p) => ({
-            ...p,
-            timeWindow: DEFAULT_DISCOVERY_FILTERS.timeWindow,
-          }));
-          return;
-        case "minViewsPerDay":
-          setFilters((p) => ({
-            ...p,
-            minViewsPerDay: DEFAULT_DISCOVERY_FILTERS.minViewsPerDay,
-          }));
-          return;
-        case "channelSize":
-          setFilters((p) => ({
-            ...p,
-            channelSize: DEFAULT_DISCOVERY_FILTERS.channelSize,
-          }));
-          return;
-        case "channelAge":
-          setFilters((p) => ({
-            ...p,
-            channelAge: DEFAULT_DISCOVERY_FILTERS.channelAge,
-          }));
-          return;
-        case "contentType":
-          setFilters((p) => ({
-            ...p,
-            contentType: DEFAULT_DISCOVERY_FILTERS.contentType,
-          }));
-          return;
-        case "sortBy":
-          setFilters((p) => ({
-            ...p,
-            sortBy: DEFAULT_DISCOVERY_FILTERS.sortBy,
-          }));
-          return;
+      if (key === "queryText") {
+        setQueryText("");
+        return;
       }
+      const filterKey = key as keyof DiscoveryFilters;
+      setFilters((p) => ({ ...p, [filterKey]: DEFAULT_DISCOVERY_FILTERS[filterKey] }));
     },
     [setFilters],
   );
@@ -662,21 +641,7 @@ export default function TrendingClient({
                 title="Remove"
               >
                 <span className={s.activeFilterPillLabel}>
-                  {key === "queryText"
-                    ? `Query: ${queryText.trim()}`
-                    : key === "minViewsPerDay"
-                      ? `Min ${filters.minViewsPerDay}/day`
-                      : key === "timeWindow"
-                        ? `Window: ${filters.timeWindow}`
-                        : key === "category"
-                          ? `Category: ${CATEGORY_OPTIONS[filters.category].label}`
-                          : key === "channelSize"
-                            ? `Size: ${CHANNEL_SIZE_LABELS[filters.channelSize].label}`
-                            : key === "channelAge"
-                              ? `Age: ${CHANNEL_AGE_LABELS[filters.channelAge].label}`
-                              : key === "contentType"
-                                ? `Type: ${filters.contentType}`
-                                : `Sort: ${SORT_OPTIONS[filters.sortBy].label}`}
+                  {getFilterPillLabel(key, filters, queryText)}
                 </span>
                 <span className={s.activeFilterPillX} aria-hidden="true">
                   ×
@@ -814,95 +779,139 @@ export default function TrendingClient({
         </div>
       </FilterDrawer>
 
-      {/* Error State */}
-      {error && (
-        <div className={s.discoveryError}>
-          <AlertCircleIcon size={20} />
-          <p>{error}</p>
-          <button type="button" onClick={handleDiscover} className={s.retryBtn}>
-            Retry
-          </button>
-        </div>
-      )}
+      <DiscoveryResults
+        error={error}
+        isLoading={isLoading}
+        hasSearched={hasSearched}
+        visibleNiches={visibleNiches}
+        totalFound={totalFound}
+        hasMore={hasMore}
+        savedNiches={savedNiches}
+        onRetry={handleDiscover}
+        onSearchNiche={handleSearchNiche}
+        onSave={handleSave}
+        onDismiss={handleDismiss}
+        onLoadMore={handleLoadMore}
+        onClearAll={clearAll}
+      />
+    </main>
+  );
+}
 
-      {/* Loading State */}
-      {isLoading && visibleNiches.length === 0 && (
-        <div className={s.discoveryLoading}>
-          <span className={s.spinner} />
-          <p>Finding niches...</p>
-        </div>
-      )}
+/* ---------- Extracted Results Section ---------- */
 
-      {/* Empty State (no search yet) */}
-      {!isLoading && !error && !hasSearched && (
-        <div className={s.discoveryEmpty}>
-          <div className={s.discoveryEmptyIcon}>
-            <CompassIcon size={48} strokeWidth={1.5} />
-          </div>
-          <h3 className={s.discoveryEmptyTitle}>Discover Rising Niches</h3>
-          <p className={s.discoveryEmptyDesc}>
-            Use the filters to discover niches that match your channel goals.
-            When you find something interesting, click "Search this niche" to
-            explore competitors.
-          </p>
-        </div>
-      )}
+function DiscoveryResults({
+  error,
+  isLoading,
+  hasSearched,
+  visibleNiches,
+  totalFound,
+  hasMore,
+  savedNiches,
+  onRetry,
+  onSearchNiche,
+  onSave,
+  onDismiss,
+  onLoadMore,
+  onClearAll,
+}: {
+  error: string | null;
+  isLoading: boolean;
+  hasSearched: boolean;
+  visibleNiches: DiscoveredNiche[];
+  totalFound: number;
+  hasMore: boolean;
+  savedNiches: Set<string>;
+  onRetry: () => void;
+  onSearchNiche: (niche: DiscoveredNiche) => void;
+  onSave: (niche: DiscoveredNiche) => void;
+  onDismiss: (niche: DiscoveredNiche) => void;
+  onLoadMore: () => void;
+  onClearAll: () => void;
+}) {
+  if (error) {
+    return (
+      <div className={s.discoveryError}>
+        <AlertCircleIcon size={20} />
+        <p>{error}</p>
+        <button type="button" onClick={onRetry} className={s.retryBtn}>
+          Retry
+        </button>
+      </div>
+    );
+  }
 
-      {/* No Results State */}
-      {!isLoading && !error && hasSearched && visibleNiches.length === 0 && (
-        <div className={s.discoveryEmpty}>
-          <div className={s.discoveryEmptyIcon}>
-            <SearchIcon size={48} strokeWidth={1.5} />
-          </div>
-          <h3 className={s.discoveryEmptyTitle}>No Niches Found</h3>
-          <p className={s.discoveryEmptyDesc}>
-            Try broadening your filters — increase the time window, lower the
-            minimum views/day, or select "Any Size" for channels.
-          </p>
-          <button
-            type="button"
-            className={s.resetFiltersBtnLarge}
-            onClick={clearAll}
-          >
-            Clear all
-          </button>
-        </div>
-      )}
+  if (isLoading && visibleNiches.length === 0) {
+    return (
+      <div className={s.discoveryLoading}>
+        <span className={s.spinner} />
+        <p>Finding niches...</p>
+      </div>
+    );
+  }
 
-      {/* Results Header */}
-      {visibleNiches.length > 0 && (
-        <div className={s.discoveryResultsHeader}>
-          <p className={s.discoveryResultsCount}>
-            Found <strong>{totalFound}</strong> niches
-            {totalFound > visibleNiches.length &&
-              ` (showing ${visibleNiches.length})`}
-          </p>
+  if (!hasSearched) {
+    return (
+      <div className={s.discoveryEmpty}>
+        <div className={s.discoveryEmptyIcon}>
+          <CompassIcon size={48} strokeWidth={1.5} />
         </div>
-      )}
+        <h3 className={s.discoveryEmptyTitle}>Discover Rising Niches</h3>
+        <p className={s.discoveryEmptyDesc}>
+          Use the filters to discover niches that match your channel goals.
+          When you find something interesting, click "Search this niche" to
+          explore competitors.
+        </p>
+      </div>
+    );
+  }
 
-      {/* Niche Cards Grid */}
-      {visibleNiches.length > 0 && (
-        <div className={s.nicheCardsGrid}>
-          {visibleNiches.map((niche) => (
-            <NicheDiscoveryCard
-              key={niche.id}
-              niche={niche}
-              onSearchThisNiche={handleSearchNiche}
-              onSave={handleSave}
-              onDismiss={handleDismiss}
-              isSaved={savedNiches.has(niche.id)}
-            />
-          ))}
+  if (visibleNiches.length === 0) {
+    return (
+      <div className={s.discoveryEmpty}>
+        <div className={s.discoveryEmptyIcon}>
+          <SearchIcon size={48} strokeWidth={1.5} />
         </div>
-      )}
+        <h3 className={s.discoveryEmptyTitle}>No Niches Found</h3>
+        <p className={s.discoveryEmptyDesc}>
+          Try broadening your filters — increase the time window, lower the
+          minimum views/day, or select "Any Size" for channels.
+        </p>
+        <button type="button" className={s.resetFiltersBtnLarge} onClick={onClearAll}>
+          Clear all
+        </button>
+      </div>
+    );
+  }
 
-      {/* Load More */}
-      {hasMore && visibleNiches.length > 0 && (
+  return (
+    <>
+      <div className={s.discoveryResultsHeader}>
+        <p className={s.discoveryResultsCount}>
+          Found <strong>{totalFound}</strong> niches
+          {totalFound > visibleNiches.length && ` (showing ${visibleNiches.length})`}
+        </p>
+      </div>
+
+      <div className={s.nicheCardsGrid}>
+        {visibleNiches.map((niche) => (
+          <NicheDiscoveryCard
+            key={niche.id}
+            niche={niche}
+            onSearchThisNiche={onSearchNiche}
+            onSave={onSave}
+            onDismiss={onDismiss}
+            isSaved={savedNiches.has(niche.id)}
+          />
+        ))}
+      </div>
+
+      {hasMore && (
         <div className={s.discoveryLoadMore}>
           <button
             type="button"
             className={s.loadMoreButton}
-            onClick={handleLoadMore}
+            onClick={onLoadMore}
             disabled={isLoading}
           >
             {isLoading ? "Loading..." : "Load More Niches"}
@@ -910,13 +919,12 @@ export default function TrendingClient({
         </div>
       )}
 
-      {/* Streaming indicator when loading more */}
-      {isLoading && visibleNiches.length > 0 && (
+      {isLoading && (
         <div className={s.discoveryLoadingMore}>
           <span className={s.spinnerSmall} />
           <p>Finding more niches...</p>
         </div>
       )}
-    </main>
+    </>
   );
 }

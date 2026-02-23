@@ -4,11 +4,11 @@
    ================================ */
 
 .badgeWrap {
-  position: relative;
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  display: inline-flex;
   flex-shrink: 0;
+  justify-content: center;
+  position: relative;
 }
 
 .badgeSvg {
@@ -18,19 +18,19 @@
 
 /* Rarity-specific styles */
 .common .badgeSvg {
-  filter: drop-shadow(0 2px 4px rgba(96, 165, 250, 0.3));
+  filter: drop-shadow(0 2px 4px rgb(96 165 250 / 30%));
 }
 
 .rare .badgeSvg {
-  filter: drop-shadow(0 4px 8px rgba(167, 139, 250, 0.4));
+  filter: drop-shadow(0 4px 8px rgb(167 139 250 / 40%));
 }
 
 .epic .badgeSvg {
-  filter: drop-shadow(0 6px 12px rgba(244, 114, 182, 0.4));
+  filter: drop-shadow(0 6px 12px rgb(244 114 182 / 40%));
 }
 
 .legendary .badgeSvg {
-  filter: drop-shadow(0 8px 16px rgba(251, 191, 36, 0.5));
+  filter: drop-shadow(0 8px 16px rgb(251 191 36 / 50%));
 }
 
 .locked .badgeSvg {
@@ -57,6 +57,7 @@
     opacity: 0.4;
     r: 42;
   }
+
   50% {
     opacity: 0.7;
     r: 44;
@@ -88,6 +89,7 @@
     opacity: 0.4;
     transform: scale(1);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.5);
@@ -96,27 +98,28 @@
 
 /* Shine overlay for epic/legendary */
 .shineOverlay {
-  position: absolute;
-  inset: 0;
+  animation: shine 3s ease-in-out infinite;
   background: linear-gradient(
     135deg,
     transparent 20%,
-    rgba(255, 255, 255, 0.3) 40%,
-    rgba(255, 255, 255, 0.4) 50%,
-    rgba(255, 255, 255, 0.3) 60%,
+    rgb(255 255 255 / 30%) 40%,
+    rgb(255 255 255 / 40%) 50%,
+    rgb(255 255 255 / 30%) 60%,
     transparent 80%
   );
   background-size: 200% 200%;
-  animation: shine 3s ease-in-out infinite;
-  pointer-events: none;
   border-radius: 50%;
   clip-path: polygon(50% 8%, 88% 28%, 88% 72%, 50% 92%, 12% 72%, 12% 28%);
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
 }
 
 @keyframes shine {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -133,9 +136,9 @@
 
 /* Focus states for accessibility */
 .badgeWrap:focus-visible {
+  border-radius: 8px;
   outline: 3px solid #6366f1;
   outline-offset: 4px;
-  border-radius: 8px;
 }
 
 /* Reduced motion */

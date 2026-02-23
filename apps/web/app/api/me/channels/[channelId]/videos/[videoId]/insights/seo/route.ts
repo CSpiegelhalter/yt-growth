@@ -1,11 +1,11 @@
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
 import {
+  generateSeoAnalysis,
   InsightParamsSchema,
   InsightQuerySchema,
-  generateSeoAnalysis,
 } from "@/lib/features/video-insights";
 import { callLLM } from "@/lib/llm";
 import { resolveInsightContext } from "@/lib/server/video-insight-context";

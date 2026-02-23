@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { getCurrentUserServer, getMeServer, getChannelsServer, resolveActiveChannelId, normalizePlan, isAdminEmail } from "@/lib/server/bootstrap";
+
 import { AppShellServer } from "@/components/navigation/AppShellServer";
+import { getChannelsServer, getCurrentUserServer, getMeServer, isAdminEmail,normalizePlan, resolveActiveChannelId } from "@/lib/server/bootstrap";
 import { getFilteredNavItems } from "@/lib/server/nav-config.server";
 
 /**

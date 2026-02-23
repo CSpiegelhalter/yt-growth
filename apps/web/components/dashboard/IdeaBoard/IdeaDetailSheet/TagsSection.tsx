@@ -56,7 +56,7 @@ export function TagsSection({
         </div>
       )}
 
-      {hasError && !tags.length && (
+      {hasError && tags.length === 0 && (
         <div className={s.errorCallout} role="alert">
           <div className={s.errorText}>Couldn't generate tags.</div>
           <button className={s.retryBtn} onClick={onRetry}>

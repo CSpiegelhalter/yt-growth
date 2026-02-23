@@ -11,10 +11,10 @@
 
 // Re-export canonical API types that this feature domain owns
 export type {
-  CompetitorVideo,
-  CompetitorVideoAnalysis,
   CompetitorCommentsAnalysis,
   CompetitorFeedResponse,
+  CompetitorVideo,
+  CompetitorVideoAnalysis,
 } from "@/types/api";
 
 // ── Search filter types ─────────────────────────────────────────

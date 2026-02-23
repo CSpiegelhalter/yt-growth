@@ -1,10 +1,11 @@
-import { prisma } from "@/prisma";
 import type { LlmPort } from "@/lib/ports/LlmPort";
 import { hashSubscriberAuditContent } from "@/lib/shared/content-hash";
+import { prisma } from "@/prisma";
+
 import { SubscriberInsightError } from "../errors";
 import type {
-  PatternAnalysisJson,
   PatternAnalysisInput,
+  PatternAnalysisJson,
   RunSubscriberAuditInput,
   SubscriberAuditDeps,
   SubscriberAuditResult,
@@ -201,11 +202,11 @@ async function generatePatternAnalysis(
 
     const parsed = parseAnalysisResponse(result.content);
     if (parsed) {return parsed;}
-  } catch (err) {
+  } catch (error) {
     throw new SubscriberInsightError(
       "EXTERNAL_FAILURE",
       "Failed to generate subscriber insights from LLM",
-      err,
+      error,
     );
   }
 
@@ -368,8 +369,8 @@ async function getCachedOrGenerateAnalysis(
     });
 
     return { analysisJson, analysisMarkdownFallback: null };
-  } catch (err) {
-    console.warn("Failed to generate subscriber insights:", err);
+  } catch (error) {
+    console.warn("Failed to generate subscriber insights:", error);
     return { analysisJson: null, analysisMarkdownFallback: null };
   }
 }

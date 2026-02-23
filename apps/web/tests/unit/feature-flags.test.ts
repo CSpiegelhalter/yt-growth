@@ -11,7 +11,6 @@ import { describe, expect, test } from "bun:test";
  * Note: Unit tests that require mocking Prisma are in integration tests
  * since Bun's test mocking doesn't intercept Prisma client properly.
  */
-
 import type { FeatureFlagKey } from "@/lib/shared/feature-flags";
 
 describe("FeatureFlagKey type", () => {

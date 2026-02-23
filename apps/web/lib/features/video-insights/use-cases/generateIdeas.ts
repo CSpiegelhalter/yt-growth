@@ -5,8 +5,8 @@
  * based on a video's topic, performance, and channel profile.
  */
 
-import type { IdeasAnalysis, LlmCallFn } from "../types";
 import { VideoInsightError } from "../errors";
+import type { IdeasAnalysis, LlmCallFn } from "../types";
 
 export type ChannelProfileForIdeas = {
   nicheLabel: string;
@@ -88,11 +88,11 @@ PERFORMANCE: ${totalViews.toLocaleString()} views`;
       { maxTokens: 800, temperature: 0.4, responseFormat: "json_object" },
     );
     return JSON.parse(result.content);
-  } catch (err) {
+  } catch (error) {
     throw new VideoInsightError(
       "EXTERNAL_FAILURE",
       "Failed to generate content ideas",
-      err,
+      error,
     );
   }
 }

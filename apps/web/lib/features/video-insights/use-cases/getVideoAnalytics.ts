@@ -1,5 +1,7 @@
 import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/prisma";
+
 import { VideoInsightError } from "../errors";
 import type { GoogleAccountResult } from "../types";
 import { analyzeRetention, type AnalyzeRetentionDeps } from "./analyzeRetention";

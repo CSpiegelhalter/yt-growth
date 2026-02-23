@@ -1,4 +1,4 @@
-import type { ReactNode, ElementType } from 'react';
+import type { ElementType,ReactNode } from 'react';
 
 type TypographyProps = {
   children: ReactNode;

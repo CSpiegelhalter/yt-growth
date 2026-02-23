@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect,useState } from "react";
+
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
+
 import s from "../login/style.module.css";
 
 /**

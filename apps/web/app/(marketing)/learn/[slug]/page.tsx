@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { LEARN_ARTICLES, getRelatedArticles } from "../articles";
-import { buildLearnMetadata, buildLearnSchemas } from "../articles/seo";
-import { ARTICLE_REGISTRY } from "../articles/registry";
-import { ArticleShell } from "../articles/_components/ArticleShell";
-import {
-  StructuredData,
-  LearnTopicsNav,
-  LearnFAQ,
-  RelatedArticles,
-} from "@/components/learn/server";
+
 import { LearnStaticCTA, normalizeItems } from "@/components/learn";
+import {
+  LearnFAQ,
+  LearnTopicsNav,
+  RelatedArticles,
+  StructuredData,
+} from "@/components/learn/server";
 import { BRAND } from "@/lib/shared/brand";
+
+import { getRelatedArticles,LEARN_ARTICLES } from "../articles";
+import { ArticleShell } from "../articles/_components/ArticleShell";
+import { ARTICLE_REGISTRY } from "../articles/registry";
+import { buildLearnMetadata, buildLearnSchemas } from "../articles/seo";
 import s from "../style.module.css";
 
 export function generateStaticParams() {

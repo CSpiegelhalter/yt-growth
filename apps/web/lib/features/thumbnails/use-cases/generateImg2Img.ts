@@ -1,6 +1,7 @@
-import { prisma } from "@/prisma";
-import { createLogger } from "@/lib/shared/logger";
 import type { ReplicatePort } from "@/lib/ports/ReplicatePort";
+import { createLogger } from "@/lib/shared/logger";
+import { prisma } from "@/prisma";
+
 import { ThumbnailError } from "../errors";
 
 const log = createLogger({ subsystem: "thumbnails/generate-img2img" });
@@ -149,7 +150,7 @@ export async function generateImg2Img(
       parentJobId: parentJob.id,
       predictionId: prediction.id,
     };
-  } catch (err) {
+  } catch (error) {
     await prisma.thumbnailJob.update({
       where: { id: job.id },
       data: { status: "failed" },
@@ -157,13 +158,13 @@ export async function generateImg2Img(
 
     log.error("Failed to create img2img prediction", {
       jobId: job.id,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
     });
 
     throw new ThumbnailError(
       "EXTERNAL_FAILURE",
       "Failed to start image variation",
-      err,
+      error,
     );
   }
 }

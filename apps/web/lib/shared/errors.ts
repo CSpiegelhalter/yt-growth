@@ -16,7 +16,7 @@
  */
 export class DomainError extends Error {
   readonly code: string;
-  readonly cause?: unknown;
+  override readonly cause?: unknown;
 
   constructor(code: string, message: string, cause?: unknown) {
     super(message);

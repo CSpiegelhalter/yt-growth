@@ -1,4 +1,5 @@
 import type { StoragePort } from "@/lib/ports/StoragePort";
+
 import { ThumbnailError } from "../errors";
 
 const ALLOWED_PREFIXES = ["thumbnails/", "assets/", "face-refs/", "identity/"];

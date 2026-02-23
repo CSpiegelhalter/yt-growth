@@ -11,9 +11,9 @@
 import "server-only";
 
 import type {
-  LlmPort,
   LlmCompletionParams,
   LlmCompletionResult,
+  LlmPort,
 } from "@/lib/ports/LlmPort";
 import { logger } from "@/lib/shared/logger";
 
@@ -67,10 +67,37 @@ function sleep(ms: number): Promise<void> {
 
 function retryDelay(attempt: number, retryAfterHeader: string | null): number {
   if (retryAfterHeader) {
-    const seconds = parseInt(retryAfterHeader, 10);
+    const seconds = Number.parseInt(retryAfterHeader, 10);
     if (!Number.isNaN(seconds) && seconds > 0) {return seconds * 1000;}
   }
   return BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
+}
+
+function buildChatBody(params: OpenAiCompletionParams): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model: params.model ?? DEFAULT_MODEL,
+    messages: params.messages.map((m) => ({ role: m.role, content: m.content })),
+    max_tokens: params.maxTokens ?? DEFAULT_MAX_TOKENS,
+    temperature: params.temperature ?? DEFAULT_TEMPERATURE,
+    store: false,
+  };
+  if (params.responseFormat) {
+    body.response_format = { type: params.responseFormat };
+  }
+  return body;
+}
+
+interface ChatCompletionJson {
+  choices?: Array<{ message?: { content?: string } }>;
+  usage?: { total_tokens?: number };
+}
+
+function parseCompletionResponse(data: ChatCompletionJson, model: string): LlmCompletionResult {
+  return {
+    content: data.choices?.[0]?.message?.content ?? "",
+    tokensUsed: data.usage?.total_tokens ?? 0,
+    model,
+  };
 }
 
 /**
@@ -81,20 +108,7 @@ async function fetchChatCompletion(
 ): Promise<LlmCompletionResult> {
   const apiKey = getApiKey();
   const model = params.model ?? DEFAULT_MODEL;
-  const maxTokens = params.maxTokens ?? DEFAULT_MAX_TOKENS;
-  const temperature = params.temperature ?? DEFAULT_TEMPERATURE;
-
-  const body: Record<string, unknown> = {
-    model,
-    messages: params.messages.map((m) => ({ role: m.role, content: m.content })),
-    max_tokens: maxTokens,
-    temperature,
-    store: false,
-  };
-
-  if (params.responseFormat) {
-    body.response_format = { type: params.responseFormat };
-  }
+  const body = buildChatBody(params);
 
   let lastError: unknown;
 
@@ -139,16 +153,9 @@ async function fetchChatCompletion(
         );
       }
 
-      const data = await response.json();
-      const choice = data.choices?.[0];
-
-      return {
-        content: choice?.message?.content ?? "",
-        tokensUsed: data.usage?.total_tokens ?? 0,
-        model,
-      };
-    } catch (err) {
-      if (err instanceof OpenAiError) {throw err;}
+      return parseCompletionResponse(await response.json(), model);
+    } catch (error) {
+      if (error instanceof OpenAiError) {throw error;}
 
       if (attempt < MAX_RETRIES) {
         const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
@@ -157,7 +164,7 @@ async function fetchChatCompletion(
           maxAttempts: MAX_RETRIES + 1,
           retryInMs: delay,
         });
-        lastError = err;
+        lastError = error;
         await sleep(delay);
         continue;
       }
@@ -166,7 +173,7 @@ async function fetchChatCompletion(
         `OpenAI request failed after ${MAX_RETRIES + 1} attempts`,
         null,
         false,
-        err
+        error
       );
     }
   }

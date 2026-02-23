@@ -5,11 +5,7 @@ import { useEffect } from "react";
  */
 export function useBodyScrollLock(isOpen: boolean) {
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = isOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };

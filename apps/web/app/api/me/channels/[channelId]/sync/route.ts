@@ -9,25 +9,25 @@
  * Rate limit: 10 per hour per channel
  * Caching: Updates lastSyncedAt, short-circuits if synced within 5 minutes
  */
+import {
+  fetchChannelVideos,
+  fetchVideoMetrics,
+  getGoogleAccount,
+} from "@/lib/adapters/youtube";
+import type { GoogleAccount } from "@/lib/adapters/youtube/types";
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
 import { channelParamsSchema } from "@/lib/competitors/video-detail/validation";
 import {
   syncChannel,
   type SyncChannelDeps,
 } from "@/lib/features/channels/use-cases/syncChannel";
-import type { GoogleAccount } from "@/lib/adapters/youtube/types";
-import {
-  getGoogleAccount,
-  fetchChannelVideos,
-  fetchVideoMetrics,
-} from "@/lib/adapters/youtube";
-import { getSubscriptionStatus } from "@/lib/stripe";
-import { getPlanFromSubscription, getLimit } from "@/lib/features/subscriptions/use-cases/checkEntitlement";
 import type { FeatureKey } from "@/lib/features/subscriptions/types";
+import { getLimit,getPlanFromSubscription } from "@/lib/features/subscriptions/use-cases/checkEntitlement";
 import { checkAndIncrement } from "@/lib/features/subscriptions/use-cases/trackUsage";
+import { getSubscriptionStatus } from "@/lib/stripe";
 
 const deps: SyncChannelDeps<GoogleAccount> = {
   getGoogleAccount,

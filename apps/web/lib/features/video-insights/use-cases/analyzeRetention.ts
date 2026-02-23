@@ -9,32 +9,33 @@
  * so the feature layer stays decoupled from the adapter implementation.
  */
 
-import { prisma } from "@/prisma";
 import {
-  computeDerivedMetrics,
-  computeChannelBaseline,
+  type BaselineComparison,
+  type ChannelBaseline,
   compareToBaseline,
-  getRetentionGrade,
+  computeChannelBaseline,
+  computeDerivedMetrics,
+  computeSectionConfidence,
+  type DerivedMetrics,
+  detectBottleneck,
+  EMPTY_CHANNEL_BASELINE,
   getConversionGrade,
   getEngagementGrade,
-  detectBottleneck,
-  computeSectionConfidence,
+  getRetentionGrade,
   isLowDataMode,
-  EMPTY_CHANNEL_BASELINE,
-  type DerivedMetrics,
-  type ChannelBaseline,
-  type BaselineComparison,
 } from "@/lib/owned-video-math";
-import { getDateRange, type AnalyticsRange } from "@/lib/shared/date-range";
 import type {
   AnalyticsTotals,
   DailyAnalyticsRow,
-  VideoMetadata,
-  SubscriberBreakdown,
-  GeographicBreakdown,
-  TrafficSourceDetail,
   DemographicBreakdown,
+  GeographicBreakdown,
+  SubscriberBreakdown,
+  TrafficSourceDetail,
+  VideoMetadata,
 } from "@/lib/ports/YouTubePort";
+import { type AnalyticsRange,getDateRange } from "@/lib/shared/date-range";
+import { prisma } from "@/prisma";
+
 import { VideoInsightError } from "../errors";
 import type { GoogleAccount } from "../types";
 
@@ -370,10 +371,14 @@ function getRetentionReason(derived: DerivedMetrics, comparison: BaselineCompari
 
 function getRetentionAction(grade: string): string {
   switch (grade) {
-    case "Needs Work": return "Add a pattern interrupt in the first 30 seconds.";
-    case "OK": return "Tighten the intro and get to value faster.";
-    case "Good": return "Maintain pacing; test mid-roll hooks.";
-    default: return "Keep doing what you're doing.";
+    case "Needs Work": { return "Add a pattern interrupt in the first 30 seconds.";
+    }
+    case "OK": { return "Tighten the intro and get to value faster.";
+    }
+    case "Good": { return "Maintain pacing; test mid-roll hooks.";
+    }
+    default: { return "Keep doing what you're doing.";
+    }
   }
 }
 
@@ -387,10 +392,14 @@ function getConversionReason(derived: DerivedMetrics, comparison: BaselineCompar
 
 function getConversionAction(grade: string): string {
   switch (grade) {
-    case "Needs Work": return "Add a subscribe reminder after delivering value.";
-    case "OK": return "Test different subscribe reminder placements.";
-    case "Good": return "Experiment with end screen timing.";
-    default: return "Your subscribe prompts are working well.";
+    case "Needs Work": { return "Add a subscribe reminder after delivering value.";
+    }
+    case "OK": { return "Test different subscribe reminder placements.";
+    }
+    case "Good": { return "Experiment with end screen timing.";
+    }
+    default: { return "Your subscribe prompts are working well.";
+    }
   }
 }
 
@@ -404,9 +413,13 @@ function getEngagementReason(derived: DerivedMetrics, comparison: BaselineCompar
 
 function getEngagementAction(grade: string): string {
   switch (grade) {
-    case "Needs Work": return "Ask a specific question to prompt comments.";
-    case "OK": return "Pin a comment to spark discussion.";
-    case "Good": return "Reply to comments to boost engagement.";
-    default: return "Your engagement is strong.";
+    case "Needs Work": { return "Ask a specific question to prompt comments.";
+    }
+    case "OK": { return "Pin a comment to spark discussion.";
+    }
+    case "Good": { return "Reply to comments to boost engagement.";
+    }
+    default: { return "Your engagement is strong.";
+    }
   }
 }

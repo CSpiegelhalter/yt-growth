@@ -1,8 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
+
 import styles from "./ErrorState.module.css";
 
 type ApiErrorInfo = {
@@ -88,13 +89,13 @@ function formatResetTime(resetAt: string): string {
     const diffMs = date.getTime() - now.getTime();
 
     if (diffMs <= 0) {return "soon";}
-    if (diffMs < 60000) {return "less than a minute";}
-    if (diffMs < 3600000) {
-      const mins = Math.ceil(diffMs / 60000);
+    if (diffMs < 60_000) {return "less than a minute";}
+    if (diffMs < 3_600_000) {
+      const mins = Math.ceil(diffMs / 60_000);
       return `${mins} minute${mins === 1 ? "" : "s"}`;
     }
-    if (diffMs < 86400000) {
-      const hours = Math.ceil(diffMs / 3600000);
+    if (diffMs < 86_400_000) {
+      const hours = Math.ceil(diffMs / 3_600_000);
       return `${hours} hour${hours === 1 ? "" : "s"}`;
     }
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -102,6 +103,104 @@ function formatResetTime(resetAt: string): string {
     return "later";
   }
 }
+
+// ─── Category helpers ─────────────────────────────────────────
+
+type ErrorCategory = "rate_limited" | "limit_reached" | "permission" | "generic";
+
+function categorizeError(error?: ApiErrorInfo | null): ErrorCategory {
+  const code = error?.code?.toUpperCase() ?? "";
+  if (error?.status === 429 || code === "RATE_LIMITED") {return "rate_limited";}
+  if (code === "LIMIT_REACHED") {return "limit_reached";}
+  if (code === "UNAUTHORIZED" || code === "FORBIDDEN" || code === "YOUTUBE_PERMISSIONS") {
+    return "permission";
+  }
+  return "generic";
+}
+
+const CATEGORY_TITLES: Record<ErrorCategory, string> = {
+  rate_limited: "Too many requests",
+  limit_reached: "Daily limit reached",
+  permission: "Permission required",
+  generic: "Something went wrong",
+};
+
+function getDefaultDescription(
+  category: ErrorCategory,
+  error?: ApiErrorInfo | null,
+): string {
+  if (category === "rate_limited") {
+    return `Please wait ${error?.resetAt ? formatResetTime(error.resetAt) : "a moment"} before trying again.`;
+  }
+  if (category === "limit_reached") {
+    return `You've used ${error?.details?.used ?? 0} of ${error?.details?.limit ?? 0} analyses today. Upgrade for more.`;
+  }
+  if (category === "permission") {
+    return "You don't have permission to access this resource. Please sign in or reconnect your account.";
+  }
+  return error?.message ?? "An unexpected error occurred. Please try again.";
+}
+
+const CATEGORY_ICONS: Record<ErrorCategory, ReactNode> = {
+  rate_limited: <LimitIcon />,
+  limit_reached: <LimitIcon />,
+  permission: <PermissionsIcon />,
+  generic: <ErrorIcon />,
+};
+
+// ─── Default actions sub-component ────────────────────────────
+
+function DefaultActions({
+  category,
+  error,
+  onRetry,
+  backLink,
+}: {
+  category: ErrorCategory;
+  error?: ApiErrorInfo | null;
+  onRetry?: () => void;
+  backLink?: { href: string; label: string };
+}) {
+  const router = useRouter();
+
+  return (
+    <>
+      {onRetry && (
+        <button onClick={onRetry} className={styles.btnPrimary} type="button">
+          Try Again
+        </button>
+      )}
+
+      {category === "permission" && (
+        <a href="/api/integrations/google/start" className={styles.btnPrimary}>
+          Reconnect Account
+        </a>
+      )}
+
+      {(category === "limit_reached" || error?.details?.upgrade) && (
+        <Link href="/api/integrations/stripe/checkout" className={styles.btnPrimary}>
+          Upgrade to Pro
+        </Link>
+      )}
+
+      {backLink ? (
+        <Link href={backLink.href} className={styles.btnSecondary}>
+          {backLink.label}
+        </Link>
+      ) : (
+        <button
+          onClick={() => router.back()}
+          className={styles.btnSecondary}
+          type="button"
+        >
+          Go Back
+        </button>
+      )}
+    </>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────
 
 /**
  * ErrorState - Unified error display component
@@ -125,46 +224,10 @@ export function ErrorState({
   requestId,
   className = "",
 }: ErrorStateProps) {
-  const router = useRouter();
-
-  const errorCode = error?.code?.toUpperCase() ?? "";
-  const isRateLimited = error?.status === 429 || errorCode === "RATE_LIMITED";
-  const isLimitReached = errorCode === "LIMIT_REACHED";
-  const isPermissionError =
-    errorCode === "UNAUTHORIZED" ||
-    errorCode === "FORBIDDEN" ||
-    errorCode === "YOUTUBE_PERMISSIONS";
-
-  const computedTitle =
-    title ??
-    (isRateLimited
-      ? "Too many requests"
-      : isLimitReached
-        ? "Daily limit reached"
-        : isPermissionError
-          ? "Permission required"
-          : "Something went wrong");
-
-  const computedDescription =
-    description ??
-    (isRateLimited
-      ? `Please wait ${error?.resetAt ? formatResetTime(error.resetAt) : "a moment"} before trying again.`
-      : isLimitReached
-        ? `You've used ${error?.details?.used ?? 0} of ${error?.details?.limit ?? 0} analyses today. Upgrade for more.`
-        : isPermissionError
-          ? "You don't have permission to access this resource. Please sign in or reconnect your account."
-          : error?.message ?? "An unexpected error occurred. Please try again.");
-
-  const computedIcon =
-    icon ??
-    (isRateLimited || isLimitReached ? (
-      <LimitIcon />
-    ) : isPermissionError ? (
-      <PermissionsIcon />
-    ) : (
-      <ErrorIcon />
-    ));
-
+  const category = categorizeError(error);
+  const computedTitle = title ?? CATEGORY_TITLES[category];
+  const computedDescription = description ?? getDefaultDescription(category, error);
+  const computedIcon = icon ?? CATEGORY_ICONS[category];
   const resolvedRequestId = requestId ?? error?.requestId;
 
   return (
@@ -180,45 +243,15 @@ export function ErrorState({
       )}
 
       <div className={styles.actions}>
-        {actions ? (
-          actions
-        ) : (
-          <>
-            {onRetry && (
-              <button onClick={onRetry} className={styles.btnPrimary} type="button">
-                Try Again
-              </button>
-            )}
-
-            {isPermissionError && (
-              <a href="/api/integrations/google/start" className={styles.btnPrimary}>
-                Reconnect Account
-              </a>
-            )}
-
-            {(isLimitReached || error?.details?.upgrade) && (
-              <Link href="/api/integrations/stripe/checkout" className={styles.btnPrimary}>
-                Upgrade to Pro
-              </Link>
-            )}
-
-            {backLink ? (
-              <Link href={backLink.href} className={styles.btnSecondary}>
-                {backLink.label}
-              </Link>
-            ) : (
-              <button
-                onClick={() => router.back()}
-                className={styles.btnSecondary}
-                type="button"
-              >
-                Go Back
-              </button>
-            )}
-          </>
+        {actions ?? (
+          <DefaultActions
+            category={category}
+            error={error}
+            onRetry={onRetry}
+            backLink={backLink}
+          />
         )}
       </div>
     </div>
   );
 }
-

@@ -1,15 +1,18 @@
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { afterEach,beforeEach, describe, expect, test } from "bun:test";
+
 import {
   getJSON,
   getJSONWithExpiry,
+  removeJSON,
   setJSON,
   setJSONWithExpiry,
-  removeJSON,
   STORAGE_KEYS,
 } from "@/lib/client/safeLocalStorage";
 
 // The storage functions prefix keys with "cb_thumbnails_"
 const PREFIX = "cb_thumbnails_";
+
+const rejectAllValidator = (_: unknown): _ is never => false;
 
 describe("safeLocalStorage", () => {
   // Store original globals for cleanup
@@ -83,10 +86,7 @@ describe("safeLocalStorage", () => {
       const data = { foo: "bar" };
       window.localStorage.setItem(`${PREFIX  }validated`, JSON.stringify(data));
 
-      // Validator that always returns false
-      const validator = (_: unknown): _ is never => false;
-
-      const result = getJSON("validated", validator);
+      const result = getJSON("validated", rejectAllValidator);
       expect(result).toBeNull();
     });
 

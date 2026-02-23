@@ -1,20 +1,18 @@
-import { type NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import JSZip from "jszip";
-import { createApiRoute } from "@/lib/api/route";
-import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
-import { withRateLimit } from "@/lib/api/withRateLimit";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { ApiError } from "@/lib/api/errors";
-import { prisma } from "@/prisma";
-import { getStorage } from "@/lib/storage";
+import { createApiRoute } from "@/lib/api/route";
+import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
+import { withRateLimit } from "@/lib/api/withRateLimit";
 import {
-  normalizeIdentityImage,
+  computeDatasetHash,
   generateIdentityTriggerWord,
   isSafeTriggerWord,
-  computeDatasetHash,
   MIN_TRAINING_PHOTOS,
+  normalizeIdentityImage,
 } from "@/lib/features/identity";
-import { createLogger } from "@/lib/shared/logger";
 import {
   createModel,
   createTraining,
@@ -22,6 +20,9 @@ import {
   verifyModelVersion,
 } from "@/lib/replicate/client";
 import { getAppBaseUrl } from "@/lib/server/url";
+import { createLogger } from "@/lib/shared/logger";
+import { getStorage } from "@/lib/storage";
+import { prisma } from "@/prisma";
 
 export const runtime = "nodejs";
 
@@ -43,10 +44,10 @@ async function cleanupFailedModel(modelId: string): Promise<void> {
     // Delete the model
     await prisma.userModel.delete({ where: { id: modelId } });
     log.info("Cleaned up failed model", { modelId });
-  } catch (err) {
+  } catch (error) {
     log.error("Failed to cleanup model", {
       modelId,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 }
@@ -63,6 +64,134 @@ function getModelOwner(): string {
   return o;
 }
 
+type TrainerRef = { owner: string; model: string; versionId: string };
+
+function parseTrainerVersion(raw: string): TrainerRef {
+  if (raw.includes(":")) {
+    const [modelRef, version] = raw.split(":");
+    const [ownerPart, namePart] = modelRef.split("/");
+    return { owner: ownerPart, model: namePart, versionId: version };
+  }
+  return {
+    owner: process.env.REPLICATE_IDENTITY_TRAINER_OWNER ?? "ostris",
+    model: process.env.REPLICATE_IDENTITY_TRAINER_MODEL ?? "flux-dev-lora-trainer",
+    versionId: raw,
+  };
+}
+
+async function validateExistingModel(userId: number): Promise<void> {
+  const existing = await prisma.userModel.findUnique({ where: { userId } });
+
+  if (existing?.status === "training") {
+    const stuckThreshold = 30 * 60 * 1000;
+    const trainingAge = existing.trainingStartedAt
+      ? Date.now() - new Date(existing.trainingStartedAt).getTime()
+      : Infinity;
+    const isStuck = !existing.trainingId || trainingAge > stuckThreshold;
+
+    if (isStuck) {
+      log.warn("Cleaning up stuck training model", {
+        modelId: existing.id,
+        trainingId: existing.trainingId,
+        trainingAge: `${Math.round(trainingAge / 60_000)} minutes`,
+      });
+      await prisma.userTrainingAsset.updateMany({
+        where: { identityModelId: existing.id },
+        data: { identityModelId: null },
+      });
+      await prisma.userModel.delete({ where: { id: existing.id } });
+    } else {
+      throw new ApiError({
+        code: "VALIDATION_ERROR",
+        status: 409,
+        message: "Training is already in progress. Check status and wait for completion.",
+      });
+    }
+  }
+
+  if (existing?.status === "ready") {
+    throw new ApiError({
+      code: "VALIDATION_ERROR",
+      status: 409,
+      message: "You already have an identity model. Retraining is not enabled yet.",
+    });
+  }
+}
+
+async function buildTrainingZip(
+  assets: Array<{ id: string; s3KeyOriginal: string }>,
+  userId: number,
+  modelId: string,
+): Promise<Uint8Array> {
+  const storage = getStorage();
+  const zip = new JSZip();
+
+  for (const [i, a] of assets.entries()) {
+    const original = await storage.get(a.s3KeyOriginal);
+    if (!original) {
+      throw new ApiError({
+        code: "NOT_FOUND",
+        status: 404,
+        message: "One of your uploaded photos could not be found. Re-upload and try again.",
+      });
+    }
+
+    const normalized = await normalizeIdentityImage(original.buffer);
+    const normalizedKey = `identity/normalized/u${userId}/${a.id}.jpg`;
+    await storage.put(normalizedKey, normalized.bytes, { contentType: normalized.contentType });
+
+    await prisma.userTrainingAsset.update({
+      where: { id: a.id },
+      data: {
+        identityModelId: modelId,
+        s3KeyNormalized: normalizedKey,
+        width: normalized.width,
+        height: normalized.height,
+      },
+    });
+
+    zip.file(`${String(i + 1).padStart(2, "0")}.jpg`, normalized.bytes);
+  }
+
+  return zip.generateAsync({ type: "uint8array", compression: "DEFLATE", compressionOptions: { level: 6 } });
+}
+
+async function verifyTrainer(trainer: TrainerRef, modelId: string): Promise<void> {
+  log.info("Verifying trainer model", {
+    trainerOwner: trainer.owner,
+    trainerModel: trainer.model,
+    trainerVersionId: `${trainer.versionId.slice(0, 20)}...`,
+  });
+
+  const verification = await verifyModelVersion(trainer.owner, trainer.model, trainer.versionId);
+  if (!verification.valid) {
+    log.error("Trainer model verification failed", {
+      trainerOwner: trainer.owner,
+      trainerModel: trainer.model,
+      trainerVersionId: trainer.versionId,
+      error: verification.error,
+    });
+    await cleanupFailedModel(modelId);
+    throw new ApiError({
+      code: "VALIDATION_ERROR",
+      status: 400,
+      message: `Identity trainer model not available: ${verification.error}. Check your REPLICATE_IDENTITY_TRAINER_VERSION_ID environment variable.`,
+    });
+  }
+}
+
+function getTrainingParams(triggerWord: string) {
+  return {
+    steps: Number.parseInt(process.env.REPLICATE_IDENTITY_TRAINING_STEPS ?? "2500", 10),
+    learningRate: Number.parseFloat(process.env.REPLICATE_IDENTITY_LEARNING_RATE ?? "0.0004"),
+    dataKey: process.env.REPLICATE_IDENTITY_TRAINER_DATA_KEY ?? "input_images",
+    triggerKey: process.env.REPLICATE_IDENTITY_TRAINER_TRIGGER_KEY ?? "trigger_word",
+    loraRank: 32,
+    resolution: "1024",
+    autocaptionPrefix: `a photo of ${triggerWord},`,
+  };
+}
+
 export const POST = createApiRoute(
   { route: "/api/identity/commit" },
   withAuth(
@@ -76,49 +205,7 @@ export const POST = createApiRoute(
         void ctx;
         const userId = api.userId!;
 
-        // Ensure user does not already have an in-progress or ready model
-        const existing = await prisma.userModel.findUnique({
-          where: { userId },
-        });
-        
-        if (existing?.status === "training") {
-          // Check if training is stuck (no trainingId or very old)
-          const stuckThreshold = 30 * 60 * 1000; // 30 minutes
-          const trainingAge = existing.trainingStartedAt 
-            ? Date.now() - new Date(existing.trainingStartedAt).getTime()
-            : Infinity;
-          const isStuck = !existing.trainingId || trainingAge > stuckThreshold;
-          
-          if (isStuck) {
-            log.warn("Cleaning up stuck training model", { 
-              modelId: existing.id, 
-              trainingId: existing.trainingId,
-              trainingAge: `${Math.round(trainingAge / 60000)  } minutes`
-            });
-            // Reset any committed assets
-            await prisma.userTrainingAsset.updateMany({
-              where: { identityModelId: existing.id },
-              data: { identityModelId: null },
-            });
-            // Delete the stuck model
-            await prisma.userModel.delete({ where: { id: existing.id } });
-          } else {
-            throw new ApiError({
-              code: "VALIDATION_ERROR",
-              status: 409,
-              message: "Training is already in progress. Check status and wait for completion.",
-            });
-          }
-        }
-        
-        if (existing?.status === "ready") {
-          throw new ApiError({
-            code: "VALIDATION_ERROR",
-            status: 409,
-            message:
-              "You already have an identity model. Retraining is not enabled yet.",
-          });
-        }
+        await validateExistingModel(userId);
 
         const assets = await prisma.userTrainingAsset.findMany({
           where: { userId, identityModelId: null },
@@ -141,8 +228,6 @@ export const POST = createApiRoute(
 
         const owner = getModelOwner();
         const modelName = `user-${crypto.randomUUID()}-identity`;
-        
-        // Compute dataset hash before starting training
         const datasetHash = await computeDatasetHash(userId);
 
         const identityModel = await prisma.userModel.create({
@@ -158,105 +243,24 @@ export const POST = createApiRoute(
           },
         });
 
-        const storage = getStorage();
-        const zip = new JSZip();
+        const zipBytes = await buildTrainingZip(assets, userId, identityModel.id);
 
-        for (let i = 0; i < assets.length; i++) {
-          const a = assets[i];
-          const original = await storage.get(a.s3KeyOriginal);
-          if (!original) {
-            throw new ApiError({
-              code: "NOT_FOUND",
-              status: 404,
-              message: "One of your uploaded photos could not be found. Re-upload and try again.",
-            });
-          }
-
-          const normalized = await normalizeIdentityImage(original.buffer);
-          const normalizedKey = `identity/normalized/u${userId}/${a.id}.jpg`;
-          await storage.put(normalizedKey, normalized.bytes, {
-            contentType: normalized.contentType,
-          });
-
-          await prisma.userTrainingAsset.update({
-            where: { id: a.id },
-            data: {
-              identityModelId: identityModel.id,
-              s3KeyNormalized: normalizedKey,
-              width: normalized.width,
-              height: normalized.height,
-            },
-          });
-
-          zip.file(`${String(i + 1).padStart(2, "0")}.jpg`, normalized.bytes);
-        }
-
-        const zipBytes = await zip.generateAsync({
-          type: "uint8array",
-          compression: "DEFLATE",
-          compressionOptions: { level: 6 },
-        });
-
-        // Create destination model (best-effort; may already exist)
         const destination = `${owner}/${modelName}`;
         try {
           await createModel({
-            owner,
-            name: modelName,
-            visibility: "private",
+            owner, name: modelName, visibility: "private",
             description: `Private identity LoRA for user ${userId}`,
           });
-        } catch (err) {
+        } catch (error) {
           log.warn("createModel failed (continuing)", {
-            destination,
-            err: err instanceof Error ? err.message : String(err),
+            destination, err: error instanceof Error ? error.message : String(error),
           });
         }
 
-        // Parse trainer version - can be "owner/model:version" or just "version"
         const rawTrainerVersion = getTrainerVersionId();
-        let trainerOwner: string;
-        let trainerModel: string;
-        let trainerVersionId: string;
-        
-        if (rawTrainerVersion.includes(":")) {
-          // Full format: "owner/model:version"
-          const [modelRef, version] = rawTrainerVersion.split(":");
-          const [ownerPart, namePart] = modelRef.split("/");
-          trainerOwner = ownerPart;
-          trainerModel = namePart;
-          trainerVersionId = version;
-        } else {
-          // Just version hash - use env vars or defaults for owner/model
-          trainerOwner = process.env.REPLICATE_IDENTITY_TRAINER_OWNER ?? "ostris";
-          trainerModel = process.env.REPLICATE_IDENTITY_TRAINER_MODEL ?? "flux-dev-lora-trainer";
-          trainerVersionId = rawTrainerVersion;
-        }
-        
-        log.info("Verifying trainer model", { 
-          trainerOwner, 
-          trainerModel, 
-          trainerVersionId: `${trainerVersionId.slice(0, 20)  }...` 
-        });
-        
-        const verification = await verifyModelVersion(trainerOwner, trainerModel, trainerVersionId);
-        if (!verification.valid) {
-          log.error("Trainer model verification failed", {
-            trainerOwner,
-            trainerModel,
-            trainerVersionId,
-            error: verification.error,
-          });
-          // Clean up the model we just created since training won't start
-          await cleanupFailedModel(identityModel.id);
-          throw new ApiError({
-            code: "VALIDATION_ERROR",
-            status: 400,
-            message: `Identity trainer model not available: ${verification.error}. Check your REPLICATE_IDENTITY_TRAINER_VERSION_ID environment variable.`,
-          });
-        }
+        const trainer = parseTrainerVersion(rawTrainerVersion);
+        await verifyTrainer(trainer, identityModel.id);
 
-        // Upload training zip to Replicate Files
         let uploaded;
         try {
           uploaded = await uploadFileToReplicate({
@@ -264,74 +268,55 @@ export const POST = createApiRoute(
             contentType: "application/zip",
             bytes: zipBytes,
           });
-        } catch (err) {
+        } catch (error) {
           log.error("Failed to upload training zip", {
             modelId: identityModel.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: error instanceof Error ? error.message : String(error),
           });
           await cleanupFailedModel(identityModel.id);
-          throw err;
+          throw error;
         }
 
-        // Trainer input keys are trainer-specific; keep configurable.
-        const dataKey = process.env.REPLICATE_IDENTITY_TRAINER_DATA_KEY ?? "input_images";
-        const triggerKey =
-          process.env.REPLICATE_IDENTITY_TRAINER_TRIGGER_KEY ?? "trigger_word";
-
+        const params = getTrainingParams(triggerWord);
         let training;
         try {
-          // Training parameters for better identity fidelity
-          // These can be configured via environment variables
-          // Default 2500 steps for strong identity capture (was 1500)
-          const trainingSteps = parseInt(process.env.REPLICATE_IDENTITY_TRAINING_STEPS ?? "2500", 10);
-          const learningRate = parseFloat(process.env.REPLICATE_IDENTITY_LEARNING_RATE ?? "0.0004");
-          
           training = await createTraining({
-            version: rawTrainerVersion, // Pass full format, createTraining will parse it
+            version: rawTrainerVersion,
             destination,
             input: {
-              [dataKey]: uploaded.urls.get,
-              [triggerKey]: triggerWord,
-              // Training type - "subject" for identity/person training
+              [params.dataKey]: uploaded.urls.get,
+              [params.triggerKey]: triggerWord,
               lora_type: "subject",
-              // More steps = better identity capture (default ~1000, we use 1500)
-              steps: trainingSteps,
-              // Learning rate - slightly higher for better convergence
-              learning_rate: learningRate,
-              // LoRA rank - higher rank captures more detail (16-32 is good for faces)
-              lora_rank: 32,
-              // Resolution - train at higher resolution for face detail
-              resolution: "1024",
-              // Autocaption to help the model understand the subject
+              steps: params.steps,
+              learning_rate: params.learningRate,
+              lora_rank: params.loraRank,
+              resolution: params.resolution,
               autocaption: true,
-              autocaption_prefix: `a photo of ${triggerWord},`,
+              autocaption_prefix: params.autocaptionPrefix,
             },
             webhook: `${getAppBaseUrl()}/api/webhooks/replicate`,
             webhook_events_filter: ["completed"],
           });
-          
+
           log.info("Training started with enhanced parameters", {
             modelId: identityModel.id,
-            steps: trainingSteps,
-            learningRate,
-            loraRank: 32,
-            resolution: "1024",
+            steps: params.steps,
+            learningRate: params.learningRate,
+            loraRank: params.loraRank,
+            resolution: params.resolution,
           });
-        } catch (err) {
+        } catch (error) {
           log.error("Failed to create training", {
             modelId: identityModel.id,
-            error: err instanceof Error ? err.message : String(err),
+            error: error instanceof Error ? error.message : String(error),
           });
           await cleanupFailedModel(identityModel.id);
-          throw err;
+          throw error;
         }
 
         await prisma.userModel.update({
           where: { id: identityModel.id },
-          data: {
-            trainingId: training.id,
-            status: "training",
-          },
+          data: { trainingId: training.id, status: "training" },
         });
 
         return NextResponse.json({

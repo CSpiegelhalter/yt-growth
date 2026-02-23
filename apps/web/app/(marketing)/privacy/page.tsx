@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+
 import { BRAND } from "@/lib/shared/brand";
+
 import s from "./style.module.css";
 
 export const metadata: Metadata = {

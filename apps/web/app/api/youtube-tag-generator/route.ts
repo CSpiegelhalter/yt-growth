@@ -6,20 +6,20 @@
  *
  * Auth: Optional (works for both authenticated and anonymous users)
  */
-import { createApiRoute } from "@/lib/api/route";
-import { withAuth, type ApiAuthContext } from "@/lib/api/withAuth";
-import { withValidation } from "@/lib/api/withValidation";
 import { jsonOk } from "@/lib/api/response";
-import { callLLM } from "@/lib/llm";
-import { fetchVideoSnippetByApiKey } from "@/lib/youtube/data-api";
+import { createApiRoute } from "@/lib/api/route";
+import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
 import { getLimit } from "@/lib/features/subscriptions/use-cases/checkEntitlement";
 import { checkAndIncrement } from "@/lib/features/subscriptions/use-cases/trackUsage";
-import { hasActiveSubscription } from "@/lib/server/auth";
+import type { GenerateTagsDeps } from "@/lib/features/tags";
 import {
   generateTags,
   GenerateTagsBodySchema,
 } from "@/lib/features/tags";
-import type { GenerateTagsDeps } from "@/lib/features/tags";
+import { callLLM } from "@/lib/llm";
+import { hasActiveSubscription } from "@/lib/server/auth";
+import { fetchVideoSnippetByApiKey } from "@/lib/youtube/data-api";
 
 const deps: GenerateTagsDeps = {
   llm: {

@@ -1,7 +1,8 @@
 "use client";
 
-import s from "../style.module.css";
 import type { Idea } from "@/types/api";
+
+import s from "../style.module.css";
 
 type ScriptOutlineSectionProps = {
   scriptOutline: Idea["scriptOutline"];

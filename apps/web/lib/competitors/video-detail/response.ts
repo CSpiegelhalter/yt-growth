@@ -4,18 +4,19 @@
  * Builds the final API response from pipeline state.
  */
 
-import type { CompetitorVideo, CompetitorVideoAnalysis, CompetitorCommentsAnalysis } from "@/types/api";
 import { computePublicSignals } from "@/lib/competitor-utils";
+import { createLogger } from "@/lib/shared/logger";
 import { daysSince } from "@/lib/youtube/utils";
+import type { CompetitorCommentsAnalysis,CompetitorVideo, CompetitorVideoAnalysis } from "@/types/api";
+
 import { computeStrategicInsights, deriveKeywordsFromText } from "./strategic";
 import type {
-  VideoDetailsResult,
-  RequestContext,
-  NormalizedAnalysis,
   BeatChecklist,
   ChannelVideosResult,
+  NormalizedAnalysis,
+  RequestContext,
+  VideoDetailsResult,
 } from "./types";
-import { createLogger } from "@/lib/shared/logger";
 
 const logger = createLogger({ module: "video-detail.response" });
 

@@ -5,13 +5,13 @@
  *
  * Auth: Optional (works for both authenticated and anonymous users)
  */
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
-import { jsonOk } from "@/lib/api/response";
-import { fetchVideoSnippetByApiKey } from "@/lib/youtube/data-api";
-import { extractTags, ExtractTagsBodySchema } from "@/lib/features/tags";
 import type { ExtractTagsDeps } from "@/lib/features/tags";
+import { extractTags, ExtractTagsBodySchema } from "@/lib/features/tags";
+import { fetchVideoSnippetByApiKey } from "@/lib/youtube/data-api";
 
 const deps: ExtractTagsDeps = {
   youtube: {

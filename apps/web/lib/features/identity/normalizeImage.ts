@@ -1,4 +1,5 @@
 import sharp from "sharp";
+
 import { IdentityError } from "./errors";
 import type { NormalizedImage } from "./types";
 

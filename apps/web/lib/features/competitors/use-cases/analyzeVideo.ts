@@ -1,35 +1,36 @@
 import "server-only";
 
-import type {
-  CompetitorVideoAnalysis,
-  CompetitorCommentsAnalysis,
-} from "@/types/api";
-import { createLogger } from "@/lib/shared/logger";
-import { hashVideoContent, hashCommentsContent } from "@/lib/shared/content-hash";
-import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/shared/rate-limit";
-import type { AnalyzeVideoInput } from "../types";
-import { CompetitorError } from "../errors";
 import {
-  VideoDetailError,
-  type RequestContext,
-  getGoogleAccountOrThrow,
-  fetchVideoDetailsWithTimeout,
-  fetchCommentsWithTimeout,
-  fetchRecentChannelVideosWithTimeout,
-  readCachesParallel,
-  isCommentsCacheFresh,
-  isAnalysisCacheFresh,
-  upsertCompetitorVideo,
-  saveAnalysisCache,
   backfillBeatChecklist,
-  normalizeBeatChecklist,
-  normalizeAnalysis,
-  runParallelAnalysis,
-  cacheCommentsInBackground,
-  buildVideoObject,
   buildMoreFromChannel,
   buildResponse,
+  buildVideoObject,
+  cacheCommentsInBackground,
+  fetchCommentsWithTimeout,
+  fetchRecentChannelVideosWithTimeout,
+  fetchVideoDetailsWithTimeout,
+  getGoogleAccountOrThrow,
+  isAnalysisCacheFresh,
+  isCommentsCacheFresh,
+  normalizeAnalysis,
+  normalizeBeatChecklist,
+  readCachesParallel,
+  type RequestContext,
+  runParallelAnalysis,
+  saveAnalysisCache,
+  upsertCompetitorVideo,
+  VideoDetailError,
 } from "@/lib/competitors/video-detail";
+import { hashCommentsContent,hashVideoContent } from "@/lib/shared/content-hash";
+import { createLogger } from "@/lib/shared/logger";
+import { checkRateLimit, RATE_LIMITS,rateLimitKey } from "@/lib/shared/rate-limit";
+import type {
+  CompetitorCommentsAnalysis,
+  CompetitorVideoAnalysis,
+} from "@/types/api";
+
+import { CompetitorError } from "../errors";
+import type { AnalyzeVideoInput } from "../types";
 
 const logger = createLogger({ module: "features.competitors.analyzeVideo" });
 
@@ -174,14 +175,14 @@ export async function analyzeVideo(
     });
 
     return response;
-  } catch (err: unknown) {
-    if (err instanceof VideoDetailError) {
-      throw toCompetitorError(err);
+  } catch (error: unknown) {
+    if (error instanceof VideoDetailError) {
+      throw toCompetitorError(error);
     }
-    if (err instanceof CompetitorError) {
-      throw err;
+    if (error instanceof CompetitorError) {
+      throw error;
     }
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const message = error instanceof Error ? error.message : "Unknown error";
     logger.error("Unexpected error in analyzeVideo", {
       videoId,
       error: message,
@@ -191,7 +192,7 @@ export async function analyzeVideo(
     throw new CompetitorError(
       "EXTERNAL_FAILURE",
       `Failed to analyze competitor video: ${message}`,
-      err,
+      error,
     );
   }
 }
@@ -307,141 +308,115 @@ type AnalysisStageInput = {
   ctx: RequestContext;
 };
 
-async function runAnalysisStage(input: AnalysisStageInput): Promise<{
+type BeatChecklistItem = {
+  action: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+  impact: "Low" | "Medium" | "High";
+};
+
+type AnalysisStageResult = {
   analysis: CompetitorVideoAnalysis["analysis"];
-  beatChecklist: Array<{
-    action: string;
-    difficulty: "Easy" | "Medium" | "Hard";
-    impact: "Low" | "Medium" | "High";
-  }> | undefined;
+  beatChecklist: BeatChecklistItem[] | undefined;
   llmFailed: boolean;
   llmFailureReason: string | null;
-}> {
-  const {
-    video,
-    videoDetails,
-    cachedVideo,
-    channelOwnership,
-    commentsAnalysis,
-    needsCommentsLLM,
-    commentsForLLM,
-    commentsContentHash,
-    ctx,
-  } = input;
+};
 
-  const currentContentHash = hashVideoContent({
-    title: video.title,
-    description: videoDetails.description,
-    tags: videoDetails.tags,
-    durationSec: video.durationSec,
-    categoryId: videoDetails.category,
-  });
+function restoreCachedAnalysis(
+  input: AnalysisStageInput,
+): { analysis: CompetitorVideoAnalysis["analysis"]; beatChecklist: BeatChecklistItem[] | undefined } {
+  const cached = input.cachedVideo!.analysisJson as Record<string, unknown>;
+  const analysis = cached as CompetitorVideoAnalysis["analysis"];
+  const beatChecklist = normalizeBeatChecklist(cached?.beatThisVideo);
 
-  const analysisIsCacheFresh = isAnalysisCacheFresh(
-    cachedVideo,
-    currentContentHash,
+  if (input.needsCommentsLLM && input.commentsForLLM && input.commentsContentHash) {
+    fireBackgroundCommentsAnalysis(input);
+  }
+
+  return { analysis, beatChecklist };
+}
+
+function fireBackgroundCommentsAnalysis(input: AnalysisStageInput): void {
+  const { commentsForLLM, commentsContentHash, commentsAnalysis, video, ctx } = input;
+  void (async () => {
+    try {
+      const { runCommentsAnalysis, cacheCommentsInBackground: cacheBg } =
+        await import("@/lib/competitors/video-detail/analysis");
+      const result = await runCommentsAnalysis(commentsForLLM!, video.title, ctx);
+      if (result && commentsAnalysis.current) {
+        cacheBg(ctx.videoId, commentsForLLM!, commentsContentHash!, commentsAnalysis.current, result);
+      }
+    } catch {
+      // Background analysis failure is non-critical
+    }
+  })();
+}
+
+async function generateFreshAnalysis(
+  input: AnalysisStageInput,
+): Promise<{ analysis: CompetitorVideoAnalysis["analysis"]; beatChecklist: BeatChecklistItem[] | undefined }> {
+  const { video, videoDetails, channelOwnership, commentsAnalysis, needsCommentsLLM, commentsForLLM, commentsContentHash, ctx } = input;
+
+  const result = await runParallelAnalysis(
+    video, videoDetails, channelOwnership.title ?? "Your Channel",
+    needsCommentsLLM ? commentsForLLM : null, commentsAnalysis.current, ctx,
   );
 
-  let analysis: CompetitorVideoAnalysis["analysis"];
-  let beatChecklist: Array<{
-    action: string;
-    difficulty: "Easy" | "Medium" | "Hard";
-    impact: "Low" | "Medium" | "High";
-  }> | undefined;
-  const llmFailed = false;
-  const llmFailureReason: string | null = null;
+  if (result.commentsAnalysis) {
+    commentsAnalysis.current = result.commentsAnalysis;
+  }
 
-  if (analysisIsCacheFresh && cachedVideo?.analysisJson) {
-    logger.info("Using cached analysis", {
-      videoId: ctx.videoId,
-      contentHash: currentContentHash,
-    });
-    const cached = cachedVideo.analysisJson as Record<string, unknown>;
-    analysis = cached as CompetitorVideoAnalysis["analysis"];
-    beatChecklist = normalizeBeatChecklist(cached?.beatThisVideo);
+  if (needsCommentsLLM && commentsForLLM && commentsContentHash && commentsAnalysis.current && result.commentsLLMResult) {
+    cacheCommentsInBackground(ctx.videoId, commentsForLLM, commentsContentHash, commentsAnalysis.current, result.commentsLLMResult);
+  }
 
-    // Fire background comments analysis (non-blocking)
-    if (needsCommentsLLM && commentsForLLM && commentsContentHash) {
-      import("@/lib/competitors/video-detail/analysis").then(
-        ({ runCommentsAnalysis, cacheCommentsInBackground: cacheBg }) => {
-          runCommentsAnalysis(commentsForLLM!, video.title, ctx)
-            .then((result) => {
-              if (result && commentsAnalysis.current) {
-                cacheBg(
-                  ctx.videoId,
-                  commentsForLLM!,
-                  commentsContentHash!,
-                  commentsAnalysis.current,
-                  result,
-                );
-              }
-            })
-            .catch(() => {});
-        },
-      );
-    }
+  return { analysis: result.analysis, beatChecklist: result.beatChecklist };
+}
+
+function persistAnalysisCache(
+  analysisIsCacheFresh: boolean,
+  input: AnalysisStageInput,
+  analysis: CompetitorVideoAnalysis["analysis"],
+  beatChecklist: BeatChecklistItem[] | undefined,
+  currentContentHash: string,
+): void {
+  if (!analysisIsCacheFresh) {
+    saveAnalysisCache(input.ctx.videoId, { ...analysis, beatThisVideo: beatChecklist }, currentContentHash).catch(() => {});
+    return;
+  }
+
+  const cachedJson = input.cachedVideo?.analysisJson as Record<string, unknown> | undefined;
+  if (cachedJson && beatChecklist && !Array.isArray(cachedJson?.beatThisVideo)) {
+    backfillBeatChecklist(input.ctx.videoId, cachedJson as object, beatChecklist).catch(() => {});
+  }
+}
+
+async function runAnalysisStage(input: AnalysisStageInput): Promise<AnalysisStageResult> {
+  const currentContentHash = hashVideoContent({
+    title: input.video.title,
+    description: input.videoDetails.description,
+    tags: input.videoDetails.tags,
+    durationSec: input.video.durationSec,
+    categoryId: input.videoDetails.category,
+  });
+
+  const analysisIsCacheFresh = isAnalysisCacheFresh(input.cachedVideo, currentContentHash);
+
+  let result: { analysis: CompetitorVideoAnalysis["analysis"]; beatChecklist: BeatChecklistItem[] | undefined };
+
+  if (analysisIsCacheFresh && input.cachedVideo?.analysisJson) {
+    logger.info("Using cached analysis", { videoId: input.ctx.videoId, contentHash: currentContentHash });
+    result = restoreCachedAnalysis(input);
   } else {
     logger.info("Generating new analysis", {
-      videoId: ctx.videoId,
-      contentHashOld: cachedVideo?.analysisContentHash,
+      videoId: input.ctx.videoId,
+      contentHashOld: input.cachedVideo?.analysisContentHash,
       contentHashNew: currentContentHash,
     });
-
-    const result = await runParallelAnalysis(
-      video,
-      videoDetails,
-      channelOwnership.title ?? "Your Channel",
-      needsCommentsLLM ? commentsForLLM : null,
-      commentsAnalysis.current,
-      ctx,
-    );
-
-    analysis = result.analysis;
-    beatChecklist = result.beatChecklist;
-
-    if (result.commentsAnalysis) {
-      commentsAnalysis.current = result.commentsAnalysis;
-    }
-
-    if (
-      needsCommentsLLM &&
-      commentsForLLM &&
-      commentsContentHash &&
-      commentsAnalysis.current &&
-      result.commentsLLMResult
-    ) {
-      cacheCommentsInBackground(
-        ctx.videoId,
-        commentsForLLM,
-        commentsContentHash,
-        commentsAnalysis.current,
-        result.commentsLLMResult,
-      );
-    }
+    result = await generateFreshAnalysis(input);
   }
 
-  analysis = normalizeAnalysis(analysis, videoDetails);
+  result.analysis = normalizeAnalysis(result.analysis, input.videoDetails);
+  persistAnalysisCache(analysisIsCacheFresh, input, result.analysis, result.beatChecklist, currentContentHash);
 
-  // Persist analysis to cache
-  if (!analysisIsCacheFresh) {
-    saveAnalysisCache(
-      ctx.videoId,
-      { ...analysis, beatThisVideo: beatChecklist },
-      currentContentHash,
-    ).catch(() => {});
-  } else if (
-    cachedVideo?.analysisJson &&
-    beatChecklist &&
-    !Array.isArray(
-      (cachedVideo.analysisJson as Record<string, unknown>)?.beatThisVideo,
-    )
-  ) {
-    backfillBeatChecklist(
-      ctx.videoId,
-      cachedVideo.analysisJson as object,
-      beatChecklist,
-    ).catch(() => {});
-  }
-
-  return { analysis, beatChecklist, llmFailed, llmFailureReason };
+  return { ...result, llmFailed: false, llmFailureReason: null };
 }

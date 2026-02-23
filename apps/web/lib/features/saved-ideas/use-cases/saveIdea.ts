@@ -6,6 +6,7 @@
  */
 
 import { prisma } from "@/prisma";
+
 import { SavedIdeaError } from "../errors";
 import type { SaveIdeaInput, SaveIdeaResult } from "../types";
 
@@ -58,7 +59,7 @@ export async function saveIdea(input: SaveIdeaInput): Promise<SaveIdeaResult> {
       status: savedIdea.status,
       createdAt: savedIdea.createdAt.toISOString(),
     };
-  } catch (err) {
-    throw new SavedIdeaError("EXTERNAL_FAILURE", "Failed to save idea", err);
+  } catch (error) {
+    throw new SavedIdeaError("EXTERNAL_FAILURE", "Failed to save idea", error);
   }
 }

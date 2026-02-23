@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback, useState } from "react";
-import { Stage, Layer, Rect, Line, Transformer, Image as KonvaImage } from "react-konva";
 import type Konva from "konva";
-import type { EditorObject, EditorDocument, ToolMode } from "./types";
-import { TextLayer, ArrowLayer, ImageLayer, ShapeLayer, useHtmlImage } from "./layers";
-import { CANVAS_WIDTH, CANVAS_HEIGHT, MIN_ZOOM, MAX_ZOOM } from "./constants";
-import { sortByZIndex, snapToCenter } from "./utils";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Image as KonvaImage,Layer, Line, Rect, Stage, Transformer } from "react-konva";
+
+import { CANVAS_HEIGHT, CANVAS_WIDTH, MAX_ZOOM,MIN_ZOOM } from "./constants";
 import s from "./editor.module.css";
+import { ArrowLayer, ImageLayer, ShapeLayer, TextLayer, useHtmlImage } from "./layers";
+import type { EditorDocument, EditorObject, ToolMode } from "./types";
+import { snapToCenter,sortByZIndex } from "./utils";
 
 const LAYER_MAP: Record<string, typeof TextLayer | typeof ArrowLayer | typeof ImageLayer | typeof ShapeLayer> = {
   text: TextLayer,

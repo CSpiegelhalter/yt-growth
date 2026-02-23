@@ -8,15 +8,24 @@
  */
 
 import "server-only";
+
 import { logger } from "@/lib/shared/logger";
-import { validatePhrase, validateLocation, DataForSEOError } from "./utils";
+
+import {
+  classifyApiStatusError,
+  classifyHttpError,
+  DataForSEOError,
+  isNonRetryableError,
+  validateLocation,
+  validatePhrase,
+} from "./utils";
 
 // ============================================
 // CONFIGURATION
 // ============================================
 
 const DEFAULT_BASE_URL = "https://api.dataforseo.com/v3";
-const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_TIMEOUT_MS = 15_000;
 const MAX_RETRIES = 2;
 const BASE_RETRY_DELAY_MS = 1000;
 
@@ -170,6 +179,84 @@ function parseYouTubeItem(item: YouTubeOrganicItem): YouTubeRankingResult {
 // MAIN API FUNCTION
 // ============================================
 
+async function executeSerpRequest(
+  url: string,
+  body: unknown,
+  credentials: { login: string; password: string },
+): Promise<YouTubeSerpApiResponse> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
+  const response = await fetch(url, {
+    method: "POST",
+    signal: controller.signal,
+    headers: {
+      Authorization: createAuthHeader(credentials.login, credentials.password),
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  clearTimeout(timeoutId);
+
+  let data: YouTubeSerpApiResponse;
+  try {
+    data = await response.json();
+  } catch {
+    throw new DataForSEOError("Invalid JSON response from API", "PARSE_ERROR");
+  }
+
+  if (!response.ok) {
+    throw classifyHttpError(response.status, data.status_message);
+  }
+
+  if (data.status_code !== 20_000) {
+    throw classifyApiStatusError(data.status_code, data.status_message);
+  }
+
+  return data;
+}
+
+function parseSerpTaskResult(
+  data: YouTubeSerpApiResponse,
+  keyword: string,
+  location: string,
+  limit: number,
+): YouTubeSerpResponse {
+  const task = data.tasks?.[0];
+  if (!task || task.status_code !== 20_000) {
+    throw new DataForSEOError(
+      task?.status_message || "Task failed",
+      "API_ERROR",
+    );
+  }
+
+  const resultData = task.result?.[0];
+  if (!resultData) {
+    return {
+      keyword,
+      location,
+      results: [],
+      totalResults: 0,
+      fetchedAt: new Date().toISOString(),
+    };
+  }
+
+  const videoItems = (resultData.items || [])
+    .filter((item) => item.type === "youtube_video")
+    .map(parseYouTubeItem)
+    .slice(0, limit);
+
+  return {
+    keyword,
+    location,
+    results: videoItems,
+    totalResults: resultData.items_count ?? videoItems.length,
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
 export async function fetchYouTubeSerp(options: {
   keyword: string;
   location?: string;
@@ -180,8 +267,7 @@ export async function fetchYouTubeSerp(options: {
   const limit = Math.min(options.limit ?? 10, 20);
 
   const credentials = getCredentials();
-  const baseUrl = getBaseUrl();
-  const url = `${baseUrl}/serp/youtube/organic/live/advanced`;
+  const url = `${getBaseUrl()}/serp/youtube/organic/live/advanced`;
 
   const body = [
     {
@@ -198,137 +284,24 @@ export async function fetchYouTubeSerp(options: {
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        DEFAULT_TIMEOUT_MS,
-      );
-
-      const response = await fetch(url, {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          Authorization: createAuthHeader(
-            credentials.login,
-            credentials.password,
-          ),
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-
-      clearTimeout(timeoutId);
-
-      let data: YouTubeSerpApiResponse;
-      try {
-        data = await response.json();
-      } catch {
-        throw new DataForSEOError(
-          "Invalid JSON response from API",
-          "PARSE_ERROR",
-        );
-      }
-
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          throw new DataForSEOError("Invalid API credentials", "AUTH_ERROR");
-        }
-        if (response.status === 429) {
-          throw new DataForSEOError(
-            "Rate limited by DataForSEO API",
-            "RATE_LIMITED",
-          );
-        }
-        if (
-          response.status === 402 ||
-          data.status_message?.toLowerCase().includes("balance")
-        ) {
-          throw new DataForSEOError(
-            "DataForSEO API balance exceeded",
-            "QUOTA_EXCEEDED",
-          );
-        }
-        throw new DataForSEOError(
-          `DataForSEO API error: ${response.status} - ${data.status_message || "Unknown error"}`,
-          "API_ERROR",
-        );
-      }
-
-      if (data.status_code !== 20000) {
-        if (data.status_code === 40001) {
-          throw new DataForSEOError(
-            "Invalid request parameters",
-            "VALIDATION_ERROR",
-          );
-        }
-        if (data.status_code === 40201) {
-          throw new DataForSEOError("Insufficient balance", "QUOTA_EXCEEDED");
-        }
-        throw new DataForSEOError(
-          `DataForSEO error: ${data.status_message || "Unknown error"}`,
-          "API_ERROR",
-        );
-      }
-
-      const task = data.tasks?.[0];
-      if (!task || task.status_code !== 20000) {
-        throw new DataForSEOError(
-          task?.status_message || "Task failed",
-          "API_ERROR",
-        );
-      }
-
-      const resultData = task.result?.[0];
-      if (!resultData) {
-        logger.info("youtube_serp.no_results", {
-          keyword,
-          location: locationInfo.region,
-        });
-        return {
-          keyword,
-          location: locationInfo.region,
-          results: [],
-          totalResults: 0,
-          fetchedAt: new Date().toISOString(),
-        };
-      }
-
-      const items = resultData.items || [];
-      const videoItems = items
-        .filter((item) => item.type === "youtube_video")
-        .map(parseYouTubeItem)
-        .slice(0, limit);
+      const data = await executeSerpRequest(url, body, credentials);
+      const result = parseSerpTaskResult(data, keyword, locationInfo.region, limit);
 
       logger.info("youtube_serp.success", {
         keyword,
         location: locationInfo.region,
-        resultCount: videoItems.length,
+        resultCount: result.results.length,
         cost: data.cost,
       });
 
-      return {
-        keyword,
-        location: locationInfo.region,
-        results: videoItems,
-        totalResults: resultData.items_count || videoItems.length,
-        fetchedAt: new Date().toISOString(),
-      };
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-
-      if (err instanceof DataForSEOError) {
-        if (
-          err.code === "VALIDATION_ERROR" ||
-          err.code === "QUOTA_EXCEEDED" ||
-          err.code === "CONFIG_ERROR" ||
-          err.code === "AUTH_ERROR"
-        ) {
-          throw err;
-        }
+      return result;
+    } catch (error) {
+      if (isNonRetryableError(error)) {
+        throw error;
       }
 
-      if (err instanceof Error && err.name === "AbortError") {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (error instanceof Error && error.name === "AbortError") {
         lastError = new DataForSEOError("Request timed out", "TIMEOUT");
       }
 

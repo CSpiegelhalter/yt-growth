@@ -5,21 +5,22 @@
  */
 
 import {
-  getGoogleAccount,
-  fetchVideoDetails as ytFetchVideoDetails,
-  fetchVideoComments as ytFetchVideoComments,
   fetchRecentChannelVideos as ytFetchRecentChannelVideos,
+  fetchVideoComments as ytFetchVideoComments,
+  fetchVideoDetails as ytFetchVideoDetails,
+  getGoogleAccount,
 } from "@/lib/adapters/youtube";
-import type { GoogleAccount } from "@/lib/youtube/types";
 import { createLogger } from "@/lib/shared/logger";
-import { withTimeout, withTimeoutOptional, TimeoutError } from "./timeout";
-import { VideoDetailError, TIMEOUTS, CACHE_CONFIG } from "./types";
+import type { GoogleAccount } from "@/lib/youtube/types";
+
+import { TimeoutError,withTimeout, withTimeoutOptional } from "./timeout";
 import type {
-  VideoDetailsResult,
-  CommentsResult,
   ChannelVideosResult,
+  CommentsResult,
   RequestContext,
+  VideoDetailsResult,
 } from "./types";
+import { CACHE_CONFIG,TIMEOUTS, VideoDetailError } from "./types";
 
 const logger = createLogger({ module: "video-detail.youtube" });
 
@@ -81,9 +82,9 @@ export async function fetchVideoDetailsWithTimeout(
     });
 
     return videoDetails as VideoDetailsResult;
-  } catch (err) {
-    if (err instanceof VideoDetailError) {throw err;}
-    if (err instanceof TimeoutError) {
+  } catch (error) {
+    if (error instanceof VideoDetailError) {throw error;}
+    if (error instanceof TimeoutError) {
       throw new VideoDetailError(
         "YouTube API timed out fetching video details",
         "YOUTUBE_ERROR",
@@ -93,7 +94,7 @@ export async function fetchVideoDetailsWithTimeout(
     }
     throw new VideoDetailError(
       `Failed to fetch video details: ${
-        err instanceof Error ? err.message : "Unknown error"
+        error instanceof Error ? error.message : "Unknown error"
       }`,
       "YOUTUBE_ERROR",
       502,
@@ -141,10 +142,10 @@ export async function fetchCommentsWithTimeout(
     });
 
     return result as CommentsResult;
-  } catch (err) {
+  } catch (error) {
     logger.warn("Comments fetch failed (non-critical)", {
       videoId,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
       durationMs: Date.now() - startTime,
     });
     return null;
@@ -194,11 +195,11 @@ export async function fetchRecentChannelVideosWithTimeout(
     });
 
     return result;
-  } catch (err) {
+  } catch (error) {
     // Log but don't fail - this is non-critical
     logger.warn("Channel videos fetch failed (non-critical)", {
       channelId,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
       durationMs: Date.now() - startTime,
     });
     return [];

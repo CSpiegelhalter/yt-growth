@@ -1,6 +1,7 @@
 import "server-only";
+
+import { checkRateLimit, RATE_LIMITS,rateLimitKey } from "@/lib/shared/rate-limit";
 import { prisma } from "@/prisma";
-import { checkRateLimit, rateLimitKey, RATE_LIMITS } from "@/lib/shared/rate-limit";
 
 type InsightDerivedData = {
   video: {

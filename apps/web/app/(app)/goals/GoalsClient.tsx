@@ -1,28 +1,30 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { PageContainer, PageHeader } from "@/components/ui";
+import { useCallback, useEffect, useMemo,useState } from "react";
+
 import BadgeArt from "@/components/badges/BadgeArt";
 import BadgeDetailModal from "@/components/badges/BadgeDetailModal";
-import s from "./style.module.css";
-import type { Channel } from "@/types/api";
+import { PageContainer, PageHeader } from "@/components/ui";
 import type {
-  BadgeWithProgress,
-  GoalWithProgress,
-  BadgesApiResponse,
   BadgeCategory,
   BadgeRarity,
+  BadgesApiResponse,
   BadgeSortKey,
+  BadgeWithProgress,
+  GoalWithProgress,
 } from "@/lib/features/badges";
 import {
   BADGE_CATEGORIES,
   BADGE_RARITIES,
   sortBadgesByClosest,
-  sortBadgesByRecent,
   sortBadgesByRarity,
+  sortBadgesByRecent,
 } from "@/lib/features/badges";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
+import type { Channel } from "@/types/api";
+
+import s from "./style.module.css";
 
 type Props = {
   initialChannels: Channel[];
@@ -68,15 +70,15 @@ export default function GoalsClient({
       if (!res.ok) {throw new Error("Failed to load badges");}
       const json = await res.json();
       setData(json);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load badges");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Failed to load badges");
     } finally {
       setLoading(false);
     }
   }, [activeChannelId]);
 
   useEffect(() => {
-    fetchBadges();
+    void fetchBadges();
   }, [fetchBadges]);
 
   // Filter and sort badges
@@ -107,16 +109,21 @@ export default function GoalsClient({
 
     // Sort
     switch (sortKey) {
-      case "closest":
+      case "closest": {
         return sortBadgesByClosest(badges);
-      case "recent":
+      }
+      case "recent": {
         return sortBadgesByRecent(badges);
-      case "rarity":
+      }
+      case "rarity": {
         return sortBadgesByRarity(badges);
-      case "alphabetical":
+      }
+      case "alphabetical": {
         return badges.sort((a, b) => a.name.localeCompare(b.name));
-      default:
+      }
+      default: {
         return badges;
+      }
     }
   }, [data?.badges, categoryFilter, rarityFilter, sortKey, searchQuery]);
 
@@ -219,310 +226,382 @@ export default function GoalsClient({
 
       {loading && <div className={s.loading}>Loading badges...</div>}
 
-      {/* Header Summary */}
-      {!loading && data && (
-        <section className={s.summarySection}>
-          <div className={s.summaryGrid}>
-            {/* Badges Collected */}
-            <div className={s.summaryCard}>
-              <div className={s.summaryIcon}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M6 9H4.5a2.5 2.5 0 010-5H6M18 9h1.5a2.5 2.5 0 000-5H18M4 22h16M18 2H6v7a6 6 0 1012 0V2z" />
-                </svg>
-              </div>
-              <div className={s.summaryValue}>
-                {data.summary.unlockedCount}
-                <span className={s.summaryTotal}>/ {data.summary.totalBadges}</span>
-              </div>
-              <div className={s.summaryLabel}>Badges Collected</div>
-            </div>
-
-            {/* Weekly Streak */}
-            <div className={s.summaryCard}>
-              <div className={`${s.summaryIcon} ${s.streakIcon}`}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z" />
-                </svg>
-              </div>
-              <div className={s.summaryValue}>{data.summary.weeklyStreak}</div>
-              <div className={s.summaryLabel}>Week Streak</div>
-            </div>
-
-            {/* Next Badge */}
-            {data.summary.nextBadge && (
-              <div
-                className={`${s.summaryCard} ${s.nextBadgeCard}`}
-                onClick={() => handleBadgeClick(data.summary.nextBadge!)}
-              >
-                <div className={s.nextBadgePreview}>
-                  <BadgeArt
-                    badgeId={data.summary.nextBadge.id}
-                    icon={data.summary.nextBadge.icon}
-                    rarity={data.summary.nextBadge.rarity}
-                    unlocked={false}
-                    size="sm"
-                  />
-                </div>
-                <div className={s.nextBadgeInfo}>
-                  <div className={s.nextBadgeLabel}>Next Badge</div>
-                  <div className={s.nextBadgeName}>{data.summary.nextBadge.name}</div>
-                  <div className={s.nextBadgeProgress}>
-                    {data.summary.nextBadge.progress.percent}% complete
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Badge Gallery */}
-      {!loading && data && (
-        <section className={s.gallerySection}>
-          <div className={s.galleryHeader}>
-            <h2 className={s.sectionTitle}>
-              Badge Gallery
-              {newBadgeCount > 0 && (
-                <span className={s.newCount}>{newBadgeCount} new</span>
-              )}
-            </h2>
-          </div>
-
-          {/* Filters */}
-          <div className={s.filtersRow}>
-            {/* Category */}
-            <div className={s.filterGroup}>
-              <label className={s.filterLabel}>Category</label>
-              <select
-                className={s.filterSelect}
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value as BadgeCategory | "all")}
-              >
-                {BADGE_CATEGORIES.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Rarity */}
-            <div className={s.filterGroup}>
-              <label className={s.filterLabel}>Rarity</label>
-              <select
-                className={s.filterSelect}
-                value={rarityFilter}
-                onChange={(e) => setRarityFilter(e.target.value as BadgeRarity | "all")}
-              >
-                {BADGE_RARITIES.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sort */}
-            <div className={s.filterGroup}>
-              <label className={s.filterLabel}>Sort</label>
-              <select
-                className={s.filterSelect}
-                value={sortKey}
-                onChange={(e) => setSortKey(e.target.value as BadgeSortKey)}
-              >
-                <option value="closest">Closest to Unlock</option>
-                <option value="recent">Recently Unlocked</option>
-                <option value="rarity">By Rarity</option>
-                <option value="alphabetical">A-Z</option>
-              </select>
-            </div>
-
-            {/* Search */}
-            <div className={`${s.filterGroup} ${s.searchGroup}`}>
-              <label className={s.filterLabel}>Search</label>
-              <input
-                type="text"
-                className={s.searchInput}
-                placeholder="Search badges..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Badge Grid */}
-          <div className={s.badgeGrid} role="list">
-            {filteredBadges.map((badge) => (
-              <button
-                key={badge.id}
-                className={`${s.badgeCard} ${badge.unlocked ? s.unlocked : ""} ${
-                  badge.progress.lockedReason ? s.locked : ""
-                }`}
-                onClick={() => handleBadgeClick(badge)}
-                aria-label={`${badge.name} badge - ${
-                  badge.unlocked
-                    ? "Unlocked"
-                    : badge.progress.lockedReason || `${badge.progress.percent}% complete`
-                }`}
-              >
-                <div className={s.badgeArtWrap}>
-                  <BadgeArt
-                    badgeId={badge.id}
-                    icon={badge.icon}
-                    rarity={badge.rarity}
-                    unlocked={badge.unlocked}
-                    size="md"
-                  />
-                  {badge.unlocked && !badge.seen && (
-                    <span className={s.newPill}>NEW</span>
-                  )}
-                </div>
-                <div className={s.badgeName}>{badge.name}</div>
-                <div className={s.badgeRarity} data-rarity={badge.rarity}>
-                  {badge.rarity}
-                </div>
-                {!badge.unlocked && !badge.progress.lockedReason && (
-                  <div className={s.badgeProgressBar}>
-                    <div
-                      className={s.badgeProgressFill}
-                      style={{ width: `${badge.progress.percent}%` }}
-                    />
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {filteredBadges.length === 0 && (
-            <div className={s.noResults}>
-              <p>No badges match your filters</p>
-              <button
-                className={s.resetBtn}
-                onClick={() => {
-                  setCategoryFilter("all");
-                  setRarityFilter("all");
-                  setSearchQuery("");
-                }}
-              >
-                Reset filters
-              </button>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Goals Section */}
-      {!loading && data && (
-        <section className={s.goalsSection}>
-          <h2 className={s.sectionTitle}>What to Do Next</h2>
-
-          {Object.entries(goalsByCategory).map(([category, goals]) => (
-            <div key={category} className={s.goalCategory}>
-              <h3 className={s.goalCategoryTitle}>
-                {BADGE_CATEGORIES.find((c) => c.id === category)?.label || category}
-              </h3>
-              <div className={s.goalsList}>
-                {goals.map((goal) => (
-                  <div
-                    key={goal.id}
-                    className={`${s.goalCard} ${
-                      goal.status === "completed" ? s.completed : ""
-                    } ${goal.status === "locked" ? s.goalLocked : ""}`}
-                  >
-                    <div className={s.goalInfo}>
-                      <h4 className={s.goalTitle}>{goal.title}</h4>
-                      <p className={s.goalDesc}>{goal.whyItMatters}</p>
-                      {goal.badgeIds.length > 0 && (
-                        <div className={s.goalBadges}>
-                          {goal.badgeIds.slice(0, 2).map((badgeId) => {
-                            const badge = data.badges.find((b) => b.id === badgeId);
-                            return badge ? (
-                              <span
-                                key={badgeId}
-                                className={s.goalBadgeChip}
-                                data-rarity={badge.rarity}
-                              >
-                                {badge.name}
-                              </span>
-                            ) : null;
-                          })}
-                        </div>
-                      )}
-                    </div>
-                    <div className={s.goalProgress}>
-                      {goal.status === "completed" ? (
-                        <span className={s.completedBadge}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M20 6L9 17l-5-5" />
-                          </svg>
-                          Done
-                        </span>
-                      ) : goal.status === "locked" ? (
-                        <span className={s.lockedBadge}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" />
-                            <path d="M7 11V7a5 5 0 0110 0v4" />
-                          </svg>
-                          {goal.lockedReason || "Locked"}
-                        </span>
-                      ) : (
-                        <div className={s.goalProgressWrap}>
-                          <div className={s.goalProgressBar}>
-                            <div
-                              className={s.goalProgressFill}
-                              style={{ width: `${goal.percentage}%` }}
-                            />
-                          </div>
-                          <span className={s.goalProgressText}>
-                            {goal.progressLabel} / {goal.targetLabel}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </section>
-      )}
-
-      {/* Recent Activity */}
-      {!loading && data && data.recentUnlocks.length > 0 && (
-        <section className={s.recentSection}>
-          <h2 className={s.sectionTitle}>Recent Unlocks</h2>
-          <div className={s.recentList}>
-            {data.recentUnlocks.slice(0, 5).map((unlock) => {
-              const badge = data.badges.find((b) => b.id === unlock.badgeId);
-              if (!badge) {return null;}
-              return (
-                <div
-                  key={unlock.badgeId}
-                  className={s.recentItem}
-                  onClick={() => handleBadgeClick(badge)}
-                >
-                  <BadgeArt
-                    badgeId={badge.id}
-                    icon={badge.icon}
-                    rarity={badge.rarity}
-                    unlocked={true}
-                    size="sm"
-                  />
-                  <div className={s.recentInfo}>
-                    <span className={s.recentName}>{badge.name}</span>
-                    <span className={s.recentDate}>
-                      {new Date(unlock.unlockedAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      <GoalsDataContent
+        loading={loading}
+        data={data}
+        filteredBadges={filteredBadges}
+        goalsByCategory={goalsByCategory}
+        newBadgeCount={newBadgeCount}
+        categoryFilter={categoryFilter}
+        rarityFilter={rarityFilter}
+        sortKey={sortKey}
+        searchQuery={searchQuery}
+        onCategoryFilter={setCategoryFilter}
+        onRarityFilter={setRarityFilter}
+        onSortKey={setSortKey}
+        onSearchQuery={setSearchQuery}
+        onBadgeClick={handleBadgeClick}
+      />
 
       {/* Badge Detail Modal */}
       <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
     </PageContainer>
+  );
+}
+
+function GoalsDataContent({
+  loading,
+  data,
+  filteredBadges,
+  goalsByCategory,
+  newBadgeCount,
+  categoryFilter,
+  rarityFilter,
+  sortKey,
+  searchQuery,
+  onCategoryFilter,
+  onRarityFilter,
+  onSortKey,
+  onSearchQuery,
+  onBadgeClick,
+}: {
+  loading: boolean;
+  data: BadgesApiResponse | null;
+  filteredBadges: BadgeWithProgress[];
+  goalsByCategory: Record<string, GoalWithProgress[]>;
+  newBadgeCount: number;
+  categoryFilter: BadgeCategory | "all";
+  rarityFilter: BadgeRarity | "all";
+  sortKey: BadgeSortKey;
+  searchQuery: string;
+  onCategoryFilter: (v: BadgeCategory | "all") => void;
+  onRarityFilter: (v: BadgeRarity | "all") => void;
+  onSortKey: (v: BadgeSortKey) => void;
+  onSearchQuery: (v: string) => void;
+  onBadgeClick: (badge: BadgeWithProgress) => void;
+}) {
+  if (loading || !data) { return null; }
+
+  return (
+    <>
+      <BadgesSummary data={data} onBadgeClick={onBadgeClick} />
+
+      <section className={s.gallerySection}>
+        <div className={s.galleryHeader}>
+          <h2 className={s.sectionTitle}>
+            Badge Gallery
+            {newBadgeCount > 0 && (
+              <span className={s.newCount}>{newBadgeCount} new</span>
+            )}
+          </h2>
+        </div>
+
+        <div className={s.filtersRow}>
+          <div className={s.filterGroup}>
+            <label className={s.filterLabel}>Category</label>
+            <select
+              className={s.filterSelect}
+              value={categoryFilter}
+              onChange={(e) => onCategoryFilter(e.target.value as BadgeCategory | "all")}
+            >
+              {BADGE_CATEGORIES.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className={s.filterGroup}>
+            <label className={s.filterLabel}>Rarity</label>
+            <select
+              className={s.filterSelect}
+              value={rarityFilter}
+              onChange={(e) => onRarityFilter(e.target.value as BadgeRarity | "all")}
+            >
+              {BADGE_RARITIES.map((r) => (
+                <option key={r.id} value={r.id}>{r.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className={s.filterGroup}>
+            <label className={s.filterLabel}>Sort</label>
+            <select
+              className={s.filterSelect}
+              value={sortKey}
+              onChange={(e) => onSortKey(e.target.value as BadgeSortKey)}
+            >
+              <option value="closest">Closest to Unlock</option>
+              <option value="recent">Recently Unlocked</option>
+              <option value="rarity">By Rarity</option>
+              <option value="alphabetical">A-Z</option>
+            </select>
+          </div>
+          <div className={`${s.filterGroup} ${s.searchGroup}`}>
+            <label className={s.filterLabel}>Search</label>
+            <input
+              type="text"
+              className={s.searchInput}
+              placeholder="Search badges..."
+              value={searchQuery}
+              onChange={(e) => onSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className={s.badgeGrid} role="list">
+          {filteredBadges.map((badge) => (
+            <BadgeCard key={badge.id} badge={badge} onBadgeClick={onBadgeClick} />
+          ))}
+        </div>
+
+        {filteredBadges.length === 0 && (
+          <div className={s.noResults}>
+            <p>No badges match your filters</p>
+            <button
+              className={s.resetBtn}
+              onClick={() => {
+                onCategoryFilter("all");
+                onRarityFilter("all");
+                onSearchQuery("");
+              }}
+            >
+              Reset filters
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section className={s.goalsSection}>
+        <h2 className={s.sectionTitle}>What to Do Next</h2>
+        {Object.entries(goalsByCategory).map(([category, goals]) => (
+          <div key={category} className={s.goalCategory}>
+            <h3 className={s.goalCategoryTitle}>
+              {BADGE_CATEGORIES.find((c) => c.id === category)?.label || category}
+            </h3>
+            <div className={s.goalsList}>
+              {goals.map((goal) => (
+                <GoalCard key={goal.id} goal={goal} badges={data.badges} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <RecentUnlocksSection data={data} onBadgeClick={onBadgeClick} />
+    </>
+  );
+}
+
+function BadgesSummary({
+  data,
+  onBadgeClick,
+}: {
+  data: BadgesApiResponse;
+  onBadgeClick: (badge: BadgeWithProgress) => void;
+}) {
+  return (
+    <section className={s.summarySection}>
+      <div className={s.summaryGrid}>
+        <div className={s.summaryCard}>
+          <div className={s.summaryIcon}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M6 9H4.5a2.5 2.5 0 010-5H6M18 9h1.5a2.5 2.5 0 000-5H18M4 22h16M18 2H6v7a6 6 0 1012 0V2z" />
+            </svg>
+          </div>
+          <div className={s.summaryValue}>
+            {data.summary.unlockedCount}
+            <span className={s.summaryTotal}>/ {data.summary.totalBadges}</span>
+          </div>
+          <div className={s.summaryLabel}>Badges Collected</div>
+        </div>
+        <div className={s.summaryCard}>
+          <div className={`${s.summaryIcon} ${s.streakIcon}`}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z" />
+            </svg>
+          </div>
+          <div className={s.summaryValue}>{data.summary.weeklyStreak}</div>
+          <div className={s.summaryLabel}>Week Streak</div>
+        </div>
+        {data.summary.nextBadge && (
+          <div
+            className={`${s.summaryCard} ${s.nextBadgeCard}`}
+            onClick={() => onBadgeClick(data.summary.nextBadge!)}
+          >
+            <div className={s.nextBadgePreview}>
+              <BadgeArt
+                badgeId={data.summary.nextBadge.id}
+                icon={data.summary.nextBadge.icon}
+                rarity={data.summary.nextBadge.rarity}
+                unlocked={false}
+                size="sm"
+              />
+            </div>
+            <div className={s.nextBadgeInfo}>
+              <div className={s.nextBadgeLabel}>Next Badge</div>
+              <div className={s.nextBadgeName}>{data.summary.nextBadge.name}</div>
+              <div className={s.nextBadgeProgress}>
+                {data.summary.nextBadge.progress.percent}% complete
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function RecentUnlocksSection({
+  data,
+  onBadgeClick,
+}: {
+  data: BadgesApiResponse;
+  onBadgeClick: (badge: BadgeWithProgress) => void;
+}) {
+  if (data.recentUnlocks.length === 0) { return null; }
+
+  return (
+    <section className={s.recentSection}>
+      <h2 className={s.sectionTitle}>Recent Unlocks</h2>
+      <div className={s.recentList}>
+        {data.recentUnlocks.slice(0, 5).map((unlock) => {
+          const badge = data.badges.find((b) => b.id === unlock.badgeId);
+          if (!badge) { return null; }
+          return (
+            <div
+              key={unlock.badgeId}
+              className={s.recentItem}
+              onClick={() => onBadgeClick(badge)}
+            >
+              <BadgeArt
+                badgeId={badge.id}
+                icon={badge.icon}
+                rarity={badge.rarity}
+                unlocked={true}
+                size="sm"
+              />
+              <div className={s.recentInfo}>
+                <span className={s.recentName}>{badge.name}</span>
+                <span className={s.recentDate}>
+                  {new Date(unlock.unlockedAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function BadgeCard({
+  badge,
+  onBadgeClick,
+}: {
+  badge: BadgeWithProgress;
+  onBadgeClick: (badge: BadgeWithProgress) => void;
+}) {
+  return (
+    <button
+      className={`${s.badgeCard} ${badge.unlocked ? s.unlocked : ""} ${
+        badge.progress.lockedReason ? s.locked : ""
+      }`}
+      onClick={() => onBadgeClick(badge)}
+      aria-label={`${badge.name} badge - ${
+        badge.unlocked
+          ? "Unlocked"
+          : badge.progress.lockedReason || `${badge.progress.percent}% complete`
+      }`}
+    >
+      <div className={s.badgeArtWrap}>
+        <BadgeArt
+          badgeId={badge.id}
+          icon={badge.icon}
+          rarity={badge.rarity}
+          unlocked={badge.unlocked}
+          size="md"
+        />
+        {badge.unlocked && !badge.seen && (
+          <span className={s.newPill}>NEW</span>
+        )}
+      </div>
+      <div className={s.badgeName}>{badge.name}</div>
+      <div className={s.badgeRarity} data-rarity={badge.rarity}>
+        {badge.rarity}
+      </div>
+      {!badge.unlocked && !badge.progress.lockedReason && (
+        <div className={s.badgeProgressBar}>
+          <div
+            className={s.badgeProgressFill}
+            style={{ width: `${badge.progress.percent}%` }}
+          />
+        </div>
+      )}
+    </button>
+  );
+}
+
+function GoalCard({
+  goal,
+  badges,
+}: {
+  goal: GoalWithProgress;
+  badges: BadgeWithProgress[];
+}) {
+  return (
+    <div
+      className={`${s.goalCard} ${
+        goal.status === "completed" ? s.completed : ""
+      } ${goal.status === "locked" ? s.goalLocked : ""}`}
+    >
+      <div className={s.goalInfo}>
+        <h4 className={s.goalTitle}>{goal.title}</h4>
+        <p className={s.goalDesc}>{goal.whyItMatters}</p>
+        {goal.badgeIds.length > 0 && (
+          <div className={s.goalBadges}>
+            {goal.badgeIds.slice(0, 2).map((badgeId) => {
+              const badge = badges.find((b) => b.id === badgeId);
+              return badge ? (
+                <span
+                  key={badgeId}
+                  className={s.goalBadgeChip}
+                  data-rarity={badge.rarity}
+                >
+                  {badge.name}
+                </span>
+              ) : null;
+            })}
+          </div>
+        )}
+      </div>
+      <div className={s.goalProgress}>
+        {goal.status === "completed" ? (
+          <span className={s.completedBadge}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+            Done
+          </span>
+        ) : (goal.status === "locked" ? (
+          <span className={s.lockedBadge}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0110 0v4" />
+            </svg>
+            {goal.lockedReason || "Locked"}
+          </span>
+        ) : (
+          <div className={s.goalProgressWrap}>
+            <div className={s.goalProgressBar}>
+              <div
+                className={s.goalProgressFill}
+                style={{ width: `${goal.percentage}%` }}
+              />
+            </div>
+            <span className={s.goalProgressText}>
+              {goal.progressLabel} / {goal.targetLabel}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

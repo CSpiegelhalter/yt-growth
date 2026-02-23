@@ -1979,7 +1979,7 @@ export function generateLearnArticleSchema(article: LearnArticle) {
       url: BRAND.url,
       logo: {
         "@type": "ImageObject",
-        url: `${BRAND.url}/logo.svg`,
+        url: `${BRAND.url}/logo.png`,
       },
     },
     mainEntityOfPage: {

@@ -6,21 +6,22 @@
  */
 
 import {
-  generateCompetitorVideoAnalysisParallel,
   analyzeVideoComments,
+  generateCompetitorVideoAnalysisParallel,
 } from "@/lib/llm";
 import { createLogger } from "@/lib/shared/logger";
-import { withTimeout, TimeoutError } from "./timeout";
+import type { CompetitorCommentsAnalysis,CompetitorVideo } from "@/types/api";
+
 import { saveCommentsCache } from "./cache";
 import { fallbackWhatItsAbout } from "./strategic";
+import { TimeoutError,withTimeout } from "./timeout";
 import type {
-  VideoDetailsResult,
-  RequestContext,
-  NormalizedAnalysis,
   BeatChecklist,
+  NormalizedAnalysis,
+  RequestContext,
+  VideoDetailsResult,
 } from "./types";
 import { TIMEOUTS as TO, VideoDetailError } from "./types";
-import type { CompetitorVideo, CompetitorCommentsAnalysis } from "@/types/api";
 
 const logger = createLogger({ module: "video-detail.analysis" });
 
@@ -130,12 +131,12 @@ export async function runCommentsAnalysis(
     });
 
     return result;
-  } catch (err) {
-    const isTimeout = err instanceof TimeoutError;
+  } catch (error) {
+    const isTimeout = error instanceof TimeoutError;
     logger.warn("Comments LLM failed (non-critical)", {
       videoId: ctx.videoId,
       isTimeout,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
       durationMs: Date.now() - startTime,
     });
     return null;
@@ -204,9 +205,9 @@ async function runMainAnalysis(
     const analysis = normalizeAnalysis(analysisOnly, videoDetails);
 
     return { analysis, beatChecklist };
-  } catch (err) {
-    const isTimeout = err instanceof TimeoutError;
-    const errorMessage = err instanceof Error ? err.message : String(err);
+  } catch (error) {
+    const isTimeout = error instanceof TimeoutError;
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
     logger.error("Main LLM analysis failed", {
       videoId: ctx.videoId,
@@ -344,10 +345,10 @@ export function cacheCommentsInBackground(
     analysisJson: commentsAnalysis as object,
     sentiment: commentsLLMResult.sentiment,
     themes: commentsLLMResult.themes,
-  }).catch((cacheErr: unknown) => {
+  }).catch((error: unknown) => {
     logger.warn("Background comments cache failed", {
       videoId,
-      error: cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
+      error: error instanceof Error ? error.message : String(error),
     });
   });
 }

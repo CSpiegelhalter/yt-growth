@@ -13,20 +13,21 @@
  */
 import "server-only";
 
-import type {
-  NicheInferenceInput,
-  InferredNiche,
-  ContentTypeFilter,
-} from "./types";
-import {
-  inferNicheFromText,
-  STOPWORDS,
-  extractKeywords,
-} from "./utils";
 import { parseYouTubeVideoId } from "@/lib/shared/youtube-video-id";
-import type { GoogleAccount, VideoDetails } from "@/lib/youtube/types";
 import { fetchVideoDetails } from "@/lib/youtube";
 import { YOUTUBE_CATEGORIES } from "@/lib/youtube/constants";
+import type { GoogleAccount, VideoDetails } from "@/lib/youtube/types";
+
+import type {
+  ContentTypeFilter,
+  InferredNiche,
+  NicheInferenceInput,
+} from "./types";
+import {
+  extractKeywords,
+  inferNicheFromText,
+  STOPWORDS,
+} from "./utils";
 
 // Platform/game identifiers that provide important context
 const PLATFORM_KEYWORDS = new Set([
@@ -53,10 +54,10 @@ function extractHashtags(text: string): string[] {
  */
 function cleanTitle(title: string): string {
   return title
-    .replace(/#[\w]+/g, "") // Remove hashtags
-    .replace(/[\u{1F300}-\u{1F9FF}]/gu, "") // Remove emojis
-    .replace(/[^\w\s'-]/g, " ") // Remove special chars except apostrophes/hyphens
-    .replace(/\s+/g, " ")
+    .replaceAll(/#[\w]+/g, "") // Remove hashtags
+    .replaceAll(/[\u{1F300}-\u{1F9FF}]/gu, "") // Remove emojis
+    .replaceAll(/[^\w\s'-]/g, " ") // Remove special chars except apostrophes/hyphens
+    .replaceAll(/\s+/g, " ")
     .trim()
     .toLowerCase();
 }
@@ -136,14 +137,71 @@ function identifyContextKeywords(
   return context.slice(0, 3); // Max 3 context keywords
 }
 
+type QueryGenContext = {
+  cleanedTitle: string;
+  contextKeywords: string[];
+  tagPhrases: string[];
+  contentWords: string[];
+  categoryName?: string;
+  primaryContext: string | undefined;
+  hasContext: boolean;
+};
+
+function addContextTitleQueries(ctx: QueryGenContext, queries: string[]): void {
+  if (ctx.hasContext && ctx.cleanedTitle.length >= 3 && ctx.cleanedTitle.length <= 50) {
+    queries.push(`${ctx.primaryContext} ${ctx.cleanedTitle}`);
+  }
+
+  const titleWordCount = ctx.cleanedTitle.split(/\s+/).filter(w => w.length >= 2).length;
+  if (titleWordCount >= 3 && ctx.cleanedTitle.length <= 40) {
+    queries.push(ctx.cleanedTitle);
+  }
+}
+
+function addTagPhraseQueries(ctx: QueryGenContext, queries: string[]): void {
+  for (const phrase of ctx.tagPhrases.slice(0, 3)) {
+    if (ctx.hasContext) { queries.push(`${ctx.primaryContext} ${phrase}`); }
+    queries.push(phrase);
+  }
+}
+
+function addContentWordQueries(ctx: QueryGenContext, queries: string[]): void {
+  if (ctx.hasContext && ctx.contentWords.length >= 2) {
+    queries.push(`${ctx.primaryContext} ${ctx.contentWords.slice(0, 3).join(" ")}`);
+  }
+  if (ctx.hasContext) {
+    for (const word of ctx.contentWords.slice(0, 4)) {
+      if (word.length >= 4) { queries.push(`${ctx.primaryContext} ${word}`); }
+    }
+  }
+}
+
+function addMultiContextQueries(ctx: QueryGenContext, queries: string[]): void {
+  if (ctx.contextKeywords.length >= 2) {
+    queries.push(ctx.contextKeywords.slice(0, 2).join(" "));
+    if (ctx.contentWords.length > 0) {
+      queries.push(`${ctx.contextKeywords.slice(0, 2).join(" ")} ${ctx.contentWords[0]}`);
+    }
+  }
+}
+
+function addCategoryFallbackQueries(ctx: QueryGenContext, queries: string[]): void {
+  if (!ctx.categoryName || ctx.hasContext) {return;}
+  const catLower = ctx.categoryName.toLowerCase();
+  if (ctx.contentWords.length >= 2) {
+    queries.push(`${catLower} ${ctx.contentWords.slice(0, 2).join(" ")}`);
+  }
+  queries.push(catLower);
+}
+
+function addSingleContextFallbackQueries(ctx: QueryGenContext, queries: string[]): void {
+  for (const kw of ctx.contextKeywords) {
+    if (!queries.includes(kw)) { queries.push(kw); }
+  }
+}
+
 /**
  * Generate search queries from video metadata.
- * 
- * Strategy:
- * 1. Prioritize context + title phrase combinations (e.g., "roblox dino kid story")
- * 2. Use multi-word tag phrases
- * 3. Combine context with individual content words
- * 4. Avoid generic single-word queries
  */
 function generateQueryTerms(
   cleanedTitle: string,
@@ -152,75 +210,28 @@ function generateQueryTerms(
   titleWords: string[],
   categoryName?: string
 ): string[] {
-  const queries: string[] = [];
-  const hasContext = contextKeywords.length > 0;
-  const primaryContext = contextKeywords[0]; // e.g., "roblox"
-
-  // 1. BEST: Full title with context (e.g., "roblox dino kid story")
-  if (hasContext && cleanedTitle.length >= 3 && cleanedTitle.length <= 50) {
-    queries.push(`${primaryContext} ${cleanedTitle}`);
-  }
-
-  // 2. Title phrase alone (if descriptive enough, 3+ words)
-  const titleWordCount = cleanedTitle.split(/\s+/).filter(w => w.length >= 2).length;
-  if (titleWordCount >= 3 && cleanedTitle.length <= 40) {
-    queries.push(cleanedTitle);
-  }
-
-  // 3. Context + tag phrases (e.g., "roblox gameplay")
-  for (const phrase of tagPhrases.slice(0, 3)) {
-    if (hasContext) {
-      queries.push(`${primaryContext} ${phrase}`);
-    }
-    queries.push(phrase);
-  }
-
-  // 4. Context + partial title (first 2-3 content words)
   const contentWords = titleWords.filter(w => !STOPWORDS.has(w) && w.length >= 3);
-  if (hasContext && contentWords.length >= 2) {
-    const partialTitle = contentWords.slice(0, 3).join(" ");
-    queries.push(`${primaryContext} ${partialTitle}`);
-  }
+  const ctx: QueryGenContext = {
+    cleanedTitle,
+    contextKeywords,
+    tagPhrases,
+    contentWords,
+    categoryName,
+    primaryContext: contextKeywords[0],
+    hasContext: contextKeywords.length > 0,
+  };
 
-  // 5. Context + individual content words (for broader matching)
-  if (hasContext) {
-    for (const word of contentWords.slice(0, 4)) {
-      if (word.length >= 4) { // Only longer words to avoid generic matches
-        queries.push(`${primaryContext} ${word}`);
-      }
-    }
-  }
+  const queries: string[] = [];
+  addContextTitleQueries(ctx, queries);
+  addTagPhraseQueries(ctx, queries);
+  addContentWordQueries(ctx, queries);
+  addMultiContextQueries(ctx, queries);
+  addCategoryFallbackQueries(ctx, queries);
+  addSingleContextFallbackQueries(ctx, queries);
 
-  // 6. Multiple context keywords combined (e.g., "roblox gaming shorts")
-  if (contextKeywords.length >= 2) {
-    queries.push(contextKeywords.slice(0, 2).join(" "));
-    if (contentWords.length > 0) {
-      queries.push(`${contextKeywords.slice(0, 2).join(" ")} ${contentWords[0]}`);
-    }
-  }
-
-  // 7. Category-based queries as fallback
-  if (categoryName && !hasContext) {
-    const catLower = categoryName.toLowerCase();
-    if (contentWords.length >= 2) {
-      queries.push(`${catLower} ${contentWords.slice(0, 2).join(" ")}`);
-    }
-    queries.push(catLower);
-  }
-
-  // 8. LAST RESORT: Single context keywords (but not generic content words)
-  for (const ctx of contextKeywords) {
-    if (!queries.includes(ctx)) {
-      queries.push(ctx);
-    }
-  }
-
-  // Dedupe and limit
-  const uniqueQueries = [...new Set(queries)]
+  return [...new Set(queries)]
     .filter(q => q.length >= 3 && q.length <= 60)
     .slice(0, 15);
-
-  return uniqueQueries;
 }
 
 /**

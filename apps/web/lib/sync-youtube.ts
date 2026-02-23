@@ -1,7 +1,7 @@
 // lib/sync-youtube.ts
-import { prisma } from "@/prisma";
-import { googleFetchWithAutoRefresh } from "@/lib/google-tokens";
 import { generateAndStoreNiche } from "@/lib/channel-niche";
+import { googleFetchWithAutoRefresh } from "@/lib/google-tokens";
+import { prisma } from "@/prisma";
 
 type GoogleAccount = {
   id: number;
@@ -69,6 +69,51 @@ type YouTubeVideoDetails = {
   };
 };
 
+function pickThumbnailUrl(thumbnails?: YouTubeThumbnails): string | null {
+  return (
+    thumbnails?.high?.url ??
+    thumbnails?.medium?.url ??
+    thumbnails?.default?.url ??
+    null
+  );
+}
+
+function extractDetailFields(details: YouTubeVideoDetails | undefined) {
+  const snip = details?.snippet;
+  return {
+    description: snip?.description ?? "",
+    tags: snip?.tags?.join(",") ?? "",
+    categoryId: snip?.categoryId ?? null,
+    durationSec: details?.contentDetails?.duration
+      ? parseDuration(details.contentDetails.duration)
+      : null,
+    privacyStatus: details?.status?.privacyStatus ?? null,
+  };
+}
+
+function extractVideoFields(
+  snippet: { title: string; publishedAt: string; thumbnails?: YouTubeThumbnails },
+  details: YouTubeVideoDetails | undefined,
+) {
+  return {
+    title: snippet.title,
+    thumbnailUrl: pickThumbnailUrl(snippet.thumbnails),
+    publishedAt: new Date(snippet.publishedAt),
+    ...extractDetailFields(details),
+  };
+}
+
+function extractMetricFields(details: YouTubeVideoDetails | undefined) {
+  return {
+    views: details?.statistics?.viewCount
+      ? Number.parseInt(details.statistics.viewCount, 10)
+      : 0,
+    likes: details?.statistics?.likeCount
+      ? Number.parseInt(details.statistics.likeCount, 10)
+      : 0,
+  };
+}
+
 async function upsertVideoAndMetrics(
   channelDbId: number,
   videoId: string,
@@ -76,27 +121,8 @@ async function upsertVideoAndMetrics(
   details: YouTubeVideoDetails | undefined,
   cachedUntil: Date,
 ) {
-  const thumb =
-    snippet.thumbnails?.high?.url ??
-    snippet.thumbnails?.medium?.url ??
-    snippet.thumbnails?.default?.url ??
-    null;
-
-  const durationSec = details?.contentDetails?.duration
-    ? parseDuration(details.contentDetails.duration)
-    : null;
-
-  const tags = details?.snippet?.tags?.join(",") ?? "";
-  const description = details?.snippet?.description ?? "";
-  const categoryId = details?.snippet?.categoryId ?? null;
-  const privacyStatus = details?.status?.privacyStatus ?? null;
-
-  const views = details?.statistics?.viewCount
-    ? parseInt(details.statistics.viewCount, 10)
-    : 0;
-  const likes = details?.statistics?.likeCount
-    ? parseInt(details.statistics.likeCount, 10)
-    : 0;
+  const videoFields = extractVideoFields(snippet, details);
+  const { views, likes } = extractMetricFields(details);
 
   const video = await prisma.video.upsert({
     where: {
@@ -105,53 +131,100 @@ async function upsertVideoAndMetrics(
         youtubeVideoId: videoId,
       },
     },
-    update: {
-      title: snippet.title,
-      description,
-      thumbnailUrl: thumb,
-      publishedAt: new Date(snippet.publishedAt),
-      durationSec,
-      tags,
-      categoryId,
-      privacyStatus,
-    },
-    create: {
-      channelId: channelDbId,
-      youtubeVideoId: videoId,
-      title: snippet.title,
-      description,
-      thumbnailUrl: thumb,
-      publishedAt: new Date(snippet.publishedAt),
-      durationSec,
-      tags,
-      categoryId,
-      privacyStatus,
-    },
+    update: videoFields,
+    create: { channelId: channelDbId, youtubeVideoId: videoId, ...videoFields },
   });
 
   await prisma.videoMetrics.upsert({
     where: { videoId: video.id },
-    update: {
-      views,
-      likes,
-      fetchedAt: new Date(),
-      cachedUntil,
-    },
-    create: {
-      videoId: video.id,
-      channelId: channelDbId,
-      views,
-      likes,
-      cachedUntil,
-    },
+    update: { views, likes, fetchedAt: new Date(), cachedUntil },
+    create: { videoId: video.id, channelId: channelDbId, views, likes, cachedUntil },
   });
+}
+
+function parseChannelStats(ch: YouTubeChannelItem) {
+  const totalVideoCount = ch.statistics?.videoCount
+    ? Number.parseInt(ch.statistics.videoCount, 10)
+    : null;
+  const subscriberCount =
+    ch.statistics?.subscriberCount && !ch.statistics?.hiddenSubscriberCount
+      ? Number.parseInt(ch.statistics.subscriberCount, 10)
+      : null;
+  return { totalVideoCount, subscriberCount };
+}
+
+async function upsertAndSyncChannel(
+  ga: GoogleAccount,
+  ch: YouTubeChannelItem,
+  userId: number,
+): Promise<void> {
+  const thumb =
+    ch.snippet.thumbnails?.high?.url ??
+    ch.snippet.thumbnails?.default?.url ??
+    null;
+  const { totalVideoCount, subscriberCount } = parseChannelStats(ch);
+
+  const channelFields = {
+    title: ch.snippet.title,
+    thumbnailUrl: thumb,
+    totalVideoCount,
+    subscriberCount,
+    lastSyncedAt: new Date(),
+    syncStatus: "idle" as const,
+    googleAccountId: ga.id,
+  };
+
+  const channel = await prisma.channel.upsert({
+    where: {
+      userId_youtubeChannelId: { userId, youtubeChannelId: ch.id },
+    },
+    update: { ...channelFields, syncError: null },
+    create: { userId, youtubeChannelId: ch.id, ...channelFields },
+  });
+
+  try {
+    await fetchChannelVideos(ga, channel.id, ch.id);
+    try {
+      await generateAndStoreNiche(channel.id);
+    } catch (error) {
+      console.error(`Failed to generate niche for channel ${ch.id}:`, error);
+    }
+  } catch (error) {
+    console.error(`Failed to fetch videos for channel ${ch.id}:`, error);
+  }
+}
+
+async function syncGoogleAccountChannels(
+  ga: GoogleAccount,
+  userId: number,
+): Promise<void> {
+  const ownedChannelsUrl = new URL(
+    "https://www.googleapis.com/youtube/v3/channels"
+  );
+  ownedChannelsUrl.search = new URLSearchParams({
+    part: "id,snippet,statistics",
+    mine: "true",
+  }).toString();
+
+  const ownedChannelsData = await googleFetchWithAutoRefresh<{
+    items?: YouTubeChannelItem[];
+  }>(ga, ownedChannelsUrl.toString());
+
+  console.log(
+    `[syncUserChannels] Found ${
+      ownedChannelsData.items?.length ?? 0
+    } channel(s) for GoogleAccount ${ga.id}`
+  );
+
+  for (const ch of ownedChannelsData.items ?? []) {
+    await upsertAndSyncChannel(ga, ch, userId);
+  }
 }
 
 export async function syncUserChannels(
   userId: number,
   googleAccountId?: number
 ): Promise<void> {
-  // Get either a specific GoogleAccount or all GoogleAccounts for the user
   const googleAccounts = googleAccountId
     ? await prisma.googleAccount.findMany({
         where: { id: googleAccountId, userId },
@@ -160,124 +233,182 @@ export async function syncUserChannels(
 
   if (googleAccounts.length === 0) {return;}
 
-  // Mark channels as syncing
   await prisma.channel.updateMany({
     where: { userId },
     data: { syncStatus: "running" },
   });
 
   try {
-    // Sync channels from each Google account
     for (const ga of googleAccounts) {
-      // Fetch user's owned channels (includes Brand Accounts when selected during OAuth)
-      // Include statistics to get video count and subscriber count
-      const ownedChannelsUrl = new URL(
-        "https://www.googleapis.com/youtube/v3/channels"
-      );
-      ownedChannelsUrl.search = new URLSearchParams({
-        part: "id,snippet,statistics",
-        mine: "true",
-      }).toString();
-
-      const ownedChannelsData = await googleFetchWithAutoRefresh<{
-        items?: YouTubeChannelItem[];
-      }>(ga, ownedChannelsUrl.toString());
-
-      console.log(
-        `[syncUserChannels] Found ${
-          ownedChannelsData.items?.length ?? 0
-        } channel(s) for GoogleAccount ${ga.id}`
-      );
-
-      // Also fetch Brand Account / managed channels
-      const managedChannelsUrl = new URL(
-        "https://www.googleapis.com/youtube/v3/channels"
-      );
-      managedChannelsUrl.search = new URLSearchParams({
-        part: "id,snippet",
-        managedByMe: "true",
-      }).toString();
-
-      const uniqueChannels = ownedChannelsData.items ?? [];
-
-      for (const ch of uniqueChannels) {
-        const thumb =
-          ch.snippet.thumbnails?.high?.url ??
-          ch.snippet.thumbnails?.default?.url ??
-          null;
-
-        // Parse statistics (YouTube returns these as strings)
-        const totalVideoCount = ch.statistics?.videoCount
-          ? parseInt(ch.statistics.videoCount, 10)
-          : null;
-        const subscriberCount =
-          ch.statistics?.subscriberCount &&
-          !ch.statistics?.hiddenSubscriberCount
-            ? parseInt(ch.statistics.subscriberCount, 10)
-            : null;
-
-        // Upsert channel (store which GoogleAccount it belongs to)
-        const channel = await prisma.channel.upsert({
-          where: {
-            userId_youtubeChannelId: { userId, youtubeChannelId: ch.id },
-          },
-          update: {
-            title: ch.snippet.title,
-            thumbnailUrl: thumb,
-            totalVideoCount,
-            subscriberCount,
-            lastSyncedAt: new Date(),
-            syncStatus: "idle",
-            syncError: null,
-            googleAccountId: ga.id,
-          },
-          create: {
-            userId,
-            youtubeChannelId: ch.id,
-            title: ch.snippet.title,
-            thumbnailUrl: thumb,
-            totalVideoCount,
-            subscriberCount,
-            lastSyncedAt: new Date(),
-            syncStatus: "idle",
-            googleAccountId: ga.id,
-          },
-        });
-
-        // Fetch recent videos for this channel (await so videos are ready when user sees dashboard)
-        try {
-          await fetchChannelVideos(ga, channel.id, ch.id);
-
-          // Generate and store the channel's niche based on video titles
-          // This is used by competitors page and idea generation
-          try {
-            await generateAndStoreNiche(channel.id);
-          } catch (nicheErr) {
-            console.error(
-              `Failed to generate niche for channel ${ch.id}:`,
-              nicheErr
-            );
-            // Don't throw - niche is not critical for initial sync
-          }
-        } catch (err) {
-          console.error(`Failed to fetch videos for channel ${ch.id}:`, err);
-          // Don't throw - channel is synced, videos are optional
-        }
-      }
+      await syncGoogleAccountChannels(ga, userId);
     }
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : String(e);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error(`[syncUserChannels] Error for user ${userId}:`, message);
     await prisma.channel.updateMany({
       where: { userId },
       data: { syncStatus: "error", syncError: message },
     });
-    throw e;
+    throw error;
   }
 }
 
 // Number of videos to sync (divisible by 6 for grid layout)
 const SYNC_VIDEO_COUNT = 96;
+
+async function fetchVideoDetailsBatched(
+  ga: GoogleAccount,
+  videoIds: string[],
+): Promise<Map<string, YouTubeVideoDetails>> {
+  const VIDEO_BATCH_SIZE = 50;
+  const allDetails: YouTubeVideoDetails[] = [];
+
+  for (let i = 0; i < videoIds.length; i += VIDEO_BATCH_SIZE) {
+    const batchIds = videoIds.slice(i, i + VIDEO_BATCH_SIZE);
+    const detailsUrl = new URL(
+      "https://www.googleapis.com/youtube/v3/videos"
+    );
+    detailsUrl.search = new URLSearchParams({
+      part: "id,contentDetails,snippet,statistics,status",
+      id: batchIds.join(","),
+    }).toString();
+
+    const detailsData = await googleFetchWithAutoRefresh<{
+      items: YouTubeVideoDetails[];
+    }>(ga, detailsUrl.toString());
+
+    allDetails.push(...(detailsData.items ?? []));
+  }
+
+  return new Map(allDetails.map((v) => [v.id, v]));
+}
+
+async function upsertVideoBatch(
+  channelDbId: number,
+  items: Array<{ videoId: string; snippet: { title: string; publishedAt: string; thumbnails?: YouTubeThumbnails } }>,
+  detailsMap: Map<string, YouTubeVideoDetails>,
+  cachedUntil: Date,
+): Promise<void> {
+  for (const { videoId, snippet } of items) {
+    await upsertVideoAndMetrics(channelDbId, videoId, snippet, detailsMap.get(videoId), cachedUntil);
+  }
+}
+
+async function fetchViaSearch(
+  ga: GoogleAccount,
+  channelDbId: number,
+  youtubeChannelId: string,
+): Promise<void> {
+  const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+  searchUrl.search = new URLSearchParams({
+    part: "id,snippet",
+    channelId: youtubeChannelId,
+    order: "date",
+    type: "video",
+    maxResults: "50",
+  }).toString();
+
+  const searchData = await googleFetchWithAutoRefresh<{
+    items: YouTubeVideoItem[];
+  }>(ga, searchUrl.toString());
+
+  const videoIds = (searchData.items ?? [])
+    .map((v) => v.id.videoId)
+    .filter(Boolean);
+  if (videoIds.length === 0) {return;}
+
+  const detailsMap = await fetchVideoDetailsBatched(ga, videoIds);
+  const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
+  const items = (searchData.items ?? []).map((item) => ({
+    videoId: item.id.videoId,
+    snippet: item.snippet,
+  }));
+
+  await upsertVideoBatch(channelDbId, items, detailsMap, cachedUntil);
+
+  await prisma.channel.update({
+    where: { id: channelDbId },
+    data: { lastSyncedAt: new Date() },
+  });
+}
+
+async function fetchPlaylistItems(
+  ga: GoogleAccount,
+  uploadsPlaylistId: string,
+): Promise<Array<{
+  contentDetails: { videoId: string };
+  snippet: { title: string; publishedAt: string; thumbnails: YouTubeThumbnails };
+}>> {
+  const allItems: Array<{
+    contentDetails: { videoId: string };
+    snippet: { title: string; publishedAt: string; thumbnails: YouTubeThumbnails };
+  }> = [];
+  let nextPageToken: string | undefined;
+
+  while (allItems.length < SYNC_VIDEO_COUNT) {
+    const playlistUrl = new URL(
+      "https://www.googleapis.com/youtube/v3/playlistItems"
+    );
+    const params: Record<string, string> = {
+      part: "snippet,contentDetails",
+      playlistId: uploadsPlaylistId,
+      maxResults: "50",
+    };
+    if (nextPageToken) {
+      params.pageToken = nextPageToken;
+    }
+    playlistUrl.search = new URLSearchParams(params).toString();
+
+    const playlistData = await googleFetchWithAutoRefresh<{
+      nextPageToken?: string;
+      items: Array<{
+        contentDetails: { videoId: string };
+        snippet: { title: string; publishedAt: string; thumbnails: YouTubeThumbnails };
+      }>;
+    }>(ga, playlistUrl.toString());
+
+    allItems.push(...(playlistData.items ?? []));
+    nextPageToken = playlistData.nextPageToken;
+
+    if (!nextPageToken || (playlistData.items ?? []).length === 0) {break;}
+  }
+
+  return allItems.slice(0, SYNC_VIDEO_COUNT);
+}
+
+async function fetchViaUploadsPlaylist(
+  ga: GoogleAccount,
+  channelDbId: number,
+  youtubeChannelId: string,
+  uploadsPlaylistId: string,
+): Promise<void> {
+  const allPlaylistItems = await fetchPlaylistItems(ga, uploadsPlaylistId);
+
+  const videoIds = allPlaylistItems
+    .map((v) => v.contentDetails.videoId)
+    .filter(Boolean);
+  if (videoIds.length === 0) {return;}
+
+  const detailsMap = await fetchVideoDetailsBatched(ga, videoIds);
+  const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
+  const items = allPlaylistItems.map((item) => ({
+    videoId: item.contentDetails.videoId,
+    snippet: item.snippet,
+  }));
+
+  await upsertVideoBatch(channelDbId, items, detailsMap, cachedUntil);
+
+  const videoCount = await prisma.video.count({
+    where: { channelId: channelDbId },
+  });
+
+  await prisma.channel.update({
+    where: { id: channelDbId },
+    data: { lastSyncedAt: new Date() },
+  });
+
+  console.log(`Synced ${videoCount} videos for channel ${youtubeChannelId}`);
+}
 
 /**
  * Fetch recent videos for a channel
@@ -289,7 +420,6 @@ async function fetchChannelVideos(
   youtubeChannelId: string
 ): Promise<void> {
   try {
-    // Avoid search.list (expensive quota). Use uploads playlist.
     const channelUrl = new URL(
       "https://www.googleapis.com/youtube/v3/channels"
     );
@@ -306,164 +436,18 @@ async function fetchChannelVideos(
 
     const uploadsPlaylistId =
       channelData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+
     if (!uploadsPlaylistId) {
-      // Fallback for rare channels where uploads playlist isn't returned.
-      // Costs more quota. Limited to 50 for search endpoint.
-      const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
-      searchUrl.search = new URLSearchParams({
-        part: "id,snippet",
-        channelId: youtubeChannelId,
-        order: "date",
-        type: "video",
-        maxResults: "50",
-      }).toString();
-
-      const searchData = await googleFetchWithAutoRefresh<{
-        items: YouTubeVideoItem[];
-      }>(ga, searchUrl.toString());
-
-      const videoIds = (searchData.items ?? [])
-        .map((v) => v.id.videoId)
-        .filter(Boolean);
-      if (videoIds.length === 0) {return;}
-
-      // Fetch video details (duration, tags, description, statistics, status)
-      const detailsUrl = new URL(
-        "https://www.googleapis.com/youtube/v3/videos"
-      );
-      detailsUrl.search = new URLSearchParams({
-        part: "id,contentDetails,snippet,statistics,status",
-        id: videoIds.join(","),
-      }).toString();
-
-      const detailsData = await googleFetchWithAutoRefresh<{
-        items: YouTubeVideoDetails[];
-      }>(ga, detailsUrl.toString());
-
-      const detailsMap = new Map(
-        (detailsData.items ?? []).map((v) => [v.id, v])
-      );
-
-      const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
-
-      for (const item of searchData.items ?? []) {
-        const videoId = item.id.videoId;
-        await upsertVideoAndMetrics(
-          channelDbId,
-          videoId,
-          item.snippet,
-          detailsMap.get(videoId),
-          cachedUntil,
-        );
-      }
-
-      // Update channel lastSyncedAt and return
-      await prisma.channel.update({
-        where: { id: channelDbId },
-        data: { lastSyncedAt: new Date() },
-      });
-
+      await fetchViaSearch(ga, channelDbId, youtubeChannelId);
       return;
     }
 
-    // Fetch videos with pagination (YouTube API max 50 per page)
-    let allPlaylistItems: Array<{
-      contentDetails: { videoId: string };
-      snippet: { title: string; publishedAt: string; thumbnails: YouTubeThumbnails };
-    }> = [];
-    let nextPageToken: string | undefined;
-
-    while (allPlaylistItems.length < SYNC_VIDEO_COUNT) {
-      const playlistUrl = new URL(
-        "https://www.googleapis.com/youtube/v3/playlistItems"
-      );
-      const params: Record<string, string> = {
-        part: "snippet,contentDetails",
-        playlistId: uploadsPlaylistId,
-        maxResults: "50",
-      };
-      if (nextPageToken) {
-        params.pageToken = nextPageToken;
-      }
-      playlistUrl.search = new URLSearchParams(params).toString();
-
-      const playlistData = await googleFetchWithAutoRefresh<{
-        nextPageToken?: string;
-        items: Array<{
-          contentDetails: { videoId: string };
-          snippet: { title: string; publishedAt: string; thumbnails: YouTubeThumbnails };
-        }>;
-      }>(ga, playlistUrl.toString());
-
-      allPlaylistItems.push(...(playlistData.items ?? []));
-      nextPageToken = playlistData.nextPageToken;
-
-      // No more pages
-      if (!nextPageToken || (playlistData.items ?? []).length === 0) {break;}
-    }
-
-    // Trim to SYNC_VIDEO_COUNT
-    allPlaylistItems = allPlaylistItems.slice(0, SYNC_VIDEO_COUNT);
-
-    const videoIds = allPlaylistItems
-      .map((v) => v.contentDetails.videoId)
-      .filter(Boolean);
-    if (videoIds.length === 0) {return;}
-
-    // Fetch video details (duration, tags, description, statistics)
-    // YouTube API allows max 50 IDs per request, so batch if needed
-    const VIDEO_BATCH_SIZE = 50;
-    const allDetails: YouTubeVideoDetails[] = [];
-
-    for (let i = 0; i < videoIds.length; i += VIDEO_BATCH_SIZE) {
-      const batchIds = videoIds.slice(i, i + VIDEO_BATCH_SIZE);
-      const detailsUrl = new URL(
-        "https://www.googleapis.com/youtube/v3/videos"
-      );
-      detailsUrl.search = new URLSearchParams({
-        part: "id,contentDetails,snippet,statistics,status",
-        id: batchIds.join(","),
-      }).toString();
-
-      const detailsData = await googleFetchWithAutoRefresh<{
-        items: YouTubeVideoDetails[];
-      }>(ga, detailsUrl.toString());
-
-      allDetails.push(...(detailsData.items ?? []));
-    }
-
-    const detailsMap = new Map(allDetails.map((v) => [v.id, v]));
-
-    const cachedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
-
-    for (const item of allPlaylistItems) {
-      const videoId = item.contentDetails.videoId;
-      await upsertVideoAndMetrics(
-        channelDbId,
-        videoId,
-        item.snippet,
-        detailsMap.get(videoId),
-        cachedUntil,
-      );
-    }
-
-    // Update channel video count
-    const videoCount = await prisma.video.count({
-      where: { channelId: channelDbId },
-    });
-
-    await prisma.channel.update({
-      where: { id: channelDbId },
-      data: { lastSyncedAt: new Date() },
-    });
-
-    console.log(`Synced ${videoCount} videos for channel ${youtubeChannelId}`);
-  } catch (err) {
+    await fetchViaUploadsPlaylist(ga, channelDbId, youtubeChannelId, uploadsPlaylistId);
+  } catch (error) {
     console.error(
       `Error fetching videos for channel ${youtubeChannelId}:`,
-      err
+      error
     );
-    // Don't throw - this is a background task
   }
 }
 
@@ -473,8 +457,8 @@ async function fetchChannelVideos(
 function parseDuration(duration: string): number {
   const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) {return 0;}
-  const hours = parseInt(match[1] || "0", 10);
-  const minutes = parseInt(match[2] || "0", 10);
-  const seconds = parseInt(match[3] || "0", 10);
+  const hours = Number.parseInt(match[1] || "0", 10);
+  const minutes = Number.parseInt(match[2] || "0", 10);
+  const seconds = Number.parseInt(match[3] || "0", 10);
   return hours * 3600 + minutes * 60 + seconds;
 }

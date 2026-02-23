@@ -109,7 +109,7 @@ const EMOJI_PATTERN = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u
  * - Lowercased and normalized
  */
 export function validatePhrase(phrase: string): string {
-  const cleaned = phrase.trim().replace(/\s+/g, " ");
+  const cleaned = phrase.trim().replaceAll(/\s+/g, " ");
 
   if (cleaned.length === 0) {
     throw new DataForSEOError("Keyword phrase is required", "VALIDATION_ERROR");
@@ -169,10 +169,10 @@ export function validateKeywords(
     try {
       const cleaned = validatePhrase(kw);
       valid.push(cleaned);
-    } catch (err) {
+    } catch (error) {
       invalid.push({
         keyword: kw,
-        error: err instanceof DataForSEOError ? err.message : "Invalid keyword",
+        error: error instanceof DataForSEOError ? error.message : "Invalid keyword",
       });
     }
   }
@@ -221,9 +221,9 @@ export function generateRequestHash(params: {
 }): string {
   const normalizedKeywords = params.keywords
     ? [...params.keywords].map((k) => k.toLowerCase().trim()).sort()
-    : params.phrase
+    : (params.phrase
       ? [params.phrase.toLowerCase().trim()]
-      : [];
+      : []);
 
   return stableHash({
     mode: params.mode,
@@ -264,14 +264,14 @@ export function calculateDifficultyHeuristic(params: {
     volumeScore = 10 + (searchVolume / 100) * 10;
   } else if (searchVolume < 1000) {
     volumeScore = 20 + ((searchVolume - 100) / 900) * 15;
-  } else if (searchVolume < 10000) {
+  } else if (searchVolume < 10_000) {
     volumeScore = 35 + ((searchVolume - 1000) / 9000) * 20;
-  } else if (searchVolume < 100000) {
-    volumeScore = 55 + ((searchVolume - 10000) / 90000) * 20;
-  } else if (searchVolume < 1000000) {
-    volumeScore = 75 + ((searchVolume - 100000) / 900000) * 15;
+  } else if (searchVolume < 100_000) {
+    volumeScore = 55 + ((searchVolume - 10_000) / 90_000) * 20;
+  } else if (searchVolume < 1_000_000) {
+    volumeScore = 75 + ((searchVolume - 100_000) / 900_000) * 15;
   } else {
-    volumeScore = 90 + Math.min((searchVolume - 1000000) / 10000000, 1) * 10;
+    volumeScore = 90 + Math.min((searchVolume - 1_000_000) / 10_000_000, 1) * 10;
   }
   
   const cpcScore = Math.min(cpc / 5, 1) * 15;
@@ -287,14 +287,14 @@ export function calculateDifficultyHeuristic(params: {
 
 export function parseNumeric(value: unknown, fallback: number = 0): number {
   if (value === null || value === undefined) {return fallback;}
-  const num = typeof value === "number" ? value : parseFloat(String(value));
-  return isNaN(num) ? fallback : num;
+  const num = typeof value === "number" ? value : Number.parseFloat(String(value));
+  return Number.isNaN(num) ? fallback : num;
 }
 
 export function parseInteger(value: unknown, fallback: number = 0): number {
   if (value === null || value === undefined) {return fallback;}
-  const num = typeof value === "number" ? Math.round(value) : parseInt(String(value), 10);
-  return isNaN(num) ? fallback : num;
+  const num = typeof value === "number" ? Math.round(value) : Number.parseInt(String(value), 10);
+  return Number.isNaN(num) ? fallback : num;
 }
 
 /**
@@ -324,14 +324,18 @@ export function parseCompetitionLevel(level: string | null | undefined): number 
   if (!level) {return 0;}
 
   switch (level.toUpperCase()) {
-    case "HIGH":
+    case "HIGH": {
       return 85;
-    case "MEDIUM":
+    }
+    case "MEDIUM": {
       return 50;
-    case "LOW":
+    }
+    case "LOW": {
       return 15;
-    default:
+    }
+    default: {
       return 0;
+    }
   }
 }
 
@@ -339,7 +343,7 @@ export function parseCompetitionLevel(level: string | null | undefined): number 
  * Check if a keyword error indicates a restricted category.
  */
 export function isRestrictedCategoryError(statusCode: number, message?: string): boolean {
-  if (statusCode === 40501 || statusCode === 40502) {
+  if (statusCode === 40_501 || statusCode === 40_502) {
     return true;
   }
 
@@ -354,4 +358,51 @@ export function isRestrictedCategoryError(statusCode: number, message?: string):
   }
 
   return false;
+}
+
+/**
+ * Check if a DataForSEO status indicates the task is still queued.
+ */
+export function isQueuedStatus(statusCode: number, statusMessage?: string): boolean {
+  return statusCode === 40_601 || !!statusMessage?.toLowerCase().includes("queue");
+}
+
+const NON_RETRYABLE_CODES = new Set<DataForSEOErrorCode>([
+  "VALIDATION_ERROR",
+  "QUOTA_EXCEEDED",
+  "CONFIG_ERROR",
+  "AUTH_ERROR",
+]);
+
+export function isNonRetryableError(error: unknown): boolean {
+  return error instanceof DataForSEOError && NON_RETRYABLE_CODES.has(error.code);
+}
+
+export function classifyHttpError(httpStatus: number, statusMessage?: string): DataForSEOError {
+  if (httpStatus === 401 || httpStatus === 403) {
+    return new DataForSEOError("Invalid API credentials", "AUTH_ERROR");
+  }
+  if (httpStatus === 429) {
+    return new DataForSEOError("Rate limited by DataForSEO API", "RATE_LIMITED");
+  }
+  if (httpStatus === 402 || statusMessage?.toLowerCase().includes("balance")) {
+    return new DataForSEOError("DataForSEO API balance exceeded", "QUOTA_EXCEEDED");
+  }
+  return new DataForSEOError(
+    `DataForSEO API error: ${httpStatus} - ${statusMessage || "Unknown error"}`,
+    "API_ERROR"
+  );
+}
+
+export function classifyApiStatusError(statusCode: number, statusMessage?: string): DataForSEOError {
+  if (statusCode === 40_001) {
+    return new DataForSEOError("Invalid request parameters", "VALIDATION_ERROR");
+  }
+  if (statusCode === 40_201) {
+    return new DataForSEOError("Insufficient balance", "QUOTA_EXCEEDED");
+  }
+  return new DataForSEOError(
+    `DataForSEO error: ${statusMessage || "Unknown error"}`,
+    "API_ERROR"
+  );
 }

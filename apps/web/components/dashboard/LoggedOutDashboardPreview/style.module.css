@@ -5,12 +5,12 @@
    ================================ */
 
 .page {
-  max-width: var(--page-max-width);
   margin: 0 auto;
+  max-width: var(--page-max-width);
   padding: var(--page-padding-mobile);
 }
 
-@media (min-width: 768px) {
+@media (width >= 768px) {
   .page {
     padding: var(--page-padding-desktop);
   }
@@ -21,31 +21,31 @@
    ================================ */
 
 .header {
-  display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  display: flex;
   gap: var(--space-4);
+  justify-content: space-between;
   margin-bottom: var(--page-header-margin);
 }
 
 .title {
+  color: var(--text);
   font-size: var(--page-title-size);
   font-weight: var(--page-title-weight);
-  color: var(--text);
   margin: 0 0 var(--space-1);
 }
 
-@media (min-width: 640px) {
+@media (width >= 640px) {
   .title {
     font-size: var(--page-title-size-lg);
   }
 }
 
 .subtitle {
-  font-size: var(--page-subtitle-size);
   color: var(--text-secondary);
-  margin: 0;
+  font-size: var(--page-subtitle-size);
   line-height: var(--page-subtitle-line-height);
+  margin: 0;
 }
 
 /* ================================
@@ -70,59 +70,59 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+  margin: 0 auto;
+  max-width: 480px;
   padding: var(--space-8) var(--space-5);
   text-align: center;
-  max-width: 480px;
-  margin: 0 auto;
 }
 
-@media (min-width: 640px) {
+@media (width >= 640px) {
   .ctaCard {
     padding: var(--space-10) var(--space-8);
   }
 }
 
 .ctaIcon {
-  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  margin: 0 auto var(--space-5);
   background: var(--primary-light);
   border-radius: var(--radius-full);
   color: var(--primary);
+  display: flex;
+  height: 64px;
+  justify-content: center;
+  margin: 0 auto var(--space-5);
+  width: 64px;
 }
 
 .ctaTitle {
+  color: var(--text);
   font-size: var(--text-xl);
   font-weight: var(--font-bold);
-  color: var(--text);
-  margin: 0 0 var(--space-3);
   line-height: var(--leading-tight);
+  margin: 0 0 var(--space-3);
 }
 
-@media (min-width: 640px) {
+@media (width >= 640px) {
   .ctaTitle {
     font-size: var(--text-2xl);
   }
 }
 
 .ctaDesc {
-  font-size: var(--page-subtitle-size);
   color: var(--text-secondary);
-  margin: 0 0 var(--space-6);
+  font-size: var(--page-subtitle-size);
   line-height: var(--leading-relaxed);
+  margin: 0 0 var(--space-6);
 }
 
 .ctaActions {
+  align-items: center;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  align-items: center;
 }
 
-@media (min-width: 400px) {
+@media (width >= 400px) {
   .ctaActions {
     flex-direction: row;
     justify-content: center;
@@ -130,48 +130,48 @@
 }
 
 .primaryBtn {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: var(--space-3) var(--space-6);
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  color: var(--text-inverse);
   background: var(--primary);
   border-radius: var(--radius-md);
-  text-decoration: none;
-  transition: all var(--transition-base);
+  color: var(--text-inverse);
+  display: inline-flex;
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  justify-content: center;
   min-height: 48px;
   min-width: 140px;
+  padding: var(--space-3) var(--space-6);
+  text-decoration: none;
+  transition: all var(--transition-base);
 }
 
 .primaryBtn:hover {
   background: var(--primary-hover);
+  box-shadow: var(--shadow-md);
   color: var(--text-inverse);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
 }
 
 .primaryBtn:focus-visible {
-  outline: none;
   box-shadow: var(--focus-ring);
+  outline: none;
 }
 
 .secondaryBtn {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: var(--space-3) var(--space-6);
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  color: var(--primary);
   background: var(--surface);
   border: 1px solid var(--primary);
   border-radius: var(--radius-md);
-  text-decoration: none;
-  transition: all var(--transition-base);
+  color: var(--primary);
+  display: inline-flex;
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  justify-content: center;
   min-height: 48px;
   min-width: 140px;
+  padding: var(--space-3) var(--space-6);
+  text-decoration: none;
+  transition: all var(--transition-base);
 }
 
 .secondaryBtn:hover {
@@ -180,8 +180,8 @@
 }
 
 .secondaryBtn:focus-visible {
-  outline: none;
   box-shadow: var(--focus-ring);
+  outline: none;
 }
 
 /* ================================
@@ -193,9 +193,9 @@
 }
 
 .previewTitle {
+  color: var(--text);
   font-size: var(--section-title-size);
   font-weight: var(--section-title-weight);
-  color: var(--text);
   margin: 0 0 var(--space-4);
   text-align: center;
 }
@@ -205,7 +205,7 @@
   gap: var(--space-4);
 }
 
-@media (min-width: 640px) {
+@media (width >= 640px) {
   .previewGrid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -216,13 +216,13 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--space-4);
   opacity: 0.85;
+  padding: var(--space-4);
 }
 
 .previewCardHeader {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
@@ -232,9 +232,9 @@
 }
 
 .previewCardLabel {
+  color: var(--text);
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
-  color: var(--text);
 }
 
 .previewCardBody {
@@ -250,36 +250,36 @@
 }
 
 .blurredLine {
+  background: var(--surface-alt);
+  border-radius: var(--radius-xs);
   display: block;
   height: 12px;
   width: 100%;
-  background: var(--surface-alt);
-  border-radius: var(--radius-xs);
 }
 
 .blurredLineShort {
+  background: var(--surface-alt);
+  border-radius: var(--radius-xs);
   display: block;
   height: 12px;
   width: 60%;
-  background: var(--surface-alt);
-  border-radius: var(--radius-xs);
 }
 
 .blurredLineMedium {
+  background: var(--surface-alt);
+  border-radius: var(--radius-xs);
   display: block;
   height: 12px;
   width: 80%;
-  background: var(--surface-alt);
-  border-radius: var(--radius-xs);
 }
 
 .blurredValue {
-  display: block;
-  height: 20px;
-  width: 48px;
   background: var(--surface-alt);
   border-radius: var(--radius-xs);
+  display: block;
+  height: 20px;
   margin-bottom: var(--space-1);
+  width: 48px;
 }
 
 /* Preview pills (like content pillars) */
@@ -289,11 +289,11 @@
 }
 
 .previewPill {
+  background: var(--surface-alt);
+  border-radius: var(--radius-full);
   display: block;
   height: 24px;
   width: 60px;
-  background: var(--surface-alt);
-  border-radius: var(--radius-full);
 }
 
 /* Preview stats row */
@@ -303,14 +303,14 @@
 }
 
 .previewStat {
+  align-items: flex-start;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
 }
 
 .previewStatLabel {
-  font-size: var(--text-xs);
   color: var(--text-tertiary);
+  font-size: var(--text-xs);
 }
 
 /* Preview ideas list */
@@ -321,9 +321,9 @@
 }
 
 .previewIdea {
-  padding: var(--space-3);
   background: var(--surface-alt);
   border-radius: var(--radius-sm);
+  padding: var(--space-3);
 }
 
 /* ================================
@@ -335,21 +335,21 @@
 }
 
 .mockVideosHeader {
-  display: flex;
   align-items: center;
+  display: flex;
   justify-content: space-between;
   margin-bottom: var(--space-4);
 }
 
 .mockVideosLabel {
+  color: var(--text-tertiary);
   font-size: var(--section-title-size);
   font-weight: var(--section-title-weight);
-  color: var(--text-tertiary);
 }
 
 .mockVideosHint {
-  font-size: var(--text-xs);
   color: var(--text-tertiary);
+  font-size: var(--text-xs);
 }
 
 .mockVideoGrid {
@@ -357,13 +357,13 @@
   gap: var(--space-4);
 }
 
-@media (min-width: 640px) {
+@media (width >= 640px) {
   .mockVideoGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (min-width: 1024px) {
+@media (width >= 1024px) {
   .mockVideoGrid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -371,28 +371,28 @@
 
 /* Mock video card - disabled appearance */
 .mockVideoCard {
-  display: flex;
-  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   opacity: 0.5;
+  overflow: hidden;
   pointer-events: none;
 }
 
 .mockThumb {
+  align-items: center;
   aspect-ratio: 16/9;
   background: var(--surface-alt);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   color: var(--text-tertiary);
+  display: flex;
+  justify-content: center;
 }
 
 .mockContent {
-  padding: var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  padding: var(--space-4);
 }

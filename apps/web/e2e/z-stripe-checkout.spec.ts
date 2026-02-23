@@ -28,11 +28,12 @@
  * - Decline: 4000000000000002
  * - Requires auth: 4000002500003155
  */
-import { test, expect, type Page } from "@playwright/test";
+import { expect, type Page,test } from "@playwright/test";
+
 import {
+  getMe,
   signIn,
   TEST_USER,
-  getMe,
 } from "./fixtures/test-helpers";
 
 // Stripe test card details
@@ -99,7 +100,7 @@ test.describe("Stripe Checkout Flow", () => {
     const upgradeButton = page.locator(
       'button:has-text("Subscribe Now"), a:has-text("Subscribe Now"), button:has-text("Upgrade"), a:has-text("Upgrade")'
     );
-    await expect(upgradeButton.first()).toBeVisible({ timeout: 10000 });
+    await expect(upgradeButton.first()).toBeVisible({ timeout: 10_000 });
 
     console.log("Clicking upgrade button...");
 
@@ -110,7 +111,7 @@ test.describe("Stripe Checkout Flow", () => {
 
     // Wait for navigation to Stripe Checkout
     // This may take a few seconds as the API call happens first
-    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 30000 });
+    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 });
 
     console.log("Successfully navigated to Stripe:", page.url());
 
@@ -144,7 +145,7 @@ test.describe("Stripe Checkout Flow", () => {
           'button:has-text("Subscribe"), button:has-text("Pay"), button[type="submit"]'
         )
         .first();
-      await subscribeBtn.waitFor({ state: "visible", timeout: 10000 });
+      await subscribeBtn.waitFor({ state: "visible", timeout: 10_000 });
       console.log("✓ Clicking Subscribe button...");
       await subscribeBtn.click();
     } else {
@@ -187,15 +188,15 @@ test.describe("Stripe Checkout Flow", () => {
       try {
         await fillStripeCheckout(page);
         console.log("Form fill completed, waiting for redirect...");
-      } catch (e) {
-        console.error("Form fill error:", e);
+      } catch (error) {
+        console.error("Form fill error:", error);
         await page.screenshot({ path: "test-results/stripe-error.png" });
-        throw e;
+        throw error;
       }
     }
 
     // Wait for redirect back to our app after successful payment
-    await page.waitForURL(/localhost:3000/, { timeout: 120000 });
+    await page.waitForURL(/localhost:3000/, { timeout: 120_000 });
     console.log("Redirected back to app:", page.url());
 
     // Verify we got the success query param
@@ -344,7 +345,7 @@ test.describe("Stripe Checkout Flow", () => {
 
     // Check for "Good until" text in the cancellation notice
     const goodUntilText = page.locator("text=/Good until/i");
-    await expect(goodUntilText).toBeVisible({ timeout: 10000 });
+    await expect(goodUntilText).toBeVisible({ timeout: 10_000 });
     console.log("✓ Profile page shows 'Good until' date");
 
     // Also verify the "Canceling" badge is visible
@@ -381,7 +382,7 @@ async function fillStripeCheckout(
 
   // Card number field
   const cardNumberField = page.locator("input#cardNumber");
-  await cardNumberField.waitFor({ state: "visible", timeout: 10000 });
+  await cardNumberField.waitFor({ state: "visible", timeout: 10_000 });
   await cardNumberField.click();
   // Type slowly to simulate human input
   await cardNumberField.pressSequentially(card.number, { delay: 50 });
@@ -455,7 +456,7 @@ async function fillStripeCheckout(
       );
       return btn && !btn.hasAttribute("disabled");
     },
-    { timeout: 10000 }
+    { timeout: 10_000 }
   );
 
   console.log("✓ Submitting payment...");

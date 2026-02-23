@@ -10,26 +10,156 @@
  */
 import "server-only";
 
+import { fetchVideosStatsBatch,searchNicheVideos } from "@/lib/youtube";
+import type { GoogleAccount } from "@/lib/youtube/types";
+
 import type {
   CompetitorSearchFilters,
-  InferredNiche,
-  SearchEvent,
   CompetitorVideoResult,
-  SearchEngineConfig,
+  InferredNiche,
   SearchCursor,
+  SearchEngineConfig,
+  SearchEvent,
 } from "./types";
-import { DEFAULT_FILTERS, DEFAULT_ENGINE_CONFIG } from "./types";
+import { DEFAULT_ENGINE_CONFIG,DEFAULT_FILTERS } from "./types";
 import {
   calculateDerivedMetrics,
   passesFilters,
   sortVideos,
 } from "./utils";
-import type { GoogleAccount } from "@/lib/youtube/types";
-import { searchNicheVideos, fetchVideosStatsBatch } from "@/lib/youtube";
+
+// ============================================
+// SEARCH ENGINE HELPERS
+// ============================================
+
+const DATE_RANGE_DAYS: Record<string, number> = {
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  "365d": 365,
+};
+
+function resolvePublishedAfterDays(filters: CompetitorSearchFilters): number {
+  const preset = filters.dateRangePreset ?? DEFAULT_FILTERS.dateRangePreset;
+
+  if (preset === "custom" && filters.postedAfter) {
+    const days = Math.ceil(
+      (Date.now() - new Date(filters.postedAfter).getTime()) /
+        (1000 * 60 * 60 * 24)
+    );
+    return Math.max(7, Math.min(365, days));
+  }
+
+  return DATE_RANGE_DAYS[preset] ?? 90;
+}
+
+function resolveVideoDuration(
+  filters: CompetitorSearchFilters,
+): "short" | "medium" | "long" | "any" {
+  const contentType = filters.contentType ?? DEFAULT_FILTERS.contentType;
+  if (contentType === "shorts") {return "short";}
+  if (contentType === "long") {return "medium";}
+  return "any";
+}
+
+function isQuotaError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : "";
+  return message.toLowerCase().includes("quota") || message.includes("429");
+}
+
+type SearchBatchVideo = {
+  videoId: string;
+  title: string;
+  channelId: string;
+  channelTitle: string;
+  thumbnailUrl: string | null;
+  publishedAt: string;
+};
+
+function processVideoMatch(
+  video: SearchBatchVideo,
+  statsMap: Map<string, { viewCount?: number; likeCount?: number; commentCount?: number }>,
+  filters: CompetitorSearchFilters,
+): CompetitorVideoResult | null {
+  const stats = statsMap.get(video.videoId);
+  const viewCount = stats?.viewCount ?? 0;
+  const derived = calculateDerivedMetrics(
+    viewCount,
+    video.publishedAt,
+    stats?.likeCount,
+    stats?.commentCount,
+  );
+
+  const videoData = {
+    publishedAt: video.publishedAt,
+    durationSec: undefined as number | undefined,
+    viewCount,
+    derived,
+  };
+
+  if (!passesFilters(videoData, filters)) {
+    return null;
+  }
+
+  return {
+    videoId: video.videoId,
+    title: video.title,
+    channelId: video.channelId,
+    channelTitle: video.channelTitle,
+    channelThumbnailUrl: null,
+    thumbnailUrl: video.thumbnailUrl,
+    publishedAt: video.publishedAt,
+    stats: {
+      viewCount,
+      likeCount: stats?.likeCount,
+      commentCount: stats?.commentCount,
+    },
+    derived,
+  };
+}
 
 // ============================================
 // SEARCH ENGINE
 // ============================================
+
+type SearchState = {
+  seenVideoIds: Set<string>;
+  matchedVideos: CompetitorVideoResult[];
+  scannedCount: number;
+  currentQueryIndex: number;
+  currentPageToken: string | undefined;
+  pagesFetched: number;
+};
+
+function initSearchState(cursor?: SearchCursor): SearchState {
+  return {
+    seenVideoIds: new Set<string>(cursor?.seenIds),
+    matchedVideos: [],
+    scannedCount: cursor?.scannedCount ?? 0,
+    currentQueryIndex: cursor?.queryIndex ?? 0,
+    currentPageToken: cursor?.pageToken,
+    pagesFetched: 0,
+  };
+}
+
+function shouldContinueSearch(
+  state: SearchState,
+  targetResults: number,
+  config: SearchEngineConfig,
+  queryCount: number,
+): boolean {
+  return (
+    state.matchedVideos.length < targetResults &&
+    state.scannedCount < config.maxCandidatesScanned &&
+    state.pagesFetched < config.maxPages &&
+    state.currentQueryIndex < queryCount
+  );
+}
+
+function advanceToNextQuery(state: SearchState): void {
+  state.currentQueryIndex++;
+  state.currentPageToken = undefined;
+}
 
 /**
  * Search for competitor videos with filter and refill loop.
@@ -39,13 +169,6 @@ import { searchNicheVideos, fetchVideosStatsBatch } from "@/lib/youtube";
  * - items: New matching videos found
  * - done: Search completed (includes nextCursor for pagination)
  * - error: Error occurred
- *
- * @param ga - Google account for YouTube API
- * @param niche - Inferred niche with query terms
- * @param filters - Search filters to apply
- * @param config - Engine configuration
- * @param signal - AbortSignal for cancellation
- * @param cursor - Optional cursor to resume from previous search
  */
 async function* searchCompetitors(
   ga: GoogleAccount,
@@ -56,74 +179,24 @@ async function* searchCompetitors(
   cursor?: SearchCursor
 ): AsyncGenerator<SearchEvent, void, unknown> {
   const startTime = Date.now();
-  
-  // Initialize from cursor or fresh start
-  const seenVideoIds = new Set<string>(cursor?.seenIds ?? []);
-  const matchedVideos: CompetitorVideoResult[] = [];
-  let scannedCount = cursor?.scannedCount ?? 0;
-  let currentQueryIndex = cursor?.queryIndex ?? 0;
-  let currentPageToken: string | undefined = cursor?.pageToken;
-  let exhausted = false;
-
-  const targetResults =
-    filters.targetResultCount ?? config.targetResults;
+  const state = initSearchState(cursor);
+  const targetResults = filters.targetResultCount ?? config.targetResults;
   const queries = niche.queryTerms;
 
-  // Log the niche inference and search queries for debugging
   console.log(`[SearchEngine] ====== SEARCH STARTED ======`);
-  console.log(`[SearchEngine] Niche: "${niche.niche}"`);
-  console.log(`[SearchEngine] Source: ${niche.source}`);
+  console.log(`[SearchEngine] Niche: "${niche.niche}", Source: ${niche.source}`);
   console.log(`[SearchEngine] Query terms (${queries.length}):`, queries);
   if (niche.referenceVideo) {
     console.log(`[SearchEngine] Reference video: "${niche.referenceVideo.title}" by ${niche.referenceVideo.channelTitle}`);
   }
-  console.log(`[SearchEngine] Target results: ${targetResults}, max pages: ${config.maxPages}`);
 
   if (queries.length === 0) {
-    yield {
-      type: "error",
-      error: "No search queries available for this niche",
-      code: "NO_QUERIES",
-    };
+    yield { type: "error", error: "No search queries available for this niche", code: "NO_QUERIES" };
     return;
   }
 
-  // Calculate publishedAfter based on date range preset
-  const dateRangePreset = filters.dateRangePreset ?? DEFAULT_FILTERS.dateRangePreset;
-  let publishedAfterDays = 90;
-  switch (dateRangePreset) {
-    case "7d":
-      publishedAfterDays = 7;
-      break;
-    case "30d":
-      publishedAfterDays = 30;
-      break;
-    case "90d":
-      publishedAfterDays = 90;
-      break;
-    case "365d":
-      publishedAfterDays = 365;
-      break;
-    case "custom":
-      // Calculate from postedAfter if provided
-      if (filters.postedAfter) {
-        const days = Math.ceil(
-          (Date.now() - new Date(filters.postedAfter).getTime()) /
-            (1000 * 60 * 60 * 24)
-        );
-        publishedAfterDays = Math.max(7, Math.min(365, days));
-      }
-      break;
-  }
-
-  // Convert content type filter to YouTube duration filter
-  const contentType = filters.contentType ?? DEFAULT_FILTERS.contentType;
-  let videoDuration: "short" | "medium" | "long" | "any" = "any";
-  if (contentType === "shorts") {
-    videoDuration = "short"; // YouTube "short" = under 4 min, but we'll filter more precisely
-  } else if (contentType === "long") {
-    videoDuration = "medium"; // Start with medium+, filter out shorts later
-  }
+  const publishedAfterDays = resolvePublishedAfterDays(filters);
+  const videoDuration = resolveVideoDuration(filters);
 
   yield {
     type: "status",
@@ -133,209 +206,134 @@ async function* searchCompetitors(
     matchedCount: 0,
   };
 
-  // Main search loop
-  let pagesFetched = 0;
-
-  while (
-    matchedVideos.length < targetResults &&
-    scannedCount < config.maxCandidatesScanned &&
-    pagesFetched < config.maxPages &&
-    currentQueryIndex < queries.length
-  ) {
-    // Check for cancellation
+  while (shouldContinueSearch(state, targetResults, config, queries.length)) {
     if (signal?.aborted) {
-      yield {
-        type: "error",
-        error: "Search cancelled",
-        code: "CANCELLED",
-        partial: matchedVideos.length > 0,
-      };
+      yield { type: "error", error: "Search cancelled", code: "CANCELLED", partial: state.matchedVideos.length > 0 };
       return;
     }
 
-    const currentQuery = queries[currentQueryIndex];
-
-    // Log each YouTube search query
-    console.log(`[SearchEngine] YouTube Search: query="${currentQuery}", page=${pagesFetched + 1}, pageToken=${currentPageToken || 'initial'}`);
+    const currentQuery = queries[state.currentQueryIndex];
+    console.log(`[SearchEngine] YouTube Search: query="${currentQuery}", page=${state.pagesFetched + 1}, pageToken=${state.currentPageToken || 'initial'}`);
 
     try {
-      // Fetch a batch from YouTube
-      const searchResult = await searchNicheVideos(
-        ga,
-        currentQuery,
-        config.batchSize,
-        currentPageToken,
-        videoDuration,
-        publishedAfterDays
+      const batchEvents = await processSearchBatch(
+        ga, currentQuery, state, filters, config, videoDuration, publishedAfterDays, targetResults,
       );
-
-      pagesFetched++;
-
-      const videos = searchResult.videos;
-      currentPageToken = searchResult.nextPageToken;
-
-      if (videos.length === 0) {
-        // No more videos from this query, try next query
-        currentQueryIndex++;
-        currentPageToken = undefined;
-        continue;
-      }
-
-      // Get stats for videos we haven't seen
-      const newVideoIds = videos
-        .map((v) => v.videoId)
-        .filter((id) => !seenVideoIds.has(id));
-
-      if (newVideoIds.length === 0) {
-        // All videos in this batch were duplicates
-        if (!currentPageToken) {
-          currentQueryIndex++;
-          currentPageToken = undefined;
-        }
-        continue;
-      }
-
-      // Fetch stats for new videos
-      const statsMap = await fetchVideosStatsBatch(ga, newVideoIds);
-
-      // Process and filter videos
-      const newMatches: CompetitorVideoResult[] = [];
-
-      for (const video of videos) {
-        if (seenVideoIds.has(video.videoId)) {continue;}
-        seenVideoIds.add(video.videoId);
-        scannedCount++;
-
-        const stats = statsMap.get(video.videoId);
-        const viewCount = stats?.viewCount ?? 0;
-
-        const derived = calculateDerivedMetrics(
-          viewCount,
-          video.publishedAt,
-          stats?.likeCount,
-          stats?.commentCount
-        );
-
-        // Apply filters
-        const videoData = {
-          publishedAt: video.publishedAt,
-          durationSec: undefined, // Duration not available from search, will need separate fetch
-          viewCount,
-          derived,
-        };
-
-        if (!passesFilters(videoData, filters)) {
-          continue;
-        }
-
-        // Build result
-        const result: CompetitorVideoResult = {
-          videoId: video.videoId,
-          title: video.title,
-          channelId: video.channelId,
-          channelTitle: video.channelTitle,
-          channelThumbnailUrl: null,
-          thumbnailUrl: video.thumbnailUrl,
-          publishedAt: video.publishedAt,
-          stats: {
-            viewCount,
-            likeCount: stats?.likeCount,
-            commentCount: stats?.commentCount,
-          },
-          derived,
-        };
-
-        newMatches.push(result);
-        matchedVideos.push(result);
-
-        // Stop if we've reached target
-        if (matchedVideos.length >= targetResults) {
-          break;
-        }
-      }
-
-      // Yield new items if we found any
-      if (newMatches.length > 0) {
-        yield {
-          type: "items",
-          items: newMatches,
-          totalMatched: matchedVideos.length,
-        };
-
-        yield {
-          type: "status",
-          status: "filtering",
-          message: `Found ${matchedVideos.length}/${targetResults} matching videos...`,
-          scannedCount,
-          matchedCount: matchedVideos.length,
-        };
-      }
-
-      // Move to next query if no more pages
-      if (!currentPageToken) {
-        currentQueryIndex++;
-        currentPageToken = undefined;
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Search failed";
-
-      // Check for rate limit
-      if (message.toLowerCase().includes("quota") || message.includes("429")) {
-        yield {
-          type: "error",
-          error: "YouTube API quota exceeded. Please try again later.",
-          code: "QUOTA_EXCEEDED",
-          partial: matchedVideos.length > 0,
-        };
+      for (const event of batchEvents) {yield event;}
+    } catch (error) {
+      if (isQuotaError(error)) {
+        yield { type: "error", error: "YouTube API quota exceeded. Please try again later.", code: "QUOTA_EXCEEDED", partial: state.matchedVideos.length > 0 };
         return;
       }
-
-      console.error("[SearchEngine] Batch error:", err);
-
-      // Try next query on error
-      currentQueryIndex++;
-      currentPageToken = undefined;
+      console.error("[SearchEngine] Batch error:", error);
+      advanceToNextQuery(state);
     }
   }
 
-  // Check if we exhausted all sources
-  exhausted =
-    currentQueryIndex >= queries.length ||
-    scannedCount >= config.maxCandidatesScanned ||
-    pagesFetched >= config.maxPages;
+  yield* emitSearchCompletion(state, filters, queries, config, startTime);
+}
 
-  // Sort final results
-  const sortedResults = sortVideos(
-    matchedVideos,
-    filters.sortBy ?? DEFAULT_FILTERS.sortBy
+async function processSearchBatch(
+  ga: GoogleAccount,
+  query: string,
+  state: SearchState,
+  filters: CompetitorSearchFilters,
+  config: SearchEngineConfig,
+  videoDuration: "short" | "medium" | "long" | "any",
+  publishedAfterDays: number,
+  targetResults: number,
+): Promise<SearchEvent[]> {
+  const searchResult = await searchNicheVideos(
+    ga, query, config.batchSize, state.currentPageToken, videoDuration, publishedAfterDays,
   );
 
-  // Build next cursor if there's more to fetch
+  state.pagesFetched++;
+  const videos = searchResult.videos;
+  state.currentPageToken = searchResult.nextPageToken;
+
+  if (videos.length === 0) {
+    advanceToNextQuery(state);
+    return [];
+  }
+
+  const newVideoIds = videos.map((v) => v.videoId).filter((id) => !state.seenVideoIds.has(id));
+
+  if (newVideoIds.length === 0) {
+    if (!state.currentPageToken) {advanceToNextQuery(state);}
+    return [];
+  }
+
+  const statsMap = await fetchVideosStatsBatch(ga, newVideoIds);
+  const newMatches: CompetitorVideoResult[] = [];
+
+  for (const video of videos) {
+    if (state.seenVideoIds.has(video.videoId)) {continue;}
+    state.seenVideoIds.add(video.videoId);
+    state.scannedCount++;
+
+    const result = processVideoMatch(video, statsMap, filters);
+    if (!result) {continue;}
+
+    newMatches.push(result);
+    state.matchedVideos.push(result);
+
+    if (state.matchedVideos.length >= targetResults) {break;}
+  }
+
+  if (!state.currentPageToken) {advanceToNextQuery(state);}
+
+  if (newMatches.length === 0) {return [];}
+
+  return [
+    { type: "items", items: newMatches, totalMatched: state.matchedVideos.length },
+    {
+      type: "status",
+      status: "filtering",
+      message: `Found ${state.matchedVideos.length}/${targetResults} matching videos...`,
+      scannedCount: state.scannedCount,
+      matchedCount: state.matchedVideos.length,
+    },
+  ];
+}
+
+function* emitSearchCompletion(
+  state: SearchState,
+  filters: CompetitorSearchFilters,
+  queries: string[],
+  config: SearchEngineConfig,
+  startTime: number,
+): Generator<SearchEvent, void, unknown> {
+  const exhausted =
+    state.currentQueryIndex >= queries.length ||
+    state.scannedCount >= config.maxCandidatesScanned ||
+    state.pagesFetched >= config.maxPages;
+
+  const sortedResults = sortVideos(
+    state.matchedVideos,
+    filters.sortBy ?? DEFAULT_FILTERS.sortBy,
+  );
+
   let nextCursor: SearchCursor | undefined;
-  if (!exhausted || (currentPageToken && currentQueryIndex < queries.length)) {
+  if (!exhausted || (state.currentPageToken && state.currentQueryIndex < queries.length)) {
     nextCursor = {
-      queryIndex: currentQueryIndex,
-      pageToken: currentPageToken,
-      seenIds: Array.from(seenVideoIds),
-      scannedCount,
+      queryIndex: state.currentQueryIndex,
+      pageToken: state.currentPageToken,
+      seenIds: [...state.seenVideoIds],
+      scannedCount: state.scannedCount,
     };
   }
 
   console.log(`[SearchEngine] ====== SEARCH COMPLETE ======`);
-  console.log(`[SearchEngine] Scanned: ${scannedCount}, Matched: ${sortedResults.length}, Exhausted: ${exhausted}`);
-  if (nextCursor) {
-    console.log(`[SearchEngine] Next cursor available: queryIndex=${nextCursor.queryIndex}, seenIds=${nextCursor.seenIds.length}`);
-  }
+  console.log(`[SearchEngine] Scanned: ${state.scannedCount}, Matched: ${sortedResults.length}, Exhausted: ${exhausted}`);
 
-  // Yield final done event
   yield {
     type: "done",
     summary: {
-      scannedCount,
+      scannedCount: state.scannedCount,
       returnedCount: sortedResults.length,
       cacheHit: false,
       timeMs: Date.now() - startTime,
-      exhausted: !nextCursor, // Only truly exhausted if no cursor
+      exhausted: !nextCursor,
     },
     nextCursor,
   };
@@ -420,8 +418,8 @@ export async function* searchCompetitorsWithCache(
         };
         return;
       }
-    } catch (err) {
-      console.warn("[SearchEngine] Cache read error:", err);
+    } catch (error) {
+      console.warn("[SearchEngine] Cache read error:", error);
       // Continue with live search
     }
   }
@@ -445,8 +443,8 @@ export async function* searchCompetitorsWithCache(
 
   // Cache results (fire and forget)
   if (allResults.length > 0) {
-    setCache(allResults, finalScannedCount, finalExhausted).catch((err) => {
-      console.warn("[SearchEngine] Cache write error:", err);
+    setCache(allResults, finalScannedCount, finalExhausted).catch((error) => {
+      console.warn("[SearchEngine] Cache write error:", error);
     });
   }
 }

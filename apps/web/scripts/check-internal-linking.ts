@@ -332,7 +332,7 @@ async function checkBodyComponentsComplete(
 
     for (const slug of slugs) {
       // Check that the slug is in BODY_COMPONENTS
-      const pattern = new RegExp(`["']${slug}["']:\\s*\\w+Body`, "i");
+      const pattern = new RegExp(String.raw`["']${slug}["']:\s*\w+Body`, "i");
       if (!pattern.test(content)) {
         errors.push({
           type: "structural",
@@ -355,7 +355,7 @@ async function checkBodyComponentsComplete(
 }
 
 function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 async function main(): Promise<void> {
@@ -454,7 +454,7 @@ async function main(): Promise<void> {
   process.exit(1);
 }
 
-main().catch((err) => {
-  console.error("Script error:", err);
+main().catch((error) => {
+  console.error("Script error:", error);
   process.exit(1);
 });

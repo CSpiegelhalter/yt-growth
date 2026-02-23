@@ -1,14 +1,14 @@
 /* VideoInsightsV2 - Clean, modern layout */
 
 .page {
-  width: 100%;
-  max-width: var(--page-max-width);
   margin: 0 auto;
+  max-width: var(--page-max-width);
   padding: var(--page-padding-mobile);
   padding-bottom: 64px;
+  width: 100%;
 }
 
-@media (min-width: 768px) {
+@media (width >= 768px) {
   .page {
     padding: var(--page-padding-desktop);
     padding-bottom: 80px;

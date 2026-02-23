@@ -1,14 +1,14 @@
 /* FilterDrawer - Shared bottom-sheet / modal component */
 
 .backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-modal-backdrop, 999);
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-  display: flex;
   align-items: flex-end;
   animation: fadeIn 0.15s ease-out;
+  backdrop-filter: blur(2px);
+  background: rgb(0 0 0 / 50%);
+  display: flex;
+  inset: 0;
+  position: fixed;
+  z-index: var(--z-modal-backdrop, 999);
 }
 
 @keyframes fadeIn {
@@ -17,14 +17,14 @@
 }
 
 .drawer {
-  width: 100%;
-  max-height: 85vh;
+  animation: slideUp 0.2s ease-out;
   background: var(--color-surface);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -4px 20px rgb(0 0 0 / 15%);
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.2s ease-out;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  max-height: 85vh;
+  width: 100%;
 }
 
 @keyframes slideUp {
@@ -32,7 +32,7 @@
   to { transform: translateY(0); }
 }
 
-@media (min-width: 768px) {
+@media (width >= 768px) {
   .backdrop {
     align-items: center;
     justify-content: center;
@@ -40,11 +40,11 @@
   }
 
   .drawer {
-    width: min(720px, 96vw);
-    max-height: min(80vh, 800px);
+    animation: none;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
-    animation: none;
+    max-height: min(80vh, 800px);
+    width: min(720px, 96vw);
   }
 
   .handle {
@@ -53,19 +53,19 @@
 }
 
 .handle {
-  width: 36px;
-  height: 4px;
-  margin: var(--space-sm) auto;
   background: var(--color-border);
   border-radius: 2px;
+  height: 4px;
+  margin: var(--space-sm) auto;
+  width: 36px;
 }
 
 .header {
-  display: flex;
   align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
   justify-content: space-between;
   padding: var(--space-sm) var(--space-md);
-  border-bottom: 1px solid var(--color-border);
 }
 
 .title {
@@ -75,17 +75,17 @@
 }
 
 .close {
-  width: 40px;
-  height: 40px;
-  display: flex;
   align-items: center;
-  justify-content: center;
   background: transparent;
   border: none;
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   cursor: pointer;
+  display: flex;
+  height: 40px;
+  justify-content: center;
   transition: all 0.15s;
+  width: 40px;
 }
 
 .close:hover {
@@ -95,29 +95,29 @@
 
 .content {
   flex: 1;
+  -webkit-overflow-scrolling: touch;
   overflow-y: auto;
   padding: var(--space-md);
-  -webkit-overflow-scrolling: touch;
 }
 
 .footer {
-  padding: var(--space-md);
   border-top: 1px solid var(--color-border);
   display: flex;
   gap: var(--space-sm);
+  padding: var(--space-md);
 }
 
 .secondaryAction {
-  flex: 1;
-  padding: var(--space-md);
-  font-size: 0.9375rem;
-  font-weight: 600;
   background: var(--color-surface);
-  color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
   cursor: pointer;
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 600;
   min-height: 48px;
+  padding: var(--space-md);
   transition: all 0.15s;
 }
 
@@ -127,16 +127,16 @@
 }
 
 .primaryAction {
-  flex: 1;
-  padding: var(--space-md);
-  font-size: 0.9375rem;
-  font-weight: 600;
   background: var(--color-primary);
-  color: var(--color-primary-contrast);
   border: none;
   border-radius: var(--radius-md);
+  color: var(--color-primary-contrast);
   cursor: pointer;
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 600;
   min-height: 48px;
+  padding: var(--space-md);
   transition: all 0.15s;
 }
 

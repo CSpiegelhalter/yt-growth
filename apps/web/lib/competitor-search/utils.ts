@@ -5,17 +5,18 @@
  * These are shared between client and server code.
  */
 
+import { stableHash } from "@/lib/shared/stable-hash";
+import { daysSince } from "@/lib/youtube/utils";
+
 import type {
   CompetitorSearchFilters,
   CompetitorVideoResult,
-  DerivedMetrics,
   ContentTypeFilter,
   DateRangePreset,
+  DerivedMetrics,
   InferredNiche,
 } from "./types";
 import { DEFAULT_FILTERS } from "./types";
-import { daysSince } from "@/lib/youtube/utils";
-import { stableHash } from "@/lib/shared/stable-hash";
 
 // ============================================
 // NICHE TEXT UTILITIES
@@ -165,8 +166,8 @@ export function sanitizeNicheText(text: string): string {
   return (
     text
       .trim()
-      .replace(/[\x00-\x1F\x7F]/g, " ")
-      .replace(/\s+/g, " ")
+      .replaceAll(/[\u0000-\u001F\u007F]/g, " ")
+      .replaceAll(/\s+/g, " ")
       .slice(0, 500)
       .trim()
   );
@@ -180,7 +181,7 @@ export function extractKeywords(text: string): string[] {
 
   const words = text
     .toLowerCase()
-    .replace(/[^\w\s-]/g, " ")
+    .replaceAll(/[^\w\s-]/g, " ")
     .split(/\s+/)
     .filter((w) => w.length >= 2 && !STOPWORDS.has(w));
 
@@ -266,9 +267,8 @@ export function normalizeFilters(
   filters: CompetitorSearchFilters
 ): Record<string, unknown> {
   const now = new Date();
-  const normalized: Record<string, unknown> = {};
+  const normalized: Record<string, unknown> = { contentType: filters.contentType ?? DEFAULT_FILTERS.contentType,};
 
-  normalized.contentType = filters.contentType ?? DEFAULT_FILTERS.contentType;
 
   const dateRangePreset =
     filters.dateRangePreset ?? DEFAULT_FILTERS.dateRangePreset;
@@ -452,25 +452,29 @@ export function sortVideos(
   const sorted = [...videos];
 
   switch (sortBy ?? DEFAULT_FILTERS.sortBy) {
-    case "viewsPerDay":
+    case "viewsPerDay": {
       sorted.sort((a, b) => b.derived.viewsPerDay - a.derived.viewsPerDay);
       break;
-    case "totalViews":
+    }
+    case "totalViews": {
       sorted.sort((a, b) => b.stats.viewCount - a.stats.viewCount);
       break;
-    case "newest":
+    }
+    case "newest": {
       sorted.sort(
         (a, b) =>
           new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
       );
       break;
-    case "engagement":
+    }
+    case "engagement": {
       sorted.sort((a, b) => {
         const engA = a.derived.engagementPerView ?? 0;
         const engB = b.derived.engagementPerView ?? 0;
         return engB - engA;
       });
       break;
+    }
   }
 
   return sorted;

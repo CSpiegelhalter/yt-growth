@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
+import { useState } from "react";
+
 import { formatCompact } from "@/lib/shared/format";
-import type { DiscoveredNiche } from "./types";
+
 import s from "./style.module.css";
+import type { DiscoveredNiche } from "./types";
 
 type Props = {
   niche: DiscoveredNiche;

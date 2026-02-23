@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
-import BadgeArt from "./BadgeArt";
+import { useCallback,useEffect, useRef } from "react";
+
 import type { BadgeWithProgress } from "@/lib/features/badges";
 import { getBadgeChain, getGoalsForBadge } from "@/lib/features/badges";
+
+import BadgeArt from "./BadgeArt";
 import s from "./BadgeDetailModal.module.css";
 
 type Props = {
@@ -45,11 +47,11 @@ export default function BadgeDetailModal({ badge, onClose }: Props) {
       }
       // Focus trap
       if (e.key === "Tab" && modalRef.current) {
-        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+        const focusable = [...modalRef.current.querySelectorAll<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
+        )];
         const first = focusable[0];
-        const last = focusable[focusable.length - 1];
+        const last = focusable.at(-1);
 
         if (e.shiftKey && document.activeElement === first) {
           e.preventDefault();
@@ -85,7 +87,7 @@ export default function BadgeDetailModal({ badge, onClose }: Props) {
     const text = badge.unlocked
       ? `I just unlocked the "${badge.name}" badge! 🏆`
       : `Working toward the "${badge.name}" badge...`;
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
   }, [badge]);
 
   if (!badge) {return null;}
@@ -168,7 +170,7 @@ export default function BadgeDetailModal({ badge, onClose }: Props) {
                   })}
               </span>
             </div>
-          ) : badge.progress.lockedReason ? (
+          ) : (badge.progress.lockedReason ? (
             <div className={s.lockedInfo}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="11" width="18" height="11" rx="2" />
@@ -193,7 +195,7 @@ export default function BadgeDetailModal({ badge, onClose }: Props) {
                 <span>{badge.progress.targetLabel}</span>
               </div>
             </div>
-          )}
+          ))}
         </div>
 
         {/* How to Unlock */}

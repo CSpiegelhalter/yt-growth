@@ -26,10 +26,10 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 
 // ANSI colors for output
-const RED = "\x1b[31m";
-const GREEN = "\x1b[32m";
-const YELLOW = "\x1b[33m";
-const RESET = "\x1b[0m";
+const RED = "\u001B[31m";
+const GREEN = "\u001B[32m";
+const YELLOW = "\u001B[33m";
+const RESET = "\u001B[0m";
 
 // Required marketing pages that must be crawlable (used for documentation)
 const _REQUIRED_PAGES = ["/", "/learn", "/privacy", "/terms", "/contact"];
@@ -93,13 +93,13 @@ function containsLink(content: string, path: string): boolean {
     // Template literal: href={\`/path\`}
     new RegExp(`href=\\{["'\`]${escapeRegex(path)}["'\`]\\}`, "i"),
     // Dynamic path with variable
-    new RegExp(`href=\\{.*${escapeRegex(path)}.*\\}`, "i"),
+    new RegExp(String.raw`href=\{.*${escapeRegex(path)}.*\}`, "i"),
   ];
   return patterns.some((p) => p.test(content));
 }
 
 function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 /**
@@ -118,8 +118,8 @@ async function checkFooterLinks(): Promise<CheckResult> {
         errors.push(`Footer missing link to ${link}`);
       }
     }
-  } catch (e) {
-    errors.push(`Could not read Footer.tsx: ${e}`);
+  } catch (error) {
+    errors.push(`Could not read Footer.tsx: ${error}`);
   }
 
   return {
@@ -148,8 +148,8 @@ async function checkHeaderLinks(): Promise<CheckResult> {
         errors.push(`Header missing link to ${link}`);
       }
     }
-  } catch (e) {
-    errors.push(`Could not read MarketingHeader.tsx: ${e}`);
+  } catch (error) {
+    errors.push(`Could not read MarketingHeader.tsx: ${error}`);
   }
 
   return {
@@ -184,8 +184,8 @@ async function checkLearnHubLinks(): Promise<CheckResult> {
         "Learn page does not use dynamic links to learn articles"
       );
     }
-  } catch (e) {
-    errors.push(`Could not read learn page: ${e}`);
+  } catch (error) {
+    errors.push(`Could not read learn page: ${error}`);
   }
 
   return {
@@ -209,8 +209,8 @@ async function checkHomepageLinks(): Promise<CheckResult> {
     if (!containsLink(content, "/learn")) {
       errors.push("Homepage missing link to /learn");
     }
-  } catch (e) {
-    errors.push(`Could not read homepage: ${e}`);
+  } catch (error) {
+    errors.push(`Could not read homepage: ${error}`);
   }
 
   return {
@@ -232,13 +232,13 @@ async function checkLearnArticlesExist(): Promise<CheckResult> {
     const content = await readFileContent("app/(marketing)/learn/articles.ts");
 
     for (const slug of REQUIRED_LEARN_SLUGS) {
-      const pattern = new RegExp(`["']${slug}["']:\\s*\\{`);
+      const pattern = new RegExp(String.raw`["']${slug}["']:\s*\{`);
       if (!pattern.test(content)) {
         errors.push(`Missing learn article: ${slug}`);
       }
     }
-  } catch (e) {
-    errors.push(`Could not read articles.ts: ${e}`);
+  } catch (error) {
+    errors.push(`Could not read articles.ts: ${error}`);
   }
 
   return {
@@ -273,8 +273,8 @@ async function checkRobotsNotBlocking(): Promise<CheckResult> {
         errors.push(`robots.txt blocks ${path}`);
       }
     }
-  } catch (e) {
-    errors.push(`Could not read robots.ts: ${e}`);
+  } catch (error) {
+    errors.push(`Could not read robots.ts: ${error}`);
   }
 
   return {
@@ -309,8 +309,8 @@ async function checkSitemapCanonical(): Promise<CheckResult> {
         "Sitemap contains hardcoded apex domain (should use www)"
       );
     }
-  } catch (e) {
-    errors.push(`Could not read sitemap.ts: ${e}`);
+  } catch (error) {
+    errors.push(`Could not read sitemap.ts: ${error}`);
   }
 
   return {
@@ -358,8 +358,8 @@ async function checkNoNoindexOnMarketingPages(): Promise<CheckResult> {
           `${page.name} has robots metadata but may not explicitly allow indexing`
         );
       }
-    } catch (e) {
-      errors.push(`Could not read ${page.path}: ${e}`);
+    } catch (error) {
+      errors.push(`Could not read ${page.path}: ${error}`);
     }
   }
 
@@ -396,8 +396,8 @@ async function checkRelatedGuidesOnLearnPages(): Promise<CheckResult> {
         "Learn article template does not call getRelatedArticles"
       );
     }
-  } catch (e) {
-    errors.push(`Could not read learn article template: ${e}`);
+  } catch (error) {
+    errors.push(`Could not read learn article template: ${error}`);
   }
 
   return {
@@ -436,8 +436,8 @@ async function checkCanonicalOriginNormalization(): Promise<CheckResult> {
     if (!content.includes("export const CANONICAL_ORIGIN")) {
       errors.push("lib/brand.ts missing CANONICAL_ORIGIN export");
     }
-  } catch (e) {
-    errors.push(`Could not read lib/brand.ts: ${e}`);
+  } catch (error) {
+    errors.push(`Could not read lib/brand.ts: ${error}`);
   }
 
   return {
@@ -474,8 +474,8 @@ async function checkWwwRedirect(): Promise<CheckResult> {
         "Verify next.config.js redirects apex to www correctly"
       );
     }
-  } catch (e) {
-    errors.push(`Could not read next.config.js: ${e}`);
+  } catch (error) {
+    errors.push(`Could not read next.config.js: ${error}`);
   }
 
   return {
@@ -555,7 +555,7 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((e) => {
-  console.error(`${RED}Script error: ${e}${RESET}`);
+main().catch((error) => {
+  console.error(`${RED}Script error: ${error}${RESET}`);
   process.exit(1);
 });

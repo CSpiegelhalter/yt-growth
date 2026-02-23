@@ -1,8 +1,9 @@
 import "server-only";
 
-import { prisma } from "@/prisma";
-import { stripeRequest, type StripeSubscription } from "@/lib/stripe";
 import { LIMITS } from "@/lib/shared/product";
+import { stripeRequest, type StripeSubscription } from "@/lib/stripe";
+import { prisma } from "@/prisma";
+
 import { SubscriptionError } from "../errors";
 
 type SyncSubscriptionInput = {
@@ -39,11 +40,11 @@ export async function syncSubscription(
     customerSubs = await stripeRequest<{ data: StripeSubscription[] }>(
       `/subscriptions?customer=${subscription.stripeCustomerId}&status=all&limit=1`,
     );
-  } catch (err) {
+  } catch (error) {
     throw new SubscriptionError(
       "EXTERNAL_FAILURE",
       "Stripe sync failed",
-      err,
+      error,
     );
   }
 

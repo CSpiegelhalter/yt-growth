@@ -3,13 +3,13 @@
    ================================ */
 
 .page {
-  max-width: 800px;
   margin: 0 auto;
+  max-width: 800px;
   padding: var(--page-padding-mobile);
   padding-bottom: var(--space-xl);
 }
 
-@media (min-width: 768px) {
+@media (width >= 768px) {
   .page {
     padding: var(--page-padding-desktop);
     padding-bottom: var(--space-2xl);
@@ -18,14 +18,14 @@
 
 /* Back Link */
 .backLink {
-  display: inline-flex;
   align-items: center;
-  gap: var(--space-xs);
+  color: var(--color-text-secondary);
+  display: inline-flex;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--color-text-secondary);
-  text-decoration: none;
+  gap: var(--space-xs);
   margin-bottom: var(--space-lg);
+  text-decoration: none;
   transition: color 0.15s;
 }
 
@@ -40,52 +40,52 @@
 
 /* Loading */
 .loadingPage {
-  min-height: calc(100vh - 96px);
-  display: flex;
   align-items: flex-start;
+  display: flex;
   justify-content: center;
+  min-height: calc(100vh - 96px);
   padding: var(--space-lg) var(--space-md);
   padding-top: 18vh;
 }
 
 .loading {
+  align-items: center;
+  color: var(--color-text-secondary);
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  width: min(520px, 100%);
   padding: 0;
-  color: var(--color-text-secondary);
   text-align: center;
+  width: min(520px, 100%);
 }
 
 .loadingStage {
-  margin: 0;
+  color: var(--color-text);
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--color-text);
   line-height: 1.4;
+  margin: 0;
 }
 
 .spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
   animation: spin 0.7s linear infinite;
+  border: 3px solid var(--color-border);
+  border-radius: 50%;
+  border-top-color: var(--color-primary);
+  height: 28px;
   margin-bottom: var(--space-md);
+  width: 28px;
 }
 
 .loadingProgress {
-  width: 100%;
   margin-top: var(--space-md);
+  width: 100%;
 }
 
 .loadingProgressHint {
-  margin-top: var(--space-sm);
-  font-size: 0.8125rem;
   color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  margin-top: var(--space-sm);
 }
 
 @keyframes spin {
@@ -93,16 +93,15 @@
 }
 
 .progressTrack {
-  height: 8px;
-  width: 100%;
-  border-radius: 9999px;
   background: var(--color-border);
+  border-radius: 9999px;
+  height: 8px;
   overflow: hidden;
+  width: 100%;
 }
 
 .progressFill {
-  height: 100%;
-  border-radius: 9999px;
+  animation: progressShimmer 1.5s ease-in-out infinite;
   background: linear-gradient(
     90deg,
     var(--color-primary) 0%,
@@ -110,7 +109,8 @@
     var(--color-primary) 100%
   );
   background-size: 200% 100%;
-  animation: progressShimmer 1.5s ease-in-out infinite;
+  border-radius: 9999px;
+  height: 100%;
   transition: width 0.2s ease-out;
 }
 
@@ -119,22 +119,31 @@
   100% { background-position: -100% 0; }
 }
 
+.progressAnimate {
+  animation: progressGrow 6s ease-out forwards, progressShimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes progressGrow {
+  from { width: 8%; }
+  to { width: 92%; }
+}
+
 .muted {
-  font-size: 0.8125rem;
   color: var(--color-text-muted);
+  font-size: 0.8125rem;
   margin: 0;
 }
 
 .backBtn {
-  display: inline-flex;
-  padding: var(--space-sm) var(--space-lg);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--color-primary-contrast);
   background: var(--color-primary);
   border: none;
   border-radius: var(--radius-md);
+  color: var(--color-primary-contrast);
   cursor: pointer;
+  display: inline-flex;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: var(--space-sm) var(--space-lg);
   transition: filter 0.15s;
 }
 
@@ -143,69 +152,69 @@
 }
 
 .secondaryBtn {
-  display: inline-flex;
-  padding: var(--space-sm) var(--space-md);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--color-text);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  color: var(--color-text);
   cursor: pointer;
+  display: inline-flex;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: var(--space-sm) var(--space-md);
   text-decoration: none;
   transition: all 0.15s;
 }
 
 .secondaryBtn:hover {
-  border-color: var(--color-text-muted);
   background: var(--color-surface-2);
+  border-color: var(--color-text-muted);
 }
 
 .redirectingBox {
-  display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-lg);
   background: var(--color-primary-muted, #e0e7ff);
   border-radius: var(--radius-md);
   color: var(--color-primary);
+  display: flex;
   font-weight: 500;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
 }
 
 .redirectingBox .spinner {
-  width: 16px;
+  border-width: 2px;
   height: 16px;
   margin-bottom: 0;
-  border-width: 2px;
+  width: 16px;
 }
 
 .sectionTitle {
+  color: var(--color-text);
   font-size: var(--section-title-size);
   font-weight: var(--section-title-weight);
-  color: var(--color-text);
   margin: 0 0 var(--space-xs);
 }
 
 .sectionDesc {
-  font-size: 0.875rem;
   color: var(--color-text-secondary);
+  font-size: 0.875rem;
   margin: 0 0 var(--space-md);
 }
 
 .aiSummaryHeader {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: var(--space-md);
   margin-bottom: var(--space-lg);
 }
 
 .spinnerSmall {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
   animation: spin 0.7s linear infinite;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  border-top-color: var(--color-primary);
+  height: 16px;
+  width: 16px;
 }
 
 @keyframes shimmer {
@@ -214,14 +223,14 @@
 }
 
 .copyBtn {
-  padding: 6px 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
   background: var(--color-surface-2);
   border: none;
   border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
   cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 12px;
   transition: background 0.15s, color 0.15s;
 }
 

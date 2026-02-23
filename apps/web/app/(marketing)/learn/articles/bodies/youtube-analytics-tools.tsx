@@ -11,7 +11,9 @@
  */
 
 import Link from "next/link";
+
 import { BRAND } from "@/lib/shared/brand";
+
 import { LEARN_ARTICLES } from "../../articles";
 import type { BodyProps } from "./_shared";
 import { articleExports } from "./_shared";
