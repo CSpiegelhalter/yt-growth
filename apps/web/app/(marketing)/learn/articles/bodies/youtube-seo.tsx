@@ -1774,7 +1774,7 @@ type PreflightCardProps = {
 function PreflightCard({ label, checks }: PreflightCardProps) {
   return (
     <div className="frameworkStep">
-      <span className="frameworkStep__num" style={{ background: "#22c55e" }}>
+      <span className="frameworkStep__num" style={{ background: "var(--color-stormy-teal)" }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" aria-hidden="true">
           <polyline points="20 6 9 17 4 12" />
         </svg>
@@ -1803,7 +1803,7 @@ function TitleExample({ label, bad, good }: TitleExampleProps) {
       >
         {bad}
       </span>
-      <span className="titlePattern__example" style={{ color: "#166534", fontWeight: 600 }}>
+      <span className="titlePattern__example" style={{ color: "var(--color-stormy-teal-hover)", fontWeight: 600 }}>
         {good}
       </span>
     </div>
@@ -1845,7 +1845,7 @@ type SERPSignalCardProps = {
 
 function SERPSignalCard({ label, signal, insight }: SERPSignalCardProps) {
   return (
-    <div className="frameworkCard" style={{ borderTopColor: "#6366f1" }}>
+    <div className="frameworkCard" style={{ borderTopColor: "var(--color-hot-rose)" }}>
       <h4 className="frameworkCard__title">{label}</h4>
       <p className="frameworkCard__example">{signal}</p>
       <p className="frameworkCard__text">{insight}</p>

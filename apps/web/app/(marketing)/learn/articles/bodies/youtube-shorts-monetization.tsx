@@ -41,13 +41,13 @@ function RevenuePizzaSvg() {
     >
       <title>Revenue Split Pizza</title>
       {/* Pizza/Pie background */}
-      <circle cx="140" cy="90" r="70" fill="#fef3c7" stroke="#f59e0b" strokeWidth="3" />
+      <circle cx="140" cy="90" r="70" fill="var(--color-cool-sky-light)" stroke="var(--color-cool-sky)" strokeWidth="3" />
       
       {/* YouTube's 55% slice */}
-      <path d="M140 90 L140 20 A70 70 0 0 1 210 90 A70 70 0 0 1 182 147 Z" fill="#ef4444" />
+      <path d="M140 90 L140 20 A70 70 0 0 1 210 90 A70 70 0 0 1 182 147 Z" fill="var(--color-hot-rose)" />
       
       {/* Creator's 45% slice */}
-      <path d="M140 90 L182 147 A70 70 0 0 1 70 90 A70 70 0 0 1 140 20 Z" fill="#22c55e" />
+      <path d="M140 90 L182 147 A70 70 0 0 1 70 90 A70 70 0 0 1 140 20 Z" fill="var(--color-stormy-teal)" />
       
       {/* Slice labels */}
       <text x="175" y="75" textAnchor="middle" fontSize="14" fontWeight="800" fill="white">55%</text>
@@ -58,11 +58,11 @@ function RevenuePizzaSvg() {
       
       {/* Legend */}
       <g>
-        <rect x="50" y="175" width="14" height="14" rx="2" fill="#22c55e" />
+        <rect x="50" y="175" width="14" height="14" rx="2" fill="var(--color-stormy-teal)" />
         <text x="70" y="186" fontSize="10" fill="#374151">Your share: 45%</text>
       </g>
       <g>
-        <rect x="160" y="175" width="14" height="14" rx="2" fill="#ef4444" />
+        <rect x="160" y="175" width="14" height="14" rx="2" fill="var(--color-hot-rose)" />
         <text x="180" y="186" fontSize="10" fill="#374151">YouTube: 55%</text>
       </g>
     </svg>
@@ -93,36 +93,36 @@ function MusicTaxSvg() {
       {/* No music scenario */}
       <g>
         <text x="80" y="65" textAnchor="middle" fontSize="13" fontWeight="700" fill="#1e293b">No Music</text>
-        <rect x="30" y="75" width="100" height="30" rx="6" fill="#22c55e" />
+        <rect x="30" y="75" width="100" height="30" rx="6" fill="var(--color-stormy-teal)" />
         <text x="80" y="96" textAnchor="middle" fontSize="12" fontWeight="700" fill="white">100% to Pool</text>
-        <text x="80" y="120" textAnchor="middle" fontSize="11" fill="#16a34a" fontWeight="600">Full share</text>
+        <text x="80" y="120" textAnchor="middle" fontSize="11" fill="var(--color-stormy-teal)" fontWeight="600">Full share</text>
       </g>
       
       {/* 1 track scenario */}
       <g>
         <text x="200" y="65" textAnchor="middle" fontSize="13" fontWeight="700" fill="#1e293b">1 Track</text>
-        <rect x="150" y="75" width="50" height="30" rx="6" fill="#22c55e" />
-        <rect x="200" y="75" width="50" height="30" rx="6" fill="#f59e0b" />
+        <rect x="150" y="75" width="50" height="30" rx="6" fill="var(--color-stormy-teal)" />
+        <rect x="200" y="75" width="50" height="30" rx="6" fill="var(--color-cool-sky)" />
         <text x="175" y="96" textAnchor="middle" fontSize="11" fontWeight="700" fill="white">50%</text>
         <text x="225" y="96" textAnchor="middle" fontSize="11" fontWeight="700" fill="white">50%</text>
-        <text x="200" y="120" textAnchor="middle" fontSize="11" fill="#d97706" fontWeight="600">Half to music</text>
+        <text x="200" y="120" textAnchor="middle" fontSize="11" fill="var(--color-cool-sky)" fontWeight="600">Half to music</text>
       </g>
       
       {/* 2 tracks scenario */}
       <g>
         <text x="320" y="65" textAnchor="middle" fontSize="13" fontWeight="700" fill="#1e293b">2 Tracks</text>
-        <rect x="270" y="75" width="33" height="30" rx="6" fill="#22c55e" />
-        <rect x="303" y="75" width="67" height="30" rx="6" fill="#f59e0b" />
+        <rect x="270" y="75" width="33" height="30" rx="6" fill="var(--color-stormy-teal)" />
+        <rect x="303" y="75" width="67" height="30" rx="6" fill="var(--color-cool-sky)" />
         <text x="286" y="96" textAnchor="middle" fontSize="10" fontWeight="700" fill="white">33%</text>
         <text x="336" y="96" textAnchor="middle" fontSize="11" fontWeight="700" fill="white">67%</text>
-        <text x="320" y="120" textAnchor="middle" fontSize="11" fill="#b45309" fontWeight="600">More to music</text>
+        <text x="320" y="120" textAnchor="middle" fontSize="11" fill="var(--color-cool-sky-hover)" fontWeight="600">More to music</text>
       </g>
       
       {/* Legend */}
       <g>
-        <rect x="110" y="145" width="16" height="16" rx="3" fill="#22c55e" />
+        <rect x="110" y="145" width="16" height="16" rx="3" fill="var(--color-stormy-teal)" />
         <text x="132" y="158" fontSize="12" fill="#374151" fontWeight="500">Creator Pool</text>
-        <rect x="230" y="145" width="16" height="16" rx="3" fill="#f59e0b" />
+        <rect x="230" y="145" width="16" height="16" rx="3" fill="var(--color-cool-sky)" />
         <text x="252" y="158" fontSize="12" fill="#374151" fontWeight="500">Music Licensing</text>
       </g>
     </svg>
@@ -820,17 +820,17 @@ export function Body({ s }: BodyProps) {
 
         <div
           style={{
-            background: "linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%)",
-            border: "2px solid #6366f1",
+            background: "linear-gradient(135deg, var(--color-cool-sky-light) 0%, var(--color-lavender-mist) 100%)",
+            border: "2px solid var(--color-hot-rose)",
             borderRadius: "12px",
             padding: "24px",
             marginTop: "24px",
           }}
         >
-          <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#1e40af", margin: "0 0 12px" }}>
+          <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-imperial-blue)", margin: "0 0 12px" }}>
             YouTube Shorts Strategy Guide
           </h3>
-          <p style={{ fontSize: "15px", color: "#3730a3", margin: "0 0 16px", lineHeight: 1.6 }}>
+          <p style={{ fontSize: "15px", color: "var(--color-imperial-blue)", margin: "0 0 16px", lineHeight: 1.6 }}>
             Now that you understand how monetization works, the next question is: how do
             you make Shorts that actually get engaged views? Our strategy guide covers
             hooks, retention, niche selection, and what to study from competitors.
@@ -846,7 +846,7 @@ export function Body({ s }: BodyProps) {
               color: "white",
               textDecoration: "none",
               padding: "12px 20px",
-              background: "#6366f1",
+              background: "var(--color-hot-rose)",
               borderRadius: "8px",
               transition: "all 0.15s ease",
             }}

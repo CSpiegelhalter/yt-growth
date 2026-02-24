@@ -41,20 +41,20 @@ type VideoHeaderCompactProps = {
 
 // CTR rating based on benchmarks
 function getCtrRating(ctr: number): { label: string; color: string } {
-  if (ctr >= 10) {return { label: "Exceptional", color: "#22c55e" };}
-  if (ctr >= 7) {return { label: "Strong", color: "#22c55e" };}
-  if (ctr >= 5) {return { label: "Good", color: "#3b82f6" };}
-  if (ctr >= 3) {return { label: "Average", color: "#f59e0b" };}
-  return { label: "Needs work", color: "#ef4444" };
+  if (ctr >= 10) {return { label: "Exceptional", color: "var(--color-stormy-teal)" };}
+  if (ctr >= 7) {return { label: "Strong", color: "var(--color-stormy-teal)" };}
+  if (ctr >= 5) {return { label: "Good", color: "var(--color-cool-sky)" };}
+  if (ctr >= 3) {return { label: "Average", color: "var(--color-cool-sky)" };}
+  return { label: "Needs work", color: "var(--color-hot-rose)" };
 }
 
 // Subscriber conversion rate rating
 function getSubRateRating(rate: number): { label: string; color: string } {
-  if (rate >= 3) {return { label: "Excellent", color: "#22c55e" };}
-  if (rate >= 2) {return { label: "Strong", color: "#22c55e" };}
-  if (rate >= 1) {return { label: "Average", color: "#3b82f6" };}
-  if (rate >= 0.5) {return { label: "Below avg", color: "#f59e0b" };}
-  return { label: "Low", color: "#ef4444" };
+  if (rate >= 3) {return { label: "Excellent", color: "var(--color-stormy-teal)" };}
+  if (rate >= 2) {return { label: "Strong", color: "var(--color-stormy-teal)" };}
+  if (rate >= 1) {return { label: "Average", color: "var(--color-cool-sky)" };}
+  if (rate >= 0.5) {return { label: "Below avg", color: "var(--color-cool-sky)" };}
+  return { label: "Low", color: "var(--color-hot-rose)" };
 }
 
 /**
@@ -315,14 +315,14 @@ function KpiWithTooltip({
 }
 
 const CTR_BENCHMARKS: Benchmark[] = [
-  { label: "10%+", color: "#22c55e", text: "Exceptional (esp. day 1)" },
-  { label: "7%+", color: "#22c55e", text: "Strong" },
-  { label: "5%+", color: "#3b82f6", text: "Good baseline" },
+  { label: "10%+", color: "var(--color-stormy-teal)", text: "Exceptional (esp. day 1)" },
+  { label: "7%+", color: "var(--color-stormy-teal)", text: "Strong" },
+  { label: "5%+", color: "var(--color-cool-sky)", text: "Good baseline" },
 ];
 
 const SUB_RATE_BENCHMARKS: Benchmark[] = [
-  { label: "2-3%+", color: "#22c55e", text: "Strong conversion" },
-  { label: "1%", color: "#3b82f6", text: "Average" },
+  { label: "2-3%+", color: "var(--color-stormy-teal)", text: "Strong conversion" },
+  { label: "1%", color: "var(--color-cool-sky)", text: "Average" },
 ];
 
 function CtrKpi({ ctr }: { ctr: number }) {

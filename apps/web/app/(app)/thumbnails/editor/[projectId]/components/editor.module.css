@@ -190,7 +190,7 @@
 }
 
 .textButton.active {
-  background: rgb(59 130 246 / 15%);
+  background: rgb(53 167 255 / 15%);
   color: var(--primary);
 }
 
@@ -342,12 +342,12 @@
 }
 
 .toolButtonActive {
-  background: rgb(59 130 246 / 15%);
+  background: rgb(53 167 255 / 15%);
   color: var(--primary);
 }
 
 .toolButtonActive:hover {
-  background: rgb(59 130 246 / 20%);
+  background: rgb(53 167 255 / 20%);
   color: var(--primary);
 }
 
@@ -657,7 +657,7 @@
 }
 
 .stylePresetBtn.active {
-  background: rgb(59 130 246 / 10%);
+  background: rgb(53 167 255 / 10%);
   border-color: var(--primary);
   color: var(--primary);
 }
@@ -720,7 +720,7 @@
 }
 
 .layerItemActive {
-  background: rgb(59 130 246 / 10%);
+  background: rgb(53 167 255 / 10%);
   border-color: var(--primary);
 }
 

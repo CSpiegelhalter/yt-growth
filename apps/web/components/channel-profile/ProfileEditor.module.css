@@ -28,7 +28,7 @@
 }
 
 .required {
-  color: var(--error, #ef4444);
+  color: var(--error, var(--color-hot-rose));
   margin-left: 2px;
 }
 
@@ -79,7 +79,7 @@
 }
 
 .textareaError {
-  border-color: var(--error, #ef4444);
+  border-color: var(--error, var(--color-hot-rose));
 }
 
 .input {
@@ -108,7 +108,7 @@
 }
 
 .inputError {
-  border-color: var(--error, #ef4444);
+  border-color: var(--error, var(--color-hot-rose));
 }
 
 /* Custom category input (shown when "Other" is selected) */
@@ -185,7 +185,7 @@
 
 /* Error message */
 .errorMessage {
-  color: var(--error, #ef4444);
+  color: var(--error, var(--color-hot-rose));
   font-size: var(--text-xs);
   margin-top: var(--space-1);
 }
@@ -218,7 +218,7 @@
 }
 
 .btnPrimary:hover:not(:disabled) {
-  background: var(--primary-dark, #4f46e5);
+  background: var(--primary-dark, var(--primary-hover));
   color: var(--text-inverse);
 }
 
@@ -292,15 +292,15 @@
 }
 
 .inlineSuccess {
-  background: var(--success-light, #dcfce7);
-  border: 1px solid var(--success, #22c55e);
-  color: var(--success-dark, #166534);
+  background: var(--success-light, var(--color-stormy-teal-light));
+  border: 1px solid var(--success, var(--color-stormy-teal));
+  color: var(--success-dark, var(--color-stormy-teal-hover));
 }
 
 .inlineError {
-  background: var(--error-light, #fee2e2);
-  border: 1px solid var(--error, #ef4444);
-  color: var(--error-dark, #991b1b);
+  background: var(--error-light, var(--danger-light));
+  border: 1px solid var(--error, var(--color-hot-rose));
+  color: var(--error-dark, var(--color-hot-rose-hover));
 }
 
 /* Responsive */

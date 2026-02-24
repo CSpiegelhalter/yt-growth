@@ -91,14 +91,14 @@ export function Body({ s }: BodyProps) {
           <Card
             title="Overview"
             icon={<OverviewTabIcon />}
-            accentColor="#6366f1"
+            accentColor="var(--color-hot-rose)"
           >
             Your daily pulse check. Views, watch time, subscriber changes, and
             real-time activity from the last 48 hours. Spot anomalies before
             diving deeper.
           </Card>
 
-          <Card title="Reach" icon={<ReachTabIcon />} accentColor="#f97316">
+          <Card title="Reach" icon={<ReachTabIcon />} accentColor="var(--color-cool-sky)">
             Are they seeing and clicking? Impressions, CTR, and traffic sources.
             The funnel shows how thumbnails convert to views through each
             discovery stage.
@@ -107,7 +107,7 @@ export function Body({ s }: BodyProps) {
           <Card
             title="Engagement"
             icon={<EngagementTabIcon />}
-            accentColor="#22c55e"
+            accentColor="var(--color-stormy-teal)"
           >
             Are they staying? Average view duration, retention curves, end
             screen performance. The retention graph shows exactly where viewers
@@ -117,7 +117,7 @@ export function Body({ s }: BodyProps) {
           <Card
             title="Audience"
             icon={<AudienceTabIcon />}
-            accentColor="#8b5cf6"
+            accentColor="var(--color-hot-rose)"
           >
             Are they returning and subscribing? Returning viewer percentage,
             subscriber status, demographics, and when your audience is most
@@ -283,28 +283,28 @@ export function Body({ s }: BodyProps) {
         </p>
 
         <CardGrid cols={2}>
-          <Card title="Competitor Discovery" accentColor="#3b82f6">
+          <Card title="Competitor Discovery" accentColor="var(--color-cool-sky)">
             Track competitor videos, spot outliers, and see what packaging works
             in your niche.{" "}
             <Link href="/competitors" style={{ fontWeight: 600 }}>
               Try competitor research →
             </Link>
           </Card>
-          <Card title="Video Idea Generation" accentColor="#22c55e">
+          <Card title="Video Idea Generation" accentColor="var(--color-stormy-teal)">
             Find topics with proven demand based on what is already working for
             similar channels.{" "}
             <Link href="/ideas" style={{ fontWeight: 600 }}>
               Generate video ideas →
             </Link>
           </Card>
-          <Card title="Tag Optimization" accentColor="#f97316">
+          <Card title="Tag Optimization" accentColor="var(--color-cool-sky)">
             Extract and analyze tags from top-performing videos. See what
             keywords actually matter.{" "}
             <Link href="/tag-generator" style={{ fontWeight: 600 }}>
               Try tag generator →
             </Link>
           </Card>
-          <Card title="Thumbnail Analysis" accentColor="#8b5cf6">
+          <Card title="Thumbnail Analysis" accentColor="var(--color-hot-rose)">
             Study what makes thumbnails click-worthy. Spot patterns in
             successful packaging.{" "}
             <Link href="/thumbnails" style={{ fontWeight: 600 }}>
@@ -493,11 +493,11 @@ export function Body({ s }: BodyProps) {
           className="funCallout"
           style={{
             marginTop: "32px",
-            background: "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)",
-            borderColor: "#fecaca",
+            background: "linear-gradient(135deg, var(--color-hot-rose-light) 0%, var(--color-hot-rose-light) 100%)",
+            borderColor: "var(--color-hot-rose-light)",
           }}
         >
-          <p className="funCallout__text" style={{ color: "#991b1b" }}>
+          <p className="funCallout__text" style={{ color: "var(--color-hot-rose-hover)" }}>
             <strong>Warning:</strong> Real-time view counts update constantly.
             Do not doomscroll your own dashboard. Open it once, note the pulse,
             close it. The numbers will not change faster because you are

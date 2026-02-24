@@ -5,7 +5,7 @@ import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withValidation } from "@/lib/api/withValidation";
 import { issuePasswordResetToken } from "@/lib/server/auth";
-import { BRAND } from "@/lib/shared/brand";
+import { BRAND, brandPalette } from "@/lib/shared/brand";
 import { logger } from "@/lib/shared/logger";
 import { prisma } from "@/prisma";
 
@@ -26,15 +26,15 @@ function buildResetEmailHtml(user: PasswordUser, resetUrl: string): string {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #222A68; max-width: 600px; margin: 0 auto; padding: 20px;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: ${brandPalette.imperialBlue}; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="text-align: center; margin-bottom: 30px;">
-    <h1 style="color: #2563eb; margin: 0; font-size: 24px;">${BRAND.name}</h1>
+    <h1 style="color: ${brandPalette.coolSky}; margin: 0; font-size: 24px;">${BRAND.name}</h1>
   </div>
-  <h2 style="color: #222A68; margin-bottom: 16px;">Reset your password</h2>
+  <h2 style="color: ${brandPalette.imperialBlue}; margin-bottom: 16px;">Reset your password</h2>
   <p>Hi${user.name ? ` ${user.name}` : ""},</p>
   <p>We received a request to reset your password. Click the button below to choose a new password:</p>
   <div style="text-align: center; margin: 32px 0;">
-    <a href="${resetUrl}" style="display: inline-block; background-color: #2563eb; color: #fff; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-weight: 600;">Reset Password</a>
+    <a href="${resetUrl}" style="display: inline-block; background-color: ${brandPalette.hotRose}; color: #fff; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-weight: 600;">Reset Password</a>
   </div>
   <p style="color: #666; font-size: 14px;">This link will expire in 1 hour. If you didn't request this, you can safely ignore this email.</p>
   <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>

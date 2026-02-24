@@ -28,9 +28,9 @@
 }
 
 .tone-ok .statValue {
-    color: #0a7a40;
+    color: var(--color-stormy-teal);
 }
 
 .tone-warn .statValue {
-    color: #9a3412;
+    color: var(--color-hot-rose-hover);
 }

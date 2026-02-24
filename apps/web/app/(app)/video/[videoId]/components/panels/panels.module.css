@@ -97,15 +97,15 @@
 }
 
 .journeyStep:nth-child(1) {
-  border-left-color: #3b82f6;
+  border-left-color: var(--color-cool-sky);
 }
 
 .journeyStep:nth-child(2) {
-  border-left-color: #8b5cf6;
+  border-left-color: var(--color-hot-rose);
 }
 
 .journeyStep:nth-child(3) {
-  border-left-color: #22c55e;
+  border-left-color: var(--color-stormy-teal);
 }
 
 .journeyStepHeader {
@@ -147,7 +147,7 @@
 /* Nuance Section */
 .nuanceSection {
   background: var(--color-surface-2);
-  border-left: 3px solid #f59e0b;
+  border-left: 3px solid var(--color-cool-sky);
   border-radius: 10px;
   padding: 14px 16px;
 }
@@ -170,8 +170,8 @@
 
 /* Strategic Pivot Section */
 .pivotSection {
-  background: linear-gradient(135deg, rgb(59 130 246 / 5%), rgb(139 92 246 / 5%));
-  border: 1px solid rgb(59 130 246 / 20%);
+  background: linear-gradient(135deg, rgb(53 167 255 / 5%), rgb(202 31 123 / 5%));
+  border: 1px solid rgb(53 167 255 / 20%);
   border-radius: 10px;
   padding: 16px;
 }
@@ -187,7 +187,7 @@
 }
 
 .pivotTitle::before {
-  color: #3b82f6;
+  color: var(--color-cool-sky);
   content: '→';
   font-size: 1.125rem;
 }
@@ -534,11 +534,11 @@
 }
 
 .inlineDiagnosisItem.spike {
-  border-left: 3px solid #22c55e;
+  border-left: 3px solid var(--color-stormy-teal);
 }
 
 .inlineDiagnosisItem.drop {
-  border-left: 3px solid #ef4444;
+  border-left: 3px solid var(--color-hot-rose);
 }
 
 .inlineDiagnosisTime {
@@ -559,13 +559,13 @@
 }
 
 .inlineDiagnosisChange.positive {
-  background: rgb(34 197 94 / 15%);
-  color: #22c55e;
+  background: rgb(15 113 115 / 15%);
+  color: var(--color-stormy-teal);
 }
 
 .inlineDiagnosisChange.negative {
-  background: rgb(239 68 68 / 15%);
-  color: #ef4444;
+  background: rgb(202 31 123 / 15%);
+  color: var(--color-hot-rose);
 }
 
 .retentionSvg {
@@ -598,12 +598,12 @@
 }
 
 .cliffLine {
-  stroke: #ef4444;
+  stroke: var(--color-hot-rose);
   stroke-width: 1;
 }
 
 .cliffLabel {
-  fill: #ef4444;
+  fill: var(--color-hot-rose);
   font-size: 10px;
 }
 
@@ -737,7 +737,7 @@
 }
 
 .sentimentPos {
-  background: #22c55e;
+  background: var(--color-stormy-teal);
 }
 
 .sentimentNeutral {
@@ -745,7 +745,7 @@
 }
 
 .sentimentNeg {
-  background: #ef4444;
+  background: var(--color-hot-rose);
 }
 
 .sentimentLabels {
@@ -755,7 +755,7 @@
 }
 
 .sentimentLabelPos {
-  color: #16a34a;
+  color: var(--color-stormy-teal);
 }
 
 .sentimentLabelNeutral {
@@ -763,7 +763,7 @@
 }
 
 .sentimentLabelNeg {
-  color: #dc2626;
+  color: var(--color-hot-rose);
 }
 
 /* Themes */
@@ -1029,7 +1029,7 @@
 }
 
 .keywordOptionActive {
-  background: rgb(37 99 235 / 10%);
+  background: rgb(53 167 255 / 10%);
   color: var(--color-primary);
 }
 
@@ -1079,16 +1079,16 @@
 }
 
 .card-strong {
-  border-left-color: #22c55e;
+  border-left-color: var(--color-stormy-teal);
   opacity: 0.75;
 }
 
 .card-needs_work {
-  border-left-color: #f59e0b;
+  border-left-color: var(--color-cool-sky);
 }
 
 .card-missing {
-  border-left-color: #ef4444;
+  border-left-color: var(--color-hot-rose);
 }
 
 .checkCardHeader {
@@ -1167,15 +1167,15 @@
 }
 
 .dot-strong {
-  background: #22c55e;
+  background: var(--color-stormy-teal);
 }
 
 .dot-needs_work {
-  background: #f59e0b;
+  background: var(--color-cool-sky);
 }
 
 .dot-missing {
-  background: #ef4444;
+  background: var(--color-hot-rose);
 }
 
 /* Suggested Tags */
@@ -1346,18 +1346,18 @@
 }
 
 .trafficTargetStatus.good {
-  background: rgb(34 197 94 / 15%);
-  color: #22c55e;
+  background: rgb(15 113 115 / 15%);
+  color: var(--color-stormy-teal);
 }
 
 .trafficTargetStatus.fair {
-  background: rgb(59 130 246 / 15%);
-  color: #3b82f6;
+  background: rgb(53 167 255 / 15%);
+  color: var(--color-cool-sky);
 }
 
 .trafficTargetStatus.low {
-  background: rgb(245 158 11 / 15%);
-  color: #f59e0b;
+  background: rgb(53 167 255 / 15%);
+  color: var(--color-cool-sky);
 }
 
 .trafficDiagnosis {
@@ -1368,13 +1368,13 @@
 }
 
 .trafficDiagnosis.success {
-  background: rgb(34 197 94 / 8%);
-  border-left-color: #22c55e;
+  background: rgb(15 113 115 / 8%);
+  border-left-color: var(--color-stormy-teal);
 }
 
 .trafficDiagnosis.warning {
-  background: rgb(245 158 11 / 8%);
-  border-left-color: #f59e0b;
+  background: rgb(53 167 255 / 8%);
+  border-left-color: var(--color-cool-sky);
 }
 
 .trafficDiagnosis.info {
@@ -1420,15 +1420,15 @@
 }
 
 .retentionDiagnosisItem.drop {
-  border-left-color: #ef4444;
+  border-left-color: var(--color-hot-rose);
 }
 
 .retentionDiagnosisItem.spike {
-  border-left-color: #22c55e;
+  border-left-color: var(--color-stormy-teal);
 }
 
 .retentionDiagnosisItem.warning {
-  border-left-color: #f59e0b;
+  border-left-color: var(--color-cool-sky);
 }
 
 .retentionTimestamp {
@@ -1452,11 +1452,11 @@
 }
 
 .retentionChange.negative {
-  color: #ef4444;
+  color: var(--color-hot-rose);
 }
 
 .retentionChange.positive {
-  color: #22c55e;
+  color: var(--color-stormy-teal);
 }
 
 .retentionDiagnosisContent {
@@ -1596,8 +1596,8 @@
 }
 
 .sessionSignal.positive .signalIcon {
-  background: rgb(34 197 94 / 15%);
-  color: #22c55e;
+  background: rgb(15 113 115 / 15%);
+  color: var(--color-stormy-teal);
 }
 
 .sessionSignal.neutral .signalIcon {
@@ -1606,8 +1606,8 @@
 }
 
 .sessionSignal.negative .signalIcon {
-  background: rgb(239 68 68 / 15%);
-  color: #ef4444;
+  background: rgb(202 31 123 / 15%);
+  color: var(--color-hot-rose);
 }
 
 .signalLabel {
@@ -1689,18 +1689,18 @@
 }
 
 .metricIndicator.strong {
-  background: rgb(34 197 94 / 15%);
-  color: #22c55e;
+  background: rgb(15 113 115 / 15%);
+  color: var(--color-stormy-teal);
 }
 
 .metricIndicator.mixed {
-  background: rgb(59 130 246 / 15%);
-  color: #3b82f6;
+  background: rgb(53 167 255 / 15%);
+  color: var(--color-cool-sky);
 }
 
 .metricIndicator.needs-work {
-  background: rgb(245 158 11 / 15%);
-  color: #f59e0b;
+  background: rgb(53 167 255 / 15%);
+  color: var(--color-cool-sky);
 }
 
 .shortsBenchmarks {
@@ -1747,7 +1747,7 @@
 }
 
 .shortsBenchmarksTable .activeRow {
-  background: rgb(59 130 246 / 8%);
+  background: rgb(53 167 255 / 8%);
 }
 
 .shortsBenchmarksTable .activeRow td {

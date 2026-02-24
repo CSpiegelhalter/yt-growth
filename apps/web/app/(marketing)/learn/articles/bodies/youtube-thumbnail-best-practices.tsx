@@ -78,7 +78,7 @@ function BadTinyTextSvg() {
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="320" y2="180">
-          <stop offset="0" stopColor="#1e293b" />
+          <stop offset="0" stopColor="var(--color-imperial-blue)" />
           <stop offset="1" stopColor="#334155" />
         </linearGradient>
       </defs>
@@ -117,12 +117,12 @@ function GoodBigShapesSvg() {
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="320" y2="180">
-          <stop offset="0" stopColor="#0f172a" />
-          <stop offset="1" stopColor="#1e293b" />
+          <stop offset="0" stopColor="var(--color-imperial-blue)" />
+          <stop offset="1" stopColor="var(--color-imperial-blue)" />
         </linearGradient>
         <linearGradient id={`${id}-accent`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#6366f1" />
-          <stop offset="1" stopColor="#8b5cf6" />
+          <stop offset="0" stopColor="var(--color-hot-rose)" />
+          <stop offset="1" stopColor="var(--color-hot-rose)" />
         </linearGradient>
       </defs>
       <rect width="320" height="180" fill={`url(#${id}-bg)`} />
@@ -149,7 +149,7 @@ function BadMultipleFocalPointsSvg() {
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="320" y2="180">
-          <stop offset="0" stopColor="#1e293b" />
+          <stop offset="0" stopColor="var(--color-imperial-blue)" />
           <stop offset="1" stopColor="#475569" />
         </linearGradient>
       </defs>
@@ -180,12 +180,12 @@ function GoodSingleFocalPointSvg() {
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="320" y2="180">
-          <stop offset="0" stopColor="#0f172a" />
-          <stop offset="1" stopColor="#1e293b" />
+          <stop offset="0" stopColor="var(--color-imperial-blue)" />
+          <stop offset="1" stopColor="var(--color-imperial-blue)" />
         </linearGradient>
         <linearGradient id={`${id}-gold`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#fbbf24" />
-          <stop offset="1" stopColor="#f59e0b" />
+          <stop offset="1" stopColor="var(--color-cool-sky)" />
         </linearGradient>
       </defs>
       <rect width="320" height="180" fill={`url(#${id}-bg)`} />
@@ -239,12 +239,12 @@ function GoodHighContrastSvg() {
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="320" y2="180">
-          <stop offset="0" stopColor="#0f172a" />
-          <stop offset="1" stopColor="#1e293b" />
+          <stop offset="0" stopColor="var(--color-imperial-blue)" />
+          <stop offset="1" stopColor="var(--color-imperial-blue)" />
         </linearGradient>
         <linearGradient id={`${id}-orange`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#fb923c" />
-          <stop offset="1" stopColor="#f97316" />
+          <stop offset="1" stopColor="var(--color-cool-sky)" />
         </linearGradient>
       </defs>
       <rect width="320" height="180" fill={`url(#${id}-bg)`} />
@@ -271,7 +271,7 @@ function BadTextPlacementSvg() {
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="320" y2="180">
-          <stop offset="0" stopColor="#1e293b" />
+          <stop offset="0" stopColor="var(--color-imperial-blue)" />
           <stop offset="1" stopColor="#334155" />
         </linearGradient>
       </defs>
@@ -303,12 +303,12 @@ function GoodTextPlacementSvg() {
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="320" y2="180">
-          <stop offset="0" stopColor="#0f172a" />
-          <stop offset="1" stopColor="#1e293b" />
+          <stop offset="0" stopColor="var(--color-imperial-blue)" />
+          <stop offset="1" stopColor="var(--color-imperial-blue)" />
         </linearGradient>
         <linearGradient id={`${id}-green`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#22c55e" />
-          <stop offset="1" stopColor="#16a34a" />
+          <stop offset="0" stopColor="var(--color-stormy-teal)" />
+          <stop offset="1" stopColor="var(--color-stormy-teal)" />
         </linearGradient>
       </defs>
       <rect width="320" height="180" fill={`url(#${id}-bg)`} />
@@ -340,7 +340,7 @@ function BadRedColorSvg() {
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="320" y2="180">
-          <stop offset="0" stopColor="#dc2626" />
+          <stop offset="0" stopColor="var(--color-hot-rose)" />
           <stop offset="1" stopColor="#b91c1c" />
         </linearGradient>
       </defs>
@@ -348,11 +348,11 @@ function BadRedColorSvg() {
       {/* White subject on red */}
       <circle cx="110" cy="85" r="45" fill="white" />
       <rect x="175" y="60" width="110" height="50" rx="10" fill="rgba(255,255,255,0.95)" />
-      <text x="230" y="93" textAnchor="middle" fontSize="20" fontWeight="900" fill="#dc2626">
+      <text x="230" y="93" textAnchor="middle" fontSize="20" fontWeight="900" fill="var(--color-hot-rose)">
         RED BAD
       </text>
       {/* Simulated YouTube red bar at bottom */}
-      <rect x="0" y="175" width="320" height="5" fill="#ff0000" opacity="0.8" />
+      <rect x="0" y="175" width="320" height="5" fill="var(--color-hot-rose)" opacity="0.8" />
     </svg>
   );
 }
@@ -368,12 +368,12 @@ function GoodBogyColorSvg() {
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="320" y2="180">
-          <stop offset="0" stopColor="#0f172a" />
-          <stop offset="1" stopColor="#1e293b" />
+          <stop offset="0" stopColor="var(--color-imperial-blue)" />
+          <stop offset="1" stopColor="var(--color-imperial-blue)" />
         </linearGradient>
         <linearGradient id={`${id}-blue`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#3b82f6" />
-          <stop offset="1" stopColor="#2563eb" />
+          <stop offset="0" stopColor="var(--color-cool-sky)" />
+          <stop offset="1" stopColor="var(--color-cool-sky)" />
         </linearGradient>
       </defs>
       <rect width="320" height="180" fill={`url(#${id}-bg)`} />
@@ -386,7 +386,7 @@ function GoodBogyColorSvg() {
         STANDS
       </text>
       {/* Small green accent */}
-      <circle cx="260" cy="145" r="12" fill="#22c55e" />
+      <circle cx="260" cy="145" r="12" fill="var(--color-stormy-teal)" />
     </svg>
   );
 }
@@ -403,12 +403,12 @@ function ThumbnailFormulaDiagram() {
       >
         <defs>
           <linearGradient id={`${id}-thumbGrad`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#0f172a" />
+            <stop offset="0" stopColor="var(--color-imperial-blue)" />
             <stop offset="1" stopColor="#334155" />
           </linearGradient>
           <linearGradient id={`${id}-accent`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#6366f1" />
-            <stop offset="1" stopColor="#8b5cf6" />
+            <stop offset="0" stopColor="var(--color-hot-rose)" />
+            <stop offset="1" stopColor="var(--color-hot-rose)" />
           </linearGradient>
         </defs>
 
@@ -430,16 +430,16 @@ function ThumbnailFormulaDiagram() {
         </text>
 
         {/* Label: Focal subject */}
-        <line x1="115" y1="65" x2="115" y2="40" stroke="#6366f1" strokeWidth="2" />
-        <circle cx="115" cy="65" r="4" fill="#6366f1" />
-        <text x="115" y="28" textAnchor="middle" fontSize="11" fontWeight="700" fill="#6366f1">
+        <line x1="115" y1="65" x2="115" y2="40" stroke="var(--color-hot-rose)" strokeWidth="2" />
+        <circle cx="115" cy="65" r="4" fill="var(--color-hot-rose)" />
+        <text x="115" y="28" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--color-hot-rose)">
           Focal subject
         </text>
 
         {/* Label: Contrast */}
-        <line x1="178" y1="235" x2="178" y2="220" stroke="#8b5cf6" strokeWidth="2" />
-        <circle cx="178" cy="235" r="4" fill="#8b5cf6" />
-        <text x="178" y="252" textAnchor="middle" fontSize="11" fontWeight="700" fill="#8b5cf6">
+        <line x1="178" y1="235" x2="178" y2="220" stroke="var(--color-hot-rose)" strokeWidth="2" />
+        <circle cx="178" cy="235" r="4" fill="var(--color-hot-rose)" />
+        <text x="178" y="252" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--color-hot-rose)">
           Contrast / separation
         </text>
 
@@ -454,19 +454,19 @@ function ThumbnailFormulaDiagram() {
         <text x="380" y="50" fontSize="11" fontWeight="700" fill="#64748b" letterSpacing="0.05em">
           THE FORMULA
         </text>
-        <text x="380" y="80" fontSize="15" fontWeight="800" fill="#0f172a">
+        <text x="380" y="80" fontSize="15" fontWeight="800" fill="var(--color-imperial-blue)">
           One idea
         </text>
         <text x="380" y="102" fontSize="15" fontWeight="700" fill="#94a3b8">
           +
         </text>
-        <text x="380" y="124" fontSize="15" fontWeight="800" fill="#0f172a">
+        <text x="380" y="124" fontSize="15" fontWeight="800" fill="var(--color-imperial-blue)">
           One focal point
         </text>
         <text x="380" y="146" fontSize="15" fontWeight="700" fill="#94a3b8">
           +
         </text>
-        <text x="380" y="168" fontSize="15" fontWeight="800" fill="#0f172a">
+        <text x="380" y="168" fontSize="15" fontWeight="800" fill="var(--color-imperial-blue)">
           Emotion / contrast
         </text>
         <text x="380" y="198" fontSize="11" fontWeight="600" fill="#64748b">
@@ -488,7 +488,7 @@ function TinyTextAntVisual() {
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#0f172a" />
+          <stop offset="0" stopColor="var(--color-imperial-blue)" />
           <stop offset="1" stopColor="#1f2937" />
         </linearGradient>
       </defs>
@@ -522,7 +522,7 @@ function TinyTextAntVisual() {
       <polygon points="270,75 285,80 270,85" fill="#9ca3af" />
 
       {/* Message - positioned below with clear spacing */}
-      <text x="240" y="205" textAnchor="middle" fontSize="14" fontWeight="700" fill="#6366f1">
+      <text x="240" y="205" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--color-hot-rose)">
         If it needs a magnifying glass, it's too small.
       </text>
     </svg>
@@ -538,8 +538,8 @@ function JunkDrawerVsShelfVisual() {
     >
       <defs>
         <linearGradient id="drawer" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#fee2e2" />
-          <stop offset="1" stopColor="#fef2f2" />
+          <stop offset="0" stopColor="var(--color-hot-rose-light)" />
+          <stop offset="1" stopColor="var(--color-hot-rose-light)" />
         </linearGradient>
         <linearGradient id="shelf" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#dcfce7" />
@@ -548,8 +548,8 @@ function JunkDrawerVsShelfVisual() {
       </defs>
 
       {/* Left: junk drawer */}
-      <rect x="16" y="30" width="232" height="164" rx="16" fill="url(#drawer)" stroke="#fecaca" />
-      <text x="28" y="56" fontSize="12" fontWeight="800" fill="#991b1b">
+      <rect x="16" y="30" width="232" height="164" rx="16" fill="url(#drawer)" stroke="var(--color-hot-rose-light)" />
+      <text x="28" y="56" fontSize="12" fontWeight="800" fill="var(--color-hot-rose-hover)">
         Clutter
       </text>
       {[
@@ -571,7 +571,7 @@ function JunkDrawerVsShelfVisual() {
 
       {/* Right: clean shelf */}
       <rect x="272" y="30" width="232" height="164" rx="16" fill="url(#shelf)" stroke="#bbf7d0" />
-      <text x="284" y="56" fontSize="12" fontWeight="800" fill="#065f46">
+      <text x="284" y="56" fontSize="12" fontWeight="800" fill="var(--color-stormy-teal-hover)">
         One focal point
       </text>
       <rect x="288" y="76" width="200" height="10" rx="5" fill="rgba(6,95,70,0.10)" />
@@ -579,7 +579,7 @@ function JunkDrawerVsShelfVisual() {
       <circle cx="364" cy="146" r="34" fill="rgba(16,185,129,0.25)" />
       <circle cx="364" cy="146" r="24" fill="rgba(16,185,129,0.38)" />
       <rect x="410" y="128" width="78" height="36" rx="12" fill="rgba(6,95,70,0.12)" stroke="rgba(6,95,70,0.14)" />
-      <text x="449" y="150" textAnchor="middle" fontSize="14" fontWeight="900" fill="#065f46">
+      <text x="449" y="150" textAnchor="middle" fontSize="14" fontWeight="900" fill="var(--color-stormy-teal-hover)">
         CLEAR
       </text>
 
@@ -604,7 +604,7 @@ function TextDecisionFlow() {
         </defs>
 
         <rect x="20" y="24" width="300" height="56" rx="14" fill="url(#box)" stroke="#e2e8f0" />
-        <text x="170" y="58" textAnchor="middle" fontSize="14" fontWeight="800" fill="#0f172a">
+        <text x="170" y="58" textAnchor="middle" fontSize="14" fontWeight="800" fill="var(--color-imperial-blue)">
           Does the image communicate the idea?
         </text>
 
@@ -622,24 +622,24 @@ function TextDecisionFlow() {
         </text>
 
         <rect x="20" y="128" width="240" height="62" rx="14" fill="#ecfdf5" stroke="#bbf7d0" />
-        <text x="140" y="156" textAnchor="middle" fontSize="14" fontWeight="800" fill="#065f46">
+        <text x="140" y="156" textAnchor="middle" fontSize="14" fontWeight="800" fill="var(--color-stormy-teal-hover)">
           Skip text
         </text>
-        <text x="140" y="176" textAnchor="middle" fontSize="12" fontWeight="600" fill="#065f46" opacity="0.9">
+        <text x="140" y="176" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--color-stormy-teal-hover)" opacity="0.9">
           Let the image do the work
         </text>
 
         <rect x="310" y="128" width="370" height="62" rx="14" fill="#eff6ff" stroke="#bfdbfe" />
-        <text x="495" y="156" textAnchor="middle" fontSize="14" fontWeight="800" fill="#1d4ed8">
+        <text x="495" y="156" textAnchor="middle" fontSize="14" fontWeight="800" fill="var(--color-cool-sky-hover)">
           Add 2–4 words (only missing context)
         </text>
-        <text x="495" y="176" textAnchor="middle" fontSize="12" fontWeight="600" fill="#1d4ed8" opacity="0.9">
+        <text x="495" y="176" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--color-cool-sky-hover)" opacity="0.9">
           Huge, high-contrast, not repeating the title
         </text>
 
         <path d="M495 190v28" stroke="#94a3b8" strokeWidth="2" />
         <rect x="310" y="218" width="370" height="30" rx="12" fill="#ffffff" stroke="#e2e8f0" />
-        <text x="495" y="238" textAnchor="middle" fontSize="12" fontWeight="700" fill="#0f172a">
+        <text x="495" y="238" textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--color-imperial-blue)">
           Position away from the bottom-right duration badge
         </text>
       </svg>
@@ -659,12 +659,12 @@ function CompositionMiniGuide() {
         <svg viewBox="0 0 360 160" role="img" aria-label="Foreground and background separation example">
           <defs>
             <linearGradient id="bgA" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#0f172a" />
+              <stop offset="0" stopColor="var(--color-imperial-blue)" />
               <stop offset="1" stopColor="#334155" />
             </linearGradient>
             <linearGradient id="fg" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0" stopColor="#fbbf24" />
-              <stop offset="1" stopColor="#f97316" />
+              <stop offset="1" stopColor="var(--color-cool-sky)" />
             </linearGradient>
           </defs>
 
@@ -690,8 +690,8 @@ function CompositionMiniGuide() {
               <stop offset="1" stopColor="#1f2937" />
             </linearGradient>
             <linearGradient id="accentB" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#6366f1" />
-              <stop offset="1" stopColor="#8b5cf6" />
+              <stop offset="0" stopColor="var(--color-hot-rose)" />
+              <stop offset="1" stopColor="var(--color-hot-rose)" />
             </linearGradient>
           </defs>
 
@@ -1052,19 +1052,19 @@ export function Body({ s }: BodyProps) {
             </p>
             <div className={u.paletteRow}>
               <div className={u.paletteSwatch}>
-                <span className={u.paletteDot} style={{ background: "#3b82f6" }} />
+                <span className={u.paletteDot} style={{ background: "var(--color-cool-sky)" }} />
                 Blue
               </div>
               <div className={u.paletteSwatch}>
-                <span className={u.paletteDot} style={{ background: "#f97316" }} />
+                <span className={u.paletteDot} style={{ background: "var(--color-cool-sky)" }} />
                 Orange
               </div>
               <div className={u.paletteSwatch}>
-                <span className={u.paletteDot} style={{ background: "#22c55e" }} />
+                <span className={u.paletteDot} style={{ background: "var(--color-stormy-teal)" }} />
                 Green
               </div>
               <div className={u.paletteSwatch}>
-                <span className={u.paletteDot} style={{ background: "#eab308" }} />
+                <span className={u.paletteDot} style={{ background: "var(--color-cool-sky)" }} />
                 Yellow
               </div>
             </div>
@@ -1077,15 +1077,15 @@ export function Body({ s }: BodyProps) {
             </p>
             <div className={u.avoidVisual}>
               <div className={u.avoidItem}>
-                <div className={u.avoidSwatch} style={{ background: "#ff0000" }} />
+                <div className={u.avoidSwatch} style={{ background: "var(--color-hot-rose)" }} />
                 YouTube red
               </div>
               <div className={u.avoidItem}>
-                <div className={u.avoidSwatch} style={{ background: "#cc0000" }} />
+                <div className={u.avoidSwatch} style={{ background: "var(--color-hot-rose-hover)" }} />
                 Subscribe btn
               </div>
               <div className={u.avoidItem}>
-                <div className={u.avoidSwatch} style={{ background: "#f00" }} />
+                <div className={u.avoidSwatch} style={{ background: "var(--color-hot-rose)" }} />
                 Progress bar
               </div>
             </div>

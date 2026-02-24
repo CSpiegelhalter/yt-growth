@@ -41,7 +41,7 @@
 }
 
 .heroTitleAccent {
-  background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--color-hot-rose) 100%);
   background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -122,7 +122,7 @@
 
 .textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-alpha, rgb(99 102 241 / 10%));
+  box-shadow: 0 0 0 3px var(--primary-alpha, rgb(202 31 123 / 10%));
   outline: none;
 }
 
@@ -233,7 +233,7 @@
 
 .generateBtn {
   align-items: center;
-  background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--color-hot-rose) 100%);
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -257,7 +257,7 @@
 }
 
 .generateBtn:hover:not(:disabled) {
-  box-shadow: 0 8px 24px -8px rgb(99 102 241 / 40%);
+  box-shadow: 0 8px 24px -8px rgb(202 31 123 / 40%);
   transform: translateY(-1px);
 }
 
@@ -405,7 +405,7 @@
 }
 
 .formatBadgeShorts {
-  background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+  background: linear-gradient(135deg, var(--color-hot-rose) 0%, var(--color-cool-sky) 100%);
   color: #fff;
 }
 
@@ -443,7 +443,7 @@
 
 .ideaCardWhy {
   align-items: flex-start;
-  color: var(--success, #22c55e);
+  color: var(--success, var(--color-stormy-teal));
   display: flex;
   font-size: 0.8125rem;
   gap: 6px;
@@ -552,7 +552,7 @@
    Upgrade Banner
    ================================ */
 .upgradeBanner {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: linear-gradient(135deg, var(--color-imperial-blue) 0%, var(--color-imperial-blue) 100%);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -584,7 +584,7 @@
 
 .upgradeBtn {
   align-items: center;
-  background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--color-hot-rose) 100%);
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -600,7 +600,7 @@
 }
 
 .upgradeBtn:hover {
-  box-shadow: 0 4px 16px rgb(99 102 241 / 40%);
+  box-shadow: 0 4px 16px rgb(202 31 123 / 40%);
   transform: translateY(-1px);
 }
 

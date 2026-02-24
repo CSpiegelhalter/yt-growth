@@ -24,7 +24,7 @@
 }
 
 .hubHero {
-  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  background: linear-gradient(180deg, var(--color-imperial-blue) 0%, var(--color-imperial-blue) 100%);
   border-radius: 0;
   margin: 0 auto var(--space-12);
   max-width: var(--page-max-width);
@@ -40,10 +40,10 @@
 
 .hubBadge {
   align-items: center;
-  background: rgb(99 102 241 / 15%);
-  border: 1px solid rgb(99 102 241 / 30%);
+  background: rgb(202 31 123 / 15%);
+  border: 1px solid rgb(202 31 123 / 30%);
   border-radius: var(--radius-full);
-  color: #a5b4fc;
+  color: var(--color-hot-rose);
   display: inline-flex;
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
@@ -68,7 +68,7 @@
 }
 
 .hubTitleAccent {
-  background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+  background: linear-gradient(135deg, var(--color-hot-rose) 0%, var(--color-hot-rose) 100%);
   background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -281,7 +281,7 @@
 
 .hubCtaPrimary {
   align-items: center;
-  background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--color-hot-rose) 100%);
   border-radius: var(--radius-sm);
   color: var(--text-inverse);
   display: inline-flex;
@@ -302,7 +302,7 @@
 }
 
 .hubCtaPrimary:hover {
-  box-shadow: 0 10px 30px -10px rgb(99 102 241 / 50%);
+  box-shadow: 0 10px 30px -10px rgb(202 31 123 / 50%);
   color: var(--text-inverse);
   transform: translateY(-2px);
 }
@@ -742,7 +742,7 @@
 
 .faqItem[open] {
   border-color: var(--primary-light);
-  box-shadow: 0 2px 12px rgb(99 102 241 / 8%);
+  box-shadow: 0 2px 12px rgb(202 31 123 / 8%);
 }
 
 .faqQuestion {
@@ -847,7 +847,7 @@
 
 /* ================================
    ARTICLE SHELL
-   Reusable 2-column layout for all articles
+   3-column layout: TOC | Content | Social
    ================================ */
 
 .shellLayout {
@@ -859,13 +859,80 @@
 @media (width >= 1100px) {
   .shellLayout {
     align-items: start;
+    column-gap: var(--space-8);
     display: grid;
-    gap: var(--space-8);
-    grid-template-columns: 220px 1fr;
+    grid-template-columns: 220px minmax(0, 720px) 48px;
+    justify-content: center;
   }
 }
 
-/* Sidebar (desktop only) */
+/* ---- Social sharing (col 3) ---- */
+
+.shellSocial {
+  display: none;
+}
+
+@media (width >= 1100px) {
+  .shellSocial {
+    display: block;
+    grid-column: 3;
+    grid-row: 1;
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-6));
+  }
+}
+
+.shellSocialInner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.shellSocialBtn {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--text-xs);
+  gap: var(--space-2);
+  justify-content: center;
+  padding: var(--space-3);
+  text-decoration: none;
+  transition: all var(--transition-base);
+}
+
+.shellSocialBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.shellSocialBtn:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* Mobile social bar */
+.shellMobileSocial {
+  display: flex;
+  gap: var(--space-2);
+  order: 3;
+}
+
+@media (width >= 1100px) {
+  .shellMobileSocial {
+    display: none;
+  }
+}
+
+.shellMobileSocial .shellSocialBtn {
+  flex: 1;
+}
+
+/* ---- TOC sidebar (col 1, desktop) ---- */
+
 .shellSidebar {
   display: none;
 }
@@ -873,10 +940,12 @@
 @media (width >= 1100px) {
   .shellSidebar {
     display: block;
-    max-height: calc(100vh - var(--space-16));
+    grid-column: 1;
+    grid-row: 1;
+    max-height: calc(100vh - var(--header-height) - var(--space-12));
     overflow-y: auto;
     position: sticky;
-    top: var(--space-8);
+    top: calc(var(--header-height) + var(--space-6));
   }
 }
 
@@ -929,9 +998,11 @@
   font-weight: var(--font-medium);
 }
 
-/* Mobile TOC */
+/* ---- Mobile TOC (accordion) ---- */
+
 .shellMobileToc {
   display: block;
+  order: 1;
 }
 
 @media (width >= 1100px) {
@@ -988,9 +1059,18 @@
   padding: 0 var(--space-4) var(--space-4);
 }
 
-/* Main content column */
+/* ---- Main content (col 2) ---- */
+
 .shellMain {
   min-width: 0;
+  order: 2;
+}
+
+@media (width >= 1100px) {
+  .shellMain {
+    grid-column: 2;
+    grid-row: 1;
+  }
 }
 
 .shellHero {
@@ -1043,4 +1123,14 @@
   .shellContent {
     gap: var(--space-6);
   }
+}
+
+/* ---- Footer (outside grid, centered on page) ---- */
+
+.shellFooter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin: var(--space-10) auto 0;
+  max-width: 960px;
 }

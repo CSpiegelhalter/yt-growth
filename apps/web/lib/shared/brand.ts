@@ -3,6 +3,21 @@
  * Use this everywhere to ensure consistent branding and avoid hardcoded strings.
  */
 
+/**
+ * Brand color palette — single source of truth for non-CSS contexts
+ * (email templates, meta tags, canvas defaults, etc.)
+ *
+ * For CSS/UI code, use the CSS custom properties defined in globals.css instead:
+ *   var(--color-hot-rose), var(--color-imperial-blue), etc.
+ */
+export const brandPalette = {
+  hotRose: "#CA1F7B",
+  imperialBlue: "#222A68",
+  lavenderMist: "#F8F1FF",
+  coolSky: "#35A7FF",
+  stormyTeal: "#0F7173",
+} as const;
+
 export const BRAND = {
   name: "ChannelBoost",
   /** Canonical domain with www prefix for SEO consistency */
@@ -16,7 +31,7 @@ export const BRAND = {
     "Data-driven video ideas, retention insights, and subscriber analysis to grow your YouTube channel faster.",
   twitterHandle: "@channelboost",
   ogImagePath: "/og/channelboost.png",
-  themeColor: "#2563eb",
+  themeColor: "#CA1F7B",
   email: "curt@getchannelboost.com",
 } as const;
 

@@ -29,10 +29,10 @@ type OverviewChartProps = {
 type ChartRow = OverviewDailyRow & { label: string };
 
 const METRICS = [
-  { key: "views" as const, label: "Views", color: "#3b82f6" },
-  { key: "shares" as const, label: "Shares", color: "#8b5cf6" },
-  { key: "watchTimeMinutes" as const, label: "Watch Time (min)", color: "#f59e0b" },
-  { key: "netSubs" as const, label: "Subscribers", color: "#10b981" },
+  { key: "views" as const, label: "Views", color: "var(--color-cool-sky)" },
+  { key: "shares" as const, label: "Shares", color: "var(--color-hot-rose)" },
+  { key: "watchTimeMinutes" as const, label: "Watch Time (min)", color: "var(--color-cool-sky)" },
+  { key: "netSubs" as const, label: "Subscribers", color: "var(--color-stormy-teal)" },
 ] as const;
 
 function prepareData(daily: OverviewDailyRow[]): ChartRow[] {

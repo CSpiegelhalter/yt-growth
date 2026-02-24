@@ -37,7 +37,7 @@ function PlanBadge({ plan }: { plan: string }) {
         fontWeight: 600,
         borderRadius: "9999px",
         background: isPro
-          ? "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)"
+          ? "linear-gradient(135deg, var(--color-imperial-blue) 0%, var(--color-cool-sky) 100%)"
           : "#e5e7eb",
         color: isPro ? "white" : "#374151",
       }}
@@ -65,9 +65,9 @@ function UsageBar({
   const percentage = (remaining / limit) * 100;
 
   const getColor = () => {
-    if (percentage > 50) {return "#22c55e";}
-    if (percentage > 20) {return "#f59e0b";}
-    return "#ef4444";
+    if (percentage > 50) {return "var(--color-stormy-teal)";}
+    if (percentage > 20) {return "var(--color-cool-sky)";}
+    return "var(--color-hot-rose)";
   };
 
   return (

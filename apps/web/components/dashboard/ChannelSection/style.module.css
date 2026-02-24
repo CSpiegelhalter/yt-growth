@@ -24,7 +24,7 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  color: #6366f1;
+  color: var(--primary);
   cursor: pointer;
   display: inline-flex;
   font-size: 0.8125rem;
@@ -37,7 +37,7 @@
 
 .addBtn:hover {
   background: #f8fafc;
-  border-color: #6366f1;
+  border-color: var(--primary);
 }
 
 .channelGrid {
@@ -158,9 +158,9 @@
 
 .modalIcon {
   align-items: center;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  background: linear-gradient(135deg, var(--color-cool-sky-light) 0%, var(--color-cool-sky-light) 100%);
   border-radius: 50%;
-  color: #d97706;
+  color: var(--color-cool-sky);
   display: flex;
   height: 64px;
   justify-content: center;
@@ -189,7 +189,7 @@
 
 .modalPrimaryBtn {
   align-items: center;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--color-hot-rose) 0%, var(--color-hot-rose) 100%);
   border: none;
   border-radius: 10px;
   color: white;
@@ -205,7 +205,7 @@
 }
 
 .modalPrimaryBtn:hover {
-  box-shadow: 0 4px 12px rgb(99 102 241 / 40%);
+  box-shadow: 0 4px 12px rgb(202 31 123 / 40%);
   color: white;
   transform: translateY(-1px);
 }

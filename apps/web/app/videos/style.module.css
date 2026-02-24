@@ -217,7 +217,7 @@
 }
 
 .ctaCard {
-  background: linear-gradient(135deg, var(--color-hot-rose) 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--color-hot-rose) 0%, var(--color-hot-rose) 100%);
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;

@@ -4,7 +4,7 @@
  * Sanitizes inputs and sends a contact form email via an email provider.
  */
 
-import { BRAND } from "@/lib/shared/brand";
+import { BRAND, brandPalette } from "@/lib/shared/brand";
 import { logger } from "@/lib/shared/logger";
 
 import { ContactError } from "../errors";
@@ -101,8 +101,8 @@ function buildHtmlContent(
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 24px; border-radius: 12px 12px 0 0;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: ${brandPalette.imperialBlue}; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, ${brandPalette.hotRose} 0%, ${brandPalette.imperialBlue} 100%); padding: 24px; border-radius: 12px 12px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 20px;">New Contact Form Submission</h1>
   </div>
   
@@ -111,7 +111,7 @@ function buildHtmlContent(
       <tr>
         <td style="padding: 8px 0; color: #64748b; width: 80px;">From:</td>
         <td style="padding: 8px 0; font-weight: 600;">
-          <a href="mailto:${sanitizedEmail}" style="color: #6366f1; text-decoration: none;">${sanitizedEmail}</a>
+          <a href="mailto:${sanitizedEmail}" style="color: ${brandPalette.hotRose}; text-decoration: none;">${sanitizedEmail}</a>
         </td>
       </tr>
       <tr>
@@ -126,7 +126,7 @@ function buildHtmlContent(
     
     <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
       <p style="margin: 0 0 12px; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Message:</p>
-      <div style="white-space: pre-wrap; color: #1e293b;">${sanitizedMessage.replaceAll('\n', "<br>")}</div>
+      <div style="white-space: pre-wrap; color: ${brandPalette.imperialBlue};">${sanitizedMessage.replaceAll('\n', "<br>")}</div>
     </div>
     
     <p style="margin: 20px 0 0; font-size: 12px; color: #94a3b8;">

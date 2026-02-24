@@ -12,7 +12,7 @@
 }
 
 .cardHighlight {
-  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  background: linear-gradient(135deg, var(--color-imperial-blue) 0%, var(--color-cool-sky) 100%);
   border-radius: var(--radius-lg, 16px);
   color: white;
   padding: var(--space-lg, 24px);
@@ -46,9 +46,9 @@
 }
 
 .badge {
-  background: #e0e7ff;
+  background: var(--color-lavender-mist);
   border-radius: 9999px;
-  color: #3730a3;
+  color: var(--color-imperial-blue);
   display: inline-flex;
   font-size: 0.75rem;
   font-weight: 600;
@@ -56,21 +56,21 @@
 }
 
 .badgeSuccess {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-light);
+  color: var(--color-stormy-teal-hover);
 }
 
 .badgeWarning {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-cool-sky-light);
+  color: var(--color-imperial-blue);
 }
 
 .cancelNotice {
   align-items: center;
-  background: #fef3c7;
-  border: 1px solid #fbbf24;
+  background: var(--color-cool-sky-light);
+  border: 1px solid var(--color-cool-sky);
   border-radius: var(--radius-md, 8px);
-  color: #92400e;
+  color: var(--color-imperial-blue);
   display: flex;
   font-size: 0.875rem;
   gap: 8px;
@@ -80,7 +80,7 @@
 
 .cancelNotice svg {
   flex-shrink: 0;
-  stroke: #f59e0b;
+  stroke: var(--color-cool-sky);
 }
 
 .cancelNotice strong {

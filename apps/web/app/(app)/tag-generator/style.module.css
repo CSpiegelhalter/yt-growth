@@ -109,7 +109,7 @@
 .input:focus,
 .textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-alpha, rgb(99 102 241 / 10%));
+  box-shadow: 0 0 0 3px var(--primary-alpha, rgb(202 31 123 / 10%));
   outline: none;
 }
 
@@ -124,7 +124,7 @@
 }
 
 .inputError:focus {
-  box-shadow: 0 0 0 3px rgb(239 68 68 / 10%);
+  box-shadow: 0 0 0 3px rgb(202 31 123 / 10%);
 }
 
 .textarea {
@@ -171,7 +171,7 @@
 
 .submitBtn:hover:not(:disabled) {
   background: var(--primary-hover);
-  box-shadow: 0 4px 16px rgb(99 102 241 / 30%);
+  box-shadow: 0 4px 16px rgb(202 31 123 / 30%);
   transform: translateY(-1px);
 }
 

@@ -173,13 +173,13 @@ export function DiscoveryChart({
                 <Area
                   type="monotone"
                   dataKey="views"
-                  stroke="#3b82f6"
+                  stroke="var(--color-cool-sky)"
                   strokeWidth={2}
                   fill="url(#viewsGradient)"
                   isAnimationActive={false}
                   activeDot={{
                     r: 4,
-                    fill: "#3b82f6",
+                    fill: "var(--color-cool-sky)",
                     stroke: "#fff",
                     strokeWidth: 2,
                   }}

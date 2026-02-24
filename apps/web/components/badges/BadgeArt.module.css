@@ -30,7 +30,7 @@
 }
 
 .legendary .badgeSvg {
-  filter: drop-shadow(0 8px 16px rgb(251 191 36 / 50%));
+  filter: drop-shadow(0 8px 16px rgb(53 167 255 / 50%));
 }
 
 .locked .badgeSvg {
@@ -137,7 +137,7 @@
 /* Focus states for accessibility */
 .badgeWrap:focus-visible {
   border-radius: 8px;
-  outline: 3px solid #6366f1;
+  outline: 3px solid var(--primary);
   outline-offset: 4px;
 }
 

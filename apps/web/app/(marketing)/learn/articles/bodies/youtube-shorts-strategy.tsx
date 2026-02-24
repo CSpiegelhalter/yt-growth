@@ -552,7 +552,7 @@ function TrendSignalCard({
         style={{
           fontSize: "14px",
           fontWeight: 700,
-          color: "#6366f1",
+          color: "var(--color-hot-rose)",
           margin: "0 0 12px",
           textTransform: "uppercase",
           letterSpacing: "0.02em",
@@ -713,7 +713,7 @@ function TransformPlayCard({
         <p
           style={{
             fontSize: "13px",
-            color: "#6366f1",
+            color: "var(--color-hot-rose)",
             margin: 0,
             fontStyle: "italic",
           }}
@@ -753,7 +753,7 @@ function ModuleHeader({ number, title, description }: ModuleHeaderProps) {
             justifyContent: "center",
             width: "36px",
             height: "36px",
-            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+            background: "linear-gradient(135deg, var(--color-hot-rose) 0%, var(--color-hot-rose) 100%)",
             color: "white",
             fontSize: "16px",
             fontWeight: 700,
@@ -824,8 +824,8 @@ function StrategyCard({
             justifyContent: "center",
             width: "28px",
             height: "28px",
-            background: "#e0e7ff",
-            color: "#4f46e5",
+            background: "var(--color-lavender-mist)",
+            color: "var(--color-hot-rose-hover)",
             fontSize: "13px",
             fontWeight: 700,
             borderRadius: "6px",
@@ -912,7 +912,7 @@ function ScorecardItem({ label, question }: ScorecardItemProps) {
           width: "18px",
           height: "18px",
           borderRadius: "4px",
-          border: "2px solid #6366f1",
+          border: "2px solid var(--color-hot-rose)",
           flexShrink: 0,
           marginTop: "2px",
         }}
@@ -961,7 +961,7 @@ function HookTemplateCard({ template, example }: HookTemplateCardProps) {
         style={{
           fontSize: "14px",
           fontWeight: 600,
-          color: "#6366f1",
+          color: "var(--color-hot-rose)",
           margin: "0 0 8px",
           lineHeight: 1.4,
         }}
@@ -1607,7 +1607,7 @@ export function Body({ s }: BodyProps) {
         >
           <div
             style={{
-              background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
+              background: "linear-gradient(135deg, var(--color-cool-sky-light) 0%, var(--color-cool-sky-light) 100%)",
               borderRadius: "12px",
               padding: "20px",
               border: "1px solid #fcd34d",
@@ -1617,7 +1617,7 @@ export function Body({ s }: BodyProps) {
               style={{
                 fontSize: "12px",
                 fontWeight: 700,
-                color: "#92400e",
+                color: "var(--color-imperial-blue)",
                 textTransform: "uppercase",
                 letterSpacing: "0.04em",
                 margin: "0 0 8px",
@@ -1628,7 +1628,7 @@ export function Body({ s }: BodyProps) {
             <p
               style={{
                 fontSize: "14px",
-                color: "#78350f",
+                color: "var(--color-imperial-blue)",
                 margin: "0 0 12px",
                 lineHeight: 1.6,
               }}
@@ -1640,7 +1640,7 @@ export function Body({ s }: BodyProps) {
             <p
               style={{
                 fontSize: "14px",
-                color: "#78350f",
+                color: "var(--color-imperial-blue)",
                 margin: "0 0 12px",
                 lineHeight: 1.6,
               }}
@@ -1653,7 +1653,7 @@ export function Body({ s }: BodyProps) {
             <p
               style={{
                 fontSize: "14px",
-                color: "#92400e",
+                color: "var(--color-imperial-blue)",
                 margin: 0,
                 fontStyle: "italic",
               }}
@@ -1665,7 +1665,7 @@ export function Body({ s }: BodyProps) {
 
           <div
             style={{
-              background: "linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)",
+              background: "linear-gradient(135deg, var(--color-stormy-teal-light) 0%, var(--color-stormy-teal-light) 100%)",
               borderRadius: "12px",
               padding: "20px",
               border: "1px solid #86efac",
@@ -1675,7 +1675,7 @@ export function Body({ s }: BodyProps) {
               style={{
                 fontSize: "12px",
                 fontWeight: 700,
-                color: "#166534",
+                color: "var(--color-stormy-teal-hover)",
                 textTransform: "uppercase",
                 letterSpacing: "0.04em",
                 margin: "0 0 8px",
@@ -1686,7 +1686,7 @@ export function Body({ s }: BodyProps) {
             <p
               style={{
                 fontSize: "14px",
-                color: "#14532d",
+                color: "var(--color-stormy-teal-hover)",
                 margin: "0 0 12px",
                 lineHeight: 1.6,
               }}
@@ -1699,7 +1699,7 @@ export function Body({ s }: BodyProps) {
             <p
               style={{
                 fontSize: "14px",
-                color: "#14532d",
+                color: "var(--color-stormy-teal-hover)",
                 margin: "0 0 12px",
                 lineHeight: 1.6,
               }}
@@ -1711,7 +1711,7 @@ export function Body({ s }: BodyProps) {
             <p
               style={{
                 fontSize: "14px",
-                color: "#166534",
+                color: "var(--color-stormy-teal-hover)",
                 margin: 0,
                 fontStyle: "italic",
               }}
@@ -2261,8 +2261,8 @@ export function Body({ s }: BodyProps) {
 
         <div
           style={{
-            background: "linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%)",
-            border: "2px solid #22c55e",
+            background: "linear-gradient(135deg, var(--color-stormy-teal-light) 0%, var(--color-stormy-teal-light) 100%)",
+            border: "2px solid var(--color-stormy-teal)",
             borderRadius: "12px",
             padding: "24px",
             marginTop: "24px",
@@ -2272,7 +2272,7 @@ export function Body({ s }: BodyProps) {
             style={{
               fontSize: "18px",
               fontWeight: 700,
-              color: "#166534",
+              color: "var(--color-stormy-teal-hover)",
               margin: "0 0 12px",
             }}
           >
@@ -2281,7 +2281,7 @@ export function Body({ s }: BodyProps) {
           <p
             style={{
               fontSize: "15px",
-              color: "#15803d",
+              color: "var(--color-stormy-teal)",
               margin: "0 0 16px",
               lineHeight: 1.6,
             }}
@@ -2301,7 +2301,7 @@ export function Body({ s }: BodyProps) {
               color: "white",
               textDecoration: "none",
               padding: "12px 20px",
-              background: "#22c55e",
+              background: "var(--color-stormy-teal)",
               borderRadius: "8px",
               transition: "all 0.15s ease",
             }}

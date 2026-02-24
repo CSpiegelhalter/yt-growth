@@ -149,13 +149,13 @@
 }
 
 .inputError {
-  background: rgb(239 68 68 / 5%);
+  background: rgb(202 31 123 / 5%);
   border-color: var(--color-danger);
 }
 
 .inputError:focus {
   border-color: var(--color-danger);
-  box-shadow: 0 0 0 3px rgb(239 68 68 / 10%);
+  box-shadow: 0 0 0 3px rgb(202 31 123 / 10%);
 }
 
 /* ================================================
@@ -299,7 +299,7 @@
 
 .successBtn:hover {
   background: var(--primary-hover);
-  box-shadow: 0 4px 16px rgb(99 102 241 / 30%);
+  box-shadow: 0 4px 16px rgb(202 31 123 / 30%);
   color: #fff;
   transform: translateY(-2px);
 }
@@ -314,8 +314,8 @@
    ================================================ */
 .errorAlert {
   align-items: flex-start;
-  background: rgb(239 68 68 / 5%);
-  border: 1px solid rgb(239 68 68 / 20%);
+  background: rgb(202 31 123 / 5%);
+  border: 1px solid rgb(202 31 123 / 20%);
   border-radius: var(--radius-md);
   display: flex;
   gap: var(--space-sm);

@@ -97,25 +97,26 @@ export default async function LearnArticlePage({ params }: LearnArticlePageProps
         title={article.title}
         description={article.metaDescription}
         toc={tocItems}
+        footer={
+          <>
+            <LearnFAQ
+              faqs={article.faqs}
+              sectionId="faq"
+              styles={faqStyles}
+            />
+            <RelatedArticles
+              items={relatedArticles.map((a) => ({ slug: a.slug, title: a.title }))}
+              styles={relatedStyles}
+            />
+            <LearnStaticCTA
+              title={`Learn More About ${article.shortTitle}`}
+              description={`${BRAND.name} helps you understand what's working and make better content decisions.`}
+            />
+          </>
+        }
       >
         <article className={s.content}>
           <BodyComponent s={s} article={article} />
-
-          <LearnFAQ
-            faqs={article.faqs}
-            sectionId="faq"
-            styles={faqStyles}
-          />
-
-          <RelatedArticles
-            items={relatedArticles.map((a) => ({ slug: a.slug, title: a.title }))}
-            styles={relatedStyles}
-          />
-
-          <LearnStaticCTA
-            title={`Learn More About ${article.shortTitle}`}
-            description={`${BRAND.name} helps you understand what's working and make better content decisions.`}
-          />
         </article>
       </ArticleShell>
     </main>

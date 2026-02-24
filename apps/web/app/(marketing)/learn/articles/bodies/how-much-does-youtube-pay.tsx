@@ -424,8 +424,8 @@ type MetricCardProps = {
 function MetricCard({ label, title, description, accent }: MetricCardProps) {
   const colors =
     accent === "amber"
-      ? { bg: "#fef3c7", border: "#f59e0b", text: "#92400e" }
-      : { bg: "#dcfce7", border: "#22c55e", text: "#166534" };
+      ? { bg: "var(--color-cool-sky-light)", border: "var(--color-cool-sky)", text: "var(--color-imperial-blue)" }
+      : { bg: "#dcfce7", border: "var(--color-stormy-teal)", text: "var(--color-stormy-teal-hover)" };
 
   return (
     <div
@@ -599,8 +599,8 @@ function CreatorCashRegister() {
     >
       <title>Creator Cash Register</title>
       {/* Register body */}
-      <rect x="20" y="40" width="100" height="60" rx="6" fill="#1e293b" />
-      <rect x="25" y="45" width="90" height="30" rx="4" fill="#0f172a" />
+      <rect x="20" y="40" width="100" height="60" rx="6" fill="var(--color-imperial-blue)" />
+      <rect x="25" y="45" width="90" height="30" rx="4" fill="var(--color-imperial-blue)" />
       {/* Display text */}
       <text
         x="70"
@@ -608,14 +608,14 @@ function CreatorCashRegister() {
         textAnchor="middle"
         fontSize="12"
         fontWeight="bold"
-        fill="#22c55e"
+        fill="var(--color-stormy-teal)"
       >
         Ads (mostly)
       </text>
       {/* Buttons */}
       <rect x="30" y="80" width="20" height="12" rx="2" fill="#475569" />
       <rect x="55" y="80" width="20" height="12" rx="2" fill="#475569" />
-      <rect x="80" y="80" width="30" height="12" rx="2" fill="#22c55e" />
+      <rect x="80" y="80" width="30" height="12" rx="2" fill="var(--color-stormy-teal)" />
       {/* Receipt printer */}
       <rect x="95" y="20" width="35" height="25" rx="3" fill="#64748b" />
       <rect x="100" y="15" width="25" height="8" rx="2" fill="#f8fafc" />
@@ -628,8 +628,8 @@ function CreatorCashRegister() {
         not CPM
       </text>
       {/* Dollar sign decoration */}
-      <circle cx="35" cy="25" r="12" fill="#fef3c7" />
-      <text x="35" y="30" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#d97706">
+      <circle cx="35" cy="25" r="12" fill="var(--color-cool-sky-light)" />
+      <text x="35" y="30" textAnchor="middle" fontSize="14" fontWeight="bold" fill="var(--color-cool-sky)">
         $
       </text>
     </svg>
@@ -649,16 +649,16 @@ function RevenuePlumbing() {
     >
       <title>Revenue Plumbing Diagram</title>
       {/* Advertiser */}
-      <rect x="10" y="30" width="70" height="40" rx="6" fill="#dbeafe" stroke="#3b82f6" strokeWidth="2" />
+      <rect x="10" y="30" width="70" height="40" rx="6" fill="var(--color-cool-sky-light)" stroke="var(--color-cool-sky)" strokeWidth="2" />
       <text x="45" y="55" textAnchor="middle" fontSize="11" fontWeight="600" fill="#1e40af">
         Advertiser
       </text>
       {/* Pipe to YouTube */}
       <rect x="80" y="45" width="50" height="10" rx="2" fill="#94a3b8" />
-      <path d="M95 40 L105 50 L95 60" fill="#22c55e" />
+      <path d="M95 40 L105 50 L95 60" fill="var(--color-stormy-teal)" />
       {/* YouTube (with valve) */}
-      <rect x="130" y="20" width="80" height="60" rx="8" fill="#fef2f2" stroke="#ef4444" strokeWidth="2" />
-      <text x="170" y="45" textAnchor="middle" fontSize="11" fontWeight="600" fill="#dc2626">
+      <rect x="130" y="20" width="80" height="60" rx="8" fill="var(--color-hot-rose-light)" stroke="var(--color-hot-rose)" strokeWidth="2" />
+      <text x="170" y="45" textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--color-hot-rose)">
         YouTube
       </text>
       {/* Valve */}
@@ -668,13 +668,13 @@ function RevenuePlumbing() {
       </text>
       {/* Pipe to Creator */}
       <rect x="210" y="45" width="50" height="10" rx="2" fill="#94a3b8" />
-      <path d="M225 40 L235 50 L225 60" fill="#22c55e" />
+      <path d="M225 40 L235 50 L225 60" fill="var(--color-stormy-teal)" />
       {/* Creator */}
-      <rect x="260" y="30" width="70" height="40" rx="6" fill="#dcfce7" stroke="#22c55e" strokeWidth="2" />
-      <text x="295" y="48" textAnchor="middle" fontSize="11" fontWeight="600" fill="#166534">
+      <rect x="260" y="30" width="70" height="40" rx="6" fill="#dcfce7" stroke="var(--color-stormy-teal)" strokeWidth="2" />
+      <text x="295" y="48" textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--color-stormy-teal-hover)">
         Creator
       </text>
-      <text x="295" y="62" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#22c55e">
+      <text x="295" y="62" textAnchor="middle" fontSize="10" fontWeight="bold" fill="var(--color-stormy-teal)">
         55%
       </text>
     </svg>
@@ -694,13 +694,13 @@ function SplitFlapBoard() {
     >
       <title>Split-Flap Board comparing CPM and RPM</title>
       {/* Board background */}
-      <rect x="10" y="10" width="280" height="80" rx="4" fill="#1e293b" />
+      <rect x="10" y="10" width="280" height="80" rx="4" fill="var(--color-imperial-blue)" />
       {/* CPM flap */}
       <g>
-        <rect x="25" y="20" width="110" height="60" rx="3" fill="#0f172a" />
+        <rect x="25" y="20" width="110" height="60" rx="3" fill="var(--color-imperial-blue)" />
         <rect x="25" y="20" width="110" height="28" rx="3" fill="#334155" />
-        <line x1="25" y1="50" x2="135" y2="50" stroke="#1e293b" strokeWidth="2" />
-        <text x="80" y="42" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#f59e0b">
+        <line x1="25" y1="50" x2="135" y2="50" stroke="var(--color-imperial-blue)" strokeWidth="2" />
+        <text x="80" y="42" textAnchor="middle" fontSize="16" fontWeight="bold" fill="var(--color-cool-sky)">
           CPM
         </text>
         <text x="80" y="68" textAnchor="middle" fontSize="9" fill="#94a3b8">
@@ -709,10 +709,10 @@ function SplitFlapBoard() {
       </g>
       {/* RPM flap */}
       <g>
-        <rect x="165" y="20" width="110" height="60" rx="3" fill="#0f172a" />
+        <rect x="165" y="20" width="110" height="60" rx="3" fill="var(--color-imperial-blue)" />
         <rect x="165" y="20" width="110" height="28" rx="3" fill="#334155" />
-        <line x1="165" y1="50" x2="275" y2="50" stroke="#1e293b" strokeWidth="2" />
-        <text x="220" y="42" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#22c55e">
+        <line x1="165" y1="50" x2="275" y2="50" stroke="var(--color-imperial-blue)" strokeWidth="2" />
+        <text x="220" y="42" textAnchor="middle" fontSize="16" fontWeight="bold" fill="var(--color-stormy-teal)">
           RPM
         </text>
         <text x="220" y="68" textAnchor="middle" fontSize="9" fill="#94a3b8">
@@ -749,18 +749,18 @@ function PennyJar() {
       {/* Lid */}
       <rect x="35" y="18" width="30" height="8" rx="2" fill="#94a3b8" />
       {/* Pennies (many small coins at bottom) */}
-      <circle cx="35" cy="90" r="6" fill="#f59e0b" opacity="0.7" />
-      <circle cx="50" cy="93" r="5" fill="#f59e0b" opacity="0.6" />
-      <circle cx="62" cy="88" r="5" fill="#f59e0b" opacity="0.7" />
+      <circle cx="35" cy="90" r="6" fill="var(--color-cool-sky)" opacity="0.7" />
+      <circle cx="50" cy="93" r="5" fill="var(--color-cool-sky)" opacity="0.6" />
+      <circle cx="62" cy="88" r="5" fill="var(--color-cool-sky)" opacity="0.7" />
       <circle cx="40" cy="77" r="4" fill="#fcd34d" opacity="0.6" />
       <circle cx="55" cy="80" r="4" fill="#fcd34d" opacity="0.5" />
       <circle cx="68" cy="75" r="4" fill="#fcd34d" opacity="0.6" />
-      <circle cx="32" cy="65" r="3" fill="#fef3c7" opacity="0.5" />
-      <circle cx="45" cy="67" r="3" fill="#fef3c7" opacity="0.4" />
-      <circle cx="58" cy="63" r="3" fill="#fef3c7" opacity="0.5" />
-      <circle cx="70" cy="60" r="3" fill="#fef3c7" opacity="0.4" />
+      <circle cx="32" cy="65" r="3" fill="var(--color-cool-sky-light)" opacity="0.5" />
+      <circle cx="45" cy="67" r="3" fill="var(--color-cool-sky-light)" opacity="0.4" />
+      <circle cx="58" cy="63" r="3" fill="var(--color-cool-sky-light)" opacity="0.5" />
+      <circle cx="70" cy="60" r="3" fill="var(--color-cool-sky-light)" opacity="0.4" />
       {/* Quarter (rare high value) */}
-      <circle cx="45" cy="50" r="9" fill="#22c55e" />
+      <circle cx="45" cy="50" r="9" fill="var(--color-stormy-teal)" />
       <text x="45" y="54" textAnchor="middle" fontSize="9" fontWeight="bold" fill="white">
         $
       </text>
@@ -781,7 +781,7 @@ function ShippingLabel() {
     >
       <title>Million Views Shipping Label showing the RPM formula</title>
       {/* Label background */}
-      <rect x="10" y="10" width="180" height="80" rx="4" fill="#fef9c3" stroke="#eab308" strokeWidth="2" strokeDasharray="8 4" />
+      <rect x="10" y="10" width="180" height="80" rx="4" fill="#fef9c3" stroke="var(--color-cool-sky)" strokeWidth="2" strokeDasharray="8 4" />
       {/* Barcode decoration */}
       <g>
         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
@@ -791,19 +791,19 @@ function ShippingLabel() {
             y="65"
             width={i % 3 === 0 ? 3 : 2}
             height="18"
-            fill="#1e293b"
+            fill="var(--color-imperial-blue)"
           />
         ))}
       </g>
       {/* Main formula */}
-      <text x="100" y="32" textAnchor="middle" fontSize="10" fill="#78350f">
+      <text x="100" y="32" textAnchor="middle" fontSize="10" fill="var(--color-imperial-blue)">
         CONTENTS:
       </text>
-      <text x="100" y="52" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#1e293b">
+      <text x="100" y="52" textAnchor="middle" fontSize="14" fontWeight="bold" fill="var(--color-imperial-blue)">
         1M views x RPM
       </text>
       {/* Ship to */}
-      <text x="140" y="78" textAnchor="start" fontSize="8" fill="#92400e">
+      <text x="140" y="78" textAnchor="start" fontSize="8" fill="var(--color-imperial-blue)">
         = earnings
       </text>
     </svg>
@@ -823,20 +823,20 @@ function WeatherCard() {
     >
       <title>Seasonality Weather Report</title>
       {/* Card */}
-      <rect x="5" y="5" width="130" height="80" rx="8" fill="#0f172a" />
-      <rect x="5" y="5" width="130" height="24" rx="8" fill="#1e293b" />
-      <rect x="5" y="21" width="130" height="8" fill="#1e293b" />
+      <rect x="5" y="5" width="130" height="80" rx="8" fill="var(--color-imperial-blue)" />
+      <rect x="5" y="5" width="130" height="24" rx="8" fill="var(--color-imperial-blue)" />
+      <rect x="5" y="21" width="130" height="8" fill="var(--color-imperial-blue)" />
       <text x="70" y="20" textAnchor="middle" fontSize="9" fontWeight="600" fill="#94a3b8">
         AD SPEND FORECAST
       </text>
       {/* Q4 */}
       <g>
-        <circle cx="40" cy="55" r="14" fill="#fef3c7" />
-        <circle cx="40" cy="55" r="10" fill="#f59e0b" />
+        <circle cx="40" cy="55" r="14" fill="var(--color-cool-sky-light)" />
+        <circle cx="40" cy="55" r="10" fill="var(--color-cool-sky)" />
         <text x="40" y="59" textAnchor="middle" fontSize="8" fontWeight="bold" fill="white">
           Q4
         </text>
-        <text x="40" y="78" textAnchor="middle" fontSize="7" fill="#22c55e">
+        <text x="40" y="78" textAnchor="middle" fontSize="7" fill="var(--color-stormy-teal)">
           High
         </text>
       </g>
@@ -844,7 +844,7 @@ function WeatherCard() {
       <g>
         <circle cx="100" cy="55" r="14" fill="#e0f2fe" />
         <path d="M92 50 L108 50 M92 55 L108 55 M92 60 L108 60" stroke="#0ea5e9" strokeWidth="2" />
-        <text x="100" y="78" textAnchor="middle" fontSize="7" fill="#dc2626">
+        <text x="100" y="78" textAnchor="middle" fontSize="7" fill="var(--color-hot-rose)">
           Jan: Low
         </text>
       </g>
@@ -865,7 +865,7 @@ function ControlPanel() {
     >
       <title>Earnings Control Panel</title>
       {/* Panel */}
-      <rect x="10" y="10" width="300" height="100" rx="8" fill="#1e293b" />
+      <rect x="10" y="10" width="300" height="100" rx="8" fill="var(--color-imperial-blue)" />
       <rect x="10" y="10" width="300" height="25" rx="8" fill="#334155" />
       <rect x="10" y="27" width="300" height="8" fill="#334155" />
       <text x="160" y="27" textAnchor="middle" fontSize="10" fontWeight="600" fill="#94a3b8">
@@ -880,7 +880,7 @@ function ControlPanel() {
         { x: 265, label: "Safe", on: true },
       ].map((knob, i) => (
         <g key={i}>
-          <rect x={knob.x - 15} y={50} width={30} height={14} rx={7} fill={knob.on ? "#22c55e" : "#475569"} />
+          <rect x={knob.x - 15} y={50} width={30} height={14} rx={7} fill={knob.on ? "var(--color-stormy-teal)" : "#475569"} />
           <circle cx={knob.on ? knob.x + 8 : knob.x - 8} cy={57} r={5} fill="white" />
           <text x={knob.x} y={78} textAnchor="middle" fontSize="8" fill="#94a3b8">
             {knob.label}
@@ -888,7 +888,7 @@ function ControlPanel() {
         </g>
       ))}
       {/* Status lights */}
-      <circle cx="30" y="95" r="4" fill="#22c55e" />
+      <circle cx="30" y="95" r="4" fill="var(--color-stormy-teal)" />
       <text x="40" y="98" fontSize="7" fill="#64748b">
         More factors ON = higher potential
       </text>
@@ -912,8 +912,8 @@ function PayLadder() {
       <rect x="30" y="20" width="8" height="170" rx="2" fill="#475569" />
       <rect x="282" y="20" width="8" height="170" rx="2" fill="#475569" />
       {/* High tier rung */}
-      <rect x="30" y="35" width="260" height="40" rx="4" fill="#dcfce7" stroke="#22c55e" strokeWidth="2" />
-      <text x="50" y="52" fontSize="10" fontWeight="700" fill="#166534">
+      <rect x="30" y="35" width="260" height="40" rx="4" fill="#dcfce7" stroke="var(--color-stormy-teal)" strokeWidth="2" />
+      <text x="50" y="52" fontSize="10" fontWeight="700" fill="var(--color-stormy-teal-hover)">
         Higher ($5–15+ RPM)
       </text>
       <g>
@@ -923,41 +923,41 @@ function PayLadder() {
           </rect>
         ))}
         {["Finance", "Business", "Software", "Legal", "Real Estate"].map((niche, i) => (
-          <text key={i} x={72 + i * 50} y={68} textAnchor="middle" fontSize="7" fill="#166534">
+          <text key={i} x={72 + i * 50} y={68} textAnchor="middle" fontSize="7" fill="var(--color-stormy-teal-hover)">
             {niche}
           </text>
         ))}
       </g>
       {/* Medium tier rung */}
-      <rect x="30" y="90" width="260" height="40" rx="4" fill="#fef3c7" stroke="#f59e0b" strokeWidth="2" />
-      <text x="50" y="107" fontSize="10" fontWeight="700" fill="#92400e">
+      <rect x="30" y="90" width="260" height="40" rx="4" fill="var(--color-cool-sky-light)" stroke="var(--color-cool-sky)" strokeWidth="2" />
+      <text x="50" y="107" fontSize="10" fontWeight="700" fill="var(--color-imperial-blue)">
         Medium ($2–5 RPM)
       </text>
       <g>
         {["Education", "Cooking", "Travel", "Fitness", "DIY"].map((niche, i) => (
-          <rect key={i} x={50 + i * 50} y={113} width={45} height={14} rx={7} fill="#fde68a">
+          <rect key={i} x={50 + i * 50} y={113} width={45} height={14} rx={7} fill="var(--color-cool-sky-light)">
             <title>{niche}</title>
           </rect>
         ))}
         {["Education", "Cooking", "Travel", "Fitness", "DIY"].map((niche, i) => (
-          <text key={i} x={72 + i * 50} y={123} textAnchor="middle" fontSize="7" fill="#92400e">
+          <text key={i} x={72 + i * 50} y={123} textAnchor="middle" fontSize="7" fill="var(--color-imperial-blue)">
             {niche}
           </text>
         ))}
       </g>
       {/* Lower tier rung */}
-      <rect x="30" y="145" width="260" height="40" rx="4" fill="#fee2e2" stroke="#f87171" strokeWidth="2" />
-      <text x="50" y="162" fontSize="10" fontWeight="700" fill="#991b1b">
+      <rect x="30" y="145" width="260" height="40" rx="4" fill="var(--color-hot-rose-light)" stroke="#f87171" strokeWidth="2" />
+      <text x="50" y="162" fontSize="10" fontWeight="700" fill="var(--color-hot-rose-hover)">
         Lower ($1–3 RPM)
       </text>
       <g>
         {["Gaming", "Comedy", "Music", "Vlogs", "Kids"].map((niche, i) => (
-          <rect key={i} x={50 + i * 50} y={168} width={45} height={14} rx={7} fill="#fecaca">
+          <rect key={i} x={50 + i * 50} y={168} width={45} height={14} rx={7} fill="var(--color-hot-rose-light)">
             <title>{niche}</title>
           </rect>
         ))}
         {["Gaming", "Comedy", "Music", "Vlogs", "Kids"].map((niche, i) => (
-          <text key={i} x={72 + i * 50} y={178} textAnchor="middle" fontSize="7" fill="#991b1b">
+          <text key={i} x={72 + i * 50} y={178} textAnchor="middle" fontSize="7" fill="var(--color-hot-rose-hover)">
             {niche}
           </text>
         ))}
@@ -979,8 +979,8 @@ function BudgetTable() {
     >
       <title>Creator Budget Table</title>
       {/* Table */}
-      <rect x="10" y="60" width="320" height="50" rx="4" fill="#78350f" />
-      <rect x="15" y="65" width="310" height="40" rx="2" fill="#92400e" />
+      <rect x="10" y="60" width="320" height="50" rx="4" fill="var(--color-imperial-blue)" />
+      <rect x="15" y="65" width="310" height="40" rx="2" fill="var(--color-imperial-blue)" />
       {/* Placemats */}
       <g>
         {/* Small */}
@@ -998,29 +998,29 @@ function BudgetTable() {
       </g>
       <g>
         {/* Growing */}
-        <rect x="125" y="25" width="90" height="55" rx="4" fill="#dbeafe" />
+        <rect x="125" y="25" width="90" height="55" rx="4" fill="var(--color-cool-sky-light)" />
         <text x="170" y="42" textAnchor="middle" fontSize="9" fontWeight="600" fill="#1e40af">
           Growing
         </text>
-        <text x="170" y="55" textAnchor="middle" fontSize="7" fill="#3b82f6">
+        <text x="170" y="55" textAnchor="middle" fontSize="7" fill="var(--color-cool-sky)">
           10K-100K subs
         </text>
         <rect x="140" y="62" width="50" height={12} rx="2" fill="white" stroke="#bfdbfe" strokeWidth="1" />
-        <text x="165" y="71" textAnchor="middle" fontSize="7" fill="#3b82f6">
+        <text x="165" y="71" textAnchor="middle" fontSize="7" fill="var(--color-cool-sky)">
           $100-$1K
         </text>
       </g>
       <g>
         {/* Established */}
         <rect x="225" y="25" width="90" height="55" rx="4" fill="#dcfce7" />
-        <text x="270" y="42" textAnchor="middle" fontSize="9" fontWeight="600" fill="#166534">
+        <text x="270" y="42" textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--color-stormy-teal-hover)">
           Established
         </text>
-        <text x="270" y="55" textAnchor="middle" fontSize="7" fill="#22c55e">
+        <text x="270" y="55" textAnchor="middle" fontSize="7" fill="var(--color-stormy-teal)">
           100K+ subs
         </text>
         <rect x="240" y="62" width="50" height={12} rx="2" fill="white" stroke="#bbf7d0" strokeWidth="1" />
-        <text x="265" y="71" textAnchor="middle" fontSize="7" fill="#22c55e">
+        <text x="265" y="71" textAnchor="middle" fontSize="7" fill="var(--color-stormy-teal)">
           $1K-$10K+
         </text>
       </g>
@@ -1043,18 +1043,18 @@ function LayerCake() {
       {/* Plate */}
       <ellipse cx="100" cy="165" rx="80" ry="10" fill="#e2e8f0" />
       {/* Layer 1 - Ads (base) */}
-      <path d="M30 145 Q30 155 100 155 Q170 155 170 145 L170 130 Q170 140 100 140 Q30 140 30 130 Z" fill="#fecaca" />
-      <text x="100" y="150" textAnchor="middle" fontSize="9" fill="#991b1b">
+      <path d="M30 145 Q30 155 100 155 Q170 155 170 145 L170 130 Q170 140 100 140 Q30 140 30 130 Z" fill="var(--color-hot-rose-light)" />
+      <text x="100" y="150" textAnchor="middle" fontSize="9" fill="var(--color-hot-rose-hover)">
         Ads
       </text>
       {/* Layer 2 - Sponsors */}
-      <path d="M35 125 Q35 135 100 135 Q165 135 165 125 L165 110 Q165 120 100 120 Q35 120 35 110 Z" fill="#fde68a" />
-      <text x="100" y="130" textAnchor="middle" fontSize="9" fill="#92400e">
+      <path d="M35 125 Q35 135 100 135 Q165 135 165 125 L165 110 Q165 120 100 120 Q35 120 35 110 Z" fill="var(--color-cool-sky-light)" />
+      <text x="100" y="130" textAnchor="middle" fontSize="9" fill="var(--color-imperial-blue)">
         Sponsors
       </text>
       {/* Layer 3 - Affiliate */}
       <path d="M40 105 Q40 115 100 115 Q160 115 160 105 L160 90 Q160 100 100 100 Q40 100 40 90 Z" fill="#bbf7d0" />
-      <text x="100" y="110" textAnchor="middle" fontSize="9" fill="#166534">
+      <text x="100" y="110" textAnchor="middle" fontSize="9" fill="var(--color-stormy-teal-hover)">
         Affiliate
       </text>
       {/* Layer 4 - Products */}
@@ -1069,8 +1069,8 @@ function LayerCake() {
         Memberships
       </text>
       {/* Cherry on top */}
-      <circle cx="100" cy="35" r="8" fill="#ef4444" />
-      <path d="M100 27 Q105 20 110 25" stroke="#22c55e" strokeWidth="2" fill="none" />
+      <circle cx="100" cy="35" r="8" fill="var(--color-hot-rose)" />
+      <path d="M100 27 Q105 20 110 25" stroke="var(--color-stormy-teal)" strokeWidth="2" fill="none" />
     </svg>
   );
 }
@@ -1093,37 +1093,37 @@ function BadTakesMuseum() {
       <rect x="10" y="55" width="260" height="20" fill="#e2e8f0" />
       {/* Picture frames */}
       <g>
-        <rect x="30" y="28" width="35" height="25" fill="#fef2f2" stroke="#fca5a5" strokeWidth="2" />
-        <text x="47" y="43" textAnchor="middle" fontSize="5" fill="#dc2626">
+        <rect x="30" y="28" width="35" height="25" fill="var(--color-hot-rose-light)" stroke="#fca5a5" strokeWidth="2" />
+        <text x="47" y="43" textAnchor="middle" fontSize="5" fill="var(--color-hot-rose)">
           MYTH
         </text>
       </g>
       <g>
-        <rect x="80" y="28" width="35" height="25" fill="#fef2f2" stroke="#fca5a5" strokeWidth="2" />
-        <text x="97" y="43" textAnchor="middle" fontSize="5" fill="#dc2626">
+        <rect x="80" y="28" width="35" height="25" fill="var(--color-hot-rose-light)" stroke="#fca5a5" strokeWidth="2" />
+        <text x="97" y="43" textAnchor="middle" fontSize="5" fill="var(--color-hot-rose)">
           MYTH
         </text>
       </g>
       <g>
-        <rect x="130" y="28" width="35" height="25" fill="#fef2f2" stroke="#fca5a5" strokeWidth="2" />
-        <text x="147" y="43" textAnchor="middle" fontSize="5" fill="#dc2626">
+        <rect x="130" y="28" width="35" height="25" fill="var(--color-hot-rose-light)" stroke="#fca5a5" strokeWidth="2" />
+        <text x="147" y="43" textAnchor="middle" fontSize="5" fill="var(--color-hot-rose)">
           MYTH
         </text>
       </g>
       <g>
-        <rect x="180" y="28" width="35" height="25" fill="#fef2f2" stroke="#fca5a5" strokeWidth="2" />
-        <text x="197" y="43" textAnchor="middle" fontSize="5" fill="#dc2626">
+        <rect x="180" y="28" width="35" height="25" fill="var(--color-hot-rose-light)" stroke="#fca5a5" strokeWidth="2" />
+        <text x="197" y="43" textAnchor="middle" fontSize="5" fill="var(--color-hot-rose)">
           MYTH
         </text>
       </g>
       <g>
-        <rect x="230" y="28" width="35" height="25" fill="#fef2f2" stroke="#fca5a5" strokeWidth="2" />
-        <text x="247" y="43" textAnchor="middle" fontSize="5" fill="#dc2626">
+        <rect x="230" y="28" width="35" height="25" fill="var(--color-hot-rose-light)" stroke="#fca5a5" strokeWidth="2" />
+        <text x="247" y="43" textAnchor="middle" fontSize="5" fill="var(--color-hot-rose)">
           MYTH
         </text>
       </g>
       {/* Museum sign */}
-      <rect x="90" y="5" width="100" height="18" rx="2" fill="#1e293b" />
+      <rect x="90" y="5" width="100" height="18" rx="2" fill="var(--color-imperial-blue)" />
       <text x="140" y="17" textAnchor="middle" fontSize="8" fontWeight="600" fill="white">
         MUSEUM OF BAD TAKES
       </text>
@@ -1144,8 +1144,8 @@ function FoamFinger() {
       {/* Foam finger pointing */}
       <path
         d="M10 55 L10 30 Q10 25 15 25 L25 25 L25 10 Q25 5 30 5 Q35 5 35 10 L35 25 L40 25 Q45 25 45 30 L45 55 Q45 58 40 58 L15 58 Q10 58 10 55 Z"
-        fill="#fef3c7"
-        stroke="#f59e0b"
+        fill="var(--color-cool-sky-light)"
+        stroke="var(--color-cool-sky)"
         strokeWidth="2"
       />
       {/* Text on finger */}
@@ -1155,7 +1155,7 @@ function FoamFinger() {
         textAnchor="middle"
         fontSize="5"
         fontWeight="bold"
-        fill="#92400e"
+        fill="var(--color-imperial-blue)"
         transform="rotate(-5 27 45)"
       >
         BRAND
@@ -1166,7 +1166,7 @@ function FoamFinger() {
         textAnchor="middle"
         fontSize="5"
         fontWeight="bold"
-        fill="#92400e"
+        fill="var(--color-imperial-blue)"
         transform="rotate(-5 27 52)"
       >
         SAFE

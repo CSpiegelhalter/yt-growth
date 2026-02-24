@@ -375,8 +375,8 @@
 }
 
 .actionBtn.danger:hover {
-  background: rgb(220 38 38 / 5%);
-  border-color: rgb(220 38 38 / 20%);
+  background: rgb(202 31 123 / 5%);
+  border-color: rgb(202 31 123 / 20%);
 }
 
 .actionBtnPrimary {
@@ -462,7 +462,7 @@
 
 .emptyBtn:hover {
   background: var(--primary-hover);
-  box-shadow: 0 4px 16px rgb(99 102 241 / 30%);
+  box-shadow: 0 4px 16px rgb(202 31 123 / 30%);
   transform: translateY(-2px);
 }
 

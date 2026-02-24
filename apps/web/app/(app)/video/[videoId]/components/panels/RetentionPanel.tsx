@@ -231,8 +231,8 @@ function RetentionAreaChart({
               x2="0"
               y2="1"
             >
-              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+              <stop offset="5%" stopColor="var(--color-cool-sky)" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="var(--color-cool-sky)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis
@@ -269,7 +269,7 @@ function RetentionAreaChart({
           />
           <ReferenceLine
             y={benchmark.target}
-            stroke="#22c55e"
+            stroke="var(--color-stormy-teal)"
             strokeDasharray="4"
             strokeOpacity={0.5}
           />
@@ -281,12 +281,12 @@ function RetentionAreaChart({
           {cliffRatio && (
             <ReferenceLine
               x={formatTime(cliffTimeSec!)}
-              stroke="#ef4444"
+              stroke="var(--color-hot-rose)"
               strokeDasharray="4"
               label={{
                 value: "Drop",
                 position: "top",
-                fill: "#ef4444",
+                fill: "var(--color-hot-rose)",
                 fontSize: 10,
               }}
             />
@@ -294,13 +294,13 @@ function RetentionAreaChart({
           <Area
             type="monotone"
             dataKey="retention"
-            stroke="#3b82f6"
+            stroke="var(--color-cool-sky)"
             strokeWidth={2}
             fill="url(#retentionGradient)"
             isAnimationActive={false}
             activeDot={{
               r: 4,
-              fill: "#3b82f6",
+              fill: "var(--color-cool-sky)",
               stroke: "#fff",
               strokeWidth: 2,
             }}

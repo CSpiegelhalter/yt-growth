@@ -420,7 +420,7 @@ export function Body({ s }: BodyProps) {
             display: "inline-block",
             padding: "0.875rem 2rem",
             background: "white",
-            color: "#6366f1",
+            color: "var(--color-hot-rose)",
             fontWeight: 600,
             borderRadius: "0.5rem",
             textDecoration: "none",
@@ -481,9 +481,9 @@ type MeterCardProps = {
 
 function MeterCard({ label, status, value, description }: MeterCardProps) {
   const statusColors = {
-    danger: { bg: "#fee2e2", text: "#991b1b", border: "#fecaca" },
-    warning: { bg: "#fef3c7", text: "#92400e", border: "#fde68a" },
-    ok: { bg: "#dcfce7", text: "#166534", border: "#bbf7d0" },
+    danger: { bg: "var(--color-hot-rose-light)", text: "var(--color-hot-rose-hover)", border: "var(--color-hot-rose-light)" },
+    warning: { bg: "var(--color-cool-sky-light)", text: "var(--color-imperial-blue)", border: "var(--color-cool-sky-light)" },
+    ok: { bg: "var(--color-stormy-teal-light)", text: "var(--color-stormy-teal-hover)", border: "var(--color-stormy-teal-light)" },
   };
   const colors = statusColors[status];
 

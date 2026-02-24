@@ -58,8 +58,8 @@
 }
 
 .status-strong {
-  background: rgb(34 197 94 / 12%);
-  color: #16a34a;
+  background: rgb(15 113 115 / 12%);
+  color: var(--color-stormy-teal);
 }
 
 .status-mixed {
@@ -68,8 +68,8 @@
 }
 
 .status-needs-work {
-  background: rgb(239 68 68 / 12%);
-  color: #dc2626;
+  background: rgb(202 31 123 / 12%);
+  color: var(--color-hot-rose);
 }
 
 /* === BulletList === */
@@ -111,11 +111,11 @@
 }
 
 .bullets-positive .bulletDot {
-  background: #22c55e;
+  background: var(--color-stormy-teal);
 }
 
 .bullets-negative .bulletDot {
-  background: #ef4444;
+  background: var(--color-hot-rose);
 }
 
 .bullets-neutral .bulletDot {

@@ -805,7 +805,7 @@ export function Body({ s }: BodyProps) {
             display: "inline-block",
             padding: "0.875rem 2rem",
             background: "white",
-            color: "#6366f1",
+            color: "var(--color-hot-rose)",
             fontWeight: 600,
             borderRadius: "0.5rem",
             textDecoration: "none",

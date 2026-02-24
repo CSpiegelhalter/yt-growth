@@ -25,13 +25,13 @@ export const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 export const COLOR_PRESETS = [
   "#FFFFFF", // White
   "#000000", // Black
-  "#FF0000", // Red
+  "#CA1F7B", // Hot Rose
+  "#222A68", // Imperial Blue
+  "#35A7FF", // Cool Sky
+  "#0F7173", // Stormy Teal
+  "#F8F1FF", // Lavender Mist
   "#FFCC00", // Yellow
-  "#00FF00", // Green
-  "#00CCFF", // Cyan
-  "#0066FF", // Blue
-  "#FF00FF", // Magenta
   "#FF6600", // Orange
-  "#9933FF", // Purple
+  "#FF00FF", // Magenta
 ];
 

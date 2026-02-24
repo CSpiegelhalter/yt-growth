@@ -275,7 +275,7 @@
 
 .avatar {
   align-items: center;
-  background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--color-hot-rose) 100%);
   border-radius: 50%;
   color: var(--text-inverse);
   display: flex;
@@ -505,9 +505,9 @@
 
 .modalIcon {
   align-items: center;
-  background: var(--warning-light, rgb(251 191 36 / 10%));
+  background: var(--warning-light, rgb(53 167 255 / 10%));
   border-radius: 50%;
-  color: var(--warning, #f59e0b);
+  color: var(--warning, var(--color-cool-sky));
   display: flex;
   height: 64px;
   justify-content: center;
@@ -530,7 +530,7 @@
 }
 
 .modalUpgradeBtn {
-  background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--color-hot-rose) 100%);
   border: none;
   border-radius: var(--radius-md);
   color: var(--text-inverse);
@@ -547,7 +547,7 @@
 }
 
 .modalUpgradeBtn:hover {
-  box-shadow: 0 4px 12px rgb(99 102 241 / 30%);
+  box-shadow: 0 4px 12px rgb(202 31 123 / 30%);
   color: var(--text-inverse);
   transform: translateY(-1px);
 }

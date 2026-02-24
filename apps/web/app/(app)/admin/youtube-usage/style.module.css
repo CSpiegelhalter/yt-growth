@@ -45,8 +45,8 @@
 }
 
 .btnDanger {
-  background: #dc2626;
-  border-color: #dc2626;
+  background: var(--danger);
+  border-color: var(--danger);
   color: white;
 }
 
@@ -132,8 +132,8 @@
 }
 
 .error {
-  background: rgb(239 68 68 / 8%);
-  border: 1px solid rgb(239 68 68 / 30%);
+  background: rgb(202 31 123 / 8%);
+  border: 1px solid rgb(202 31 123 / 30%);
   border-radius: 12px;
   margin: 12px 0;
   padding: 12px;

@@ -77,7 +77,7 @@
 
 .newPill {
   animation: pulse 1.5s ease-in-out infinite;
-  background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+  background: linear-gradient(135deg, var(--color-hot-rose) 0%, var(--color-hot-rose) 100%);
   border-radius: 12px;
   color: white;
   font-size: 0.6875rem;
@@ -146,7 +146,7 @@
 
 .unlockedInfo {
   align-items: center;
-  color: #10b981;
+  color: var(--color-stormy-teal);
   display: flex;
   font-weight: 600;
   gap: 10px;
@@ -292,13 +292,13 @@
 }
 
 .closeModalBtn {
-  background: #6366f1;
+  background: var(--primary);
   border: none;
   color: white;
 }
 
 .closeModalBtn:hover {
-  background: #4f46e5;
+  background: var(--primary-hover);
   color: white;
 }
 

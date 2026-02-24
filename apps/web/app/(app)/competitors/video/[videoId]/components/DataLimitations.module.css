@@ -72,12 +72,12 @@
 }
 
 .checkIcon {
-  color: #10b981;
+  color: var(--color-stormy-teal);
   font-size: 0.75rem;
 }
 
 .xIcon {
-  color: #ef4444;
+  color: var(--color-hot-rose);
   font-size: 0.75rem;
 }
 
@@ -98,9 +98,9 @@
 }
 
 .canItem::marker {
-  color: #10b981;
+  color: var(--color-stormy-teal);
 }
 
 .cantItem::marker {
-  color: #ef4444;
+  color: var(--color-hot-rose);
 }

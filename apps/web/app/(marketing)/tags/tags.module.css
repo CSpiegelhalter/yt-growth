@@ -89,7 +89,7 @@
 }
 
 .required {
-  color: var(--error, #ef4444);
+  color: var(--error, var(--color-hot-rose));
 }
 
 .optional {
@@ -118,7 +118,7 @@
 .input:focus,
 .textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-alpha, rgb(99 102 241 / 10%));
+  box-shadow: 0 0 0 3px var(--primary-alpha, rgb(202 31 123 / 10%));
   outline: none;
 }
 
@@ -129,11 +129,11 @@
 }
 
 .inputError {
-  border-color: var(--error, #ef4444);
+  border-color: var(--error, var(--color-hot-rose));
 }
 
 .inputError:focus {
-  box-shadow: 0 0 0 3px rgb(239 68 68 / 10%);
+  box-shadow: 0 0 0 3px rgb(202 31 123 / 10%);
 }
 
 .textarea {
@@ -148,7 +148,7 @@
 }
 
 .errorText {
-  color: var(--error, #ef4444);
+  color: var(--error, var(--color-hot-rose));
   font-size: 0.8125rem;
   margin: 6px 0 0;
 }
@@ -183,7 +183,7 @@
 
 .submitBtn:hover:not(:disabled) {
   background: var(--primary-hover);
-  box-shadow: 0 4px 16px rgb(99 102 241 / 30%);
+  box-shadow: 0 4px 16px rgb(202 31 123 / 30%);
   transform: translateY(-1px);
 }
 
@@ -320,7 +320,7 @@
 }
 
 .tag:hover {
-  background: var(--primary-alpha, rgb(99 102 241 / 8%));
+  background: var(--primary-alpha, rgb(202 31 123 / 8%));
   border-color: var(--primary);
 }
 

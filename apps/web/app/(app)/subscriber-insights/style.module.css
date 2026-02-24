@@ -41,8 +41,8 @@
 
 /* Upgrade Banner */
 .upgradeBanner {
-  background: rgb(245 158 11 / 10%);
-  border: 1px solid rgb(245 158 11 / 20%);
+  background: rgb(53 167 255 / 10%);
+  border: 1px solid rgb(53 167 255 / 20%);
   border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
@@ -514,8 +514,8 @@
 }
 
 .tierStrong {
-  background: rgb(5 150 105 / 10%);
-  border: 1px solid rgb(5 150 105 / 25%);
+  background: rgb(15 113 115 / 10%);
+  border: 1px solid rgb(15 113 115 / 25%);
   color: var(--color-success);
 }
 
@@ -526,8 +526,8 @@
 }
 
 .tierWeak {
-  background: rgb(239 68 68 / 8%);
-  border: 1px solid rgb(239 68 68 / 15%);
+  background: rgb(202 31 123 / 8%);
+  border: 1px solid rgb(202 31 123 / 15%);
   color: var(--color-danger);
 }
 
@@ -667,7 +667,7 @@
 
 .emptyBtn:hover {
   background: var(--primary-hover);
-  box-shadow: 0 4px 16px rgb(99 102 241 / 30%);
+  box-shadow: 0 4px 16px rgb(202 31 123 / 30%);
   transform: translateY(-2px);
 }
 

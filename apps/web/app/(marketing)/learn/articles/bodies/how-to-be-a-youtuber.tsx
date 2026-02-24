@@ -440,7 +440,7 @@ export function Body({ s }: BodyProps) {
                 Months of work, barely any views. Am I invisible?
               </div>
               <div>
-                <strong style={{ color: "#16a34a" }}>Do this:</strong>{" "}
+                <strong style={{ color: "var(--color-stormy-teal)" }}>Do this:</strong>{" "}
                 Compare to last month&apos;s you, not someone else&apos;s year 
                 five. The algorithm needs time to learn your content.
               </div>
@@ -451,7 +451,7 @@ export function Body({ s }: BodyProps) {
                 The excitement faded. I don&apos;t feel like making anything.
               </div>
               <div>
-                <strong style={{ color: "#16a34a" }}>Do this:</strong>{" "}
+                <strong style={{ color: "var(--color-stormy-teal)" }}>Do this:</strong>{" "}
                 Rely on your system, not inspiration. Show up on production 
                 days even when you don&apos;t feel it.
               </div>
@@ -462,7 +462,7 @@ export function Body({ s }: BodyProps) {
                 Audio issues, software crashes, footage that looks wrong.
               </div>
               <div>
-                <strong style={{ color: "#16a34a" }}>Do this:</strong>{" "}
+                <strong style={{ color: "var(--color-stormy-teal)" }}>Do this:</strong>{" "}
                 Each problem you solve is a skill you now have. The learning 
                 curve is steep at first, then flattens.
               </div>
@@ -714,17 +714,17 @@ function CreatorGym() {
         <linearGradient id="redPlate3d" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#7f1d1d" />
           <stop offset="15%" stopColor="#b91c1c" />
-          <stop offset="40%" stopColor="#ef4444" />
-          <stop offset="60%" stopColor="#dc2626" />
+          <stop offset="40%" stopColor="var(--color-hot-rose)" />
+          <stop offset="60%" stopColor="var(--color-hot-rose)" />
           <stop offset="85%" stopColor="#b91c1c" />
-          <stop offset="100%" stopColor="#991b1b" />
+          <stop offset="100%" stopColor="var(--color-hot-rose-hover)" />
         </linearGradient>
         <linearGradient id="bluePlate3d" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#1e3a8a" />
-          <stop offset="15%" stopColor="#1d4ed8" />
-          <stop offset="40%" stopColor="#3b82f6" />
-          <stop offset="60%" stopColor="#2563eb" />
-          <stop offset="85%" stopColor="#1d4ed8" />
+          <stop offset="15%" stopColor="var(--color-cool-sky-hover)" />
+          <stop offset="40%" stopColor="var(--color-cool-sky)" />
+          <stop offset="60%" stopColor="var(--color-cool-sky)" />
+          <stop offset="85%" stopColor="var(--color-cool-sky-hover)" />
           <stop offset="100%" stopColor="#1e40af" />
         </linearGradient>
         {/* Skin tone gradients */}
@@ -752,7 +752,7 @@ function CreatorGym() {
         <linearGradient id="jeansGradient" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#1e3a8a" />
           <stop offset="30%" stopColor="#1e40af" />
-          <stop offset="70%" stopColor="#1d4ed8" />
+          <stop offset="70%" stopColor="var(--color-cool-sky-hover)" />
           <stop offset="100%" stopColor="#1e3a8a" />
         </linearGradient>
       </defs>
@@ -784,7 +784,7 @@ function CreatorGym() {
       <g>
         <ellipse cx="65" cy="72" rx="5" ry="38" fill="#1e3a8a" />
         <ellipse cx="62" cy="72" rx="5" ry="38" fill="url(#bluePlate3d)" />
-        <ellipse cx="62" cy="72" rx="3" ry="28" fill="#1d4ed8" />
+        <ellipse cx="62" cy="72" rx="3" ry="28" fill="var(--color-cool-sky-hover)" />
         <ellipse cx="62" cy="72" rx="1.5" ry="7" fill="#1f2937" />
       </g>
       {/* Collar */}
@@ -799,7 +799,7 @@ function CreatorGym() {
       <g>
         <ellipse cx="278" cy="72" rx="5" ry="38" fill="url(#bluePlate3d)" />
         <ellipse cx="281" cy="72" rx="5" ry="38" fill="#1e3a8a" />
-        <ellipse cx="278" cy="72" rx="3" ry="28" fill="#1d4ed8" />
+        <ellipse cx="278" cy="72" rx="3" ry="28" fill="var(--color-cool-sky-hover)" />
         <ellipse cx="278" cy="72" rx="1.5" ry="7" fill="#1f2937" />
       </g>
       {/* Red 25kg plate */}
@@ -837,18 +837,18 @@ function CreatorGym() {
         <path d="M-28 196 L-8 196" stroke="#cbd5e1" strokeWidth="1.5" />
         <ellipse cx="-18" cy="197" rx="10" ry="4" fill="#f1f5f9" />
         {/* Shoe details */}
-        <circle cx="-22" cy="195" r="1" fill="#dc2626" />
-        <circle cx="-18" cy="195" r="1" fill="#dc2626" />
-        <circle cx="-14" cy="195" r="1" fill="#dc2626" />
+        <circle cx="-22" cy="195" r="1" fill="var(--color-hot-rose)" />
+        <circle cx="-18" cy="195" r="1" fill="var(--color-hot-rose)" />
+        <circle cx="-14" cy="195" r="1" fill="var(--color-hot-rose)" />
         
         {/* Right shoe */}
         <ellipse cx="18" cy="198" rx="14" ry="7" fill="#f8fafc" />
         <path d="M30 198 Q32 195 28 193 L8 193 Q4 195 6 198" fill="#e2e8f0" />
         <path d="M28 196 L8 196" stroke="#cbd5e1" strokeWidth="1.5" />
         <ellipse cx="18" cy="197" rx="10" ry="4" fill="#f1f5f9" />
-        <circle cx="22" cy="195" r="1" fill="#dc2626" />
-        <circle cx="18" cy="195" r="1" fill="#dc2626" />
-        <circle cx="14" cy="195" r="1" fill="#dc2626" />
+        <circle cx="22" cy="195" r="1" fill="var(--color-hot-rose)" />
+        <circle cx="18" cy="195" r="1" fill="var(--color-hot-rose)" />
+        <circle cx="14" cy="195" r="1" fill="var(--color-hot-rose)" />
         
         {/* === HOODIE TORSO === */}
         <path d="M-28 105 Q-35 125 -32 145 Q-25 165 0 168 Q25 165 32 145 Q35 125 28 105 Q18 92 0 92 Q-18 92 -28 105" fill="url(#hoodieMain)" />
@@ -946,8 +946,8 @@ function CreatorGym() {
         <ellipse cx="-7" cy="79" rx="3" ry="2.5" fill="white" />
         <ellipse cx="7" cy="79" rx="3" ry="2.5" fill="white" />
         {/* Irises */}
-        <circle cx="-7" cy="79" r="2" fill="#78350f" />
-        <circle cx="7" cy="79" r="2" fill="#78350f" />
+        <circle cx="-7" cy="79" r="2" fill="var(--color-imperial-blue)" />
+        <circle cx="7" cy="79" r="2" fill="var(--color-imperial-blue)" />
         {/* Pupils */}
         <circle cx="-7" cy="79" r="1" fill="#1c1917" />
         <circle cx="7" cy="79" r="1" fill="#1c1917" />
@@ -1039,29 +1039,29 @@ function IdeaSlotMachine() {
       
       {/* Top decoration - "IDEAS" sign with lights */}
       <rect x="30" y="10" width="100" height="28" rx="6" fill="#fbbf24" />
-      <rect x="35" y="14" width="90" height="20" rx="4" fill="#f59e0b" />
-      <text x="80" y="30" textAnchor="middle" fontSize="14" fontWeight="900" fill="#1e293b">IDEAS</text>
+      <rect x="35" y="14" width="90" height="20" rx="4" fill="var(--color-cool-sky)" />
+      <text x="80" y="30" textAnchor="middle" fontSize="14" fontWeight="900" fill="var(--color-imperial-blue)">IDEAS</text>
       {/* Blinking lights */}
-      <circle cx="25" cy="24" r="5" fill="#ef4444">
+      <circle cx="25" cy="24" r="5" fill="var(--color-hot-rose)">
         <animate attributeName="opacity" values="1;0.3;1" dur="0.8s" repeatCount="indefinite" />
       </circle>
-      <circle cx="135" cy="24" r="5" fill="#22c55e">
+      <circle cx="135" cy="24" r="5" fill="var(--color-stormy-teal)">
         <animate attributeName="opacity" values="0.3;1;0.3" dur="0.8s" repeatCount="indefinite" />
       </circle>
       
       {/* Slot display window */}
-      <rect x="30" y="50" width="100" height="60" rx="4" fill="#1e293b" />
-      <rect x="35" y="55" width="90" height="50" rx="2" fill="#0f172a" />
+      <rect x="30" y="50" width="100" height="60" rx="4" fill="var(--color-imperial-blue)" />
+      <rect x="35" y="55" width="90" height="50" rx="2" fill="var(--color-imperial-blue)" />
       
       {/* Three reels showing 5-0-! */}
       <g>
         {/* Reel 1 */}
         <rect x="38" y="58" width="26" height="44" rx="2" fill="#f8fafc" />
-        <text x="51" y="90" textAnchor="middle" fontSize="28" fontWeight="900" fill="#22c55e">5</text>
+        <text x="51" y="90" textAnchor="middle" fontSize="28" fontWeight="900" fill="var(--color-stormy-teal)">5</text>
         
         {/* Reel 2 */}
         <rect x="67" y="58" width="26" height="44" rx="2" fill="#f8fafc" />
-        <text x="80" y="90" textAnchor="middle" fontSize="28" fontWeight="900" fill="#22c55e">0</text>
+        <text x="80" y="90" textAnchor="middle" fontSize="28" fontWeight="900" fill="var(--color-stormy-teal)">0</text>
         
         {/* Reel 3 - star */}
         <rect x="96" y="58" width="26" height="44" rx="2" fill="#f8fafc" />
@@ -1069,30 +1069,30 @@ function IdeaSlotMachine() {
       </g>
       
       {/* WIN banner */}
-      <rect x="45" y="115" width="70" height="20" rx="4" fill="#22c55e" />
+      <rect x="45" y="115" width="70" height="20" rx="4" fill="var(--color-stormy-teal)" />
       <text x="80" y="130" textAnchor="middle" fontSize="12" fontWeight="800" fill="white">JACKPOT!</text>
       
       {/* Lever */}
-      <rect x="145" y="60" width="8" height="50" rx="4" fill="#dc2626" />
-      <circle cx="149" cy="55" r="10" fill="#ef4444" stroke="#dc2626" strokeWidth="2" />
+      <rect x="145" y="60" width="8" height="50" rx="4" fill="var(--color-hot-rose)" />
+      <circle cx="149" cy="55" r="10" fill="var(--color-hot-rose)" stroke="var(--color-hot-rose)" strokeWidth="2" />
       
       {/* Coin slot */}
-      <rect x="60" y="145" width="40" height="8" rx="2" fill="#1e293b" />
+      <rect x="60" y="145" width="40" height="8" rx="2" fill="var(--color-imperial-blue)" />
       <rect x="65" y="147" width="30" height="4" rx="1" fill="#475569" />
       
       {/* Coins spilling out */}
       <g>
-        <circle cx="55" cy="175" r="8" fill="#fbbf24" stroke="#f59e0b" strokeWidth="2" />
-        <text x="55" y="179" textAnchor="middle" fontSize="8" fontWeight="700" fill="#92400e">$</text>
+        <circle cx="55" cy="175" r="8" fill="#fbbf24" stroke="var(--color-cool-sky)" strokeWidth="2" />
+        <text x="55" y="179" textAnchor="middle" fontSize="8" fontWeight="700" fill="var(--color-imperial-blue)">$</text>
         
-        <circle cx="75" cy="180" r="8" fill="#fbbf24" stroke="#f59e0b" strokeWidth="2" />
-        <text x="75" y="184" textAnchor="middle" fontSize="8" fontWeight="700" fill="#92400e">$</text>
+        <circle cx="75" cy="180" r="8" fill="#fbbf24" stroke="var(--color-cool-sky)" strokeWidth="2" />
+        <text x="75" y="184" textAnchor="middle" fontSize="8" fontWeight="700" fill="var(--color-imperial-blue)">$</text>
         
-        <circle cx="95" cy="178" r="8" fill="#fbbf24" stroke="#f59e0b" strokeWidth="2" />
-        <text x="95" y="182" textAnchor="middle" fontSize="8" fontWeight="700" fill="#92400e">$</text>
+        <circle cx="95" cy="178" r="8" fill="#fbbf24" stroke="var(--color-cool-sky)" strokeWidth="2" />
+        <text x="95" y="182" textAnchor="middle" fontSize="8" fontWeight="700" fill="var(--color-imperial-blue)">$</text>
         
-        <circle cx="115" cy="182" r="8" fill="#fbbf24" stroke="#f59e0b" strokeWidth="2" />
-        <text x="115" y="186" textAnchor="middle" fontSize="8" fontWeight="700" fill="#92400e">$</text>
+        <circle cx="115" cy="182" r="8" fill="#fbbf24" stroke="var(--color-cool-sky)" strokeWidth="2" />
+        <text x="115" y="186" textAnchor="middle" fontSize="8" fontWeight="700" fill="var(--color-imperial-blue)">$</text>
       </g>
       
       {/* Sparkles */}
@@ -1122,17 +1122,17 @@ function VideoStructure() {
       <rect x="20" y="35" width="280" height="10" rx="5" fill="#e2e8f0" />
       
       {/* Hook section */}
-      <rect x="20" y="30" width="50" height="20" rx="4" fill="#dc2626" />
+      <rect x="20" y="30" width="50" height="20" rx="4" fill="var(--color-hot-rose)" />
       <text x="45" y="44" textAnchor="middle" fontSize="9" fontWeight="600" fill="white">HOOK</text>
       <text x="45" y="60" textAnchor="middle" fontSize="8" fill="#64748b">10 sec</text>
       
       {/* Main content */}
-      <rect x="75" y="30" width="180" height="20" rx="4" fill="#6366f1" />
+      <rect x="75" y="30" width="180" height="20" rx="4" fill="var(--color-hot-rose)" />
       <text x="165" y="44" textAnchor="middle" fontSize="9" fontWeight="600" fill="white">MAIN CONTENT</text>
       <text x="165" y="60" textAnchor="middle" fontSize="8" fill="#64748b">3-5 points</text>
       
       {/* CTA */}
-      <rect x="260" y="30" width="40" height="20" rx="4" fill="#22c55e" />
+      <rect x="260" y="30" width="40" height="20" rx="4" fill="var(--color-stormy-teal)" />
       <text x="280" y="44" textAnchor="middle" fontSize="9" fontWeight="600" fill="white">CTA</text>
       <text x="280" y="60" textAnchor="middle" fontSize="8" fill="#64748b">Next</text>
     </svg>
@@ -1173,11 +1173,11 @@ function RecordingSetup() {
         <line x1="140" y1="130" x2="160" y2="130" stroke="#64748b" strokeWidth="3" />
         
         {/* Phone */}
-        <rect x="115" y="40" width="30" height="50" rx="4" fill="#1e293b" stroke="#475569" strokeWidth="2" />
+        <rect x="115" y="40" width="30" height="50" rx="4" fill="var(--color-imperial-blue)" stroke="#475569" strokeWidth="2" />
         <rect x="118" y="45" width="24" height="35" rx="2" fill="#334155" />
         
         {/* Recording dot */}
-        <circle cx="130" cy="60" r="6" fill="#dc2626">
+        <circle cx="130" cy="60" r="6" fill="var(--color-hot-rose)">
           <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite" />
         </circle>
         <text x="130" y="74" textAnchor="middle" fontSize="6" fill="#94a3b8">REC</text>
@@ -1208,35 +1208,35 @@ function EditingTimeline() {
       <rect x="20" y="40" width="280" height="30" rx="4" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth="1" />
       
       {/* Good content blocks */}
-      <rect x="25" y="45" width="60" height="20" rx="3" fill="#22c55e" />
-      <rect x="135" y="45" width="80" height="20" rx="3" fill="#22c55e" />
-      <rect x="255" y="45" width="40" height="20" rx="3" fill="#22c55e" />
+      <rect x="25" y="45" width="60" height="20" rx="3" fill="var(--color-stormy-teal)" />
+      <rect x="135" y="45" width="80" height="20" rx="3" fill="var(--color-stormy-teal)" />
+      <rect x="255" y="45" width="40" height="20" rx="3" fill="var(--color-stormy-teal)" />
       
       {/* Bad content being cut - with X marks */}
       <g>
-        <rect x="90" y="45" width="40" height="20" rx="3" fill="#fecaca" stroke="#f87171" strokeWidth="1" strokeDasharray="4" />
-        <text x="110" y="58" textAnchor="middle" fontSize="8" fill="#dc2626">um...</text>
-        <line x1="95" y1="50" x2="125" y2="60" stroke="#dc2626" strokeWidth="2" />
-        <line x1="125" y1="50" x2="95" y2="60" stroke="#dc2626" strokeWidth="2" />
+        <rect x="90" y="45" width="40" height="20" rx="3" fill="var(--color-hot-rose-light)" stroke="#f87171" strokeWidth="1" strokeDasharray="4" />
+        <text x="110" y="58" textAnchor="middle" fontSize="8" fill="var(--color-hot-rose)">um...</text>
+        <line x1="95" y1="50" x2="125" y2="60" stroke="var(--color-hot-rose)" strokeWidth="2" />
+        <line x1="125" y1="50" x2="95" y2="60" stroke="var(--color-hot-rose)" strokeWidth="2" />
       </g>
       
       <g>
-        <rect x="220" y="45" width="30" height="20" rx="3" fill="#fecaca" stroke="#f87171" strokeWidth="1" strokeDasharray="4" />
-        <text x="235" y="58" textAnchor="middle" fontSize="8" fill="#dc2626">pause</text>
-        <line x1="225" y1="50" x2="245" y2="60" stroke="#dc2626" strokeWidth="2" />
-        <line x1="245" y1="50" x2="225" y2="60" stroke="#dc2626" strokeWidth="2" />
+        <rect x="220" y="45" width="30" height="20" rx="3" fill="var(--color-hot-rose-light)" stroke="#f87171" strokeWidth="1" strokeDasharray="4" />
+        <text x="235" y="58" textAnchor="middle" fontSize="8" fill="var(--color-hot-rose)">pause</text>
+        <line x1="225" y1="50" x2="245" y2="60" stroke="var(--color-hot-rose)" strokeWidth="2" />
+        <line x1="245" y1="50" x2="225" y2="60" stroke="var(--color-hot-rose)" strokeWidth="2" />
       </g>
       
       {/* Labels */}
-      <text x="55" y="30" textAnchor="middle" fontSize="9" fontWeight="600" fill="#16a34a">Keep</text>
-      <text x="110" y="30" textAnchor="middle" fontSize="9" fontWeight="600" fill="#dc2626">Cut</text>
-      <text x="175" y="30" textAnchor="middle" fontSize="9" fontWeight="600" fill="#16a34a">Keep</text>
-      <text x="235" y="30" textAnchor="middle" fontSize="9" fontWeight="600" fill="#dc2626">Cut</text>
-      <text x="275" y="30" textAnchor="middle" fontSize="9" fontWeight="600" fill="#16a34a">Keep</text>
+      <text x="55" y="30" textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--color-stormy-teal)">Keep</text>
+      <text x="110" y="30" textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--color-hot-rose)">Cut</text>
+      <text x="175" y="30" textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--color-stormy-teal)">Keep</text>
+      <text x="235" y="30" textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--color-hot-rose)">Cut</text>
+      <text x="275" y="30" textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--color-stormy-teal)">Keep</text>
       
       {/* Playhead */}
-      <rect x="160" y="35" width="2" height="40" fill="#6366f1" />
-      <polygon points="161,35 155,28 167,28" fill="#6366f1" />
+      <rect x="160" y="35" width="2" height="40" fill="var(--color-hot-rose)" />
+      <polygon points="161,35 155,28 167,28" fill="var(--color-hot-rose)" />
       
       {/* Result label */}
       <text x="160" y="90" textAnchor="middle" fontSize="11" fill="#64748b">
@@ -1247,11 +1247,11 @@ function EditingTimeline() {
 }
 
 const WEEK_DAYS = [
-  { day: "M", fill: "#dbeafe", stroke: "#3b82f6", task: "Plan" },
-  { day: "T", fill: "#dbeafe", stroke: "#3b82f6", task: "Plan" },
-  { day: "W", fill: "#fef3c7", stroke: "#f59e0b", task: "Record" },
-  { day: "T", fill: "#fef3c7", stroke: "#f59e0b", task: "Record" },
-  { day: "F", fill: "#dcfce7", stroke: "#22c55e", task: "Edit" },
+  { day: "M", fill: "var(--color-cool-sky-light)", stroke: "var(--color-cool-sky)", task: "Plan" },
+  { day: "T", fill: "var(--color-cool-sky-light)", stroke: "var(--color-cool-sky)", task: "Plan" },
+  { day: "W", fill: "var(--color-cool-sky-light)", stroke: "var(--color-cool-sky)", task: "Record" },
+  { day: "T", fill: "var(--color-cool-sky-light)", stroke: "var(--color-cool-sky)", task: "Record" },
+  { day: "F", fill: "#dcfce7", stroke: "var(--color-stormy-teal)", task: "Edit" },
   { day: "S", fill: "#f1f5f9", stroke: "#e2e8f0", task: "Rest" },
   { day: "S", fill: "#f1f5f9", stroke: "#e2e8f0", task: "Rest" },
 ] as const;
@@ -1291,7 +1291,7 @@ function ProductionCycle() {
       ))}
       
       {/* Publish indicator on Friday */}
-      <circle cx={41 + 4 * 40} cy="95" r="12" fill="#22c55e" />
+      <circle cx={41 + 4 * 40} cy="95" r="12" fill="var(--color-stormy-teal)" />
       <path d="M235 92 L238 95 L245 88" stroke="white" strokeWidth="2" fill="none" />
       <text x="260" y="98" fontSize="9" fill="#64748b">Publish</text>
     </svg>
@@ -1314,40 +1314,40 @@ function GrowthLoopDiagram() {
       
       {/* Central hub */}
       <circle cx="150" cy="100" r="35" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="2" />
-      <text x="150" y="96" textAnchor="middle" fontSize="11" fontWeight="700" fill="#1e293b">GROWTH</text>
-      <text x="150" y="110" textAnchor="middle" fontSize="11" fontWeight="700" fill="#1e293b">LOOP</text>
+      <text x="150" y="96" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--color-imperial-blue)">GROWTH</text>
+      <text x="150" y="110" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--color-imperial-blue)">LOOP</text>
       
       {/* Four pillars */}
       <g>
         {/* Topic - top */}
-        <rect x="110" y="10" width="80" height="32" rx="6" fill="#6366f1" />
+        <rect x="110" y="10" width="80" height="32" rx="6" fill="var(--color-hot-rose)" />
         <text x="150" y="31" textAnchor="middle" fontSize="12" fontWeight="600" fill="white">Topic</text>
-        <line x1="150" y1="42" x2="150" y2="65" stroke="#6366f1" strokeWidth="2" />
-        <polygon points="150,65 145,58 155,58" fill="#6366f1" />
+        <line x1="150" y1="42" x2="150" y2="65" stroke="var(--color-hot-rose)" strokeWidth="2" />
+        <polygon points="150,65 145,58 155,58" fill="var(--color-hot-rose)" />
       </g>
       
       <g>
         {/* Packaging - right */}
-        <rect x="210" y="84" width="80" height="32" rx="6" fill="#f59e0b" />
+        <rect x="210" y="84" width="80" height="32" rx="6" fill="var(--color-cool-sky)" />
         <text x="250" y="105" textAnchor="middle" fontSize="12" fontWeight="600" fill="white">Packaging</text>
-        <line x1="210" y1="100" x2="185" y2="100" stroke="#f59e0b" strokeWidth="2" />
-        <polygon points="185,100 192,95 192,105" fill="#f59e0b" />
+        <line x1="210" y1="100" x2="185" y2="100" stroke="var(--color-cool-sky)" strokeWidth="2" />
+        <polygon points="185,100 192,95 192,105" fill="var(--color-cool-sky)" />
       </g>
       
       <g>
         {/* Retention - bottom */}
-        <rect x="110" y="158" width="80" height="32" rx="6" fill="#22c55e" />
+        <rect x="110" y="158" width="80" height="32" rx="6" fill="var(--color-stormy-teal)" />
         <text x="150" y="179" textAnchor="middle" fontSize="12" fontWeight="600" fill="white">Retention</text>
-        <line x1="150" y1="158" x2="150" y2="135" stroke="#22c55e" strokeWidth="2" />
-        <polygon points="150,135 145,142 155,142" fill="#22c55e" />
+        <line x1="150" y1="158" x2="150" y2="135" stroke="var(--color-stormy-teal)" strokeWidth="2" />
+        <polygon points="150,135 145,142 155,142" fill="var(--color-stormy-teal)" />
       </g>
       
       <g>
         {/* Next Video - left */}
-        <rect x="10" y="84" width="80" height="32" rx="6" fill="#ec4899" />
+        <rect x="10" y="84" width="80" height="32" rx="6" fill="var(--color-hot-rose)" />
         <text x="50" y="105" textAnchor="middle" fontSize="12" fontWeight="600" fill="white">Next Video</text>
-        <line x1="90" y1="100" x2="115" y2="100" stroke="#ec4899" strokeWidth="2" />
-        <polygon points="115,100 108,95 108,105" fill="#ec4899" />
+        <line x1="90" y1="100" x2="115" y2="100" stroke="var(--color-hot-rose)" strokeWidth="2" />
+        <polygon points="115,100 108,95 108,105" fill="var(--color-hot-rose)" />
       </g>
     </svg>
   );
@@ -1392,7 +1392,7 @@ function ObstacleRoad() {
         {/* Bump highlight for 3D effect */}
         <path d="M45 103 Q75 78 105 103" fill="#fcd34d" />
         {/* Bump top stripe */}
-        <path d="M50 100 Q75 82 100 100" fill="#f59e0b" />
+        <path d="M50 100 Q75 82 100 100" fill="var(--color-cool-sky)" />
         {/* White warning stripes */}
         <g fill="white" opacity="0.9">
           <rect x="52" y="88" width="4" height="12" rx="1" transform="rotate(-15, 54, 94)" />
@@ -1402,7 +1402,7 @@ function ObstacleRoad() {
           <rect x="98" y="88" width="4" height="12" rx="1" transform="rotate(15, 100, 94)" />
         </g>
         {/* Label */}
-        <rect x="50" y="42" width="50" height="22" rx="4" fill="#1e293b" />
+        <rect x="50" y="42" width="50" height="22" rx="4" fill="var(--color-imperial-blue)" />
         <text x="75" y="57" textAnchor="middle" fontSize="10" fontWeight="600" fill="white">SLOW</text>
         <text x="75" y="37" textAnchor="middle" fontSize="9" fontWeight="500" fill="#64748b">Month 1-3</text>
       </g>
@@ -1416,7 +1416,7 @@ function ObstacleRoad() {
         {/* Bump highlight */}
         <path d="M150 103 Q180 78 210 103" fill="#fcd34d" />
         {/* Bump top stripe */}
-        <path d="M155 100 Q180 82 205 100" fill="#f59e0b" />
+        <path d="M155 100 Q180 82 205 100" fill="var(--color-cool-sky)" />
         {/* White warning stripes */}
         <g fill="white" opacity="0.9">
           <rect x="157" y="88" width="4" height="12" rx="1" transform="rotate(-15, 159, 94)" />
@@ -1426,7 +1426,7 @@ function ObstacleRoad() {
           <rect x="203" y="88" width="4" height="12" rx="1" transform="rotate(15, 205, 94)" />
         </g>
         {/* Label */}
-        <rect x="155" y="42" width="50" height="22" rx="4" fill="#1e293b" />
+        <rect x="155" y="42" width="50" height="22" rx="4" fill="var(--color-imperial-blue)" />
         <text x="180" y="57" textAnchor="middle" fontSize="10" fontWeight="600" fill="white">DIP</text>
         <text x="180" y="37" textAnchor="middle" fontSize="9" fontWeight="500" fill="#64748b">Month 4-6</text>
       </g>
@@ -1440,7 +1440,7 @@ function ObstacleRoad() {
         {/* Bump highlight */}
         <path d="M255 103 Q285 78 315 103" fill="#fcd34d" />
         {/* Bump top stripe */}
-        <path d="M260 100 Q285 82 310 100" fill="#f59e0b" />
+        <path d="M260 100 Q285 82 310 100" fill="var(--color-cool-sky)" />
         {/* White warning stripes */}
         <g fill="white" opacity="0.9">
           <rect x="262" y="88" width="4" height="12" rx="1" transform="rotate(-15, 264, 94)" />
@@ -1450,7 +1450,7 @@ function ObstacleRoad() {
           <rect x="308" y="88" width="4" height="12" rx="1" transform="rotate(15, 310, 94)" />
         </g>
         {/* Label */}
-        <rect x="255" y="42" width="60" height="22" rx="4" fill="#1e293b" />
+        <rect x="255" y="42" width="60" height="22" rx="4" fill="var(--color-imperial-blue)" />
         <text x="285" y="57" textAnchor="middle" fontSize="10" fontWeight="600" fill="white">TECHNICAL</text>
         <text x="285" y="37" textAnchor="middle" fontSize="9" fontWeight="500" fill="#64748b">Ongoing</text>
       </g>
@@ -1458,7 +1458,7 @@ function ObstacleRoad() {
       {/* Green success path arrow */}
       <path
         d="M10 105 C30 105 50 90 75 90 C100 90 120 105 145 105 C160 105 165 90 180 90 C195 90 210 105 240 105 C260 105 270 90 285 90 C300 90 330 105 350 105"
-        stroke="#22c55e"
+        stroke="var(--color-stormy-teal)"
         strokeWidth="4"
         fill="none"
         strokeLinecap="round"
@@ -1469,11 +1469,11 @@ function ObstacleRoad() {
       <g transform="translate(340, 75)">
         <rect x="0" y="0" width="3" height="35" fill="#475569" />
         <rect x="3" y="0" width="15" height="12" fill="white" />
-        <rect x="3" y="0" width="5" height="4" fill="#1e293b" />
-        <rect x="13" y="0" width="5" height="4" fill="#1e293b" />
-        <rect x="8" y="4" width="5" height="4" fill="#1e293b" />
-        <rect x="3" y="8" width="5" height="4" fill="#1e293b" />
-        <rect x="13" y="8" width="5" height="4" fill="#1e293b" />
+        <rect x="3" y="0" width="5" height="4" fill="var(--color-imperial-blue)" />
+        <rect x="13" y="0" width="5" height="4" fill="var(--color-imperial-blue)" />
+        <rect x="8" y="4" width="5" height="4" fill="var(--color-imperial-blue)" />
+        <rect x="3" y="8" width="5" height="4" fill="var(--color-imperial-blue)" />
+        <rect x="13" y="8" width="5" height="4" fill="var(--color-imperial-blue)" />
       </g>
       
       {/* Caption */}
@@ -1503,21 +1503,21 @@ function MoneyMilestone() {
       
       {/* Progress fill */}
       <rect x="34" y="70" width="16" height="46" rx="8" fill="linear-gradient(180deg, #22c55e 0%, #16a34a 100%)" />
-      <rect x="34" y="70" width="16" height="46" rx="8" fill="#22c55e" />
+      <rect x="34" y="70" width="16" height="46" rx="8" fill="var(--color-stormy-teal)" />
       
       {/* Milestone markers */}
       <line x1="56" y1="30" x2="70" y2="30" stroke="#94a3b8" strokeWidth="2" />
       <text x="75" y="34" fontSize="9" fill="#64748b">YPP</text>
       
       <line x1="56" y1="60" x2="70" y2="60" stroke="#94a3b8" strokeWidth="2" />
-      <text x="75" y="64" fontSize="9" fill="#16a34a">You are here</text>
+      <text x="75" y="64" fontSize="9" fill="var(--color-stormy-teal)">You are here</text>
       
       <line x1="56" y1="110" x2="70" y2="110" stroke="#94a3b8" strokeWidth="2" />
       <text x="75" y="114" fontSize="9" fill="#64748b">Start</text>
       
       {/* Dollar at top */}
-      <circle cx="42" cy="30" r="10" fill="#f1f5f9" stroke="#22c55e" strokeWidth="2" />
-      <text x="42" y="34" textAnchor="middle" fontSize="10" fontWeight="700" fill="#22c55e">$</text>
+      <circle cx="42" cy="30" r="10" fill="#f1f5f9" stroke="var(--color-stormy-teal)" strokeWidth="2" />
+      <text x="42" y="34" textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--color-stormy-teal)">$</text>
     </svg>
   );
 }
@@ -1539,9 +1539,9 @@ function NextStepVisual() {
       {/* Pencil */}
       <g transform="translate(30, 10)">
         <rect x="0" y="15" width="80" height="14" rx="2" fill="#fbbf24" />
-        <polygon points="80,15 80,29 95,22" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1" />
+        <polygon points="80,15 80,29 95,22" fill="var(--color-cool-sky-light)" stroke="var(--color-cool-sky)" strokeWidth="1" />
         <rect x="0" y="15" width="15" height="14" rx="2" fill="#fca5a5" />
-        <circle cx="95" cy="22" r="2" fill="#1e293b" />
+        <circle cx="95" cy="22" r="2" fill="var(--color-imperial-blue)" />
       </g>
       
       {/* Arrow pointing right */}

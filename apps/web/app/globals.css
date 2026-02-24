@@ -36,7 +36,7 @@
   padding: 10px 20px;
   font-size: 0.9375rem;
   font-weight: 600;
-  background: #6366f1;
+  background: var(--color-hot-rose);
   color: white;
   border-radius: 8px;
   transition: all 0.15s ease;
@@ -57,10 +57,10 @@
 }
 
 .heroCtas__primary:hover {
-  background: #4f46e5;
+  background: var(--color-hot-rose-hover);
   color: white;
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 10px 20px -10px rgba(202, 31, 123, 0.5);
   text-decoration: none;
 }
 
@@ -93,20 +93,20 @@
 }
 
 .heroCtas__secondary:hover {
-  border-color: #6366f1;
-  color: #6366f1;
+  border-color: var(--color-hot-rose);
+  color: var(--color-hot-rose);
   text-decoration: none;
 }
 
 /* CTA Section overrides for dark background */
 .ctaSection .heroCtas__primary {
   background: #ffffff;
-  color: #1e3a5f;
+  color: var(--color-imperial-blue);
 }
 
 .ctaSection .heroCtas__primary:hover {
   background: #f8fafc;
-  color: #1e3a5f;
+  color: var(--color-imperial-blue);
   box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
 }
 
@@ -161,7 +161,7 @@
   gap: 12px;
   padding: 8px 0;
   font-size: 0.9375rem;
-  color: #334155;
+  color: var(--color-imperial-blue);
   text-decoration: none;
   border-bottom: 1px solid #f1f5f9;
   transition: color 0.15s ease;
@@ -183,18 +183,18 @@
 }
 
 .toc__link:hover {
-  color: #6366f1;
+  color: var(--color-hot-rose);
   text-decoration: none;
 }
 
 .toc__link:hover::before {
-  background: #eef2ff;
-  color: #6366f1;
+  background: var(--color-lavender-mist);
+  color: var(--color-hot-rose);
 }
 
 .toc__link:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 3px rgba(202, 31, 123, 0.15);
   border-radius: 4px;
 }
 
@@ -231,7 +231,7 @@
 .learnCta {
   text-align: center;
   padding: 24px 16px;
-  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  background: linear-gradient(135deg, var(--color-imperial-blue) 0%, var(--color-cool-sky) 100%);
   border-radius: 12px;
   color: #ffffff;
   margin-top: 48px;
@@ -280,7 +280,7 @@
   font-size: 0.9375rem;
   font-weight: 600;
   background: #ffffff;
-  color: #1e3a5f;
+  color: var(--color-imperial-blue);
   border-radius: 8px;
   text-decoration: none;
   transition: all 0.15s ease;
@@ -331,39 +331,39 @@
   --border: #e2e8f0;                /* Default border */
   --border-light: #f1f5f9;          /* Subtle border */
   --border-hover: #cbd5e1;          /* Hover state border */
-  --border-focus: #6366f1;          /* Focus state border */
+  --border-focus: var(--color-hot-rose); /* Focus state border */
   
   /* Brand/Primary */
-  --primary: #6366f1;               /* Primary action color (indigo) */
-  --primary-hover: #4f46e5;         /* Primary hover */
-  --primary-light: #eef2ff;         /* Primary tint background */
-  --primary-contrast: #ffffff;      /* Text on primary */
+  --primary: var(--color-hot-rose);           /* Primary action color */
+  --primary-hover: var(--color-hot-rose-hover); /* Primary hover */
+  --primary-light: var(--color-lavender-mist);  /* Primary tint background */
+  --primary-contrast: #ffffff;                  /* Text on primary */
   
   /* Secondary */
-  --secondary: #2563eb;             /* Secondary action (blue) */
-  --secondary-hover: #1d4ed8;
-  --secondary-light: #dbeafe;
+  --secondary: var(--color-cool-sky);           /* Secondary action */
+  --secondary-hover: var(--color-cool-sky-hover);
+  --secondary-light: var(--color-cool-sky-light);
   
   /* Status Colors */
-  --success: #059669;
-  --success-light: #d1fae5;
-  --success-dark: #065f46;
+  --success: var(--color-stormy-teal);
+  --success-light: var(--color-stormy-teal-light);
+  --success-dark: var(--color-stormy-teal-hover);
   
-  --warning: #d97706;
-  --warning-light: #fef3c7;
-  --warning-dark: #92400e;
+  --warning: var(--color-cool-sky);
+  --warning-light: var(--color-cool-sky-light);
+  --warning-dark: var(--color-cool-sky-hover);
   
-  --danger: #dc2626;
-  --danger-light: #fee2e2;
-  --danger-dark: #991b1b;
+  --danger: var(--color-hot-rose);
+  --danger-light: var(--color-hot-rose-light);
+  --danger-dark: var(--color-hot-rose-hover);
   
-  --info: #0284c7;
-  --info-light: #e0f2fe;
+  --info: var(--color-cool-sky);
+  --info-light: var(--color-cool-sky-light);
   
-  /* Interactive States */
-  --focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.15);
-  --focus-ring-danger: 0 0 0 3px rgba(220, 38, 38, 0.15);
-  --focus-ring-success: 0 0 0 3px rgba(5, 150, 105, 0.15);
+  /* Interactive States — rgb channels for Hot Rose: 202, 31, 123 */
+  --focus-ring: 0 0 0 3px rgba(202, 31, 123, 0.15);
+  --focus-ring-danger: 0 0 0 3px rgba(202, 31, 123, 0.15);
+  --focus-ring-success: 0 0 0 3px rgba(15, 113, 115, 0.15);
   
   /* Tab Navigation */
   --tab-container-bg: #f1f5f9;         /* Container background for tabs */
@@ -371,7 +371,7 @@
   --tab-bg-hover: #ffffff;              /* Hover tab background */
   --tab-bg-active: #ffffff;             /* Active tab background */
   --tab-text: #64748b;                  /* Default tab text color */
-  --tab-text-hover: #6366f1;            /* Hover tab text color (purple) */
+  --tab-text-hover: var(--color-hot-rose); /* Hover tab text color */
   --tab-text-active: var(--text);       /* Active tab text color */
   --tab-shadow-active: 0 1px 3px rgba(0, 0, 0, 0.08);  /* Active tab shadow */
   
@@ -427,10 +427,19 @@
   --color-cool-sky: #35A7FF;
   --color-stormy-teal: #0F7173;
 
+  /* Derived brand shades — auto-calculated from base palette */
+  --color-hot-rose-hover: color-mix(in srgb, var(--color-hot-rose) 85%, black);
+  --color-hot-rose-light: color-mix(in srgb, var(--color-hot-rose) 10%, white);
+  --color-cool-sky-hover: color-mix(in srgb, var(--color-cool-sky) 80%, black);
+  --color-cool-sky-light: color-mix(in srgb, var(--color-cool-sky) 10%, white);
+  --color-stormy-teal-hover: color-mix(in srgb, var(--color-stormy-teal) 80%, black);
+  --color-stormy-teal-light: color-mix(in srgb, var(--color-stormy-teal) 10%, white);
+  --color-imperial-blue-light: color-mix(in srgb, var(--color-imperial-blue) 8%, white);
+
   /* Tag / pill gradient borders (defined as full gradient values) */
-  --gradient-positive: linear-gradient(90deg, #D03688, #5BB8FF);
-  --gradient-negative: linear-gradient(90deg, #D03688, #222A68);
-  --gradient-neutral:  linear-gradient(90deg, #35A7FF, #0F7173);
+  --gradient-positive: linear-gradient(90deg, var(--color-hot-rose), var(--color-cool-sky));
+  --gradient-negative: linear-gradient(90deg, var(--color-hot-rose), var(--color-imperial-blue));
+  --gradient-neutral:  linear-gradient(90deg, var(--color-cool-sky), var(--color-stormy-teal));
 
   /* ===========================================
      TYPOGRAPHY
@@ -810,7 +819,7 @@ label {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   background: var(--primary-light);
-  color: #3730a3;
+  color: var(--color-imperial-blue);
   border-radius: var(--radius-full);
   margin-bottom: var(--space-6);
 }
@@ -830,7 +839,7 @@ label {
 }
 
 .landingHighlight {
-  background: linear-gradient(135deg, var(--secondary) 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--color-cool-sky) 0%, var(--color-hot-rose) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1024,7 +1033,7 @@ label {
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, var(--secondary) 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--color-cool-sky) 0%, var(--color-hot-rose) 100%);
   color: var(--text-inverse);
   font-size: var(--text-xl);
   font-weight: var(--font-bold);
@@ -1095,7 +1104,7 @@ label {
 .landingCtaSection {
   text-align: center;
   padding: var(--space-12) var(--space-6);
-  background: linear-gradient(135deg, #1e3a5f 0%, var(--secondary) 100%);
+  background: linear-gradient(135deg, var(--color-imperial-blue) 0%, var(--color-cool-sky) 100%);
   border-radius: var(--radius-lg);
   color: var(--text-inverse);
   margin: var(--space-8) var(--space-4);
@@ -1121,12 +1130,12 @@ label {
 
 .landingCtaSection .heroCtas__primary {
   background: #ffffff;
-  color: #1e3a5f;
+  color: var(--color-imperial-blue);
 }
 
 .landingCtaSection .heroCtas__primary:hover {
   background: #f8fafc;
-  color: #1e3a5f;
+  color: var(--color-imperial-blue);
   box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
 }
 
@@ -1352,7 +1361,7 @@ label {
 
 .landingSeoCallout {
   background: linear-gradient(135deg, var(--primary-light) 0%, var(--secondary-light) 100%);
-  border: 1px solid #c7d2fe;
+  border: 1px solid var(--color-lavender-mist);
   border-radius: var(--radius-md);
   padding: var(--space-5) var(--space-6);
   text-align: center;
@@ -1360,7 +1369,7 @@ label {
 
 .landingSeoCallout p {
   font-size: var(--text-base);
-  color: #4338ca;
+  color: var(--color-imperial-blue);
   line-height: var(--leading-relaxed);
   margin: 0;
 }
@@ -1503,7 +1512,7 @@ label {
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
-  background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--color-hot-rose) 0%, var(--color-cool-sky) 100%);
   color: var(--text-inverse);
   text-decoration: none;
   border-radius: var(--radius-sm);
@@ -1524,7 +1533,7 @@ label {
 
 .headerStatic__signup:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 4px 12px rgba(202, 31, 123, 0.25);
   text-decoration: none;
   color: #fff;
 }
@@ -1644,71 +1653,71 @@ label {
 
 /* Callout variants */
 .callout--tip {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  border: 1px solid #a7f3d0;
+  background: linear-gradient(135deg, var(--color-stormy-teal-light) 0%, var(--color-stormy-teal-light) 100%);
+  border: 1px solid var(--color-stormy-teal);
 }
 
 .callout--tip .callout__icon {
-  color: #059669;
+  color: var(--color-stormy-teal);
 }
 
 .callout--tip .callout__title {
-  color: #047857;
+  color: var(--color-stormy-teal);
 }
 
 .callout--tip .callout__body {
-  color: #065f46;
+  color: var(--color-stormy-teal-hover);
 }
 
 .callout--warning {
-  background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
-  border: 1px solid #fde68a;
+  background: linear-gradient(135deg, var(--color-cool-sky-light) 0%, var(--color-cool-sky-light) 100%);
+  border: 1px solid var(--color-cool-sky);
 }
 
 .callout--warning .callout__icon {
-  color: #d97706;
+  color: var(--color-cool-sky);
 }
 
 .callout--warning .callout__title {
-  color: #b45309;
+  color: var(--color-cool-sky-hover);
 }
 
 .callout--warning .callout__body {
-  color: #92400e;
+  color: var(--color-imperial-blue);
 }
 
 .callout--info {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  border: 1px solid #bfdbfe;
+  background: linear-gradient(135deg, var(--color-cool-sky-light) 0%, var(--color-cool-sky-light) 100%);
+  border: 1px solid var(--color-cool-sky);
 }
 
 .callout--info .callout__icon {
-  color: #2563eb;
+  color: var(--color-cool-sky);
 }
 
 .callout--info .callout__title {
-  color: #1d4ed8;
+  color: var(--color-cool-sky-hover);
 }
 
 .callout--info .callout__body {
-  color: #1e40af;
+  color: var(--color-imperial-blue);
 }
 
 .callout--example {
-  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-  border: 1px solid #e9d5ff;
+  background: linear-gradient(135deg, var(--color-lavender-mist) 0%, var(--color-lavender-mist) 100%);
+  border: 1px solid var(--color-hot-rose);
 }
 
 .callout--example .callout__icon {
-  color: #9333ea;
+  color: var(--color-hot-rose);
 }
 
 .callout--example .callout__title {
-  color: #7e22ce;
+  color: var(--color-hot-rose);
 }
 
 .callout--example .callout__body {
-  color: #6b21a8;
+  color: var(--color-hot-rose-hover);
 }
 
 /* Accordion - Collapsible content */

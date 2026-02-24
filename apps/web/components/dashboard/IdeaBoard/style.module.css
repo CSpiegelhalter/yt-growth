@@ -370,7 +370,7 @@
 /* Save Toast */
 .saveToast {
   animation: slideUp 0.3s ease-out;
-  background: #1e293b;
+  background: var(--color-imperial-blue);
   border-radius: var(--radius-full);
   bottom: 24px;
   box-shadow: 0 10px 25px rgb(0 0 0 / 20%);

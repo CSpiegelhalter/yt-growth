@@ -101,23 +101,23 @@
 }
 
 .statusConnected {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--secondary-light);
+  color: var(--color-imperial-blue);
 }
 
 .statusProcessing {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-cool-sky-light);
+  color: var(--color-imperial-blue);
 }
 
 .statusReady {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-light);
+  color: var(--color-stormy-teal-hover);
 }
 
 .statusError {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-light);
+  color: var(--color-hot-rose-hover);
 }
 
 .statusDot {
@@ -136,10 +136,10 @@
 /* Error Banner */
 .errorBanner {
   align-items: center;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-hot-rose-light);
+  border: 1px solid var(--color-hot-rose-light);
   border-radius: 10px;
-  color: #991b1b;
+  color: var(--color-hot-rose-hover);
   display: flex;
   font-size: 0.8125rem;
   gap: 8px;
@@ -161,7 +161,7 @@
 
 .primaryBtn {
   align-items: center;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--color-hot-rose) 0%, var(--color-hot-rose) 100%);
   border: none;
   border-radius: 10px;
   color: white;
@@ -177,7 +177,7 @@
 }
 
 .primaryBtn:hover {
-  box-shadow: 0 4px 12px rgb(99 102 241 / 30%);
+  box-shadow: 0 4px 12px rgb(202 31 123 / 30%);
   color: white;
   transform: translateY(-1px);
 }
@@ -221,9 +221,9 @@
 }
 
 .iconBtnDanger:hover:not(:disabled) {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #dc2626;
+  background: var(--color-hot-rose-light);
+  border-color: var(--color-hot-rose-light);
+  color: var(--danger);
 }
 
 /* Spinner */
@@ -231,7 +231,7 @@
   animation: spin 0.8s linear infinite;
   border: 2px solid #e2e8f0;
   border-radius: 50%;
-  border-top-color: #6366f1;
+  border-top-color: var(--primary);
   display: inline-block;
   height: 18px;
   width: 18px;
@@ -319,7 +319,7 @@
 }
 
 .confirmRemove {
-  background: #dc2626;
+  background: var(--danger);
   border: none;
   border-radius: 10px;
   color: white;
@@ -332,5 +332,5 @@
 }
 
 .confirmRemove:hover {
-  background: #b91c1c;
+  background: var(--color-hot-rose-hover);
 }
