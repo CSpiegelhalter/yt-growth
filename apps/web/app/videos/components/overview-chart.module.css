@@ -93,20 +93,6 @@
   overflow: hidden;
 }
 
-.markerNotch {
-  background:
-    radial-gradient(circle at 0 0, transparent 7px, var(--border) 7px, var(--border) 8px, var(--sidebar-bg) 8px) left top / 8px 8px no-repeat,
-    radial-gradient(circle at 100% 0, transparent 7px, var(--border) 7px, var(--border) 8px, var(--sidebar-bg) 8px) right top / 8px 8px no-repeat,
-    linear-gradient(var(--sidebar-bg), var(--sidebar-bg)) 8px 0 / calc(100% - 16px) 100% no-repeat;
-  height: 10px;
-  pointer-events: none;
-  position: absolute;
-  top: 20px;
-  transform: translateX(-50%);
-  width: calc(34px + 16px);
-  z-index: 5;
-}
-
 .markerActiveIcon {
   background: url('/sidebar/videos.svg') center / contain no-repeat;
   height: 24px;
@@ -148,14 +134,17 @@
 }
 
 .markerTooltipFloat::after {
-  background: var(--sidebar-bg);
+  background:
+    radial-gradient(circle at 0 0, transparent 7px, var(--border) 7px, var(--border) 8px, var(--sidebar-bg) 8px) left top / 8px 8px no-repeat,
+    radial-gradient(circle at 100% 0, transparent 7px, var(--border) 7px, var(--border) 8px, var(--sidebar-bg) 8px) right top / 8px 8px no-repeat,
+    linear-gradient(var(--sidebar-bg), var(--sidebar-bg)) 8px 0 / calc(100% - 16px) 100% no-repeat;
   content: '';
-  height: 3px;
+  height: 10px;
   left: 50%;
   position: absolute;
-  top: -1px;
+  top: -8px;
   transform: translateX(-50%);
-  width: 36px;
+  width: calc(34px + 16px);
 }
 
 /* ── Full-height marker lines (continuous across all charts) ── */

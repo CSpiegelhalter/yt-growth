@@ -283,7 +283,6 @@ function SingleMetricChart({
           const left = `calc(${fraction * 100}% - ${fraction * 8}px)`;
           return (
             <>
-              <div className={s.markerNotch} style={{ left }} />
               <div className={s.markerActiveIcon} style={{ left }} />
               <div className={s.markerTooltipFloat} style={{ left }}>
                 <VideoMarkerTooltip video={video} />
