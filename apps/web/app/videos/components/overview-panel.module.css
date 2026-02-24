@@ -5,7 +5,7 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-10);
 }
 
 .section {

@@ -30,9 +30,9 @@ type ChartRow = OverviewDailyRow & { label: string };
 
 const METRICS = [
   { key: "views" as const, label: "Views", color: "var(--color-cool-sky)" },
-  { key: "shares" as const, label: "Shares", color: "var(--color-hot-rose)" },
-  { key: "watchTimeMinutes" as const, label: "Watch Time (min)", color: "var(--color-cool-sky)" },
-  { key: "netSubs" as const, label: "Subscribers", color: "var(--color-stormy-teal)" },
+  { key: "shares" as const, label: "Shares", color: "var(--color-cool-sky)" },
+  { key: "watchTimeMinutes" as const, label: "Watch Time", color: "var(--color-cool-sky)" },
+  { key: "netSubs" as const, label: "Subscribers", color: "var(--color-cool-sky)" },
 ] as const;
 
 function prepareData(daily: OverviewDailyRow[]): ChartRow[] {
@@ -174,7 +174,7 @@ function SingleMetricChart({
 }) {
   return (
     <div className={s.chartRow}>
-      <span className={s.chartLabel} style={{ color: metric.color }}>
+      <span className={s.chartLabel} style={{ color: "var(--color-imperial-blue)" }}>
         {metric.label}
       </span>
       <div className={s.chartArea} onMouseLeave={() => onMarkerHover(null)}>
@@ -278,10 +278,17 @@ function SingleMetricChart({
             (v) => (v.chartDate ?? toLocalDate(v.publishedAt)) === hoveredMarker,
           );
           if (!video) {return null;}
+          const idx = data.findIndex((p) => p.date === hoveredMarker);
+          const fraction = idx !== -1 && data.length > 1 ? idx / (data.length - 1) : 0.5;
+          const left = `calc(${fraction * 100}% - ${fraction * 8}px)`;
           return (
-            <div className={s.markerTooltipFloat}>
-              <VideoMarkerTooltip video={video} />
-            </div>
+            <>
+              <div className={s.markerNotch} style={{ left }} />
+              <div className={s.markerActiveIcon} style={{ left }} />
+              <div className={s.markerTooltipFloat} style={{ left }}>
+                <VideoMarkerTooltip video={video} />
+              </div>
+            </>
           );
         })()}
       </div>

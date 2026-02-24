@@ -21,20 +21,27 @@
 
 .chartLabel {
   flex-shrink: 0;
-  font-size: var(--text-xs);
+  font-size: var(--text-base);
   font-weight: var(--font-semibold);
   text-align: left;
-  width: 120px;
+  width: 140px;
 }
 
 .chartArea {
   flex: 1;
   min-width: 0;
+  position: relative;
 }
 
 .chartArea :global(.recharts-wrapper),
 .chartArea :global(.recharts-surface) {
   outline: none;
+  overflow: visible;
+}
+
+.chartArea :global(.recharts-wrapper) {
+  position: relative;
+  z-index: 2;
 }
 
 /* ── Tooltip ── */
@@ -86,8 +93,34 @@
   overflow: hidden;
 }
 
+.markerNotch {
+  background:
+    radial-gradient(circle at 0 0, transparent 7px, var(--border) 7px, var(--border) 8px, var(--sidebar-bg) 8px) left top / 8px 8px no-repeat,
+    radial-gradient(circle at 100% 0, transparent 7px, var(--border) 7px, var(--border) 8px, var(--sidebar-bg) 8px) right top / 8px 8px no-repeat,
+    linear-gradient(var(--sidebar-bg), var(--sidebar-bg)) 8px 0 / calc(100% - 16px) 100% no-repeat;
+  height: 10px;
+  pointer-events: none;
+  position: absolute;
+  top: 20px;
+  transform: translateX(-50%);
+  width: calc(34px + 16px);
+  z-index: 5;
+}
+
+.markerActiveIcon {
+  background: url('/sidebar/videos.svg') center / contain no-repeat;
+  height: 24px;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%) scale(1.3);
+  transition: transform 0.15s ease;
+  width: 24px;
+  z-index: 11;
+}
+
 .markerTooltipFloat {
-  background: var(--surface);
+  background: var(--sidebar-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
@@ -100,11 +133,36 @@
   z-index: 10;
 }
 
+.markerTooltipFloat::before {
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  content: '';
+  height: 22px;
+  left: 50%;
+  position: absolute;
+  top: -30px;
+  transform: translateX(-50%);
+  width: 34px;
+}
+
+.markerTooltipFloat::after {
+  background: var(--sidebar-bg);
+  content: '';
+  height: 3px;
+  left: 50%;
+  position: absolute;
+  top: -1px;
+  transform: translateX(-50%);
+  width: 36px;
+}
+
 /* ── Full-height marker lines (continuous across all charts) ── */
 
 .markerLinesOverlay {
-  bottom: 0;
-  left: calc(120px + var(--space-3));
+  bottom: 20px;
+  left: calc(140px + var(--space-3));
   pointer-events: none;
   position: absolute;
   right: 8px;

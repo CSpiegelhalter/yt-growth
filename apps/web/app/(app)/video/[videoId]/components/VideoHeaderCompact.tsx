@@ -215,7 +215,7 @@ export function VideoHeaderCompact({
             <span className={styles.kpiValue}>
               {formatCompact(kpis.watchTimeMin)}
             </span>
-            <span className={styles.kpiLabel}>Watch time (min)</span>
+            <span className={styles.kpiLabel}>Watch time</span>
           </div>
         )}
         {kpis.avgViewedPct != null && (
