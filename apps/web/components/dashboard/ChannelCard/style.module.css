@@ -61,7 +61,6 @@
 
 .channelName {
   -webkit-box-orient: vertical;
-  color: #1e293b;
   display: -webkit-box;
   font-size: 1rem;
   font-weight: 600;
@@ -284,7 +283,6 @@
 }
 
 .confirmTitle {
-  color: #1e293b;
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0 0 8px;

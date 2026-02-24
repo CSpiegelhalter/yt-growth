@@ -11,7 +11,7 @@ import { LEARN_ARTICLES } from "./(marketing)/learn/articles";
  * Excludes:
  * - /auth/* (noindex, disallowed in robots.txt)
  * - /api/* (not pages)
- * - Private app routes that require login (dashboard, profile, competitors, etc.)
+ * - Private app routes that require login (videos, profile, competitors, etc.)
  *
  * Public SEO tool pages (/ideas, /keywords, /tags/*) ARE included here.
  *

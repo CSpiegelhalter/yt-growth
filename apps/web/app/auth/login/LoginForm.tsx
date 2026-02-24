@@ -35,7 +35,7 @@ export default function LoginForm() {
       return;
     }
 
-    const callbackUrl = sp.get("callbackUrl") || "/dashboard";
+    const callbackUrl = sp.get("callbackUrl") || "/videos";
     const res = await signIn("credentials", {
       email,
       password,
@@ -53,12 +53,12 @@ export default function LoginForm() {
 
   async function handleGoogleSignIn() {
     setLoading(true);
-    await signIn("google", { callbackUrl: "/dashboard" });
+    await signIn("google", { callbackUrl: "/videos" });
   }
 
   function handleVerificationLogin() {
     setLoading(true);
-    const callbackUrl = sp.get("callbackUrl") || "/dashboard";
+    const callbackUrl = sp.get("callbackUrl") || "/videos";
     window.location.href = `/auth/verify?callbackUrl=${encodeURIComponent(
       callbackUrl
     )}`;

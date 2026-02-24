@@ -29,7 +29,7 @@
 }
 
 .backLink:hover {
-  color: #1e293b;
+  color: var(--text);
 }
 
 /* ================================
@@ -138,7 +138,6 @@
 }
 
 .videoTitle {
-  color: #1e293b;
   font-size: 1.125rem;
   font-weight: 700;
   line-height: 1.35;
@@ -274,7 +273,6 @@
   border-radius: 6px;
   bottom: calc(100% + 8px);
   box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
-  color: #1e293b;
   font-size: 0.75rem;
   font-weight: 400;
   left: 50%;
@@ -346,7 +344,6 @@
 }
 
 .sectionTitle {
-  color: #1e293b;
   font-size: 1rem;
   font-weight: 700;
   margin: 0 0 10px;
@@ -418,7 +415,6 @@
 }
 
 .patternTitle {
-  color: #0f172a;
   font-size: 0.875rem;
   font-weight: 700;
   line-height: 1.35;
@@ -459,7 +455,6 @@
 }
 
 .themeTitle {
-  color: #1e293b;
   font-size: 0.9375rem;
   font-weight: 600;
   margin: 0 0 4px;
@@ -532,7 +527,6 @@
 
 .hookText,
 .overlayText {
-  color: #1e293b;
   font-size: 0.8125rem;
   line-height: 1.4;
 }
@@ -620,7 +614,6 @@
 
 .moreTitle {
   -webkit-box-orient: vertical;
-  color: #1e293b;
   display: -webkit-box;
   font-size: 0.75rem;
   font-weight: 500;
@@ -1087,7 +1080,6 @@
 }
 
 .highlightTitle {
-  color: #1e293b;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -1232,7 +1224,6 @@
 }
 
 .outperformAction {
-  color: #1e293b;
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.4;

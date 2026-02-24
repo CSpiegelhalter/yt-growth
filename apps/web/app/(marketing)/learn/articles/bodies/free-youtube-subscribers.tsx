@@ -415,7 +415,7 @@ export function Body({ s }: BodyProps) {
           competitor baselines. Real signals lead to better distribution.
         </p>
         <Link
-          href="/dashboard"
+          href="/videos"
           style={{
             display: "inline-block",
             padding: "0.875rem 2rem",

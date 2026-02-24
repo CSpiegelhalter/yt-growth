@@ -42,7 +42,7 @@ export const GET = createApiRoute(
       return res;
     } catch {
       const res = NextResponse.redirect(
-        new URL(`/dashboard?error=google_oauth&rid=${api.requestId}`, baseUrl)
+        new URL(`/videos?error=google_oauth&rid=${api.requestId}`, baseUrl)
       );
       res.headers.set("x-request-id", api.requestId);
       return res;

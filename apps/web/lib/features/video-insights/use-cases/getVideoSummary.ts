@@ -60,10 +60,7 @@ type InsightDerivedData = {
   } | null;
 };
 
-type CachedLlmData = {
-  headline?: string;
-  summary?: { headline?: string };
-};
+type BaselineMeanStd = { mean: number; std: number };
 
 type InsightContext = {
   derivedData: InsightDerivedData;
@@ -72,7 +69,14 @@ type InsightContext = {
     cachedUntil: Date;
     contentHash: string | null;
   };
-  channel: { id: number };
+  channel: { id: number; subscriberCount?: number | null };
+  videoPublishedAt?: string | null;
+  baseline?: {
+    avgViewPercentage?: BaselineMeanStd;
+    subsPer1k?: BaselineMeanStd;
+    viewsPerDay?: BaselineMeanStd;
+    impressionsCtr?: BaselineMeanStd;
+  } | null;
 };
 
 type GetVideoSummaryDeps = {
@@ -91,13 +95,23 @@ type GetVideoSummaryDeps = {
   }) => Promise<{ ok: boolean; error?: unknown }>;
 };
 
+function extractChannelBaselines(
+  baseline: InsightContext["baseline"],
+): { avgCtr: number | null; avgAvdPct: number | null; avgSubsPer1kViews: number | null; avgViewsPerDay: number | null } | undefined {
+  if (!baseline) {return undefined;}
+  return {
+    avgCtr: baseline.impressionsCtr?.mean ?? null,
+    avgAvdPct: baseline.avgViewPercentage?.mean != null
+      ? baseline.avgViewPercentage.mean * 100
+      : null,
+    avgSubsPer1kViews: baseline.subsPer1k?.mean ?? null,
+    avgViewsPerDay: baseline.viewsPerDay?.mean ?? null,
+  };
+}
+
 function extractCachedSummary(llmJson: unknown): CoreAnalysis | null {
-  const data = llmJson as CachedLlmData;
-  if (data.headline) {
-    return data as CoreAnalysis;
-  }
-  if (data.summary?.headline) {
-    return data.summary as CoreAnalysis;
+  if (Array.isArray(llmJson) && llmJson.length > 0 && llmJson[0]?.title && llmJson[0]?.explanation) {
+    return llmJson as CoreAnalysis;
   }
   return null;
 }
@@ -172,12 +186,16 @@ export async function getVideoSummary(
 
   const competitiveContext = await fetchCompetitiveContextIfAvailable(videoId, derivedData, deps);
 
+  const channelBaselines = extractChannelBaselines(context.baseline);
+
   const summary = await generateSummary(
     {
-      video: derivedData.video,
+      video: { ...derivedData.video, publishedAt: context.videoPublishedAt ?? undefined },
       derived: derivedData.derived,
       comparison: derivedData.comparison,
       bottleneck: derivedData.bottleneck,
+      channelSubscribers: context.channel.subscriberCount ?? null,
+      channelBaselines,
       subscriberBreakdown: derivedData.subscriberBreakdown,
       geoBreakdown: derivedData.geoBreakdown,
       trafficDetail: derivedData.trafficDetail,

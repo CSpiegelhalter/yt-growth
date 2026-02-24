@@ -39,8 +39,8 @@ export async function signUp(
   // Submit
   await page.click('button[type="submit"]');
 
-  // Wait for redirect to dashboard or success state
-  await expect(page).toHaveURL(/dashboard|login/, { timeout: 15_000 });
+  // Wait for redirect to videos or success state
+  await expect(page).toHaveURL(/videos|login/, { timeout: 15_000 });
 }
 
 /**
@@ -67,9 +67,9 @@ export async function signIn(
   // Submit
   await page.click('button[type="submit"]');
 
-  // Wait for redirect to dashboard (or check for error)
+  // Wait for redirect to videos (or check for error)
   try {
-    await expect(page).toHaveURL(/dashboard/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/videos/, { timeout: 15_000 });
   } catch {
     // Check if there's a login error
     const errorAlert = page.locator('[role="alert"], [class*="error"]');
@@ -77,7 +77,7 @@ export async function signIn(
       const errorText = await errorAlert.textContent();
       throw new Error(`Login failed: ${errorText}`);
     }
-    throw new Error(`Login failed - not redirected to dashboard. Current URL: ${page.url()}`);
+    throw new Error(`Login failed - not redirected to videos. Current URL: ${page.url()}`);
   }
 }
 

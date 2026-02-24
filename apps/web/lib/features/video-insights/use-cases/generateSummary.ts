@@ -6,7 +6,7 @@
  */
 
 import { VideoInsightError } from "../errors";
-import type { CoreAnalysis, LlmCallFn } from "../types";
+import type { CoreAnalysis, InsightItem, LlmCallFn } from "../types";
 
 // ── Input Types ─────────────────────────────────────────────
 
@@ -15,6 +15,7 @@ type VideoData = {
   description?: string;
   tags: string[];
   durationSec: number;
+  publishedAt?: string;
 };
 
 type DerivedData = {
@@ -79,11 +80,20 @@ export type CompetitiveContextData = {
   similarVideos?: Array<{ videoId: string }> | null;
 } | null;
 
+type ChannelBaselinesData = {
+  avgCtr: number | null;
+  avgAvdPct: number | null;
+  avgSubsPer1kViews: number | null;
+  avgViewsPerDay: number | null;
+};
+
 type GenerateSummaryInput = {
   video: VideoData;
   derived: DerivedData;
   comparison: ComparisonData;
   bottleneck: BottleneckData;
+  channelSubscribers: number | null;
+  channelBaselines?: ChannelBaselinesData;
   subscriberBreakdown?: SubscriberBreakdownData;
   geoBreakdown?: GeoBreakdownData;
   trafficDetail?: TrafficDetailData;
@@ -236,11 +246,17 @@ function getRelevantArchetypes(
 function formatComparison(
   comp: { vsBaseline: string; delta?: number | null },
   label: string,
+  baselineValue?: number | null,
 ): string {
   if (comp.vsBaseline === "unknown") {
     return "";
   }
-  return `(${comp.delta?.toFixed(0)}% vs ${label})`;
+  const delta = comp.delta?.toFixed(0) ?? "?";
+  const direction = (comp.delta ?? 0) >= 0 ? "above" : "below";
+  if (baselineValue != null) {
+    return `(${Math.abs(Number(delta))}% ${direction} your 30-day average of ${baselineValue.toFixed(1)})`;
+  }
+  return `(${delta}% vs ${label})`;
 }
 
 function buildSubscriberSection(sub: SubscriberBreakdownData | undefined): string {
@@ -333,33 +349,87 @@ function buildCompetitiveSection(ctx: CompetitiveContextData | undefined): strin
   return parts.length > 0 ? `\nCOMPETITIVE CONTEXT:\n${parts.join("\n")}` : "";
 }
 
+// ── Channel Scale ────────────────────────────────────────────
+
+function subscriberTier(count: number | null): string {
+  if (count == null) {return "Unknown";}
+  if (count < 1_000) {return "Nano (<1K subs)";}
+  if (count < 10_000) {return "Micro (1K-10K subs)";}
+  if (count < 100_000) {return "Established (10K-100K subs)";}
+  return "Large (100K+ subs)";
+}
+
+function videoAgeDays(publishedAt: string | undefined): number | null {
+  if (!publishedAt) {return null;}
+  const ms = Date.now() - new Date(publishedAt).getTime();
+  return Math.max(0, Math.round(ms / 86_400_000));
+}
+
 // ── Prompt Building ─────────────────────────────────────────
 
-function buildVideoContext(input: GenerateSummaryInput): string {
-  const { video, derived, comparison, bottleneck } = input;
+function buildBaselinesSection(baselines?: ChannelBaselinesData): string {
+  if (!baselines) {return "";}
 
-  const durationMin = Math.round(video.durationSec / 60);
-  const descSnippet = video.description?.slice(0, 300) ?? "No description";
+  const ctrLine = baselines.avgCtr != null ? `• Average CTR: ${baselines.avgCtr.toFixed(1)}%` : "• Average CTR: N/A";
+  const avdLine = baselines.avgAvdPct != null ? `• Average Retention (AVD%): ${baselines.avgAvdPct.toFixed(1)}%` : "• Average Retention (AVD%): N/A";
+  const subsLine = baselines.avgSubsPer1kViews != null ? `• Average Subs/1K Views: ${baselines.avgSubsPer1kViews.toFixed(1)}` : "• Average Subs/1K Views: N/A";
+  const vpdLine = baselines.avgViewsPerDay != null ? `• Average Views/Day: ${baselines.avgViewsPerDay.toFixed(0)}` : "• Average Views/Day: N/A";
 
+  return `\nCHANNEL 30-DAY BASELINES:
+${ctrLine}
+${avdLine}
+${subsLine}
+${vpdLine}
+Use these to determine if the current video is an outlier.\n`;
+}
+
+function buildTemporalBlock(publishedAt?: string): { publishedStr: string; todayStr: string; ageSuffix: string } {
+  const todayStr = new Date().toISOString().split("T")[0];
+  const publishedStr = publishedAt?.split("T")[0] ?? "unknown";
+  const ageDays = videoAgeDays(publishedAt);
+  const ageSuffix = ageDays != null ? ` (${ageDays} days ago)` : "";
+  return { publishedStr, todayStr, ageSuffix };
+}
+
+function buildPerformanceLines(
+  derived: DerivedData,
+  comparison: ComparisonData,
+  baselines?: ChannelBaselinesData,
+): string {
   const avdDisplay = derived.avdRatio != null ? (derived.avdRatio * 100).toFixed(1) : "N/A";
   const engDisplay = derived.engagementPerView != null ? (derived.engagementPerView * 100).toFixed(2) : "N/A";
   const subsDisplay = derived.subsPer1k?.toFixed(2) ?? "N/A";
+
+  return `PERFORMANCE DATA (${derived.daysInRange} day period):
+• Total Views: ${derived.totalViews.toLocaleString()}
+• Views/Day: ${derived.viewsPerDay.toFixed(0)} ${formatComparison(comparison.viewsPerDay, "your channel avg", baselines?.avgViewsPerDay)}
+• Avg % Viewed: ${avdDisplay}% ${formatComparison(comparison.avgViewPercentage, "avg", baselines?.avgAvdPct)}
+• Engagement Rate: ${engDisplay}% ${formatComparison(comparison.engagementPerView, "avg")}
+• Subs/1K Views: ${subsDisplay} ${formatComparison(comparison.subsPer1k, "avg", baselines?.avgSubsPer1kViews)}`;
+}
+
+function buildVideoContext(input: GenerateSummaryInput): string {
+  const { video, derived, comparison, bottleneck, channelSubscribers, channelBaselines } = input;
+
+  const durationMin = Math.round(video.durationSec / 60);
+  const descSnippet = video.description?.slice(0, 300) ?? "No description";
   const bottleneckLine = bottleneck ? `\nBOTTLENECK: ${bottleneck.bottleneck} - ${bottleneck.evidence}` : "";
-
   const competitive = buildCompetitiveSection(input.competitiveContext);
+  const { publishedStr, todayStr, ageSuffix } = buildTemporalBlock(video.publishedAt);
 
-  return `VIDEO INFO:
+  return `CHANNEL SCALE:
+Subscribers: ${channelSubscribers != null ? channelSubscribers.toLocaleString() : "Unknown"}
+Tier: ${subscriberTier(channelSubscribers)}
+${buildBaselinesSection(channelBaselines)}
+VIDEO INFO:
 TITLE: "${video.title}"
+PUBLISHED: ${publishedStr}${ageSuffix}
+TODAY'S DATE: ${todayStr}
 DESCRIPTION (first 300 chars): "${descSnippet}"
 TAGS: [${video.tags.slice(0, 10).map((t) => `"${t}"`).join(", ")}]
 DURATION: ${durationMin} minutes
 
-PERFORMANCE DATA (${derived.daysInRange} day period):
-• Total Views: ${derived.totalViews.toLocaleString()}
-• Views/Day: ${derived.viewsPerDay.toFixed(0)} ${formatComparison(comparison.viewsPerDay, "your channel avg")}
-• Avg % Viewed: ${avdDisplay}% ${formatComparison(comparison.avgViewPercentage, "avg")}
-• Engagement Rate: ${engDisplay}% ${formatComparison(comparison.engagementPerView, "avg")}
-• Subs/1K Views: ${subsDisplay} ${formatComparison(comparison.subsPer1k, "avg")}
+${buildPerformanceLines(derived, comparison, channelBaselines)}
 ${bottleneckLine}
 ${buildSubscriberSection(input.subscriberBreakdown)}
 ${buildGeoSection(input.geoBreakdown)}
@@ -388,38 +458,38 @@ export async function generateSummary(
 
   const videoContext = buildVideoContext(input);
 
-  const systemPrompt = `
-You are a YouTube Growth Strategist. Your goal is to explain the CAUSAL RELATIONSHIP between data points. 
+  const systemPrompt = `You are a YouTube Growth Strategist. Your goal is to explain the CAUSAL RELATIONSHIP between data points.
 
 --- YOUR MENTAL MODELS (DO NOT REPEAT THESE LABELS) ---
 Use the following logic to shape your response. These archetypes explain how metrics interact. If the data fits one of these patterns, use that logic to write your explanation:
 
 ${archetypeString}
 
---- THE EXPLANATION RULES ---
-1. NO REPEATING DATA: Do not say 'Your CTR is 4%.' Say 'Your packaging is struggling to capture attention compared to the high search interest in this topic.'
-2. DURATION AWARENESS: For videos over 30 minutes, treat 'Low % Viewed' as a success if the raw minutes are high. Explain this as 'Deep Intent' or 'Comfort Content.'
-3. THE 'WHY' REQUIREMENT: Every statement must answer: 'What is the viewer thinking?' 
-   - (e.g., 'Subscribers are skipping this because the title feels like a repeat of previous content, not a new mystery to solve.')
-4. DIMENSIONAL INTEGRATION: Use the Geo/Demo/SEO data to add 'flavor' to the why. 
-   - (e.g., 'While the US audience is loyal, the 0% retention in international markets suggests the pacing is too fast for non-native speakers.')
+--- RULES ---
+1. NO REPEATING DATA: Do not say "Your CTR is 4%." Say "Your packaging is struggling to capture attention compared to the high search interest in this topic."
+2. DURATION AWARENESS: For videos over 30 minutes, treat "Low % Viewed" as a success if the raw minutes are high. Explain this as "Deep Intent" or "Comfort Content."
+3. THE "WHY" REQUIREMENT: Every statement must answer "What is the viewer thinking?"
+   - (e.g., "Subscribers are skipping this because the title feels like a repeat of previous content, not a new mystery to solve.")
+4. DIMENSIONAL INTEGRATION: Use the Geo/Demo/SEO data to add flavor to the why.
+   - (e.g., "While the US audience is loyal, the 0% retention in international markets suggests the pacing is too fast for non-native speakers.")
+5. CONTEXTUAL CALIBRATION: Adjust advice based on channel size. A 5% CTR for a channel with 100 subscribers is a "High-Signal Win," while 5% for a 1M sub channel is "Saturation." Do not give enterprise-level advice to nano-creators.
+6. LIMIT TO 3-5 INSIGHTS: Focus on the most important findings. Quality over quantity.
+7. BASELINE AWARENESS: The user's 30-day baselines are provided. Use them to determine if metrics are outliers for THIS channel. A 2% CTR on a channel with 1.2% baseline is a "Breakthrough" — not "low CTR."
+8. RECENCY AWARENESS: You are given the video's publish date and today's date. A video posted 1-3 days ago has NOT had time to accumulate views — do NOT diagnose "low views" as a problem. Factor video age into every metric interpretation. Only flag view counts as concerning after 7+ days.
 
---- OUTPUT FORMAT (JSON ONLY) ---
+--- OUTPUT FORMAT (JSON ONLY, NO MARKDOWN) ---
+Each insight MUST have exactly three parts:
+  - "title": A punchy 3-5 word verdict heading (e.g., "Packaging Win, Retention Crisis" or "Breakthrough Engagement").
+  - "explanation": WHY the data looks this way based on viewer psychology. 1-2 sentences. Do NOT repeat raw numbers.
+  - "fix": A tactical, specific 1-sentence instruction the creator can act on today.
+
 {
-  "insight_headline": "String",
-  "the_viewer_journey": {
-    "discovery_phase": "Explanation of the 'Click' psychology",
-    "consumption_phase": "Explanation of the 'Watch' psychology",
-    "conversion_phase": "Explanation of the 'Join' psychology"
-  },
-  "dimensional_nuance": "Explanation of how Geo/Demo/SEO factors are shifting the numbers",
-  "strategic_pivot": {
-    "what": "Actionable step",
-    "why": "The psychological trigger",
-    "impact_forecast": "Expected result"
-  }
+  "insights": [
+    { "title": "...", "explanation": "...", "fix": "..." }
+  ]
 }
-`;
+
+CRITICAL: Return ONLY the JSON object. No markdown code blocks, no explanations.`;
 
   try {
     const result = await callLlm(
@@ -427,9 +497,14 @@ ${archetypeString}
         { role: "system", content: systemPrompt },
         { role: "user", content: videoContext },
       ],
-      { maxTokens: 800, temperature: 0.3, responseFormat: "json_object" },
+      { maxTokens: 1000, temperature: 0.3, responseFormat: "json_object" },
     );
-    return JSON.parse(result.content);
+
+    const parsed = JSON.parse(result.content) as { insights?: InsightItem[] };
+    const items = parsed.insights ?? [];
+    return items
+      .filter((i) => i.title && i.explanation && i.fix)
+      .slice(0, 5);
   } catch (error) {
     throw new VideoInsightError(
       "EXTERNAL_FAILURE",

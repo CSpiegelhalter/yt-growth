@@ -17,7 +17,7 @@ export function LearnStaticCTA({
   title,
   description,
   buttonText = "Get Started Free",
-  buttonHref = "/dashboard",
+  buttonHref = "/videos",
 }: Props) {
   return (
     <section className="learnCta">

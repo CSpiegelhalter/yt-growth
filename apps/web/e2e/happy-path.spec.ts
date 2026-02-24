@@ -3,7 +3,7 @@
  *
  * Tests the main user journey:
  * 1. Login with demo credentials
- * 2. View dashboard with channels
+ * 2. View videos with channels
  * 3. View audit page
  * 4. View profile with subscription status
  *
@@ -29,8 +29,8 @@ test.describe("Happy Path", () => {
   test("login works", async ({ page }) => {
     await signIn(page, TEST_USER);
 
-    // Should redirect to dashboard
-    await expect(page).toHaveURL(/dashboard/);
+    // Should redirect to videos
+    await expect(page).toHaveURL(/videos/);
     await expect(page.locator("main").first()).toBeVisible();
   });
 });
@@ -38,9 +38,9 @@ test.describe("Happy Path", () => {
 test.describe("Mobile Responsive", () => {
   test.use({ viewport: { width: 375, height: 667 } });
 
-  test("dashboard is usable on mobile", async ({ page }) => {
+  test("videos is usable on mobile", async ({ page }) => {
     await signIn(page, TEST_USER);
-    await expect(page).toHaveURL(/dashboard/);
+    await expect(page).toHaveURL(/videos/);
 
     // Should render main content
     await expect(page.locator("main").first()).toBeVisible();

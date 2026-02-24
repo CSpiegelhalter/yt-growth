@@ -1,0 +1,140 @@
+/* ================================
+   Overview Chart (Stacked Line Charts)
+   ================================ */
+
+.chartStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  position: relative;
+  user-select: none;
+}
+
+/* ── Single chart row ── */
+
+.chartRow {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+  position: relative;
+}
+
+.chartLabel {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  text-align: left;
+  width: 120px;
+}
+
+.chartArea {
+  flex: 1;
+  min-width: 0;
+}
+
+.chartArea :global(.recharts-wrapper),
+.chartArea :global(.recharts-surface) {
+  outline: none;
+}
+
+/* ── Tooltip ── */
+
+.tooltip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--text-xs);
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+}
+
+.tooltipLabel {
+  color: var(--text-secondary);
+}
+
+.tooltipValue {
+  font-weight: var(--font-semibold);
+}
+
+/* ── Video marker tooltip ── */
+
+.markerTooltip {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  max-width: 240px;
+}
+
+.markerTooltipThumb {
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+  height: 45px;
+  object-fit: cover;
+  width: 80px;
+}
+
+.markerTooltipTitle {
+  -webkit-box-orient: vertical;
+  color: var(--text);
+  display: -webkit-box;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  -webkit-line-clamp: 2;
+  line-height: var(--leading-snug);
+  overflow: hidden;
+}
+
+.markerTooltipFloat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  left: 50%;
+  padding: var(--space-2);
+  pointer-events: none;
+  position: absolute;
+  top: 28px;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+/* ── Full-height marker lines (continuous across all charts) ── */
+
+.markerLinesOverlay {
+  bottom: 0;
+  left: calc(120px + var(--space-3));
+  pointer-events: none;
+  position: absolute;
+  right: 8px;
+  top: 28px; /* clear the 24px video icon + 4px gap */
+  z-index: 1;
+}
+
+.fullHeightMarkerLine {
+  border-left: 1.5px dashed var(--color-hot-rose);
+  bottom: 0;
+  position: absolute;
+  top: 0;
+  transition: border-color 0.15s ease;
+  width: 0;
+}
+
+/* ── Empty state ── */
+
+.emptyChart {
+  align-items: center;
+  background: var(--surface-alt);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  display: flex;
+  font-size: var(--text-sm);
+  justify-content: center;
+  padding: var(--space-10) var(--space-6);
+}
+
+.emptyChart p {
+  margin: 0;
+}

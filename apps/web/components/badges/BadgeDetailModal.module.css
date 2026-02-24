@@ -64,7 +64,7 @@
 
 .closeBtn:hover {
   background: #e2e8f0;
-  color: #1e293b;
+  color: var(--text);
 }
 
 /* Badge Art Section */
@@ -114,7 +114,6 @@
 }
 
 .badgeName {
-  color: #1e293b;
   font-size: 1.5rem;
   font-weight: 800;
   margin: 0 0 8px;
@@ -182,7 +181,6 @@
 
 .progressText {
   align-items: center;
-  color: #1e293b;
   display: flex;
   font-size: 0.875rem;
   font-weight: 600;
@@ -220,7 +218,6 @@
 }
 
 .goalTitle {
-  color: #1e293b;
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -291,7 +288,7 @@
 
 .shareBtn:hover {
   background: #e2e8f0;
-  color: #1e293b;
+  color: var(--text);
 }
 
 .closeModalBtn {

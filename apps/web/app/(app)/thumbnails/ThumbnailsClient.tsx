@@ -565,11 +565,13 @@ function IdentityFormSection({
             {photos.map((photo) => (
               <div key={photo.id} className={s.uploadedPhotoItem}>
                 {photo.url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={photo.url}
                     alt="Uploaded training reference"
                     className={s.uploadedPhotoImg}
+                    fill
+                    sizes="80px"
+                    unoptimized
                   />
                 ) : (
                   <div className={s.uploadedPhotoPlaceholder} />

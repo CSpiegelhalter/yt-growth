@@ -1271,7 +1271,7 @@ export function Body({ s }: BodyProps) {
       <div className={s.highlight}>
         <p>
           <strong>Make thumbnails faster without guessing.</strong> {BRAND.name} helps you study competitor packaging patterns, generate better video ideas, and ship more consistently. If you want tools (not just theory),{" "}
-          <Link href="/dashboard">try the app</Link>.
+          <Link href="/videos">try the app</Link>.
         </p>
       </div>
     </>

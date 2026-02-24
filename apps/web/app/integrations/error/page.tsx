@@ -61,7 +61,7 @@ export default async function IntegrationsErrorPage(props: {
         description={description}
         action={
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
-            <Link className="btn btn-primary" href="/dashboard">
+            <Link className="btn btn-primary" href="/videos">
               Try again
             </Link>
             <Link className="btn" href="/">

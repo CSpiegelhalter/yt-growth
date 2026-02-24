@@ -28,8 +28,8 @@ const LLMS_PRODUCT_INFO = {
  */
 const LLMS_TOOLS = [
   {
-    name: "Video Analytics Dashboard",
-    path: "/dashboard",
+    name: "Video Analytics",
+    path: "/videos",
     description: "See retention curves, CTR, subscriber conversion, and insights for every video on your channel.",
     requiresLogin: true,
   },

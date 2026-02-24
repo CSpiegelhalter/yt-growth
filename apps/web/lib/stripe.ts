@@ -139,8 +139,8 @@ export async function createCheckoutSession(
   const session = await stripe.createCheckoutSession({
     customerId,
     priceId: STRIPE_PRICE_ID,
-    successUrl: `${APP_URL}/dashboard?checkout=success`,
-    cancelUrl: `${APP_URL}/dashboard?checkout=canceled`,
+    successUrl: `${APP_URL}/videos?checkout=success`,
+    cancelUrl: `${APP_URL}/videos?checkout=canceled`,
     metadata: { userId: String(userId) },
   });
 

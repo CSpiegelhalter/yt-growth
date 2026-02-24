@@ -2341,7 +2341,7 @@ export function Body({ s }: BodyProps) {
           which Shorts are driving growth for your channel.
         </p>
         <Link
-          href="/dashboard"
+          href="/videos"
           style={{
             display: "inline-block",
             padding: "0.875rem 2rem",

@@ -254,7 +254,7 @@ export function normalizePlan(plan: string): AppPlan {
 
 /**
  * Default AppShellServer props for unauthenticated (guest) users.
- * Shared by marketing layout and dashboard layout.
+ * Shared by marketing layout and videos layout.
  */
 export const GUEST_SHELL_PROPS = {
   channels: [] as Channel[],

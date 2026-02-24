@@ -171,7 +171,7 @@ export function AppShellServer({
     setActiveChannelId(channelId);
 
     if (isVideoPath(pathname)) {
-      router.push(`/dashboard?channelId=${channelId}`);
+      router.push(`/videos?channelId=${channelId}`);
       return;
     }
 
@@ -227,7 +227,7 @@ export function AppShellServer({
 /* ---------- Helpers ---------- */
 
 function isChannelScopedPath(pathname: string): boolean {
-  if (pathname === "/dashboard") {return true;}
+  if (pathname === "/videos") {return true;}
   if (pathname === "/ideas") {return true;}
   if (pathname === "/goals") {return true;}
   if (pathname === "/subscriber-insights") {return true;}

@@ -408,10 +408,10 @@ export default function VideoInsightsClientV2({
 
 function buildBackLink(from: string | undefined, channelId: string) {
   const base =
-    from === "subscriber-insights" ? "/subscriber-insights" : "/dashboard";
+    from === "subscriber-insights" ? "/subscriber-insights" : "/videos";
   return {
     href: `${base}?channelId=${encodeURIComponent(channelId)}`,
-    label: from === "subscriber-insights" ? "Subscriber Insights" : "Dashboard",
+    label: from === "subscriber-insights" ? "Subscriber Insights" : "Videos",
   };
 }
 

@@ -136,8 +136,8 @@ function ChannelListSection({
           </svg>
         </div>
         <p>No channels connected yet.</p>
-        <a href="/dashboard" className={styles.linkBtn}>
-          Go to Dashboard
+        <a href="/videos" className={styles.linkBtn}>
+          Go to Videos
         </a>
       </div>
     );

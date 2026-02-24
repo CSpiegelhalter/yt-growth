@@ -81,9 +81,9 @@ export default function ChannelProfileClient() {
             <path d="M20 8v6M23 11h-6" />
           </svg>
           <h2>No Channel Selected</h2>
-          <p>Please select a channel from your dashboard first.</p>
-          <Link href="/dashboard" className={s.backBtn}>
-            Go to Dashboard
+          <p>Please select a channel from your videos page first.</p>
+          <Link href="/videos" className={s.backBtn}>
+            Go to Videos
           </Link>
         </div>
       </main>
@@ -94,7 +94,7 @@ export default function ChannelProfileClient() {
     <main className={s.page}>
       {/* Header */}
       <div className={s.header}>
-        <Link href={`/dashboard?channelId=${channelId}`} className={s.backLink}>
+        <Link href={`/videos?channelId=${channelId}`} className={s.backLink}>
           <svg
             width="16"
             height="16"
@@ -225,7 +225,7 @@ export default function ChannelProfileClient() {
           <ProfileEditor
             initialInput={profile?.input}
             onSave={handleSave}
-            onCancel={() => router.push(`/dashboard?channelId=${channelId}`)}
+            onCancel={() => router.push(`/videos?channelId=${channelId}`)}
             onGenerate={handleRegenerate}
             saving={saving}
             generating={generating}

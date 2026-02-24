@@ -72,7 +72,7 @@
   font-size: 0.9375rem;
   font-weight: 600;
   background: #ffffff;
-  color: #0f172a;
+  color: var(--text);
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   transition: all 0.15s ease;
@@ -313,15 +313,16 @@
      =========================================== */
   
   /* Backgrounds */
-  --bg: #fafafa;                    /* Main app background */
+  --bg: #ffffff;                    /* Main app background */
   --bg-elevated: #ffffff;           /* Elevated surfaces (modals, dropdowns) */
   --surface: #ffffff;               /* Card/panel background */
+  --sidebar-bg: #f0f0f7;           /* Sidebar navigation background */
   --surface-hover: #f8fafc;         /* Card hover state */
   --surface-alt: #f8fafc;           /* Subtle secondary surface */
   --surface-active: #f1f5f9;        /* Active/selected state */
   
   /* Text */
-  --text: #0f172a;                  /* Primary text */
+  --text: var(--color-imperial-blue); /* Primary text */
   --text-secondary: #64748b;        /* Secondary/muted text */
   --text-tertiary: #94a3b8;         /* Tertiary/hint text */
   --text-inverse: #ffffff;          /* Text on dark backgrounds */
@@ -371,7 +372,7 @@
   --tab-bg-active: #ffffff;             /* Active tab background */
   --tab-text: #64748b;                  /* Default tab text color */
   --tab-text-hover: #6366f1;            /* Hover tab text color (purple) */
-  --tab-text-active: #0f172a;           /* Active tab text color */
+  --tab-text-active: var(--text);       /* Active tab text color */
   --tab-shadow-active: 0 1px 3px rgba(0, 0, 0, 0.08);  /* Active tab shadow */
   
   /* ===========================================

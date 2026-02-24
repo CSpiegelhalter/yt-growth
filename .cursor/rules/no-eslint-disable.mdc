@@ -1,0 +1,23 @@
+---
+description: Enforced whenever writing or modifying TypeScript/JavaScript files
+globs: **/*.{ts,tsx,js,jsx,mjs}
+alwaysApply: true
+---
+
+# No eslint-disable — EVER
+
+**NEVER** add `eslint-disable`, `eslint-disable-next-line`, or `eslint-disable-line`
+comments in any form. This is a hard rule with zero exceptions.
+
+If ESLint flags an issue, **fix the root cause**:
+
+- `@typescript-eslint/no-explicit-any` → add proper types
+- `@next/next/no-img-element` → use `next/image` (`Image`) component
+- `unicorn/*` rules → follow the suggested modern JS pattern
+- Any other rule → understand why it exists and write compliant code
+
+If a rule is genuinely wrong for the entire project, disable it in
+`eslint.config.js` at the config level — never inline.
+
+This policy is enforced by `@eslint-community/eslint-comments/no-use` in the
+ESLint config, which will error on any `eslint-disable` comment.

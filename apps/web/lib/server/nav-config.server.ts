@@ -20,7 +20,7 @@ import {
  */
 export type SerializableNavItem = Omit<NavItem, "match" | "featureFlag"> & {
   /** If item has a custom match pattern, encode it as a string identifier */
-  matchPattern?: "dashboard" | "competitors" | "trending" | "tags" | "keywords";
+  matchPattern?: "videos" | "competitors" | "trending" | "tags" | "keywords";
 };
 
 /**
@@ -72,8 +72,8 @@ export async function getFilteredNavItems(): Promise<{
 
         // Encode match patterns as identifiers
         switch (item.id) {
-        case "dashboard": {
-          serializable.matchPattern = "dashboard";
+        case "videos": {
+          serializable.matchPattern = "videos";
         
         break;
         }

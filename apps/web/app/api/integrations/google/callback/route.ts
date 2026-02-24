@@ -119,7 +119,7 @@ export const GET = createApiRoute(
         if (!channelCheck.allowed) {
           const limitMsg = buildChannelLimitMessage(channelCheck.plan, channelCheck.limit);
           return redirect(
-            `/dashboard?error=channel_limit&message=${encodeURIComponent(limitMsg)}&rid=${api.requestId}`
+            `/videos?error=channel_limit&message=${encodeURIComponent(limitMsg)}&rid=${api.requestId}`
           );
         }
       }
@@ -132,7 +132,7 @@ export const GET = createApiRoute(
         const errorMsg = await verifyAnalyticsForReconnect(tok.accessToken, me.email, reconnectChannelId);
         if (errorMsg) {
           return redirect(
-            `/dashboard?error=wrong_account&message=${errorMsg}&channelId=${reconnectChannelId}&rid=${api.requestId}`
+            `/videos?error=wrong_account&message=${errorMsg}&channelId=${reconnectChannelId}&rid=${api.requestId}`
           );
         }
       }
@@ -140,8 +140,8 @@ export const GET = createApiRoute(
       await upsertGoogleAccountAndSync(row.userId, me.providerAccountId, tok, reconnectChannelId);
 
       const redirectPath = reconnectChannelId
-        ? `/dashboard?reconnected=1&channelId=${reconnectChannelId}&rid=${api.requestId}`
-        : `/dashboard?newChannel=1&rid=${api.requestId}`;
+        ? `/videos?reconnected=1&channelId=${reconnectChannelId}&rid=${api.requestId}`
+        : `/videos?newChannel=1&rid=${api.requestId}`;
       return redirect(redirectPath);
     } catch (error) {
       console.error("[OAuth Callback] Error:", error);

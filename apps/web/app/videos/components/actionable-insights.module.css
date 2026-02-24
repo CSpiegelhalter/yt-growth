@@ -1,0 +1,54 @@
+/* ================================
+   Actionable Insights Stack
+   ================================ */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── Loading hint ── */
+
+.loadingHint {
+  align-items: center;
+  color: var(--text-secondary);
+  display: flex;
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+.dotPulse {
+  animation: pulse 1.2s ease-in-out infinite;
+  background: var(--color-hot-rose);
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── Empty state ── */
+
+.empty {
+  background: var(--surface-alt);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  padding: var(--space-6);
+}
+
+.empty p {
+  margin: 0;
+}

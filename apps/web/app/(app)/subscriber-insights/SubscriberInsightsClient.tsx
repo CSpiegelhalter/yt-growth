@@ -178,8 +178,8 @@ export default function SubscriberInsightsClient({
             Connect your YouTube channel to discover which videos convert
             viewers into subscribers.
           </p>
-          <Link href="/dashboard" className={s.emptyBtn}>
-            Go to Dashboard
+          <Link href="/videos" className={s.emptyBtn}>
+            Go to Videos
           </Link>
         </div>
       </main>

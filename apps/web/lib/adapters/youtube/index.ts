@@ -242,3 +242,18 @@ export async function fetchVideosStatsBatch(
 ): Promise<Map<string, VideoStats>> {
   return fetchVideosStatsBatchCore(ga, videoIds);
 }
+
+// ============================================
+// Channel Statistics
+// ============================================
+
+export { fetchChannelSubscriberCount } from "./data-api";
+
+// ============================================
+// Batch Video Analytics (for baselines)
+// ============================================
+
+export {
+  type BatchVideoAnalyticsRow,
+  fetchBatchVideoAnalytics,
+} from "./owned-analytics";

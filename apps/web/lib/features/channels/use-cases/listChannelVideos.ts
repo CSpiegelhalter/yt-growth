@@ -31,6 +31,7 @@ type ListChannelVideosInput = {
   channelId: string;
   offset?: number;
   limit?: number;
+  publishedAfter?: string;
 };
 
 type ChannelVideoItem = {
@@ -87,13 +88,17 @@ export async function listChannelVideos(
     );
   }
 
-  const maxNeededWithSentinel = offset + limit + 1;
-  const allVideos = await deps.fetchChannelVideos(
-    ga,
-    channelId,
-    maxNeededWithSentinel,
-  );
-  const pageVideos = allVideos.slice(offset, offset + limit);
+  const { publishedAfter } = input;
+  const maxFetch = publishedAfter ? 50 : offset + limit + 1;
+  const allVideos = await deps.fetchChannelVideos(ga, channelId, maxFetch);
+
+  const filtered = publishedAfter
+    ? allVideos.filter((v) => v.publishedAt >= publishedAfter)
+    : allVideos;
+
+  const pageVideos = publishedAfter
+    ? filtered
+    : filtered.slice(offset, offset + limit);
 
   const videos: ChannelVideoItem[] = pageVideos.map((v) => ({
     videoId: v.videoId,
@@ -116,9 +121,9 @@ export async function listChannelVideos(
     channelId,
     videos,
     pagination: {
-      offset,
-      limit,
-      hasMore: allVideos.length > offset + limit,
+      offset: publishedAfter ? 0 : offset,
+      limit: publishedAfter ? videos.length : limit,
+      hasMore: publishedAfter ? false : allVideos.length > offset + limit,
     },
   };
 }

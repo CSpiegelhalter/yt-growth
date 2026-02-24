@@ -90,12 +90,12 @@ function buildBackLink(
   channelId: string | undefined,
 ): BackLink {
   const base =
-    from === "subscriber-insights" ? "/subscriber-insights" : "/dashboard";
+    from === "subscriber-insights" ? "/subscriber-insights" : "/videos";
   return {
     href: channelId
       ? `${base}?channelId=${encodeURIComponent(channelId)}`
       : base,
-    label: from === "subscriber-insights" ? "Subscriber Insights" : "Dashboard",
+    label: from === "subscriber-insights" ? "Subscriber Insights" : "Videos",
   };
 }
 

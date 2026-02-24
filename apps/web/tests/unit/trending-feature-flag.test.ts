@@ -51,7 +51,7 @@ describe("Trending feature flag gating", () => {
       // The matchNavItemPattern function in nav-config.server.ts handles:
       // - "trending" pattern: matches only "/trending"
       // - "competitors" pattern: matches "/competitors" and "/competitors/*"
-      // - "dashboard" pattern: matches "/dashboard" and "/video/*"
+      // - "videos" pattern: matches "/videos" and "/video/*"
       // This logic is verified via integration/e2e tests
       expect(true).toBe(true);
     });

@@ -110,8 +110,8 @@ export default function ContactForm({ userEmail }: Props) {
           Thanks for reaching out. We&apos;ll get back to you as soon as possible,
           usually within 24-48 hours.
         </p>
-        <Link href="/dashboard" className={s.successBtn}>
-          Back to Dashboard
+        <Link href="/videos" className={s.successBtn}>
+          Back to Videos
         </Link>
       </div>
     );

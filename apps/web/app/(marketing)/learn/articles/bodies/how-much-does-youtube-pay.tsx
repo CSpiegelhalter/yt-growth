@@ -451,7 +451,6 @@ function MetricCard({ label, title, description, accent }: MetricCardProps) {
         style={{
           fontSize: "18px",
           fontWeight: 700,
-          color: "#1e293b",
           margin: "8px 0",
         }}
       >

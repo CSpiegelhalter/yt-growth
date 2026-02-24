@@ -144,6 +144,34 @@ export async function fetchVideoSnippetByApiKey(
 // ============================================
 
 /**
+ * Fetch the subscriber count for a channel.
+ * Returns null when the channel hides its subscriber count.
+ */
+export async function fetchChannelSubscriberCount(
+  ga: GoogleAccount,
+  channelId: string,
+): Promise<number | null> {
+  const url = new URL(`${YOUTUBE_DATA_API}/channels`);
+  url.searchParams.set("part", "statistics");
+  url.searchParams.set("id", channelId);
+
+  const data = await youtubeFetch<{
+    items?: Array<{
+      statistics: {
+        subscriberCount?: string;
+        hiddenSubscriberCount?: boolean;
+      };
+    }>;
+  }>(ga, url.toString());
+
+  const stats = data.items?.[0]?.statistics;
+  if (!stats || stats.hiddenSubscriberCount) {
+    return null;
+  }
+  return Number.parseInt(stats.subscriberCount ?? "0", 10);
+}
+
+/**
  * Get the uploads playlist ID for a channel.
  * This is the recommended way to get channel videos (1 unit vs 100 for search).
  */

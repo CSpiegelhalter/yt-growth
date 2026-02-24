@@ -401,7 +401,7 @@ export function AppHeader({
                 isAdmin={isAdmin}
               />
             ) : (
-              <Link href="/auth/login?redirect=/dashboard" className={s.signInBtn}>
+              <Link href="/auth/login?redirect=/videos" className={s.signInBtn}>
                 Sign in
               </Link>
             )}

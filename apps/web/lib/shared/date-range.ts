@@ -5,13 +5,22 @@
  * Used by features (video-insights) and adapters (youtube/owned-analytics).
  */
 
-export type AnalyticsRange = "7d" | "28d" | "90d";
+export type AnalyticsRange = "7d" | "28d" | "30d" | "90d";
 
 const RANGE_DAYS: Record<AnalyticsRange, number> = {
   "7d": 7,
   "28d": 28,
+  "30d": 30,
   "90d": 90,
 };
+
+/** Format a Date as YYYY-MM-DD using local timezone (avoids UTC offset bugs). */
+export function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 export function getDateRange(range: AnalyticsRange): {
   startDate: string;
@@ -22,7 +31,7 @@ export function getDateRange(range: AnalyticsRange): {
   startDate.setDate(endDate.getDate() - RANGE_DAYS[range]);
 
   return {
-    startDate: startDate.toISOString().split("T")[0],
-    endDate: endDate.toISOString().split("T")[0],
+    startDate: toLocalDateStr(startDate),
+    endDate: toLocalDateStr(endDate),
   };
 }

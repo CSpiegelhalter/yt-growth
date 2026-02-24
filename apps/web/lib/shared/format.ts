@@ -46,4 +46,17 @@ export function formatCompactFloored(num: number): string {
   return Math.floor(num).toFixed(0);
 }
 
+/** Null-safe compact formatter, defaults to "0". */
+export function formatCompactSafe(num: number | null | undefined): string {
+  if (num == null) {return "0";}
+  return formatCompact(num);
+}
+
+/** Short date format: "Jan 5", "Mar 22". */
+export function formatDateShort(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
 

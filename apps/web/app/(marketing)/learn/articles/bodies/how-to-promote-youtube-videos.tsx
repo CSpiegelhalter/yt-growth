@@ -1579,7 +1579,6 @@ function GateCard({ label, description, linkText, linkHref }: GateCardProps) {
           display: "block",
           fontSize: "13px",
           fontWeight: 700,
-          color: "#1e293b",
           marginBottom: "6px",
         }}
       >
@@ -1631,7 +1630,6 @@ function MiniCard({ icon, text }: MiniCardProps) {
         borderRadius: "8px",
         boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
         fontSize: "13px",
-        color: "#1e293b",
       }}
     >
       {icon && <span style={{ flexShrink: 0 }}>{icon}</span>}
@@ -1686,7 +1684,6 @@ function ChannelCard({ icon, title, leverage, description }: ChannelCardProps) {
               display: "block",
               fontSize: "14px",
               fontWeight: 700,
-              color: "#1e293b",
             }}
           >
             {title}
@@ -1735,7 +1732,6 @@ function CaseCard({ issue, description, fix }: CaseCardProps) {
           display: "block",
           fontSize: "15px",
           fontWeight: 700,
-          color: "#1e293b",
           marginBottom: "8px",
         }}
       >

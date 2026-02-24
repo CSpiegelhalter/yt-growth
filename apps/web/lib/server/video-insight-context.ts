@@ -30,7 +30,7 @@ type InsightDerivedData = {
 };
 
 type InsightContext = {
-  channel: { id: number; youtubeChannelId: string };
+  channel: { id: number; youtubeChannelId: string; subscriberCount: number | null };
   cached: {
     derivedJson: unknown;
     llmJson: unknown;
@@ -38,6 +38,8 @@ type InsightContext = {
     contentHash: string | null;
   };
   derivedData: InsightDerivedData;
+  videoPublishedAt: string | null;
+  baseline: Record<string, unknown> | null;
 };
 
 /**
@@ -81,14 +83,28 @@ export async function resolveInsightContext(
     );
   }
 
+  const video = await prisma.video.findFirst({
+    where: { youtubeVideoId: videoId, channelId: channel.id },
+    select: { publishedAt: true },
+  });
+
+  const derivedData = cached.derivedJson as InsightDerivedData;
+  const baselineRaw = (derivedData as Record<string, unknown>).baseline;
+
   return {
-    channel: { id: channel.id, youtubeChannelId: channel.youtubeChannelId! },
+    channel: {
+      id: channel.id,
+      youtubeChannelId: channel.youtubeChannelId!,
+      subscriberCount: channel.subscriberCount ?? null,
+    },
     cached: {
       derivedJson: cached.derivedJson,
       llmJson: cached.llmJson,
       cachedUntil: cached.cachedUntil,
       contentHash: cached.contentHash,
     },
-    derivedData: cached.derivedJson as InsightDerivedData,
+    derivedData,
+    videoPublishedAt: video?.publishedAt?.toISOString() ?? null,
+    baseline: (baselineRaw as Record<string, unknown>) ?? null,
   };
 }

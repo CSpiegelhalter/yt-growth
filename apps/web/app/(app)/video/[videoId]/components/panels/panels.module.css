@@ -7,7 +7,44 @@
 }
 
 /* ===================================
-   VIEWER JOURNEY - NEW SUMMARY FORMAT
+   INSIGHT ITEMS - title / explanation / fix
+   =================================== */
+
+.insightItems {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.insightItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.insightItemTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  margin: 0;
+}
+
+.insightItemExplanation {
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.insightItemFix {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-style: italic;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ===================================
+   VIEWER JOURNEY - LEGACY FORMAT
    =================================== */
 
 .viewerJourneyContainer {

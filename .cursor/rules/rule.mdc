@@ -103,6 +103,21 @@ See `architecture.mdc` for the full forbidden-imports table.
 - Keep performance in mind (avoid heavy client bundles; code split).
 - Write code that is easy to change and test.
 
+### File Structure (MANDATORY -- never violate)
+- **One component per file.** A `.tsx` file exports ONE React component.
+  Do NOT define helper components, sub-components, or internal components
+  inside the same file as the parent component. Extract them to their own files.
+- **Hooks go in separate files.** Custom hooks (`use*.ts`) must live in their
+  own dedicated file, never inlined inside a component file.
+- **Pure logic goes in separate files.** Utility/helper functions, data
+  transformers, and static computation functions must be extracted to their own
+  `.ts` file -- not buried inside a component file.
+- **Shared types go in a types file.** If a type is used by more than one file
+  in the same directory, create a shared `*-types.ts` file for it.
+- **Target: <150 lines per file.** If a component file exceeds ~150 lines,
+  it almost certainly contains logic that should be extracted. Refactor
+  immediately -- do not wait for a follow-up pass.
+
 ---
 
 ## SEO Requirements

@@ -151,7 +151,6 @@ export const config = {
      * - _next/image (image optimization)
      * - Static files in public folder
      */
-    // eslint-disable-next-line unicorn/prefer-string-raw
     "/((?!_next/static|_next/image|favicon\\.ico|favicon\\.svg|icon\\.svg|logo\\.svg|apple-touch-icon\\.svg|robots\\.txt|sitemap\\.xml|manifest\\.json|og/).*)",
     "/api/:path*",
   ],

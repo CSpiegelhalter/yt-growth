@@ -26,11 +26,11 @@ function buildResetEmailHtml(user: PasswordUser, resetUrl: string): string {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #222A68; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="text-align: center; margin-bottom: 30px;">
     <h1 style="color: #2563eb; margin: 0; font-size: 24px;">${BRAND.name}</h1>
   </div>
-  <h2 style="color: #111; margin-bottom: 16px;">Reset your password</h2>
+  <h2 style="color: #222A68; margin-bottom: 16px;">Reset your password</h2>
   <p>Hi${user.name ? ` ${user.name}` : ""},</p>
   <p>We received a request to reset your password. Click the button below to choose a new password:</p>
   <div style="text-align: center; margin: 32px 0;">

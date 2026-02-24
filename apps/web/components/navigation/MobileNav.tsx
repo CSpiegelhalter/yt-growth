@@ -12,7 +12,8 @@ import { BRAND } from "@/lib/shared/brand";
 import { getNavHref } from "@/lib/shared/nav-config";
 
 import s from "./MobileNav.module.css";
-import { NavIcon } from "./NavIcon";
+import { isNavItemActive } from "./nav-utils";
+import { SidebarIcon } from "./SidebarIcon";
 
 type MobileNavProps = {
   activeChannelId: string | null;
@@ -21,23 +22,6 @@ type MobileNavProps = {
   /** Filtered secondary nav items (from server) */
   secondaryNavItems: SerializableNavItem[];
 };
-
-/**
- * Check if a nav item is active based on current pathname.
- */
-function isNavItemActive(item: SerializableNavItem, pathname: string): boolean {
-  switch (item.matchPattern) {
-    case "dashboard": {
-      return pathname === "/dashboard" || pathname.startsWith("/video/");
-    }
-    case "competitors": {
-      return pathname === "/competitors" || pathname.startsWith("/competitors/");
-    }
-    default: {
-      return pathname === item.href;
-    }
-  }
-}
 
 /**
  * Mobile navigation component with hamburger menu and slide-in drawer.
@@ -159,35 +143,17 @@ export function MobileNav({
 
         {/* Navigation */}
         <nav className={s.nav}>
-          <div className={s.navSection}>
-            <span className={s.navSectionLabel}>Growth</span>
-            <ul className={s.navList}>
-              {primaryNavItems.map((item) => (
-                <MobileNavItem
-                  key={item.id}
-                  item={item}
-                  pathname={pathname}
-                  activeChannelId={activeChannelId}
-                  onNavigate={handleClose}
-                />
-              ))}
-            </ul>
-          </div>
-
-          <div className={s.navSection}>
-            <span className={s.navSectionLabel}>Resources</span>
-            <ul className={s.navList}>
-              {secondaryNavItems.map((item) => (
-                <MobileNavItem
-                  key={item.id}
-                  item={item}
-                  pathname={pathname}
-                  activeChannelId={activeChannelId}
-                  onNavigate={handleClose}
-                />
-              ))}
-            </ul>
-          </div>
+          <ul className={s.navList}>
+            {[...primaryNavItems, ...secondaryNavItems].map((item) => (
+              <MobileNavItem
+                key={item.id}
+                item={item}
+                pathname={pathname}
+                activeChannelId={activeChannelId}
+                onNavigate={handleClose}
+              />
+            ))}
+          </ul>
         </nav>
 
         {/* Legal Links */}
@@ -254,7 +220,7 @@ function MobileNavItem({
         onClick={onNavigate}
       >
         <span className={s.navIcon}>
-          <NavIcon type={item.icon} size={20} />
+          <SidebarIcon itemId={item.id} iconType={item.icon} size={20} />
         </span>
         <span className={s.navLabel}>{item.label}</span>
       </Link>

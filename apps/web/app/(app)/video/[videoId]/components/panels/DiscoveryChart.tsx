@@ -41,7 +41,7 @@ type DiscoveryChartProps = {
 
 /**
  * DiscoveryChart - Shows views trend over time with discovery metrics
- * Uses Recharts for consistency with dashboard
+ * Uses Recharts for consistency with videos page
  */
 export function DiscoveryChart({
   dailySeries,

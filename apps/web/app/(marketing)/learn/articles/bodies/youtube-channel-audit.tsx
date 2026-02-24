@@ -61,10 +61,10 @@ export function Body({ s }: BodyProps) {
             If you want the faster version: {BRAND.name} connects to your
             YouTube analytics and surfaces these same signals inside your{" "}
             <Link
-              href="/dashboard"
+              href="/videos"
               style={{ color: "var(--primary)", fontWeight: 600 }}
             >
-              dashboard
+              videos page
             </Link>{" "}
             and per-video pages—so you can spot the bottleneck in minutes
             instead of digging through tabs.
@@ -227,10 +227,10 @@ export function Body({ s }: BodyProps) {
           stability, and whether the video is spreading beyond your core
           audience—right in the Analytics tab on your{" "}
           <Link
-            href="/dashboard"
+            href="/videos"
             style={{ color: "var(--primary)", fontWeight: 600 }}
           >
-            Dashboard
+            Videos
           </Link>
           .
         </p>

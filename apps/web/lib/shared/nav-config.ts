@@ -49,13 +49,13 @@ export type NavIconType =
  */
 export const primaryNavItems: NavItem[] = [
   {
-    id: "dashboard",
+    id: "videos",
     label: "Videos",
-    href: "/dashboard",
+    href: "/videos",
     icon: "video",
     channelScoped: true,
     match: (pathname) =>
-      pathname === "/dashboard" || pathname.startsWith("/video/"),
+      pathname === "/videos" || pathname.startsWith("/video/"),
   },
   {
     id: "ideas",
@@ -234,5 +234,5 @@ export function getPageTitle(pathname: string): string {
     return "Keywords";
   }
 
-  return "Dashboard";
+  return "Videos";
 }

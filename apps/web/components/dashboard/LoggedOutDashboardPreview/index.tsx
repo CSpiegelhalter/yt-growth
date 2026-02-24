@@ -12,8 +12,8 @@ import s from "./style.module.css";
  * - No redirect, no harsh "sign in wall" - feels like part of the product
  */
 export function LoggedOutDashboardPreview() {
-  const loginUrl = "/auth/login?redirect=/dashboard";
-  const signupUrl = "/auth/signup?redirect=/dashboard";
+  const loginUrl = "/auth/login?redirect=/videos";
+  const signupUrl = "/auth/signup?redirect=/videos";
 
   return (
     <main className={s.page}>

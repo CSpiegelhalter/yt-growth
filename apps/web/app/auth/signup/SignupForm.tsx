@@ -75,7 +75,7 @@ export default function SignupForm() {
           redirect: false,
         });
         if (signInRes?.ok) {
-          window.location.href = "/dashboard";
+          window.location.href = "/videos";
         } else {
           router.push("/auth/login?signup=1");
         }
@@ -92,7 +92,7 @@ export default function SignupForm() {
 
   async function handleGoogleSignUp() {
     setLoading(true);
-    await signIn("google", { callbackUrl: "/dashboard" });
+    await signIn("google", { callbackUrl: "/videos" });
   }
 
   function handleVerificationLogin() {

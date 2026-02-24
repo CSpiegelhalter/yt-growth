@@ -40,28 +40,28 @@ test.describe("Smoke Tests - Public Pages", () => {
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
 
-  test("dashboard returns 200 OK for anonymous users (no redirect)", async ({
+  test("videos returns 200 OK for anonymous users (no redirect)", async ({
     page,
   }) => {
-    // Navigate to dashboard without being logged in
-    const response = await page.goto("/dashboard");
+    // Navigate to videos without being logged in
+    const response = await page.goto("/videos");
 
     // Should return 200 OK, not a redirect (302/307)
     expect(response?.status()).toBe(200);
 
-    // URL should remain /dashboard (no redirect to login)
-    await expect(page).toHaveURL(/\/dashboard/);
+    // URL should remain /videos (no redirect to login)
+    await expect(page).toHaveURL(/\/videos/);
 
     // Should show the logged-out preview page with CTAs
     await expect(
-      page.locator('a[href*="/auth/login?redirect=/dashboard"]')
+      page.locator('a[href*="/auth/login?redirect=/videos"]')
     ).toBeVisible();
     await expect(
-      page.locator('a[href*="/auth/signup?redirect=/dashboard"]')
+      page.locator('a[href*="/auth/signup?redirect=/videos"]')
     ).toBeVisible();
 
     // Should have appropriate page title
-    await expect(page).toHaveTitle(/Dashboard.*ChannelBoost/i);
+    await expect(page).toHaveTitle(/Videos.*ChannelBoost/i);
 
     // Should NOT show any error states
     await expect(
@@ -102,15 +102,15 @@ test.describe("Smoke Tests - Protected Pages", () => {
     await signIn(page, TEST_USER);
   });
 
-  test("dashboard loads without error", async ({ page }) => {
-    await page.goto("/dashboard");
+  test("videos loads without error", async ({ page }) => {
+    await page.goto("/videos");
     await page.waitForLoadState("networkidle");
 
     // Main content should be visible (use .first() for strict mode)
     await expect(page.locator("main").first()).toBeVisible();
 
-    // Verify we're on the dashboard
-    await expect(page).toHaveURL(/dashboard/);
+    // Verify we're on the videos page
+    await expect(page).toHaveURL(/videos/);
   });
 
   test("profile page loads without error", async ({ page }) => {
@@ -169,14 +169,14 @@ test.describe("Smoke Tests - API Endpoints", () => {
 test.describe("Smoke Tests - Mobile Viewport", () => {
   test.use({ viewport: { width: 375, height: 667 } });
 
-  test("dashboard is responsive on mobile", async ({ page }) => {
+  test("videos is responsive on mobile", async ({ page }) => {
     await signIn(page, TEST_USER);
-    await page.goto("/dashboard");
+    await page.goto("/videos");
     await page.waitForLoadState("networkidle");
 
     // Main content should be visible (use .first() for strict mode)
     await expect(page.locator("main").first()).toBeVisible();
-    await expect(page).toHaveURL(/dashboard/);
+    await expect(page).toHaveURL(/videos/);
   });
 
   test("profile page is responsive on mobile", async ({ page }) => {

@@ -72,7 +72,7 @@ export function VideoHeaderCompact({
   const router = useRouter();
   const youtubeUrl = `https://youtube.com/watch?v=${videoId}`;
 
-  // Use router.back() to preserve browser history state (dashboard stays cached)
+  // Use router.back() to preserve browser history state (videos page stays cached)
   // Fall back to direct navigation if user navigated directly to this page
   const handleBack = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -87,7 +87,7 @@ export function VideoHeaderCompact({
 
   return (
     <header className={styles.header}>
-      {/* Back navigation - uses history.back() to preserve dashboard state */}
+      {/* Back navigation - uses history.back() to preserve videos page state */}
       <a href={backHref} onClick={handleBack} className={styles.backLink}>
         <svg
           width="16"

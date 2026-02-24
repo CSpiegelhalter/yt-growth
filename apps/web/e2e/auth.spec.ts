@@ -47,9 +47,9 @@ test.describe("Authentication", () => {
     // Submit
     await page.click('button[type="submit"]');
 
-    // Should redirect to dashboard or show success
+    // Should redirect to videos or show success
     // (might go to login first if email verification is required)
-    await expect(page).toHaveURL(/dashboard|login/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/videos|login/, { timeout: 15_000 });
 
     // If redirected to login, sign in
     if (page.url().includes("/login")) {
@@ -82,8 +82,8 @@ test.describe("Authentication", () => {
       page.locator('[role="alert"], [class*="error"], [class*="Error"]').first()
     ).toBeVisible({ timeout: 10_000 });
 
-    // Should NOT redirect to dashboard
-    await expect(page).not.toHaveURL(/dashboard/);
+    // Should NOT redirect to videos
+    await expect(page).not.toHaveURL(/videos/);
   });
 
   test("sign in works", async ({ page }) => {
@@ -101,10 +101,10 @@ test.describe("Authentication", () => {
 
     await page.click('button[type="submit"]');
 
-    // Should redirect to dashboard
-    await expect(page).toHaveURL(/dashboard/, { timeout: 15_000 });
+    // Should redirect to videos
+    await expect(page).toHaveURL(/videos/, { timeout: 15_000 });
 
-    // Verify dashboard content loads (use .first() since there may be nested mains)
+    // Verify videos content loads (use .first() since there may be nested mains)
     await expect(page.locator("main").first()).toBeVisible();
   });
 
@@ -112,8 +112,8 @@ test.describe("Authentication", () => {
     // Sign in first
     await signIn(page, { email: "demo@example.com", password: "demo123" });
 
-    // Verify we're on dashboard
-    await expect(page).toHaveURL(/dashboard/);
+    // Verify we're on videos
+    await expect(page).toHaveURL(/videos/);
 
     // Find and click sign out (might be in a dropdown menu)
     const userMenu = page.locator(
@@ -129,12 +129,12 @@ test.describe("Authentication", () => {
     // Should sign out immediately and land on the homepage
     await expect(page).toHaveURL(/\/($|\?)/, { timeout: 15_000 });
 
-    // Verify we're signed out - dashboard shows logged-out preview (no redirect)
-    await page.goto("/dashboard");
-    // Should stay on /dashboard with the logged-out preview (200 OK, no redirect)
-    await expect(page).toHaveURL(/dashboard/);
+    // Verify we're signed out - videos shows logged-out preview (no redirect)
+    await page.goto("/videos");
+    // Should stay on /videos with the logged-out preview (200 OK, no redirect)
+    await expect(page).toHaveURL(/videos/);
     // Should show login CTA on the logged-out preview
-    await expect(page.locator('a[href*="/auth/login?redirect=/dashboard"]')).toBeVisible();
+    await expect(page.locator('a[href*="/auth/login?redirect=/videos"]')).toBeVisible();
   });
 
   test("invalid credentials shows error", async ({ page }) => {

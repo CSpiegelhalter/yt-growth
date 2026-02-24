@@ -628,7 +628,7 @@ export async function generateLlmRecommendations(
  * Extract and parse JSON from an LLM response that may contain
  * markdown code fences or trailing text.
  */
-function parseRecommendationsJson(content: string): unknown | null {
+export function parseRecommendationsJson(content: string): unknown | null {
   try {
     const codeBlockMatch = content.match(
       /```(?:json)?\s*(\{[\s\S]*?\})\s*```/,

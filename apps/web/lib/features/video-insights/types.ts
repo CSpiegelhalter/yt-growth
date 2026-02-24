@@ -70,36 +70,13 @@ export type {
 
 // ── Summary / Core Analysis Types ───────────────────────────
 
-export type CoreAnalysis = {
-  headline?: string;
-  wins?: Array<{
-    label: string;
-    metric: string;
-    why: string;
-  }>;
-  improvements?: Array<{
-    label: string;
-    metric: string;
-    fix: string;
-  }>;
-  topAction?: {
-    what: string;
-    why: string;
-    effort: "low" | "medium" | "high";
-  };
-  insight_headline?: string;
-  the_viewer_journey?: {
-    discovery_phase: string;
-    consumption_phase: string;
-    conversion_phase: string;
-  };
-  dimensional_nuance?: string;
-  strategic_pivot?: {
-    what: string;
-    why: string;
-    impact_forecast: string;
-  };
+export type InsightItem = {
+  title: string;
+  explanation: string;
+  fix: string;
 };
+
+export type CoreAnalysis = InsightItem[];
 
 // ── SEO Analysis (LLM-powered) ──────────────────────────────
 

@@ -131,7 +131,7 @@ insights for your channel. See your retention curves, track competitors, and get
 AI-powered video ideas—all in one dashboard.`,
     primaryButton: {
       label: "Get Started Free",
-      href: "/dashboard",
+      href: "/videos",
     },
     secondaryButton: {
       label: "See ChannelBoost features",

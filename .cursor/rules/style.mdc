@@ -80,7 +80,7 @@ All primary app pages MUST use the standard page container pattern for consisten
 4. **CSS modules:** Apply the standard `.page` pattern shown above
 5. **Exceptions:** If a page needs different width (e.g., article pages), use `--page-max-width-narrow` instead
 
-**Source of truth pages:** `/subscriber-insights`, `/dashboard`, `/competitors`
+**Source of truth pages:** `/subscriber-insights`, `/videos`, `/competitors`
 **These pages demonstrate correct margin implementation.**
 
 ---

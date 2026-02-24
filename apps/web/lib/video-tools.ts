@@ -5,7 +5,7 @@
  * quickly sort, filter, and find what to work on next.
  */
 
-import { safeGetItem, safeSetItem } from "@/lib/client/safeLocalStorage";
+
 import { daysSince } from "@/lib/youtube/utils";
 
 // ============================================
@@ -157,19 +157,6 @@ export type VideoFilters = {
   searchQuery: string;
 };
 
-export const DEFAULT_FILTERS: VideoFilters = {
-  timeRange: "lifetime",
-  contentType: "all",
-  status: "all",
-  preset: "none",
-  searchQuery: "",
-};
-
-// Persistence
-type VideoToolsState = {
-  sortKey: SortKey;
-  filters: VideoFilters;
-};
 
 // ============================================
 // METRIC CALCULATIONS
@@ -573,46 +560,6 @@ export function sortVideos(
 }
 
 // ============================================
-// NEXT ACTIONS / INSIGHTS
-// ============================================
-
-// ============================================
-// PERSISTENCE
-// ============================================
-
-const STORAGE_KEY_PREFIX = "dashboardVideoTools:";
-
-/**
- * Get localStorage key for a channel
- */
-function getStorageKey(channelId: string): string {
-  return `${STORAGE_KEY_PREFIX}${channelId}`;
-}
-
-/**
- * Load saved state from localStorage
- */
-export function loadVideoToolsState(channelId: string): VideoToolsState | null {
-  const stored = safeGetItem(getStorageKey(channelId));
-  if (!stored) {return null;}
-  try {
-    return JSON.parse(stored) as VideoToolsState;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Save state to localStorage
- */
-export function saveVideoToolsState(
-  channelId: string,
-  state: VideoToolsState
-): void {
-  safeSetItem(getStorageKey(channelId), JSON.stringify(state));
-}
-
-// ============================================
 // CSV EXPORT
 // ============================================
 
@@ -679,85 +626,3 @@ export function exportToCSV(
   return [headers.join(","), ...rows].join("\n");
 }
 
-/**
- * Download CSV file
- */
-export function downloadCSV(
-  videos: VideoWithMetrics[],
-  sortKey: SortKey,
-  filename?: string
-): void {
-  const csv = exportToCSV(videos, sortKey);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download =
-    filename ??
-    `videos-${sortKey}-${new Date().toISOString().split("T")[0]}.csv`;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-// ============================================
-// FORMAT HELPERS
-// ============================================
-
-/**
- * Format a sort key as a human-readable label
- */
-export function getSortLabel(sortKey: SortKey): string {
-  const option = SORT_OPTIONS.find((o) => o.key === sortKey);
-  return option?.label ?? "Sort";
-}
-
-type MetricFormatter = (video: VideoWithMetrics) => string | null;
-
-const CONTEXT_METRIC_FORMATTERS: Record<string, MetricFormatter> = {
-  comments_desc: (v) => `${v.comments} comments`,
-  likes_desc: (v) => `${v.likes} likes`,
-  like_rate_desc: (v) => `${(v.computed.likeRate * 100).toFixed(1)}% like rate`,
-  velocity_desc: (v) => `${v.computed.viewsPerDay.toFixed(0)} views/day`,
-  ctr_desc: (v) => (v.ctr != null ? `${v.ctr.toFixed(1)}% CTR` : null),
-  retention_asc: (v) =>
-    v.computed.retentionPercent != null
-      ? `${v.computed.retentionPercent.toFixed(0)}% avg viewed`
-      : null,
-  sub_conversion_desc: (v) =>
-    v.computed.subsPerThousandViews != null
-      ? `${v.computed.subsPerThousandViews.toFixed(1)} subs/1k views`
-      : null,
-  watch_time_desc: (v) =>
-    v.computed.watchTimeMinutes != null
-      ? `${(v.computed.watchTimeMinutes / 60).toFixed(0)}h watch time`
-      : null,
-  avg_view_duration_desc: (v) =>
-    v.avgViewDuration != null
-      ? `${Math.floor(v.avgViewDuration / 60)}:${String(
-          Math.floor(v.avgViewDuration % 60)
-        ).padStart(2, "0")} avg`
-      : null,
-};
-
-/**
- * Format context metric value for display
- */
-export function formatContextMetric(
-  video: VideoWithMetrics,
-  sortKey: SortKey
-): string | null {
-  const formatter = CONTEXT_METRIC_FORMATTERS[sortKey];
-  return formatter ? formatter(video) : null;
-}
-
-/**
- * Return a "Short" label for YouTube Shorts (≤60s), null otherwise.
- */
-export function shortFormBadge(durationSec: number | null): string | null {
-  if (durationSec == null) {return null;}
-  if (durationSec <= 60) {return "Short";}
-  return null;
-}

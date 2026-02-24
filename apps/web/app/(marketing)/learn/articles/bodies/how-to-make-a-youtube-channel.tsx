@@ -800,7 +800,7 @@ export function Body({ s }: BodyProps) {
           what is performing, and identify opportunities you might miss.
         </p>
         <Link
-          href="/dashboard"
+          href="/videos"
           style={{
             display: "inline-block",
             padding: "0.875rem 2rem",

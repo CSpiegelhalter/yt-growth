@@ -170,8 +170,8 @@ export default async function ContactPage() {
 
         {/* Footer Link */}
         <div className={s.footerLinks}>
-          <Link href="/dashboard" className={s.footerLink}>
-            ← Back to Dashboard
+          <Link href="/videos" className={s.footerLink}>
+            ← Back to Videos
           </Link>
         </div>
       </div>

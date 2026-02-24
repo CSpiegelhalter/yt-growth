@@ -26,6 +26,13 @@ export {
 
 // Use-cases
 export { deleteChannel } from "./use-cases/deleteChannel";
+export type {
+  EnrichedVideoAnalytics,
+  EnrichResult,
+  EnrichVideosDeps,
+  EnrichVideosInput,
+} from "./use-cases/enrichVideosWithAnalytics";
+export { enrichVideosWithAnalytics } from "./use-cases/enrichVideosWithAnalytics";
 export { generateProfile } from "./use-cases/generateProfile";
 export { getChannel } from "./use-cases/getChannel";
 export { getProfile } from "./use-cases/getProfile";

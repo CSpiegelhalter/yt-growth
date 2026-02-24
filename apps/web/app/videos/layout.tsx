@@ -8,13 +8,13 @@ import {
 import { getFilteredNavItems } from "@/lib/server/nav-config.server";
 
 /**
- * Dashboard layout that handles both authenticated and unauthenticated states.
+ * Videos layout that handles both authenticated and unauthenticated states.
  *
  * Always renders the AppShell with navigation sidebar for consistent UX.
- * - Authenticated: Full dashboard with user data
+ * - Authenticated: Full videos page with user data
  * - Unauthenticated: Navigation visible, "Sign in" button in header
  *
- * This allows /dashboard to be accessible without redirects for SEO,
+ * This allows /videos to be accessible without redirects for SEO,
  * while keeping navigation consistent so users can explore the app.
  */
 export default async function DashboardLayout({

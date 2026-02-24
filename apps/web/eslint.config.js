@@ -1,3 +1,4 @@
+import eslintCommentsPlugin from "@eslint-community/eslint-plugin-eslint-comments";
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import boundaries from "eslint-plugin-boundaries";
 import importX from "eslint-plugin-import-x";
@@ -20,6 +21,14 @@ const config = [
   { ignores: [".jscpd-report/**", ".next/**"] },
 
   ...nextCoreWebVitals,
+
+  // ── Ban eslint-disable comments (fix the issue, never suppress it) ─
+  {
+    plugins: { "@eslint-community/eslint-comments": eslintCommentsPlugin },
+    rules: {
+      "@eslint-community/eslint-comments/no-use": ["error", { allow: [] }],
+    },
+  },
 
   // ── Promise correctness ─────────────────────────────────────────────
   promise.configs["flat/recommended"],
@@ -286,6 +295,14 @@ const config = [
     rules: {
       "unicorn/prefer-module": "off",
       "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+
+  // ── proxy.ts: Next.js middleware config must be statically analyzable ─
+  {
+    files: ["proxy.ts"],
+    rules: {
+      "unicorn/prefer-string-raw": "off",
     },
   },
 ];

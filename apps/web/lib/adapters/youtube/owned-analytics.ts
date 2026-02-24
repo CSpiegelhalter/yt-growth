@@ -883,9 +883,9 @@ type ChannelTotals = {
   netSubscribers: number;
 };
 
-const RANGE_DAYS: Record<string, number> = { "7d": 7, "28d": 28, "90d": 90 };
+const RANGE_DAYS: Record<string, number> = { "7d": 7, "28d": 28, "30d": 30, "90d": 90 };
 
-function getPreviousPeriodDates(startDate: string, range: "7d" | "28d" | "90d") {
+function getPreviousPeriodDates(startDate: string, range: "7d" | "28d" | "30d" | "90d") {
   const daysInRange = RANGE_DAYS[range] ?? 28;
   const prevEndDate = new Date(startDate);
   prevEndDate.setDate(prevEndDate.getDate() - 1);
@@ -940,7 +940,7 @@ function buildAuditResult(
 export async function fetchChannelAuditMetrics(
   ga: GoogleAccount,
   channelId: string,
-  range: "7d" | "28d" | "90d" = "28d",
+  range: "7d" | "28d" | "30d" | "90d" = "28d",
 ): Promise<ChannelAuditMetrics | null> {
   try {
     const { startDate, endDate } = getDateRange(range);
@@ -1034,6 +1034,60 @@ async function fetchChannelTotals(
     console.warn("[ChannelTotals] Failed:", error);
     return null;
   }
+}
+
+// ── Channel Daily Analytics (overview chart) ─────────────────
+
+type ChannelDailyRow = {
+  date: string;
+  views: number;
+  shares: number;
+  estimatedMinutesWatched: number;
+  subscribersGained: number;
+  subscribersLost: number;
+};
+
+/**
+ * Fetch channel-level daily analytics (no video filter).
+ * Returns one row per day for the given date range.
+ */
+export async function fetchChannelDailyAnalytics(
+  ga: GoogleAccount,
+  channelId: string,
+  startDate: string,
+  endDate: string,
+): Promise<ChannelDailyRow[]> {
+  const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+  url.searchParams.set("ids", `channel==${channelId}`);
+  url.searchParams.set("startDate", startDate);
+  url.searchParams.set("endDate", endDate);
+  url.searchParams.set(
+    "metrics",
+    "views,shares,estimatedMinutesWatched,subscribersGained,subscribersLost",
+  );
+  url.searchParams.set("dimensions", "day");
+  url.searchParams.set("sort", "day");
+
+  const data = await googleFetchWithAutoRefresh<{
+    columnHeaders: Array<{ name: string }>;
+    rows?: Array<Array<string | number>>;
+  }>(ga, url.toString());
+
+  if (!data.rows || data.rows.length === 0) {return [];}
+
+  const headers = data.columnHeaders.map((h) => h.name);
+
+  return data.rows.map((row) => {
+    const obj = mapRowToRecord(headers, row);
+    return {
+      date: String(obj.day ?? startDate),
+      views: Number(obj.views ?? 0),
+      shares: Number(obj.shares ?? 0),
+      estimatedMinutesWatched: Number(obj.estimatedMinutesWatched ?? 0),
+      subscribersGained: Number(obj.subscribersGained ?? 0),
+      subscribersLost: Number(obj.subscribersLost ?? 0),
+    };
+  });
 }
 
 /**
@@ -1458,5 +1512,106 @@ export async function fetchDemographicBreakdown(
     }
     console.warn("[DemographicBreakdown] Failed:", error instanceof Error ? error.message : String(error));
     return null;
+  }
+}
+
+// ── Batch Video Analytics (for baseline computation) ─────────
+
+export type BatchVideoAnalyticsRow = {
+  videoId: string;
+  views: number;
+  avgViewPercentage: number | null;
+  subscribersGained: number | null;
+  impressions: number | null;
+  impressionsCtr: number | null;
+};
+
+const BATCH_METRICS =
+  "views,averageViewPercentage,subscribersGained,subscribersLost";
+
+const BATCH_CHUNK_SIZE = 50;
+
+/**
+ * Fetch per-video analytics for a batch of video IDs in a single API call.
+ * Uses `dimensions=video` to return one row per video.
+ * Chunks requests if videoIds exceeds BATCH_CHUNK_SIZE.
+ */
+export async function fetchBatchVideoAnalytics(
+  ga: GoogleAccount,
+  channelId: string,
+  videoIds: string[],
+  startDate: string,
+  endDate: string,
+): Promise<BatchVideoAnalyticsRow[]> {
+  if (videoIds.length === 0) {return [];}
+
+  const chunks: string[][] = [];
+  for (let i = 0; i < videoIds.length; i += BATCH_CHUNK_SIZE) {
+    chunks.push(videoIds.slice(i, i + BATCH_CHUNK_SIZE));
+  }
+
+  const allRows: BatchVideoAnalyticsRow[] = [];
+
+  for (const chunk of chunks) {
+    const rows = await fetchBatchVideoChunk(
+      ga,
+      channelId,
+      chunk,
+      startDate,
+      endDate,
+    );
+    allRows.push(...rows);
+  }
+
+  return allRows;
+}
+
+async function fetchBatchVideoChunk(
+  ga: GoogleAccount,
+  channelId: string,
+  videoIds: string[],
+  startDate: string,
+  endDate: string,
+): Promise<BatchVideoAnalyticsRow[]> {
+  try {
+    const url = new URL(`${YOUTUBE_ANALYTICS_API}/reports`);
+    url.searchParams.set("ids", `channel==${channelId}`);
+    url.searchParams.set("startDate", startDate);
+    url.searchParams.set("endDate", endDate);
+    url.searchParams.set("dimensions", "video");
+    url.searchParams.set("metrics", BATCH_METRICS);
+    url.searchParams.set("filters", `video==${videoIds.join(",")}`);
+    url.searchParams.set("sort", "-views");
+
+    const data = await googleFetchWithAutoRefresh<{
+      columnHeaders: Array<{ name: string }>;
+      rows?: Array<Array<string | number>>;
+    }>(ga, url.toString());
+
+    if (!data.rows || data.rows.length === 0) {return [];}
+
+    const headers = data.columnHeaders.map((h) => h.name);
+    const vidIdx = headers.indexOf("video");
+
+    return data.rows.map((row) => {
+      const obj = mapRowToRecord(headers, row);
+      return {
+        videoId: String(obj.video ?? row[vidIdx] ?? ""),
+        views: Number(obj.views ?? 0),
+        avgViewPercentage: numOrNull(obj, "averageViewPercentage"),
+        subscribersGained: numOrNull(obj, "subscribersGained"),
+        impressions: null,
+        impressionsCtr: null,
+      };
+    });
+  } catch (error: unknown) {
+    if (error instanceof GoogleTokenRefreshError) {
+      throw error;
+    }
+    console.warn(
+      "[BatchVideoAnalytics] Failed:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return [];
   }
 }

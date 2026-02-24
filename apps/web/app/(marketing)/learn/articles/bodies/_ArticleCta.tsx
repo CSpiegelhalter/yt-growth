@@ -43,7 +43,7 @@ export function ArticleCta({
   heading,
   description,
   linkText,
-  linkHref = "/dashboard",
+  linkHref = "/videos",
   children,
 }: ArticleCtaProps) {
   return (

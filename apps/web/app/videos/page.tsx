@@ -7,30 +7,30 @@ import { BRAND, CANONICAL_ORIGIN } from "@/lib/shared/brand";
 import DashboardClient from "./DashboardClient";
 
 /**
- * Dashboard Page - Server component that handles both authenticated and
+ * Videos Page - Server component that handles both authenticated and
  * unauthenticated users.
  *
  * SEO Strategy:
  * - Returns 200 OK for all users (no redirects)
- * - noindex to prevent search engine indexing of dashboard
+ * - noindex to prevent search engine indexing of videos page
  * - canonical to homepage to consolidate any accidental link equity
  *
- * Authenticated: Renders the full dashboard with user data
+ * Authenticated: Renders the full videos page with user data
  * Unauthenticated: Renders a preview page with clear CTAs
  */
 
 export const metadata: Metadata = {
-  title: `Dashboard Preview | ${BRAND.name}`,
+  title: `Videos | ${BRAND.name}`,
   description:
-    "Access your YouTube analytics dashboard. Get channel insights, video performance metrics, and content ideas to grow your channel.",
+    "Access your YouTube video analytics. Get channel insights, video performance metrics, and content ideas to grow your channel.",
   robots: { index: false, follow: true },
   alternates: {
     canonical: CANONICAL_ORIGIN,
   },
   openGraph: {
-    title: `Dashboard | ${BRAND.name}`,
+    title: `Videos | ${BRAND.name}`,
     description:
-      "Your YouTube growth dashboard with channel analytics, video insights, and AI-powered content ideas.",
+      "Your YouTube video analytics with channel insights, performance metrics, and AI-powered content ideas.",
     type: "website",
   },
 };
@@ -45,7 +45,7 @@ type Props = {
 export default async function DashboardPage({ searchParams }: Props) {
   const params = await searchParams;
 
-  // Authenticated: fetch bootstrap once and render dashboard.
+  // Authenticated: fetch bootstrap once and render videos page.
   // Unauthenticated: show logged-out preview (200 OK, no redirect).
   const bootstrap = await getAppBootstrapOptional({
     channelId: params.channelId,
