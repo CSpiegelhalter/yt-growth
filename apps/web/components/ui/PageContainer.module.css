@@ -3,13 +3,6 @@
 .page {
   margin: 0 auto;
   max-width: var(--page-max-width);
-  padding: var(--page-padding-mobile);
-}
-
-@media (width >= 768px) {
-  .page {
-    padding: var(--page-padding-desktop);
-  }
 }
 
 /* Narrow variant for article/detail pages */

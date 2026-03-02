@@ -427,6 +427,10 @@
   --color-cool-sky: #35A7FF;
   --color-stormy-teal: #0F7173;
 
+  /* Extended palette — status indicators for reports */
+  --color-leaf-green: #22c55e;
+  --color-warm-gold: #eab308;
+
   /* Derived brand shades — auto-calculated from base palette */
   --color-hot-rose-hover: color-mix(in srgb, var(--color-hot-rose) 85%, black);
   --color-hot-rose-light: color-mix(in srgb, var(--color-hot-rose) 10%, white);
@@ -495,6 +499,7 @@
   --page-max-width-narrow: 800px;
   --page-padding-mobile: 16px;
   --page-padding-desktop: 24px;
+  --page-padding: var(--page-padding-mobile);
   --page-header-margin: 24px;
   
   /* Page typography */
@@ -574,6 +579,12 @@
   --shell-gap: var(--space-6);
 }
 
+@media (width >= 768px) {
+  :root {
+    --page-padding: var(--page-padding-desktop);
+  }
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -611,6 +622,14 @@ body {
 
 .appMain {
   flex: 1 0 auto;
+}
+
+/* Full-bleed utility — edge-to-edge background within padded parent */
+.fullBleed {
+  margin-left: calc(-1 * var(--page-padding));
+  margin-right: calc(-1 * var(--page-padding));
+  padding-left: var(--page-padding);
+  padding-right: var(--page-padding);
 }
 
 /* Typography */
@@ -795,7 +814,7 @@ label {
 /* Hero - Fixed dimensions to prevent CLS */
 .landingHero {
   text-align: center;
-  padding: var(--space-12) var(--space-4);
+  padding: var(--space-12) 0;
   max-width: 800px;
   margin: 0 auto;
   min-height: 420px;
@@ -856,7 +875,7 @@ label {
 /* Social Proof */
 .landingSocialProof {
   text-align: center;
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-6) 0;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background: var(--surface-alt);
@@ -878,7 +897,7 @@ label {
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-6);
-  padding: var(--space-12) var(--space-4);
+  padding: var(--space-12) 0;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -986,7 +1005,7 @@ label {
 
 /* How It Works */
 .landingHowItWorks {
-  padding: var(--space-12) var(--space-4);
+  padding: var(--space-12) 0;
   background: var(--surface-alt);
 }
 
@@ -1056,7 +1075,7 @@ label {
 
 /* FAQ Section */
 .landingFaqSection {
-  padding: var(--space-12) var(--space-4);
+  padding: var(--space-12) 0;
   max-width: 1000px;
   margin: 0 auto;
 }
@@ -1107,10 +1126,8 @@ label {
   background: linear-gradient(135deg, var(--color-imperial-blue) 0%, var(--color-cool-sky) 100%);
   border-radius: var(--radius-lg);
   color: var(--text-inverse);
-  margin: var(--space-8) var(--space-4);
+  margin: var(--space-8) auto;
   max-width: 1000px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .landingCtaTitle {
@@ -1141,7 +1158,7 @@ label {
 
 /* Popular Guides Section - Internal links for SEO */
 .landingGuidesSection {
-  padding: var(--space-12) var(--space-4);
+  padding: var(--space-12) 0;
   background: var(--surface-alt);
 }
 
@@ -1255,7 +1272,7 @@ label {
 
 /* SEO Content Section - Additional text-rich content */
 .landingSeoSection {
-  padding: var(--space-12) var(--space-4);
+  padding: var(--space-12) 0;
   max-width: 900px;
   margin: 0 auto;
 }
@@ -1731,7 +1748,6 @@ label {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  overflow: hidden;
 }
 
 .accordion__item[open] {
@@ -1771,7 +1787,7 @@ label {
   transition: transform var(--transition-base);
 }
 
-.accordion__item[open] .accordion__chevron {
+.accordion__item[open] > summary .accordion__chevron {
   transform: rotate(180deg);
 }
 
@@ -1789,6 +1805,25 @@ label {
 .accordion__content p + p {
   margin-top: var(--space-3);
 }
+
+/* Sub-accordion: borderless, compact variant for nesting */
+.accordion__item--sub {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.accordion__item--sub .accordion__trigger {
+  font-size: var(--text-sm);
+  padding: var(--space-2) 0;
+}
+
+.accordion__item--sub .accordion__content {
+  border-left: 2px solid var(--border);
+  margin-left: var(--space-2);
+  padding: 0 0 var(--space-2) var(--space-4);
+}
+
 
 /* QuickSummary - Hero summary card */
 .quickSummary {

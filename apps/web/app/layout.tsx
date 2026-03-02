@@ -1,6 +1,7 @@
 import "@/app/globals.css";
 
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { Fustat, Inter } from "next/font/google";
 
@@ -168,6 +169,7 @@ export default async function RootLayout({
       <body>
         <Providers>{children}</Providers>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

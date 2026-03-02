@@ -5,14 +5,7 @@
 .page {
   margin: 0 auto;
   max-width: 900px;
-  padding: 16px;
   padding-top: 20px;
-}
-
-@media (width >= 768px) {
-  .page {
-    padding: 24px;
-  }
 }
 
 /* Back Link */

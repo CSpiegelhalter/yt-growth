@@ -9,6 +9,8 @@ PIP := $(VENV)/bin/pip
 # ---------- Convenience ----------
 .PHONY: help
 help:
+	@echo "  make preflight     # run all 6 pre-flight checks vs baseline"
+	@echo ""
 	@echo "Common targets:"
 	@echo "  make dev           # start Next.js dev server"
 	@echo "  make db-up         # start Postgres with pgvector"
@@ -32,13 +34,17 @@ help:
 	@echo "  make worker-rss    # expand from RSS feeds (FREE, no quota!)"
 
 # ---------- Web App ----------
-.PHONY: dev build
+.PHONY: dev build preflight
 
 dev:
 	cd $(WEB_DIR) && bun run dev
 
 build:
 	cd $(WEB_DIR) && bun run build
+
+# Run all 6 pre-flight checks, compare against baseline, output table
+preflight:
+	@./scripts/preflight.sh
 
 # ---------- Compose lifecycle ----------
 .PHONY: db-up db-down ps logs

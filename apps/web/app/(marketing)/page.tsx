@@ -43,7 +43,7 @@ export default function HomePage() {
       </section>
 
       {/* Social Proof */}
-      <section className="landingSocialProof">
+      <section className="landingSocialProof fullBleed">
         <p className="landingProofText">
           Trusted by <strong>2,000+</strong> YouTube creators to grow their
           channels
@@ -217,7 +217,7 @@ export default function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="landingHowItWorks">
+      <section className="landingHowItWorks fullBleed">
         <h2 className="landingSectionTitle">How {BRAND.name} Works</h2>
         <p className="landingSectionSubtitle">
           Connect your channel and start getting insights in under 2 minutes
@@ -522,7 +522,7 @@ function PopularGuidesSection() {
   });
 
   return (
-    <section className="landingGuidesSection">
+    <section className="landingGuidesSection fullBleed">
       <h2 className="landingSectionTitle">Free YouTube Growth Guides</h2>
       <p className="landingSectionSubtitle">
         Learn proven strategies to grow your channel with our free guides

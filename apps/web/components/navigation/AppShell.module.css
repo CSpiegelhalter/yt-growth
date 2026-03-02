@@ -20,7 +20,7 @@
 .content {
   flex: 1;
   min-height: 0; /* Allow proper scrolling in flex context */
-  padding-top: var(--space-6);
+  padding: var(--space-6) var(--page-padding) 0;
 }
 
 /* Responsive adjustments */

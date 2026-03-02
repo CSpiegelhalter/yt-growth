@@ -1,0 +1,133 @@
+/* ── Hook Analysis ── */
+
+.hookScoreBadge {
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  padding: 2px var(--space-2);
+  text-transform: uppercase;
+}
+
+.hookStrong {
+  background: color-mix(in srgb, var(--color-leaf-green) 15%, transparent);
+  color: var(--color-leaf-green);
+}
+
+.hookNeedsWork {
+  background: color-mix(in srgb, var(--color-warm-gold) 15%, transparent);
+  color: var(--color-warm-gold);
+}
+
+.hookWeak {
+  background: color-mix(in srgb, var(--color-hot-rose) 15%, transparent);
+  color: var(--color-hot-rose);
+}
+
+.hookComparison {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.hookPanel {
+  border-radius: var(--radius-md);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.hookPanelIssue {
+  background: color-mix(in srgb, var(--color-hot-rose) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-hot-rose) 20%, transparent);
+}
+
+.hookPanelFix {
+  background: color-mix(in srgb, var(--color-leaf-green) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-leaf-green) 20%, transparent);
+}
+
+.hookPanelTop {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.hookPanelLabel {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hookPanelText {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
+.hookTimestamp {
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.02em;
+  padding: 2px var(--space-2);
+}
+
+.hookOutlineList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.hookOutlineStep {
+  color: var(--text-secondary);
+}
+
+.hookNarrativeList {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--text-sm);
+  gap: var(--space-3);
+  line-height: var(--leading-relaxed);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hookNarrativeStep {
+  color: var(--text-secondary);
+}
+
+.hookNarrativeLabel {
+  background: color-mix(in srgb, var(--color-leaf-green) 15%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--color-leaf-green);
+  display: inline-block;
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-1);
+  margin-right: var(--space-2);
+  padding: 2px var(--space-2);
+  text-transform: uppercase;
+}
+
+.hookCurrentScript {
+  border-left: 3px solid color-mix(in srgb, var(--color-hot-rose) 30%, transparent);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-style: italic;
+  line-height: var(--leading-relaxed);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+}

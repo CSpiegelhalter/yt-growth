@@ -184,63 +184,18 @@ considered complete. No exceptions.
 
 ### Pre-Flight Suite
 
-Run all six commands in order. If any command fails to install/run, skip it and
-note the skip in the summary.
+Run the single pre-flight command from the repo root:
 
 ```
-bun run build
-bun run lint
-bunx knip --config apps/web/knip.json
-bunx madge --circular --extensions ts,tsx,js,jsx apps/web/app apps/web/lib
-bunx depcruise --config dependency-cruiser.js --output-type err-long apps/web
-bunx jscpd apps/web --pattern "**/*.{ts,tsx}" --min-lines 8 --min-tokens 70
+make preflight
 ```
 
-### Baseline Tracking
+This runs all six checks (build, lint, knip, madge, depcruise, jscpd),
+compares against `.agent/baseline.json`, outputs the comparison table, and
+auto-updates the baseline when metrics improve. If any metric regresses the
+script exits non-zero — fix regressions before completing the task.
 
-1. A baseline file lives at `.agent/baseline.json`.
-2. **If the file does not exist**, run the full suite once and save the results
-   as the baseline. The baseline records counts for: build errors, lint errors,
-   knip unused exports/files, circular dependency count, dependency-cruiser
-   violations, and jscpd duplicate clones.
-3. **After every task**, run the suite again and compare against the baseline.
-4. **If any metric is HIGHER than the baseline**, the task has failed. Fix the
-   regressions before reporting completion.
-5. **If any metric is LOWER than the baseline**, update the baseline with the
-   new (improved) counts.
-
-### Summary Table
-
-After running the checks, output a comparison table in the chat:
-
-```
-| Metric                | Baseline | Current | Status |
-|-----------------------|----------|---------|--------|
-| Build errors          | 0        | 0       | pass   |
-| Lint errors           | 0        | 0       | pass   |
-| Knip unused exports   | 12       | 12      | pass   |
-| Circular deps (madge) | 3        | 2       | pass*  |
-| Dep-cruiser violations| 0        | 0       | pass   |
-| jscpd clones          | 5        | 5       | pass   |
-```
-
-Mark improved metrics with `*` and update the baseline. Mark regressions with
-`FAIL` and fix them before completing the task.
-
-### `.agent/baseline.json` Format
-
-```json
-{
-  "generatedAt": "ISO timestamp",
-  "buildErrors": 0,
-  "lintErrors": 0,
-  "knipUnusedExports": 0,
-  "knipUnusedFiles": 0,
-  "circularDeps": 0,
-  "depcruiseViolations": 0,
-  "jscpdClones": 0
-}
-```
+**Do NOT run the six checks individually.** Always use `make preflight`.
 
 ---
 

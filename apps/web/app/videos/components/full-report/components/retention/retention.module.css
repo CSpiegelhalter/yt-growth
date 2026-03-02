@@ -1,0 +1,90 @@
+.emptyState {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+  padding: var(--space-4) 0;
+  text-align: center;
+}
+
+/* ── Retention Timeline ── */
+
+.retentionTable {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  width: 100%;
+}
+
+.retentionTable th {
+  border-bottom: 2px solid var(--border);
+  color: var(--text-secondary);
+  font-weight: var(--font-semibold);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+}
+
+.retentionTable td {
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-2) var(--space-3);
+  vertical-align: top;
+}
+
+.retentionTable tr:last-child td {
+  border-bottom: none;
+}
+
+.retentionTable tr:nth-child(even) td {
+  background: var(--surface-alt);
+}
+
+.retentionTime {
+  font-weight: var(--font-semibold);
+  white-space: nowrap;
+}
+
+.retentionIssue {
+  display: block;
+  font-weight: var(--font-medium);
+}
+
+.retentionReasoning {
+  color: var(--text-secondary);
+  display: block;
+  font-size: var(--text-xs);
+  margin-top: 2px;
+}
+
+.retentionAction {
+  font-size: var(--text-sm);
+}
+
+/* ── Drop-Off Badge ── */
+
+.dropOffBadge {
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  padding: 2px var(--space-2);
+  white-space: nowrap;
+}
+
+.dropHigh {
+  background: color-mix(in srgb, var(--color-hot-rose) 15%, transparent);
+  color: var(--color-hot-rose);
+}
+
+.dropMedium {
+  background: color-mix(in srgb, var(--color-warm-gold) 15%, transparent);
+  color: var(--color-warm-gold);
+}
+
+.dropNeutral {
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+}
+
+.retentionVisualCue {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-style: italic;
+  padding-left: var(--space-6);
+}

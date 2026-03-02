@@ -4,13 +4,14 @@ import { useMemo } from "react";
 
 import type { VideoWithMetrics } from "@/lib/video-tools";
 
+import { useFullReport } from "./full-report";
 import { MetricPills } from "./MetricPills";
 import type { PillMetric } from "./pill-metric-types";
 import { rankVideoMetrics } from "./rank-metrics";
 import { useVideoInsights } from "./useVideoInsights";
 import s from "./video-detail-panel.module.css";
 import { VideoHeader } from "./VideoHeader";
-import { VideoInsightCards } from "./VideoInsightCards";
+import { VideoInsightArea } from "./VideoInsightArea";
 
 type VideoDetailPanelProps = {
   video: VideoWithMetrics | null;
@@ -42,6 +43,15 @@ function VideoDetailContent({
     channelId,
     video.videoId,
   );
+  const {
+    report,
+    phase,
+    hasAnySection,
+    generate: generateReport,
+    retry: retryReport,
+  } = useFullReport(channelId, video.videoId);
+
+  const reportLoading = phase !== "idle" && phase !== "done" && phase !== "error";
 
   const ranked = useMemo(() => rankVideoMetrics(video), [video]);
 
@@ -69,38 +79,48 @@ function VideoDetailContent({
     <div className={s.panel}>
       <VideoHeader video={video} />
 
-      {loading && (
-        <div className={s.loadingState}>
-          <div className={s.spinner} />
-          <span>Analyzing this video...</span>
-        </div>
-      )}
+      <div className={s.buttonRow}>
+        <button
+          type="button"
+          className={s.transcriptBtn}
+          onClick={generateReport}
+          disabled={reportLoading}
+        >
+          {reportLoading ? "Generating report..." : "Full Report"}
+        </button>
+      </div>
 
-      {error && !loading && (
-        <div className={s.errorState}>
-          <p>{error}</p>
-          <button type="button" onClick={retry} className={s.retryBtn}>
-            Try again
-          </button>
-        </div>
-      )}
+      <div className={s.contentArea}>
+        {loading && (
+          <div className={s.loadingState}>
+            <div className={s.spinner} />
+            <span>Analyzing this video...</span>
+          </div>
+        )}
 
-      {!loading && !error && (
-        <>
-          <MetricPills goingWell={ranked.goingWell} needsWork={needsWork} />
-          {summary && summary.length > 0 && (
-            <VideoInsightCards insights={summary} />
-          )}
-          {!hasContent && !summary?.length && (
-            <div className={s.emptyState}>
-              <p>
-                Not enough data to generate insights yet. Check back once this
-                video has more views.
-              </p>
-            </div>
-          )}
-        </>
-      )}
+        {error && !loading && (
+          <div className={s.errorState}>
+            <p>{error}</p>
+            <button type="button" onClick={retry} className={s.retryBtn}>
+              Try again
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            <MetricPills goingWell={ranked.goingWell} needsWork={needsWork} />
+            <VideoInsightArea
+              report={report}
+              phase={phase}
+              hasAnySection={hasAnySection}
+              retryReport={retryReport}
+              summary={summary}
+              hasContent={hasContent}
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 }

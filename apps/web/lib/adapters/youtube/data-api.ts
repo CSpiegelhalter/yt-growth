@@ -268,7 +268,7 @@ export async function fetchVideosDetailsBatch(
     DEFAULT_CONCURRENCY_LIMIT,
     async (batchIds) => {
       const url = new URL(`${YOUTUBE_DATA_API}/videos`);
-      url.searchParams.set("part", "contentDetails,snippet,statistics");
+      url.searchParams.set("part", "contentDetails,snippet,statistics,status");
       url.searchParams.set("id", batchIds.join(","));
 
       const data = await youtubeFetch<{
@@ -287,24 +287,35 @@ export async function fetchVideosDetailsBatch(
             likeCount?: string;
             commentCount?: string;
           };
+          status?: {
+            privacyStatus?: string;
+            uploadStatus?: string;
+          };
         }>;
       }>(ga, url.toString());
 
-      return (data.items ?? []).map((v) => ({
-        videoId: v.id,
-        title: decodeHtmlEntities(v.snippet.title),
-        description: decodeHtmlEntities(v.snippet.description),
-        publishedAt: v.snippet.publishedAt,
-        durationSec: parseDuration(v.contentDetails.duration),
-        tags: v.snippet.tags?.join(",") ?? null,
-        thumbnailUrl:
-          v.snippet.thumbnails?.high?.url ??
-          v.snippet.thumbnails?.default?.url ??
-          null,
-        views: Number.parseInt(v.statistics.viewCount ?? "0", 10),
-        likes: Number.parseInt(v.statistics.likeCount ?? "0", 10),
-        comments: Number.parseInt(v.statistics.commentCount ?? "0", 10),
-      }));
+      const items = data.items ?? [];
+      for (const v of items) {
+        console.log(`[VideoFilter] ${v.id} "${v.snippet.title}" — privacyStatus=${v.status?.privacyStatus}, uploadStatus=${v.status?.uploadStatus}`);
+      }
+
+      return items
+        .filter((v) => v.status?.privacyStatus === "public")
+        .map((v) => ({
+          videoId: v.id,
+          title: decodeHtmlEntities(v.snippet.title),
+          description: decodeHtmlEntities(v.snippet.description),
+          publishedAt: v.snippet.publishedAt,
+          durationSec: parseDuration(v.contentDetails.duration),
+          tags: v.snippet.tags?.join(",") ?? null,
+          thumbnailUrl:
+            v.snippet.thumbnails?.high?.url ??
+            v.snippet.thumbnails?.default?.url ??
+            null,
+          views: Number.parseInt(v.statistics.viewCount ?? "0", 10),
+          likes: Number.parseInt(v.statistics.likeCount ?? "0", 10),
+          comments: Number.parseInt(v.statistics.commentCount ?? "0", 10),
+        }));
     }
   );
 

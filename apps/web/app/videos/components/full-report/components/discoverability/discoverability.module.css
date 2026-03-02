@@ -1,0 +1,211 @@
+/* ── Discoverability ── */
+
+.discoverabilitySubAccordions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ── Title Options ── */
+
+.titleOptions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.titleOptionCard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  transition: border-color var(--transition-base);
+}
+
+.titleOptionCard:hover {
+  border-color: var(--border-hover);
+}
+
+.titleOptionTop {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.titleLabel {
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  padding: 2px var(--space-2);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.titleStats {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.statChip {
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.02em;
+  padding: var(--space-1) var(--space-2);
+}
+
+.statHigh {
+  background: color-mix(in srgb, var(--color-leaf-green) 15%, transparent);
+  color: var(--color-leaf-green);
+}
+
+.statMedium {
+  background: color-mix(in srgb, var(--color-warm-gold) 15%, transparent);
+  color: var(--color-warm-gold);
+}
+
+.statLow {
+  background: color-mix(in srgb, var(--color-cool-sky) 15%, transparent);
+  color: var(--color-cool-sky);
+}
+
+.titleOptionBottom {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.titleText {
+  flex: 1;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-normal);
+  min-width: 0;
+}
+
+/* ── Description ── */
+
+.descriptionBlock {
+  background: var(--surface-alt);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.descriptionTop {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.descriptionBlockLabel {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.descriptionText {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.descriptionClamped {
+  -webkit-box-orient: vertical;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.showMoreBtn {
+  background: none;
+  border: none;
+  color: var(--color-cool-sky);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  padding: 0;
+  text-align: left;
+}
+
+.showMoreBtn:hover {
+  text-decoration: underline;
+}
+
+/* ── Tag Selector ── */
+
+.tagSelectorWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tagPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.tagPill {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-2);
+  transition: all var(--transition-base);
+}
+
+.tagPill:hover {
+  background: color-mix(in srgb, var(--color-cool-sky) 8%, transparent);
+  border-color: var(--color-cool-sky);
+}
+
+.tagPillSelected {
+  background: color-mix(in srgb, var(--color-cool-sky) 15%, transparent);
+  border-color: var(--color-cool-sky);
+  color: var(--color-cool-sky);
+}
+
+.tagPill:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.copyBtn {
+  background: var(--surface);
+  border: 1px solid var(--color-cool-sky);
+  border-radius: var(--radius-md);
+  color: var(--color-cool-sky);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  padding: var(--space-2) var(--space-4);
+  transition: all var(--transition-base);
+}
+
+.copyBtn:hover {
+  background: var(--color-cool-sky);
+  color: var(--text-inverse);
+}
+
+.copyBtn:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}

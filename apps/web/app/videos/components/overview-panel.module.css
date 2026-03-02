@@ -34,6 +34,7 @@
   font-size: var(--text-sm);
   gap: var(--space-3);
   justify-content: center;
+  min-height: 400px;
   padding: var(--space-12) 0;
 }
 

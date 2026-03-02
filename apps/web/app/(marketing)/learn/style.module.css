@@ -12,15 +12,7 @@
   min-height: 100vh;
 
   /* No max-width - sections handle their own centering */
-  padding: var(--page-padding-mobile);
   padding-top: var(--space-8);
-}
-
-@media (width >= 768px) {
-  .learnHub {
-    padding: var(--page-padding-desktop);
-    padding-top: var(--space-8);
-  }
 }
 
 .hubHero {
@@ -587,15 +579,7 @@
 .page {
   margin: 0 auto;
   max-width: var(--page-max-width);
-  padding: var(--page-padding-mobile);
   padding-top: var(--space-8);
-}
-
-@media (width >= 768px) {
-  .page {
-    padding: var(--page-padding-desktop);
-    padding-top: var(--space-8);
-  }
 }
 
 .articleNav {
@@ -861,8 +845,7 @@
     align-items: start;
     column-gap: var(--space-8);
     display: grid;
-    grid-template-columns: 220px minmax(0, 720px) 48px;
-    justify-content: center;
+    grid-template-columns: 220px 1fr 48px;
   }
 }
 
@@ -1132,5 +1115,5 @@
   flex-direction: column;
   gap: var(--space-6);
   margin: var(--space-10) auto 0;
-  max-width: 960px;
+  max-width: var(--page-max-width);
 }

@@ -1,46 +1,8 @@
 import "server-only";
 
+import type { InsightContext, InsightDerivedData } from "@/lib/features/full-report/types";
 import { checkRateLimit, RATE_LIMITS,rateLimitKey } from "@/lib/shared/rate-limit";
 import { prisma } from "@/prisma";
-
-type InsightDerivedData = {
-  video: {
-    title: string;
-    description?: string;
-    tags?: string[];
-    durationSec: number;
-    categoryId?: string;
-    [key: string]: unknown;
-  };
-  derived: {
-    totalViews: number;
-    trafficSources?: Record<string, number> | null;
-    [key: string]: unknown;
-  };
-  comparison?: Record<string, unknown>;
-  bottleneck?: Record<string, unknown>;
-  subscriberBreakdown?: Record<string, unknown>;
-  geoBreakdown?: Record<string, unknown>;
-  trafficDetail?: {
-    searchTerms?: Array<{ term: string; views: number }>;
-    [key: string]: unknown;
-  };
-  demographicBreakdown?: Record<string, unknown>;
-  [key: string]: unknown;
-};
-
-type InsightContext = {
-  channel: { id: number; youtubeChannelId: string; subscriberCount: number | null };
-  cached: {
-    derivedJson: unknown;
-    llmJson: unknown;
-    cachedUntil: Date;
-    contentHash: string | null;
-  };
-  derivedData: InsightDerivedData;
-  videoPublishedAt: string | null;
-  baseline: Record<string, unknown> | null;
-};
 
 /**
  * Shared pre-flight checks for video insight route handlers.

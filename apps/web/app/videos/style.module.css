@@ -112,6 +112,7 @@
 @media (width >= 768px) {
   .rightPanel {
     display: block;
+    min-height: 60vh;
   }
 }
 

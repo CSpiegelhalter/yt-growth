@@ -1,0 +1,86 @@
+/* ── Copy Buttons ── */
+
+.copyBtn {
+  background: var(--surface);
+  border: 1px solid var(--color-cool-sky);
+  border-radius: var(--radius-md);
+  color: var(--color-cool-sky);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  padding: var(--space-2) var(--space-4);
+  transition: all var(--transition-base);
+}
+
+.copyBtn:hover {
+  background: var(--color-cool-sky);
+  color: var(--text-inverse);
+}
+
+.copyBtn:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.copyBtnIcon {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  font: inherit;
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+  transition: color var(--transition-base);
+}
+
+.copyBtnIcon:hover {
+  color: var(--color-cool-sky);
+}
+
+.copyBtnIcon:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* ── Accordion Title Flex ── */
+
+.accordionTitleFlex {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+/* ── Info Tooltip ── */
+
+.infoTooltipWrap {
+  align-items: center;
+  color: var(--text-tertiary);
+  cursor: help;
+  display: inline-flex;
+  margin-left: var(--space-1);
+  overflow: visible;
+  position: relative;
+  vertical-align: middle;
+}
+
+.infoTooltipWrap:hover::after {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  color: var(--text-secondary);
+  content: attr(data-tooltip);
+  font-size: var(--text-xs);
+  left: 0;
+  line-height: var(--leading-normal);
+  max-width: 260px;
+  padding: var(--space-2) var(--space-3);
+  pointer-events: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  white-space: normal;
+  width: max-content;
+  z-index: 10;
+}
