@@ -557,8 +557,8 @@ export function IdeasPublicClient() {
           <Link href="/learn/youtube-competitor-analysis" className={s.relatedLink}>
             Competitor Analysis Guide
           </Link>
-          <Link href="/tags/generator" className={s.relatedLink}>
-            Tag Generator
+          <Link href="/tags" className={s.relatedLink}>
+            Tag Finder
           </Link>
         </div>
       </section>

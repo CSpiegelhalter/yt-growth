@@ -215,12 +215,6 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/admin/")) {
     return "Admin";
   }
-  if (pathname === "/tags/generator") {
-    return "Tag Generator";
-  }
-  if (pathname === "/tags/extractor") {
-    return "Tag Finder";
-  }
   if (pathname.startsWith("/tags")) {
     return "Tags";
   }

@@ -1733,7 +1733,7 @@ export function Body({ s }: BodyProps) {
           <ToolCtaCard
             title="Extract Tags from Trending Videos"
             description="Capture recurring topic language across trending winners. Useful for understanding how successful creators frame similar content."
-            href="/tags/extractor"
+            href="/tags"
             bestFor="Best for topic framing"
           />
         </div>
@@ -2180,14 +2180,14 @@ export function Body({ s }: BodyProps) {
           <ToolCtaCard
             title="Extract Tags from Any Video"
             description="See what tags successful videos in your niche are using. Build your tag strategy from real data."
-            href="/tags/extractor"
+            href="/tags"
             bestFor="Best for tag research"
           />
           <ToolCtaCard
-            title="Generate Relevant Tags"
-            description="Get tag suggestions based on your video topic. Creates a starting point you can refine."
-            href="/tags/generator"
-            bestFor="Best for new videos"
+            title="Find Competitor Tags"
+            description="Extract tags from any YouTube video to discover what keywords competitors are targeting."
+            href="/tags"
+            bestFor="Best for tag research"
           />
         </div>
       </section>

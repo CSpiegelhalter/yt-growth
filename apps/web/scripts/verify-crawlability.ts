@@ -55,7 +55,6 @@ const REQUIRED_LEARN_SLUGS = [
   "buy-youtube-views",
   "youtube-analytics-tools",
   "how-to-be-a-youtuber",
-  "youtube-tag-generator",
   "youtube-shorts-length",
   "youtube-shorts-monetization",
   "youtube-algorithm",

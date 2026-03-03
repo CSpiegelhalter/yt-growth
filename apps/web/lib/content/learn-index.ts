@@ -46,7 +46,7 @@ export const LEARN_INDEX_CONTENT = {
       id: "seo",
       title: "SEO & Discovery",
       description: `YouTube is the world's second-largest search engine, processing over 3 billion searches per month. Learn how to optimize your titles, descriptions, and tags so your videos get found by people actively searching for content like yours. Understand how the algorithm decides which videos to recommend in browse and suggested feeds, and learn how to position your content for maximum reach across all traffic sources.`,
-      relatedSlugs: ["youtube-seo", "youtube-tag-generator", "youtube-algorithm"],
+      relatedSlugs: ["youtube-seo", "youtube-algorithm"],
     },
     {
       id: "competitors",

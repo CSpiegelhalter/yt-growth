@@ -43,7 +43,6 @@ export const ARTICLE_REGISTRY: Record<string, ArticleLoader> = {
   "buy-youtube-views": () => import("./bodies/buy-youtube-views"),
   "youtube-analytics-tools": () => import("./bodies/youtube-analytics-tools"),
   "how-to-be-a-youtuber": () => import("./bodies/how-to-be-a-youtuber"),
-  "youtube-tag-generator": () => import("./bodies/youtube-tag-generator"),
   "youtube-shorts-length": () => import("./bodies/youtube-shorts-length"),
   "youtube-shorts-monetization": () => import("./bodies/youtube-shorts-monetization"),
   "youtube-shorts-strategy": () => import("./bodies/youtube-shorts-strategy"),

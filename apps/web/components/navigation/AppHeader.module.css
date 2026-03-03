@@ -38,8 +38,11 @@
 
 .pageTitle {
   color: var(--text);
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
+  font-family: var(--font-heading, Fustat, sans-serif);
+  font-size: 28px;
+  font-weight: var(--font-bold, 700);
+  letter-spacing: 0.03em;
+  line-height: 1;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -48,7 +51,7 @@
 
 @media (width <= 479px) {
   .pageTitle {
-    font-size: var(--text-base);
+    font-size: 22px;
   }
 }
 

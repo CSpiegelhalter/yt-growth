@@ -3,27 +3,24 @@ import type { Metadata } from "next";
 import { BRAND, CANONICAL_ORIGIN } from "@/lib/shared/brand";
 
 import s from "./tags.module.css";
-import { TagsTabsNav } from "./TagsTabsNav";
 
 export const metadata: Metadata = {
-  title: `YouTube Tags Tools — Generator & Tag Finder | ${BRAND.name}`,
+  title: `YouTube Tags Extractor — Find Tags From Any Video | ${BRAND.name}`,
   description:
-    "Free YouTube tag tools: Generate optimized tags for your videos or find tags used by any YouTube video. Improve discoverability with the right keywords.",
+    "Free YouTube tag extractor: Find the exact tags used by any YouTube video. Discover competitor keywords and improve your video SEO.",
   alternates: {
     canonical: `${CANONICAL_ORIGIN}/tags`,
   },
   openGraph: {
-    title: `YouTube Tags Tools — Generator & Tag Finder | ${BRAND.name}`,
+    title: `YouTube Tags Extractor — Find Tags From Any Video | ${BRAND.name}`,
     description:
-      "Free YouTube tag tools: Generate optimized tags for your videos or find tags used by any YouTube video.",
+      "Free YouTube tag extractor: Find the exact tags used by any YouTube video. Discover competitor keywords and improve your video SEO.",
     url: `${CANONICAL_ORIGIN}/tags`,
   },
 };
 
 /**
- * Shared layout for Tags hub pages.
- * Provides consistent header and tab navigation across /tags, /tags/generator, /tags/extractor.
- * 
+ * Layout for the /tags page.
  * This layout is public (no auth required) and renders within the marketing shell.
  */
 export default function TagsLayout({
@@ -33,7 +30,6 @@ export default function TagsLayout({
 }) {
   return (
     <div className={s.pageWrapper}>
-      <TagsTabsNav />
       <div className={s.pageContent}>
         {children}
       </div>

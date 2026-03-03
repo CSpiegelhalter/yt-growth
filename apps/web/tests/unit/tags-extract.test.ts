@@ -163,29 +163,3 @@ describe("Tag Extraction Response Validation", () => {
   });
 });
 
-describe("Tag Prefill URL Generation", () => {
-  // Tests for the "Generate tags based on these" feature
-
-  it("generates valid prefill URL for tags", () => {
-    const tags = ["tag1", "tag2", "tag three"];
-    const prefill = encodeURIComponent(tags.join(","));
-    const url = `/tags/generator?prefill=${prefill}`;
-
-    expect(url).toBe("/tags/generator?prefill=tag1%2Ctag2%2Ctag%20three");
-  });
-
-  it("handles decoding prefill tags", () => {
-    const prefill = "tag1%2Ctag2%2Ctag%20three";
-    const decodedTags = decodeURIComponent(prefill);
-    const tagList = decodedTags.split(",").map((t) => t.trim());
-
-    expect(tagList).toEqual(["tag1", "tag2", "tag three"]);
-  });
-
-  it("limits tags to prevent URL overflow", () => {
-    const manyTags = Array.from({ length: 50 }, (_, i) => `tag${i}`);
-    const limitedTags = manyTags.slice(0, 30);
-
-    expect(limitedTags.length).toBe(30);
-  });
-});

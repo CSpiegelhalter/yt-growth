@@ -493,9 +493,7 @@ export function Body({ s }: BodyProps) {
 
         <p className={s.sectionText}>
           Need tags quickly? Use our{" "}
-          <Link href="/tags/generator">Tag Generator</Link> to create relevant
-          tags in seconds, or the{" "}
-          <Link href="/tags/extractor">Tag Extractor</Link> to see what tags
+          <Link href="/tags">Tag Extractor</Link> to see what tags
           top-ranking videos use (for research, not copying).
         </p>
       </section>

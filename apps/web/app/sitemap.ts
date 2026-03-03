@@ -70,18 +70,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.9,
     },
-    {
-      url: `${baseUrl}/tags/generator`,
-      lastModified: new Date("2026-01-26"),
-      changeFrequency: "monthly",
-      priority: 0.85,
-    },
-    {
-      url: `${baseUrl}/tags/extractor`,
-      lastModified: new Date("2026-01-26"),
-      changeFrequency: "monthly",
-      priority: 0.85,
-    },
     // Contact page
     {
       url: `${baseUrl}/contact`,

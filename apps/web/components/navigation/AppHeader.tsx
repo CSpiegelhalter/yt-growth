@@ -378,7 +378,7 @@ export function AppHeader({
         <div className={s.inner}>
           <div className={s.leftSection}>
             {mobileNavSlot}
-            <p className={s.pageTitle}>{pageTitle}</p>
+            <h1 className={s.pageTitle}>{pageTitle}</h1>
           </div>
 
           <div className={s.centerSection}>

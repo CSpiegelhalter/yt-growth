@@ -90,19 +90,9 @@ const LLMS_PUBLIC_PAGES = [
     description: "Free keyword research tool to find high-volume, low-competition YouTube keywords with search volume and competition data.",
   },
   {
-    name: "YouTube Tags Hub",
-    path: "/tags",
-    description: "Collection of free YouTube tag tools including tag generator and tag extractor.",
-  },
-  {
     name: "YouTube Tag Finder",
-    path: "/tags/extractor",
+    path: "/tags",
     description: "Free tool to extract and view tags from any YouTube video URL. Useful for competitive research.",
-  },
-  {
-    name: "YouTube Tag Generator",
-    path: "/tags/generator",
-    description: "Free tool to generate optimized YouTube tags based on video title and description.",
   },
   {
     name: "Contact",
@@ -137,7 +127,6 @@ const PRIORITY_LEARN_SLUGS = new Set([
   "how-to-make-a-youtube-channel",
   "youtube-algorithm",
   "youtube-analytics-tools",
-  "youtube-tag-generator",
 ]);
 
 type LearnArticleSlug = keyof typeof LEARN_ARTICLES;

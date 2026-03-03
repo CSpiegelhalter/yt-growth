@@ -472,7 +472,6 @@ const POPULAR_GUIDE_SLUGS = [
   "youtube-algorithm",
   "youtube-monetization-requirements",
   "how-to-make-a-youtube-channel",
-  "youtube-tag-generator",
   // Content & ideas
   "youtube-thumbnail-best-practices",
   // Growth & promotion
