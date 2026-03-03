@@ -63,7 +63,7 @@
 .lockedDesc {
   color: var(--color-text-secondary);
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
   margin: 0 auto var(--space-8);
   max-width: 480px;
 }
@@ -98,7 +98,7 @@
 .emptyDesc {
   color: var(--color-text-secondary);
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
   margin: 0 auto var(--space-8);
   max-width: 480px;
 }
@@ -217,7 +217,7 @@
 .insightList li {
   color: var(--color-text);
   font-size: 0.875rem;
-  line-height: 1.4;
+  line-height: var(--leading-normal);
   padding-left: 12px;
   position: relative;
 }
@@ -262,14 +262,14 @@
 .ideaTitle {
   font-size: 1.125rem;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: var(--leading-snug);
   margin: 0 0 12px;
 }
 
 .ideaAngle {
   color: var(--color-text-secondary);
   font-size: 0.9375rem;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   margin: 0;
 }
 
@@ -521,7 +521,7 @@
 .descriptionText {
   color: var(--color-text-secondary);
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
   margin: 0;
 }
 
@@ -562,7 +562,7 @@
 
 .optionText {
   font-size: 0.9375rem;
-  line-height: 1.4;
+  line-height: var(--leading-normal);
   margin: 0;
 }
 
@@ -683,7 +683,7 @@
 
 .directionsList li {
   font-size: 0.875rem;
-  line-height: 1.4;
+  line-height: var(--leading-normal);
 }
 
 /* Remix Section */
@@ -765,7 +765,7 @@
 
 .scriptCardBody {
   font-size: 0.875rem;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   margin: 0;
 }
 

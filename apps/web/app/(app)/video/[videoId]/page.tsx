@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import type { ComponentProps } from "react";
+import { z } from "zod";
 
 import { getAppBootstrap } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
@@ -17,9 +18,15 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+const searchParamsSchema = z.object({
+  channelId: z.string().optional(),
+  range: z.enum(["7d", "28d", "90d"]).catch("28d"),
+  from: z.string().optional(),
+});
+
 type Props = {
   params: Promise<{ videoId: string }>;
-  searchParams: Promise<{ channelId?: string; range?: string; from?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 type BackLink = { href: string; label: string };
@@ -41,8 +48,9 @@ type FetchResult =
  * - AI Summary and deep dives fetched client-side progressively
  */
 export default async function VideoPage({ params, searchParams }: Props) {
-  const [{ videoId }, search] = await Promise.all([params, searchParams]);
-  const range = parseRange(search.range);
+  const [{ videoId }, rawSearch] = await Promise.all([params, searchParams]);
+  const search = searchParamsSchema.parse(rawSearch);
+  const range = search.range;
   const bootstrap = await getAppBootstrap({ channelId: search.channelId });
   const channelId = bootstrap.activeChannelId ?? undefined;
   const backLink = buildBackLink(search.from, channelId);
@@ -97,11 +105,6 @@ function buildBackLink(
       : base,
     label: from === "subscriber-insights" ? "Subscriber Insights" : "Videos",
   };
-}
-
-function parseRange(raw: string | undefined): "7d" | "28d" | "90d" {
-  if (raw === "7d" || raw === "28d" || raw === "90d") {return raw;}
-  return "28d";
 }
 
 async function fetchAndParseAnalytics(

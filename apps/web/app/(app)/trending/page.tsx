@@ -7,6 +7,8 @@
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { z } from "zod";
 
 import { getAppBootstrap } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
@@ -23,8 +25,12 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+const searchParamsSchema = z.object({
+  channelId: z.string().optional(),
+});
+
 type Props = {
-  searchParams: Promise<{ channelId?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 /**
@@ -40,13 +46,15 @@ export default async function TrendingPage({ searchParams }: Props) {
     notFound();
   }
 
-  const params = await searchParams;
+  const params = searchParamsSchema.parse(await searchParams);
   const bootstrap = await getAppBootstrap({ channelId: params.channelId });
 
   return (
-    <TrendingClient
-      initialMe={bootstrap.me}
-      initialActiveChannelId={bootstrap.activeChannelId}
-    />
+    <Suspense>
+      <TrendingClient
+        initialMe={bootstrap.me}
+        initialActiveChannelId={bootstrap.activeChannelId}
+      />
+    </Suspense>
   );
 }

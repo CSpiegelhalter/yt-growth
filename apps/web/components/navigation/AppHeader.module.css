@@ -38,11 +38,10 @@
 
 .pageTitle {
   color: var(--text);
-  font-family: var(--font-heading, Fustat, sans-serif);
   font-size: 28px;
   font-weight: var(--font-bold, 700);
   letter-spacing: 0.03em;
-  line-height: 1;
+  line-height: var(--leading-none);
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -528,7 +527,7 @@
 .modalDesc {
   color: var(--text-secondary);
   font-size: var(--text-sm);
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
   margin-bottom: var(--space-6);
 }
 

@@ -779,7 +779,7 @@
 .faqAnswer {
   color: var(--text-secondary);
   font-size: var(--text-sm);
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
   margin: 0;
   padding: 0 var(--space-4) var(--space-4);
 }

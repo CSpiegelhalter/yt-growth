@@ -133,7 +133,7 @@
 .videoTitle {
   font-size: 1.125rem;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: var(--leading-snug);
   margin: 0 0 6px;
 }
 
@@ -270,7 +270,7 @@
   font-weight: 400;
   left: 50%;
   letter-spacing: normal;
-  line-height: 1.3;
+  line-height: var(--leading-snug);
   max-width: 180px;
   padding: 6px 10px;
   position: absolute;
@@ -357,7 +357,7 @@
 .aboutText {
   color: #475569;
   font-size: 0.9375rem;
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
   margin: 0;
 }
 
@@ -384,7 +384,7 @@
 .cardText {
   color: var(--color-imperial-blue);
   font-size: 0.875rem;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   margin: 0;
 }
 
@@ -410,21 +410,21 @@
 .patternTitle {
   font-size: 0.875rem;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: var(--leading-snug);
   margin: 0 0 6px;
 }
 
 .patternEvidence {
   color: #64748b;
   font-size: 0.8125rem;
-  line-height: 1.45;
+  line-height: var(--leading-snug);
   margin: 0 0 8px;
 }
 
 .patternHow {
   color: var(--color-imperial-blue);
   font-size: 0.875rem;
-  line-height: 1.45;
+  line-height: var(--leading-snug);
   margin: 0;
 }
 
@@ -456,7 +456,7 @@
 .themeWhy {
   color: #64748b;
   font-size: 0.8125rem;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   margin: 0;
 }
 
@@ -487,14 +487,14 @@
   color: var(--color-imperial-blue);
   font-size: 0.9375rem;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: var(--leading-tight);
   margin: 0 0 6px;
 }
 
 .remixAngle {
   color: var(--primary-hover);
   font-size: 0.8125rem;
-  line-height: 1.4;
+  line-height: var(--leading-snug);
   margin: 0 0 12px;
 }
 
@@ -521,7 +521,7 @@
 .hookText,
 .overlayText {
   font-size: 0.8125rem;
-  line-height: 1.4;
+  line-height: var(--leading-snug);
 }
 
 .copyBtn {
@@ -611,7 +611,7 @@
   font-size: 0.75rem;
   font-weight: 500;
   -webkit-line-clamp: 2;
-  line-height: 1.3;
+  line-height: var(--leading-tight);
   margin: 0;
   overflow: hidden;
 }
@@ -677,7 +677,7 @@
   color: var(--color-imperial-blue);
   font-size: 0.9375rem;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--leading-snug);
   margin: 0;
 }
 
@@ -942,7 +942,7 @@
 .topCommentText {
   color: #475569;
   font-size: 0.875rem;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
@@ -1083,7 +1083,7 @@
 .highlightList {
   color: #475569;
   font-size: 0.8125rem;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   margin: 0;
   padding-left: 16px;
 }
@@ -1219,7 +1219,7 @@
 .outperformAction {
   font-size: 0.875rem;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: var(--leading-snug);
 }
 
 .outperformTheme {

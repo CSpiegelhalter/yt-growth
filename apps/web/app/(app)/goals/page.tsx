@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { z } from "zod";
 
 import { getAppBootstrap } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
 
-import GoalsClient from "./GoalsClient";
+import { GoalsClient } from "./GoalsClient";
 
 export const metadata: Metadata = {
   title: `Goals & Achievements | ${BRAND.name}`,
@@ -13,8 +15,12 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+const searchParamsSchema = z.object({
+  channelId: z.string().optional(),
+});
+
 type Props = {
-  searchParams: Promise<{ channelId?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 /**
@@ -22,13 +28,15 @@ type Props = {
  * Fetches bootstrap data and passes to client.
  */
 export default async function GoalsPage({ searchParams }: Props) {
-  const params = await searchParams;
+  const params = searchParamsSchema.parse(await searchParams);
   const bootstrap = await getAppBootstrap({ channelId: params.channelId });
 
   return (
-    <GoalsClient
-      initialChannels={bootstrap.channels}
-      initialActiveChannelId={bootstrap.activeChannelId}
-    />
+    <Suspense>
+      <GoalsClient
+        initialChannels={bootstrap.channels}
+        initialActiveChannelId={bootstrap.activeChannelId}
+      />
+    </Suspense>
   );
 }

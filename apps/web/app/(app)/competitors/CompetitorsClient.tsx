@@ -1,20 +1,19 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef,useState } from "react";
+import { useState } from "react";
 
 import { ProfileTip } from "@/components/dashboard/ProfileTip";
 import { LockedFeatureGate } from "@/components/features/LockedFeatureGate";
-import { AlertCircleIcon,SearchIcon } from "@/components/icons";
+import { SearchIcon } from "@/components/icons";
+import { ErrorBanner, PageContainer, PageHeader } from "@/components/ui";
 import { useSyncActiveChannelIdToLocalStorage } from "@/lib/use-sync-active-channel";
-import type { Channel, CompetitorVideo,Me } from "@/types/api";
+import type { Channel, Me } from "@/types/api";
 
-import CompetitorFilters, {
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-} from "./CompetitorFilters";
-import CompetitorResultsStream from "./CompetitorResultsStream";
-import CompetitorSearchPanel from "./CompetitorSearchPanel";
+import CompetitorFilters from "./_components/CompetitorFilters";
+import CompetitorResultsStream from "./_components/CompetitorResultsStream";
+import CompetitorSearchPanel from "./_components/CompetitorSearchPanel";
+import { useCompetitorSearchState } from "./_components/use-competitor-search-state";
 import s from "./style.module.css";
 
 type Props = {
@@ -23,92 +22,8 @@ type Props = {
   initialActiveChannelId: string | null;
 };
 
-// ============================================
-// SESSION STORAGE STATE MANAGEMENT
-// ============================================
-
-const STORAGE_KEY = "competitor-search-state";
-const CLICKED_VIDEO_KEY = "competitor-clicked-video";
-const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
-
-type SearchCursor = {
-  queryIndex: number;
-  pageToken?: string;
-  seenIds: string[];
-  scannedCount: number;
-};
-
-type SavedState = {
-  nicheText: string;
-  referenceVideoUrl: string;
-  filters: FilterState;
-  videos: CompetitorVideo[];
-  nextCursor: SearchCursor | null;
-  hasSearched: boolean;
-  timestamp: number;
-};
-
-function saveState(state: Omit<SavedState, "timestamp">) {
-  try {
-    const data: SavedState = { ...state, timestamp: Date.now() };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {
-    // Ignore storage errors (quota, private mode, etc.)
-  }
-}
-
-function loadState(): SavedState | null {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) {return null;}
-
-    const state = JSON.parse(raw) as SavedState;
-
-    // Expire after TTL
-    if (Date.now() - state.timestamp > CACHE_TTL_MS) {
-      sessionStorage.removeItem(STORAGE_KEY);
-      return null;
-    }
-
-    return state;
-  } catch {
-    return null;
-  }
-}
-
-/** Save the clicked video ID for scroll restoration */
-function saveClickedVideo(videoId: string) {
-  try {
-    sessionStorage.setItem(CLICKED_VIDEO_KEY, videoId);
-  } catch {
-    // Ignore
-  }
-}
-
-/** Get and clear the clicked video ID */
-function getAndClearClickedVideo(): string | null {
-  try {
-    const videoId = sessionStorage.getItem(CLICKED_VIDEO_KEY);
-    if (videoId) {
-      sessionStorage.removeItem(CLICKED_VIDEO_KEY);
-    }
-    return videoId;
-  } catch {
-    return null;
-  }
-}
-
-// ============================================
-// MAIN COMPONENT
-// ============================================
-
 /**
- * CompetitorsClient - Competitor search experience
- *
- * Focused competitor/niche search:
- * - Manual niche search
- * - "Search My Niche" shortcut
- *
+ * CompetitorsClient - Competitor search experience.
  * State is preserved in sessionStorage so back button works properly.
  */
 export default function CompetitorsClient({
@@ -120,184 +35,22 @@ export default function CompetitorsClient({
   const urlChannelId = searchParams.get("channelId");
   const urlNiche = searchParams.get("niche");
 
-  // Active channel
   const [channels] = useState<Channel[]>(initialChannels);
   const activeChannelId = urlChannelId ?? initialActiveChannelId ?? null;
-  const activeChannel = useMemo(
-    () => channels.find((c) => c.channel_id === activeChannelId) ?? null,
-    [channels, activeChannelId],
-  );
-
-  // Subscription check
-  const isSubscribed = useMemo(
-    () => initialMe.subscription?.isActive ?? false,
-    [initialMe],
-  );
-
-  // Initialize all state with server-safe defaults
-  const [nicheText, setNicheText] = useState("");
-  const [referenceVideoUrl, setReferenceVideoUrl] = useState("");
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTER_STATE);
-
-  // Search state
-  const [hasSearched, setHasSearched] = useState(false);
-  const [searchKey, setSearchKey] = useState<string | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searchMode, setSearchMode] = useState<
-    "competitor_search" | "search_my_niche"
-  >("competitor_search");
-
-  // Cached videos and cursor (populated after hydration)
-  const [cachedVideos, setCachedVideos] = useState<CompetitorVideo[] | null>(
-    null,
-  );
-  const [cachedNextCursor, setCachedNextCursor] = useState<SearchCursor | null>(
-    null,
-  );
-  const [currentVideos, setCurrentVideos] = useState<CompetitorVideo[]>([]);
-  const [currentNextCursor, setCurrentNextCursor] =
-    useState<SearchCursor | null>(null);
-
-  // Track whether we've restored from sessionStorage
-  const hasRestoredRef = useRef(false);
-
-  // Track clicked video ID for scroll restoration
-  const [scrollToVideoId, setScrollToVideoId] = useState<string | null>(null);
+  const activeChannel =
+    channels.find((c) => c.channel_id === activeChannelId) ?? null;
+  const isSubscribed = initialMe.subscription?.isActive ?? false;
 
   useSyncActiveChannelIdToLocalStorage(activeChannelId);
 
-  // Handle URL niche parameter (from trending "Search this niche" action)
-  useEffect(() => {
-    if (urlNiche && !hasRestoredRef.current) {
-      setNicheText(urlNiche);
-      // Automatically trigger search
-      setSearchMode("competitor_search");
-      setError(null);
-      setIsSearching(true);
-      setHasSearched(true);
-      setCurrentVideos([]);
-      setSearchKey(`competitor_search:niche:${Date.now()}`);
-    }
-  }, [urlNiche]);
-
-  // Restore state from sessionStorage AFTER hydration
-  useEffect(() => {
-    // Skip if we have a URL niche parameter
-    if (urlNiche) {return;}
-
-    const savedState = loadState();
-    const clickedVideoId = getAndClearClickedVideo();
-
-    if (savedState) {
-      hasRestoredRef.current = true;
-
-      // Restore all state
-      setNicheText(savedState.nicheText);
-      setReferenceVideoUrl(savedState.referenceVideoUrl);
-      setFilters(savedState.filters);
-      setHasSearched(savedState.hasSearched);
-      setCurrentVideos(savedState.videos);
-      setCurrentNextCursor(savedState.nextCursor);
-      setCachedVideos(savedState.videos);
-      setCachedNextCursor(savedState.nextCursor);
-
-      if (savedState.hasSearched) {
-        setSearchKey(`restored:${Date.now()}`);
-      }
-
-      // Set scroll target
-      if (clickedVideoId && savedState.videos.length > 0) {
-        setScrollToVideoId(clickedVideoId);
-      }
-
-      // Allow saving again after a tick
-      setTimeout(() => {
-        hasRestoredRef.current = false;
-      }, 0);
-    }
-  }, [urlNiche]);
-
-  // Save state to sessionStorage whenever it changes
-  useEffect(() => {
-    if (!hasSearched || hasRestoredRef.current) {return;}
-
-    saveState({
-      nicheText,
-      referenceVideoUrl,
-      filters,
-      videos: currentVideos,
-      nextCursor: currentNextCursor,
-      hasSearched,
-    });
-  }, [
-    nicheText,
-    referenceVideoUrl,
-    filters,
-    currentVideos,
-    currentNextCursor,
-    hasSearched,
-  ]);
-
-  // Handle search initiation (manual niche)
-  const handleSearch = useCallback((text: string, url: string) => {
-    setNicheText(text);
-    setReferenceVideoUrl(url);
-    setSearchMode("competitor_search");
-    setError(null);
-    setIsSearching(true);
-    setHasSearched(true);
-    setCurrentVideos([]);
-    setSearchKey(`competitor_search:${Date.now()}`);
-  }, []);
-
-  // Handle "Search My Niche" shortcut
-  const handleSearchMyNiche = useCallback(() => {
-    setSearchMode("search_my_niche");
-    setError(null);
-    setIsSearching(true);
-    setHasSearched(true);
-    setCurrentVideos([]);
-    setSearchKey(`search_my_niche:${Date.now()}`);
-  }, []);
-
-  // Handle filter changes
-  const handleFiltersChange = useCallback(
-    (newFilters: FilterState) => {
-      setFilters(newFilters);
-      if (hasSearched) {
-        setCurrentVideos([]);
-        setSearchKey(`${searchMode}:${Date.now()}`);
-      }
-    },
-    [searchMode, hasSearched],
-  );
-
-  // Handle search complete
-  const handleSearchComplete = useCallback(() => {
-    setIsSearching(false);
-  }, []);
-
-  // Handle results update (for caching)
-  const handleResultsUpdate = useCallback((videos: CompetitorVideo[]) => {
-    setCurrentVideos(videos);
-  }, []);
-
-  // Handle cursor update
-  const handleCursorUpdate = useCallback((cursor: SearchCursor | null) => {
-    setCurrentNextCursor(cursor);
-  }, []);
-
-  // Handle video click (save for scroll restoration)
-  const handleVideoClick = useCallback((videoId: string) => {
-    saveClickedVideo(videoId);
-  }, []);
-
-  // Handle search error
-  const handleError = useCallback((errorMessage: string) => {
-    setError(errorMessage);
-    setIsSearching(false);
-  }, []);
+  const {
+    nicheText, referenceVideoUrl, filters, hasSearched,
+    searchKey, isSearching, error, searchMode,
+    cachedVideos, cachedNextCursor, scrollToVideoId,
+    handleSearch, handleSearchMyNiche, handleFiltersChange,
+    handleSearchComplete, handleResultsUpdate, handleCursorUpdate,
+    handleVideoClick, handleError, dismissError,
+  } = useCompetitorSearchState({ urlNiche });
 
   if (!isSubscribed) {
     return (
@@ -313,19 +66,14 @@ export default function CompetitorsClient({
   }
 
   return (
-    <main className={s.page}>
-      {/* Header */}
-      <div className={s.header}>
-        <div>
-          <h1 className={s.title}>Competitor Search</h1>
-          <p className={s.subtitle}>Find winning videos in any niche</p>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Competitor Search"
+        subtitle="Find winning videos in any niche"
+      />
 
-      {/* Profile Tip */}
       <ProfileTip channelId={activeChannelId} />
 
-      {/* Search Panel */}
       <CompetitorSearchPanel
         mode="search"
         onSearch={handleSearch}
@@ -336,7 +84,6 @@ export default function CompetitorsClient({
         initialReferenceUrl={referenceVideoUrl}
       />
 
-      {/* Filters - only show after first search */}
       {hasSearched && (
         <CompetitorFilters
           filters={filters}
@@ -345,22 +92,10 @@ export default function CompetitorsClient({
         />
       )}
 
-      {/* Error Banner */}
       {error && (
-        <div className={s.errorBanner}>
-          <AlertCircleIcon size={20} />
-          <p className={s.errorMessage}>{error}</p>
-          <button
-            className={s.errorDismiss}
-            onClick={() => setError(null)}
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
-        </div>
+        <ErrorBanner message={error} dismissible onDismiss={dismissError} />
       )}
 
-      {/* Results Stream */}
       {(searchKey || hasSearched) && (
         <CompetitorResultsStream
           searchKey={searchKey}
@@ -380,7 +115,6 @@ export default function CompetitorsClient({
         />
       )}
 
-      {/* Initial state - no search yet */}
       {!hasSearched && (
         <div className={s.emptyState}>
           <div className={s.emptyIcon}>
@@ -393,6 +127,6 @@ export default function CompetitorsClient({
           </p>
         </div>
       )}
-    </main>
+    </PageContainer>
   );
 }

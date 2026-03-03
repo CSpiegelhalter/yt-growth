@@ -44,7 +44,7 @@ export function TopBar({
           Back
         </Link>
         <div className={s.topBarDivider} />
-        <h1 className={s.title}>Thumbnail Editor</h1>
+        <h2 className={s.title}>Thumbnail Editor</h2>
       </div>
 
       <div className={s.topBarCenter}>

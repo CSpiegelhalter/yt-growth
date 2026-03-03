@@ -130,7 +130,7 @@ export default function AdminYoutubeUsageClient() {
     <main className={s.page}>
       <div className={s.headerRow}>
         <div>
-          <h1 className={s.title}>YouTube API Usage</h1>
+          <h2 className={s.title}>YouTube API Usage</h2>
           <p className={s.subtitle}>
             Tracks actual calls made by the backend, plus estimated quota units.
           </p>

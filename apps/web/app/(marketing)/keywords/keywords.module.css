@@ -1357,7 +1357,7 @@
 
 .emptyStateText {
   font-size: 0.9375rem;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   margin: 0 0 24px;
   max-width: 400px;
 }
@@ -1496,7 +1496,7 @@
 .paywallCard p {
   color: var(--text-secondary);
   font-size: 0.9375rem;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   margin: 0 0 24px;
 }
 

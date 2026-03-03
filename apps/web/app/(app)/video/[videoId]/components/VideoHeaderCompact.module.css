@@ -105,7 +105,7 @@
   font-size: 1.125rem;
   font-weight: 600;
   -webkit-line-clamp: 2;
-  line-height: 1.35;
+  line-height: var(--leading-snug);
   margin: 0;
   overflow: hidden;
   transition: color 0.15s;
@@ -249,7 +249,7 @@
 .tooltipDesc {
   color: var(--color-text-secondary);
   font-size: 0.75rem;
-  line-height: 1.45;
+  line-height: var(--leading-snug);
   margin: 0 0 10px;
 }
 
@@ -277,6 +277,6 @@
   color: var(--color-text-muted);
   font-size: 0.6875rem;
   font-style: italic;
-  line-height: 1.4;
+  line-height: var(--leading-snug);
   margin: 0;
 }

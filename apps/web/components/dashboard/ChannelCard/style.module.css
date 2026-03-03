@@ -65,7 +65,7 @@
   font-size: 1rem;
   font-weight: 600;
   -webkit-line-clamp: 2;
-  line-height: 1.3;
+  line-height: var(--leading-snug);
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -291,7 +291,7 @@
 .confirmText {
   color: #64748b;
   font-size: 0.875rem;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   margin: 0 0 20px;
 }
 

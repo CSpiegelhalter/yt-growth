@@ -1,0 +1,126 @@
+/* =====================================
+   Button Component
+   Variants: primary | secondary | danger | ghost
+   Sizes: sm | md
+   ===================================== */
+
+.button {
+  align-items: center;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  gap: 8px;
+  justify-content: center;
+  line-height: var(--leading-none);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.button:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* --- Sizes --- */
+
+.sm {
+  height: 32px;
+  padding: 8px 12px;
+}
+
+.md {
+  height: 44px;
+  padding: 12px 16px;
+}
+
+/* --- Variants --- */
+
+.primary {
+  background: linear-gradient(135deg, var(--color-cool-sky), var(--color-hot-rose));
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
+  color: white;
+}
+
+.primary:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.primary:active {
+  transform: translateY(0);
+}
+
+.secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.secondary:hover {
+  background: var(--surface-alt);
+}
+
+.danger {
+  background: var(--danger);
+  border-color: transparent;
+  color: white;
+}
+
+.danger:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.danger:active {
+  transform: translateY(0);
+}
+
+.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text);
+}
+
+.ghost:hover {
+  background: var(--surface-alt);
+}
+
+/* --- States --- */
+
+.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.disabled:hover {
+  transform: none;
+}
+
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* --- Spinner --- */
+
+.spinner {
+  animation: spin 0.6s linear infinite;
+  border: 2px solid currentcolor;
+  border-radius: 50%;
+  border-top-color: transparent;
+  display: inline-block;
+  flex-shrink: 0;
+  height: 16px;
+  width: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

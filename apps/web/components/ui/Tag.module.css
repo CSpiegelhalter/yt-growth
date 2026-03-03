@@ -10,7 +10,6 @@
   border-radius: 20px;
   color: var(--text);
   display: inline-flex;
-  font-family: var(--font-sans);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   height: 40px;

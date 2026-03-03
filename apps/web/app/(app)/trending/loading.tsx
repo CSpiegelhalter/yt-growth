@@ -5,7 +5,7 @@ export default function Loading() {
     <main className={s.page}>
       <div className={s.header}>
         <div>
-          <h1 className={s.title}>Trending Search</h1>
+          <h2 className={s.title}>Trending Search</h2>
           <p className={s.subtitle}>
             Discover trending niches and rising videos
           </p>

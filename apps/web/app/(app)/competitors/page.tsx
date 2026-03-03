@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { z } from "zod";
 
 import { getAppBootstrap } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
@@ -14,8 +16,12 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+const searchParamsSchema = z.object({
+  channelId: z.string().optional(),
+});
+
 type Props = {
-  searchParams: Promise<{ channelId?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 /**
@@ -23,14 +29,16 @@ type Props = {
  * Fetches bootstrap data and passes to client.
  */
 export default async function CompetitorsPage({ searchParams }: Props) {
-  const params = await searchParams;
+  const params = searchParamsSchema.parse(await searchParams);
   const bootstrap = await getAppBootstrap({ channelId: params.channelId });
 
   return (
-    <CompetitorsClient
-      initialMe={bootstrap.me}
-      initialChannels={bootstrap.channels}
-      initialActiveChannelId={bootstrap.activeChannelId}
-    />
+    <Suspense>
+      <CompetitorsClient
+        initialMe={bootstrap.me}
+        initialChannels={bootstrap.channels}
+        initialActiveChannelId={bootstrap.activeChannelId}
+      />
+    </Suspense>
   );
 }

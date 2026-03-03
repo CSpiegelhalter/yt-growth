@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { getPlatformKey } from "./parse-platform";
 
 type PlatformIconProps = {
@@ -17,7 +19,7 @@ export function PlatformIcon({ platform, size = 16 }: PlatformIconProps) {
   const src = PLATFORM_SVG[key];
 
   if (src) {
-    return <img src={src} width={size} height={size} alt="" />;
+    return <Image src={src} width={size} height={size} alt="" unoptimized />;
   }
 
   return (

@@ -3,11 +3,12 @@
 import Image from "next/image";
 import { useState } from "react";
 
-import AccountStats from "@/components/dashboard/AccountStats";
-import BillingCTA from "@/components/dashboard/BillingCTA";
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
+import { PageContainer, PageHeader } from "@/components/ui";
 import type { Channel,Me } from "@/types/api";
 
+import AccountStats from "./_components/AccountStats";
+import BillingCTA from "./_components/BillingCTA";
 import styles from "./style.module.css";
 
 /**
@@ -69,12 +70,11 @@ export default function ProfileClient({
   };
 
   return (
-    <main className={styles.page}>
-      {/* Page Header */}
-      <div className={styles.header}>
-        <h1 className={styles.title}>Profile</h1>
-        <p className={styles.subtitle}>Manage your account and subscription</p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Profile"
+        subtitle="Manage your account and subscription"
+      />
 
       {err && <ErrorAlert message={err} />}
 
@@ -97,7 +97,7 @@ export default function ProfileClient({
           />
         </section>
       </div>
-    </main>
+    </PageContainer>
   );
 }
 

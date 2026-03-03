@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useRouter,useSearchParams } from "next/navigation";
 import { useEffect,useState } from "react";
 
-import { ProfileEditor } from "@/components/channel-profile";
+import { ErrorBanner, PageContainer } from "@/components/ui";
 import type { ChannelProfileInput } from "@/lib/features/channels/schemas";
 import { useChannelProfile } from "@/lib/hooks/use-channel-profile";
 
+import ProfileEditor from "./_components/ProfileEditor";
 import s from "./style.module.css";
 
 export default function ChannelProfileClient() {
@@ -66,7 +67,7 @@ export default function ChannelProfileClient() {
   // Redirect if no channel selected
   if (!channelId) {
     return (
-      <main className={s.page}>
+      <PageContainer>
         <div className={s.emptyState}>
           <svg
             width="48"
@@ -86,12 +87,12 @@ export default function ChannelProfileClient() {
             Go to Videos
           </Link>
         </div>
-      </main>
+      </PageContainer>
     );
   }
 
   return (
-    <main className={s.page}>
+    <PageContainer>
       {/* Header */}
       <div className={s.header}>
         <Link href={`/videos?channelId=${channelId}`} className={s.backLink}>
@@ -107,7 +108,7 @@ export default function ChannelProfileClient() {
           </svg>
           Back to Dashboard
         </Link>
-        <h1 className={s.title}>Channel Profile</h1>
+        <h2 className={s.title}>Channel Profile</h2>
         <p className={s.subtitle}>
           Define your channel's niche, audience, and style. This helps us
           provide better video ideas, competitor suggestions, and personalized
@@ -134,23 +135,7 @@ export default function ChannelProfileClient() {
       )}
 
       {error && (
-        <div className={s.errorBanner}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M15 9l-6 6M9 9l6 6" />
-          </svg>
-          {error}
-          <button onClick={clearError} className={s.closeBannerBtn}>
-            ×
-          </button>
-        </div>
+        <ErrorBanner message={error} dismissible onDismiss={clearError} />
       )}
 
       {/* AI Profile Summary (if exists) */}
@@ -233,6 +218,6 @@ export default function ChannelProfileClient() {
           />
         )}
       </div>
-    </main>
+    </PageContainer>
   );
 }

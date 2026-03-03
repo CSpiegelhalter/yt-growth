@@ -8,13 +8,13 @@
 
 import { describe, expect,it } from "vitest";
 
-import type { FilterState } from "@/app/(app)/competitors/CompetitorFilters";
+import type { FilterState } from "@/app/(app)/competitors/_components/CompetitorFilters";
 import {
   deserializeFilters,
   serializeFilters,
   validateNicheText,
   validateYouTubeUrl,
-} from "@/app/(app)/competitors/utils";
+} from "@/app/(app)/competitors/_components/utils";
 
 // ============================================
 // URL VALIDATION TESTS

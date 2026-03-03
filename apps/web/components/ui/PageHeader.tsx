@@ -28,7 +28,7 @@ export function PageHeader({
   return (
     <header className={`${styles.header} ${className}`.trim()}>
       <div className={styles.content}>
-        <h1 className={styles.title}>{title}</h1>
+        <h2 className={styles.title}>{title}</h2>
         {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
       </div>
       {action && <div className={styles.action}>{action}</div>}

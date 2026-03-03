@@ -31,18 +31,17 @@
 
 .pageHeading {
   color: var(--text);
-  font-family: Fustat, sans-serif;
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  line-height: 1;
+  line-height: var(--leading-none);
   margin: 0 0 12px;
 }
 
 .pageDescription {
   color: var(--text-secondary);
   font-size: 0.9375rem;
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
   margin: 0;
   max-width: 560px;
 }
@@ -57,11 +56,10 @@
 .inputLabel {
   color: var(--tags-label);
   display: block;
-  font-family: Fustat, sans-serif;
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  line-height: 1;
+  line-height: var(--leading-none);
   margin-bottom: 8px;
 }
 
@@ -76,7 +74,6 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  font-family: inherit;
   font-size: 1rem;
   height: 40px;
   padding: 0 12px;
@@ -341,7 +338,7 @@
   color: var(--text);
   font-size: 1rem;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--leading-normal);
   margin: 0 0 4px;
 }
 
@@ -424,7 +421,7 @@
 .seoText {
   color: var(--text-secondary);
   font-size: 0.9375rem;
-  line-height: 1.7;
+  line-height: var(--leading-relaxed);
   margin: 0 0 16px;
 }
 
@@ -439,7 +436,7 @@
 .seoList {
   color: var(--text-secondary);
   font-size: 0.9375rem;
-  line-height: 1.7;
+  line-height: var(--leading-relaxed);
   margin: 0;
   padding-left: 20px;
 }
@@ -467,12 +464,11 @@
   color: var(--text);
   cursor: pointer;
   display: flex;
-  font-family: Fustat, sans-serif;
   font-size: 16px;
   font-weight: 700;
   gap: 8px;
   letter-spacing: 0.03em;
-  line-height: 1;
+  line-height: var(--leading-none);
   list-style: none;
   padding: 16px;
 }
@@ -506,7 +502,7 @@
 .seoAccordionBody {
   color: var(--text-secondary);
   font-size: 0.875rem;
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
   margin: 0;
 }
 

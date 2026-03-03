@@ -49,6 +49,7 @@ export default function ChannelCard({
               height={48}
               className={s.avatar}
               sizes="48px"
+              priority
             />
           ) : (
             <div className={s.avatarPlaceholder}>

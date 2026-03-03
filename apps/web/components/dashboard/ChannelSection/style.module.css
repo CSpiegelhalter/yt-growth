@@ -177,7 +177,7 @@
 .modalText {
   color: #64748b;
   font-size: 0.9375rem;
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
   margin: 0 0 24px;
 }
 

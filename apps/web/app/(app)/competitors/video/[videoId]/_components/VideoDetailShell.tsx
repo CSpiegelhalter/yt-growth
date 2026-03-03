@@ -107,7 +107,7 @@ function VideoHeader({ video, ageDays }: { video: VideoInfo; ageDays: number }) 
       </a>
 
       <div className={s.videoInfo}>
-        <h1 className={s.videoTitle}>{video.title}</h1>
+        <h2 className={s.videoTitle}>{video.title}</h2>
         <div className={s.channelMeta}>
           <a href={video.channelUrl} target="_blank" rel="noopener noreferrer" className={s.channelLink}>
             {video.channelTitle}

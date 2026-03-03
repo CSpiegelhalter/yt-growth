@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { LoggedOutDashboardPreview } from "@/components/dashboard/LoggedOutDashboardPreview";
 import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
 import { BRAND, CANONICAL_ORIGIN } from "@/lib/shared/brand";
 
-import DashboardClient from "./DashboardClient";
+import { DashboardClient } from "./DashboardClient";
 
 /**
  * Videos Page - Server component that handles both authenticated and
@@ -56,11 +57,13 @@ export default async function DashboardPage({ searchParams }: Props) {
   }
 
   return (
-    <DashboardClient
-      initialMe={bootstrap.me}
-      initialChannels={bootstrap.channels}
-      initialActiveChannelId={bootstrap.activeChannelId}
-      checkoutStatus={params.checkout}
-    />
+    <Suspense>
+      <DashboardClient
+        initialMe={bootstrap.me}
+        initialChannels={bootstrap.channels}
+        initialActiveChannelId={bootstrap.activeChannelId}
+        checkoutStatus={params.checkout}
+      />
+    </Suspense>
   );
 }

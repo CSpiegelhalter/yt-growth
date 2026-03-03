@@ -1,0 +1,86 @@
+/* =====================================
+   StatusBadge Component
+   Pill-shaped status indicator with optional dot + pulse.
+   Variants: success | warning | error | info | processing
+   ===================================== */
+
+.badge {
+  align-items: center;
+  border-radius: 9999px;
+  display: inline-flex;
+  font-weight: var(--font-medium);
+  gap: 6px;
+  line-height: var(--leading-none);
+  white-space: nowrap;
+}
+
+/* --- Size: sm (24px) --- */
+.sm {
+  font-size: var(--text-xs);
+  height: 24px;
+  padding: 2px 8px;
+}
+
+/* --- Size: md (32px) --- */
+.md {
+  font-size: var(--text-sm);
+  height: 32px;
+  padding: 4px 10px;
+}
+
+/* --- Variant: success --- */
+.success {
+  background: var(--success-light);
+  color: var(--color-stormy-teal);
+}
+
+/* --- Variant: warning --- */
+.warning {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+/* --- Variant: error --- */
+.error {
+  background: var(--danger-light);
+  color: var(--color-hot-rose);
+}
+
+/* --- Variant: info --- */
+.info {
+  background: var(--info-light);
+  color: var(--color-cool-sky);
+}
+
+/* --- Variant: processing --- */
+.processing {
+  background: var(--secondary-light);
+  color: var(--color-cool-sky);
+}
+
+/* --- Dot indicator --- */
+.dot::before {
+  background: currentColor;
+  border-radius: 9999px;
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  height: 6px;
+  width: 6px;
+}
+
+/* --- Pulse animation on dot --- */
+.pulse::before {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}

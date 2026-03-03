@@ -7,6 +7,7 @@ import { useEffect, useMemo,useState } from "react";
 
 import { SearchIcon } from "@/components/icons";
 import { VideoCardSkeletons } from "@/components/skeletons/VideoCardSkeletons";
+import { PageContainer, PageHeader } from "@/components/ui";
 import { formatDurationBadge } from "@/lib/competitor-utils";
 import { formatUsd,SUBSCRIPTION } from "@/lib/shared/product";
 import type {
@@ -152,14 +153,11 @@ export default function SubscriberInsightsClient({
   // No channels state
   if (!activeChannel) {
     return (
-      <main className={s.page}>
-        <div className={s.header}>
-          <h1 className={s.title}>Subscriber Drivers</h1>
-          <p className={s.subtitle}>
-            See which videos turn viewers into subscribers — and what to
-            replicate.
-          </p>
-        </div>
+      <PageContainer>
+        <PageHeader
+          title="Subscriber Drivers"
+          subtitle="See which videos turn viewers into subscribers — and what to replicate."
+        />
         <div className={s.emptyState}>
           <div className={s.emptyIcon}>
             <svg
@@ -182,20 +180,19 @@ export default function SubscriberInsightsClient({
             Go to Videos
           </Link>
         </div>
-      </main>
+      </PageContainer>
     );
   }
 
   const insufficientData = !auditData?.videos || auditData.videos.length < 8;
 
   return (
-    <main className={s.page}>
-      {/* Header */}
+    <PageContainer>
+      <PageHeader
+        title="Subscriber Drivers"
+        subtitle="See which videos turn viewers into subscribers and what to replicate."
+      />
       <div className={s.header}>
-        <h1 className={s.title}>Subscriber Drivers</h1>
-        <p className={s.subtitle}>
-          See which videos turn viewers into subscribers and what to replicate.
-        </p>
         <p className={s.attributionNote}>
           <svg
             className={s.infoIcon}
@@ -307,7 +304,7 @@ export default function SubscriberInsightsClient({
           </p>
         </div>
       )}
-    </main>
+    </PageContainer>
   );
 }
 

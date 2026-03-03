@@ -85,7 +85,7 @@
 }
 
 .tabLabel {
-  line-height: 1;
+  line-height: var(--leading-none);
 }
 
 .tabLoader {

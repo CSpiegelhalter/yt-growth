@@ -98,7 +98,7 @@
 .description {
   color: var(--text-secondary);
   font-size: 0.875rem;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   margin: 0;
 }
 
@@ -199,7 +199,6 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  font-family: inherit;
   font-size: 1rem;
   padding: 12px 16px;
   transition: border-color 0.15s, box-shadow 0.15s;

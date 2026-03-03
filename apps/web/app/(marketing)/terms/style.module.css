@@ -56,7 +56,7 @@
 .section p {
   color: var(--color-text-secondary);
   font-size: 0.9375rem;
-  line-height: 1.7;
+  line-height: var(--leading-relaxed);
   margin: 0 0 var(--space-sm);
 }
 
@@ -72,7 +72,7 @@
 .section li {
   color: var(--color-text-secondary);
   font-size: 0.9375rem;
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
   margin-bottom: var(--space-xs);
 }
 

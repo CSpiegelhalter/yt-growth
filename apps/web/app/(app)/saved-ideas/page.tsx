@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { getCurrentUser } from "@/lib/server/auth";
 import { BRAND } from "@/lib/shared/brand";
 
-import SavedIdeasClient from "./SavedIdeasClient";
+import { SavedIdeasClient } from "./SavedIdeasClient";
 
 export const metadata: Metadata = {
   title: `Saved Ideas | ${BRAND.name}`,
@@ -19,5 +20,9 @@ export default async function SavedIdeasPage() {
     redirect("/auth/login?callbackUrl=/saved-ideas");
   }
 
-  return <SavedIdeasClient />;
+  return (
+    <Suspense>
+      <SavedIdeasClient />
+    </Suspense>
+  );
 }

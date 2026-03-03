@@ -1,0 +1,80 @@
+/* =====================================
+   FilterPill — Interactive filter chip.
+   States: inactive (default) | active
+   Optional dismiss button.
+   ===================================== */
+
+.pill {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  gap: 6px;
+  height: 36px;
+  padding: 8px 14px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.pill:hover {
+  background: var(--surface-alt);
+}
+
+.pill:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* --- Active state --- */
+.active {
+  background: var(--primary);
+  border-color: transparent;
+  color: white;
+}
+
+.active:hover {
+  background: var(--primary);
+}
+
+/* --- Dismiss button --- */
+.dismissible {
+  padding-right: 8px;
+}
+
+.dismissBtn {
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: 9999px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 16px;
+  justify-content: center;
+  padding: 0;
+  transition: color 0.15s ease;
+  width: 16px;
+}
+
+.dismissBtn:hover {
+  color: var(--text);
+}
+
+.dismissBtn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.active .dismissBtn {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.active .dismissBtn:hover {
+  color: white;
+}

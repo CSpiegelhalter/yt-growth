@@ -119,6 +119,7 @@ export function VideoHeaderCompact({
                 fill
                 className={styles.thumbnailImg}
                 sizes="120px"
+                priority
               />
             ) : (
               <div className={styles.thumbnailPlaceholder}>
@@ -148,7 +149,7 @@ export function VideoHeaderCompact({
             rel="noopener noreferrer"
             className={styles.titleLink}
           >
-            <h1 className={styles.title}>{video.title}</h1>
+            <h2 className={styles.title}>{video.title}</h2>
           </a>
           <div className={styles.meta}>
             {/* Views first with eye icon */}

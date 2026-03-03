@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { z } from "zod";
 
 import { getAppBootstrap } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
@@ -14,12 +15,16 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+const searchParamsSchema = z.object({
+  channelId: z.string().optional(),
+});
+
 type Props = {
-  searchParams: Promise<{ channelId?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function SubscriberInsightsPage({ searchParams }: Props) {
-  const params = await searchParams;
+  const params = searchParamsSchema.parse(await searchParams);
   const bootstrap = await getAppBootstrap({ channelId: params.channelId });
 
   return (

@@ -4,7 +4,7 @@ import {
   clearAllDiscoveryState,
   getActiveDiscoveryFilterCount,
   toggleQuickChip,
-} from "@/app/(app)/trending/discovery-utils";
+} from "@/app/(app)/trending/_components/discovery-utils";
 import { DEFAULT_DISCOVERY_FILTERS } from "@/app/(app)/trending/types";
 
 describe("discovery-utils (trending)", () => {

@@ -1,0 +1,73 @@
+/* =====================================
+   ErrorBanner Component
+   Inline notification banner with variant colors.
+   Variants: error | warning | info
+   ===================================== */
+
+.banner {
+  align-items: flex-start;
+  border-radius: 8px;
+  color: var(--text);
+  display: flex;
+  font-size: var(--text-sm);
+  gap: 8px;
+  line-height: var(--leading-normal);
+  padding: 12px 16px;
+  position: relative;
+}
+
+/* --- Variant: error --- */
+.error {
+  background: var(--danger-light);
+  border-left: 4px solid var(--danger);
+}
+
+/* --- Variant: warning --- */
+.warning {
+  background: var(--warning-light);
+  border-left: 4px solid var(--warning);
+}
+
+/* --- Variant: info --- */
+.info {
+  background: var(--info-light);
+  border-left: 4px solid var(--info);
+}
+
+/* --- Dismiss button --- */
+.dismissBtn {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  opacity: 0.6;
+  padding: 4px;
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  transition: opacity 0.15s ease;
+}
+
+.dismissBtn:hover {
+  opacity: 1;
+}
+
+/* --- Retry button --- */
+.retryBtn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.retryBtn:hover {
+  opacity: 0.8;
+}

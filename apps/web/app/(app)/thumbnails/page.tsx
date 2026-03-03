@@ -5,12 +5,13 @@
  * Protected by the "thumbnail_generation" feature flag.
  */
 
-import { notFound,redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { getCurrentUserWithSubscription } from "@/lib/server/auth";
 import { getFeatureFlag } from "@/lib/shared/feature-flags";
 
-import ThumbnailsClient from "./ThumbnailsClient";
+import { ThumbnailsClient } from "./ThumbnailsClient";
 
 export const metadata = {
   title: "Thumbnail Generator | ChannelBoost",
@@ -32,8 +33,9 @@ export default async function ThumbnailsPage() {
   }
 
   return (
-    <ThumbnailsClient
-      initialUser={{
+    <Suspense>
+      <ThumbnailsClient
+        initialUser={{
         id: user.id,
         email: user.email,
         name: user.name,
@@ -46,6 +48,7 @@ export default async function ThumbnailsPage() {
             }
           : undefined,
       }}
-    />
+      />
+    </Suspense>
   );
 }
