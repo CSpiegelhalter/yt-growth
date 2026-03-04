@@ -120,6 +120,8 @@ const nextConfig = {
       // Legacy route -> Videos (was /dashboard)
       { source: "/dashboard", destination: "/videos", permanent: true },
       { source: "/dashboard/:path*", destination: "/videos/:path*", permanent: true },
+      // Legacy single-video route -> Videos dashboard
+      { source: "/video/:videoId", destination: "/videos", permanent: true },
     ];
   },
 };

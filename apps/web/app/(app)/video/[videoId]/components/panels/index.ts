@@ -1,9 +1,0 @@
-export { CommentsPanel } from "./CommentsPanel";
-export { DimensionalInsightsPanel } from "./DimensionalInsightsPanel";
-export { IdeasPanel } from "./IdeasPanel";
-export { OverviewPanel } from "./OverviewPanel";
-export { PostWatchPanel } from "./PostWatchPanel";
-export { RetentionPanel } from "./RetentionPanel";
-export { SeoPanel } from "./SeoPanel";
-export { ShortsMetricsPanel } from "./ShortsMetricsPanel";
-export { TrafficSourcePanel } from "./TrafficSourcePanel";

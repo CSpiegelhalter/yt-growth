@@ -16,15 +16,6 @@ export function formatCompact(num: number): string {
   return String(num);
 }
 
-/**
- * Compact formatter for "count-like" metrics where values < 1000 should display
- * as whole numbers.
- */
-export function formatCompactRounded(num: number): string {
-  if (num >= 1_000_000) {return `${(num / 1_000_000).toFixed(1)}M`;}
-  if (num >= 1000) {return `${(num / 1000).toFixed(1)}K`;}
-  return num.toFixed(0);
-}
 
 /**
  * Compact formatter that always rounds DOWN at the displayed precision.
