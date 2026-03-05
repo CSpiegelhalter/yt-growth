@@ -244,6 +244,6 @@ export async function cacheTranscriptAnalysis(
 ): Promise<void> {
   await prisma.transcriptCache.updateMany({
     where: { videoId },
-    data: { analysisJson: analysisJson as Record<string, unknown>, analysisHash },
+    data: { analysisJson: analysisJson as Prisma.InputJsonValue, analysisHash },
   });
 }
