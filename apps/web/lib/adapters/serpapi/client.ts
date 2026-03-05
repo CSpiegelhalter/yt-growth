@@ -11,6 +11,8 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 
+import type { Prisma } from "@prisma/client";
+
 import type {
   TranscriptCacheData,
   TranscriptParams,
@@ -18,7 +20,6 @@ import type {
   TranscriptSegment,
 } from "@/lib/ports/SerpApiPort";
 import { createLogger } from "@/lib/shared/logger";
-import type { Prisma } from "@prisma/client";
 import { prisma } from "@/prisma";
 
 const log = createLogger({ subsystem: "serpapi" });
