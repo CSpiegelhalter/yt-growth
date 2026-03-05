@@ -36,9 +36,29 @@ export interface TranscriptResult {
   };
 }
 
+// ─── Transcript Cache ────────────────────────────────────
+
+export interface TranscriptCacheData {
+  segments: TranscriptSegment[];
+  fullText: string;
+  transcriptHash: string;
+  analysisJson?: unknown;
+  analysisHash?: string;
+}
+
 // ─── Port Interface ──────────────────────────────────────
 
 export interface SerpApiPort {
   /** Fetch the transcript (captions) for a YouTube video. */
   getYouTubeTranscript(params: TranscriptParams): Promise<TranscriptResult>;
+
+  /** Read cached transcript data (segments, hash, analysis) for a video. */
+  getCachedTranscript(videoId: string): Promise<TranscriptCacheData | null>;
+
+  /** Write transcript analysis results back to the cache. */
+  cacheTranscriptAnalysis(
+    videoId: string,
+    analysisJson: unknown,
+    analysisHash: string,
+  ): Promise<void>;
 }

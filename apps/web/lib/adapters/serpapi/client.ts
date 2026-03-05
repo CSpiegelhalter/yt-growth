@@ -9,14 +9,19 @@
 
 import "server-only";
 
+import { createHash } from "node:crypto";
+
 import type {
+  TranscriptCacheData,
   TranscriptParams,
   TranscriptResult,
   TranscriptSegment,
 } from "@/lib/ports/SerpApiPort";
 import { createLogger } from "@/lib/shared/logger";
+import { prisma } from "@/prisma";
 
 const log = createLogger({ subsystem: "serpapi" });
+const TRANSCRIPT_CACHE_TTL_DAYS = 7;
 
 const SERPAPI_BASE_URL = "https://serpapi.com";
 
@@ -123,9 +128,29 @@ function mapSegments(raw: RawTranscriptSegment[]): TranscriptSegment[] {
   }));
 }
 
+function computeTranscriptHash(fullText: string): string {
+  return createHash("sha256").update(fullText).digest("hex");
+}
+
 export async function getYouTubeTranscript(
   params: TranscriptParams,
 ): Promise<TranscriptResult> {
+  // Check transcript cache
+  const cached = await prisma.transcriptCache.findFirst({
+    where: { videoId: params.videoId, expiresAt: { gt: new Date() } },
+  });
+
+  if (cached) {
+    log.info("Transcript cache hit", { videoId: params.videoId });
+    return {
+      videoId: params.videoId,
+      segments: cached.rawSegments as unknown as TranscriptSegment[],
+      fullText: cached.fullText,
+      meta: { fetchedAt: cached.fetchedAt.toISOString() },
+    };
+  }
+
+  // Cache miss — fetch from SerpAPI
   let raw: RawTranscriptResponse;
 
   try {
@@ -148,6 +173,37 @@ export async function getYouTubeTranscript(
   const rawSegments = extractRawSegments(raw);
   const segments = mapSegments(rawSegments);
   const fullText = segments.map((s) => s.text).join(" ");
+  const transcriptHash = computeTranscriptHash(fullText);
+
+  // Write to cache (fire-and-forget)
+  const expiresAt = new Date(
+    Date.now() + TRANSCRIPT_CACHE_TTL_DAYS * 24 * 60 * 60 * 1000,
+  );
+  prisma.transcriptCache
+    .upsert({
+      where: { videoId: params.videoId },
+      create: {
+        videoId: params.videoId,
+        rawSegments: segments as unknown as Record<string, unknown>[],
+        fullText,
+        transcriptHash,
+        fetchedAt: new Date(),
+        expiresAt,
+      },
+      update: {
+        rawSegments: segments as unknown as Record<string, unknown>[],
+        fullText,
+        transcriptHash,
+        fetchedAt: new Date(),
+        expiresAt,
+      },
+    })
+    .catch((error) => {
+      log.warn("Failed to cache transcript", {
+        videoId: params.videoId,
+        error,
+      });
+    });
 
   return {
     videoId: params.videoId,
@@ -157,4 +213,35 @@ export async function getYouTubeTranscript(
       fetchedAt: new Date().toISOString(),
     },
   };
+}
+
+export async function getCachedTranscript(
+  videoId: string,
+): Promise<TranscriptCacheData | null> {
+  const cached = await prisma.transcriptCache.findFirst({
+    where: { videoId, expiresAt: { gt: new Date() } },
+  });
+
+  if (!cached) {
+    return null;
+  }
+
+  return {
+    segments: cached.rawSegments as unknown as TranscriptSegment[],
+    fullText: cached.fullText,
+    transcriptHash: cached.transcriptHash,
+    analysisJson: cached.analysisJson ?? undefined,
+    analysisHash: cached.analysisHash ?? undefined,
+  };
+}
+
+export async function cacheTranscriptAnalysis(
+  videoId: string,
+  analysisJson: unknown,
+  analysisHash: string,
+): Promise<void> {
+  await prisma.transcriptCache.updateMany({
+    where: { videoId },
+    data: { analysisJson: analysisJson as Record<string, unknown>, analysisHash },
+  });
 }

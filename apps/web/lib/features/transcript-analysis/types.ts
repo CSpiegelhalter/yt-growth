@@ -131,6 +131,20 @@ export type RunTranscriptAnalysisInput = {
   dropOffPoints?: DropOffPoint[];
 };
 
+export type TranscriptCacheDeps = {
+  getCachedTranscript: (videoId: string) => Promise<{
+    transcriptHash: string;
+    analysisJson?: unknown;
+    analysisHash?: string;
+  } | null>;
+  cacheTranscriptAnalysis: (
+    videoId: string,
+    analysisJson: unknown,
+    analysisHash: string,
+  ) => Promise<void>;
+};
+
 export type RunTranscriptAnalysisDeps = {
   callLlm: LlmCallFn;
+  cache?: TranscriptCacheDeps;
 };

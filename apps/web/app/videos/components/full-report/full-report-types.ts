@@ -12,6 +12,7 @@ export type SectionState<T> = {
   status: SectionStatus;
   data: T | null;
   error: string | null;
+  retryable?: boolean;
 };
 
 export type PartialFullReport = {

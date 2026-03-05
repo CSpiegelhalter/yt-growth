@@ -24,9 +24,16 @@ export async function resolveInsightContext(
     return Response.json({ error: "Channel not found" }, { status: 404 });
   }
 
-  const cached = await prisma.ownedVideoInsightsCache.findFirst({
-    where: { userId, channelId: channel.id, videoId, range },
-  });
+  const [cached, video] = await Promise.all([
+    prisma.ownedVideoInsightsCache.findFirst({
+      where: { userId, channelId: channel.id, videoId, range },
+    }),
+    prisma.video.findFirst({
+      where: { youtubeVideoId: videoId, channelId: channel.id },
+      select: { publishedAt: true },
+    }),
+  ]);
+
   if (!cached?.derivedJson) {
     return Response.json(
       { error: "Analytics not loaded. Call /analytics first." },
@@ -44,11 +51,6 @@ export async function resolveInsightContext(
       { status: 429 },
     );
   }
-
-  const video = await prisma.video.findFirst({
-    where: { youtubeVideoId: videoId, channelId: channel.id },
-    select: { publishedAt: true },
-  });
 
   const derivedData = cached.derivedJson as InsightDerivedData;
   const baselineRaw = (derivedData as Record<string, unknown>).baseline;

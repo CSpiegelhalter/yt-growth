@@ -16,6 +16,7 @@ import type {
   SearchRanking,
   SimilarVideo,
   TopicTrend,
+  YouTubeSerpResult,
 } from "@/lib/ports/DataForSeoPort";
 import { logger } from "@/lib/shared/logger";
 
@@ -148,7 +149,8 @@ export async function fetchCompetitiveContext(
 ): Promise<CompetitiveContextResult> {
   const { videoId, title, tags, searchTerms, totalViews } = input;
 
-  const [searchRankings, topicTrends, similarVideos] = await Promise.all([
+  // Run search rankings and topic trends in parallel
+  const [rankingsResult, topicTrends] = await Promise.all([
     fetchSearchRankings(videoId, searchTerms.slice(0, 3), totalViews, port).catch(
       (error) => {
         logger.warn("[CompetitiveContext] Search rankings failed:", error);
@@ -159,14 +161,21 @@ export async function fetchCompetitiveContext(
       logger.warn("[CompetitiveContext] Topic trends failed:", error);
       return null;
     }),
-    fetchSimilarVideos(searchTerms[0]?.term, videoId, port).catch((error) => {
-      logger.warn("[CompetitiveContext] Similar videos failed:", error);
-      return null;
-    }),
   ]);
 
+  // Reuse the first search term's SERP result for similar videos (avoids duplicate API call)
+  const similarVideos = await extractSimilarVideos(
+    searchTerms[0]?.term,
+    videoId,
+    port,
+    rankingsResult?.firstSerp,
+  ).catch((error) => {
+    logger.warn("[CompetitiveContext] Similar videos failed:", error);
+    return null;
+  });
+
   return {
-    searchRankings,
+    searchRankings: rankingsResult?.rankings ?? null,
     topicTrends,
     similarVideos,
   };
@@ -176,24 +185,35 @@ export async function fetchCompetitiveContext(
 // HELPER FUNCTIONS
 // ============================================
 
+interface SearchRankingsResult {
+  rankings: SearchRanking[];
+  firstSerp: YouTubeSerpResult | null;
+}
+
 async function fetchSearchRankings(
   videoId: string,
   searchTerms: Array<{ term: string; views: number }>,
   totalViews: number,
   port: CompetitiveContextPort,
-): Promise<SearchRanking[] | null> {
+): Promise<SearchRankingsResult | null> {
   if (!searchTerms || searchTerms.length === 0) {
     return null;
   }
 
+  let firstSerp: YouTubeSerpResult | null = null;
+
   const rankings = await Promise.all(
-    searchTerms.map(async ({ term, views }) => {
+    searchTerms.map(async ({ term, views }, index) => {
       try {
         const serp = await port.getYouTubeSerp({
           keyword: term,
           region: "us",
           limit: 20,
         });
+
+        if (index === 0) {
+          firstSerp = serp;
+        }
 
         const result = serp.results.find((r) => r.videoId === videoId);
         const position = result?.position ?? null;
@@ -218,7 +238,10 @@ async function fetchSearchRankings(
     }),
   );
 
-  return rankings.filter((r) => r !== null);
+  return {
+    rankings: rankings.filter((r) => r !== null),
+    firstSerp,
+  };
 }
 
 async function fetchTopicTrends(
@@ -245,17 +268,19 @@ async function fetchTopicTrends(
   }
 }
 
-async function fetchSimilarVideos(
+async function extractSimilarVideos(
   topSearchTerm: string | undefined,
   excludeVideoId: string,
   port: CompetitiveContextPort,
+  prefetchedSerp?: YouTubeSerpResult | null,
 ): Promise<SimilarVideo[] | null> {
   if (!topSearchTerm) {
     return null;
   }
 
   try {
-    const serp = await port.getYouTubeSerp({
+    // Reuse pre-fetched SERP from search rankings; fall back to fresh fetch
+    const serp = prefetchedSerp ?? await port.getYouTubeSerp({
       keyword: topSearchTerm,
       region: "us",
       limit: 10,

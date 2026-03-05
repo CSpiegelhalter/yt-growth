@@ -16,6 +16,7 @@ export function useVideoInsights(
 ) {
   const [summary, setSummary] = useState<CoreAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fetchedRef = useRef<string | null>(null);
 
@@ -31,22 +32,33 @@ export function useVideoInsights(
     fetchedRef.current = key;
 
     setLoading(true);
+    setSummaryLoading(true);
     setError(null);
     setSummary(null);
 
+    const base = `/api/me/channels/${channelId}/videos/${videoId}/insights`;
+
     try {
-      const base = `/api/me/channels/${channelId}/videos/${videoId}/insights`;
-
       await apiFetchJson(`${base}/analytics?range=28d`);
+    } catch {
+      setError("Unable to generate video insights.");
+      setLoading(false);
+      setSummaryLoading(false);
+      return;
+    }
 
+    // Analytics resolved — unblock the UI to show metric pills
+    setLoading(false);
+
+    try {
       const result = await apiFetchJson<SummaryResponse>(
         `${base}/summary?range=28d`,
       );
       setSummary(result.summary);
     } catch {
-      setError("Unable to generate video insights.");
+      setError("Unable to generate video summary.");
     } finally {
-      setLoading(false);
+      setSummaryLoading(false);
     }
   }, [channelId, videoId, summary]);
 
@@ -59,5 +71,5 @@ export function useVideoInsights(
     void fetchInsights();
   }, [fetchInsights]);
 
-  return { summary, loading, error, retry };
+  return { summary, loading, summaryLoading, error, retry };
 }

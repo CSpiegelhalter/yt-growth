@@ -23,6 +23,7 @@ All project rules live in `.claude/rules/`. Read and follow ALL of them for EVER
 ## Active Technologies
 - TypeScript 5.6.0, React 19.0.0, Node 18+ + Next.js 16.0.0, Zod 3.23.8, Prisma 5.22.0, (001-frontend-refactor)
 - Supabase Postgres with pgvector (via Prisma) (001-frontend-refactor)
+- TypeScript 5.6.0, React 19.0.0, Node 18+ + Next.js 16.0.0, Prisma 5.22.0, Zod 3.23.8, OpenAI (LLM), SerpAPI (transcripts), DataForSEO (SERP/trends) (002-video-perf-optimization)
 
 ## Recent Changes
 - 001-frontend-refactor: Added TypeScript 5.6.0, React 19.0.0, Node 18+ + Next.js 16.0.0, Zod 3.23.8, Prisma 5.22.0,

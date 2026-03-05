@@ -1,4 +1,8 @@
-import { getYouTubeTranscript } from "@/lib/adapters/serpapi/client";
+import {
+  cacheTranscriptAnalysis,
+  getCachedTranscript,
+  getYouTubeTranscript,
+} from "@/lib/adapters/serpapi/client";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
@@ -15,6 +19,9 @@ import { callLLM } from "@/lib/llm";
 import { resolveInsightContext } from "@/lib/server/video-insight-context";
 
 export const dynamic = "force-dynamic";
+
+// T018: In-memory request deduplication — prevent concurrent duplicate generations
+const inFlightReports = new Map<string, true>();
 
 function createEventStream(
   generator: AsyncGenerator<ReportStreamEvent, void, unknown>,
@@ -51,16 +58,27 @@ export const POST = createApiRoute(
       },
       async (_req, _ctx, api, { params, body }) => {
         const { channelId, videoId } = params!;
-        const { range } = body!;
+        const { range, sections: requestedSections } = body!;
+
+        // T018: Reject if generation already in-flight for this video
+        if (inFlightReports.has(videoId)) {
+          return Response.json(
+            { error: "Report generation already in progress" },
+            { status: 409 },
+          );
+        }
 
         const ctx = await resolveInsightContext(api.userId!, channelId, videoId, range);
         if (ctx instanceof Response) { return ctx; }
 
-        const generator = streamFullReport(
-          { userId: api.userId!, channelId, videoId, range },
+        inFlightReports.set(videoId, true);
+
+        const baseGenerator = streamFullReport(
+          { userId: api.userId!, channelId, videoId, range, sections: requestedSections },
           ctx,
           {
             callLlm: callLLM,
+            transcriptCache: { getCachedTranscript, cacheTranscriptAnalysis },
             getYouTubeTranscript,
             runTranscriptAnalysis,
             generateSeoAnalysis,
@@ -68,7 +86,16 @@ export const POST = createApiRoute(
           },
         );
 
-        return new Response(createEventStream(generator), {
+        // Wrap generator to clean up dedup map when stream ends
+        async function* trackedGenerator(): AsyncGenerator<ReportStreamEvent> {
+          try {
+            yield* baseGenerator;
+          } finally {
+            inFlightReports.delete(videoId);
+          }
+        }
+
+        return new Response(createEventStream(trackedGenerator()), {
           headers: {
             "Content-Type": "application/x-ndjson",
             "Cache-Control": "no-cache",

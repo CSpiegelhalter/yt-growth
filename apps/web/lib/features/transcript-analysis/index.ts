@@ -11,6 +11,7 @@ export type {
   RetentionKiller,
   RunTranscriptAnalysisDeps,
   RunTranscriptAnalysisInput,
+  TranscriptCacheDeps,
   TranscriptChunk,
   TranscriptReport,
 } from "./types";

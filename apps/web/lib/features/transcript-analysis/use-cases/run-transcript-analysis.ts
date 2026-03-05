@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { createLogger } from "@/lib/shared/logger";
 
 import { TranscriptAnalysisError } from "../errors";
@@ -55,19 +57,38 @@ function aggregateKeywords(chunkAnalyses: ChunkAnalysisResult[]): string[] {
     .slice(0, 15);
 }
 
+function computeAnalysisHash(transcriptHash: string, videoTitle: string): string {
+  return createHash("sha256")
+    .update(`${transcriptHash}:${videoTitle}`)
+    .digest("hex");
+}
+
 export async function runTranscriptAnalysis(
   input: RunTranscriptAnalysisInput,
   deps: RunTranscriptAnalysisDeps,
 ): Promise<TranscriptReport> {
   const { videoId, videoTitle, videoDurationSec, segments, dropOffPoints } =
     input;
-  const { callLlm } = deps;
+  const { callLlm, cache } = deps;
 
   if (!segments || segments.length === 0) {
     throw new TranscriptAnalysisError(
       "INVALID_INPUT",
       "No transcript segments provided",
     );
+  }
+
+  // Check for cached analysis
+  if (cache) {
+    const cached = await cache.getCachedTranscript(videoId);
+    if (cached?.analysisJson && cached.analysisHash) {
+      const expectedHash = computeAnalysisHash(cached.transcriptHash, videoTitle);
+      if (cached.analysisHash === expectedHash) {
+        log.info("Transcript analysis cache hit", { videoId });
+        return cached.analysisJson as TranscriptReport;
+      }
+      log.info("Transcript analysis cache stale (hash mismatch)", { videoId });
+    }
   }
 
   // Phase 1: Segment
@@ -132,7 +153,7 @@ export async function runTranscriptAnalysis(
   const allCtas = aggregateCtas(chunkAnalyses);
   const topKeywords = aggregateKeywords(chunkAnalyses);
 
-  return {
+  const report: TranscriptReport = {
     videoId,
     videoTitle,
     videoDurationSec,
@@ -151,4 +172,19 @@ export async function runTranscriptAnalysis(
     topKeywords,
     chunkAnalyses,
   };
+
+  // Write analysis to transcript cache (fire-and-forget)
+  if (cache) {
+    const cached = await cache.getCachedTranscript(videoId).catch(() => null);
+    if (cached) {
+      const analysisHash = computeAnalysisHash(cached.transcriptHash, videoTitle);
+      cache
+        .cacheTranscriptAnalysis(videoId, report, analysisHash)
+        .catch((error) => {
+          log.warn("Failed to cache transcript analysis", { videoId, error });
+        });
+    }
+  }
+
+  return report;
 }

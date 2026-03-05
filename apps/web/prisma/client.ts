@@ -2,9 +2,11 @@ import { PrismaClient } from "@prisma/client";
 
 /**
  * Ensures the DATABASE_URL has reasonable pool settings for serverless.
- * With PgBouncer (connection_limit=1), concurrent queries within a single
- * request can starve and timeout. We bump connection_limit to 3 (still safe
- * for serverless) and pool_timeout to 20s so queued queries have time.
+ * In serverless (Vercel), each function instance gets its own PrismaClient.
+ * With connection_limit > 1, concurrent functions can exhaust the PgBouncer
+ * pool (e.g. 8 functions × 3 connections = 24, hitting the pool cap).
+ * We default to connection_limit=1 so each function uses a single connection,
+ * letting PgBouncer handle the multiplexing.
  */
 function getDatabaseUrl(): string {
   const raw = process.env.DATABASE_URL ?? "";
@@ -15,9 +17,8 @@ function getDatabaseUrl(): string {
     if (!url.searchParams.has("pool_timeout")) {
       url.searchParams.set("pool_timeout", "20");
     }
-    const limit = Number.parseInt(url.searchParams.get("connection_limit") ?? "", 10);
-    if (!Number.isNaN(limit) && limit < 3) {
-      url.searchParams.set("connection_limit", "3");
+    if (!url.searchParams.has("connection_limit")) {
+      url.searchParams.set("connection_limit", "1");
     }
     return url.toString();
   } catch {

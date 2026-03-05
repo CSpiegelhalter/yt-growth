@@ -18,7 +18,7 @@ type Action =
   | { type: "reset" }
   | { type: "phase"; phase: StreamPhase }
   | { type: "section"; key: ReportSectionKey; data: unknown }
-  | { type: "sectionError"; key: ReportSectionKey; error: string }
+  | { type: "sectionError"; key: ReportSectionKey; error: string; retryable?: boolean }
   | { type: "fatalError" };
 
 const SECTION_KEYS: ReportSectionKey[] = [
@@ -50,7 +50,12 @@ function reducer(state: State, action: Action): State {
         ...state,
         report: {
           ...state.report,
-          [action.key]: { status: "error" as const, data: null, error: action.error },
+          [action.key]: {
+            status: "error" as const,
+            data: null,
+            error: action.error,
+            retryable: action.retryable,
+          },
         },
       };
     }
@@ -74,6 +79,7 @@ export type UseFullReportReturn = {
   isComplete: boolean;
   generate: () => void;
   retry: () => void;
+  retrySection: (key: ReportSectionKey) => void;
 };
 
 export function useFullReport(
@@ -138,7 +144,12 @@ export function useFullReport(
             break;
           }
           case "error": {
-            dispatch({ type: "sectionError", key: event.key, error: event.error });
+            dispatch({
+              type: "sectionError",
+              key: event.key,
+              error: event.error,
+              retryable: event.retryable,
+            });
             break;
           }
           case "done": {
@@ -166,6 +177,44 @@ export function useFullReport(
     void generate();
   }, [generate]);
 
+  const retrySection = useCallback(async (key: ReportSectionKey) => {
+    if (!videoId) { return; }
+
+    // Mark the section as loading
+    dispatch({ type: "section", key, data: null });
+
+    try {
+      const res = await fetch(
+        `/api/me/channels/${channelId}/videos/${videoId}/full-report`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ range: "28d", sections: [key] }),
+        },
+      );
+
+      if (!res.ok || !res.body) {
+        dispatch({ type: "sectionError", key, error: "Retry failed", retryable: true });
+        return;
+      }
+
+      await readNdjsonStream(res.body, (event: ReportStreamEvent) => {
+        if (event.type === "section" && event.key === key) {
+          dispatch({ type: "section", key: event.key, data: event.data });
+        } else if (event.type === "error" && event.key === key) {
+          dispatch({
+            type: "sectionError",
+            key: event.key,
+            error: event.error,
+            retryable: event.retryable,
+          });
+        }
+      });
+    } catch {
+      dispatch({ type: "sectionError", key, error: "Retry failed", retryable: true });
+    }
+  }, [channelId, videoId]);
+
   const hasAnySection = SECTION_KEYS.some((k) => state.report[k].status === "done");
   const isComplete = SECTION_KEYS.every((k) =>
     state.report[k].status === "done" || state.report[k].status === "error",
@@ -178,5 +227,6 @@ export function useFullReport(
     isComplete,
     generate: () => void generate(),
     retry,
+    retrySection: (key: ReportSectionKey) => void retrySection(key),
   };
 }

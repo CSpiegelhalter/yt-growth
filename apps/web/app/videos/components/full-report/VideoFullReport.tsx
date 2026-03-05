@@ -17,6 +17,7 @@ import { ReportAccordion } from "./ui/ReportAccordion";
 
 type VideoFullReportProps = {
   report: PartialFullReport;
+  onRetrySection?: (key: ReportSectionKey) => void;
 };
 
 const SCORE_CLASS: Record<string, string> = {
@@ -29,17 +30,24 @@ function renderSection<T>(
   section: SectionState<T>,
   sectionKey: ReportSectionKey,
   renderDone: (data: T) => ReactNode,
+  onRetry?: (key: ReportSectionKey) => void,
 ): ReactNode {
   if (section.status === "done" && section.data) {
     return renderDone(section.data);
   }
   if (section.status === "error") {
-    return <SectionError message={section.error ?? "Section failed"} />;
+    return (
+      <SectionError
+        message={section.error ?? "Section failed"}
+        retryable={section.retryable}
+        onRetry={onRetry ? () => onRetry(sectionKey) : undefined}
+      />
+    );
   }
   return <SectionSkeleton variant={sectionKey} />;
 }
 
-export function VideoFullReport({ report }: VideoFullReportProps) {
+export function VideoFullReport({ report, onRetrySection }: VideoFullReportProps) {
   const hookData = report.hookAnalysis;
   const hookScore = hookData.status === "done" && hookData.data
     ? hookData.data.score
@@ -61,12 +69,12 @@ export function VideoFullReport({ report }: VideoFullReportProps) {
     <div className={s.reportStack}>
       {renderSection(report.videoAudit, "videoAudit", (data) => (
         <VideoAuditBar audit={data} />
-      ))}
+      ), onRetrySection)}
 
       <ReportAccordion title="Discoverability" variant="section">
         {renderSection(report.discoverability, "discoverability", (data) => (
           <DiscoverabilityAccordion discoverability={data} />
-        ))}
+        ), onRetrySection)}
       </ReportAccordion>
 
       <ReportAccordion
@@ -76,19 +84,19 @@ export function VideoFullReport({ report }: VideoFullReportProps) {
       >
         {renderSection(report.promotionPlaybook, "promotionPlaybook", (data) => (
           <PromotionSection actions={data} />
-        ))}
+        ), onRetrySection)}
       </ReportAccordion>
 
       <ReportAccordion title="Why Viewers Leave" variant="section">
         {renderSection(report.retention, "retention", (data) => (
           <RetentionTimeline retention={data} />
-        ))}
+        ), onRetrySection)}
       </ReportAccordion>
 
       <ReportAccordion title="Opening Strategy" variant="section" badge={hookBadge}>
         {renderSection(report.hookAnalysis, "hookAnalysis", (data) => (
           <HookAnalysisSection hookAnalysis={data} />
-        ))}
+        ), onRetrySection)}
       </ReportAccordion>
     </div>
   );

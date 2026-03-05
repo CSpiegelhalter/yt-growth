@@ -87,7 +87,7 @@ async function fetchTranscriptAnalysis(
         videoDurationSec: video.durationSec,
         segments: transcript.segments,
       },
-      { callLlm: deps.callLlm },
+      { callLlm: deps.callLlm, cache: deps.transcriptCache },
     );
 
     return { report, hasCaptions: true };

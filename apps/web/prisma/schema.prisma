@@ -675,3 +675,53 @@ model KeywordCache {
   @@index([expiresAt], map: "idx_keyword_cache_expires")
   @@index([phrase, database], map: "idx_keyword_cache_phrase")
 }
+
+// ============================================
+// TRANSCRIPT CACHE (shared per video, 7-day TTL)
+// ============================================
+
+model TranscriptCache {
+  id             String   @id @default(uuid()) @db.Uuid
+  videoId        String   @unique @db.VarChar(32) // YouTube video ID
+  rawSegments    Json // Raw transcript segments from SerpAPI
+  fullText       String   @db.Text // Concatenated transcript text
+  transcriptHash String   @db.VarChar(64) // SHA256 of fullText for invalidation
+  analysisJson   Json? // Chunk analyses + synthesized report output
+  analysisHash   String?  @db.VarChar(64) // Hash of inputs (transcriptHash + videoTitle)
+  fetchedAt      DateTime @default(now()) @db.Timestamptz(6)
+  expiresAt      DateTime @db.Timestamptz(6) // fetchedAt + 7 days
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([expiresAt], map: "idx_transcript_cache_expires")
+}
+
+// ============================================
+// FULL REPORT SECTION CACHE (shared per video, 24h TTL)
+// ============================================
+
+model FullReportSectionCache {
+  id          String   @id @default(uuid()) @db.Uuid
+  videoId     String   @db.VarChar(32) // YouTube video ID
+  sectionKey  String   @db.VarChar(32) // videoAudit, discoverability, promotionPlaybook, retention, hookAnalysis
+  contentHash String   @db.VarChar(64) // SHA256 of video metadata (title+desc+tags+duration+category)
+  sectionData Json // The section's output data
+  cachedUntil DateTime @db.Timestamptz(6) // now + 24 hours
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([videoId, sectionKey], map: "uq_report_section_cache")
+  @@index([cachedUntil], map: "idx_report_section_cache_cached")
+  @@index([videoId], map: "idx_report_section_cache_video")
+}
+
+// ============================================
+// REPORT GENERATION LOCK (prevents concurrent duplicate generation)
+// ============================================
+
+model ReportGenerationLock {
+  id        String   @id @default(uuid()) @db.Uuid
+  videoId   String   @unique @db.VarChar(32) // YouTube video ID
+  startedAt DateTime @default(now()) @db.Timestamptz(6)
+  expiresAt DateTime @db.Timestamptz(6) // startedAt + 5 minutes (stale lock timeout)
+}

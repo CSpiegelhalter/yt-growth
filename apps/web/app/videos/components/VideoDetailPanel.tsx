@@ -39,7 +39,7 @@ function VideoDetailContent({
   video: VideoWithMetrics;
   channelId: string;
 }) {
-  const { summary, loading, error, retry } = useVideoInsights(
+  const { summary, loading, summaryLoading, error, retry } = useVideoInsights(
     channelId,
     video.videoId,
   );
@@ -49,6 +49,7 @@ function VideoDetailContent({
     hasAnySection,
     generate: generateReport,
     retry: retryReport,
+    retrySection,
   } = useFullReport(channelId, video.videoId);
 
   const reportLoading = phase !== "idle" && phase !== "done" && phase !== "error";
@@ -110,11 +111,18 @@ function VideoDetailContent({
         {!loading && !error && (
           <>
             <MetricPills goingWell={ranked.goingWell} needsWork={needsWork} />
+            {summaryLoading && (
+              <div className={s.loadingState}>
+                <div className={s.spinner} />
+                <span>Generating insights...</span>
+              </div>
+            )}
             <VideoInsightArea
               report={report}
               phase={phase}
               hasAnySection={hasAnySection}
               retryReport={retryReport}
+              retrySection={retrySection}
               summary={summary}
               hasContent={hasContent}
             />

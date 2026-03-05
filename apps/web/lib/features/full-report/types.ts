@@ -1,4 +1,4 @@
-import type { TranscriptReport } from "@/lib/features/transcript-analysis";
+import type { TranscriptCacheDeps, TranscriptReport } from "@/lib/features/transcript-analysis";
 import type { LlmCallFn, SeoAnalysis } from "@/lib/features/video-insights/types";
 import type { CompetitiveContextResult } from "@/lib/ports/DataForSeoPort";
 
@@ -167,13 +167,14 @@ export type ReportStreamEvent =
   | { type: "section"; key: "promotionPlaybook"; data: PromotionAction[] }
   | { type: "section"; key: "retention"; data: RetentionAnalysis }
   | { type: "section"; key: "hookAnalysis"; data: HookAnalysis }
-  | { type: "error"; key: ReportSectionKey; error: string }
+  | { type: "error"; key: ReportSectionKey; error: string; retryable?: boolean }
   | { type: "done" };
 
 // ── Dependencies ───────────────────────────────────────
 
 export type FullReportDeps = {
   callLlm: LlmCallFn;
+  transcriptCache?: TranscriptCacheDeps;
   getYouTubeTranscript: (params: { videoId: string }) => Promise<{
     videoId: string;
     segments: Array<{ text: string; start: number; duration: number }>;
@@ -187,7 +188,7 @@ export type FullReportDeps = {
       videoDurationSec: number;
       segments: Array<{ text: string; start: number; duration: number }>;
     },
-    deps: { callLlm: LlmCallFn },
+    deps: { callLlm: LlmCallFn; cache?: TranscriptCacheDeps },
   ) => Promise<TranscriptReport>;
   generateSeoAnalysis: (
     input: {

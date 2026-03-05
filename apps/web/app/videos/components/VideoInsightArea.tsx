@@ -1,3 +1,4 @@
+import type { ReportSectionKey } from "@/lib/features/full-report";
 import type { CoreAnalysis } from "@/lib/features/video-insights/types";
 
 import { FullReportError, FullReportLoading, VideoFullReport } from "./full-report";
@@ -10,6 +11,7 @@ type VideoInsightAreaProps = {
   phase: StreamPhase;
   hasAnySection: boolean;
   retryReport: () => void;
+  retrySection?: (key: ReportSectionKey) => void;
   summary: CoreAnalysis | null;
   hasContent: boolean;
 };
@@ -19,26 +21,27 @@ export function VideoInsightArea({
   phase,
   hasAnySection,
   retryReport,
+  retrySection,
   summary,
   hasContent,
 }: VideoInsightAreaProps) {
   // Streaming in progress or complete with sections
   if (phase === "gathering" || phase === "synthesizing") {
     if (hasAnySection) {
-      return <VideoFullReport report={report} />;
+      return <VideoFullReport report={report} onRetrySection={retrySection} />;
     }
     return <FullReportLoading />;
   }
 
   if (phase === "error") {
     if (hasAnySection) {
-      return <VideoFullReport report={report} />;
+      return <VideoFullReport report={report} onRetrySection={retrySection} />;
     }
     return <FullReportError message="Failed to generate report." onRetry={retryReport} />;
   }
 
   if (phase === "done") {
-    return <VideoFullReport report={report} />;
+    return <VideoFullReport report={report} onRetrySection={retrySection} />;
   }
 
   // phase === "idle" — show insight cards or empty state
