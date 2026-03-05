@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 import { hashVideoContent } from "@/lib/shared/content-hash";
 import { createLogger } from "@/lib/shared/logger";
 import { prisma } from "@/prisma";
@@ -91,17 +93,17 @@ function writeSectionCache(
   const cachedUntil = new Date(Date.now() + SECTION_CACHE_TTL_MS);
   prisma.fullReportSectionCache
     .upsert({
-      where: { uq_report_section_cache: { videoId, sectionKey } },
+      where: { videoId_sectionKey: { videoId, sectionKey } },
       create: {
         videoId,
         sectionKey,
         contentHash,
-        sectionData: sectionData as Record<string, unknown>,
+        sectionData: sectionData as Prisma.InputJsonValue,
         cachedUntil,
       },
       update: {
         contentHash,
-        sectionData: sectionData as Record<string, unknown>,
+        sectionData: sectionData as Prisma.InputJsonValue,
         cachedUntil,
       },
     })
