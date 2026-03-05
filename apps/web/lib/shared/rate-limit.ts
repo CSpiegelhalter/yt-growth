@@ -1,9 +1,16 @@
 /**
- * Simple in-memory rate limiter for expensive operations
+ * Rate limiter with distributed (Upstash Redis) and in-memory fallback.
  *
- * Note: In production, use Redis for distributed rate limiting.
- * This in-memory implementation is suitable for single-instance deployments.
+ * - When UPSTASH_REDIS_REST_URL + TOKEN are set, uses distributed Redis.
+ * - Otherwise falls back to in-memory (suitable for local dev / single instance).
+ * - When DISABLE_RATE_LIMITS=1, all checks pass immediately (for tests).
  */
+
+import type { RateLimitPort } from "@/lib/ports/RateLimitPort";
+
+// ---------------------------------------------------------------------------
+// In-memory fallback (local dev / single instance)
+// ---------------------------------------------------------------------------
 
 type RateLimitEntry = {
   count: number;
@@ -20,7 +27,7 @@ setInterval(() => {
       store.delete(key);
     }
   }
-}, 60_000); // Clean every minute
+}, 60_000);
 
 export type RateLimitConfig = {
   /** Maximum number of requests allowed in the window */
@@ -35,36 +42,20 @@ type RateLimitResult = {
   resetAt: number;
 };
 
-/**
- * Check and update rate limit for a key
- */
-export function checkRateLimit(
-  key: string,
-  config: RateLimitConfig,
-): RateLimitResult {
+function checkInMemory(key: string, config: RateLimitConfig): RateLimitResult {
   const now = Date.now();
   const windowMs = config.windowSec * 1000;
 
   let entry = store.get(key);
 
-  // Reset if window expired
   if (!entry || entry.resetAt < now) {
-    entry = {
-      count: 0,
-      resetAt: now + windowMs,
-    };
+    entry = { count: 0, resetAt: now + windowMs };
   }
 
-  // Check limit
   if (entry.count >= config.limit) {
-    return {
-      success: false,
-      remaining: 0,
-      resetAt: entry.resetAt,
-    };
+    return { success: false, remaining: 0, resetAt: entry.resetAt };
   }
 
-  // Increment count
   entry.count++;
   store.set(key, entry);
 
@@ -73,6 +64,56 @@ export function checkRateLimit(
     remaining: config.limit - entry.count,
     resetAt: entry.resetAt,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Distributed backend (lazy-loaded to avoid importing server-only in client)
+// ---------------------------------------------------------------------------
+
+let distributedLimiter: RateLimitPort | null = null;
+let distributedResolved = false;
+
+async function getDistributedLimiter(): Promise<RateLimitPort | null> {
+  if (!distributedResolved) {
+    distributedResolved = true;
+    if (
+      process.env.UPSTASH_REDIS_REST_URL &&
+      process.env.UPSTASH_REDIS_REST_TOKEN
+    ) {
+      try {
+        const mod = await import("@/lib/adapters/upstash/client");
+        distributedLimiter = mod.upstashRateLimiter as RateLimitPort;
+      } catch {
+        // Adapter not available (e.g. client-side bundle) — fall through
+      }
+    }
+  }
+  return distributedLimiter;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Check and consume a rate limit token for a key.
+ * Delegates to Upstash when configured, otherwise uses in-memory.
+ */
+export async function checkRateLimit(
+  key: string,
+  config: RateLimitConfig,
+): Promise<RateLimitResult> {
+  // Bypass for tests
+  if (process.env.DISABLE_RATE_LIMITS === "1") {
+    return { success: true, remaining: config.limit, resetAt: Date.now() + config.windowSec * 1000 };
+  }
+
+  const distributed = await getDistributedLimiter();
+  if (distributed?.isConfigured()) {
+    return distributed.check(key, config);
+  }
+
+  return checkInMemory(key, config);
 }
 
 /**
@@ -85,12 +126,12 @@ export const RATE_LIMITS = {
   videoSync: { limit: 10, windowSec: 3600 },
   // Checkout: 3 per minute per user
   checkout: { limit: 3, windowSec: 60 },
-  // Competitor feed: 30 per hour per user
-  competitorFeed: { limit: 30, windowSec: 3600 },
-  // Competitor video detail: 60 per hour per user
-  competitorDetail: { limit: 60, windowSec: 3600 },
-  // Competitor comments fetch: 20 per hour per user
-  competitorComments: { limit: 20, windowSec: 3600 },
+  // Competitor feed: 10 per hour per user (tightened from 30)
+  competitorFeed: { limit: 10, windowSec: 3600 },
+  // Competitor video detail: 20 per hour per user (tightened from 60)
+  competitorDetail: { limit: 20, windowSec: 3600 },
+  // Competitor comments fetch: 10 per hour per user (tightened from 20)
+  competitorComments: { limit: 10, windowSec: 3600 },
   // Owned video insights: 150 per hour per user
   videoInsights: { limit: 150, windowSec: 3600 },
   // Owned video remixes generation: 20 per hour per user

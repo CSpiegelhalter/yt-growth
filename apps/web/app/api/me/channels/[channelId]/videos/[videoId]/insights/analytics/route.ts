@@ -9,6 +9,7 @@ import {
   fetchVideoAnalyticsTotalsWithStatus,
   fetchVideoDiscoveryMetrics,
 } from "@/lib/adapters/youtube/owned-analytics";
+import { ApiError } from "@/lib/api/errors";
 import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
@@ -45,15 +46,17 @@ export const GET = createApiRoute(
         const { channelId, videoId } = params!;
         const range = query!.range;
 
-        const rateResult = checkRateLimit(
+        const rateResult = await checkRateLimit(
           rateLimitKey("videoInsights", api.userId!),
           RATE_LIMITS.videoInsights,
         );
         if (!rateResult.success) {
-          return Response.json(
-            { error: "Rate limit exceeded", retryAfter: rateResult.resetAt },
-            { status: 429 },
-          );
+          throw new ApiError({
+            code: "RATE_LIMITED",
+            status: 429,
+            message: "Rate limit exceeded. Please try again later.",
+            details: { resetAt: new Date(rateResult.resetAt).toISOString() },
+          });
         }
 
         try {

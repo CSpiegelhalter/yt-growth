@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useSessionStorage } from "@/lib/hooks/use-session-storage";
 import type { CompetitorVideo } from "@/types/api";
@@ -115,15 +115,14 @@ export function useCompetitorSearchState({ urlNiche }: { urlNiche: string | null
     },
 
     handleFiltersChange(newFilters: FilterState) {
-      setSaved((prev) => {
-        if (prev.hasSearched) {setSearchKey(`${searchMode}:${Date.now()}`);}
-        return { ...prev, filters: newFilters, videos: [] };
-      });
+      const shouldRetrigger = saved.hasSearched;
+      setSaved((prev) => ({ ...prev, filters: newFilters, videos: [] }));
+      if (shouldRetrigger) { setSearchKey(`${searchMode}:${Date.now()}`); }
     },
 
-    handleSearchComplete: () => setIsSearching(false),
-    handleResultsUpdate: (videos: CompetitorVideo[]) => setSaved((p) => ({ ...p, videos })),
-    handleCursorUpdate: (cursor: SearchCursor | null) => setSaved((p) => ({ ...p, nextCursor: cursor })),
+    handleSearchComplete: useCallback(() => setIsSearching(false), []),
+    handleResultsUpdate: useCallback((videos: CompetitorVideo[]) => setSaved((p) => ({ ...p, videos })), [setSaved]),
+    handleCursorUpdate: useCallback((cursor: SearchCursor | null) => setSaved((p) => ({ ...p, nextCursor: cursor })), [setSaved]),
     handleVideoClick: (videoId: string) => setClickedVideoId(videoId),
     handleError(msg: string) { setError(msg); setIsSearching(false); },
     dismissError: () => setError(null),

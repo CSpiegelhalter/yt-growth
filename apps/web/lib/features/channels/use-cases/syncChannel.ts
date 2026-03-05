@@ -109,7 +109,7 @@ async function enforceUsageAndRateLimits<A>(
   }
 
   const rateKey = rateLimitKey("videoSync", dbChannelId);
-  const rateResult = checkRateLimit(rateKey, RATE_LIMITS.videoSync);
+  const rateResult = await checkRateLimit(rateKey, RATE_LIMITS.videoSync);
   if (!rateResult.success) {
     throw new ChannelError("RATE_LIMITED", "Rate limit exceeded");
   }

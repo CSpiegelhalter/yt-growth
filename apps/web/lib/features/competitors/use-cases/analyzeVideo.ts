@@ -114,7 +114,7 @@ export async function analyzeVideo(
 
     // Decide whether to fetch fresh comments (respect per-user rate limit)
     const commentsRlKey = rateLimitKey("competitorComments", userId);
-    const commentsRlResult = checkRateLimit(
+    const commentsRlResult = await checkRateLimit(
       commentsRlKey,
       RATE_LIMITS.competitorComments,
     );

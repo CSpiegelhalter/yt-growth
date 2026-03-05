@@ -41,7 +41,7 @@ export async function resolveInsightContext(
     );
   }
 
-  const rateResult = checkRateLimit(
+  const rateResult = await checkRateLimit(
     rateLimitKey("videoInsights", userId),
     RATE_LIMITS.videoInsights,
   );

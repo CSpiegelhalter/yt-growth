@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AlertCircleIcon, SearchIcon } from "@/components/icons";
 import type { CompetitorVideo } from "@/types/api";
@@ -199,22 +199,32 @@ export default function CompetitorResultsStream({
     });
   }, [scrollToVideoId, videos.length]);
 
+  // Keep stable refs for callback props to avoid re-trigger loops
+  const onResultsUpdateRef = useRef(onResultsUpdate);
+  onResultsUpdateRef.current = onResultsUpdate;
+  const onCursorUpdateRef = useRef(onCursorUpdate);
+  onCursorUpdateRef.current = onCursorUpdate;
+  const onSearchCompleteRef = useRef(onSearchComplete);
+  onSearchCompleteRef.current = onSearchComplete;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
   // Notify parent when videos change (for caching) - skip if it's from restoration
   useEffect(() => {
     // Only notify for fresh search results, not restoration
     if (videos.length > 0 && !handledRestorationRef.current) {
-      onResultsUpdate?.(videos);
+      onResultsUpdateRef.current?.(videos);
     }
     // Reset the flag after first notification check
     if (handledRestorationRef.current) {
       handledRestorationRef.current = false;
     }
-  }, [videos, onResultsUpdate]);
+  }, [videos]);
 
   // Notify parent when cursor changes (for caching)
   useEffect(() => {
-    onCursorUpdate?.(nextCursor);
-  }, [nextCursor, onCursorUpdate]);
+    onCursorUpdateRef.current?.(nextCursor);
+  }, [nextCursor]);
 
   function mapToCompetitorVideo(item: SearchItemsEvent["items"][0]): CompetitorVideo {
     return {
@@ -239,7 +249,7 @@ export default function CompetitorResultsStream({
     };
   }
 
-  function processEvent(event: SearchEvent) {
+  const processEvent = useCallback((event: SearchEvent) => {
     switch (event.type) {
       case "status": {
         setStatusMessage(event.message);
@@ -266,22 +276,22 @@ export default function CompetitorResultsStream({
         setState("done");
         setStatusMessage("");
         setIsLoadingMore(false);
-        onSearchComplete();
+        onSearchCompleteRef.current();
         break;
       }
 
       case "error": {
         setState("error");
-        onError(event.error);
+        onErrorRef.current(event.error);
         if (!event.partial) {
           setVideos([]);
         }
         break;
       }
     }
-  }
+  }, []);
 
-  async function performSearch(controller: AbortController, cursor?: SearchCursor) {
+  const performSearch = useCallback(async (controller: AbortController, cursor?: SearchCursor) => {
     try {
       const body = {
         mode,
@@ -321,9 +331,9 @@ export default function CompetitorResultsStream({
       console.error("[Stream] Search error:", error);
       setState("error");
       setIsLoadingMore(false);
-      onError(error instanceof Error ? error.message : "Search failed");
+      onErrorRef.current(error instanceof Error ? error.message : "Search failed");
     }
-  }
+  }, [mode, nicheText, referenceVideoUrl, channelId, filters, processEvent]);
 
   function handleLoadMore() {
     if (!nextCursor || isLoadingMore) { return; }
@@ -338,15 +348,21 @@ export default function CompetitorResultsStream({
     void performSearch(controller, nextCursor);
   }
 
+  // Keep a ref for performSearch so the effect doesn't re-fire when search params change
+  const performSearchRef = useRef(performSearch);
+  performSearchRef.current = performSearch;
+  const initialVideosRef = useRef(initialVideos);
+  initialVideosRef.current = initialVideos;
+
   // Perform initial search when searchKey changes
   useEffect(() => {
     if (!searchKey) {return;}
 
     // If this is a restoration (searchKey starts with "restored:") AND we have cached data,
     // skip the API call - we'll use the cached data from initialVideos
-    if (searchKey.startsWith("restored:") && initialVideos && initialVideos.length > 0) {
+    if (searchKey.startsWith("restored:") && initialVideosRef.current && initialVideosRef.current.length > 0) {
       // Mark as complete since we already have cached results
-      onSearchComplete();
+      onSearchCompleteRef.current();
       return;
     }
 
@@ -365,12 +381,12 @@ export default function CompetitorResultsStream({
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    void performSearch(controller);
+    void performSearchRef.current(controller);
 
     return () => {
       controller.abort();
     };
-  }, [searchKey, performSearch, onSearchComplete, initialVideos]);
+  }, [searchKey]);
 
   return (
     <CompetitorResultsView

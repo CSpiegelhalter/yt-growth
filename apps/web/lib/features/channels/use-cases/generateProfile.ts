@@ -30,7 +30,7 @@ export async function generateProfile(
   const { userId, channelId, force = false } = params;
 
   const rateLimitKey = `profile_generate:${userId}`;
-  const rateLimit = checkRateLimit(rateLimitKey, {
+  const rateLimit = await checkRateLimit(rateLimitKey, {
     limit: 10,
     windowSec: 60 * 60,
   });

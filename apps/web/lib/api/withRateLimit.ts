@@ -20,7 +20,7 @@ export function withRateLimit<P>(
     }
     const config = opts.config ?? RATE_LIMITS[opts.operation];
     const key = rateLimitKey(opts.operation, id);
-    const result = checkRateLimit(key, config);
+    const result = await checkRateLimit(key, config);
     if (!result.success) {
       throw new ApiError({
         code: "RATE_LIMITED",
