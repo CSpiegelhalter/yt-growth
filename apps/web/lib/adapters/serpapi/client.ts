@@ -18,6 +18,7 @@ import type {
   TranscriptSegment,
 } from "@/lib/ports/SerpApiPort";
 import { createLogger } from "@/lib/shared/logger";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/prisma";
 
 const log = createLogger({ subsystem: "serpapi" });
@@ -184,14 +185,14 @@ export async function getYouTubeTranscript(
       where: { videoId: params.videoId },
       create: {
         videoId: params.videoId,
-        rawSegments: segments as unknown as Record<string, unknown>[],
+        rawSegments: segments as unknown as Prisma.InputJsonValue,
         fullText,
         transcriptHash,
         fetchedAt: new Date(),
         expiresAt,
       },
       update: {
-        rawSegments: segments as unknown as Record<string, unknown>[],
+        rawSegments: segments as unknown as Prisma.InputJsonValue,
         fullText,
         transcriptHash,
         fetchedAt: new Date(),
