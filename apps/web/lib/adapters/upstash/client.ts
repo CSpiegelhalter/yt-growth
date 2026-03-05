@@ -10,7 +10,7 @@ import type {
 } from "@/lib/ports/RateLimitPort";
 import { createLogger } from "@/lib/shared/logger";
 
-const log = createLogger("upstash-rate-limit");
+const log = createLogger({ module: "upstash-rate-limit" });
 
 // Lazy singleton — created on first use
 let redis: Redis | null = null;
