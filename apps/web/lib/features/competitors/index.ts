@@ -27,6 +27,7 @@ export type {
 
 // Schemas
 export {
+  AnalyzeUrlSchema,
   DiscoverBodySchema,
   MoreFromChannelParamsSchema,
   MoreFromChannelQuerySchema,

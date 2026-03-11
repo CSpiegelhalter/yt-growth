@@ -1,6 +1,78 @@
-import type { ChannelProfileAI,ChannelProfileInput } from "./schemas";
+import type { z } from "zod";
+
+import type { ChannelProfileAI, ChannelProfileInput, CompetitorEntrySchema } from "./schemas";
+
+export type CompetitorEntry = z.infer<typeof CompetitorEntrySchema>;
 
 // ── Constants ───────────────────────────────────────────────────
+
+export const CONTENT_STYLES = [
+  "Educational",
+  "Entertaining",
+  "Opinion/Commentary",
+  "Storytelling",
+  "Tutorial",
+  "Review",
+  "Documentary",
+  "Vlog",
+  "News/Updates",
+] as const;
+
+export const CREATOR_STRENGTHS = [
+  "On-camera presence",
+  "Editing",
+  "Storytelling",
+  "Research",
+  "Humor",
+  "Teaching",
+  "Visual design",
+  "Writing",
+  "Interviewing",
+] as const;
+
+export const FORMAT_PREFERENCES = [
+  "Long-form",
+  "Shorts",
+  "List/Ranking",
+  "How-to",
+  "Deep dive",
+  "Reaction",
+  "Challenge",
+  "Interview",
+  "Behind-the-scenes",
+] as const;
+
+export const SCRIPT_TONES = [
+  "Casual & conversational",
+  "Professional & authoritative",
+  "Energetic & enthusiastic",
+  "Calm & thoughtful",
+  "Humorous & witty",
+  "Direct & no-nonsense",
+] as const;
+
+export const TAG_STYLE_PREFERENCES = [
+  "Broad & general",
+  "Niche & specific",
+  "Mix of both",
+] as const;
+
+export const SEO_PRIORITIES = [
+  "Very important (keyword-rich)",
+  "Moderate (natural with some keywords)",
+  "Minimal (conversational)",
+] as const;
+
+export const PROFILE_TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "idea-guidance", label: "New idea guidance" },
+  { id: "script-guidance", label: "Script guidance" },
+  { id: "tag-guidance", label: "Tag guidance" },
+  { id: "description-guidance", label: "Description guidance" },
+  { id: "competitors", label: "Competitors" },
+] as const;
+
+export type ProfileTabId = (typeof PROFILE_TABS)[number]["id"];
 
 export const PROFILE_CATEGORIES = [
   "Gaming",
@@ -46,6 +118,42 @@ export const DEFAULT_PROFILE_INPUT: ChannelProfileInput = {
   tone: [],
   examples: [],
   goals: [],
+  overview: {
+    channelDescription: "",
+    coreTopics: [],
+    knownFor: "",
+    contentStyles: [],
+    creatorStrengths: [],
+  },
+  ideaGuidance: {
+    topicsToLeanInto: "",
+    topicsToAvoid: "",
+    idealVideo: "",
+    formatPreferences: [],
+    viewerFeeling: "",
+  },
+  scriptGuidance: {
+    tone: "",
+    structurePreference: "",
+    styleNotes: "",
+    neverInclude: "",
+  },
+  tagGuidance: {
+    primaryKeywords: [],
+    nicheTerms: [],
+    tagStylePreference: "",
+  },
+  descriptionGuidance: {
+    descriptionFormat: "",
+    standardLinks: "",
+    seoPriority: "",
+  },
+  competitors: {
+    closeToSize: [],
+    aspirational: [],
+    nicheHero: [],
+    differentiation: "",
+  },
 };
 
 // ── Domain types ────────────────────────────────────────────────

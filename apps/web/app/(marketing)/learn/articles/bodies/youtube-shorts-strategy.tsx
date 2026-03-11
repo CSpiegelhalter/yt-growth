@@ -1742,7 +1742,7 @@ export function Body({ s }: BodyProps) {
           <ToolCtaCard
             title="Generate Ideas from Trends"
             description="Turn a trending topic into multiple angles and series ideas. Get variations you can test rather than copying what exists."
-            href="/ideas"
+            href="/dashboard"
             bestFor="Best for angle generation"
           />
         </div>
@@ -1921,7 +1921,7 @@ export function Body({ s }: BodyProps) {
         <ToolCtaCard
           title="Generate Ideas Based on What Works"
           description="Get video ideas tailored to your niche based on what is performing for channels like yours."
-          href="/ideas"
+          href="/dashboard"
           bestFor="Best for idea generation"
         />
       </section>

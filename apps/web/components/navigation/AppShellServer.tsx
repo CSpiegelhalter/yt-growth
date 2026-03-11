@@ -228,15 +228,11 @@ export function AppShellServer({
 
 function isChannelScopedPath(pathname: string): boolean {
   if (pathname === "/videos") {return true;}
-  if (pathname === "/ideas") {return true;}
-  if (pathname === "/goals") {return true;}
   if (pathname === "/subscriber-insights") {return true;}
-  if (pathname === "/competitors") {return true;}
   if (pathname.startsWith("/video/")) {return true;}
-  if (pathname.startsWith("/competitors/video/")) {return true;}
   return false;
 }
 
 function isVideoPath(pathname: string): boolean {
-  return pathname.startsWith("/video/") || pathname.startsWith("/competitors/video/");
+  return pathname.startsWith("/video/");
 }

@@ -172,6 +172,11 @@ export type ReportStreamEvent =
 
 // ── Dependencies ───────────────────────────────────────
 
+export type RetentionCurvePoint = {
+  elapsedRatio: number;
+  audienceWatchRatio: number;
+};
+
 export type FullReportDeps = {
   callLlm: LlmCallFn;
   transcriptCache?: TranscriptCacheDeps;
@@ -181,12 +186,18 @@ export type FullReportDeps = {
     fullText: string;
     meta: { fetchedAt: string };
   }>;
+  fetchRetentionCurve: (
+    userId: number,
+    channelId: string,
+    videoId: string,
+  ) => Promise<RetentionCurvePoint[]>;
   runTranscriptAnalysis: (
     input: {
       videoId: string;
       videoTitle: string;
       videoDurationSec: number;
       segments: Array<{ text: string; start: number; duration: number }>;
+      dropOffPoints?: Array<{ timeSec: number; severityPct: number }>;
     },
     deps: { callLlm: LlmCallFn; cache?: TranscriptCacheDeps },
   ) => Promise<TranscriptReport>;

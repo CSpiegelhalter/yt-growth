@@ -2,12 +2,11 @@
 
 import { useMemo } from "react";
 
+import type { PillMetric } from "@/components/overview";
+import { MetricPills, rankVideoMetrics } from "@/components/overview";
 import type { VideoWithMetrics } from "@/lib/video-tools";
 
 import { useFullReport } from "./full-report";
-import { MetricPills } from "./MetricPills";
-import type { PillMetric } from "./pill-metric-types";
-import { rankVideoMetrics } from "./rank-metrics";
 import { useVideoInsights } from "./useVideoInsights";
 import s from "./video-detail-panel.module.css";
 import { VideoHeader } from "./VideoHeader";

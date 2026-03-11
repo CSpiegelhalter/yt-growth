@@ -51,3 +51,12 @@ export function formatDateShort(dateStr: string): string {
   });
 }
 
+/** Medium date format: "Jan 5, 2024". */
+export function formatDateMedium(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+

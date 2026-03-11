@@ -1,15 +1,11 @@
 import type { SerializableNavItem } from "@/lib/server/nav-config.server";
 
 const SIDEBAR_ICON_MAP: Record<string, string> = {
+  dashboard: "/sidebar/dashboard.svg",
   videos: "/sidebar/videos.svg",
-  ideas: "/sidebar/ideas.svg",
-  goals: "/sidebar/goals.svg",
-  competitors: "/sidebar/competitors.svg",
+  analyzer: "/sidebar/analyze.svg",
   tags: "/sidebar/tags.svg",
   keywords: "/sidebar/keywords.svg",
-  "channel-profile": "/sidebar/channel_profile.svg",
-  "saved-ideas": "/sidebar/saved_ideas.svg",
-  learn: "/sidebar/learn.svg",
 };
 
 export function getNavIconSrc(itemId: string): string | null {
@@ -23,11 +19,6 @@ export function isNavItemActive(
   switch (item.matchPattern) {
     case "videos": {
       return pathname === "/videos" || pathname.startsWith("/video/");
-    }
-    case "competitors": {
-      return (
-        pathname === "/competitors" || pathname.startsWith("/competitors/")
-      );
     }
     case "tags": {
       return pathname === "/tags" || pathname.startsWith("/tags/");

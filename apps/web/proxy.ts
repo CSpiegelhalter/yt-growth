@@ -66,14 +66,6 @@ function getOrCreateRequestId(req: NextRequest) {
 
 function isProtectedPath(pathname: string) {
   const prefixes = [
-    "/channels",
-    "/audit",
-    "/profile",
-    "/saved-ideas",
-    "/subscriber-insights",
-    "/competitors",
-    "/video",
-    "/admin",
     "/api/private",
     "/api/me",
   ];

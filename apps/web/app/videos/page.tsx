@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { LoggedOutDashboardPreview } from "@/components/dashboard/LoggedOutDashboardPreview";
+import { AccessGate } from "@/components/auth/AccessGate";
 import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
 import { BRAND, CANONICAL_ORIGIN } from "@/lib/shared/brand";
 
@@ -17,7 +17,7 @@ import { DashboardClient } from "./DashboardClient";
  * - canonical to homepage to consolidate any accidental link equity
  *
  * Authenticated: Renders the full videos page with user data
- * Unauthenticated: Renders a preview page with clear CTAs
+ * Unauthenticated: Renders the AccessGate sign-in prompt
  */
 
 export const metadata: Metadata = {
@@ -46,24 +46,22 @@ type Props = {
 export default async function DashboardPage({ searchParams }: Props) {
   const params = await searchParams;
 
-  // Authenticated: fetch bootstrap once and render videos page.
-  // Unauthenticated: show logged-out preview (200 OK, no redirect).
   const bootstrap = await getAppBootstrapOptional({
     channelId: params.channelId,
   });
 
-  if (!bootstrap) {
-    return <LoggedOutDashboardPreview />;
-  }
-
   return (
-    <Suspense>
-      <DashboardClient
-        initialMe={bootstrap.me}
-        initialChannels={bootstrap.channels}
-        initialActiveChannelId={bootstrap.activeChannelId}
-        checkoutStatus={params.checkout}
-      />
-    </Suspense>
+    <AccessGate bootstrap={bootstrap}>
+      {(data) => (
+        <Suspense>
+          <DashboardClient
+            initialMe={data.me}
+            initialChannels={data.channels}
+            initialActiveChannelId={data.activeChannelId}
+            checkoutStatus={params.checkout}
+          />
+        </Suspense>
+      )}
+    </AccessGate>
   );
 }

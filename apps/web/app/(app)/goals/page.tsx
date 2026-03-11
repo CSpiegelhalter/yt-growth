@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { z } from "zod";
 
-import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { AccessGate } from "@/components/auth/AccessGate";
+import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
 
 import { GoalsClient } from "./GoalsClient";
@@ -29,14 +30,18 @@ type Props = {
  */
 export default async function GoalsPage({ searchParams }: Props) {
   const params = searchParamsSchema.parse(await searchParams);
-  const bootstrap = await getAppBootstrap({ channelId: params.channelId });
+  const bootstrap = await getAppBootstrapOptional({ channelId: params.channelId });
 
   return (
-    <Suspense>
-      <GoalsClient
-        initialChannels={bootstrap.channels}
-        initialActiveChannelId={bootstrap.activeChannelId}
-      />
-    </Suspense>
+    <AccessGate bootstrap={bootstrap}>
+      {(data) => (
+        <Suspense>
+          <GoalsClient
+            initialChannels={data.channels}
+            initialActiveChannelId={data.activeChannelId}
+          />
+        </Suspense>
+      )}
+    </AccessGate>
   );
 }

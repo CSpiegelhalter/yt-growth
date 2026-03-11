@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { useToast } from "@/components/ui/Toast";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
+import { validateYouTubeUrl } from "@/lib/shared/youtube-url";
 
 import { SeoAccordion } from "./SeoAccordion";
 import s from "./tags.module.css";
@@ -42,30 +43,10 @@ export function TagExtractorClient() {
     return result.tags.filter((t) => selected.has(t)).length;
   }, [result, selected]);
 
-  const validateUrl = useCallback((inputUrl: string): string | null => {
-    const trimmed = inputUrl.trim();
-    if (!trimmed) {
-      return "Please enter a YouTube URL";
-    }
-
-    try {
-      const parsed = new URL(trimmed);
-      const hostname = parsed.hostname.toLowerCase();
-      const isYouTube =
-        hostname === "youtube.com" ||
-        hostname === "www.youtube.com" ||
-        hostname === "m.youtube.com" ||
-        hostname === "youtu.be";
-
-      if (!isYouTube) {
-        return "Please enter a valid YouTube URL";
-      }
-    } catch {
-      return "Please enter a valid URL";
-    }
-
-    return null;
-  }, []);
+  const validateUrl = useCallback(
+    (inputUrl: string): string | null => validateYouTubeUrl(inputUrl),
+    [],
+  );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {

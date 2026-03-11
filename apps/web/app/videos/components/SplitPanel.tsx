@@ -1,62 +1,75 @@
 "use client";
 
-import type { InsightVideoInput, VideoPublishMarker } from "@/lib/features/channel-audit";
 import type { VideoWithMetrics } from "@/lib/video-tools";
 
 import s from "../style.module.css";
-import { OverviewPanel } from "./OverviewPanel";
+import type { VideoTab } from "./TabToggle";
+import { TabToggle } from "./TabToggle";
 import { VideoDetailPanel } from "./VideoDetailPanel";
 import { VideoList } from "./VideoList";
 
 type SplitPanelProps = {
   activeChannelId: string;
+  tab: VideoTab;
+  onTabChange: (tab: VideoTab) => void;
   videosWithMetrics: VideoWithMetrics[];
-  insightVideos: InsightVideoInput[];
-  videoMarkers: VideoPublishMarker[];
   selectedVideoId: string | null;
   selectedVideo: VideoWithMetrics | null;
   videosLoading: boolean;
   showDetail: boolean;
-  onSelect: (id: string | null) => void;
+  onSelect: (id: string) => void;
   onBack: () => void;
+  plannedLeftContent?: React.ReactNode;
+  plannedRightContent?: React.ReactNode;
 };
 
 export function SplitPanel({
   activeChannelId,
+  tab,
+  onTabChange,
   videosWithMetrics,
-  insightVideos,
-  videoMarkers,
   selectedVideoId,
   selectedVideo,
   videosLoading,
   showDetail,
   onSelect,
   onBack,
+  plannedLeftContent,
+  plannedRightContent,
 }: SplitPanelProps) {
+  const isPublished = tab === "published";
+
   return (
     <div className={s.splitPanel}>
-      {/* Left: Video list */}
+      {/* Left panel */}
       <div
         className={`${s.leftPanel} ${showDetail ? s.leftPanelHiddenMobile : ""}`}
       >
-        <VideoList
-          videos={videosWithMetrics}
-          selectedId={selectedVideoId}
-          onSelect={onSelect}
-          loading={videosLoading}
-        />
+        <div className={s.tabContainer}>
+          <TabToggle activeTab={tab} onTabChange={onTabChange} />
+        </div>
+
+        {isPublished ? (
+          <VideoList
+            videos={videosWithMetrics}
+            selectedId={selectedVideoId}
+            onSelect={onSelect}
+            loading={videosLoading}
+          />
+        ) : (
+          plannedLeftContent
+        )}
       </div>
 
-      {/* Right: Dynamic detail panel */}
+      {/* Right panel */}
       <div
         className={`${s.rightPanel} ${showDetail ? s.rightPanelVisibleMobile : ""}`}
       >
-        {/* Mobile back button */}
         <button
           type="button"
           className={s.backBtn}
           onClick={onBack}
-          aria-label="Back to video list"
+          aria-label="Back to list"
         >
           <svg
             width="16"
@@ -71,17 +84,13 @@ export function SplitPanel({
           Back
         </button>
 
-        {selectedVideoId === null ? (
-          <OverviewPanel
-            channelId={activeChannelId}
-            videos={insightVideos}
-            videoMarkers={videoMarkers}
-          />
-        ) : (
+        {isPublished ? (
           <VideoDetailPanel
             video={selectedVideo}
             channelId={activeChannelId}
           />
+        ) : (
+          plannedRightContent
         )}
       </div>
     </div>

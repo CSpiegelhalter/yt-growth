@@ -7,8 +7,6 @@
  * items filtered out.
  */
 
-import type { FeatureFlagKey } from "@/lib/shared/feature-flags";
-
 export type NavItem = {
   id: string;
   label: string;
@@ -18,8 +16,6 @@ export type NavItem = {
   channelScoped?: boolean;
   /** Custom match function for highlighting active state */
   match?: (pathname: string) => boolean;
-  /** Feature flag that must be enabled for this item to appear */
-  featureFlag?: FeatureFlagKey;
 };
 
 export type NavIconType =
@@ -42,12 +38,15 @@ export type NavIconType =
 
 /**
  * Primary navigation items - shown prominently in sidebar/top nav
- *
- * Note: Items with a `featureFlag` property will be filtered out
- * when that flag is disabled. Use `getFilteredNavItems()` for the
- * filtered list.
  */
 export const primaryNavItems: NavItem[] = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: "home",
+    channelScoped: true,
+  },
   {
     id: "videos",
     label: "Videos",
@@ -58,43 +57,12 @@ export const primaryNavItems: NavItem[] = [
       pathname === "/videos" || pathname.startsWith("/video/"),
   },
   {
-    id: "ideas",
-    label: "Ideas",
-    href: "/ideas",
-    icon: "lightbulb",
-    channelScoped: true,
-  },
-  {
-    id: "goals",
-    label: "Goals",
-    href: "/goals",
-    icon: "target",
-    channelScoped: true,
-  },
-  {
-    id: "competitors",
-    label: "Competitors",
-    href: "/competitors",
-    icon: "trophy",
-    channelScoped: true,
-    match: (pathname) =>
-      pathname === "/competitors" || pathname.startsWith("/competitors/"),
-  },
-  {
-    id: "trending",
-    label: "Trending",
-    href: "/trending",
-    icon: "trending",
-    channelScoped: true,
-    featureFlag: "trending_search", // Gated behind feature flag
-  },
-  {
-    id: "thumbnails",
-    label: "Thumbnails",
-    href: "/thumbnails",
-    icon: "image",
+    id: "analyzer",
+    label: "Analyzer",
+    href: "/analyze",
+    icon: "search",
     channelScoped: false,
-    featureFlag: "thumbnail_generation", // Gated behind feature flag
+    match: (pathname) => pathname === "/analyze",
   },
   {
     id: "tags",
@@ -113,46 +81,24 @@ export const primaryNavItems: NavItem[] = [
     match: (pathname) =>
       pathname === "/keywords" || pathname.startsWith("/keywords/"),
   },
+  {
+    id: "profile",
+    label: "Channel Profile",
+    href: "/channel-profile",
+    icon: "user",
+    channelScoped: true,
+  },
 ];
 
 /**
  * Secondary navigation items - shown in a separate section (tools/resources)
  */
-export const secondaryNavItems: NavItem[] = [
-  {
-    id: "channel-profile",
-    label: "Channel Profile",
-    href: "/channel-profile",
-    icon: "channel",
-    channelScoped: true,
-  },
-  {
-    id: "saved-ideas",
-    label: "Saved Ideas",
-    href: "/saved-ideas",
-    icon: "bookmark",
-    channelScoped: false,
-  },
-  {
-    id: "learn",
-    label: "Learn",
-    href: "/learn",
-    icon: "book",
-    channelScoped: false,
-  },
-];
+export const secondaryNavItems: NavItem[] = [];
 
 /**
  * Account/user menu items - shown in user dropdown
  */
 export const accountNavItems: NavItem[] = [
-  {
-    id: "profile",
-    label: "Profile & Billing",
-    href: "/profile",
-    icon: "user",
-    channelScoped: false,
-  },
   {
     id: "contact",
     label: "Contact Support",
@@ -205,9 +151,6 @@ export function getPageTitle(pathname: string): string {
   // Fallback titles for nested routes
   if (pathname.startsWith("/video/")) {
     return "Video Insights";
-  }
-  if (pathname.startsWith("/competitors/video/")) {
-    return "Competitor Video";
   }
   if (pathname.startsWith("/learn/")) {
     return "Learn";

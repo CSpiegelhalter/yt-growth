@@ -1,0 +1,186 @@
+/* ── Idea Editor Panel ── */
+
+.editorPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-bottom: var(--space-8);
+}
+
+/* ── Header ── */
+
+.editorHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.editorTitle {
+  color: var(--text);
+  font-size: 20px;
+  font-weight: var(--font-bold);
+  margin: 0;
+}
+
+.discardLink {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: var(--text-sm);
+  padding: 0;
+  text-decoration: underline;
+}
+
+.discardLink:hover {
+  color: var(--text);
+}
+
+/* ── AI Help Banner ── */
+
+.aiHelpBanner {
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.aiHelpIcon {
+  color: var(--color-imperial-blue);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.aiHelpText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.aiHelpTitle {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: var(--font-semibold);
+}
+
+.aiHelpDesc {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+/* ── Form Field ── */
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fieldHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.fieldLabel {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: var(--font-medium);
+}
+
+.suggestBtn {
+  background: none;
+  border: none;
+  color: var(--color-imperial-blue);
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  padding: 0;
+}
+
+.suggestBtn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.suggestBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.fieldInput {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-family);
+  font-size: 15px;
+  height: 51px;
+  padding: 0 var(--space-4);
+  transition: border-color var(--transition-base);
+  width: 100%;
+}
+
+.fieldInput:focus {
+  border-color: var(--color-imperial-blue);
+  outline: none;
+}
+
+.fieldInput:disabled {
+  opacity: 0.6;
+}
+
+.fieldTextarea {
+  height: 151px;
+  padding: var(--space-3) var(--space-4);
+  resize: vertical;
+}
+
+.charCount {
+  color: var(--text-secondary);
+  font-size: var(--control-font-size-sm);
+  text-align: right;
+}
+
+.fieldError {
+  color: var(--color-hot-rose);
+  font-size: var(--control-font-size-sm);
+}
+
+/* ── Summary field (taller) ── */
+
+.summaryInput {
+  height: 66px;
+}
+
+/* ── Save Button ── */
+
+.saveBtn {
+  background: var(--color-imperial-blue);
+  border: none;
+  border-radius: 8px;
+  color: var(--text-inverse);
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: var(--font-semibold);
+  align-self: flex-end;
+  height: 35px;
+  padding: 0 var(--space-6);
+  transition: opacity var(--transition-base);
+  width: auto;
+}
+
+.saveBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.saveBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

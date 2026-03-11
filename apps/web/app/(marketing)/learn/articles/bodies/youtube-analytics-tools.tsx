@@ -293,7 +293,7 @@ export function Body({ s }: BodyProps) {
           <Card title="Video Idea Generation" accentColor="var(--color-stormy-teal)">
             Find topics with proven demand based on what is already working for
             similar channels.{" "}
-            <Link href="/ideas" style={{ fontWeight: 600 }}>
+            <Link href="/dashboard" style={{ fontWeight: 600 }}>
               Generate video ideas →
             </Link>
           </Card>

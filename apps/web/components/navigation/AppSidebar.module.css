@@ -133,6 +133,11 @@
   width: 20px;
 }
 
+/* Profile icon always hot rose (inline SVG inherits color, unlike SVG-file icons) */
+.navLink[data-nav-id="profile"] .navIcon {
+  color: var(--color-hot-rose);
+}
+
 .navLabel {
   overflow: hidden;
   text-overflow: ellipsis;

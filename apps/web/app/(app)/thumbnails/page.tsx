@@ -5,10 +5,11 @@
  * Protected by the "thumbnail_generation" feature flag.
  */
 
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { getCurrentUserWithSubscription } from "@/lib/server/auth";
+import { AccessGate } from "@/components/auth/AccessGate";
+import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
 import { getFeatureFlag } from "@/lib/shared/feature-flags";
 
 import { ThumbnailsClient } from "./ThumbnailsClient";
@@ -20,35 +21,32 @@ export const metadata = {
 };
 
 export default async function ThumbnailsPage() {
-  // Check feature flag first (returns 404 if disabled)
   const isEnabled = await getFeatureFlag("thumbnail_generation");
   if (!isEnabled) {
     notFound();
   }
 
-  const user = await getCurrentUserWithSubscription();
-
-  if (!user) {
-    redirect("/auth/login?redirect=/thumbnails");
-  }
+  const bootstrap = await getAppBootstrapOptional();
 
   return (
-    <Suspense>
-      <ThumbnailsClient
-        initialUser={{
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        subscription: user.subscription
-          ? {
-              isActive:
-                user.subscription.status === "active" ||
-                user.subscription.status === "past_due",
-              plan: user.subscription.plan,
-            }
-          : undefined,
-      }}
-      />
-    </Suspense>
+    <AccessGate bootstrap={bootstrap} requireChannel={false}>
+      {(data) => (
+        <Suspense>
+          <ThumbnailsClient
+            initialUser={{
+              id: data.me.id,
+              email: data.me.email,
+              name: data.me.name,
+              subscription: data.me.subscription
+                ? {
+                    isActive: data.me.subscription.isActive,
+                    plan: data.me.plan,
+                  }
+                : undefined,
+            }}
+          />
+        </Suspense>
+      )}
+    </AccessGate>
   );
 }

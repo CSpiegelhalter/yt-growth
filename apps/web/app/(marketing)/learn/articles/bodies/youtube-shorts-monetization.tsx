@@ -861,7 +861,7 @@ export function Body({ s }: BodyProps) {
         <ToolCtaCard
           title="Find Ideas That Work in Your Niche"
           description="Get video ideas based on what is performing for channels like yours."
-          href="/ideas"
+          href="/dashboard"
           bestFor="Best for idea generation"
         />
       </section>

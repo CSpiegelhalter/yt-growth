@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { z } from "zod";
 
-import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { AccessGate } from "@/components/auth/AccessGate";
+import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
 
 import SubscriberInsightsClient from "./SubscriberInsightsClient";
@@ -25,13 +26,17 @@ type Props = {
 
 export default async function SubscriberInsightsPage({ searchParams }: Props) {
   const params = searchParamsSchema.parse(await searchParams);
-  const bootstrap = await getAppBootstrap({ channelId: params.channelId });
+  const bootstrap = await getAppBootstrapOptional({ channelId: params.channelId });
 
   return (
-    <SubscriberInsightsClient
-      initialMe={bootstrap.me}
-      initialChannels={bootstrap.channels}
-      initialActiveChannelId={bootstrap.activeChannelId}
-    />
+    <AccessGate bootstrap={bootstrap}>
+      {(data) => (
+        <SubscriberInsightsClient
+          initialMe={data.me}
+          initialChannels={data.channels}
+          initialActiveChannelId={data.activeChannelId}
+        />
+      )}
+    </AccessGate>
   );
 }

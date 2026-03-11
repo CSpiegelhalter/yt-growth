@@ -27,6 +27,9 @@ export function getDateRange(range: AnalyticsRange): {
   endDate: string;
 } {
   const endDate = new Date();
+  // YouTube Analytics data has a ~2-day processing delay;
+  // requesting recent dates causes Google API 500 errors.
+  endDate.setDate(endDate.getDate() - 2);
   const startDate = new Date();
   startDate.setDate(endDate.getDate() - RANGE_DAYS[range]);
 

@@ -1,68 +1,46 @@
 import { describe, expect,it } from "bun:test";
 
 /**
- * Trending Feature Flag Tests
+ * Navigation Config Tests
  *
- * Tests for the trending_search feature flag gating:
- * 1. Nav gating: Trending nav item should not appear when flag is disabled
- * 2. Route guard: The getFeatureFlag function should correctly return flag values
- *
- * Note: These tests verify the logic in nav-config and feature-flags modules.
- * Full E2E route tests would require a running app, but we can verify the
- * underlying logic that the route guard depends on.
+ * Tests for the primary navigation configuration:
+ * 1. Correct items in correct order
+ * 2. Feature flag system still works
  */
 
-describe("Trending feature flag gating", () => {
+describe("Navigation configuration", () => {
   describe("nav-config", () => {
-    it("primaryNavItems includes trending with featureFlag property", async () => {
+    it("primaryNavItems contains exactly 6 items in correct order", async () => {
       const { primaryNavItems } = await import("@/lib/shared/nav-config");
 
-      const trendingItem = primaryNavItems.find((item) => item.id === "trending");
-
-      expect(trendingItem).toBeDefined();
-      expect(trendingItem?.featureFlag).toBe("trending_search");
-      expect(trendingItem?.href).toBe("/trending");
-      expect(trendingItem?.label).toBe("Trending");
+      expect(primaryNavItems).toHaveLength(6);
+      expect(primaryNavItems[0].id).toBe("dashboard");
+      expect(primaryNavItems[1].id).toBe("videos");
+      expect(primaryNavItems[2].id).toBe("analyzer");
+      expect(primaryNavItems[3].id).toBe("tags");
+      expect(primaryNavItems[4].id).toBe("keywords");
+      expect(primaryNavItems[5].id).toBe("profile");
     });
 
-    it("competitors nav item does not have a feature flag", async () => {
+    it("competitors is not in primaryNavItems", async () => {
       const { primaryNavItems } = await import("@/lib/shared/nav-config");
 
       const competitorsItem = primaryNavItems.find((item) => item.id === "competitors");
-
-      expect(competitorsItem).toBeDefined();
-      expect(competitorsItem?.featureFlag).toBeUndefined();
+      expect(competitorsItem).toBeUndefined();
     });
 
-    it("thumbnails nav item is gated by thumbnail_generation flag", async () => {
+    it("trending is not in primaryNavItems", async () => {
       const { primaryNavItems } = await import("@/lib/shared/nav-config");
 
-      const thumbnailsItem = primaryNavItems.find((item) => item.id === "thumbnails");
-
-      expect(thumbnailsItem).toBeDefined();
-      expect(thumbnailsItem?.featureFlag).toBe("thumbnail_generation");
-    });
-  });
-
-  // Note: nav-config.server tests are skipped because the module imports 'server-only'
-  // which cannot be imported in unit tests. The filtering logic is tested via integration tests.
-  describe("nav-config.server filtering logic (documented, not testable in unit tests)", () => {
-    it("documents that matchNavItemPattern handles trending pattern", () => {
-      // The matchNavItemPattern function in nav-config.server.ts handles:
-      // - "trending" pattern: matches only "/trending"
-      // - "competitors" pattern: matches "/competitors" and "/competitors/*"
-      // - "videos" pattern: matches "/videos" and "/video/*"
-      // This logic is verified via integration/e2e tests
-      expect(true).toBe(true);
+      const trendingItem = primaryNavItems.find((item) => item.id === "trending");
+      expect(trendingItem).toBeUndefined();
     });
   });
 
   describe("feature-flags type safety", () => {
     it("trending_search is a valid FeatureFlagKey", async () => {
-      // Import the type and verify it works with trending_search
       type FeatureFlagKey = "thumbnail_generation" | "trending_search";
 
-      // TypeScript compile-time check - this should compile
       const validKey: FeatureFlagKey = "trending_search";
       expect(validKey).toBe("trending_search");
     });
@@ -72,26 +50,22 @@ describe("Trending feature flag gating", () => {
 
       expect(typeof getFeatureFlag).toBe("function");
 
-      // Note: Actual DB calls may fail in unit test env, but we verify the interface
       const resultPromise = getFeatureFlag("trending_search");
       expect(resultPromise).toBeInstanceOf(Promise);
     });
   });
 });
 
-describe("Trending route guard logic", () => {
+describe("Feature flag defaults", () => {
   it("feature flag returns false as safe default on error", async () => {
     const { getFeatureFlag, invalidateFeatureFlagCache } = await import(
       "@/lib/shared/feature-flags"
     );
 
-    // Clear cache to force fresh check
     invalidateFeatureFlagCache("trending_search");
 
-    // In test environment without DB, should return false (safe default)
     const result = await getFeatureFlag("trending_search");
     expect(typeof result).toBe("boolean");
-    // Note: Actual value depends on DB state, but should always be boolean
   });
 
   it("invalidateFeatureFlagCache does not throw for trending_search", async () => {

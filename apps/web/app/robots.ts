@@ -9,9 +9,9 @@ import { CANONICAL_ORIGIN } from "@/lib/shared/brand";
  * for routes that should not be crawled:
  * - /api/ - API endpoints
  * - /auth/ - Login, signup, password reset flows
- * - Private app routes that require login (videos, profile, competitors, etc.)
+ * - Private app pages (videos, profile, analyze, etc.)
  *
- * Public SEO tool pages (/ideas, /keywords, /tags/*) are intentionally ALLOWED.
+ * Public SEO tool pages (/keywords, /tags/*, /dashboard) are intentionally ALLOWED.
  *
  * Note: All disallowed routes also have noindex metadata as a defense-in-depth.
  * Sitemap URL uses the canonical www origin for consistency.
@@ -33,20 +33,21 @@ export default function robots(): MetadataRoute.Robots {
           "/api/",
           // Auth flows (noindex set on pages)
           "/auth/",
-          // Private app pages (require login, noindex set on pages)
+          // Private app pages (noindex set on pages)
           "/videos/",
           "/profile/",
-          "/goals/",
-          "/competitors/",
-          "/saved-ideas/",
           "/video/",
+          "/analyze/",
           "/thumbnails/",
           "/channel-profile/",
+          "/goals/",
+          "/competitors/",
+          "/subscriber-insights/",
           // Admin routes
           "/admin/",
           // Internal integrations
           "/integrations/",
-          // Note: /ideas, /keywords, and /tags/* are PUBLIC SEO pages - intentionally NOT disallowed
+          // Note: /keywords and /tags/* are PUBLIC SEO pages - intentionally NOT disallowed
         ],
       },
     ],

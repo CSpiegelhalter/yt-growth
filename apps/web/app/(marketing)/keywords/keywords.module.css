@@ -220,18 +220,6 @@
    ================================ */
 
 /* Container - Uses standard page tokens */
-.container {
-  margin: 0 auto;
-  max-width: var(--page-max-width);
-  padding: var(--page-padding-mobile);
-  width: 100%;
-}
-
-@media (width >= 768px) {
-  .container {
-    padding: var(--page-padding-desktop);
-  }
-}
 
 /* Search Form */
 .searchForm {

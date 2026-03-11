@@ -3,6 +3,7 @@ import {
   getCachedTranscript,
   getYouTubeTranscript,
 } from "@/lib/adapters/serpapi/client";
+import { fetchRetentionCurve, getGoogleAccount } from "@/lib/adapters/youtube";
 import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
@@ -80,6 +81,11 @@ export const POST = createApiRoute(
             callLlm: callLLM,
             transcriptCache: { getCachedTranscript, cacheTranscriptAnalysis },
             getYouTubeTranscript,
+            fetchRetentionCurve: async (userId, ytChannelId, vid) => {
+              const ga = await getGoogleAccount(userId, ytChannelId);
+              if (!ga) { return []; }
+              return fetchRetentionCurve(ga, ytChannelId, vid);
+            },
             runTranscriptAnalysis,
             generateSeoAnalysis,
             fetchCompetitiveContext,

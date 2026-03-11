@@ -1,6 +1,4 @@
-import type { InsightVideoInput, VideoPublishMarker } from "@/lib/features/channel-audit";
-import { toLocalDateStr } from "@/lib/shared/date-range";
-import type { DashboardVideo, VideoWithMetrics } from "@/lib/video-tools";
+import type { DashboardVideo } from "@/lib/video-tools";
 
 import type { Video } from "./dashboard-types";
 
@@ -35,31 +33,4 @@ export function buildPublishedAfter(): string {
   const d = new Date();
   d.setDate(d.getDate() - LOOKBACK_DAYS);
   return d.toISOString();
-}
-
-export function deriveInsightVideos(vwm: VideoWithMetrics[]): InsightVideoInput[] {
-  return vwm.map((v) => ({
-    videoId: v.videoId,
-    title: v.title,
-    views: v.views,
-    likes: v.likes,
-    comments: v.comments,
-    durationSec: v.durationSec,
-    publishedAt: v.publishedAt,
-    avgViewPercentage: v.avgViewPercentage ?? null,
-    subscribersGained: v.subscribersGained ?? null,
-    shares: v.shares ?? null,
-  }));
-}
-
-export function deriveVideoMarkers(vwm: VideoWithMetrics[]): VideoPublishMarker[] {
-  return vwm
-    .filter((v): v is VideoWithMetrics & { publishedAt: string } => !!v.publishedAt)
-    .map((v) => ({
-      videoId: v.videoId,
-      title: v.title ?? "Untitled",
-      thumbnailUrl: v.thumbnailUrl ?? null,
-      publishedAt: v.publishedAt,
-      chartDate: toLocalDateStr(new Date(v.publishedAt)),
-    }));
 }

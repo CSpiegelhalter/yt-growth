@@ -69,9 +69,10 @@ export async function getChannelOverview(
   const { userId, channelId, range } = input;
   const { startDate, endDate } = getDateRange(range);
 
-  const [daily, auditTrends] = await Promise.all([
+  const [daily, auditTrends, videos] = await Promise.all([
     deps.fetchDailyAnalytics(userId, channelId, startDate, endDate),
     deps.fetchAuditTrends(userId, channelId, range),
+    deps.fetchRecentVideos(userId, channelId, 50),
   ]);
 
   if (!daily) {
@@ -84,5 +85,5 @@ export async function getChannelOverview(
   const filledDaily = fillMissingDays(daily, startDate, endDate);
   const trends = auditTrends ? trendsToMetrics(auditTrends) : [];
 
-  return { daily: filledDaily, trends, videos: [] };
+  return { daily: filledDaily, trends, videos };
 }

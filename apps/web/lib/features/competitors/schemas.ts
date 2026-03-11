@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { extractVideoId, validateYouTubeUrl } from "@/lib/shared/youtube-url";
+
 // ── Discovery route schemas (/api/competitors/discover) ─────────
 
 const DiscoveryFiltersSchema = z.object({
@@ -123,3 +125,19 @@ export const MoreFromChannelQuerySchema = z.object({
 export type MoreFromChannelQuery = z.infer<
   typeof MoreFromChannelQuerySchema
 >;
+
+// ── Analyze route schemas (/api/analyze) ────────────────────────
+
+export const AnalyzeUrlSchema = z
+  .object({
+    url: z.string().url("Please enter a valid URL"),
+  })
+  .refine(
+    (data) => validateYouTubeUrl(data.url) === null,
+    (data) => ({ message: validateYouTubeUrl(data.url) ?? "Invalid YouTube URL", path: ["url"] }),
+  )
+  .refine(
+    (data) => extractVideoId(data.url) !== null,
+    { message: "Could not find a video ID in this URL", path: ["url"] },
+  );
+

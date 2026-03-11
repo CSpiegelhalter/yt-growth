@@ -1,0 +1,99 @@
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6);
+}
+
+.tabTitle {
+  color: var(--color-imperial-blue);
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+.input {
+  background: #fff;
+  border: 1px solid var(--border-muted, #9ea3cc);
+  border-radius: 8px;
+  color: var(--color-imperial-blue);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  height: 51px;
+  letter-spacing: 0.03em;
+  padding: var(--space-3) var(--space-4);
+  transition: border-color var(--transition-fast);
+  width: 100%;
+}
+
+.input::placeholder {
+  color: var(--color-imperial-blue);
+  opacity: 0.3;
+}
+
+.input:focus {
+  border-color: var(--color-imperial-blue);
+  outline: none;
+}
+
+.textarea {
+  background: #fff;
+  border: 1px solid var(--border-muted, #9ea3cc);
+  border-radius: 8px;
+  color: var(--color-imperial-blue);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.03em;
+  min-height: 151px;
+  padding: var(--space-3) var(--space-4);
+  resize: vertical;
+  transition: border-color var(--transition-fast);
+  width: 100%;
+}
+
+.textarea::placeholder {
+  color: var(--color-imperial-blue);
+  opacity: 0.3;
+}
+
+.textarea:focus {
+  border-color: var(--color-imperial-blue);
+  outline: none;
+}
+
+.tagInputWrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tagChip {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--border-muted, #9ea3cc);
+  border-radius: var(--radius-full);
+  color: var(--color-imperial-blue);
+  display: inline-flex;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+}
+
+.tagRemove {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  line-height: 1;
+  opacity: 0.6;
+  padding: 0;
+}
+
+.tagRemove:hover {
+  opacity: 1;
+}

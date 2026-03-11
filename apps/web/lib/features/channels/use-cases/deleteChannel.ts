@@ -41,10 +41,6 @@ export async function deleteChannel(
     prisma.subscriberAuditCache.deleteMany({
       where: { userId, channelId: channel.id },
     }),
-    prisma.savedIdea.updateMany({
-      where: { userId, channelId: channel.id },
-      data: { channelId: null },
-    }),
   ]);
 
   log.info("Cleared caches for channel", {

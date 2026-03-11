@@ -1,0 +1,44 @@
+/* ── Tab Toggle (pill-style) ── */
+
+.container {
+  background: var(--color-lavender-mist);
+  border-radius: 20px;
+  display: inline-flex;
+  gap: 0;
+  padding: 4px;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  color: var(--color-imperial-blue);
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: 24px;
+  font-weight: var(--font-bold);
+  height: 42px;
+  letter-spacing: 0.72px;
+  opacity: 0.3;
+  padding: 0 24px;
+  transition: all var(--transition-base);
+}
+
+.tab:hover:not(.tabActive) {
+  opacity: 0.5;
+}
+
+.tabActive {
+  background: var(--color-imperial-blue);
+  color: var(--text-inverse);
+  opacity: 1;
+}
+
+@media (width < 768px) {
+  .tab {
+    font-size: 18px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0 16px;
+  }
+}

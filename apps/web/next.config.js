@@ -117,9 +117,6 @@ const nextConfig = {
       // Legacy route -> Subscriber Insights
       { source: "/converters", destination: "/subscriber-insights", permanent: true },
       { source: "/converters/:path*", destination: "/subscriber-insights", permanent: true },
-      // Legacy route -> Videos (was /dashboard)
-      { source: "/dashboard", destination: "/videos", permanent: true },
-      { source: "/dashboard/:path*", destination: "/videos/:path*", permanent: true },
       // Legacy single-video route -> Videos dashboard
       { source: "/video/:videoId", destination: "/videos", permanent: true },
     ];

@@ -6,7 +6,6 @@
  */
 import "server-only";
 
-import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { cache } from "react";
 
@@ -152,18 +151,6 @@ export async function getCurrentUserServer(): Promise<BootstrapUser | null> {
 }
 
 /**
- * Require authenticated user or redirect to login.
- * Use in server components where auth is required.
- */
-async function requireUserServer(): Promise<BootstrapUser> {
-  const user = await getCurrentUserServer();
-  if (!user) {
-    redirect("/auth/login");
-  }
-  return user;
-}
-
-/**
  * Get user profile with subscription (Me type).
  */
 export async function getMeServer(user: BootstrapUser): Promise<Me> {
@@ -204,33 +191,6 @@ export function resolveActiveChannelId(
 
   // Fallback to first channel
   return channels[0]?.channel_id ?? null;
-}
-
-/**
- * Full bootstrap: get user, me, channels, and activeChannelId.
- * Redirects to login if not authenticated.
- *
- * @param searchParams - URL search params (can be passed from page props)
- */
-export async function getAppBootstrap(searchParams?: {
-  channelId?: string;
-}): Promise<BootstrapData> {
-  const user = await requireUserServer();
-  const [me, channels] = await Promise.all([
-    getMeServer(user),
-    getChannelsServer(user.id),
-  ]);
-
-  const activeChannelId = resolveActiveChannelId(channels, searchParams);
-  const activeChannel =
-    channels.find((c) => c.channel_id === activeChannelId) ?? null;
-
-  return {
-    me,
-    channels,
-    activeChannelId,
-    activeChannel,
-  };
 }
 
 /**

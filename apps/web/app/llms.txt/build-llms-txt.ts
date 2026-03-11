@@ -34,27 +34,9 @@ const LLMS_TOOLS = [
     requiresLogin: true,
   },
   {
-    name: "Competitor Analysis",
-    path: "/competitors",
-    description: "Analyze competitor channels to find outlier videos, trending topics, and successful title/thumbnail patterns.",
-    requiresLogin: true,
-  },
-  {
-    name: "Subscriber Insights",
-    path: "/subscriber-insights",
-    description: "Discover which videos drive the most subscribers and understand your subscriber growth patterns.",
-    requiresLogin: true,
-  },
-  {
-    name: "Goals Tracker",
-    path: "/goals",
-    description: "Set and track YouTube growth goals with progress badges and milestones.",
-    requiresLogin: true,
-  },
-  {
-    name: "Thumbnail Generator",
-    path: "/thumbnails",
-    description: "Create eye-catching YouTube thumbnails using AI with style training on your brand.",
+    name: "Video Analyzer",
+    path: "/analyze",
+    description: "Analyze any YouTube video and get actionable insights for your channel.",
     requiresLogin: true,
   },
   {
@@ -75,14 +57,14 @@ const LLMS_PUBLIC_PAGES = [
     description: "ChannelBoost landing page with product overview and features.",
   },
   {
+    name: "Dashboard",
+    path: "/dashboard",
+    description: "YouTube growth dashboard with channel analytics overview and AI-powered video suggestions.",
+  },
+  {
     name: "Learn Hub",
     path: "/learn",
     description: "Collection of in-depth YouTube growth guides and tutorials.",
-  },
-  {
-    name: "YouTube Video Ideas Generator",
-    path: "/ideas",
-    description: "Free tool to generate data-driven YouTube video ideas based on trending topics, search demand, and what's working in your niche.",
   },
   {
     name: "YouTube Keyword Research Tool",

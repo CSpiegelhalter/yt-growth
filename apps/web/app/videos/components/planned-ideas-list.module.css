@@ -1,0 +1,132 @@
+/* ── Planned Ideas List ── */
+
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow-y: auto;
+  position: relative;
+}
+
+/* ── New Idea Card ── */
+
+.newIdeaCard {
+  align-items: center;
+  background: var(--surface);
+  border: 2px solid var(--color-lavender-mist);
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  text-align: left;
+  transition: border-color var(--transition-base);
+  width: 100%;
+}
+
+.newIdeaCard:hover {
+  border-color: var(--color-hot-rose);
+}
+
+.newIdeaCardSelected {
+  border-color: var(--color-hot-rose);
+}
+
+.newIdeaIcon {
+  align-items: center;
+  color: var(--color-imperial-blue);
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.newIdeaText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.newIdeaTitle {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: var(--font-semibold);
+}
+
+.newIdeaSubtitle {
+  color: var(--text-secondary);
+  font-size: var(--control-font-size-sm);
+}
+
+/* ── Idea List Item ── */
+
+.ideaItem {
+  align-items: center;
+  background: var(--surface);
+  border: 2px solid var(--color-lavender-mist);
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  text-align: left;
+  transition: border-color var(--transition-base);
+  width: 100%;
+}
+
+.ideaItem:hover {
+  border-color: var(--color-hot-rose);
+}
+
+.ideaItemSelected {
+  border-color: var(--color-hot-rose);
+}
+
+.ideaIcon {
+  align-items: center;
+  color: var(--color-imperial-blue);
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.ideaContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ideaTitle {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: var(--font-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ideaDate {
+  color: var(--text-secondary);
+  font-size: var(--control-font-size-sm);
+}
+
+/* ── Empty State ── */
+
+.emptyState {
+  color: var(--text-secondary);
+  font-size: 15px;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+/* ── Bottom Fade ── */
+
+.fadeGradient {
+  background: linear-gradient(transparent, var(--surface));
+  bottom: 0;
+  height: 60px;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}

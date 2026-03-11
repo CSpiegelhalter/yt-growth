@@ -199,6 +199,22 @@ async function refreshAccessToken(ga: GA): Promise<string> {
   return tok.accessToken;
 }
 
+/** Retry a fetch on Google 500 (transient internal errors), up to 2 attempts with backoff. */
+async function retryOn500(response: Response, url: string, accessToken: string, init?: RequestInit): Promise<Response> {
+  let result = response;
+  if (result.status !== 500) {return result;}
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    await result.text(); // consume body
+    await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+    result = await fetch(url, {
+      ...init,
+      headers: { ...init?.headers, Authorization: `Bearer ${accessToken}` },
+    });
+    if (result.status !== 500) {break;}
+  }
+  return result;
+}
+
 // Generic wrapper that auto-refreshes on 401 once.
 export async function googleFetchWithAutoRefresh<T>(
   ga: GA & { id: number },
@@ -235,6 +251,8 @@ export async function googleFetchWithAutoRefresh<T>(
       });
     }
   }
+
+  r = await retryOn500(r, url, accessToken, init);
 
   if (!r.ok) {
     const body = await r.text();

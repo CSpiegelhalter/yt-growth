@@ -13,7 +13,7 @@ import { LEARN_ARTICLES } from "./(marketing)/learn/articles";
  * - /api/* (not pages)
  * - Private app routes that require login (videos, profile, competitors, etc.)
  *
- * Public SEO tool pages (/ideas, /keywords, /tags/*) ARE included here.
+ * Public SEO tool pages (/keywords, /tags/*) ARE included here.
  *
  * URLs use consistent format: no trailing slash for pages.
  * All URLs use the canonical www origin to avoid redirect warnings in SEO audits.
@@ -51,13 +51,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     // Learn articles
     ...learnArticleEntries,
-    // SEO tool pages - high priority public pages
+    // Dashboard - public with auth prompt for logged-out users
     {
-      url: `${baseUrl}/ideas`,
-      lastModified: new Date("2026-01-26"),
+      url: `${baseUrl}/dashboard`,
+      lastModified: new Date("2026-03-09"),
       changeFrequency: "weekly",
-      priority: 0.9,
+      priority: 0.8,
     },
+    // SEO tool pages - high priority public pages
     {
       url: `${baseUrl}/keywords`,
       lastModified: new Date("2026-01-26"),

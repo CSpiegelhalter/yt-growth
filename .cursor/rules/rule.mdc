@@ -1,211 +1,193 @@
 ---
-description: 
+description:
 alwaysApply: true
 ---
 
 ## Mission
-Build a YouTube growth application that helps creators make better content faster:
-- Channel + competitor analysis
-- Idea generation
-- Thumbnail generation
-- Anything else that measurably improves growth (CTR, retention, upload consistency)
-
-Success looks like: fast, clear workflows that create "wow" moments, keep users engaged, and improve creator outcomes.
+YouTube growth app: channel/competitor analysis, idea generation, thumbnail generation, and anything that measurably improves creator growth (CTR, retention, upload consistency).
 
 ---
 
 ## Tech & Platform
-- Runtime/package manager: **bun** (prefer `bun` commands and bun-compatible tooling).
+- Runtime: **bun** (not npm/yarn).
 - Framework: **Next.js App Router** (`app/`).
-- **Do NOT use Next.js middleware** (deprecated for this project). We use **proxy.ts** for request proxying instead.
-- Payments: **Stripe**.
-  - Stripe webhooks exist and are critical -- treat webhook routes as externally-invoked entrypoints.
-  - Never assume a webhook route is unused just because UI doesn't call it.
+- **No Next.js middleware** — use **proxy.ts** for request proxying.
+- Payments: **Stripe**. Webhook routes are externally-invoked entrypoints — never assume unused.
 
 ---
 
-## Architecture & Project Structure
+## Architecture & Layers
 
-The canonical architecture is defined in `docs/ARCHITECTURE.md` and enforced by
-`.cursor/rules/architecture.mdc`. Summary of the layered structure:
+Canonical architecture: `docs/ARCHITECTURE.md`. Imports flow **downward only**.
 
-- **`app/`** -- entrypoints only (routes, pages, layouts). Must remain thin.
-  - `app/**/page.tsx` = pages (RSC-first, fetch via `lib/server/`, pass props)
-  - `app/api/**/route.ts` = API routes (orchestrate: validate -> use-case -> respond)
-  - `app/sitemap.ts` and `app/robots.ts` exist; sitemap omissions are not proof a route is dead.
-- **`components/`** -- UI layer:
-  - `ui/` -- presentational primitives (no business logic)
-  - `layout/` -- app shell, headers, sidebars, navigation
-  - `features/<domain>/` -- feature-specific client components + hooks
-- **`lib/`** -- all non-UI code:
-  - `api/` -- route middleware & response helpers (existing, keep as-is)
-  - `features/<domain>/` -- domain logic, use-cases, schemas, types, errors
-  - `ports/` -- interface contracts for external I/O (pure types)
-  - `adapters/<provider>/` -- external I/O implementations (YouTube, Stripe, etc.)
-  - `shared/` -- cross-domain utilities (last resort -- must be used by 3+ domains)
-  - `server/` -- server-only helpers (bootstrap, auth, env, request context)
-  - `client/` -- client-side API helpers
-- **`scripts/`** -- CLI/maintenance scripts (entrypoints).
-- **`tests/`** -- unit/integration tests (treat test-only helpers as "alive" if tests depend on them).
-- **`proxy.ts`** -- request proxying; keep aligned with routes and API boundaries.
+```
+app/ (entrypoints)
+  └──► components/, lib/api/, lib/features/, lib/adapters/, lib/server/
+components/
+  └──► lib/features/, lib/shared/
+lib/features/
+  └──► lib/ports/, lib/shared/
+lib/adapters/
+  └──► lib/ports/, lib/shared/
+lib/server/
+  └──► lib/features/, lib/adapters/, lib/shared/
+lib/api/
+  └──► lib/shared/
+lib/ports/
+  └──► (nothing — pure types)
+lib/shared/
+  └──► (nothing — leaf layer)
+```
 
-**Dependency direction** (strict, one-way):
-`app/` + `components/` -> `lib/features/` -> `lib/ports/` <- `lib/adapters/`
-`lib/shared/` is a leaf layer imported by features/adapters but imports nothing app-specific.
-See `architecture.mdc` for the full forbidden-imports table.
+### Forbidden imports
+- `lib/features/` must NOT import from `lib/adapters/`, `components/`, or `app/`.
+- `lib/adapters/` must NOT import from `lib/features/`, `components/`, or `app/`.
+- `lib/ports/` must NOT import from `lib/features/`, `lib/adapters/`, or `components/`.
+- `lib/shared/` must NOT import from `lib/features/`, `lib/adapters/`, or `components/`.
+- `components/ui/` must NOT import from `lib/adapters/` or `app/`.
 
----
+If a change requires a forbidden import, the code is in the wrong layer. Move it.
 
-## UX Principles (non-negotiables)
-- User-centric workflows: help creators move from "question" to "action" quickly.
-- Usability: clear navigation, predictable flows, minimal friction.
-- Consistency: reuse patterns and components.
-- Clarity & hierarchy: important info stands out; reduce noise.
-- Accessibility: semantic HTML, keyboard nav, ARIA where needed.
-- User control & freedom: undo/cancel/escape hatches.
-- Feedback: visible loading/error/success states; explain outcomes.
+### Layer responsibilities
 
----
+**`app/`** — entrypoints only (routes, pages, layouts). Must remain thin.
+- `app/api/**/route.ts`: orchestrate only — middleware → use-case → response. No business logic, no direct DB/LLM/API calls.
+- `app/**/page.tsx`: fetch via `lib/server/`, pass props to components, define metadata.
+- `app/sitemap.ts` and `app/robots.ts` exist; sitemap omissions ≠ dead routes.
 
-## Product Design Heuristics
-- Minimize cognitive load: fewer choices per screen; progressive disclosure.
-- Context-aware UI: tailor based on channel state, plan tier, device.
-- Error prevention & recovery: guard rails + helpful messages.
-- Recognition over recall: keep key info visible.
-- Peak-end rule: make "results" screens and completion moments delightful.
+**`components/`** — UI layer:
+- `ui/` — presentational primitives (no business logic)
+- `layout/` — app shell, headers, sidebars
+- `features/<domain>/` — feature-specific client components + hooks
 
----
+**`lib/features/<domain>/`** — domain logic. Each domain owns:
+- `types.ts`, `schemas.ts`, `errors.ts` (extending `DomainError`), `use-cases/`, `index.ts`
+- Features receive validated inputs, return domain types or throw `DomainError`. No `Response` objects.
+- Access external I/O through port interfaces only.
 
-## Rendering & Data Fetching Policy (Next.js)
-- Default to **React Server Components** and server-side data fetching.
-- Minimize:
-  - `'use client'`
-  - `useEffect`
-  - `useState`
-- Use client components only when required:
-  - interactive UI state
-  - browser-only APIs
-  - realtime UX
-- Prefer server actions / route handlers for mutations when appropriate.
-- Keep pages thin: pages compose smaller components and call into `lib/features/`.
+**`lib/adapters/<provider>/`** — I/O only: HTTP calls, SDK wrappers, caching, retries, data mapping.
+- Must NOT make business decisions or import feature code.
+
+**`lib/ports/`** — pure type contracts for external I/O.
+
+**`lib/shared/`** — cross-domain utilities. Must be used by 3+ domains. When in doubt, keep in the feature.
+
+**`scripts/`** — CLI/maintenance scripts. **`tests/`** — unit/integration tests. **`proxy.ts`** — request proxying.
 
 ---
 
-## Code Quality & Maintainability
-- Components should be small; avoid giant files.
-- Follow the layered architecture separation:
-  - UI in `components/` and `app/`
-  - Domain logic in `lib/features/`
-  - External I/O in `lib/adapters/`
-  - Contracts in `lib/ports/`
-  - Cross-cutting utilities in `lib/shared/`
-- Reuse logic; avoid duplication. Search existing code before adding new utilities.
-- Keep performance in mind (avoid heavy client bundles; code split).
-- Write code that is easy to change and test.
-
-### File Structure (MANDATORY -- never violate)
-- **One component per file.** A `.tsx` file exports ONE React component.
-  Do NOT define helper components, sub-components, or internal components
-  inside the same file as the parent component. Extract them to their own files.
-- **Hooks go in separate files.** Custom hooks (`use*.ts`) must live in their
-  own dedicated file, never inlined inside a component file.
-- **Pure logic goes in separate files.** Utility/helper functions, data
-  transformers, and static computation functions must be extracted to their own
-  `.ts` file -- not buried inside a component file.
-- **Shared types go in a types file.** If a type is used by more than one file
-  in the same directory, create a shared `*-types.ts` file for it.
-- **Target: <150 lines per file.** If a component file exceeds ~150 lines,
-  it almost certainly contains logic that should be extracted. Refactor
-  immediately -- do not wait for a follow-up pass.
+## File Structure (MANDATORY)
+- **One component per file.** Extract sub-components to their own files.
+- **Hooks in separate files.** Custom hooks (`use*.ts`) get dedicated files.
+- **Pure logic in separate files.** Utilities/transformers/computation → own `.ts` file.
+- **Shared types** used by 2+ files → `*-types.ts`.
+- **Target: <150 lines per file.** Refactor immediately if exceeded.
 
 ---
 
-## SEO Requirements
-- "SEO is a feature." Pages must be indexable, fast, and content-rich.
-- Use Next.js metadata APIs correctly:
-  - `generateMetadata` where appropriate
-  - unique titles/descriptions per route
-  - canonical URLs where needed
-- Optimize performance:
-  - dynamic imports for code splitting
-  - images: Next/Image, WebP when possible, explicit sizes, lazy loading
-  - responsive, mobile-first layouts
-- Avoid client-only rendering for pages that should rank.
+## Naming Conventions
+
+| Item | Convention | Example |
+| --- | --- | --- |
+| Folders/files | kebab-case | `competitor-search/` |
+| React components | PascalCase.tsx | `ExampleWidget.tsx` |
+| Types/interfaces | PascalCase | `CompetitorVideo` |
+| Functions | camelCase | `discoverCompetitors` |
+| Zod schemas | PascalCase + `Schema` | `DiscoverQuerySchema` |
+| Error classes | PascalCase + `Error` | `CompetitorNotFoundError` |
+| Use-case files | camelCase verb phrase | `discoverCompetitors.ts` |
+| CSS modules | `style.module.css` or `<Component>.module.css` | |
+
+Before creating a new utility, search: `lib/shared/` → `lib/features/` → `lib/adapters/`. Extend existing functions.
+
+---
+
+## Barrel Files
+- `index.ts` = re-export only. No logic, no side effects.
+- Never import your own barrel (no circular `import from './index'`).
 
 ---
 
 ## Error Handling & Validation
-- Domain errors extend `DomainError` from `lib/shared/errors.ts`.
-- Each feature defines its own error subclass in `lib/features/<domain>/errors.ts`.
-- Route handlers use `withErrorHandling` middleware; `toApiError()` maps `DomainError` to `ApiError`.
-- Zod schemas live in `lib/features/<domain>/schemas.ts`.
-- Route handlers validate with `withValidation()` from `lib/api/withValidation.ts`.
-- Use guard clauses / early returns.
-- Handle edge cases explicitly (missing channel data, rate limits, empty results).
-- Never log secrets. Be careful with webhook payloads and auth tokens.
+- Domain errors extend `DomainError` from `lib/shared/errors.ts`. Each feature has `errors.ts`.
+- Route handlers use `withErrorHandling`; `toApiError()` maps `DomainError` → `ApiError`.
+- Common codes: `NOT_FOUND`, `UNAUTHORIZED`, `FORBIDDEN`, `LIMIT_REACHED`, `INVALID_INPUT`, `EXTERNAL_FAILURE`, `TIMEOUT`, `RATE_LIMITED`.
+- Zod schemas in `lib/features/<domain>/schemas.ts`. Route handlers validate with `withValidation()`.
+- Use-cases receive validated types — no re-parsing. Infer: `type Input = z.infer<typeof InputSchema>`.
+- Use guard clauses / early returns. Handle edge cases explicitly. Never log secrets.
 
 ---
 
-## State Management
-- Prefer server state when possible (RSC/SSR).
-- If client state is required:
-  - use **Zustand** for global UI state
-  - use **TanStack React Query** for client fetching/caching
-- Avoid redundant fetching; use caching where appropriate.
+## Rendering & State
+- Default to **React Server Components** and server-side data fetching.
+- Minimize `'use client'`, `useEffect`, `useState`. Use client components only for interactive state, browser APIs, realtime UX.
+- Server-only modules use `import "server-only"`.
+- Client state: **Zustand** (global UI), **TanStack React Query** (fetching/caching).
 
 ---
 
-## Stripe Webhooks (Special Rules)
-- Treat webhook endpoints as **public entrypoints** triggered by Stripe.
-- Never remove/refactor webhook code without:
-  - verifying Stripe event types used
-  - confirming handling paths
-  - ensuring idempotency and signature verification remain intact
-- Prefer storing enough metadata to reconcile payments safely.
+## Adding a New API Route
+
+```ts
+import { createApiRoute } from "@/lib/api/route";
+import { withAuth } from "@/lib/api/withAuth";
+import { withValidation } from "@/lib/api/withValidation";
+import { jsonOk } from "@/lib/api/response";
+import { SomeBodySchema } from "@/lib/features/<domain>";
+import { doSomething } from "@/lib/features/<domain>";
+
+export const POST = createApiRoute(
+  { route: "/api/path/here" },
+  withAuth({ mode: "required" },
+    withValidation({ body: SomeBodySchema }, async (_req, _ctx, api, { body }) => {
+      const result = await doSomething({ userId: api.userId!, ...body });
+      return jsonOk(result, { requestId: api.requestId });
+    })
+  )
+);
+```
 
 ---
 
-## Safe Refactors & Cleanup Policy
-- Do not delete routes/files/exports unless you have 2 proofs of unused:
-  1) IDE/TypeScript "Find References" or compiler/linter evidence, AND
-  2) repo-wide search evidence (including dynamic imports and string-based usage)
-- Always check for:
-  - `import()`, `require()`, `next/dynamic`, `React.lazy`
-  - string references (`fetch("/api/...")`, route names, config keys)
-  - usage from scripts/tests/CI/infra
-- Make changes in small batches; run verification commands after each batch.
+## SEO
+- Use `generateMetadata`, unique titles/descriptions, canonical URLs.
+- Dynamic imports for code splitting. `next/image` with WebP, explicit sizes, lazy loading.
+- Avoid client-only rendering for pages that should rank.
+
+---
+
+## Stripe Webhooks
+- Never remove/refactor webhook code without verifying event types, handling paths, idempotency, and signature verification.
+
+---
+
+## Safe Refactors
+- Don't delete routes/files/exports without 2 proofs of unused:
+  1. IDE/TypeScript references or compiler evidence, AND
+  2. Repo-wide search (including dynamic imports, string references, scripts/tests/CI).
+- Small batches; verify after each.
+
+---
+
+## Testing
+- Unit tests required for new `lib/features/` and `lib/adapters/` code.
+- Tests in `__tests__/` co-located with source. Mock port interfaces (features) or external APIs (adapters).
+- Naming: `<module>.test.ts`. Run: `bun run test:unit`.
 
 ---
 
 ## Verified-Change Workflow (MANDATORY)
 
-Every code modification must pass a **Pre-Flight Check** before the task is
-considered complete. No exceptions.
-
-### Pre-Flight Suite
-
-Run the single pre-flight command from the repo root:
+Run after every code change:
 
 ```
 make preflight
 ```
 
-This runs all six checks (build, lint, knip, madge, depcruise, jscpd),
-compares against `.agent/baseline.json`, outputs the comparison table, and
-auto-updates the baseline when metrics improve. If any metric regresses the
-script exits non-zero — fix regressions before completing the task.
-
-**Do NOT run the six checks individually.** Always use `make preflight`.
+Compares against `.agent/baseline.json`. Regressions = fix before completing.
+Do NOT run checks individually — always use `make preflight`.
 
 ---
 
 ## Implementation Method
-When implementing or refactoring:
-1) Analyze requirements and constraints.
-2) Plan the smallest safe change set.
-3) Implement step-by-step.
-4) Review for edge cases, performance, security.
-5) Run the Verified-Change Workflow pre-flight suite.
-6) Output the summary table. Fix regressions. Update baseline if improved.
-
-Prefer the simplest solution that is safe, maintainable, and performant.
+1. Analyze requirements. 2. Plan smallest safe change. 3. Implement. 4. Review edge cases, perf, security. 5. Run `make preflight`. 6. Fix regressions.

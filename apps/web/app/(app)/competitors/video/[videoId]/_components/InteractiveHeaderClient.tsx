@@ -336,16 +336,10 @@ const categoryColors: Record<OutperformRecommendation["category"], string> = {
 };
 
 /**
- * WaysToOutperform - Comment-driven recommendations for differentiation.
+ * OutperformList - Shared rendering for grouped outperform recommendations.
+ * Used by both the competitor detail page and the analyze page.
  */
-export const WaysToOutperform = memo(function WaysToOutperform({
-  recommendations,
-}: WaysToOutperformProps) {
-  if (recommendations.length === 0) {
-    return null;
-  }
-
-  // Group by category
+export function OutperformList({ recommendations }: { recommendations: OutperformRecommendation[] }) {
   const grouped = recommendations.reduce(
     (acc, rec) => {
       if (!acc[rec.category]) {
@@ -358,6 +352,53 @@ export const WaysToOutperform = memo(function WaysToOutperform({
   );
 
   return (
+    <div className={s.outperformList}>
+      {Object.entries(grouped).map(([category, recs]) => (
+        <div key={category} className={s.outperformCategory}>
+          <span
+            className={s.categoryBadge}
+            data-category={categoryColors[category as OutperformRecommendation["category"]]}
+          >
+            {categoryLabels[category as OutperformRecommendation["category"]]}
+          </span>
+          <ul className={s.outperformItems}>
+            {recs.map((rec, i) => (
+              <li key={i} className={s.outperformItem}>
+                <span className={s.outperformAction}>{rec.action}</span>
+                {rec.supportingTheme && (
+                  <span className={s.outperformTheme}>
+                    Based on: {rec.supportingTheme}
+                  </span>
+                )}
+                {rec.exampleSnippets.length > 0 && (
+                  <div className={s.snippets}>
+                    {rec.exampleSnippets.map((snippet, j) => (
+                      <span key={j} className={s.snippet}>
+                        &ldquo;{snippet}&rdquo;
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * WaysToOutperform - Comment-driven recommendations for differentiation.
+ */
+export const WaysToOutperform = memo(function WaysToOutperform({
+  recommendations,
+}: WaysToOutperformProps) {
+  if (recommendations.length === 0) {
+    return null;
+  }
+
+  return (
     <section className={s.section}>
       <h2 className={s.sectionTitle}>
         Ways to Outperform
@@ -368,40 +409,7 @@ export const WaysToOutperform = memo(function WaysToOutperform({
       <p className={s.sectionSubtitle}>
         Actionable recommendations grounded in viewer feedback
       </p>
-
-      <div className={s.outperformList}>
-        {Object.entries(grouped).map(([category, recs]) => (
-          <div key={category} className={s.outperformCategory}>
-            <span
-              className={s.categoryBadge}
-              data-category={categoryColors[category as OutperformRecommendation["category"]]}
-            >
-              {categoryLabels[category as OutperformRecommendation["category"]]}
-            </span>
-            <ul className={s.outperformItems}>
-              {recs.map((rec, i) => (
-                <li key={i} className={s.outperformItem}>
-                  <span className={s.outperformAction}>{rec.action}</span>
-                  {rec.supportingTheme && (
-                    <span className={s.outperformTheme}>
-                      Based on: {rec.supportingTheme}
-                    </span>
-                  )}
-                  {rec.exampleSnippets.length > 0 && (
-                    <div className={s.snippets}>
-                      {rec.exampleSnippets.map((snippet, j) => (
-                        <span key={j} className={s.snippet}>
-                          "{snippet}"
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
+      <OutperformList recommendations={recommendations} />
     </section>
   );
 });

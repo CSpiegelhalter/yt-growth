@@ -5,10 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 
-import { shouldShowVerifyButton, validateEmailPassword } from "@/components/auth/auth-helpers";
+import { validateEmailPassword } from "@/components/auth/auth-helpers";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { VerifyLoginSection } from "@/components/auth/VerifyLoginSection";
 
 import s from "./style.module.css";
 
@@ -21,7 +20,6 @@ export default function LoginForm() {
   const sp = useSearchParams();
 
   const showSignupSuccess = sp.get("signup") === "1";
-  const showVerifyButton = shouldShowVerifyButton(sp);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,7 +33,7 @@ export default function LoginForm() {
       return;
     }
 
-    const callbackUrl = sp.get("callbackUrl") || "/videos";
+    const callbackUrl = sp.get("callbackUrl") || "/dashboard";
     const res = await signIn("credentials", {
       email,
       password,
@@ -53,15 +51,7 @@ export default function LoginForm() {
 
   async function handleGoogleSignIn() {
     setLoading(true);
-    await signIn("google", { callbackUrl: "/videos" });
-  }
-
-  function handleVerificationLogin() {
-    setLoading(true);
-    const callbackUrl = sp.get("callbackUrl") || "/videos";
-    window.location.href = `/auth/verify?callbackUrl=${encodeURIComponent(
-      callbackUrl
-    )}`;
+    await signIn("google", { callbackUrl: "/dashboard" });
   }
 
   return (
@@ -138,7 +128,7 @@ export default function LoginForm() {
         iconClassName={s.googleIcon}
       />
 
-      <VerifyLoginSection
+      {/* <VerifyLoginSection
         visible={showVerifyButton}
         disabled={loading}
         onClick={handleVerificationLogin}
@@ -146,7 +136,7 @@ export default function LoginForm() {
         buttonClassName={s.verifyBtn}
         iconClassName={s.verifyIcon}
         hintClassName={s.verifyHint}
-      />
+      /> */}
     </AuthPageShell>
   );
 }

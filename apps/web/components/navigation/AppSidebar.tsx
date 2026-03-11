@@ -138,6 +138,7 @@ function NavItemLink({ item, pathname, activeChannelId, collapsed }: NavItemLink
         className={`${s.navLink} ${isActive ? s.navLinkActive : ""}`}
         aria-current={isActive ? "page" : undefined}
         title={collapsed ? item.label : undefined}
+        data-nav-id={item.id}
       >
         <span className={s.navIcon}>
           <SidebarIcon itemId={item.id} iconType={item.icon} size={20} />

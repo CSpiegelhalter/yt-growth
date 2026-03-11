@@ -3,24 +3,6 @@
    Mobile First, 4pt Grid System
    ================================ */
 
-/* Page Layout - Uses standard page tokens */
-.pageWrapper {
-  --tags-label: #656A91;
-  margin: 0 auto;
-  max-width: var(--page-max-width);
-  padding: var(--page-padding-mobile);
-  width: 100%;
-}
-
-@media (width >= 768px) {
-  .pageWrapper {
-    padding: var(--page-padding-desktop);
-  }
-}
-
-.pageContent {
-  margin-top: 24px;
-}
 
 /* ================================
    Page Header
@@ -54,7 +36,7 @@
 }
 
 .inputLabel {
-  color: var(--tags-label);
+  color: var(--tags-label, #656A91);
   display: block;
   font-size: 15px;
   font-weight: 700;

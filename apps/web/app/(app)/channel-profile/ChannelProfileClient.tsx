@@ -1,70 +1,131 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter,useSearchParams } from "next/navigation";
-import { useEffect,useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ErrorBanner, PageContainer } from "@/components/ui";
 import type { ChannelProfileInput } from "@/lib/features/channels/schemas";
+import type { ProfileTabId } from "@/lib/features/channels/types";
+import { DEFAULT_PROFILE_INPUT } from "@/lib/features/channels/types";
 import { useChannelProfile } from "@/lib/hooks/use-channel-profile";
 
-import ProfileEditor from "./_components/ProfileEditor";
+import { CompetitorsTab } from "./_components/CompetitorsTab";
+import { DescriptionGuidanceTab } from "./_components/DescriptionGuidanceTab";
+import { IdeaGuidanceTab } from "./_components/IdeaGuidanceTab";
+import { OverviewTab } from "./_components/OverviewTab";
+import { ProfileTabNav } from "./_components/ProfileTabNav";
+import { ScriptGuidanceTab } from "./_components/ScriptGuidanceTab";
+import { TagGuidanceTab } from "./_components/TagGuidanceTab";
+import { useProfileSuggest } from "./_hooks/useProfileSuggest";
 import s from "./style.module.css";
+
+function SaveStatusIndicator({
+  status,
+}: {
+  status: "idle" | "saving" | "saved" | "error";
+}) {
+  if (status === "idle") {
+    return <div className={s.saveStatus} />;
+  }
+
+  const cls =
+    status === "saving"
+      ? s.saveStatusSaving
+      : status === "saved"
+        ? s.saveStatusSaved
+        : s.saveStatusError;
+
+  const text =
+    status === "saving"
+      ? "Saving..."
+      : status === "saved"
+        ? "Saved"
+        : "Save failed";
+
+  return (
+    <div className={`${s.saveStatus} ${cls}`} role="status" aria-live="polite">
+      {text}
+    </div>
+  );
+}
 
 export default function ChannelProfileClient() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const channelId = searchParams.get("channelId");
 
   const {
     profile,
     loading,
-    saving,
-    generating,
     error,
-    saveProfile,
-    generateAI,
+    saveStatus,
+    debouncedSave,
+    cancelPendingSave,
     clearError,
   } = useChannelProfile(channelId);
 
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ProfileTabId>("overview");
+  const [localInput, setLocalInput] = useState<ChannelProfileInput>(
+    DEFAULT_PROFILE_INPUT,
+  );
+  const initializedRef = useRef(false);
 
-  const handleSave = async (input: ChannelProfileInput) => {
-    const saved = await saveProfile(input);
-    if (saved) {
-      // Auto-generate AI profile after saving if it's new or input changed
-      const ai = await generateAI(false);
-      if (ai) {
-        setSuccessMessage("Profile saved and AI summary generated!");
-      } else {
-        setSuccessMessage("Profile saved!");
-      }
-    }
-    return saved;
-  };
-
-  // Handle regenerate
-  const handleRegenerate = async () => {
-    const ai = await generateAI(true);
-    if (ai) {
-      setSuccessMessage("AI summary regenerated!");
-    }
-  };
-
-  // Clear success message after 5 seconds
+  // Sync profile data to local state on load
   useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(null), 5000);
-      return () => clearTimeout(timer);
+    if (profile?.input && !initializedRef.current) {
+      setLocalInput({ ...DEFAULT_PROFILE_INPUT, ...profile.input });
+      initializedRef.current = true;
     }
-  }, [successMessage]);
+  }, [profile]);
 
-  // Clear error when closing
+  // Sync URL hash to tab state
   useEffect(() => {
-    return () => clearError();
-  }, [clearError]);
+    const hash = window.location.hash.replace("#", "");
+    if (hash) {
+      setActiveTab(hash as ProfileTabId);
+    }
+  }, []);
 
-  // Redirect if no channel selected
+  const handleTabChange = useCallback((tabId: ProfileTabId) => {
+    setActiveTab(tabId);
+    window.history.replaceState(null, "", `#${tabId}`);
+  }, []);
+
+  const handleFieldChange = useCallback(
+    (updatedInput: ChannelProfileInput) => {
+      setLocalInput(updatedInput);
+      debouncedSave(updatedInput);
+    },
+    [debouncedSave],
+  );
+
+  const { suggestField, isFieldLoading } = useProfileSuggest(channelId);
+
+  const handleSuggest = useCallback(
+    async (field: string, section: string) => {
+      const value = await suggestField(field, section, localInput);
+      if (!value) { return; }
+
+      setLocalInput((prev) => {
+        const sectionData =
+          (prev[section as keyof ChannelProfileInput] as Record<string, unknown>) ?? {};
+        const updated = {
+          ...prev,
+          [section]: { ...sectionData, [field]: value },
+        } as ChannelProfileInput;
+        debouncedSave(updated);
+        return updated;
+      });
+    },
+    [suggestField, localInput, debouncedSave],
+  );
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => cancelPendingSave();
+  }, [cancelPendingSave]);
+
+  // No channel selected
   if (!channelId) {
     return (
       <PageContainer>
@@ -93,131 +154,71 @@ export default function ChannelProfileClient() {
 
   return (
     <PageContainer>
-      {/* Header */}
-      <div className={s.header}>
-        <Link href={`/videos?channelId=${channelId}`} className={s.backLink}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-          Back to Dashboard
-        </Link>
-        <h2 className={s.title}>Channel Profile</h2>
-        <p className={s.subtitle}>
-          Define your channel's niche, audience, and style. This helps us
-          provide better video ideas, competitor suggestions, and personalized
-          insights.
-        </p>
-      </div>
-
-      {/* Success/Error Messages */}
-      {successMessage && (
-        <div className={s.successBanner}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-            <path d="M22 4L12 14.01l-3-3" />
-          </svg>
-          {successMessage}
-        </div>
-      )}
-
       {error && (
         <ErrorBanner message={error} dismissible onDismiss={clearError} />
       )}
 
-      {/* AI Profile Summary (if exists) */}
-      {profile?.aiProfile && (
-        <div className={s.aiSummary}>
-          <div className={s.aiSummaryHeader}>
-            <h2 className={s.aiSummaryTitle}>
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-              AI-Generated Summary
-            </h2>
-            <button
-              className={s.regenBtn}
-              onClick={handleRegenerate}
-              disabled={generating}
-            >
-              {generating ? "Regenerating..." : "Regenerate"}
-            </button>
-          </div>
-          <div className={s.aiSummaryContent}>
-            <div className={s.nicheLabel}>{profile.aiProfile.nicheLabel}</div>
-            <p className={s.nicheDesc}>{profile.aiProfile.nicheDescription}</p>
+      <SaveStatusIndicator status={saveStatus} />
 
-            {profile.aiProfile.contentPillars.length > 0 && (
-              <div className={s.pillarsSection}>
-                <h4>Content Pillars</h4>
-                <div className={s.pillarsList}>
-                  {profile.aiProfile.contentPillars.map((pillar, i) => (
-                    <div key={i} className={s.pillarItem}>
-                      <strong>{pillar.name}</strong>
-                      <span>{pillar.description}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+      {loading ? (
+        <div className={s.loadingState}>
+          <div className={s.spinner} />
+          <p>Loading profile...</p>
+        </div>
+      ) : (
+        <div className={s.layout}>
+          <ProfileTabNav
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
+          <div className={s.contentCard}>
+            {activeTab === "overview" && (
+              <OverviewTab
+                input={localInput}
+                onFieldChange={handleFieldChange}
+              />
             )}
-
-            <div className={s.aiMeta}>
-              <span>Target: {profile.aiProfile.targetAudience}</span>
-              {profile.lastGeneratedAt && (
-                <span>
-                  Generated:{" "}
-                  {new Date(profile.lastGeneratedAt).toLocaleDateString()}
-                </span>
-              )}
-            </div>
+            {activeTab === "idea-guidance" && (
+              <IdeaGuidanceTab
+                input={localInput}
+                onFieldChange={handleFieldChange}
+                onSuggest={handleSuggest}
+                isFieldLoading={isFieldLoading}
+              />
+            )}
+            {activeTab === "script-guidance" && (
+              <ScriptGuidanceTab
+                input={localInput}
+                onFieldChange={handleFieldChange}
+                onSuggest={handleSuggest}
+                isFieldLoading={isFieldLoading}
+              />
+            )}
+            {activeTab === "tag-guidance" && (
+              <TagGuidanceTab
+                input={localInput}
+                onFieldChange={handleFieldChange}
+              />
+            )}
+            {activeTab === "description-guidance" && (
+              <DescriptionGuidanceTab
+                input={localInput}
+                onFieldChange={handleFieldChange}
+                onSuggest={handleSuggest}
+                isFieldLoading={isFieldLoading}
+              />
+            )}
+            {activeTab === "competitors" && (
+              <CompetitorsTab
+                input={localInput}
+                onFieldChange={handleFieldChange}
+                onSuggest={handleSuggest}
+                isFieldLoading={isFieldLoading}
+              />
+            )}
           </div>
         </div>
       )}
-
-      {/* Editor */}
-      <div className={s.editorSection}>
-        <h2 className={s.sectionTitle}>
-          {profile ? "Edit Your Profile" : "Create Your Profile"}
-        </h2>
-
-        {loading ? (
-          <div className={s.loadingState}>
-            <div className={s.spinner} />
-            <p>Loading profile...</p>
-          </div>
-        ) : (
-          <ProfileEditor
-            initialInput={profile?.input}
-            onSave={handleSave}
-            onCancel={() => router.push(`/videos?channelId=${channelId}`)}
-            onGenerate={handleRegenerate}
-            saving={saving}
-            generating={generating}
-            hasAIProfile={!!profile?.aiProfile}
-          />
-        )}
-      </div>
     </PageContainer>
   );
 }

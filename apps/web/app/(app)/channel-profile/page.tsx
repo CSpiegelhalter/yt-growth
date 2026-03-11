@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+import { AccessGate } from "@/components/auth/AccessGate";
+import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
+
 import ChannelProfileClient from "./ChannelProfileClient";
 
 export const metadata: Metadata = {
@@ -9,6 +12,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function ChannelProfilePage() {
-  return <ChannelProfileClient />;
+export default async function ChannelProfilePage() {
+  const bootstrap = await getAppBootstrapOptional();
+
+  return (
+    <AccessGate bootstrap={bootstrap}>
+      <ChannelProfileClient />
+    </AccessGate>
+  );
 }

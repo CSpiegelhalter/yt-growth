@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 
+import { PageContainer } from "@/components/ui";
 import { BRAND, CANONICAL_ORIGIN } from "@/lib/shared/brand";
-
-import s from "./tags.module.css";
 
 export const metadata: Metadata = {
   title: `YouTube Tags Extractor — Find Tags From Any Video | ${BRAND.name}`,
@@ -29,10 +28,8 @@ export default function TagsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={s.pageWrapper}>
-      <div className={s.pageContent}>
-        {children}
-      </div>
-    </div>
+    <PageContainer>
+      {children}
+    </PageContainer>
   );
 }

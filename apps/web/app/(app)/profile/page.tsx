@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { AccessGate } from "@/components/auth/AccessGate";
+import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
 
 import ProfileClient from "./ProfileClient";
@@ -16,8 +17,13 @@ export const metadata: Metadata = {
  * Auth required, not crawlable
  */
 export default async function ProfilePage() {
-  const bootstrap = await getAppBootstrap();
+  const bootstrap = await getAppBootstrapOptional();
+
   return (
-    <ProfileClient initialMe={bootstrap.me} initialChannels={bootstrap.channels} />
+    <AccessGate bootstrap={bootstrap} requireChannel={false}>
+      {(data) => (
+        <ProfileClient initialMe={data.me} initialChannels={data.channels} />
+      )}
+    </AccessGate>
   );
 }

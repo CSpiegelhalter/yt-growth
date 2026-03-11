@@ -1,13 +1,12 @@
 /**
  * Server-side navigation configuration helpers.
  *
- * This file contains async functions that filter nav items based on
- * feature flags. Import this only in server components or API routes.
+ * This file contains functions that serialize nav items for client components.
+ * Import this only in server components or API routes.
  */
 
 import "server-only";
 
-import { type FeatureFlagKey,getFeatureFlags } from "@/lib/shared/feature-flags";
 import {
   type NavItem,
   primaryNavItems,
@@ -18,94 +17,51 @@ import {
  * Serializable nav item for passing to client components.
  * Strips out the `match` function since functions can't be serialized.
  */
-export type SerializableNavItem = Omit<NavItem, "match" | "featureFlag"> & {
+export type SerializableNavItem = Omit<NavItem, "match"> & {
   /** If item has a custom match pattern, encode it as a string identifier */
-  matchPattern?: "videos" | "competitors" | "trending" | "tags" | "keywords";
+  matchPattern?: "videos" | "tags" | "keywords";
 };
 
 /**
- * Get nav items filtered by feature flags.
+ * Get nav items serialized for client components.
  *
- * This is an async server-only function that:
- * 1. Fetches all relevant feature flags
- * 2. Filters out nav items whose feature flag is disabled
- * 3. Returns serializable nav items (without functions)
- *
- * @returns Object with filtered primary and secondary nav items
+ * @returns Object with primary and secondary nav items
  */
 export async function getFilteredNavItems(): Promise<{
   primary: SerializableNavItem[];
   secondary: SerializableNavItem[];
 }> {
-  // Collect all feature flags used by nav items
-  const flagKeys = new Set<FeatureFlagKey>();
-  for (const item of [...primaryNavItems, ...secondaryNavItems]) {
-    if (item.featureFlag) {
-      flagKeys.add(item.featureFlag);
-    }
-  }
+  const serialize = (items: NavItem[]): SerializableNavItem[] =>
+    items.map((item) => {
+      const serializable: SerializableNavItem = {
+        id: item.id,
+        label: item.label,
+        href: item.href,
+        icon: item.icon,
+        channelScoped: item.channelScoped,
+      };
 
-  // Fetch flags in batch
-  const flags =
-    flagKeys.size > 0
-      ? await getFeatureFlags([...flagKeys])
-      : ({} as Record<FeatureFlagKey, boolean>);
+      switch (item.id) {
+      case "videos": {
+        serializable.matchPattern = "videos";
+        break;
+      }
+      case "tags": {
+        serializable.matchPattern = "tags";
+        break;
+      }
+      case "keywords": {
+        serializable.matchPattern = "keywords";
+        break;
+      }
+      // No default
+      }
 
-  // Filter and serialize nav items
-  const filterAndSerialize = (items: NavItem[]): SerializableNavItem[] =>
-    items
-      .filter((item) => {
-        // If no feature flag, always include
-        if (!item.featureFlag) {return true;}
-        // Include only if flag is enabled
-        return flags[item.featureFlag] === true;
-      })
-      .map((item) => {
-        // Convert to serializable format
-        const serializable: SerializableNavItem = {
-          id: item.id,
-          label: item.label,
-          href: item.href,
-          icon: item.icon,
-          channelScoped: item.channelScoped,
-        };
-
-        // Encode match patterns as identifiers
-        switch (item.id) {
-        case "videos": {
-          serializable.matchPattern = "videos";
-        
-        break;
-        }
-        case "competitors": {
-          serializable.matchPattern = "competitors";
-        
-        break;
-        }
-        case "trending": {
-          serializable.matchPattern = "trending";
-        
-        break;
-        }
-        case "tags": {
-          serializable.matchPattern = "tags";
-        
-        break;
-        }
-        case "keywords": {
-          serializable.matchPattern = "keywords";
-        
-        break;
-        }
-        // No default
-        }
-
-        return serializable;
-      });
+      return serializable;
+    });
 
   return {
-    primary: filterAndSerialize(primaryNavItems),
-    secondary: filterAndSerialize(secondaryNavItems),
+    primary: serialize(primaryNavItems),
+    secondary: serialize(secondaryNavItems),
   };
 }
-

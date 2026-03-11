@@ -94,10 +94,12 @@ export function useFullReport(
   const abortRef = useRef<AbortController | null>(null);
   const runningRef = useRef(false);
 
-  // Abort on unmount
+  // Reset state + abort in-flight stream when video changes (or on unmount)
   useEffect(() => {
+    dispatch({ type: "reset" });
+    runningRef.current = false;
     return () => { abortRef.current?.abort(); };
-  }, []);
+  }, [videoId]);
 
   const generate = useCallback(async () => {
     if (!videoId || runningRef.current) { return; }

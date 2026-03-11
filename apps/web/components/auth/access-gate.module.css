@@ -1,0 +1,82 @@
+.gate {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: calc(100dvh - 200px);
+  padding-bottom: 10vh;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 480px;
+  padding: var(--space-10) var(--space-8);
+  text-align: center;
+  width: 100%;
+}
+
+.icon {
+  align-items: center;
+  background: var(--color-lavender-mist);
+  border-radius: var(--radius-full);
+  color: var(--color-imperial-blue);
+  display: flex;
+  height: 48px;
+  justify-content: center;
+  margin: 0 auto;
+  width: 48px;
+}
+
+.title {
+  color: var(--color-imperial-blue);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  margin: 0;
+}
+
+.description {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: var(--leading-normal);
+  margin: 0 auto;
+  max-width: 380px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+  margin-top: var(--space-3);
+}
+
+.gateButton {
+  font-size: 1rem;
+  height: 48px;
+  min-width: 160px;
+  transition: all var(--transition-base);
+}
+
+.gateButton:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.ctaButton {
+  background: var(--primary);
+}
+
+.ctaButton:hover {
+  background: var(--primary-hover);
+  color: var(--text-inverse);
+}
+
+@media (max-width: 480px) {
+  .actions {
+    flex-direction: column;
+  }
+}

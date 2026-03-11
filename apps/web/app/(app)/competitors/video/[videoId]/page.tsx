@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { AccessGate } from "@/components/auth/AccessGate";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
 
 import {
@@ -43,13 +44,29 @@ export default async function CompetitorVideoDetailPage({
     searchParams,
   ]);
 
-  const bootstrap = await getAppBootstrap({
+  const bootstrap = await getAppBootstrapOptional({
     channelId: searchParamsResolved.channelId,
   });
 
-  const activeChannelId = bootstrap.activeChannelId;
+  const activeChannelId = bootstrap?.activeChannelId ?? null;
 
-  // If no active channel, show error state (no fallback)
+  return (
+    <AccessGate bootstrap={bootstrap}>
+      <CompetitorVideoContent
+        videoId={videoId}
+        activeChannelId={activeChannelId}
+      />
+    </AccessGate>
+  );
+}
+
+async function CompetitorVideoContent({
+  videoId,
+  activeChannelId,
+}: {
+  videoId: string;
+  activeChannelId: string | null;
+}) {
   if (!activeChannelId) {
     return (
       <main className={s.page}>
@@ -62,10 +79,8 @@ export default async function CompetitorVideoDetailPage({
     );
   }
 
-  // Fetch analysis server-side
   const result = await fetchCompetitorVideoAnalysis(videoId, activeChannelId);
 
-  // If fetch failed, show error state
   if (!result.ok) {
     const backHref = `/competitors?channelId=${encodeURIComponent(activeChannelId)}`;
     return (
@@ -81,8 +96,6 @@ export default async function CompetitorVideoDetailPage({
 
   const analysis = result.data;
 
-  // Render the shell with pre-fetched data
-  // MoreFromChannel is streamed via Suspense (non-blocking)
   return (
     <VideoDetailShell
       analysis={analysis}

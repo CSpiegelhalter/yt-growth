@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "figma": {
+      "command": "/opt/homebrew/bin/figma-developer-mcp",
+      "args": ["--figma-api-key=REDACTED", "--stdio"]
+    }
+  }
+}

@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  height: 100%;
   overflow-y: auto;
   padding: var(--space-2) var(--space-2) var(--space-2) 0;
 }
@@ -98,22 +99,24 @@
   white-space: nowrap;
 }
 
-/* ── Overview item (custom icon slot) ── */
+/* ── List container + fade ── */
 
-.overviewItem {
-  margin-bottom: var(--space-3);
-  padding-bottom: var(--space-4);
+.listContainer {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
 }
 
-.overviewIcon {
-  align-items: center;
-  background: var(--surface-alt);
-  border-radius: var(--radius-sm);
-  display: flex;
-  flex-shrink: 0;
-  height: 45px;
-  justify-content: center;
-  width: 80px;
+.fadeGradient {
+  background: linear-gradient(transparent, var(--surface));
+  bottom: 0;
+  height: 80px;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  z-index: 1;
 }
 
 /* ── Skeleton loading ── */

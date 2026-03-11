@@ -1,29 +1,20 @@
 # Claude Code Instructions
 
-## Mandatory Rules
+All project rules live in `.claude/rules/`. Follow ALL of them for EVERY task.
 
-All project rules live in `.claude/rules/`. Read and follow ALL of them for EVERY task — no exceptions.
-
-### Rule files:
-- **`.claude/rules/rule.md`** — Master rules: architecture, code quality, verified-change workflow, pre-flight suite
-- **`.claude/rules/design-system.md`** — Design system and component patterns
-- **`.claude/rules/style.md`** — Styling conventions and CSS rules
-- **`.claude/rules/no-eslint-disable.md`** — Never use eslint-disable comments
-- **`.claude/rules/layer-guardrails.md`** — Layer boundary enforcement (dependency direction)
-
-### Key non-negotiables:
-- **Verified-Change Workflow**: Run the full pre-flight suite after every code change and output the comparison table. Never skip this.
-- **Baseline tracking**: Compare against `.agent/baseline.json`. Regressions = task failure.
-- **Architecture**: Follow the hexagonal architecture (ports + adapters). Respect dependency direction.
-- **File structure**: One component per file, <150 lines, hooks in separate files.
-- **Runtime**: Use `bun`, not npm or yarn.
-- **No `eslint-disable`**: Never add eslint-disable comments. Fix the underlying issue instead.
-- **Styling**: Follow the design system and style rules exactly.
+- **Runtime**: `bun` (not npm/yarn). Use `make` targets when available.
+- **Verified-Change Workflow**: Run `make preflight` after every code change. Compare against `.agent/baseline.json`. Regressions = task failure.
+- **No `eslint-disable`**: Fix the underlying issue instead.
 
 ## Active Technologies
-- TypeScript 5.6.0, React 19.0.0, Node 18+ + Next.js 16.0.0, Zod 3.23.8, Prisma 5.22.0, (001-frontend-refactor)
-- Supabase Postgres with pgvector (via Prisma) (001-frontend-refactor)
-- TypeScript 5.6.0, React 19.0.0, Node 18+ + Next.js 16.0.0, Prisma 5.22.0, Zod 3.23.8, OpenAI (LLM), SerpAPI (transcripts), DataForSEO (SERP/trends) (002-video-perf-optimization)
+- TypeScript 5.x, React 19, Next.js 15 (App Router) + next-auth (session), Prisma (user/channel queries), CSS Modules (005-access-gate)
+- Existing PostgreSQL via Prisma (no schema changes) (005-access-gate)
+- TypeScript 5.x + React 19, Next.js 15 (App Router), Zod, Prisma, next-auth (006-creator-profile)
+- PostgreSQL via Prisma (`ChannelProfile.inputJson` TEXT field stores JSON) (006-creator-profile)
+- TypeScript 5.x + React 19, Next.js 15 (App Router), Zod, next-auth (007-analyze-page)
+- PostgreSQL via Prisma (read-only for this feature — analysis caching handled by existing competitor pipeline) (007-analyze-page)
+- TypeScript 5.x + React 19, Next.js 15 (App Router), next-auth, CSS Modules (008-nav-routing-cleanup)
+- N/A (no database changes) (008-nav-routing-cleanup)
 
 ## Recent Changes
-- 001-frontend-refactor: Added TypeScript 5.6.0, React 19.0.0, Node 18+ + Next.js 16.0.0, Zod 3.23.8, Prisma 5.22.0,
+- 005-access-gate: Added TypeScript 5.x, React 19, Next.js 15 (App Router) + next-auth (session), Prisma (user/channel queries), CSS Modules

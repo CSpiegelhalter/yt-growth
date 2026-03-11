@@ -10,7 +10,8 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
 
-import { getAppBootstrap } from "@/lib/server/bootstrap";
+import { AccessGate } from "@/components/auth/AccessGate";
+import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
 import { getFeatureFlag } from "@/lib/shared/feature-flags";
 
@@ -40,21 +41,24 @@ type Props = {
  * Returns 404 if flag is disabled.
  */
 export default async function TrendingPage({ searchParams }: Props) {
-  // Check feature flag first - return 404 if disabled
   const isEnabled = await getFeatureFlag("trending_search");
   if (!isEnabled) {
     notFound();
   }
 
   const params = searchParamsSchema.parse(await searchParams);
-  const bootstrap = await getAppBootstrap({ channelId: params.channelId });
+  const bootstrap = await getAppBootstrapOptional({ channelId: params.channelId });
 
   return (
-    <Suspense>
-      <TrendingClient
-        initialMe={bootstrap.me}
-        initialActiveChannelId={bootstrap.activeChannelId}
-      />
-    </Suspense>
+    <AccessGate bootstrap={bootstrap} requireChannel={false}>
+      {(data) => (
+        <Suspense>
+          <TrendingClient
+            initialMe={data.me}
+            initialActiveChannelId={data.activeChannelId}
+          />
+        </Suspense>
+      )}
+    </AccessGate>
   );
 }

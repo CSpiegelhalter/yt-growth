@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 
-import { shouldShowVerifyButton } from "@/components/auth/auth-helpers";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { VerifyLoginSection } from "@/components/auth/VerifyLoginSection";
 
 import s from "./style.module.css";
 
@@ -42,11 +40,8 @@ function parseSignupError(status: number, body: Record<string, unknown>): string
 
 export default function SignupForm() {
   const router = useRouter();
-  const sp = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-
-  const showVerifyButton = shouldShowVerifyButton(sp);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -75,7 +70,7 @@ export default function SignupForm() {
           redirect: false,
         });
         if (signInRes?.ok) {
-          window.location.href = "/videos";
+          window.location.href = "/dashboard";
         } else {
           router.push("/auth/login?signup=1");
         }
@@ -92,12 +87,7 @@ export default function SignupForm() {
 
   async function handleGoogleSignUp() {
     setLoading(true);
-    await signIn("google", { callbackUrl: "/videos" });
-  }
-
-  function handleVerificationLogin() {
-    setLoading(true);
-    window.location.href = "/auth/verify?callbackUrl=%2Fdashboard";
+    await signIn("google", { callbackUrl: "/dashboard" });
   }
 
   return (
@@ -184,7 +174,7 @@ export default function SignupForm() {
         label="Sign up with Google"
       />
 
-      <VerifyLoginSection
+      {/* <VerifyLoginSection
         visible={showVerifyButton}
         disabled={loading}
         onClick={handleVerificationLogin}
@@ -192,7 +182,7 @@ export default function SignupForm() {
         buttonClassName={s.verifyBtn}
         iconClassName={s.verifyIcon}
         hintClassName={s.verifyHint}
-      />
+      /> */}
 
       <p className={s.terms}>
         By creating an account, you agree to our{" "}

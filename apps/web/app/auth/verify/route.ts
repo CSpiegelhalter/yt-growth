@@ -18,7 +18,7 @@ function generateState(): string {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const callbackUrl = searchParams.get("callbackUrl") || "/videos";
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
   const cookieStore = await cookies();

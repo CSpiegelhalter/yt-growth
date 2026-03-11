@@ -1,5 +1,3 @@
-import { BRAND } from "@/lib/shared/brand";
-
 type StyleModule = Record<string, string>;
 
 interface AuthPageShellProps {
@@ -28,11 +26,6 @@ export function AuthPageShell({
   return (
     <main className={s.page}>
       <div className={s.card}>
-        <div className={s.branding}>
-          <h1 className={s.logo}>{BRAND.name}</h1>
-          <p className={s.tagline}>{BRAND.tagline}</p>
-        </div>
-
         <div className={s.header}>
           <h2 className={s.title}>{title}</h2>
           {subtitle && <p className={s.subtitle}>{subtitle}</p>}

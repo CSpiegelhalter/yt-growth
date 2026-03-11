@@ -2,20 +2,6 @@
    Videos Page - Split Panel Layout
    ================================ */
 
-.page {
-  margin: 0 auto;
-  max-width: var(--page-max-width);
-  min-height: 95vh;
-  padding: var(--page-padding-mobile);
-  width: 100%;
-}
-
-@media (width >= 768px) {
-  .page {
-    padding: var(--page-padding-desktop);
-  }
-}
-
 /* ── Alerts ── */
 
 .successAlert {
@@ -64,6 +50,13 @@
     flex-direction: row;
     gap: var(--space-6);
   }
+}
+
+/* ── Tab Container ── */
+
+.tabContainer {
+  margin-bottom: var(--space-4);
+  padding: 0;
 }
 
 /* ── Left Panel (Video list) ── */

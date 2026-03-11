@@ -1,0 +1,53 @@
+.cardRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.card {
+  background: var(--color-lavender-mist, #f3f4fb);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 113px;
+  justify-content: center;
+  padding: var(--space-4);
+  position: relative;
+  width: 185px;
+}
+
+.categoryLabel {
+  color: var(--color-imperial-blue);
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+  letter-spacing: 0.03em;
+  margin: 0 0 var(--space-1);
+}
+
+.channelName {
+  color: var(--color-imperial-blue);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.03em;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: var(--color-imperial-blue);
+  cursor: pointer;
+  opacity: 0.5;
+  padding: var(--space-1);
+  position: absolute;
+  right: var(--space-3);
+  top: var(--space-3);
+  transition: opacity var(--transition-fast);
+}
+
+.removeBtn:hover {
+  opacity: 1;
+}

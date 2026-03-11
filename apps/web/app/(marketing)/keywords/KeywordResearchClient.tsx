@@ -1,6 +1,7 @@
 "use client";
 
 import { AuthModal } from "@/components/auth";
+import { PageContainer } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 
 import { KeywordEmptyState } from "./components/KeywordEmptyState";
@@ -73,7 +74,7 @@ export function KeywordResearchClient() {
   }
 
   return (
-    <div className={s.container}>
+    <PageContainer>
       <KeywordSearchForm
         inputRef={input.inputRef}
         inputValue={input.inputValue}
@@ -135,6 +136,6 @@ export function KeywordResearchClient() {
         title="Sign in to search"
         description="Create a free account to search keywords and get video ideas."
       />
-    </div>
+    </PageContainer>
   );
 }

@@ -24,6 +24,8 @@ model User {
   UserTrainingAsset UserTrainingAsset[]
   ThumbnailJobs     ThumbnailJob[]
   ThumbnailProjects ThumbnailProject[]
+  VideoSuggestion   VideoSuggestion[]
+  VideoIdea         VideoIdea[]
 
   @@index([email], map: "idx_user_email")
 }
@@ -85,6 +87,8 @@ model Channel {
   VideoMetrics     VideoMetrics[]
   ChannelNiche     ChannelNiche?
   ChannelProfile   ChannelProfile?
+  VideoSuggestion  VideoSuggestion[]
+  VideoIdea        VideoIdea[]
 
   @@unique([userId, youtubeChannelId], map: "uq_channel_owner_youtube")
   @@index([userId], map: "idx_channel_user")
@@ -613,6 +617,29 @@ model ThumbnailProject {
   @@index([thumbnailJobId], map: "idx_thumbnail_project_job")
 }
 
+// ============================================
+// VIDEO SUGGESTIONS - AI-generated Dashboard ideas
+// ============================================
+
+model VideoSuggestion {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        Int
+  channelId     Int
+  title         String    @db.VarChar(500)
+  description   String    @db.Text
+  sourceContext Json // Signals that informed this suggestion
+  status        String    @default("active") @db.VarChar(16) // active, saved, dismissed, used
+  generatedAt   DateTime  @default(now()) @db.Timestamptz(6)
+  actedAt       DateTime? @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  User          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Channel       Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([userId, channelId, status], map: "idx_video_suggestion_user_channel_status")
+  @@index([userId, generatedAt(sort: Desc)], map: "idx_video_suggestion_user_generated")
+}
+
 model ReplicateWebhookEvent {
   id        String   @id @db.VarChar(255) // e.g. "prediction:<id>:<status>"
   createdAt DateTime @default(now()) @db.Timestamptz(6)
@@ -724,4 +751,29 @@ model ReportGenerationLock {
   videoId   String   @unique @db.VarChar(32) // YouTube video ID
   startedAt DateTime @default(now()) @db.Timestamptz(6)
   expiresAt DateTime @db.Timestamptz(6) // startedAt + 5 minutes (stale lock timeout)
+}
+
+// ============================================
+// VIDEO IDEAS - Planned/workshopped video concepts
+// ============================================
+
+model VideoIdea {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      Int
+  channelId   Int
+  summary     String    @db.VarChar(150)
+  title       String?   @db.VarChar(500)
+  script      String?   @db.Text
+  description String?   @db.Text
+  tags        String?   @db.Text // JSON array of strings
+  postDate    DateTime? @db.Date
+  status      String    @default("draft") @db.VarChar(16) // draft, planned
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  User    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([userId, channelId, status], map: "idx_video_idea_user_channel_status")
+  @@index([userId, createdAt(sort: Desc)], map: "idx_video_idea_user_created")
 }
