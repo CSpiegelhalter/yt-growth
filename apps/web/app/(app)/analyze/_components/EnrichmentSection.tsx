@@ -25,7 +25,7 @@ function velocityInsight(ageDays: number): string {
   return "Evergreen content — focus on quality and SEO over speed.";
 }
 
-function DifficultyCard({ difficulty }: { difficulty: CompetitorVideoAnalysis["strategicInsights"]["competitionDifficulty"] }) {
+function DifficultyCard({ difficulty }: { difficulty: NonNullable<CompetitorVideoAnalysis["strategicInsights"]>["competitionDifficulty"] }) {
   const isAccessible = difficulty.score === "Easy" || difficulty.score === "Medium";
   return (
     <div className={s.enrichmentCard}>
@@ -72,7 +72,7 @@ function BenchmarkCard({ label, rate, verdict, positiveMsg, negativeMsg }: {
   );
 }
 
-function TimingCard({ timing }: { timing: CompetitorVideoAnalysis["strategicInsights"]["postingTiming"] }) {
+function TimingCard({ timing }: { timing: NonNullable<CompetitorVideoAnalysis["strategicInsights"]>["postingTiming"] }) {
   const timeStr = timing.localTimeFormatted ? ` at ${timing.localTimeFormatted}` : "";
   return (
     <div className={s.enrichmentCard}>
@@ -95,7 +95,7 @@ function VelocityCard({ ageDays }: { ageDays: number }) {
   );
 }
 
-function BenchmarkCards({ benchmarks }: { benchmarks: CompetitorVideoAnalysis["strategicInsights"]["engagementBenchmarks"] }) {
+function BenchmarkCards({ benchmarks }: { benchmarks: NonNullable<CompetitorVideoAnalysis["strategicInsights"]>["engagementBenchmarks"] }) {
   return (
     <>
       {benchmarks.likeRate !== null && (

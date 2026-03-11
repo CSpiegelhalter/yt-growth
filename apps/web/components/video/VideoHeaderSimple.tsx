@@ -60,7 +60,7 @@ export function VideoHeaderSimple({
         <ul className={s.statStack}>
           {publishedAt && (
             <li className={s.statLine}>
-              Posted {formatDateShort(publishedAt instanceof Date ? publishedAt : new Date(publishedAt))}
+              Posted {formatDateShort(publishedAt instanceof Date ? publishedAt.toISOString() : publishedAt)}
             </li>
           )}
           <li className={s.statLine}>

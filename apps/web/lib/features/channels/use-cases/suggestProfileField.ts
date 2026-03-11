@@ -4,7 +4,7 @@ import { buildContext } from "@/lib/features/suggestions/use-cases/buildContext"
 import { callLLM } from "@/lib/llm";
 import { createLogger } from "@/lib/shared/logger";
 
-const log = createLogger("suggestProfileField");
+const log = createLogger({ module: "suggestProfileField" });
 
 type SuggestProfileFieldInput = {
   userId: number;
