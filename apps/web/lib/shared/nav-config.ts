@@ -96,27 +96,18 @@ export const primaryNavItems: NavItem[] = [
 export const secondaryNavItems: NavItem[] = [];
 
 /**
- * Account/user menu items - shown in user dropdown
+ * Sidebar bottom items - shown at the bottom of the sidebar, visually
+ * separated from the primary navigation.
  */
-export const accountNavItems: NavItem[] = [
+export const sidebarBottomItems: NavItem[] = [
   {
-    id: "contact",
-    label: "Contact Support",
-    href: "/contact",
-    icon: "mail",
+    id: "sidebar-account",
+    label: "Account",
+    href: "/account",
+    icon: "user",
     channelScoped: false,
   },
 ];
-
-/**
- * Check if a given pathname matches a nav item
- */
-function isNavItemActive(item: NavItem, pathname: string): boolean {
-  if (item.match) {
-    return item.match(pathname);
-  }
-  return pathname === item.href;
-}
 
 /**
  * Get the href with optional channelId query param
@@ -131,45 +122,3 @@ export function getNavHref(
   return `${item.href}?channelId=${activeChannelId}`;
 }
 
-/**
- * Get page title from current pathname
- */
-export function getPageTitle(pathname: string): string {
-  const allItems = [
-    ...primaryNavItems,
-    ...secondaryNavItems,
-    ...accountNavItems,
-  ];
-
-  // Check for exact or custom match
-  for (const item of allItems) {
-    if (isNavItemActive(item, pathname)) {
-      return item.label;
-    }
-  }
-
-  // Fallback titles for nested routes
-  if (pathname.startsWith("/video/")) {
-    return "Video Insights";
-  }
-  if (pathname.startsWith("/learn/")) {
-    return "Learn";
-  }
-  if (pathname.startsWith("/admin/")) {
-    return "Admin";
-  }
-  if (pathname.startsWith("/tags")) {
-    return "Tags";
-  }
-  if (pathname === "/keywords/overview") {
-    return "Keyword Overview";
-  }
-  if (pathname === "/keywords/ideas") {
-    return "Keyword Ideas";
-  }
-  if (pathname.startsWith("/keywords")) {
-    return "Keywords";
-  }
-
-  return "Videos";
-}

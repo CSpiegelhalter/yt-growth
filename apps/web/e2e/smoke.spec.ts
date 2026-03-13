@@ -88,7 +88,7 @@ test.describe("Smoke Tests - Protected Pages", () => {
   });
 
   test("profile page loads without error", async ({ page }) => {
-    await page.goto("/profile");
+    await page.goto("/account");
     await page.waitForLoadState("networkidle");
 
     await expect(page.locator("main").first()).toBeVisible();
@@ -144,7 +144,7 @@ test.describe("Smoke Tests - Mobile Viewport", () => {
 
   test("profile page is responsive on mobile", async ({ page }) => {
     await signIn(page, TEST_USER);
-    await page.goto("/profile");
+    await page.goto("/account");
     await page.waitForLoadState("networkidle");
 
     // Check for proper rendering

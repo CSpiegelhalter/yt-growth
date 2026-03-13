@@ -63,3 +63,20 @@ export function CompassIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function CheckCircleIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+      <path d="M22 4L12 14.01l-3-3" />
+    </Icon>
+  );
+}
+
+export function SparklesIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3l1.912 5.813a2 2 0 001.272 1.278L21 12l-5.816 1.91a2 2 0 00-1.278 1.277L12 21l-1.906-5.813a2 2 0 00-1.278-1.278L3 12l5.816-1.909a2 2 0 001.272-1.278L12 3z" />
+    </Icon>
+  );
+}

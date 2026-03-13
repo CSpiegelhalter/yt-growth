@@ -31,16 +31,10 @@ export function useIdeaForm(idea: VideoIdea | null, channelId: string) {
   // Reset form fields when the selected idea changes
   const prevIdeaId = useRef(idea?.id);
   useEffect(() => {
-    if (idea?.id !== prevIdeaId.current) {
-      prevIdeaId.current = idea?.id;
-      setSummary(idea?.summary ?? "");
-      setTitle(idea?.title ?? "");
-      setScript(idea?.script ?? "");
-      setDescription(idea?.description ?? "");
-      setTagsStr(idea?.tags?.join(", ") ?? "");
-      setPostDate(idea?.postDate ?? "");
-      setSuggestStates({});
-    }
+    if (idea?.id === prevIdeaId.current) {return;}
+    prevIdeaId.current = idea?.id;
+    resetFields(idea, setSummary, setTitle, setScript, setDescription, setTagsStr, setPostDate);
+    setSuggestStates({});
   }, [idea]);
 
   const canSave = summary.trim().length > 0;
@@ -61,35 +55,20 @@ export function useIdeaForm(idea: VideoIdea | null, channelId: string) {
     };
   }
 
+  const setters: Record<string, (v: string) => void> = {
+    title: setTitle,
+    script: setScript,
+    description: setDescription,
+    tags: setTagsStr,
+    postDate: setPostDate,
+  };
+
   const suggestField = useCallback(async (field: string) => {
     setSuggestStates((prev) => ({ ...prev, [field]: { loading: true, error: null } }));
     try {
-      const currentIdea = {
-        summary: summary || undefined,
-        title: title || undefined,
-        script: script || undefined,
-        description: description || undefined,
-        tags: tagsStr.split(",").map((t) => t.trim()).filter(Boolean),
-        postDate: postDate || undefined,
-      };
-
-      const res = await fetch(`/api/me/channels/${channelId}/ideas/suggest`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ field, currentIdea }),
+      const data = await fetchSuggestion(channelId, field, {
+        summary, title, script, description, tagsStr, postDate,
       });
-
-      if (!res.ok) {throw new Error("Failed to generate suggestion");}
-
-      const data = await res.json() as { value: string };
-
-      const setters: Record<string, (v: string) => void> = {
-        title: setTitle,
-        script: setScript,
-        description: setDescription,
-        tags: setTagsStr,
-        postDate: setPostDate,
-      };
       setters[field]?.(data.value);
       setSuggestStates((prev) => ({ ...prev, [field]: { loading: false, error: null } }));
     } catch (error_) {
@@ -98,7 +77,7 @@ export function useIdeaForm(idea: VideoIdea | null, channelId: string) {
         [field]: { loading: false, error: error_ instanceof Error ? error_.message : "Failed" },
       }));
     }
-  }, [channelId, summary, title, script, description, tagsStr, postDate]);
+  }, [channelId, summary, title, script, description, tagsStr, postDate, setters]);
 
   function getSuggestState(field: string): SuggestState {
     return suggestStates[field] ?? { loading: false, error: null };
@@ -116,4 +95,55 @@ export function useIdeaForm(idea: VideoIdea | null, channelId: string) {
     suggestField,
     getSuggestState,
   };
+}
+
+function resetFields(
+  idea: VideoIdea | null,
+  setSummary: (v: string) => void,
+  setTitle: (v: string) => void,
+  setScript: (v: string) => void,
+  setDescription: (v: string) => void,
+  setTagsStr: (v: string) => void,
+  setPostDate: (v: string) => void,
+): void {
+  setSummary(idea?.summary ?? "");
+  setTitle(idea?.title ?? "");
+  setScript(idea?.script ?? "");
+  setDescription(idea?.description ?? "");
+  setTagsStr(idea?.tags?.join(", ") ?? "");
+  setPostDate(idea?.postDate ?? "");
+}
+
+type FormFields = {
+  summary: string;
+  title: string;
+  script: string;
+  description: string;
+  tagsStr: string;
+  postDate: string;
+};
+
+async function fetchSuggestion(
+  channelId: string,
+  field: string,
+  fields: FormFields,
+): Promise<{ value: string }> {
+  const currentIdea = {
+    summary: fields.summary || undefined,
+    title: fields.title || undefined,
+    script: fields.script || undefined,
+    description: fields.description || undefined,
+    tags: fields.tagsStr.split(",").map((t) => t.trim()).filter(Boolean),
+    postDate: fields.postDate || undefined,
+  };
+
+  const res = await fetch(`/api/me/channels/${channelId}/ideas/suggest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ field, currentIdea }),
+  });
+
+  if (!res.ok) {throw new Error("Failed to generate suggestion");}
+
+  return res.json() as Promise<{ value: string }>;
 }

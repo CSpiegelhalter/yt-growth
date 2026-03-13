@@ -80,7 +80,7 @@ test.describe("Stripe Checkout Flow", () => {
     // }
 
     // Navigate to profile/billing page
-    await page.goto("/profile");
+    await page.goto("/account");
     await page.waitForLoadState("networkidle");
 
     // Check current plan
@@ -235,7 +235,7 @@ test.describe("Stripe Checkout Flow", () => {
     console.log("✓ Plan verified as PRO");
 
     // Navigate to profile and verify UI shows PRO status
-    await page.goto("/profile");
+    await page.goto("/account");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000); // Give UI time to render
 
@@ -336,7 +336,7 @@ test.describe("Stripe Checkout Flow", () => {
 
     // Verify profile page shows cancellation info with "Good until" date
     // Need to do a fresh page load to get updated server-side data
-    await page.goto("/profile");
+    await page.goto("/account");
     await page.waitForLoadState("networkidle");
 
     // Reload to ensure we get fresh data (SSR uses initialMe from server)

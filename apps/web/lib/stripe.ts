@@ -139,8 +139,8 @@ export async function createCheckoutSession(
   const session = await stripe.createCheckoutSession({
     customerId,
     priceId: STRIPE_PRICE_ID,
-    successUrl: `${APP_URL}/videos?checkout=success`,
-    cancelUrl: `${APP_URL}/videos?checkout=canceled`,
+    successUrl: `${APP_URL}/dashboard?checkout=success`,
+    cancelUrl: `${APP_URL}/pricing?checkout=canceled`,
     metadata: { userId: String(userId) },
   });
 
@@ -164,7 +164,7 @@ export async function createPortalSession(
 
   const session = await stripe.createPortalSession({
     customerId: subscription.stripeCustomerId,
-    returnUrl: `${APP_URL}/profile`,
+    returnUrl: `${APP_URL}/account`,
   });
 
   return { url: session.url };

@@ -3,7 +3,8 @@
 import { useState } from "react";
 
 import { AlertCircleIcon } from "@/components/icons";
-import { formatUsd,LIMITS, SUBSCRIPTION } from "@/lib/shared/product";
+import { UpgradeCard } from "@/components/pricing/UpgradeCard";
+import { formatUsd, LIMITS, SUBSCRIPTION } from "@/lib/shared/product";
 
 import s from "./BillingCTA.module.css";
 
@@ -118,33 +119,6 @@ export default function BillingCTA({
   }
 
   return (
-    <div className={s.cardHighlight}>
-      <div className={s.header}>
-        <div>
-          <h3 className={s.title}>Upgrade to Pro</h3>
-          <p className={s.subtitle}>
-            Unlock all features and grow your channel faster
-          </p>
-        </div>
-      </div>
-      <ul className={s.features}>
-        <li>Unlimited Idea Engine</li>
-        <li>Video analysis with fixes</li>
-        <li>Subscriber driver insights</li>
-        <li>Up to {LIMITS.PRO_MAX_CONNECTED_CHANNELS} connected channels</li>
-        <li>Priority support</li>
-      </ul>
-      <div className={s.pricing}>
-        <span className={s.price}>{formatUsd(SUBSCRIPTION.PRO_MONTHLY_PRICE_USD)}</span>
-        <span className={s.period}>/{SUBSCRIPTION.PRO_INTERVAL}</span>
-      </div>
-      <button
-        onClick={handleSubscribe}
-        disabled={loading}
-        className={`${s.btn} ${s.btnPrimary}`}
-      >
-        {loading ? "Loading..." : "Subscribe Now"}
-      </button>
-    </div>
+    <UpgradeCard onPurchase={handleSubscribe} isPro={false} loading={loading} />
   );
 }

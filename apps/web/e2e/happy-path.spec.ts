@@ -48,7 +48,7 @@ test.describe("Mobile Responsive", () => {
 
   test("profile page is usable on mobile", async ({ page }) => {
     await signIn(page, TEST_USER);
-    await page.goto("/profile");
+    await page.goto("/account");
     await page.waitForLoadState("networkidle");
 
     // Should render main content

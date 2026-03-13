@@ -9,7 +9,7 @@ import { CANONICAL_ORIGIN } from "@/lib/shared/brand";
  * for routes that should not be crawled:
  * - /api/ - API endpoints
  * - /auth/ - Login, signup, password reset flows
- * - Private app pages (videos, profile, analyze, etc.)
+ * - Private app pages (videos, account, analyze, etc.)
  *
  * Public SEO tool pages (/keywords, /tags/*, /dashboard) are intentionally ALLOWED.
  *
@@ -35,7 +35,7 @@ export default function robots(): MetadataRoute.Robots {
           "/auth/",
           // Private app pages (noindex set on pages)
           "/videos/",
-          "/profile/",
+          "/account/",
           "/video/",
           "/analyze/",
           "/thumbnails/",

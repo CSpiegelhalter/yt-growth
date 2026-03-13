@@ -7,7 +7,7 @@ import { BRAND } from "@/lib/shared/brand";
 import ProfileClient from "./ProfileClient";
 
 export const metadata: Metadata = {
-  title: `Profile | ${BRAND.name}`,
+  title: `Account | ${BRAND.name}`,
   description: "Manage your account and subscription",
   robots: { index: false, follow: false },
 };

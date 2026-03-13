@@ -1,0 +1,209 @@
+/* ================================
+   SidebarChannelSelector
+   ================================ */
+
+.wrapper {
+  position: relative;
+}
+
+/* Trigger button */
+.trigger {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: var(--space-2);
+  text-align: left;
+  transition: all var(--transition-base);
+  width: 100%;
+}
+
+.trigger:hover {
+  border-color: var(--border-hover);
+}
+
+.trigger:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* Thumbnail in trigger */
+.thumb {
+  border-radius: 50%;
+  flex-shrink: 0;
+  height: 20px;
+  object-fit: cover;
+  width: 20px;
+}
+
+.thumbPlaceholder {
+  align-items: center;
+  background: var(--surface-alt);
+  border-radius: 50%;
+  color: var(--text-tertiary);
+  display: flex;
+  flex-shrink: 0;
+  height: 20px;
+  justify-content: center;
+  width: 20px;
+}
+
+.channelName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevronUp {
+  transform: rotate(180deg);
+}
+
+/* Dropdown */
+.dropdown {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  bottom: calc(100% + var(--space-2));
+  box-shadow: var(--shadow-lg);
+  left: 0;
+  max-height: 240px;
+  min-width: 200px;
+  overflow-y: auto;
+  padding: var(--space-1);
+  position: absolute;
+  right: 0;
+  z-index: var(--z-dropdown);
+}
+
+/* Channel option */
+.option {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  font-size: var(--text-xs);
+  gap: var(--space-2);
+  padding: var(--space-2);
+  text-align: left;
+  transition: background var(--transition-base);
+  width: 100%;
+}
+
+.option:hover {
+  background: var(--surface-alt);
+}
+
+.optionActive {
+  font-weight: var(--font-semibold);
+}
+
+.optionThumb {
+  border-radius: 50%;
+  flex-shrink: 0;
+  height: 24px;
+  object-fit: cover;
+  width: 24px;
+}
+
+.optionThumbPlaceholder {
+  background: var(--surface-alt);
+  border-radius: 50%;
+  flex-shrink: 0;
+  height: 24px;
+  width: 24px;
+}
+
+.optionName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkIcon {
+  color: var(--color-hot-rose);
+  flex-shrink: 0;
+}
+
+/* Add channel link */
+.addChannel {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  font-size: var(--text-xs);
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding: var(--space-2);
+  text-decoration: none;
+  transition: color var(--transition-base);
+  width: 100%;
+}
+
+.addChannel:hover {
+  color: var(--text);
+}
+
+/* Upgrade prompt */
+.upgradeOverlay {
+  background: rgb(0 0 0 / 40%);
+  inset: 0;
+  position: fixed;
+  z-index: var(--z-modal);
+}
+
+.upgradeCard {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  left: 50%;
+  max-width: 320px;
+  padding: var(--space-6);
+  position: absolute;
+  text-align: center;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+}
+
+.upgradeText {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: 0 0 var(--space-4);
+}
+
+.upgradeBtn {
+  background: var(--gradient-positive);
+  border-radius: var(--radius-md);
+  color: white;
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  text-align: center;
+  text-decoration: none;
+}
+
+.upgradeDismiss {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: var(--text-xs);
+}

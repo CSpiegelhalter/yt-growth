@@ -51,7 +51,8 @@ export default function LoginForm() {
 
   async function handleGoogleSignIn() {
     setLoading(true);
-    await signIn("google", { callbackUrl: "/dashboard" });
+    const callbackUrl = sp.get("callbackUrl") || "/dashboard";
+    await signIn("google", { callbackUrl });
   }
 
   return (

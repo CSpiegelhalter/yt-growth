@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { signOut } from "next-auth/react";
 import { useState } from "react";
 
 import ErrorAlert from "@/components/dashboard/ErrorAlert";
@@ -72,7 +73,7 @@ export default function ProfileClient({
   return (
     <PageContainer>
       <PageHeader
-        title="Profile"
+        title="Account"
         subtitle="Manage your account and subscription"
       />
 
@@ -96,6 +97,14 @@ export default function ProfileClient({
             onRemove={removeChannel}
           />
         </section>
+
+        <button
+          type="button"
+          className={styles.signOutBtn}
+          onClick={() => signOut({ callbackUrl: "/" })}
+        >
+          Sign out
+        </button>
       </div>
     </PageContainer>
   );

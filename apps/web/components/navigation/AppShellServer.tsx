@@ -1,18 +1,16 @@
 "use client";
 
-import { usePathname, useRouter,useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { useCallback, useEffect, useRef,useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
 import { safeGetItem, safeSetItem } from "@/lib/client/safeLocalStorage";
 import type { SerializableNavItem } from "@/lib/server/nav-config.server";
 import { useSyncActiveChannel } from "@/lib/use-sync-active-channel";
 
-import { AppHeader } from "./AppHeader";
 import s from "./AppShell.module.css";
 import { AppSidebar } from "./AppSidebar";
-import { MobileNav } from "./MobileNav";
 
 type Channel = {
   channel_id: string;
@@ -21,19 +19,11 @@ type Channel = {
   thumbnailUrl: string | null;
 };
 
-type Plan = "FREE" | "PRO" | "ENTERPRISE";
-
 type AppShellServerProps = {
   children: React.ReactNode;
   channels: Channel[];
   activeChannelId: string | null;
-  /** User email - null for unauthenticated users */
-  userEmail: string | null;
-  /** User name - null for unauthenticated users */
-  userName: string | null;
-  plan: Plan;
   channelLimit: number;
-  isAdmin?: boolean;
   /** Filtered primary nav items (from server) */
   primaryNavItems: SerializableNavItem[];
   /** Filtered secondary nav items (from server) */
@@ -44,24 +34,15 @@ const SIDEBAR_COLLAPSE_KEY = "sidebar-collapsed";
 
 /**
  * App shell component that receives initial data from server.
- * 
- * Key differences from AppShellWrapper:
- * - No auth checking (done server-side in layout)
- * - Receives initial channel/user data as props
- * - Still manages client-side state (sidebar collapse, channel switching)
- * - Can refresh channel list on certain events (channel added/removed)
- * 
- * This eliminates layout shift by having stable shell from first paint.
+ *
+ * Renders sidebar + content area (no top header).
+ * Manages client-side state: sidebar collapse, channel switching, URL sync.
  */
 export function AppShellServer({
   children,
   channels: initialChannels,
   activeChannelId: initialActiveChannelId,
-  userEmail,
-  userName,
-  plan,
   channelLimit,
-  isAdmin = false,
   primaryNavItems,
   secondaryNavItems,
 }: AppShellServerProps) {
@@ -80,10 +61,10 @@ export function AppShellServer({
     initialActiveChannelId,
     urlChannelId,
   });
-  
+
   // Sidebar collapse state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
+
   // Track if we've done initial URL sync
   const didInitialSync = useRef(false);
 
@@ -94,13 +75,13 @@ export function AppShellServer({
       setSidebarCollapsed(stored === "true");
     }
   }, []);
-  
+
   // Sync active channel to URL on mount
   useEffect(() => {
     if (didInitialSync.current) {return;}
     didInitialSync.current = true;
-    
-    if (activeChannelId && // Sync URL if on a channel-scoped page and URL doesn't match
+
+    if (activeChannelId &&
       isChannelScopedPath(pathname) && urlChannelId !== activeChannelId) {
         const next = new URLSearchParams(searchParams.toString());
         next.set("channelId", activeChannelId);
@@ -115,7 +96,6 @@ export function AppShellServer({
       setChannels((prev) =>
         prev.filter((c) => c.channel_id !== e.detail.channelId),
       );
-      // Hook's synchronous reconciliation handles activeChannelId fallback
     };
 
     window.addEventListener("channel-removed", handleChannelRemoved as EventListener);
@@ -123,12 +103,12 @@ export function AppShellServer({
       window.removeEventListener("channel-removed", handleChannelRemoved as EventListener);
     };
   }, []);
-  
+
   // Listen for newChannel query param (after OAuth redirect)
   useEffect(() => {
     const isNewChannel = searchParams.get("newChannel") === "1";
     if (!isNewChannel) {return;}
-    
+
     async function refreshChannels() {
       try {
         const data = await apiFetchJson<Channel[] | { channels: Channel[] }>("/api/me/channels", {
@@ -136,11 +116,11 @@ export function AppShellServer({
         });
         const channelList = Array.isArray(data) ? data : data.channels;
         setChannels(channelList);
-        
+
         if (channelList.length > 0) {
           const newChannelId = channelList[0].channel_id;
           setActiveChannelId(newChannelId);
-          
+
           const next = new URLSearchParams(searchParams.toString());
           next.delete("newChannel");
           if (isChannelScopedPath(pathname)) {
@@ -155,7 +135,7 @@ export function AppShellServer({
         console.error("Failed to refresh channels:", error);
       }
     }
-    
+
     void refreshChannels();
   }, [searchParams, pathname, router, setActiveChannelId]);
 
@@ -170,7 +150,7 @@ export function AppShellServer({
   const handleChannelChange = useCallback((channelId: string) => {
     setActiveChannelId(channelId);
 
-    if (isVideoPath(pathname)) {
+    if (pathname.startsWith("/video/")) {
       router.push(`/videos?channelId=${channelId}`);
       return;
     }
@@ -192,30 +172,13 @@ export function AppShellServer({
         onToggleCollapse={handleToggleCollapse}
         primaryNavItems={primaryNavItems}
         secondaryNavItems={secondaryNavItems}
+        channels={channels}
+        channelLimit={channelLimit}
+        onChannelChange={handleChannelChange}
       />
 
       {/* Main Content Area */}
       <div className={s.main}>
-        {/* App Header */}
-        <AppHeader
-          channels={channels}
-          activeChannelId={activeChannelId}
-          userEmail={userEmail}
-          userName={userName}
-          plan={plan}
-          channelLimit={channelLimit}
-          isAdmin={isAdmin}
-          onChannelChange={handleChannelChange}
-          mobileNavSlot={
-            <MobileNav
-              activeChannelId={activeChannelId}
-              primaryNavItems={primaryNavItems}
-              secondaryNavItems={secondaryNavItems}
-            />
-          }
-        />
-
-        {/* Page Content */}
         <main className={s.content} id="main-content">
           {children}
         </main>
@@ -231,8 +194,4 @@ function isChannelScopedPath(pathname: string): boolean {
   if (pathname === "/subscriber-insights") {return true;}
   if (pathname.startsWith("/video/")) {return true;}
   return false;
-}
-
-function isVideoPath(pathname: string): boolean {
-  return pathname.startsWith("/video/");
 }

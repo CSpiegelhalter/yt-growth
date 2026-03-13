@@ -1,0 +1,133 @@
+.card {
+  background: var(--bg, #fff);
+  border: 2px solid var(--color-imperial-blue);
+  border-radius: 20px;
+  box-shadow: 0 4px 4px 0 rgb(0 0 0 / 8%);
+  overflow: hidden;
+  width: 100%;
+}
+
+/* ── Gradient header ─────────────────────────────── */
+
+.header {
+  background: linear-gradient(167deg, var(--color-hot-rose) 15%, var(--color-cool-sky) 112%);
+  border-radius: 18px 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+  padding: var(--space-6, 24px) var(--space-6, 24px) var(--space-5, 20px);
+}
+
+.titleRow {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2, 8px);
+}
+
+.title {
+  color: var(--text-inverse, #fff);
+  font-size: var(--text-xl, 1.25rem);
+  font-weight: var(--font-bold, 700);
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--text-inverse, #fff);
+  font-size: var(--text-sm, 0.875rem);
+  margin: 0;
+  opacity: 0.9;
+}
+
+.sparkleIcon {
+  color: var(--text-inverse, #fff);
+  flex-shrink: 0;
+}
+
+/* ── Body ────────────────────────────────────────── */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5, 20px);
+  padding: var(--space-6, 24px);
+}
+
+/* ── Feature list ────────────────────────────────── */
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.featureItem {
+  align-items: center;
+  color: var(--color-imperial-blue);
+  display: flex;
+  font-size: var(--text-base, 1rem);
+  font-weight: var(--font-bold, 700);
+  gap: var(--space-3, 12px);
+  line-height: 1.875;
+}
+
+.checkIcon {
+  color: var(--color-imperial-blue);
+  flex-shrink: 0;
+}
+
+/* ── Price ────────────────────────────────────────── */
+
+.price {
+  color: var(--color-imperial-blue);
+  font-size: var(--text-subtitle-size, 1.375rem);
+  font-weight: var(--font-bold, 700);
+  letter-spacing: 0.03em;
+}
+
+/* ── Purchase button ─────────────────────────────── */
+
+.purchaseBtn {
+  background: var(--color-imperial-blue);
+  border: none;
+  border-radius: 8px;
+  color: var(--text-inverse, #fff);
+  cursor: pointer;
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: var(--font-bold, 700);
+  letter-spacing: 0.03em;
+  padding: var(--space-3, 12px) var(--space-6, 24px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  width: 100%;
+}
+
+@media (width >= 480px) {
+  .purchaseBtn {
+    width: auto;
+  }
+}
+
+.purchaseBtn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.purchaseBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ── Pro badge (current plan) ────────────────────── */
+
+.proBadge {
+  background: var(--success-light);
+  border-radius: 9999px;
+  color: var(--color-stormy-teal-hover);
+  display: inline-flex;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--font-semibold, 600);
+  padding: var(--space-1, 4px) var(--space-3, 12px);
+}

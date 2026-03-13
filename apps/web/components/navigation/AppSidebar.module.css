@@ -10,7 +10,7 @@
   height: 100%;
   min-height: 100vh;
   min-width: var(--sidebar-width, 220px);
-  overflow: hidden;
+  overflow: visible;
   padding: 0;
   padding-top: var(--space-4);
   position: sticky;
@@ -60,6 +60,12 @@
   white-space: nowrap;
 }
 
+.collapsed .logoSection {
+  display: flex;
+  justify-content: center;
+  padding-left: 0;
+}
+
 .collapsed .logoText {
   display: none;
 }
@@ -70,9 +76,8 @@
   flex: 1;
   flex-direction: column;
   gap: var(--space-6);
-  margin-left: 20px;
   overflow: hidden auto;
-  padding: 0;
+  padding: 0 var(--space-3);
 }
 
 .navSection {
@@ -154,10 +159,16 @@
   display: none;
 }
 
-/* Bottom Section */
-.bottomSection {
+/* Bottom Navigation (Channel, Account, Support) */
+.bottomNav {
   border-top: 1px solid var(--border);
   margin-top: auto;
+  padding: var(--space-3) var(--space-3) 0;
+}
+
+/* Bottom Section (Legal links + Collapse toggle) */
+.bottomSection {
+  border-top: 1px solid var(--border);
   padding: var(--space-4) var(--space-3) 0;
 }
 

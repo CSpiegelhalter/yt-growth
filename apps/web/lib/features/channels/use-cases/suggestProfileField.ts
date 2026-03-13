@@ -157,7 +157,7 @@ export async function suggestProfileField(
 
 function extractValue(content: string): string | null {
   const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return null;
+  if (!jsonMatch) {return null;}
 
   try {
     const parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>;

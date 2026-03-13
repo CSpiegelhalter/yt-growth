@@ -36,7 +36,7 @@ export const GET = createApiRoute(
         const user = (api as ApiAuthContext).user;
         if (!user) {
           const res = NextResponse.redirect(
-            new URL("/auth/login?redirect=/api/integrations/stripe/checkout", base)
+            new URL("/auth/login?callbackUrl=/api/integrations/stripe/checkout", base)
           );
           res.headers.set("x-request-id", api.requestId);
           return res;

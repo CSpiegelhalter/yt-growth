@@ -15,6 +15,8 @@ All project rules live in `.claude/rules/`. Follow ALL of them for EVERY task.
 - PostgreSQL via Prisma (read-only for this feature — analysis caching handled by existing competitor pipeline) (007-analyze-page)
 - TypeScript 5.x + React 19, Next.js 15 (App Router), next-auth, CSS Modules (008-nav-routing-cleanup)
 - N/A (no database changes) (008-nav-routing-cleanup)
+- TypeScript 5.x + React 19, Next.js 15 (App Router), next-auth, Stripe (existing) (010-pricing-page)
+- PostgreSQL via Prisma (read-only — Subscription table, no schema changes) (010-pricing-page)
 
 ## Recent Changes
 - 005-access-gate: Added TypeScript 5.x, React 19, Next.js 15 (App Router) + next-auth (session), Prisma (user/channel queries), CSS Modules

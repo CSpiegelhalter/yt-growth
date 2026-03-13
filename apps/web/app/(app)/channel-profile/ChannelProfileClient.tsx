@@ -70,11 +70,13 @@ export default function ChannelProfileClient() {
   );
   const initializedRef = useRef(false);
 
-  // Sync profile data to local state on load
+  // Sync profile data to local state on initial load only
   useEffect(() => {
-    if (profile?.input && !initializedRef.current) {
-      setLocalInput({ ...DEFAULT_PROFILE_INPUT, ...profile.input });
+    if (profile && !initializedRef.current) {
       initializedRef.current = true;
+      if (profile.input) {
+        setLocalInput({ ...DEFAULT_PROFILE_INPUT, ...profile.input });
+      }
     }
   }, [profile]);
 
@@ -106,16 +108,19 @@ export default function ChannelProfileClient() {
       const value = await suggestField(field, section, localInput);
       if (!value) { return; }
 
+      let updated: ChannelProfileInput | undefined;
       setLocalInput((prev) => {
         const sectionData =
           (prev[section as keyof ChannelProfileInput] as Record<string, unknown>) ?? {};
-        const updated = {
+        updated = {
           ...prev,
           [section]: { ...sectionData, [field]: value },
         } as ChannelProfileInput;
-        debouncedSave(updated);
         return updated;
       });
+      if (updated) {
+        debouncedSave(updated);
+      }
     },
     [suggestField, localInput, debouncedSave],
   );

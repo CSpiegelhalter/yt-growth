@@ -6,6 +6,7 @@ const SIDEBAR_ICON_MAP: Record<string, string> = {
   analyzer: "/sidebar/analyze.svg",
   tags: "/sidebar/tags.svg",
   keywords: "/sidebar/keywords.svg",
+  "sidebar-account": "/sidebar/settings.svg",
 };
 
 export function getNavIconSrc(itemId: string): string | null {

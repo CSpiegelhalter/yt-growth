@@ -119,6 +119,37 @@ const getChannelsServerCached = cache(async (userId: number): Promise<Channel[]>
   }));
 });
 
+async function getCurrentUserServer(): Promise<BootstrapUser | null> {
+  return getCurrentUserServerCached();
+}
+
+async function getMeServer(user: BootstrapUser): Promise<Me> {
+  return getMeServerCached(user.id, user.email, user.name);
+}
+
+async function getChannelsServer(userId: number): Promise<Channel[]> {
+  return getChannelsServerCached(userId);
+}
+
+function resolveActiveChannelId(
+  channels: Channel[],
+  searchParams?: { channelId?: string } | string | null
+): string | null {
+  if (channels.length === 0) {return null;}
+
+  const channelIdParam =
+    typeof searchParams === "string"
+      ? searchParams
+      : searchParams?.channelId ?? null;
+
+  if (channelIdParam) {
+    const found = channels.find((c) => c.channel_id === channelIdParam);
+    if (found) {return found.channel_id;}
+  }
+
+  return channels[0]?.channel_id ?? null;
+}
+
 const getAppBootstrapOptionalCached = cache(
   async (channelIdParam: string | null): Promise<BootstrapData | null> => {
     const user = await getCurrentUserServer();
@@ -143,57 +174,6 @@ const getAppBootstrapOptionalCached = cache(
 );
 
 /**
- * Get the current user from server session.
- * Returns null if not authenticated.
- */
-export async function getCurrentUserServer(): Promise<BootstrapUser | null> {
-  return getCurrentUserServerCached();
-}
-
-/**
- * Get user profile with subscription (Me type).
- */
-export async function getMeServer(user: BootstrapUser): Promise<Me> {
-  return getMeServerCached(user.id, user.email, user.name);
-}
-
-/**
- * Get all channels for user.
- */
-export async function getChannelsServer(userId: number): Promise<Channel[]> {
-  return getChannelsServerCached(userId);
-}
-
-/**
- * Resolve the active channel ID from URL or first channel.
- *
- * @param channels - User's channels
- * @param searchParams - URL search params object or channelId string
- * @returns The active channel ID or null
- */
-export function resolveActiveChannelId(
-  channels: Channel[],
-  searchParams?: { channelId?: string } | string | null
-): string | null {
-  if (channels.length === 0) {return null;}
-
-  // Handle string param (direct channelId)
-  const channelIdParam =
-    typeof searchParams === "string"
-      ? searchParams
-      : searchParams?.channelId ?? null;
-
-  // Check if the requested channelId is valid
-  if (channelIdParam) {
-    const found = channels.find((c) => c.channel_id === channelIdParam);
-    if (found) {return found.channel_id;}
-  }
-
-  // Fallback to first channel
-  return channels[0]?.channel_id ?? null;
-}
-
-/**
  * Optional bootstrap: returns null if not authenticated (no redirect).
  * Use for pages that work for both logged-in and logged-out users.
  */
@@ -203,35 +183,11 @@ export async function getAppBootstrapOptional(searchParams?: {
   return getAppBootstrapOptionalCached(searchParams?.channelId ?? null);
 }
 
-type AppPlan = "FREE" | "PRO" | "ENTERPRISE";
-
-export function normalizePlan(plan: string): AppPlan {
-  const upper = plan.toUpperCase();
-  if (upper === "PRO") {return "PRO";}
-  if (upper === "ENTERPRISE" || upper === "TEAM") {return "ENTERPRISE";}
-  return "FREE";
-}
-
 /**
  * Default AppShellServer props for unauthenticated (guest) users.
- * Shared by marketing layout and videos layout.
  */
 export const GUEST_SHELL_PROPS = {
   channels: [] as Channel[],
   activeChannelId: null,
-  userEmail: null,
-  userName: null,
-  plan: "FREE" as const,
   channelLimit: 1,
-  isAdmin: false,
 };
-
-export function isAdminEmail(email: string): boolean {
-  const adminEmails = String(
-    process.env.ADMIN_EMAILS ?? process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? ""
-  )
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  return adminEmails.length > 0 && adminEmails.includes(email.toLowerCase());
-}

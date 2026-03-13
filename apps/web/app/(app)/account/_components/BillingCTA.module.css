@@ -11,12 +11,6 @@
   }
 }
 
-.cardHighlight {
-  background: linear-gradient(135deg, var(--color-imperial-blue) 0%, var(--color-cool-sky) 100%);
-  border-radius: var(--radius-lg, 16px);
-  color: white;
-  padding: var(--space-lg, 24px);
-}
 
 .header {
   display: flex;
@@ -108,10 +102,6 @@
   padding: var(--space-xs, 4px) 0;
 }
 
-.cardHighlight .features li {
-  color: rgb(255 255 255 / 90%);
-}
-
 .pricing {
   align-items: baseline;
   display: flex;
@@ -154,13 +144,4 @@
   opacity: 0.5;
 }
 
-.btnPrimary {
-  background: white;
-  border-color: white;
-  color: var(--text);
-}
-
-.btnPrimary:hover:not(:disabled) {
-  background: #f8fafc;
-}
 
