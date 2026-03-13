@@ -1,36 +1,99 @@
-.grid {
-    display: grid;
-    gap: 12px;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+/* Account Overview — labeled rows matching Figma */
+
+.overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5, 20px);
 }
 
-.stat {
-    background: #fff;
-    border: 1px solid #e7eaf0;
-    border-radius: 12px;
-    min-width: 0;
-    overflow: hidden;
-    padding: 14px;
+.overviewHeading {
+  color: var(--color-imperial-blue);
+  font-size: var(--text-xl, 1.25rem);
+  font-weight: var(--font-bold, 700);
+  letter-spacing: 0.03em;
+  margin: 0;
 }
 
-.statLabel {
-    color: #6b7280;
-    font-size: 12px;
+/* Field rows: label + value */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
 }
 
-.statValue {
-    font-size: 18px;
-    font-weight: 600;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    word-break: break-all;
+.fieldLabel {
+  color: var(--color-imperial-blue);
+  font-size: var(--text-sm, 0.9375rem);
+  font-weight: var(--font-medium, 500);
 }
 
-.tone-ok .statValue {
-    color: var(--color-stormy-teal);
+.fieldValue {
+  color: var(--color-imperial-blue);
+  font-size: var(--text-body-size, 1.125rem);
+  font-weight: var(--font-bold, 700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.tone-warn .statValue {
-    color: var(--color-hot-rose-hover);
+/* Plan row with inline badge */
+.planRow {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3, 12px);
+}
+
+.activeBadge {
+  background: var(--surface-alt, #f3f4fb);
+  border-radius: var(--radius-full, 9999px);
+  color: var(--color-imperial-blue);
+  font-size: var(--text-sm, 0.9375rem);
+  font-weight: var(--font-medium, 500);
+  padding: var(--space-1, 4px) var(--space-3, 12px);
+}
+
+/* Daily usage — secondary section */
+.usageSection {
+  border-top: 1px solid var(--border-light, #e8eafb);
+  margin-top: var(--space-2, 8px);
+  padding-top: var(--space-4, 16px);
+}
+
+.usageHeading {
+  color: var(--text-secondary, #64748b);
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: var(--font-semibold, 600);
+  margin: 0 0 var(--space-3, 12px);
+}
+
+.usageBar {
+  margin-bottom: var(--space-2, 8px);
+}
+
+.usageBarHeader {
+  color: var(--text-secondary, #64748b);
+  display: flex;
+  font-size: var(--text-xs, 0.75rem);
+  justify-content: space-between;
+  margin-bottom: var(--space-1, 4px);
+}
+
+.usageBarTrack {
+  background: var(--border-light, #e5e7eb);
+  border-radius: 3px;
+  height: 6px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.usageBarFill {
+  border-radius: 3px;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.resetTime {
+  color: var(--text-tertiary, #9ca3af);
+  font-size: var(--text-xs, 0.75rem);
+  margin: var(--space-2, 8px) 0 0;
 }
