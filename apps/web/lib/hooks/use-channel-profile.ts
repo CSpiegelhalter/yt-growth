@@ -43,6 +43,7 @@ export function useChannelProfile(channelId: string | null): UseChannelProfileRe
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingInputRef = useRef<ChannelProfileInput | null>(null);
 
   // Fetch profile on mount and when channelId changes
   const fetchProfile = useCallback(async () => {
@@ -179,8 +180,10 @@ export function useChannelProfile(channelId: string | null): UseChannelProfileRe
       if (savedTimerRef.current) {
         clearTimeout(savedTimerRef.current);
       }
+      pendingInputRef.current = input;
       setSaveStatus("saving");
       debounceTimerRef.current = setTimeout(() => {
+        pendingInputRef.current = null;
         void saveProfile(input).then((success) => {
           if (success) {
             setSaveStatus("saved");
@@ -195,6 +198,27 @@ export function useChannelProfile(channelId: string | null): UseChannelProfileRe
     [saveProfile],
   );
 
+  // Flush pending save on page unload (e.g. refresh)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (pendingInputRef.current && channelId) {
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
+        }
+        void fetch(`/api/me/channels/${channelId}/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ input: pendingInputRef.current }),
+          keepalive: true,
+        });
+        pendingInputRef.current = null;
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [channelId]);
+
   // Cancel pending debounced save
   const cancelPendingSave = useCallback(() => {
     if (debounceTimerRef.current) {
@@ -205,6 +229,7 @@ export function useChannelProfile(channelId: string | null): UseChannelProfileRe
       clearTimeout(savedTimerRef.current);
       savedTimerRef.current = null;
     }
+    pendingInputRef.current = null;
   }, []);
 
   // Cleanup timers on unmount

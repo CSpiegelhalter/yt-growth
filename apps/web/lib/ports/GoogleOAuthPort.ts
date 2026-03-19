@@ -23,6 +23,8 @@ export interface OAuthRefreshResult {
   accessToken: string;
   expiresIn: number;
   scope?: string;
+  /** Google may rotate the refresh token — if present, persist it. */
+  refreshToken?: string;
 }
 
 // ─── User Info Types ───────────────────────────────────────

@@ -73,6 +73,32 @@ async function exchangeCode(
   };
 }
 
+/**
+ * Errors that mean the refresh token is permanently dead — user must re-authorize.
+ * All other errors are transient and should be retried.
+ */
+const PERMANENT_GRANT_ERRORS = new Set([
+  "invalid_grant",
+  "unauthorized_client",
+  "invalid_client",
+]);
+
+class GoogleRefreshRevokedError extends Error {
+  readonly permanent = true as const;
+  constructor(message: string) {
+    super(message);
+    this.name = "GoogleRefreshRevokedError";
+  }
+}
+
+class GoogleRefreshTransientError extends Error {
+  readonly permanent = false as const;
+  constructor(message: string) {
+    super(message);
+    this.name = "GoogleRefreshTransientError";
+  }
+}
+
 async function refreshToken(
   refreshTokenValue: string,
 ): Promise<OAuthRefreshResult> {
@@ -85,30 +111,73 @@ async function refreshToken(
     refresh_token: refreshTokenValue,
   });
 
-  const res = await fetch(TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-  });
+  const MAX_RETRIES = 2;
+  let lastError: Error = new GoogleRefreshTransientError("Token refresh failed");
 
-  if (!res.ok) {
-    throw new Error(
-      `Token refresh failed with status ${res.status}`,
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+    }
+
+    let res: Response;
+    try {
+      res = await fetch(TOKEN_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params.toString(),
+      });
+    } catch (error) {
+      // Network error (DNS, timeout, etc.) — transient, retry
+      lastError = new GoogleRefreshTransientError(
+        `Network error during token refresh: ${error instanceof Error ? error.message : String(error)}`
+      );
+      continue;
+    }
+
+    if (res.ok) {
+      const data = (await res.json()) as {
+        access_token: string;
+        refresh_token?: string;
+        expires_in: number;
+        scope?: string;
+      };
+
+      return {
+        accessToken: data.access_token,
+        expiresIn: data.expires_in,
+        scope: data.scope,
+        refreshToken: data.refresh_token,
+      };
+    }
+
+    // Parse error body to distinguish permanent vs transient
+    const body = await res.text();
+    let errorCode = "";
+    try {
+      const parsed = JSON.parse(body) as { error?: string; error_description?: string };
+      errorCode = parsed.error ?? "";
+    } catch {
+      // non-JSON body
+    }
+
+    if (PERMANENT_GRANT_ERRORS.has(errorCode)) {
+      // Truly revoked / invalid — no point retrying
+      throw new GoogleRefreshRevokedError(
+        `Token refresh permanently failed (${errorCode}): ${body}`
+      );
+    }
+
+    // Transient (5xx, rate limit, etc.) — retry
+    lastError = new GoogleRefreshTransientError(
+      `Token refresh failed with status ${res.status}: ${body}`
     );
   }
 
-  const data = (await res.json()) as {
-    access_token: string;
-    expires_in: number;
-    scope?: string;
-  };
-
-  return {
-    accessToken: data.access_token,
-    expiresIn: data.expires_in,
-    scope: data.scope,
-  };
+  // All retries exhausted — throw the last transient error
+  throw lastError;
 }
+
+export { GoogleRefreshRevokedError, GoogleRefreshTransientError };
 
 async function getUserInfo(accessToken: string): Promise<OAuthUserInfo> {
   const res = await fetch(USERINFO_ENDPOINT, {

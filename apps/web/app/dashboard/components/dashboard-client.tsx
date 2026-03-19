@@ -9,6 +9,7 @@ import type { SuggestionAction, VideoSuggestion  } from "@/lib/features/suggesti
 import type { Channel } from "@/types/api";
 
 import s from "./dashboard-client.module.css";
+import { ProfileCompletionPopup } from "./profile-completion-popup";
 import { SuggestionPanel } from "./suggestion-panel";
 
 type SuggestionsResponse = {
@@ -89,6 +90,9 @@ export function DashboardClient({
 
   return (
     <PageContainer>
+      {initialActiveChannelId && (
+        <ProfileCompletionPopup channelId={initialActiveChannelId} />
+      )}
       <div className={s.grid}>
         <div className={`${s.leftPanel} ${s.panelCard}`}>
           <h2 className={s.panelTitle}>Performance Overview</h2>

@@ -1,5 +1,9 @@
 // lib/google-tokens.ts
 import { googleOAuthAdapter } from "@/lib/adapters/google";
+import {
+  GoogleRefreshRevokedError,
+  GoogleRefreshTransientError,
+} from "@/lib/adapters/google/oauth";
 import { prisma } from "@/prisma";
 
 /**
@@ -179,10 +183,20 @@ async function refreshAccessToken(ga: GA): Promise<string> {
   let tok;
   try {
     tok = await googleOAuthAdapter.refreshToken(ga.refreshTokenEnc);
-  } catch {
-    throw new GoogleTokenRefreshError(
-      "Your Google access has been revoked or expired. Please reconnect your Google account."
-    );
+  } catch (error) {
+    // Only treat permanently-revoked tokens as a reconnect prompt.
+    // Transient errors (network, 5xx) bubble up as-is so callers can retry
+    // without telling the user their access was revoked.
+    if (error instanceof GoogleRefreshRevokedError) {
+      throw new GoogleTokenRefreshError(
+        "Your Google access has been revoked. Please reconnect your Google account."
+      );
+    }
+    if (error instanceof GoogleRefreshTransientError) {
+      throw error; // Let caller see this is transient, not permanent
+    }
+    // Unknown error — still don't assume revoked
+    throw error;
   }
 
   const expiresAt = Date.now() + tok.expiresIn * 1000;
@@ -193,6 +207,8 @@ async function refreshAccessToken(ga: GA): Promise<string> {
       accessTokenEnc: tok.accessToken,
       tokenExpiresAt: new Date(expiresAt),
       scopes: tok.scope ?? undefined,
+      // Google may rotate the refresh token — persist the new one
+      ...(tok.refreshToken ? { refreshTokenEnc: tok.refreshToken } : {}),
     },
   });
 

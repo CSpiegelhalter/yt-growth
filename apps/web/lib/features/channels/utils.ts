@@ -16,6 +16,12 @@ export function computeProfileInputHash(input: ChannelProfileInput): string {
     tone: [...(input.tone || [])].sort(),
     examples: (input.examples || []).map((e) => e.toLowerCase().trim()).sort(),
     goals: [...(input.goals || [])].sort(),
+    overview: input.overview ?? null,
+    ideaGuidance: input.ideaGuidance ?? null,
+    scriptGuidance: input.scriptGuidance ?? null,
+    tagGuidance: input.tagGuidance ?? null,
+    descriptionGuidance: input.descriptionGuidance ?? null,
+    competitors: input.competitors ?? null,
   });
 }
 
@@ -49,10 +55,7 @@ export function sanitizeUserText(text: string): string {
   return text
     .replaceAll(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
     .replaceAll(/on\w+\s*=\s*["'][^"']*["']/gi, "")
-    .replaceAll(/javascript:/gi, "")
-    .replaceAll('&', "&amp;")
-    .replaceAll('<', "&lt;")
-    .replaceAll('>', "&gt;");
+    .replaceAll(/javascript:/gi, "");
 }
 
 /**
@@ -61,17 +64,76 @@ export function sanitizeUserText(text: string): string {
 export function sanitizeProfileInput(
   input: ChannelProfileInput,
 ): ChannelProfileInput {
+  const optText = (v: string | undefined) =>
+    v ? sanitizeUserText(v) : undefined;
+  const optArr = (a: string[] | undefined) => a?.map(sanitizeUserText);
+  const sanitizeCompetitors = (
+    entries: { channelUrl: string; channelName: string; whatYouAdmire?: string }[] | undefined,
+  ) =>
+    entries?.map((e) => ({
+      channelUrl: sanitizeUserText(e.channelUrl),
+      channelName: sanitizeUserText(e.channelName),
+      whatYouAdmire: optText(e.whatYouAdmire),
+    }));
+
   return {
     description: sanitizeUserText(input.description),
     categories: input.categories.map((c) => sanitizeUserText(c)),
-    customCategory: input.customCategory
-      ? sanitizeUserText(input.customCategory)
+    customCategory: optText(input.customCategory),
+    formats: optArr(input.formats),
+    audience: optText(input.audience),
+    tone: optArr(input.tone),
+    examples: optArr(input.examples),
+    goals: optArr(input.goals),
+
+    overview: input.overview
+      ? {
+          channelDescription: optText(input.overview.channelDescription),
+          knownFor: optText(input.overview.knownFor),
+          coreTopics: optArr(input.overview.coreTopics),
+          contentStyles: optArr(input.overview.contentStyles),
+          creatorStrengths: optArr(input.overview.creatorStrengths),
+        }
       : undefined,
-    formats: input.formats?.map((f) => sanitizeUserText(f)),
-    audience: input.audience ? sanitizeUserText(input.audience) : undefined,
-    tone: input.tone?.map((t) => sanitizeUserText(t)),
-    examples: input.examples?.map((e) => sanitizeUserText(e)),
-    goals: input.goals?.map((g) => sanitizeUserText(g)),
+    ideaGuidance: input.ideaGuidance
+      ? {
+          topicsToLeanInto: optText(input.ideaGuidance.topicsToLeanInto),
+          topicsToAvoid: optText(input.ideaGuidance.topicsToAvoid),
+          idealVideo: optText(input.ideaGuidance.idealVideo),
+          viewerFeeling: optText(input.ideaGuidance.viewerFeeling),
+          formatPreferences: optArr(input.ideaGuidance.formatPreferences),
+        }
+      : undefined,
+    scriptGuidance: input.scriptGuidance
+      ? {
+          tone: optText(input.scriptGuidance.tone),
+          structurePreference: optText(input.scriptGuidance.structurePreference),
+          styleNotes: optText(input.scriptGuidance.styleNotes),
+          neverInclude: optText(input.scriptGuidance.neverInclude),
+        }
+      : undefined,
+    tagGuidance: input.tagGuidance
+      ? {
+          primaryKeywords: optArr(input.tagGuidance.primaryKeywords),
+          nicheTerms: optArr(input.tagGuidance.nicheTerms),
+          tagStylePreference: optText(input.tagGuidance.tagStylePreference),
+        }
+      : undefined,
+    descriptionGuidance: input.descriptionGuidance
+      ? {
+          descriptionFormat: optText(input.descriptionGuidance.descriptionFormat),
+          standardLinks: optText(input.descriptionGuidance.standardLinks),
+          seoPriority: optText(input.descriptionGuidance.seoPriority),
+        }
+      : undefined,
+    competitors: input.competitors
+      ? {
+          differentiation: optText(input.competitors.differentiation),
+          closeToSize: sanitizeCompetitors(input.competitors.closeToSize),
+          aspirational: sanitizeCompetitors(input.competitors.aspirational),
+          nicheHero: sanitizeCompetitors(input.competitors.nicheHero),
+        }
+      : undefined,
   };
 }
 
