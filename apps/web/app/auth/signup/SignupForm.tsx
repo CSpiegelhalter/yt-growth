@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 
@@ -40,6 +40,9 @@ function parseSignupError(status: number, body: Record<string, unknown>): string
 
 export default function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefillName = searchParams.get("name") ?? "";
+  const prefillEmail = searchParams.get("email") ?? "";
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -116,6 +119,7 @@ export default function SignupForm() {
             type="text"
             autoComplete="name"
             placeholder="Jane Creator"
+            defaultValue={prefillName}
             className={s.input}
           />
         </div>
@@ -130,6 +134,7 @@ export default function SignupForm() {
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
+            defaultValue={prefillEmail}
             className={s.input}
           />
         </div>

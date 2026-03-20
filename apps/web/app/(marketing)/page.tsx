@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { HeroStaticCTAs } from "@/components/HeroStaticCTAs";
+import { LandingSignupCard } from "@/components/LandingSignupCard";
 import { HOME_CONTENT } from "@/lib/content/home";
 import { BRAND, FEATURES } from "@/lib/shared/brand";
 
@@ -26,29 +28,50 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <main className="landingPage">
-      {/* Hero Section - Primary Keyword in H1 */}
-      <section className="landingHero">
-        <div className="landingBadge">YouTube Growth Tool for Creators</div>
-        <h1 className="landingTitle">
-          YouTube Growth Analytics
-          <br />
-          <span className="landingHighlight"> and Video Ideas for Creators</span>
-        </h1>
-        <p className="landingSubtitle">
-          Stop guessing what to post. Get channel audits, retention analysis,
-          competitor insights, and video ideas to grow your YouTube channel
-          faster.
-        </p>
-        <HeroStaticCTAs />
+      {/* Hero Gradient Band */}
+      <section className="landingHeroBand">
+        <Image
+          src="/hero-texture.webp"
+          alt=""
+          width={1600}
+          height={900}
+          className="landingHeroTexture"
+          priority
+        />
+        <div className="landingHeroInner">
+          <div className="landingHeroText">
+            <p className="landingHeroWelcome">Welcome to {BRAND.name}</p>
+            <h1 className="landingTitle">
+              YouTube Growth Analytics and Video Ideas for Creators
+            </h1>
+          </div>
+          <Image
+            src="/landing_icon.svg"
+            alt="ChannelBoost analytics illustration"
+            width={320}
+            height={287}
+            className="landingHeroIcon"
+            priority
+          />
+        </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="landingSocialProof fullBleed">
-        <p className="landingProofText">
-          Trusted by <strong>2,000+</strong> YouTube creators to grow their
-          channels
-        </p>
-      </section>
+      {/* Signup Card + Value Proposition */}
+      <div className="landingHeroContent">
+        <LandingSignupCard />
+
+        <div className="landingValueProp">
+          <p className="landingValuePropSubtitle">
+            Stop guessing what to post. Get audits, retention analysis,
+            competitor insights, and ideas to grow your channel faster.
+          </p>
+          <ul className="landingValuePropList">
+            <li>Unlimited idea suggestions</li>
+            <li>Video analysis with actionable fixes</li>
+            <li>Subscriber driver insights</li>
+          </ul>
+        </div>
+      </div>
 
       {/* Feature Pillars - SEO-Rich Sections */}
       <section className="landingPillars" id="features">
@@ -56,8 +79,8 @@ export default function HomePage() {
         <div className="landingPillar">
           <div className="landingPillarIcon">
             <svg
-              width="32"
-              height="32"
+              width="30"
+              height="30"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -72,7 +95,8 @@ export default function HomePage() {
           </p>
           <ul className="landingPillarBenefits">
             <li>
-              Identify underperforming videos and why they're not getting views
+              Identify underperforming videos and why they&apos;re not getting
+              views
             </li>
             <li>Get recommendations for specific improvement areas</li>
             <li>
@@ -83,7 +107,7 @@ export default function HomePage() {
             href="/learn/youtube-channel-audit"
             className="landingPillarLink"
           >
-            Learn about channel audits →
+            Learn about channel audits
           </Link>
         </div>
 
@@ -91,8 +115,8 @@ export default function HomePage() {
         <div className="landingPillar">
           <div className="landingPillarIcon">
             <svg
-              width="32"
-              height="32"
+              width="30"
+              height="30"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -116,7 +140,7 @@ export default function HomePage() {
             href="/learn/youtube-retention-analysis"
             className="landingPillarLink"
           >
-            Learn about retention analysis →
+            Learn about retention analysis
           </Link>
         </div>
 
@@ -124,8 +148,8 @@ export default function HomePage() {
         <div className="landingPillar">
           <div className="landingPillarIcon">
             <svg
-              width="32"
-              height="32"
+              width="30"
+              height="30"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -152,7 +176,7 @@ export default function HomePage() {
             href="/learn/how-to-get-more-subscribers"
             className="landingPillarLink"
           >
-            Learn how to get more subscribers →
+            Learn how to get more subscribers
           </Link>
         </div>
 
@@ -160,8 +184,8 @@ export default function HomePage() {
         <div className="landingPillar">
           <div className="landingPillarIcon">
             <svg
-              width="32"
-              height="32"
+              width="30"
+              height="30"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -177,7 +201,9 @@ export default function HomePage() {
             {FEATURES.competitorAnalysis.description}
           </p>
           <ul className="landingPillarBenefits">
-            <li>Monitor what's working for similar channels in your niche</li>
+            <li>
+              Monitor what&apos;s working for similar channels in your niche
+            </li>
             <li>Find trending topics before they saturate</li>
             <li>Get alerts when outlier videos emerge in your space</li>
           </ul>
@@ -185,7 +211,7 @@ export default function HomePage() {
             href="/learn/youtube-competitor-analysis"
             className="landingPillarLink"
           >
-            Learn about competitor analysis →
+            Learn about competitor analysis
           </Link>
         </div>
 
@@ -193,8 +219,8 @@ export default function HomePage() {
         <div className="landingPillar">
           <div className="landingPillarIcon">
             <svg
-              width="32"
-              height="32"
+              width="30"
+              height="30"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -211,43 +237,53 @@ export default function HomePage() {
             <li>Never run out of content ideas again</li>
           </ul>
           <Link href="/learn/youtube-video-ideas" className="landingPillarLink">
-            Learn about video ideas →
+            Learn about video ideas
           </Link>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="landingHowItWorks fullBleed">
-        <h2 className="landingSectionTitle">How {BRAND.name} Works</h2>
-        <p className="landingSectionSubtitle">
-          Connect your channel and start getting insights in under 2 minutes
-        </p>
-        <div className="landingSteps">
-          <div className="landingStep">
-            <div className="landingStepNumber">1</div>
-            <h3 className="landingStepTitle">Connect Your Channel</h3>
-            <p className="landingStepDesc">
-              Securely link your YouTube channel with Google OAuth. We only
-              request read-only access to your analytics data.
-            </p>
-          </div>
+      <section className="landingHowItWorks">
+        <Image
+          src="/hero-texture.webp"
+          alt=""
+          width={1600}
+          height={900}
+          className="landingHowTexture"
+          loading="lazy"
+        />
+        <div className="landingHowInner">
+          <h2 className="landingSectionTitle">How {BRAND.name} Works</h2>
+          <p className="landingSectionSubtitle">
+            Connect your channel and start getting insights in under 2 minutes
+          </p>
+          <div className="landingSteps">
+            <div className="landingStep">
+              <div className="landingStepNumber">1</div>
+              <h3 className="landingStepTitle">Connect Your Channel</h3>
+              <p className="landingStepDesc">
+                Securely link your YouTube channel with Google OAuth. We only
+                request read-only access to your analytics data.
+              </p>
+            </div>
 
-          <div className="landingStep">
-            <div className="landingStepNumber">2</div>
-            <h3 className="landingStepTitle">Get Your Analysis</h3>
-            <p className="landingStepDesc">
-              We analyze your video performance, retention curves, subscriber
-              patterns, and compare to similar channels.
-            </p>
-          </div>
+            <div className="landingStep">
+              <div className="landingStepNumber">2</div>
+              <h3 className="landingStepTitle">Get Your Analysis</h3>
+              <p className="landingStepDesc">
+                We analyze your video performance, retention curves, subscriber
+                patterns, and compare to similar channels.
+              </p>
+            </div>
 
-          <div className="landingStep">
-            <div className="landingStepNumber">3</div>
-            <h3 className="landingStepTitle">Grow Faster</h3>
-            <p className="landingStepDesc">
-              Get personalized video ideas and actionable recommendations based
-              on what's actually working in your niche.
-            </p>
+            <div className="landingStep">
+              <div className="landingStepNumber">3</div>
+              <h3 className="landingStepTitle">Grow Faster</h3>
+              <p className="landingStepDesc">
+                Get personalized video ideas and actionable recommendations
+                based on what&apos;s actually working in your niche.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -433,12 +469,24 @@ export default function HomePage() {
 
       {/* CTA Section */}
       <section className="landingCtaSection">
-        <h2 className="landingCtaTitle">Ready to Grow Your YouTube Channel?</h2>
-        <p className="landingCtaSubtitle">
-          Join thousands of creators using data-driven content strategy to get
-          more subscribers and views.
-        </p>
-        <HeroStaticCTAs />
+        <Image
+          src="/hero-texture.webp"
+          alt=""
+          width={1600}
+          height={900}
+          className="landingCtaTexture"
+          loading="lazy"
+        />
+        <div className="landingCtaInner">
+          <h2 className="landingCtaTitle">
+            Ready to Grow Your YouTube Channel?
+          </h2>
+          <p className="landingCtaSubtitle">
+            Join thousands of creators using data-driven content strategy to get
+            more subscribers and views.
+          </p>
+          <HeroStaticCTAs />
+        </div>
       </section>
     </main>
   );
@@ -508,7 +556,7 @@ function PopularGuidesSection() {
     return {
       slug,
       title: article.shortTitle,
-      description: `${article.description.slice(0, 120)  }...`,
+      description: `${article.description.slice(0, 120)}...`,
     };
   });
 
@@ -521,7 +569,7 @@ function PopularGuidesSection() {
   });
 
   return (
-    <section className="landingGuidesSection fullBleed">
+    <section className="landingGuidesSection">
       <h2 className="landingSectionTitle">Free YouTube Growth Guides</h2>
       <p className="landingSectionSubtitle">
         Learn proven strategies to grow your channel with our free guides
@@ -536,7 +584,7 @@ function PopularGuidesSection() {
           >
             <h3 className="landingGuideTitle">{guide.title}</h3>
             <p className="landingGuideDesc">{guide.description}</p>
-            <span className="landingGuideLink">Read guide →</span>
+            <span className="landingGuideLink">Read the guide →</span>
           </Link>
         ))}
       </div>
