@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { MarketingHeroBand } from "@/components/marketing/MarketingHeroBand";
 import { FaqSection } from "@/components/ui/FaqSection";
 import { LEARN_INDEX_CONTENT } from "@/lib/content/learn-index";
 import { BRAND } from "@/lib/shared/brand";
@@ -75,7 +76,8 @@ export default function LearnPage() {
   const content = LEARN_INDEX_CONTENT;
 
   // Get article by slug helper
-  const getArticle = (slug: string) => learnArticles.find((a) => a.slug === slug);
+  const getArticle = (slug: string) =>
+    learnArticles.find((a) => a.slug === slug);
 
   return (
     <main className={s.learnHub}>
@@ -86,44 +88,70 @@ export default function LearnPage() {
       />
 
       {/* Hero */}
-      <header className={s.hubHero}>
-        <div className={s.hubBadge}>Learning Center</div>
-        <h1 className={s.hubTitle}>
-          {content.hero.title}
-          <br />
-          <span className={s.hubTitleAccent}>{content.hero.titleAccent}</span>
+      <MarketingHeroBand>
+        <p className={s.heroBadge}>{BRAND.name} Blog Posts</p>
+        <h1 className={s.heroTitle}>
+          {content.hero.title}{" "}
+          <span className={s.heroTitleAccent}>{content.hero.titleAccent}</span>
         </h1>
-        <p className={s.hubSubtitle}>{content.hero.subtitle}</p>
-      </header>
+      </MarketingHeroBand>
 
-      {/* Intro Section - SEO text content */}
-      <section className={s.introSection}>
-        <p className={s.introText}>{content.intro.text}</p>
-        <ul className={s.introHighlights}>
-          {content.intro.highlights.map((h, i) => (
-            <li key={i}>{h}</li>
-          ))}
-        </ul>
+      {/* Subtitle */}
+      <section className={s.subtitleSection}>
+        <p className={s.subtitleText}>{content.hero.subtitle}</p>
       </section>
 
-      {/* Start Here Section */}
-      <section className={s.startHereSection}>
+      {/* Intro + Value Props */}
+      <section className={s.introSection}>
+        <p className={s.introText}>{content.intro.text}</p>
+        <div className={s.highlightsGrid}>
+          {content.intro.highlights.map((h, i) => (
+            <div key={i} className={s.highlightItem}>
+              <svg
+                className={s.highlightIcon}
+                width="30"
+                height="30"
+                viewBox="0 0 30 30"
+                fill="none"
+              >
+                <circle
+                  cx="15"
+                  cy="15"
+                  r="14"
+                  stroke="var(--color-hot-rose)"
+                  strokeWidth="1.5"
+                />
+                <path
+                  d="M10 15.5l3.5 3.5 6.5-7"
+                  stroke="var(--color-hot-rose)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <p className={s.highlightText}>{h}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Start Here */}
+      <section className={s.startHereCard}>
         <h2 className={s.startHereTitle}>{content.startHere.title}</h2>
         <p className={s.startHereDesc}>{content.startHere.description}</p>
-        <div className={s.startHereGuides}>
+        <div className={s.startHerePills}>
           {content.startHere.guides.map((guide) => {
             const article = getArticle(guide.slug);
             return (
-              <Link
-                key={guide.slug}
-                href={`/learn/${guide.slug}`}
-                className={s.startHereGuide}
-              >
-                <span className={s.startHereGuideTitle}>
+              <div key={guide.slug} className={s.startHerePillGroup}>
+                <Link
+                  href={`/learn/${guide.slug}`}
+                  className={s.startHerePill}
+                >
                   {article?.title ?? guide.slug}
-                </span>
-                <p className={s.startHereGuideReason}>{guide.reason}</p>
-              </Link>
+                </Link>
+                <p className={s.startHerePillDesc}>{guide.reason}</p>
+              </div>
             );
           })}
         </div>
@@ -138,12 +166,27 @@ export default function LearnPage() {
               href={`/learn/${article.slug}`}
               className={s.articleCard}
             >
-              <span className={s.articleCategory}>{article.category}</span>
               <h2 className={s.articleTitle}>{article.title}</h2>
+              <span className={s.articleCategory}>{article.category}</span>
               <p className={s.articleDescription}>{article.description}</p>
               <div className={s.articleMeta}>
                 <span className={s.readTime}>{article.readingTime}</span>
-                <span className={s.readMore}>{article.ctaLabel} →</span>
+                <span className={s.readMore}>
+                  {article.ctaLabel}
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="7" y1="17" x2="17" y2="7" />
+                    <polyline points="7 7 17 7 17 17" />
+                  </svg>
+                </span>
               </div>
             </Link>
           ))}
@@ -224,10 +267,16 @@ export default function LearnPage() {
         <h2 className={s.hubCtaTitle}>{content.cta.title}</h2>
         <p className={s.hubCtaText}>{content.cta.description}</p>
         <div className={s.hubCtaButtons}>
-          <Link href={content.cta.primaryButton.href} className={s.hubCtaPrimary}>
+          <Link
+            href={content.cta.primaryButton.href}
+            className={s.hubCtaPrimary}
+          >
             {content.cta.primaryButton.label}
           </Link>
-          <Link href={content.cta.secondaryButton.href} className={s.hubCtaSecondary}>
+          <Link
+            href={content.cta.secondaryButton.href}
+            className={s.hubCtaSecondary}
+          >
             {content.cta.secondaryButton.label}
           </Link>
         </div>

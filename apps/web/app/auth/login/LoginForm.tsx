@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn, useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 
 import { validateEmailPassword } from "@/components/auth/auth-helpers";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
@@ -12,12 +12,22 @@ import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import s from "./style.module.css";
 
 /**
- * LoginForm - Client component with interactive login functionality
+ * LoginForm - Client component with interactive login functionality.
+ * Redirects authenticated users to the dashboard (or callbackUrl) immediately.
  */
 export default function LoginForm() {
+  const { status } = useSession();
+  const router = useRouter();
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const sp = useSearchParams();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      const redirect = sp.get("callbackUrl") || sp.get("redirect") || "/dashboard";
+      router.replace(redirect);
+    }
+  }, [status, sp, router]);
 
   const showSignupSuccess = sp.get("signup") === "1";
 

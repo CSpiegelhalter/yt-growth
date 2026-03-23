@@ -26,7 +26,7 @@ export function StaticNav() {
           <Link href="/pricing" className={s.navLink}>
             Pricing
           </Link>
-          <Link href="/auth/login?redirect=/videos" className={s.ctaBtn}>
+          <Link href="/auth/login?callbackUrl=/dashboard" className={s.ctaBtn}>
             Get Started
           </Link>
         </div>

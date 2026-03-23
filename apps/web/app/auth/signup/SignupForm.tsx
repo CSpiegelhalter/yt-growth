@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
@@ -39,12 +39,19 @@ function parseSignupError(status: number, body: Record<string, unknown>): string
 }
 
 export default function SignupForm() {
+  const { status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefillName = searchParams.get("name") ?? "";
   const prefillEmail = searchParams.get("email") ?? "";
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/dashboard");
+    }
+  }, [status, router]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

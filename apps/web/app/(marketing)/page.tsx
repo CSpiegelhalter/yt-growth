@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { HeroStaticCTAs } from "@/components/HeroStaticCTAs";
 import { LandingSignupCard } from "@/components/LandingSignupCard";
+import { MarketingHeroBand } from "@/components/marketing/MarketingHeroBand";
 import { HOME_CONTENT } from "@/lib/content/home";
 import { BRAND, FEATURES } from "@/lib/shared/brand";
 
@@ -29,32 +30,12 @@ export default function HomePage() {
   return (
     <main className="landingPage">
       {/* Hero Gradient Band */}
-      <section className="landingHeroBand">
-        <Image
-          src="/hero-texture.webp"
-          alt=""
-          width={1600}
-          height={900}
-          className="landingHeroTexture"
-          priority
-        />
-        <div className="landingHeroInner">
-          <div className="landingHeroText">
-            <p className="landingHeroWelcome">Welcome to {BRAND.name}</p>
-            <h1 className="landingTitle">
-              YouTube Growth Analytics and Video Ideas for Creators
-            </h1>
-          </div>
-          <Image
-            src="/landing_icon.svg"
-            alt="ChannelBoost analytics illustration"
-            width={320}
-            height={287}
-            className="landingHeroIcon"
-            priority
-          />
-        </div>
-      </section>
+      <MarketingHeroBand>
+        <p className="landingHeroWelcome">Welcome to {BRAND.name}</p>
+        <h1 className="landingTitle">
+          YouTube Growth Analytics and Video Ideas for Creators
+        </h1>
+      </MarketingHeroBand>
 
       {/* Signup Card + Value Proposition */}
       <div className="landingHeroContent">

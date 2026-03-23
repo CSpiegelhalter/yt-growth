@@ -15,8 +15,12 @@ export function LandingSignupCard() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (name) params.set("name", name);
-    if (email) params.set("email", email);
+    if (name) {
+      params.set("name", name);
+    }
+    if (email) {
+      params.set("email", email);
+    }
     const qs = params.toString();
     router.push(`/auth/signup${qs ? `?${qs}` : ""}`);
   }
