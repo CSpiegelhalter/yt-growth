@@ -11,7 +11,7 @@ import { prisma } from "@/prisma";
 
 const log = createLogger({ module: "cron/keyword-snapshot" });
 
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 

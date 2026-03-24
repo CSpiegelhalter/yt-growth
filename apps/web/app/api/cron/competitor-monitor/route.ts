@@ -12,7 +12,7 @@ import { createLogger } from "@/lib/shared/logger";
 
 const log = createLogger({ module: "cron/competitor-monitor" });
 
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
