@@ -1041,3 +1041,58 @@
   font-style: italic;
   padding-left: 12px;
 }
+
+/* Action row — groups primary + secondary action buttons */
+.actionRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Make My Version Button */
+.makeVersionBtn {
+  background: var(--color-imperial-blue);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  padding: var(--space-2) var(--space-4);
+  transition: background var(--transition-base);
+}
+
+.makeVersionBtn:hover {
+  background: var(--color-hot-rose);
+}
+
+.makeVersionBtn:disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Secondary Action Button (Save as competitor, Generate ideas) */
+.secondaryActionBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  padding: var(--space-2) var(--space-4);
+  transition: all var(--transition-base);
+}
+
+.secondaryActionBtn:hover {
+  border-color: var(--color-imperial-blue);
+  color: var(--color-imperial-blue);
+}
+
+.secondaryActionBtn:disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}

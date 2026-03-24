@@ -2,7 +2,7 @@
  * Domain types for the video-ideas feature.
  */
 
-export type VideoIdeaStatus = "draft" | "planned";
+export type VideoIdeaStatus = "draft" | "planned" | "published";
 
 export type VideoIdea = {
   id: string;
@@ -14,6 +14,8 @@ export type VideoIdea = {
   tags: string[];
   postDate: string | null;
   status: VideoIdeaStatus;
+  sourceProvenanceJson: string | null;
+  publishedVideoId: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -27,6 +29,7 @@ export type CreateIdeaInput = {
   description?: string;
   tags?: string[];
   postDate?: string;
+  sourceProvenanceJson?: string;
 };
 
 export type UpdateIdeaInput = {
@@ -37,6 +40,7 @@ export type UpdateIdeaInput = {
   tags?: string[];
   postDate?: string | null;
   status?: VideoIdeaStatus;
+  publishedVideoId?: string | null;
 };
 
 export type SuggestableField = "title" | "script" | "description" | "tags" | "postDate";

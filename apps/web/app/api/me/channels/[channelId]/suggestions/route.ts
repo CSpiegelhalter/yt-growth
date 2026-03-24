@@ -3,6 +3,7 @@
  *
  * Fetch active video suggestions for a channel.
  * Auto-generates suggestions if none exist.
+ * Uses competitor-backed context when cached competitor data is available.
  *
  * Auth: Required
  */
@@ -13,9 +14,10 @@ import { createApiRoute } from "@/lib/api/route";
 import { withAuth } from "@/lib/api/withAuth";
 import { withValidation } from "@/lib/api/withValidation";
 import {
-  buildContext,
+  buildCompetitorBackedContext,
   generateSuggestions,
   getSuggestions,
+  resolveChannelId,
   SuggestionParamsSchema,
 } from "@/lib/features/suggestions";
 
@@ -26,14 +28,14 @@ export const GET = createApiRoute(
     withValidation(
       { params: SuggestionParamsSchema },
       async (_req: NextRequest, _ctx, api, validated) => {
-        const channelId = Number(validated.params!.channelId);
         const userId = api.userId!;
+        const channelId = await resolveChannelId(validated.params!.channelId, userId);
 
         let result = await getSuggestions({ userId, channelId });
 
         if (result.suggestions.length < 3) {
           const needed = 3 - result.suggestions.length;
-          const context = await buildContext({ userId, channelId });
+          const context = await buildCompetitorBackedContext({ userId, channelId });
           await generateSuggestions({
             userId,
             channelId,

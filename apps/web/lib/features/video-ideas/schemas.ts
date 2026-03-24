@@ -16,6 +16,7 @@ export const CreateIdeaBodySchema = z.object({
   description: z.string().optional(),
   tags: z.array(z.string()).optional(),
   postDate: z.string().date().optional(),
+  sourceProvenanceJson: z.string().optional(),
 });
 
 export const UpdateIdeaBodySchema = z.object({
@@ -25,7 +26,8 @@ export const UpdateIdeaBodySchema = z.object({
   description: z.string().nullable().optional(),
   tags: z.array(z.string()).optional(),
   postDate: z.string().date().nullable().optional(),
-  status: z.enum(["draft", "planned"]).optional(),
+  status: z.enum(["draft", "planned", "published"]).optional(),
+  publishedVideoId: z.string().max(32).nullable().optional(),
 });
 
 export const SuggestFieldBodySchema = z.object({

@@ -26,6 +26,7 @@ model User {
   ThumbnailProjects ThumbnailProject[]
   VideoSuggestion   VideoSuggestion[]
   VideoIdea         VideoIdea[]
+  SavedCompetitor   SavedCompetitor[]
 
   @@index([email], map: "idx_user_email")
 }
@@ -89,6 +90,8 @@ model Channel {
   ChannelProfile   ChannelProfile?
   VideoSuggestion  VideoSuggestion[]
   VideoIdea        VideoIdea[]
+  SavedCompetitor      SavedCompetitor[]
+  NicheKeywordHistory  NicheKeywordHistory[]
 
   @@unique([userId, youtubeChannelId], map: "uq_channel_owner_youtube")
   @@index([userId], map: "idx_channel_user")
@@ -765,9 +768,11 @@ model VideoIdea {
   title       String?   @db.VarChar(500)
   script      String?   @db.Text
   description String?   @db.Text
-  tags        String?   @db.Text // JSON array of strings
-  postDate    DateTime? @db.Date
-  status      String    @default("draft") @db.VarChar(16) // draft, planned
+  tags                 String?   @db.Text // JSON array of strings
+  postDate             DateTime? @db.Date
+  status               String    @default("draft") @db.VarChar(16) // draft, planned, published
+  sourceProvenanceJson String?   @db.Text // JSON SourceProvenance — null for manually created ideas
+  publishedVideoId     String?   @db.VarChar(32) // YouTube video ID of the published version
   createdAt   DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
 
@@ -776,4 +781,61 @@ model VideoIdea {
 
   @@index([userId, channelId, status], map: "idx_video_idea_user_channel_status")
   @@index([userId, createdAt(sort: Desc)], map: "idx_video_idea_user_created")
+}
+
+// ============================================
+// SAVED COMPETITORS - Persistent competitor engine
+// ============================================
+
+model SavedCompetitor {
+  id                   String   @id @default(uuid()) @db.Uuid
+  userId               Int
+  channelId            Int
+
+  // Competitor channel identity
+  ytChannelId          String   @db.VarChar(64)
+  channelTitle         String   @db.VarChar(255)
+  thumbnailUrl         String?
+  subscriberCount      Int?
+
+  // Classification
+  type                 String   @default("competitor") @db.VarChar(16) // competitor | inspiration
+  source               String   @default("auto") @db.VarChar(16) // auto | manual | profile | analyze
+
+  // Discovery metadata
+  matchReason          String?  @db.VarChar(255)
+  nicheOverlap         Float?
+
+  // Monitoring state
+  isActive             Boolean  @default(true)
+  lastProcessedVideoId String?  @db.VarChar(32) // Idempotency guard for cron
+
+  createdAt            DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  User    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId, ytChannelId], map: "uq_saved_competitor_user_channel_yt")
+  @@index([userId, channelId, isActive], map: "idx_saved_competitor_user_channel_active")
+  @@index([ytChannelId], map: "idx_saved_competitor_yt_channel")
+}
+
+// ============================================
+// NICHE KEYWORD HISTORY (weekly snapshots for trend tracking)
+// ============================================
+
+model NicheKeywordHistory {
+  id           String   @id @default(uuid()) @db.Uuid
+  channelId    Int
+  keyword      String   @db.VarChar(255)
+  searchVolume Int
+  difficulty   Int
+  trendDirection String @db.VarChar(16) // rising | stable | declining
+  capturedAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  Channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId, keyword, capturedAt(sort: Desc)], map: "idx_niche_kw_history_channel_kw")
+  @@index([capturedAt], map: "idx_niche_kw_history_captured")
 }

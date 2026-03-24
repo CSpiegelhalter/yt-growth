@@ -37,7 +37,7 @@ help:
 .PHONY: dev build preflight
 
 dev:
-	cd $(WEB_DIR) && bun run dev
+	./scripts/dev-full.sh
 
 build:
 	cd $(WEB_DIR) && bun run build

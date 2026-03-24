@@ -20,6 +20,8 @@ All project rules live in `.claude/rules/`. Follow ALL of them for EVERY task.
 - PostgreSQL via Prisma (read-only — no schema changes) (001-account-page-refactor)
 - PostgreSQL via Prisma (read-only — no schema changes); localStorage for dismissal state (011-profile-completion-popup)
 - TypeScript 5.x + React 19, Next.js 15 (App Router), CSS Modules + globals.css (012-landing-page-redesign)
+- TypeScript 5.x + React 19, Next.js 15 (App Router), Prisma, next-auth, Zod, OpenAI (via lib/llm.ts) (014-competitor-backed-ideas)
+- PostgreSQL via Prisma (one new column on VideoIdea) (014-competitor-backed-ideas)
 
 ## Recent Changes
 - 005-access-gate: Added TypeScript 5.x, React 19, Next.js 15 (App Router) + next-auth (session), Prisma (user/channel queries), CSS Modules

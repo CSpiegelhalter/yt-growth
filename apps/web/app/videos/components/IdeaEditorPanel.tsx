@@ -1,10 +1,15 @@
 "use client";
 
+import { useState } from "react";
+
+import { apiFetchJson } from "@/lib/client/api";
+import type { SourceProvenance } from "@/lib/features/suggestions/types";
 import type { VideoIdea } from "@/lib/features/video-ideas/types";
 
 import { AiHelpBanner } from "./AiHelpBanner";
 import s from "./idea-editor-panel.module.css";
 import { IdeaFormField } from "./IdeaFormField";
+import { IdeaSourceSection } from "./IdeaSourceSection";
 import { useIdeaForm } from "./useIdeaForm";
 
 type IdeaEditorPanelProps = {
@@ -20,7 +25,105 @@ type IdeaEditorPanelProps = {
   }) => Promise<void>;
   onDiscard: () => void;
   saving?: boolean;
+  onPublished?: (idea: VideoIdea) => void;
 };
+
+function extractVideoId(input: string): string | null {
+  const trimmed = input.trim();
+  // Direct ID (11 chars)
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  // YouTube URL patterns
+  const urlMatch = trimmed.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+  return urlMatch?.[1] ?? null;
+}
+
+function MarkAsPublishedSection({
+  channelId,
+  idea,
+  onPublished,
+}: {
+  channelId: string;
+  idea: VideoIdea;
+  onPublished?: (idea: VideoIdea) => void;
+}) {
+  const [videoInput, setVideoInput] = useState(idea.publishedVideoId ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleMarkPublished() {
+    const videoId = extractVideoId(videoInput);
+    if (!videoId) {
+      setError("Enter a valid YouTube video URL or ID");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const result = await apiFetchJson<{ idea: VideoIdea }>(
+        `/api/me/channels/${channelId}/ideas/${idea.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "published",
+            publishedVideoId: videoId,
+          }),
+        },
+      );
+      onPublished?.(result.idea);
+    } catch {
+      setError("Failed to mark as published");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (idea.status === "published" && idea.publishedVideoId) {
+    return (
+      <div className={s.publishedSection}>
+        <span className={s.publishedBadge}>Published</span>
+        <a
+          href={`https://youtube.com/watch?v=${idea.publishedVideoId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={s.publishedLink}
+        >
+          View on YouTube
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className={s.publishSection}>
+      <h4 className={s.publishTitle}>Mark as published</h4>
+      <p className={s.publishHint}>
+        Paste the YouTube video URL or ID of the published version.
+      </p>
+      <div className={s.publishRow}>
+        <input
+          type="text"
+          className={s.publishInput}
+          value={videoInput}
+          onChange={(e) => setVideoInput(e.target.value)}
+          placeholder="https://youtube.com/watch?v=... or video ID"
+          disabled={saving}
+        />
+        <button
+          type="button"
+          className={s.publishBtn}
+          onClick={handleMarkPublished}
+          disabled={saving || !videoInput.trim()}
+        >
+          {saving ? "Saving..." : "Mark published"}
+        </button>
+      </div>
+      {error && <p className={s.publishError}>{error}</p>}
+    </div>
+  );
+}
 
 export function IdeaEditorPanel({
   channelId,
@@ -28,9 +131,17 @@ export function IdeaEditorPanel({
   onSave,
   onDiscard,
   saving = false,
+  onPublished,
 }: IdeaEditorPanelProps) {
-  const form = useIdeaForm(idea, channelId);
   const isNew = !idea;
+  const form = useIdeaForm(idea, channelId, isNew ? undefined : onSave);
+
+  let parsedProvenance: SourceProvenance | null = null;
+  if (idea?.sourceProvenanceJson) {
+    try {
+      parsedProvenance = JSON.parse(idea.sourceProvenanceJson) as SourceProvenance;
+    } catch { /* malformed JSON, skip */ }
+  }
 
   async function handleSave() {
     await onSave(form.toFormData());
@@ -46,6 +157,8 @@ export function IdeaEditorPanel({
           Discard
         </button>
       </div>
+
+      <IdeaSourceSection provenance={parsedProvenance} />
 
       <AiHelpBanner />
 
@@ -91,6 +204,7 @@ export function IdeaEditorPanel({
         label="Description"
         value={form.description}
         onChange={form.setDescription}
+        multiline
         placeholder="SEO-optimized description"
         onSuggest={() => form.suggestField("description")}
         suggestLoading={form.getSuggestState("description").loading}
@@ -116,6 +230,15 @@ export function IdeaEditorPanel({
         suggestLoading={form.getSuggestState("postDate").loading}
         suggestError={form.getSuggestState("postDate").error}
       />
+
+      {/* Mark as published — shown for planned ideas */}
+      {idea && (idea.status === "planned" || idea.status === "published") && (
+        <MarkAsPublishedSection
+          channelId={channelId}
+          idea={idea}
+          onPublished={onPublished}
+        />
+      )}
     </div>
   );
 }

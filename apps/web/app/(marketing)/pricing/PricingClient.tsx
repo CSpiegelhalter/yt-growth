@@ -5,24 +5,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { UpgradeCard } from "@/components/pricing/UpgradeCard";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { startCheckout } from "@/lib/client/checkout";
 
 type PricingClientProps = {
   isAuthenticated: boolean;
   isPro: boolean;
 };
-
-async function startCheckout(): Promise<string> {
-  const res = await fetch("/api/integrations/stripe/checkout", {
-    method: "POST",
-  });
-  const data = await res.json();
-  if (!res.ok || !data.url) {
-    throw new Error(
-      data.message ?? "Failed to start checkout. Please try again.",
-    );
-  }
-  return data.url;
-}
 
 export function PricingClient({ isAuthenticated, isPro }: PricingClientProps) {
   const [loading, setLoading] = useState(false);

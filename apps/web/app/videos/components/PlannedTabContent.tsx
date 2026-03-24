@@ -27,6 +27,7 @@ type PlannedTabContentProps = {
     postDate?: string;
   }) => Promise<void>;
   onDiscard: () => void;
+  onIdeasRefresh?: () => void;
 };
 
 export function PlannedLeftContent({

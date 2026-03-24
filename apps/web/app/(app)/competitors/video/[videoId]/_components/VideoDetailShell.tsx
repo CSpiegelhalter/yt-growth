@@ -29,6 +29,9 @@ import { DataLimitations } from "../components";
 import s from "../style.module.css";
 import {
   CommentsSection,
+  GenerateIdeasButton,
+  MakeMyVersionButton,
+  SaveAsCompetitorButton,
   TagsSection,
   WaysToOutperform,
 } from "./InteractiveHeaderClient";
@@ -78,6 +81,28 @@ export default function VideoDetailShell({
       </Link>
 
       <VideoHeader video={video} ageDays={ageDays} thumbnailWidth={280} showPlayOverlay />
+
+      <div className={s.actionRow}>
+        <MakeMyVersionButton
+          videoId={video.videoId}
+          videoTitle={video.title}
+          channelId={video.channelId ?? ""}
+          channelTitle={video.channelTitle ?? ""}
+          viewCount={video.stats?.viewCount ?? 0}
+          viewsPerDay={data.publicSignals?.viewsPerDay ?? 0}
+          publishedAt={video.publishedAt ?? ""}
+          thumbnailUrl={video.thumbnailUrl ?? null}
+          whyItsWorking={insights.whyItsWorking ?? []}
+          activeChannelId={activeChannelId}
+        />
+        <SaveAsCompetitorButton
+          ytChannelId={video.channelId ?? ""}
+          channelTitle={video.channelTitle ?? ""}
+          thumbnailUrl={null}
+          activeChannelId={activeChannelId}
+        />
+        <GenerateIdeasButton activeChannelId={activeChannelId} />
+      </div>
 
       <AnalysisSections
         allTags={allTags}

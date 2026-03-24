@@ -219,6 +219,7 @@ export default function ChannelProfileClient() {
                 onFieldChange={handleFieldChange}
                 onSuggest={handleSuggest}
                 isFieldLoading={isFieldLoading}
+                channelId={channelId}
               />
             )}
           </div>

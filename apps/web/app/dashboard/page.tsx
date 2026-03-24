@@ -35,6 +35,7 @@ export default async function DashboardPage() {
           <DashboardClient
             initialChannels={data.channels}
             initialActiveChannelId={data.activeChannelId}
+            isPro={data.me.subscription?.isActive ?? false}
           />
         </Suspense>
       )}

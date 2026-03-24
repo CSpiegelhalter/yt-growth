@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { memo, useCallback, useMemo,useState } from "react";
 
 import { copyToClipboard } from "@/components/ui/Toast";
+import { apiFetchJson } from "@/lib/client/api";
 import type { CompetitorCommentsAnalysis } from "@/types/api";
 
 import s from "../style.module.css";
@@ -413,4 +415,202 @@ export const WaysToOutperform = memo(function WaysToOutperform({
     </section>
   );
 });
+
+/* ============================================
+   SAVE AS COMPETITOR BUTTON
+   ============================================ */
+
+type SaveAsCompetitorButtonProps = {
+  ytChannelId: string;
+  channelTitle: string;
+  thumbnailUrl: string | null;
+  activeChannelId: string;
+};
+
+export function SaveAsCompetitorButton({
+  ytChannelId,
+  channelTitle,
+  thumbnailUrl,
+  activeChannelId,
+}: SaveAsCompetitorButtonProps) {
+  const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  const handleClick = useCallback(async () => {
+    setState("saving");
+    try {
+      await apiFetchJson(
+        `/api/me/channels/${activeChannelId}/competitors`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            competitors: [{
+              ytChannelId,
+              channelTitle,
+              thumbnailUrl,
+            }],
+            source: "analyze",
+          }),
+        },
+      );
+      setState("saved");
+    } catch {
+      setState("error");
+    }
+  }, [ytChannelId, channelTitle, thumbnailUrl, activeChannelId]);
+
+  if (state === "saved") {
+    return (
+      <button type="button" className={s.secondaryActionBtn} disabled>
+        Saved as competitor
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={s.secondaryActionBtn}
+      onClick={handleClick}
+      disabled={state === "saving"}
+    >
+      {state === "saving" ? "Saving..." : state === "error" ? "Failed — retry" : "Save as competitor"}
+    </button>
+  );
+}
+
+/* ============================================
+   GENERATE IDEAS FROM PATTERN BUTTON
+   ============================================ */
+
+type GenerateIdeasButtonProps = {
+  activeChannelId: string;
+};
+
+export function GenerateIdeasButton({
+  activeChannelId,
+}: GenerateIdeasButtonProps) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = useCallback(async () => {
+    setLoading(true);
+    try {
+      await apiFetchJson(
+        `/api/me/channels/${activeChannelId}/suggestions/generate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ count: 3 }),
+        },
+      );
+      router.push("/dashboard");
+    } catch {
+      // Fall through
+    } finally {
+      setLoading(false);
+    }
+  }, [activeChannelId, router]);
+
+  return (
+    <button
+      type="button"
+      className={s.secondaryActionBtn}
+      onClick={handleClick}
+      disabled={loading}
+    >
+      {loading ? "Generating..." : "Generate ideas from this pattern"}
+    </button>
+  );
+}
+
+/* ============================================
+   MAKE MY VERSION BUTTON
+   ============================================ */
+
+type MakeMyVersionButtonProps = {
+  videoId: string;
+  videoTitle: string;
+  channelId: string;
+  channelTitle: string;
+  viewCount: number;
+  viewsPerDay: number;
+  publishedAt: string;
+  thumbnailUrl: string | null;
+  whyItsWorking: string[];
+  activeChannelId: string;
+};
+
+type CreateIdeaResponse = {
+  idea: { id: string };
+};
+
+export function MakeMyVersionButton({
+  videoId,
+  videoTitle,
+  channelId,
+  channelTitle,
+  viewCount,
+  viewsPerDay,
+  publishedAt,
+  thumbnailUrl,
+  whyItsWorking,
+  activeChannelId,
+}: MakeMyVersionButtonProps) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = useCallback(async () => {
+    setLoading(true);
+    try {
+      const provenance = {
+        sourceVideos: [
+          {
+            videoId,
+            title: videoTitle,
+            channelId,
+            channelTitle,
+            thumbnailUrl,
+            stats: { viewCount, viewsPerDay },
+            publishedAt,
+          },
+        ],
+        pattern: whyItsWorking[0] ?? "High-performing video in your niche",
+        rationale: whyItsWorking.slice(0, 2).join(". ") || "Strong audience engagement",
+        adaptationAngle: "Create your unique take on this topic",
+      };
+
+      const result = await apiFetchJson<CreateIdeaResponse>(
+        `/api/me/channels/${activeChannelId}/ideas`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            summary: videoTitle.slice(0, 150),
+            sourceProvenanceJson: JSON.stringify(provenance),
+          }),
+        },
+      );
+
+      router.push(
+        `/videos?tab=planned&channelId=${activeChannelId}&ideaId=${result.idea.id}`,
+      );
+    } catch {
+      // Silently fail — user can retry
+    } finally {
+      setLoading(false);
+    }
+  }, [videoId, videoTitle, channelId, channelTitle, viewCount, viewsPerDay, publishedAt, thumbnailUrl, whyItsWorking, activeChannelId, router]);
+
+  return (
+    <button
+      type="button"
+      className={s.makeVersionBtn}
+      onClick={handleClick}
+      disabled={loading}
+    >
+      {loading ? "Creating..." : "Make my version"}
+    </button>
+  );
+}
 

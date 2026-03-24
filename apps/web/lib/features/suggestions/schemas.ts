@@ -12,3 +12,7 @@ export const SuggestionActionParamsSchema = z.object({
 export const SuggestionActionBodySchema = z.object({
   action: z.enum(["save", "dismiss", "use"]),
 });
+
+export const GenerateBodySchema = z.object({
+  count: z.number().int().min(1).max(5).default(3),
+});

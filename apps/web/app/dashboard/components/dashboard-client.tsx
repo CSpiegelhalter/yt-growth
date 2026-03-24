@@ -1,92 +1,54 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { OverviewPanel } from "@/components/overview";
+import { PricingModal } from "@/components/pricing/PricingModal";
 import { PageContainer } from "@/components/ui";
-import { apiFetchJson } from "@/lib/client/api";
-import type { SuggestionAction, VideoSuggestion  } from "@/lib/features/suggestions/types";
 import type { Channel } from "@/types/api";
 
 import s from "./dashboard-client.module.css";
 import { ProfileCompletionPopup } from "./profile-completion-popup";
+import { SourceDrawer } from "./source-drawer";
 import { SuggestionPanel } from "./suggestion-panel";
-
-type SuggestionsResponse = {
-  suggestions: VideoSuggestion[];
-  total: number;
-};
-
-type ActionResponse = {
-  suggestion: { id: string; status: string };
-  replacement: VideoSuggestion;
-  videoIdeaId?: string;
-  ideaFlowUrl?: string;
-};
+import { useSuggestionEngine } from "./use-suggestion-engine";
 
 type DashboardClientProps = {
   initialChannels: Channel[];
   initialActiveChannelId: string | null;
+  isPro: boolean;
 };
 
 export function DashboardClient({
   initialChannels,
   initialActiveChannelId,
+  isPro,
 }: DashboardClientProps) {
   const activeChannel = initialChannels.find(
     (c) => c.channel_id === initialActiveChannelId,
   );
 
-  const [suggestions, setSuggestions] = useState<VideoSuggestion[]>([]);
-  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
-  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
+  const router = useRouter();
 
-  const fetchSuggestions = useCallback(async () => {
-    if (!activeChannel) {return;}
-    setSuggestionsLoading(true);
-    setSuggestionsError(null);
-    try {
-      const result = await apiFetchJson<SuggestionsResponse>(
-        `/api/me/channels/${activeChannel.id}/suggestions`,
-      );
-      setSuggestions(result.suggestions);
-    } catch {
-      setSuggestionsError("Failed to load suggestions.");
-    } finally {
-      setSuggestionsLoading(false);
-    }
-  }, [activeChannel]);
+  const engine = useSuggestionEngine({
+    channelId: activeChannel?.id ? String(activeChannel.id) : null,
+    youtubeChannelId: activeChannel?.channel_id ?? null,
+    isPro,
+  });
 
-  useEffect(() => {
-    void fetchSuggestions();
-  }, [fetchSuggestions]);
+  const drawerSuggestion = engine.drawerSuggestionId
+    ? engine.suggestions.find((s) => s.id === engine.drawerSuggestionId) ?? null
+    : null;
 
-  const handleAction = useCallback(
-    async (suggestionId: string, action: SuggestionAction) => {
-      if (!activeChannel) {return;}
-      const result = await apiFetchJson<ActionResponse>(
-        `/api/me/channels/${activeChannel.id}/suggestions/${suggestionId}/action`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action }),
-        },
-      );
+  function handleMakeMyVersion(suggestionId: string) {
+    engine.closeDrawer();
+    void engine.handleAction(suggestionId, "use");
+  }
 
-      setSuggestions((prev) => {
-        const without = prev.filter((s) => s.id !== suggestionId);
-        if (result.replacement?.id && !without.some((s) => s.id === result.replacement.id)) {
-          return [...without, result.replacement];
-        }
-        return without;
-      });
-
-      if (action === "use" && result.ideaFlowUrl) {
-        window.location.href = result.ideaFlowUrl;
-      }
-    },
-    [activeChannel],
-  );
+  function handleAnalyzeSource(videoId: string) {
+    engine.closeDrawer();
+    router.push(`/competitors/video/${videoId}`);
+  }
 
   return (
     <PageContainer>
@@ -100,14 +62,32 @@ export function DashboardClient({
         </div>
         <div className={`${s.rightPanel} ${s.panelCard}`}>
           <SuggestionPanel
-            suggestions={suggestions}
-            loading={suggestionsLoading}
-            error={suggestionsError}
-            onAction={handleAction}
-            onRetry={fetchSuggestions}
+            suggestions={engine.suggestions}
+            loading={engine.loading}
+            error={engine.error}
+            onAction={engine.handleAction}
+            onRetry={engine.handleRetry}
+            onGenerate={engine.handleGenerate}
+            researchPhase={engine.researchPhase}
+            researchStatus={engine.researchStatus}
+            researchError={engine.researchError}
+            channelId={activeChannel?.id ? String(activeChannel.id) : null}
+            youtubeChannelId={activeChannel?.channel_id ?? null}
+            isPro={isPro}
+            onViewSource={engine.openDrawer}
+            needsDiscovery={engine.needsDiscovery}
+            onDiscoveryComplete={engine.onDiscoveryComplete}
           />
         </div>
       </div>
+      <SourceDrawer
+        suggestion={drawerSuggestion}
+        isOpen={engine.isDrawerOpen}
+        onClose={engine.closeDrawer}
+        onMakeMyVersion={handleMakeMyVersion}
+        onAnalyzeSource={handleAnalyzeSource}
+      />
+      <PricingModal isOpen={engine.showPricing} onClose={() => engine.setShowPricing(false)} />
     </PageContainer>
   );
 }

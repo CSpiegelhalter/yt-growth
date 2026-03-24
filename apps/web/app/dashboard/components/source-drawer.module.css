@@ -1,0 +1,279 @@
+/* Source drawer — desktop side panel / mobile bottom sheet */
+
+.backdrop {
+  background: rgba(0, 0, 0, 0.3);
+  inset: 0;
+  position: fixed;
+  z-index: 100;
+}
+
+/* Desktop: right-side panel */
+.drawer {
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 440px;
+  z-index: 101;
+}
+
+/* Mobile: bottom sheet */
+@media (max-width: 768px) {
+  .drawer {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    border-top-left-radius: var(--radius-xl);
+    border-top-right-radius: var(--radius-xl);
+    bottom: 0;
+    height: 85vh;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+  }
+}
+
+.drawerHeader {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+}
+
+.drawerTitle {
+  color: var(--color-imperial-blue);
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: var(--text-xl);
+  line-height: 1;
+  padding: var(--space-1);
+}
+
+.closeBtn:hover {
+  color: var(--text);
+}
+
+.drawerBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+/* Thumbnail */
+.thumbnail {
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  width: 100%;
+}
+
+.thumbnailPlaceholder {
+  align-items: center;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-alt);
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  display: flex;
+  font-size: var(--text-sm);
+  justify-content: center;
+  width: 100%;
+}
+
+/* Video info */
+.videoTitle {
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  margin: 0;
+}
+
+.videoChannel {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+/* Stats bar — 4 fixed cells */
+.statsBar {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.statCell {
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2);
+  text-align: center;
+}
+
+.statValue {
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+}
+
+.statLabel {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* Why this worked section */
+.sectionTitle {
+  color: var(--color-imperial-blue);
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  letter-spacing: 0.3px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.bulletList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bulletList li {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  padding-left: var(--space-4);
+  position: relative;
+}
+
+.bulletList li::before {
+  color: var(--color-hot-rose);
+  content: "\2022";
+  left: 0;
+  position: absolute;
+}
+
+/* Your edge section */
+.edgeBox {
+  background: color-mix(in srgb, var(--color-imperial-blue) 4%, transparent);
+  border-left: 3px solid var(--color-imperial-blue);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  padding: var(--space-3);
+}
+
+/* Action buttons */
+.drawerActions {
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.primaryAction {
+  background: var(--color-imperial-blue);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  cursor: pointer;
+  flex: 1;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  padding: var(--space-2) var(--space-3);
+  transition: background var(--transition-base);
+}
+
+.primaryAction:hover {
+  background: var(--color-hot-rose);
+}
+
+.secondaryAction {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex: 1;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  padding: var(--space-2) var(--space-3);
+  transition: all var(--transition-base);
+}
+
+.secondaryAction:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+
+/* Skeleton loading */
+.skeletonBlock {
+  animation: pulse 1.5s ease-in-out infinite;
+  background: var(--surface-alt);
+  border-radius: var(--radius-md);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skeletonThumb {
+  composes: skeletonBlock;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+}
+
+.skeletonTitle {
+  composes: skeletonBlock;
+  height: 20px;
+  width: 80%;
+}
+
+.skeletonLine {
+  composes: skeletonBlock;
+  height: 14px;
+  width: 60%;
+}
+
+.skeletonStats {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.skeletonStat {
+  composes: skeletonBlock;
+  height: 48px;
+}
+
+.skeletonBullet {
+  composes: skeletonBlock;
+  height: 14px;
+  width: 90%;
+}

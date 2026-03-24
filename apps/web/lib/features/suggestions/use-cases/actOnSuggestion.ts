@@ -66,13 +66,39 @@ export async function actOnSuggestion(
 
     let videoIdeaId: string | undefined;
     if (action === "save" || action === "use") {
+      // Extract provenance from sourceContext if present
+      const sourceCtx = existing.sourceContext as Record<string, unknown> | null;
+      const provenance = sourceCtx?.provenance ?? null;
+      const sourceProvenanceJson = provenance
+        ? JSON.stringify(provenance)
+        : null;
+
+      // Extract tags from the source CompetitorVideo if provenance references one
+      let tags: string | null = null;
+      if (provenance && typeof provenance === "object") {
+        const prov = provenance as { sourceVideos?: Array<{ videoId: string }> };
+        const sourceVideoId = prov.sourceVideos?.[0]?.videoId;
+        if (sourceVideoId) {
+          const competitorVideo = await prisma.competitorVideo.findUnique({
+            where: { videoId: sourceVideoId },
+            select: { tags: true },
+          });
+          if (competitorVideo?.tags && competitorVideo.tags.length > 0) {
+            tags = JSON.stringify(competitorVideo.tags);
+          }
+        }
+      }
+
       const videoIdea = await prisma.videoIdea.create({
         data: {
           userId,
           channelId,
           summary: existing.title.slice(0, 150),
+          title: existing.title.slice(0, 500),
           description: existing.description,
           status: "draft",
+          sourceProvenanceJson,
+          ...(tags ? { tags } : {}),
         },
       });
       videoIdeaId = String(videoIdea.id);

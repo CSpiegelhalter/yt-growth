@@ -139,8 +139,8 @@ export async function createCheckoutSession(
   const session = await stripe.createCheckoutSession({
     customerId,
     priceId: STRIPE_PRICE_ID,
-    successUrl: `${APP_URL}/dashboard?checkout=success`,
-    cancelUrl: `${APP_URL}/pricing?checkout=canceled`,
+    successUrl: `${process.env.NEXTAUTH_URL || APP_URL}/dashboard?checkout=success`,
+    cancelUrl: `${process.env.NEXTAUTH_URL || APP_URL}/pricing?checkout=canceled`,
     metadata: { userId: String(userId) },
   });
 

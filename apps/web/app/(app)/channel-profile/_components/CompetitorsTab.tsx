@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
+import { apiFetchJson } from "@/lib/client/api";
 import type { ChannelProfileInput } from "@/lib/features/channels/schemas";
 import type { CompetitorEntry } from "@/lib/features/channels/types";
 
@@ -15,6 +16,17 @@ type Props = {
   onFieldChange: (input: ChannelProfileInput) => void;
   onSuggest: (field: string, section: string) => void;
   isFieldLoading: (field: string) => boolean;
+  channelId?: string | null;
+};
+
+type SavedCompetitorRow = {
+  id: string;
+  ytChannelId: string;
+  channelTitle: string;
+  thumbnailUrl: string | null;
+  subscriberCount: number | null;
+  type: string;
+  source: string;
 };
 
 type CompetitorTier = "closeToSize" | "aspirational" | "nicheHero";
@@ -151,7 +163,166 @@ function CompetitorSection({
   );
 }
 
-export function CompetitorsTab({ input, onFieldChange, onSuggest, isFieldLoading }: Props) {
+function SavedCompetitorsSection({ channelId }: { channelId: string }) {
+  const [competitors, setCompetitors] = useState<SavedCompetitorRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCompetitors = useCallback(async () => {
+    try {
+      const result = await apiFetchJson<{ competitors: SavedCompetitorRow[] }>(
+        `/api/me/channels/${channelId}/competitors`,
+      );
+      setCompetitors(result.competitors);
+    } catch {
+      // Silently fail
+    } finally {
+      setLoading(false);
+    }
+  }, [channelId]);
+
+  useEffect(() => {
+    void fetchCompetitors();
+  }, [fetchCompetitors]);
+
+  async function handleToggleType(id: string, currentType: string) {
+    const newType = currentType === "competitor" ? "inspiration" : "competitor";
+    try {
+      await apiFetchJson(`/api/me/channels/${channelId}/competitors/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: newType }),
+      });
+      setCompetitors((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, type: newType } : c)),
+      );
+    } catch {
+      // Silently fail
+    }
+  }
+
+  async function handleRemove(id: string) {
+    try {
+      await apiFetchJson(`/api/me/channels/${channelId}/competitors/${id}`, {
+        method: "DELETE",
+      });
+      setCompetitors((prev) => prev.filter((c) => c.id !== id));
+    } catch {
+      // Silently fail
+    }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ padding: "var(--space-4) 0" }}>
+        <p style={{ color: "var(--text-tertiary)", fontSize: "var(--text-sm)" }}>
+          Loading saved competitors...
+        </p>
+      </div>
+    );
+  }
+
+  if (competitors.length === 0) {
+    return (
+      <div style={{ padding: "var(--space-4) 0" }}>
+        <p style={{ color: "var(--text-tertiary)", fontSize: "var(--text-sm)" }}>
+          No saved competitors yet. They&apos;ll appear here once you discover them from the Dashboard.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+      {competitors.map((comp) => (
+        <div
+          key={comp.id}
+          style={{
+            alignItems: "center",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-md)",
+            display: "flex",
+            gap: "var(--space-3)",
+            padding: "var(--space-2) var(--space-3)",
+          }}
+        >
+          {comp.thumbnailUrl ? (
+            <img
+              src={comp.thumbnailUrl}
+              alt=""
+              style={{ borderRadius: "50%", height: 32, width: 32, objectFit: "cover" }}
+              loading="lazy"
+            />
+          ) : (
+            <span
+              style={{
+                alignItems: "center",
+                background: "var(--surface-alt)",
+                borderRadius: "50%",
+                color: "var(--text-tertiary)",
+                display: "flex",
+                fontSize: "var(--text-sm)",
+                fontWeight: "var(--font-bold)",
+                height: 32,
+                justifyContent: "center",
+                width: 32,
+              }}
+            >
+              {comp.channelTitle.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: "var(--text)", fontSize: "var(--text-sm)", fontWeight: "var(--font-medium)" }}>
+              {comp.channelTitle}
+            </div>
+            {comp.subscriberCount && (
+              <div style={{ color: "var(--text-tertiary)", fontSize: "var(--text-xs)" }}>
+                {comp.subscriberCount >= 1000
+                  ? `${(comp.subscriberCount / 1000).toFixed(1)}K subs`
+                  : `${comp.subscriberCount} subs`}
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => handleToggleType(comp.id, comp.type)}
+            style={{
+              background: comp.type === "inspiration" ? "color-mix(in srgb, var(--color-warm-gold) 12%, transparent)" : "var(--surface-alt)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-sm)",
+              color: comp.type === "inspiration" ? "var(--color-warm-gold)" : "var(--text-secondary)",
+              cursor: "pointer",
+              font: "inherit",
+              fontSize: "var(--text-xs)",
+              padding: "2px 8px",
+            }}
+          >
+            {comp.type === "inspiration" ? "Inspiration" : "Competitor"}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRemove(comp.id)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--text-tertiary)",
+              cursor: "pointer",
+              fontSize: "var(--text-sm)",
+              padding: "var(--space-1)",
+            }}
+            aria-label={`Remove ${comp.channelTitle}`}
+          >
+            &times;
+          </button>
+        </div>
+      ))}
+      <p style={{ color: "var(--text-tertiary)", fontSize: "var(--text-xs)", margin: 0 }}>
+        {competitors.length}/5 competitors saved
+      </p>
+    </div>
+  );
+}
+
+export function CompetitorsTab({ input, onFieldChange, onSuggest, isFieldLoading, channelId }: Props) {
   const competitors = input.competitors ?? {
     closeToSize: [],
     aspirational: [],
@@ -199,6 +370,19 @@ export function CompetitorsTab({ input, onFieldChange, onSuggest, isFieldLoading
         title="These sections are important to complete"
         description="Adding competitors and inspirations enables competitor-aware recommendations and helps us understand your positioning goals."
       />
+
+      {/* Saved Competitors from the suggestion engine */}
+      {channelId && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <h3 style={{ color: "var(--color-imperial-blue)", fontSize: "var(--text-base)", fontWeight: "var(--font-bold)", margin: 0 }}>
+            Saved Competitors
+          </h3>
+          <p style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)", margin: 0 }}>
+            Channels powering your idea suggestions. Add from the Dashboard or Analyze page.
+          </p>
+          <SavedCompetitorsSection channelId={channelId} />
+        </div>
+      )}
 
       {TIER_CONFIGS.map((config) => (
         <CompetitorSection

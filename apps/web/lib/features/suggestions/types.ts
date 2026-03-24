@@ -52,3 +52,65 @@ export type ActOnSuggestionResult = {
   videoIdeaId?: string;
   ideaFlowUrl?: string;
 };
+
+// ============================================
+// Competitor-Backed Suggestion Types
+// ============================================
+
+export type SourceVideoSnapshot = {
+  videoId: string;
+  title: string;
+  channelId: string;
+  channelTitle: string;
+  thumbnailUrl: string | null;
+  stats: {
+    viewCount: number;
+    viewsPerDay: number;
+  };
+  publishedAt: string;
+};
+
+export type SourceProvenance = {
+  sourceVideos: SourceVideoSnapshot[];
+  pattern: string;
+  rationale: string;
+  adaptationAngle: string;
+};
+
+export type CompetitorVideoForContext = {
+  videoId: string;
+  title: string;
+  channelId: string;
+  channelTitle: string;
+  thumbnailUrl: string | null;
+  viewCount: number;
+  viewsPerDay: number;
+  publishedAt: string;
+  durationSec: number | null;
+  tags: string[];
+};
+
+export type GenerationMode = "profile_only" | "competitor_backed";
+
+export type NicheKeywordForContext = {
+  keyword: string;
+  searchVolume: number;
+  difficulty: number;
+  opportunityScore: number;
+  competitionLevel: string | null;
+  trendDirection: "rising" | "stable" | "declining";
+  intent: string | null;
+  youtubeValidated: boolean;
+  youtubeGapScore: number | null;
+  youtubeResultCount: number | null;
+  seasonalPeak: number | null;
+  monthlySearches: Array<{ year: number; month: number; searchVolume: number }>;
+};
+
+export type CompetitorBackedSuggestionContext = SuggestionContext & {
+  provenance: SourceProvenance | null;
+  generationMode: GenerationMode;
+  competitorVideos: CompetitorVideoForContext[];
+  nicheAvgViewsPerDay: number | null;
+  nicheKeywords: NicheKeywordForContext[];
+};

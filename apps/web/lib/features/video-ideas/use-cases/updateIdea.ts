@@ -29,6 +29,7 @@ export async function updateIdea(params: UpdateIdeaParams): Promise<VideoIdea> {
   if (input.tags !== undefined) {data.tags = JSON.stringify(input.tags);}
   if (input.postDate !== undefined) {data.postDate = input.postDate ? new Date(input.postDate) : null;}
   if (input.status !== undefined) {data.status = input.status;}
+  if (input.publishedVideoId !== undefined) {data.publishedVideoId = input.publishedVideoId;}
 
   try {
     const row = await prisma.videoIdea.update({

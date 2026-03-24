@@ -32,7 +32,25 @@ export function IdeaListItem({ idea, selected, onClick }: IdeaListItemProps) {
         </svg>
       </span>
       <span className={s.ideaContent}>
-        <span className={s.ideaTitle}>{displayTitle}</span>
+        <span className={s.ideaTitle}>
+          {idea.sourceProvenanceJson && (
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className={s.sourceIcon}
+              aria-label="Has source intelligence"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
+            </svg>
+          )}
+          {displayTitle}
+        </span>
         {dateLabel && <span className={s.ideaDate}>{dateLabel}</span>}
       </span>
     </button>

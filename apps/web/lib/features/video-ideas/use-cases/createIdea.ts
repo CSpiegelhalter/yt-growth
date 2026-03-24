@@ -5,7 +5,7 @@ import { mapRowToVideoIdea } from "../mapRow";
 import type { CreateIdeaInput, VideoIdea } from "../types";
 
 export async function createIdea(input: CreateIdeaInput): Promise<VideoIdea> {
-  const { userId, channelId, summary, title, script, description, tags, postDate } = input;
+  const { userId, channelId, summary, title, script, description, tags, postDate, sourceProvenanceJson } = input;
 
   try {
     const row = await prisma.videoIdea.create({
@@ -19,6 +19,7 @@ export async function createIdea(input: CreateIdeaInput): Promise<VideoIdea> {
         tags: tags ? JSON.stringify(tags) : null,
         postDate: postDate ? new Date(postDate) : null,
         status: "draft",
+        sourceProvenanceJson: sourceProvenanceJson ?? null,
       },
     });
 

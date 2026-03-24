@@ -18,7 +18,7 @@ type SuggestState = {
   error: string | null;
 };
 
-export function useIdeaForm(idea: VideoIdea | null, channelId: string) {
+export function useIdeaForm(idea: VideoIdea | null, channelId: string, onAutoSave?: (data: IdeaFormData) => Promise<void>) {
   const [summary, setSummary] = useState(idea?.summary ?? "");
   const [title, setTitle] = useState(idea?.title ?? "");
   const [script, setScript] = useState(idea?.script ?? "");
@@ -55,29 +55,43 @@ export function useIdeaForm(idea: VideoIdea | null, channelId: string) {
     };
   }
 
-  const setters: Record<string, (v: string) => void> = {
-    title: setTitle,
-    script: setScript,
-    description: setDescription,
-    tags: setTagsStr,
-    postDate: setPostDate,
-  };
-
   const suggestField = useCallback(async (field: string) => {
+    const fieldSetters: Record<string, (v: string) => void> = {
+      title: setTitle,
+      script: setScript,
+      description: setDescription,
+      tags: setTagsStr,
+      postDate: setPostDate,
+    };
+
     setSuggestStates((prev) => ({ ...prev, [field]: { loading: true, error: null } }));
     try {
       const data = await fetchSuggestion(channelId, field, {
         summary, title, script, description, tagsStr, postDate,
       });
-      setters[field]?.(data.value);
+      fieldSetters[field]?.(data.value);
       setSuggestStates((prev) => ({ ...prev, [field]: { loading: false, error: null } }));
+
+      // Auto-save with the new value merged in
+      if (onAutoSave) {
+        const tags = tagsStr.split(",").map((t) => t.trim()).filter(Boolean);
+        const updatedData: IdeaFormData = {
+          summary: summary.trim(),
+          title: (field === "title" ? data.value : title).trim() || undefined,
+          script: (field === "script" ? data.value : script).trim() || undefined,
+          description: (field === "description" ? data.value : description).trim() || undefined,
+          tags: field === "tags" ? data.value.split(",").map((t: string) => t.trim()).filter(Boolean) : (tags.length > 0 ? tags : undefined),
+          postDate: (field === "postDate" ? data.value : postDate) || undefined,
+        };
+        await onAutoSave(updatedData).catch(() => { /* silent — field is already set locally */ });
+      }
     } catch (error_) {
       setSuggestStates((prev) => ({
         ...prev,
         [field]: { loading: false, error: error_ instanceof Error ? error_.message : "Failed" },
       }));
     }
-  }, [channelId, summary, title, script, description, tagsStr, postDate, setters]);
+  }, [channelId, summary, title, script, description, tagsStr, postDate, onAutoSave]);
 
   function getSuggestState(field: string): SuggestState {
     return suggestStates[field] ?? { loading: false, error: null };

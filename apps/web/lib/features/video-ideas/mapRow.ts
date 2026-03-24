@@ -13,6 +13,8 @@ export function mapRowToVideoIdea(row: PrismaVideoIdea): VideoIdea {
     tags: row.tags ? (JSON.parse(row.tags) as string[]) : [],
     postDate: row.postDate ? row.postDate.toISOString().split("T")[0] : null,
     status: row.status as VideoIdea["status"],
+    sourceProvenanceJson: row.sourceProvenanceJson ?? null,
+    publishedVideoId: row.publishedVideoId ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
