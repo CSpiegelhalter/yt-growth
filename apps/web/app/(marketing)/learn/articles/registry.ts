@@ -47,4 +47,6 @@ export const ARTICLE_REGISTRY: Record<string, ArticleLoader> = {
   "youtube-shorts-monetization": () => import("./bodies/youtube-shorts-monetization"),
   "youtube-shorts-strategy": () => import("./bodies/youtube-shorts-strategy"),
   "youtube-algorithm": () => import("./bodies/youtube-algorithm"),
+  "create-youtube-background-ideas": () =>
+    import("./bodies/create-youtube-background-ideas"),
 };

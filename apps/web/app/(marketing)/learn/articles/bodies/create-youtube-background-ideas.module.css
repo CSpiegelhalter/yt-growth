@@ -1,0 +1,400 @@
+/* ================================================================
+   Hero image
+   ================================================================ */
+
+.heroImageWrap {
+  border-radius: var(--radius-xl);
+  margin: 0 0 var(--space-6);
+  overflow: hidden;
+  position: relative;
+}
+
+.heroImage {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.lastUpdated {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.04em;
+  margin: 0 0 var(--space-4);
+  text-transform: uppercase;
+}
+
+/* ================================================================
+   Inline subheading inside a section (md "**Bold**" run-in subhead)
+   ================================================================ */
+
+.tipBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-4);
+}
+
+.tipTitle {
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+  margin: 0;
+}
+
+.tipText {
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
+/* ================================================================
+   Budget Tier Cards (replaces budget.png)
+   3 stacked horizontal cards: $0-$50 / $50-$250 / $250+
+   ================================================================ */
+
+.budgetStack {
+  display: grid;
+  gap: var(--space-4);
+  grid-auto-rows: 1fr;
+  grid-template-columns: 1fr;
+  margin: var(--space-6) 0 var(--space-2);
+}
+
+.budgetCard {
+  align-content: center;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 2px 12px rgb(15 23 42 / 4%);
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  height: 100%;
+  min-height: 96px;
+  overflow: hidden;
+  padding: var(--space-4) var(--space-5);
+  position: relative;
+}
+
+@media (width >= 1280px) {
+  .budgetCard {
+    align-items: center;
+    column-gap: var(--space-4);
+    grid-template-columns: minmax(150px, 180px) minmax(0, 1fr) minmax(300px, 360px);
+    min-height: 108px;
+    padding: var(--space-4) var(--space-6);
+  }
+}
+
+.budgetCard::before {
+  background: var(--budget-stripe, linear-gradient(180deg, var(--color-imperial-blue), var(--color-stormy-teal)));
+  border-radius: var(--radius-full);
+  content: "";
+  inset: var(--space-3) auto var(--space-3) var(--space-2);
+  position: absolute;
+  width: 4px;
+}
+
+@media (width >= 768px) {
+  .budgetCard::before {
+    inset: var(--space-4) auto var(--space-4) var(--space-3);
+    width: 6px;
+  }
+}
+
+.budgetTierZero {
+  --budget-stripe: linear-gradient(180deg, var(--color-imperial-blue), var(--color-stormy-teal));
+}
+
+.budgetTierMid {
+  --budget-stripe: linear-gradient(180deg, var(--color-hot-rose), #ff5c8a);
+}
+
+.budgetTierHigh {
+  --budget-stripe: linear-gradient(180deg, var(--color-cool-sky), var(--color-lavender-mist));
+}
+
+.budgetPriceBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-left: var(--space-5);
+}
+
+@media (width >= 768px) {
+  .budgetPriceBlock {
+    padding-left: var(--space-6);
+  }
+}
+
+.budgetPrice {
+  color: var(--text);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  margin: 0;
+}
+
+@media (width >= 768px) {
+  .budgetPrice {
+    font-size: 1.875rem;
+  }
+}
+
+.budgetTierLabel {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  margin: 0;
+}
+
+.budgetFocusBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-left: var(--space-5);
+}
+
+@media (width >= 1280px) {
+  .budgetFocusBlock {
+    border-left: 1px solid var(--border-light);
+    padding: 0 0 0 var(--space-5);
+  }
+}
+
+.budgetFocusLabel {
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+  margin: 0;
+}
+
+.budgetFocusLabel strong {
+  color: var(--primary);
+  font-weight: var(--font-bold);
+}
+
+.budgetIconRow {
+  align-items: center;
+  color: var(--primary);
+  display: flex;
+  gap: var(--space-3);
+  opacity: 0.85;
+}
+
+.budgetIconRow svg {
+  flex: 0 0 auto;
+}
+
+.budgetChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-left: var(--space-5);
+}
+
+@media (width >= 1280px) {
+  .budgetChipRow {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    padding-left: 0;
+  }
+}
+
+.budgetChip {
+  background: var(--color-lavender-mist);
+  border: 1px solid rgb(202 31 123 / 18%);
+  border-radius: var(--radius-full);
+  color: var(--text);
+  font-size: 0.6875rem;
+  font-weight: var(--font-medium);
+  padding: var(--space-1) var(--space-2);
+  white-space: nowrap;
+}
+
+@media (width >= 768px) {
+  .budgetChip {
+    font-size: var(--text-xs);
+    padding: var(--space-1-5, 6px) var(--space-2);
+  }
+}
+
+/* ================================================================
+   Markdown table styling (Budget Tier table)
+   ================================================================ */
+
+.tableWrap {
+  margin: var(--space-5) 0;
+  overflow-x: auto;
+}
+
+.table {
+  border: 1px solid var(--border);
+  border-collapse: collapse;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  min-width: 100%;
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid var(--border-light);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table thead th {
+  background: var(--surface-alt);
+  color: var(--text);
+  font-weight: var(--font-bold);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody td:first-child {
+  font-weight: var(--font-bold);
+  white-space: nowrap;
+}
+
+/* ================================================================
+   Niche Idea Grid (replaces background_ideas.png)
+   ================================================================ */
+
+.nicheGrid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  margin: var(--space-5) 0;
+}
+
+@media (width >= 640px) {
+  .nicheGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+}
+
+.nicheCard {
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-alt) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  position: relative;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.nicheCard:hover {
+  border-color: rgb(202 31 123 / 25%);
+  box-shadow: 0 4px 16px rgb(15 23 42 / 6%);
+}
+
+.nicheCardHeader {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+}
+
+.nicheCardIcon {
+  align-items: center;
+  background: var(--color-lavender-mist);
+  border-radius: var(--radius-md);
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.nicheCardTitle {
+  color: var(--text);
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  margin: 0;
+}
+
+.nicheChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.nicheChip {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  padding: var(--space-1) var(--space-3);
+}
+
+/* ================================================================
+   Related Guides list
+   ================================================================ */
+
+.relatedList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: disc;
+  margin: var(--space-3) 0 0;
+  padding-left: var(--space-5);
+}
+
+.relatedList a {
+  color: var(--primary);
+  font-weight: var(--font-medium);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.relatedList a:hover {
+  color: var(--primary-hover);
+}
+
+/* ================================================================
+   CTA banner image (free.png) and lead-in copy
+   ================================================================ */
+
+.ctaCallout {
+  background: var(--color-lavender-mist);
+  border: 1px solid rgb(202 31 123 / 25%);
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  font-weight: var(--font-semibold);
+  margin-top: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+}
+
+.ctaCallout a {
+  color: var(--primary);
+  font-weight: var(--font-bold);
+  text-decoration: underline;
+}
+
+.ctaBannerLink {
+  display: block;
+  margin-top: var(--space-4);
+}
+
+.ctaBannerImage {
+  border-radius: var(--radius-lg);
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.ctaBannerLink:hover .ctaBannerImage {
+  filter: brightness(1.05);
+}

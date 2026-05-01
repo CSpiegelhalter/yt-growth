@@ -1,14 +1,14 @@
 "use client";
 
 import { OutperformList } from "@/app/(app)/competitors/video/[videoId]/_components/InteractiveHeaderClient";
-import { TagSelector } from "@/app/videos/components/full-report/components/discoverability/TagSelector";
 import { VideoHeaderSimple } from "@/components/video/VideoHeaderSimple";
 import type { CompetitorVideoAnalysis } from "@/types/api";
 
 import s from "../style.module.css";
-import { AnalysisSection } from "./AnalysisSection";
-import { CommentAnalysis } from "./CommentAnalysis";
-import { EnrichmentSection } from "./EnrichmentSection";
+import { SentimentStrip, TopCommentsList } from "./CommentAnalysis";
+import { VerdictTiles } from "./EnrichmentSection";
+import { PatternsToBorrow } from "./PatternsToBorrow";
+import { TagsAndSeoSection } from "./TagsAndSeoSection";
 
 type Props = {
   data: CompetitorVideoAnalysis;
@@ -158,123 +158,13 @@ function prepareCards(insights: CompetitorVideoAnalysis["analysis"]) {
   };
 }
 
-/* ---------- Sub-sections ---------- */
+/* ---------- Region sub-components ---------- */
 
-function RemixSection({ remixCards }: { remixCards: CompetitorVideoAnalysis["analysis"]["remixIdeasForYou"] }) {
+function TopRegion({ data }: Props) {
+  const { video, publicSignals, strategicInsights } = data;
   return (
-    <div className={s.remixGrid}>
-      {remixCards.map((remix, i) => (
-        <div key={i} className={s.remixCard}>
-          <h4 className={s.remixTitle}>{remix.title}</h4>
-          <p className={s.remixAngle}>{remix.angle}</p>
-          <div className={s.remixHook}>
-            <span className={s.hookLabel}>Hook: </span>
-            <span className={s.hookText}>&ldquo;{remix.hook}&rdquo;</span>
-          </div>
-          <div className={s.remixOverlay}>
-            <span className={s.overlayLabel}>Thumbnail Text: </span>
-            <span className={s.overlayText}>{remix.overlayText}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ---------- Comments + Outperform Sub-section ---------- */
-
-function CommentsAndOutperform({ comments }: { comments: CompetitorVideoAnalysis["comments"] }) {
-  const waysToOutperform = generateWaysToOutperform(comments);
-
-  return (
-    <>
-      {comments && !comments.commentsDisabled && (
-        <AnalysisSection title="Comment Analysis">
-          <CommentAnalysis comments={comments} />
-        </AnalysisSection>
-      )}
-      {comments?.commentsDisabled && (
-        <p className={s.commentsDisabledMsg}>Comments are disabled for this video.</p>
-      )}
-      {waysToOutperform.length > 0 && (
-        <AnalysisSection title="Ways to Outperform">
-          <OutperformList recommendations={waysToOutperform} />
-        </AnalysisSection>
-      )}
-    </>
-  );
-}
-
-/* ---------- Insights Sub-section ---------- */
-
-function InsightsSections({ insights }: { insights: CompetitorVideoAnalysis["analysis"] }) {
-  const { whyCards, themeCards, patternCards, remixCards } = prepareCards(insights);
-
-  return (
-    <>
-      {whyCards.length > 0 && (
-        <AnalysisSection title="What's Driving Performance">
-          <p className={s.sectionSubtitle}>
-            Observed signals from public data — use these to inform your own content strategy
-          </p>
-          <div className={s.cardGrid}>
-            {whyCards.map((text, i) => (
-              <div key={i} className={s.simpleCard}>
-                <p className={s.cardText}>{text}</p>
-              </div>
-            ))}
-          </div>
-        </AnalysisSection>
-      )}
-
-      {themeCards.length > 0 && (
-        <AnalysisSection title="Portable Patterns">
-          <p className={s.sectionSubtitle}>Templates you can adapt for your own videos</p>
-          <div className={s.themesList}>
-            {themeCards.map((theme, i) => (
-              <div key={i} className={s.themeCard}>
-                <h4 className={s.themeTitle}>{theme.theme}</h4>
-                <p className={s.themeWhy}>{theme.why}</p>
-              </div>
-            ))}
-          </div>
-        </AnalysisSection>
-      )}
-
-      {patternCards.length > 0 && (
-        <AnalysisSection title="Title Patterns">
-          <p className={s.sectionSubtitle}>Structural patterns you can borrow for your titles</p>
-          <div className={s.patternCards}>
-            {patternCards.map((pattern, i) => (
-              <div key={i} className={s.patternCard}>
-                <h4 className={s.patternTitle}>{pattern}</h4>
-                <p className={s.patternHow}>Write 2 variants using this pattern with your main keyword.</p>
-              </div>
-            ))}
-          </div>
-        </AnalysisSection>
-      )}
-
-      {remixCards.length > 0 && (
-        <AnalysisSection title="Make Your Better Version">
-          <p className={s.sectionSubtitle}>Differentiated ideas for your channel — not clones</p>
-          <RemixSection remixCards={remixCards} />
-        </AnalysisSection>
-      )}
-    </>
-  );
-}
-
-/* ---------- Main Component ---------- */
-
-export function AnalyzeResults({ data }: Props) {
-  const { video, analysis: insights, comments, tags, derivedKeywords, publicSignals, strategicInsights } = data;
-
-  const allTags = tags ?? derivedKeywords ?? [];
-
-  return (
-    <div className={s.page}>
-      <div className={s.videoHeader}>
+    <section className={s.topRegion}>
+      <div className={s.topRegionVideo}>
         <VideoHeaderSimple
           thumbnailUrl={video.thumbnailUrl}
           title={video.title}
@@ -284,23 +174,101 @@ export function AnalyzeResults({ data }: Props) {
           comments={video.stats.commentCount ?? 0}
         />
       </div>
-
-      <div className={s.resultsContainer}>
-        {allTags.length > 0 && (
-          <AnalysisSection title="Tags">
-            <TagSelector tags={allTags} />
-          </AnalysisSection>
-        )}
-
-        <CommentsAndOutperform comments={comments} />
-        <InsightsSections insights={insights} />
-
-        {strategicInsights && (
-          <AnalysisSection title="Strategic Insights">
-            <EnrichmentSection strategicInsights={strategicInsights} publicSignals={publicSignals} />
-          </AnalysisSection>
+      <div className={s.topRegionVerdict}>
+        <p className={s.regionLabel}>Verdict</p>
+        {strategicInsights ? (
+          <VerdictTiles strategicInsights={strategicInsights} publicSignals={publicSignals} />
+        ) : (
+          <p className={s.verdictMissing}>Verdict not available for this video.</p>
         )}
       </div>
+    </section>
+  );
+}
+
+function AudienceRegion({ comments }: { comments: CompetitorVideoAnalysis["comments"] }) {
+  if (!comments) {return null;}
+  return (
+    <section className={s.region}>
+      <p className={s.regionLabel}>How viewers reacted</p>
+      {comments.commentsDisabled ? (
+        <p className={s.commentsDisabledMsg}>
+          Comments are disabled for this video — audience signals unavailable.
+        </p>
+      ) : (
+        <div className={s.audienceStrip}>
+          <SentimentStrip comments={comments} />
+        </div>
+      )}
+    </section>
+  );
+}
+
+function WaysToOutperformSection({ recommendations }: { recommendations: OutperformRec[] }) {
+  if (recommendations.length === 0) {return null;}
+  return (
+    <section className={s.region}>
+      <h2 className={s.sectionHeader}>Ways to outperform</h2>
+      <OutperformList recommendations={recommendations} />
+    </section>
+  );
+}
+
+function BetterVersionSection({ remixCards }: { remixCards: CompetitorVideoAnalysis["analysis"]["remixIdeasForYou"] }) {
+  if (remixCards.length === 0) {return null;}
+  return (
+    <section className={s.region}>
+      <h2 className={s.sectionHeader}>Your better version</h2>
+      <p className={s.sectionSubtitle}>Differentiated ideas for your channel — not clones.</p>
+      <div className={s.remixGrid}>
+        {remixCards.map((remix, i) => (
+          <div key={i} className={s.remixCard}>
+            <h4 className={s.remixTitle}>{remix.title}</h4>
+            <p className={s.remixAngle}>{remix.angle}</p>
+            <div className={s.remixHook}>
+              <span className={s.hookLabel}>Hook: </span>
+              <span className={s.hookText}>&ldquo;{remix.hook}&rdquo;</span>
+            </div>
+            <div className={s.remixOverlay}>
+              <span className={s.overlayLabel}>Thumbnail Text: </span>
+              <span className={s.overlayText}>{remix.overlayText}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TopCommentsSection({ comments }: { comments: CompetitorVideoAnalysis["comments"] }) {
+  if (!comments || comments.commentsDisabled) {return null;}
+  if ((comments.topComments?.length ?? 0) === 0) {return null;}
+  return (
+    <section className={s.region}>
+      <h2 className={s.sectionHeader}>Top viewer comments</h2>
+      <TopCommentsList comments={comments} />
+    </section>
+  );
+}
+
+
+/* ---------- Main Component ---------- */
+
+export function AnalyzeResults({ data }: Props) {
+  const { analysis: insights, comments, tags, derivedKeywords } = data;
+  const allTags = tags ?? derivedKeywords ?? [];
+  const { whyCards, themeCards, patternCards, remixCards } = prepareCards(insights);
+  const waysToOutperform = generateWaysToOutperform(comments);
+
+  return (
+    <div className={s.regionsContainer}>
+      <TopRegion data={data} />
+      <AudienceRegion comments={comments} />
+      <WaysToOutperformSection recommendations={waysToOutperform} />
+      <BetterVersionSection remixCards={remixCards} />
+      <TopCommentsSection comments={comments} />
+      <PatternsToBorrow whyCards={whyCards} themeCards={themeCards} patternCards={patternCards} />
+      <TagsAndSeoSection tags={allTags} enableVolumeLookup />
     </div>
   );
 }

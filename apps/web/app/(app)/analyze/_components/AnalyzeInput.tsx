@@ -37,14 +37,7 @@ export function AnalyzeInput({ url, setUrl, loading, error, onSubmit }: Props) {
           className={s.analyzeBtn}
           disabled={loading || !url.trim()}
         >
-          {loading ? (
-            <>
-              <span className={s.spinner} aria-hidden="true" />
-              Analyzing...
-            </>
-          ) : (
-            "Analyze"
-          )}
+          {loading ? "Analyzing..." : "Analyze"}
         </button>
       </div>
       {error && (

@@ -12,7 +12,51 @@ type Props = {
 
 const INITIAL_COUNT = 3;
 
-export function CommentAnalysis({ comments }: Props) {
+export function SentimentStrip({ comments }: Props) {
+  if (comments.commentsDisabled) {return null;}
+
+  const hasAnalysis =
+    comments.sentiment.positive > 0 ||
+    comments.sentiment.neutral > 0 ||
+    comments.sentiment.negative > 0;
+
+  if (!hasAnalysis && (!comments.themes || comments.themes.length === 0)) {return null;}
+
+  const ariaLabel = hasAnalysis
+    ? `${comments.sentiment.positive}% positive, ${comments.sentiment.neutral}% neutral, ${comments.sentiment.negative}% negative comments`
+    : "Sentiment analysis";
+
+  return (
+    <div>
+      {hasAnalysis && (
+        <>
+          <div className={s.sentimentBar} role="img" aria-label={ariaLabel}>
+            <div className={s.sentimentPositive} style={{ width: `${comments.sentiment.positive}%` }} />
+            <div className={s.sentimentNeutral} style={{ width: `${comments.sentiment.neutral}%` }} />
+            <div className={s.sentimentNegative} style={{ width: `${comments.sentiment.negative}%` }} />
+          </div>
+          <div className={s.sentimentLabels}>
+            <span className={s.sentimentLabelPos}>{comments.sentiment.positive}% Positive</span>
+            <span className={s.sentimentLabelNeu}>{comments.sentiment.neutral}% Neutral</span>
+            <span className={s.sentimentLabelNeg}>{comments.sentiment.negative}% Negative</span>
+          </div>
+        </>
+      )}
+
+      {comments.themes && comments.themes.length > 0 && (
+        <div className={s.commentThemes}>
+          {comments.themes.slice(0, 6).map((theme, i) => (
+            <span key={i} className={s.themeChip}>
+              {theme.theme} <span className={s.themeCount}>({theme.count})</span>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function TopCommentsList({ comments }: Props) {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [showAll, setShowAll] = useState(false);
 
@@ -33,47 +77,12 @@ export function CommentAnalysis({ comments }: Props) {
     return [...comments.topComments].sort((a, b) => b.likeCount - a.likeCount);
   }, [comments.topComments]);
 
+  if (comments.commentsDisabled || sortedComments.length === 0) {return null;}
+
   const displayComments = showAll ? sortedComments : sortedComments.slice(0, INITIAL_COUNT);
-
-  if (comments.commentsDisabled) {
-    return <p className={s.commentsDisabledMsg}>Comments are disabled for this video.</p>;
-  }
-
-  const hasAnalysis =
-    comments.sentiment.positive > 0 ||
-    comments.sentiment.neutral > 0 ||
-    comments.sentiment.negative > 0;
 
   return (
     <div>
-      {/* Sentiment bar */}
-      {hasAnalysis && (
-        <>
-          <div className={s.sentimentBar}>
-            <div className={s.sentimentPositive} style={{ width: `${comments.sentiment.positive}%` }} />
-            <div className={s.sentimentNeutral} style={{ width: `${comments.sentiment.neutral}%` }} />
-            <div className={s.sentimentNegative} style={{ width: `${comments.sentiment.negative}%` }} />
-          </div>
-          <div className={s.sentimentLabels}>
-            <span className={s.sentimentLabelPos}>{comments.sentiment.positive}% Positive</span>
-            <span className={s.sentimentLabelNeu}>{comments.sentiment.neutral}% Neutral</span>
-            <span className={s.sentimentLabelNeg}>{comments.sentiment.negative}% Negative</span>
-          </div>
-        </>
-      )}
-
-      {/* Recurring themes */}
-      {comments.themes && comments.themes.length > 0 && (
-        <div className={s.commentThemes}>
-          {comments.themes.slice(0, 6).map((theme, i) => (
-            <span key={i} className={s.themeChip}>
-              {theme.theme} <span className={s.themeCount}>({theme.count})</span>
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Truncated comments */}
       <div className={s.commentsList}>
         {displayComments.map((comment, i) => {
           const isExpanded = expandedIds.has(i);
@@ -112,3 +121,4 @@ export function CommentAnalysis({ comments }: Props) {
     </div>
   );
 }
+

@@ -5,12 +5,11 @@ import { LearnStaticCTA, normalizeItems } from "@/components/learn";
 import {
   LearnFAQ,
   LearnTopicsNav,
-  RelatedArticles,
   StructuredData,
 } from "@/components/learn/server";
 import { BRAND } from "@/lib/shared/brand";
 
-import { getRelatedArticles,LEARN_ARTICLES } from "../articles";
+import { LEARN_ARTICLES } from "../articles";
 import { ArticleShell } from "../articles/_components/ArticleShell";
 import { ARTICLE_REGISTRY } from "../articles/registry";
 import { buildLearnMetadata, buildLearnSchemas } from "../articles/seo";
@@ -57,7 +56,6 @@ export default async function LearnArticlePage({ params }: LearnArticlePageProps
   const { Body: BodyComponent } = await loader();
 
   const { articleSchema, faqSchema, breadcrumbSchema } = buildLearnSchemas(article);
-  const relatedArticles = getRelatedArticles(article.slug);
   const tocItems = normalizeItems(article.toc);
 
   const navStyles = {
@@ -78,13 +76,6 @@ export default async function LearnArticlePage({ params }: LearnArticlePageProps
     faqAnswer: s.faqAnswer,
   };
 
-  const relatedStyles = {
-    related: s.related,
-    relatedTitle: s.relatedTitle,
-    relatedLinks: s.relatedLinks,
-    relatedLink: s.relatedLink,
-  };
-
   return (
     <main className={s.page}>
       <StructuredData
@@ -103,10 +94,6 @@ export default async function LearnArticlePage({ params }: LearnArticlePageProps
               faqs={article.faqs}
               sectionId="faq"
               styles={faqStyles}
-            />
-            <RelatedArticles
-              items={relatedArticles.map((a) => ({ slug: a.slug, title: a.title }))}
-              styles={relatedStyles}
             />
             <LearnStaticCTA
               title={`Learn More About ${article.shortTitle}`}
