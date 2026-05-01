@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { AnalyzeInput } from "@/app/(app)/analyze/_components/AnalyzeInput";
 import s from "@/app/(app)/analyze/style.module.css";
@@ -35,7 +35,6 @@ export function AnalyzePublicClient() {
   const [url, setUrl] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
-  const topRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -99,17 +98,9 @@ export function AnalyzePublicClient() {
     [url],
   );
 
-  const handleBack = useCallback(() => {
-    setState({ view: "input" });
-    setUrl("");
-    setInputError(null);
-    window.history.replaceState(null, "", "/analyze");
-    topRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
   return (
     <PageContainer>
-      <div ref={topRef}>
+      <div>
         <header className={s.pageHeader}>
           <h1 className={s.pageHeading}>Analyze Video</h1>
           <p className={s.pageDescription}>
@@ -143,7 +134,7 @@ export function AnalyzePublicClient() {
         {state.view === "results" && (
           <>
             {remaining !== null && <UsageLimitBanner remaining={remaining} />}
-            <AnalyzeResultsPublic data={state.data} onBack={handleBack} />
+            <AnalyzeResultsPublic data={state.data} />
 
             <div className={s.signupCta}>
               <h3 className={s.signupCtaTitle}>

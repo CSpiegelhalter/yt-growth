@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { PageContainer } from "@/components/ui";
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
@@ -33,7 +33,6 @@ export function AnalyzeClient({ activeChannelId: _activeChannelId }: Props) {
   const [state, setState] = useState<PageState>({ view: "input" });
   const [url, setUrl] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
-  const topRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -68,14 +67,9 @@ export function AnalyzeClient({ activeChannelId: _activeChannelId }: Props) {
     [url],
   );
 
-  const handleBack = useCallback(() => {
-    setState({ view: "input" });
-    topRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
   return (
     <PageContainer>
-    <div ref={topRef}>
+    <div>
       <header className={s.pageHeader}>
         <h1 className={s.pageHeading}>Analyze Video</h1>
         <p className={s.pageDescription}>
@@ -101,7 +95,7 @@ export function AnalyzeClient({ activeChannelId: _activeChannelId }: Props) {
       )}
 
       {state.view === "results" && (
-        <AnalyzeResults data={state.data} onBack={handleBack} />
+        <AnalyzeResults data={state.data} />
       )}
 
       {state.view === "error" && (

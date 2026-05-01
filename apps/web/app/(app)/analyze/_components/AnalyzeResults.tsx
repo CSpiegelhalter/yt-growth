@@ -2,7 +2,6 @@
 
 import { OutperformList } from "@/app/(app)/competitors/video/[videoId]/_components/InteractiveHeaderClient";
 import { TagSelector } from "@/app/videos/components/full-report/components/discoverability/TagSelector";
-import { Button } from "@/components/ui/Button";
 import { VideoHeaderSimple } from "@/components/video/VideoHeaderSimple";
 import type { CompetitorVideoAnalysis } from "@/types/api";
 
@@ -13,7 +12,6 @@ import { EnrichmentSection } from "./EnrichmentSection";
 
 type Props = {
   data: CompetitorVideoAnalysis;
-  onBack: () => void;
 };
 
 /* ---------- Helpers ---------- */
@@ -269,17 +267,13 @@ function InsightsSections({ insights }: { insights: CompetitorVideoAnalysis["ana
 
 /* ---------- Main Component ---------- */
 
-export function AnalyzeResults({ data, onBack }: Props) {
+export function AnalyzeResults({ data }: Props) {
   const { video, analysis: insights, comments, tags, derivedKeywords, publicSignals, strategicInsights } = data;
 
   const allTags = tags ?? derivedKeywords ?? [];
 
   return (
     <div className={s.page}>
-      <Button variant="ghost" size="sm" onClick={onBack} className={s.backBtn}>
-        &larr; Analyze another video
-      </Button>
-
       <div className={s.videoHeader}>
         <VideoHeaderSimple
           thumbnailUrl={video.thumbnailUrl}

@@ -19,7 +19,6 @@ export function UsageLimitBanner({ remaining }: Props) {
 
   return (
     <div className={`${s.usageBanner} ${depleted ? s.usageBannerDepleted : s.usageBannerRemaining}`}>
-      <span className={s.usageBannerIcon}>{depleted ? "\u26A0" : "\u23F3"}</span>
       <span className={s.usageBannerText}>
         {depleted ? (
           <>

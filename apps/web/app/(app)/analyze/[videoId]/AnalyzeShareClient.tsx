@@ -108,10 +108,7 @@ export function AnalyzeShareClient({ videoId }: Props) {
 
           {remaining !== null && <UsageLimitBanner remaining={remaining} />}
 
-          <AnalyzeResultsPublic
-            data={state.data}
-            onBack={() => { window.location.href = "/analyze"; }}
-          />
+          <AnalyzeResultsPublic data={state.data} />
 
           <div className={s.signupCta}>
             <h3 className={s.signupCtaTitle}>Want to analyze YOUR video?</h3>

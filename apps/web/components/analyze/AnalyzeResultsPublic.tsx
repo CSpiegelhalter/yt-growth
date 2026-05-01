@@ -10,7 +10,6 @@ import s from "@/app/(app)/analyze/style.module.css";
 
 type Props = {
   data: CompetitorVideoAnalysis;
-  onBack: () => void;
 };
 
 /* ---------- Helpers ---------- */
@@ -405,15 +404,12 @@ function CommentsAndOutperform({ comments }: { comments: CompetitorVideoAnalysis
 
 /* ---------- Main Component ---------- */
 
-export function AnalyzeResultsPublic({ data, onBack }: Props) {
+export function AnalyzeResultsPublic({ data }: Props) {
   const { video, analysis: insights, comments, tags, derivedKeywords, publicSignals, strategicInsights } = data;
   const allTags = tags ?? derivedKeywords ?? [];
 
   return (
     <>
-      <button type="button" className={s.backBtn} onClick={onBack}>
-        &larr; Analyze another video
-      </button>
       <div className={s.videoHeader}>
         <VideoHeaderSimple
           thumbnailUrl={video.thumbnailUrl}
