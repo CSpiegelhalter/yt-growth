@@ -1915,6 +1915,63 @@ export const LEARN_ARTICLES = {
       },
     ],
   },
+  "how-to-build-youtube-channel-ideas": {
+    slug: "how-to-build-youtube-channel-ideas",
+    title:
+      "How to Build YouTube Channel Ideas That People Actually Want to Watch",
+    shortTitle: "Channel Ideas",
+    navLabel: "Channel Ideas",
+    description:
+      "Stop guessing what to make videos about. Learn the data-driven frameworks for finding YouTube channel ideas that have a built-in audience.",
+    metaDescription:
+      "Stop guessing what to make videos about. Learn the data-driven frameworks for finding YouTube channel ideas that have a built-in audience.",
+    datePublished: "2026-05-01",
+    dateModified: "2026-05-01",
+    readingTime: "9 min read",
+    category: "Content",
+    keywords: ["youtube channel ideas"],
+    toc: [
+      {
+        id: "why-fail",
+        title: "Why Most YouTube Channel Ideas Fail",
+      },
+      {
+        id: "demand-first",
+        title: "The Demand-First Framework: Where to Find Ideas",
+      },
+      { id: "formats", title: "5 Proven Formats for Any Niche" },
+      { id: "from-idea", title: "From Idea to Thriving Channel" },
+      { id: "related-guides", title: "Related Guides" },
+      { id: "faq", title: "Frequently Asked Questions" },
+    ],
+    faqs: [
+      {
+        question: "How do I find a YouTube niche with low competition?",
+        answer:
+          "Look for the intersection of two or more topics. “Gaming” is competitive, but “Cozy Simulation Games for Nintendo Switch” is a specific niche. Use YouTube search and see if smaller channels are ranking for your target phrases. If so, there’s room to compete.",
+      },
+      {
+        question: "How many videos should I plan before starting a channel?",
+        answer:
+          "Aim to have at least 10-15 solid video ideas before you even film the first one. This ensures you have a content buffer and have truly validated that your chosen niche has enough depth to sustain a channel.",
+      },
+      {
+        question: "Can I have multiple topics on one YouTube channel?",
+        answer:
+          "It’s best to start with a very specific focus. Once you have an established audience that trusts you, you can begin to broaden your topics. But in the beginning, a narrow focus helps the algorithm understand who your content is for.",
+      },
+      {
+        question: "What if I pick the wrong niche?",
+        answer:
+          "It’s not permanent. You can always pivot. The skills you learn about creating, editing, and packaging videos are transferable to any niche. It’s better to start, learn, and pivot than to never start at all.",
+      },
+      {
+        question: "How important is my personality in my channel idea?",
+        answer:
+          "It’s critical. People may come for the topic, but they subscribe for the personality. Your unique perspective, humor, or teaching style is your ultimate differentiator. Our guide on How to Be a YouTuber covers this in more detail.",
+      },
+    ],
+  },
 } as const;
 
 /**
@@ -1930,6 +1987,8 @@ export const learnArticles = Object.values(LEARN_ARTICLES).map((article) => ({
   description: article.description,
   readingTime: article.readingTime,
   category: article.category,
+  datePublished: article.datePublished,
+  dateModified: article.dateModified,
   /** Descriptive CTA label for link anchor text - avoids generic "Learn More" */
   ctaLabel: `Read ${article.shortTitle.toLowerCase()} guide`,
 }));
@@ -1937,6 +1996,7 @@ export const learnArticles = Object.values(LEARN_ARTICLES).map((article) => ({
 // Type exports
 export type LearnArticleSlug = keyof typeof LEARN_ARTICLES;
 export type LearnArticle = (typeof LEARN_ARTICLES)[LearnArticleSlug];
+export type LearnArticleListItem = (typeof learnArticles)[number];
 
 /**
  * Generate FAQPage JSON-LD schema from article FAQs

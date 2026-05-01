@@ -74,6 +74,126 @@
   padding: 0 var(--page-padding) var(--space-16);
 }
 
+/* Search bar */
+.searchBar {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--color-lavender-mist);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding: var(--space-3) var(--space-4);
+  transition: all var(--transition-base);
+}
+
+.searchBar:focus-within {
+  border-color: var(--color-hot-rose);
+  box-shadow: 0 4px 12px rgba(208, 52, 135, 0.12);
+}
+
+.searchIcon {
+  color: var(--color-imperial-blue);
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  color: var(--color-imperial-blue);
+  flex: 1;
+  font-size: var(--text-base);
+  letter-spacing: 0.45px;
+  outline: none;
+  width: 100%;
+}
+
+.searchInput::placeholder {
+  color: var(--color-imperial-blue);
+  opacity: 0.5;
+}
+
+.searchInput::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.searchClear {
+  background: transparent;
+  border: none;
+  color: var(--color-imperial-blue);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  opacity: 0.6;
+  padding: 0 var(--space-1);
+  transition: opacity var(--transition-base);
+}
+
+.searchClear:hover {
+  opacity: 1;
+}
+
+.emptyState {
+  color: var(--color-imperial-blue);
+  font-size: var(--text-base);
+  margin: var(--space-8) 0;
+  opacity: 0.6;
+  text-align: center;
+}
+
+/* Pagination */
+.pagination {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  margin-top: var(--space-8);
+}
+
+.paginationList {
+  display: flex;
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.paginationButton,
+.paginationPage {
+  background: var(--surface);
+  border: 1px solid var(--color-lavender-mist);
+  border-radius: var(--radius-md);
+  color: var(--color-imperial-blue);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.45px;
+  min-width: 40px;
+  padding: var(--space-2) var(--space-3);
+  transition: all var(--transition-base);
+}
+
+.paginationButton:hover:not(:disabled),
+.paginationPage:hover:not(:disabled) {
+  border-color: var(--color-hot-rose);
+  color: var(--color-hot-rose);
+}
+
+.paginationButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.paginationPageActive,
+.paginationPageActive:hover {
+  background: var(--color-imperial-blue);
+  border-color: var(--color-imperial-blue);
+  color: var(--text-inverse);
+}
+
 .articlesGrid {
   display: grid;
   gap: var(--space-5);

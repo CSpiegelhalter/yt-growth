@@ -6,8 +6,13 @@ import { FaqSection } from "@/components/ui/FaqSection";
 import { LEARN_INDEX_CONTENT } from "@/lib/content/learn-index";
 import { BRAND } from "@/lib/shared/brand";
 
+import ArticleBrowser from "./_components/ArticleBrowser";
 import { learnArticles } from "./articles";
 import s from "./style.module.css";
+
+const sortedArticles = [...learnArticles].sort((a, b) =>
+  b.dateModified.localeCompare(a.dateModified),
+);
 
 export const metadata: Metadata = {
   title: "YouTube Growth Guides (2026)",
@@ -62,7 +67,7 @@ const itemListSchema = {
   },
   mainEntity: {
     "@type": "ItemList",
-    itemListElement: learnArticles.map((article, index) => ({
+    itemListElement: sortedArticles.map((article, index) => ({
       "@type": "ListItem",
       position: index + 1,
       url: `${BRAND.url}/learn/${article.slug}`,
@@ -159,38 +164,7 @@ export default function LearnPage() {
 
       {/* Articles Grid */}
       <section className={s.articlesSection} aria-label="YouTube growth guides">
-        <div className={s.articlesGrid}>
-          {learnArticles.map((article) => (
-            <Link
-              key={article.slug}
-              href={`/learn/${article.slug}`}
-              className={s.articleCard}
-            >
-              <h2 className={s.articleTitle}>{article.title}</h2>
-              <span className={s.articleCategory}>{article.category}</span>
-              <p className={s.articleDescription}>{article.description}</p>
-              <div className={s.articleMeta}>
-                <span className={s.readTime}>{article.readingTime}</span>
-                <span className={s.readMore}>
-                  {article.ctaLabel}
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <line x1="7" y1="17" x2="17" y2="7" />
-                    <polyline points="7 7 17 7 17 17" />
-                  </svg>
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <ArticleBrowser articles={sortedArticles} />
       </section>
 
       {/* What You'll Learn */}

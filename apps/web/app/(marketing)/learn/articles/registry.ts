@@ -49,4 +49,6 @@ export const ARTICLE_REGISTRY: Record<string, ArticleLoader> = {
   "youtube-algorithm": () => import("./bodies/youtube-algorithm"),
   "create-youtube-background-ideas": () =>
     import("./bodies/create-youtube-background-ideas"),
+  "how-to-build-youtube-channel-ideas": () =>
+    import("./bodies/how-to-build-youtube-channel-ideas"),
 };
