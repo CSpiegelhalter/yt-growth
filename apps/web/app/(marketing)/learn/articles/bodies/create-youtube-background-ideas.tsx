@@ -19,6 +19,7 @@ export const { meta, toc } = articleExports(
 );
 
 const HERO_SRC = "/learn/create-youtube-background-ideas/hero.png";
+const NICHE_SRC = "/learn/create-youtube-background-ideas/niche-ideas.png";
 const CTA_SRC = "/learn/create-youtube-background-ideas/cta-audit.png";
 
 /* ================================================================
@@ -102,43 +103,6 @@ function BadgeIcon() {
   );
 }
 
-function GridIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </svg>
-  );
-}
-
-function BookIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 4h11a3 3 0 013 3v13H7a3 3 0 01-3-3z" />
-      <path d="M4 17a3 3 0 013-3h11" />
-    </svg>
-  );
-}
-
-function GamepadIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6 16l-2 2a3 3 0 01-4-3l2-7a4 4 0 014-3h12a4 4 0 014 3l2 7a3 3 0 01-4 3l-2-2z" />
-      <path d="M7 9v4M5 11h4M16 11h.01M19 13h.01" />
-    </svg>
-  );
-}
-
-function SparkleIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8" />
-    </svg>
-  );
-}
-
 /* ================================================================
  * BUDGET FRAMEWORK (CSS replacement for image2)
  * ================================================================ */
@@ -207,67 +171,6 @@ function BudgetFramework() {
           <div className={u.budgetChipRow}>
             {tier.chips.map((chip) => (
               <span key={chip} className={u.budgetChip}>
-                {chip}
-              </span>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ================================================================
- * NICHE GRID (CSS replacement for image3)
- * ================================================================ */
-
-interface NicheCard {
-  icon: React.ReactNode;
-  title: string;
-  chips: readonly string[];
-}
-
-const NICHE_CARDS: readonly NicheCard[] = [
-  {
-    icon: <GridIcon />,
-    title: "Tech Channels",
-    chips: ["Pegboard", "Cool LEDs", "Minimalist desk"],
-  },
-  {
-    icon: <BookIcon />,
-    title: "Educational Channels",
-    chips: ["Bookshelf", "Whiteboard", "World map"],
-  },
-  {
-    icon: <GamepadIcon />,
-    title: "Gaming Channels",
-    chips: ["RGB lighting", "Sound panels", "Collectibles shelf"],
-  },
-  {
-    icon: <SparkleIcon />,
-    title: "Lifestyle & Beauty",
-    chips: ["Soft lights", "Vanity setup", "Greenery"],
-  },
-];
-
-function NicheGrid() {
-  return (
-    <div
-      className={u.nicheGrid}
-      role="list"
-      aria-label="Background ideas grouped by channel type"
-    >
-      {NICHE_CARDS.map((card) => (
-        <div key={card.title} role="listitem" className={u.nicheCard}>
-          <div className={u.nicheCardHeader}>
-            <span className={u.nicheCardIcon} aria-hidden="true">
-              {card.icon}
-            </span>
-            <h3 className={u.nicheCardTitle}>{card.title}</h3>
-          </div>
-          <div className={u.nicheChipRow}>
-            {card.chips.map((chip) => (
-              <span key={chip} className={u.nicheChip}>
                 {chip}
               </span>
             ))}
@@ -576,8 +479,17 @@ export function Body({ s }: BodyProps) {
           are some ideas to get you started.
         </p>
 
-        {/* CSS replacement for image3 */}
-        <NicheGrid />
+        {/* image3: niche grid */}
+        <div className={u.nicheImageWrap}>
+          <Image
+            src={NICHE_SRC}
+            alt="Background Ideas by Channel Type: Tech, Educational, Gaming, Lifestyle & Beauty"
+            width={1228}
+            height={780}
+            className={u.nicheImage}
+            sizes="(max-width: 768px) 100vw, 720px"
+          />
+        </div>
 
         <div className={u.tipBlock}>
           <p className={u.tipTitle}>For Tech Channels</p>
