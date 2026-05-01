@@ -17,6 +17,7 @@ type SplitPanelProps = {
   selectedVideo: VideoWithMetrics | null;
   videosLoading: boolean;
   showDetail: boolean;
+  isSubscribed: boolean;
   onSelect: (id: string) => void;
   onBack: () => void;
   plannedLeftContent?: React.ReactNode;
@@ -32,6 +33,7 @@ export function SplitPanel({
   selectedVideo,
   videosLoading,
   showDetail,
+  isSubscribed,
   onSelect,
   onBack,
   plannedLeftContent,
@@ -88,6 +90,7 @@ export function SplitPanel({
           <VideoDetailPanel
             video={selectedVideo}
             channelId={activeChannelId}
+            isSubscribed={isSubscribed}
           />
         ) : (
           plannedRightContent

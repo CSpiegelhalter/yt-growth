@@ -15,6 +15,7 @@ export {
   fetchCommentsWithTimeout,
   fetchRecentChannelVideosWithTimeout,
   fetchVideoDetailsWithTimeout,
+  getCredential,
   getGoogleAccountOrThrow,
 } from "./youtube";
 

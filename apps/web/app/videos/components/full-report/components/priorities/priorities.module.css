@@ -1,0 +1,204 @@
+/* ── Priorities ── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sectionTitle {
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.emptyState {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+  padding: var(--space-4) 0;
+  text-align: center;
+}
+
+/* ── Card ── */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.cardHead {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.rankChip {
+  color: var(--color-hot-rose);
+  flex-shrink: 0;
+  font-size: var(--text-xl, 22px);
+  font-weight: var(--font-semibold);
+  line-height: 1;
+}
+
+.title {
+  color: var(--text-primary);
+  flex: 1;
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+  margin: 0;
+  min-width: 0;
+}
+
+.sourceTag {
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  padding: 2px var(--space-2);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tagRetention {
+  background: color-mix(in srgb, var(--color-hot-rose) 12%, transparent);
+  color: var(--color-hot-rose);
+}
+
+.tagHook {
+  background: color-mix(in srgb, var(--color-hot-rose) 12%, transparent);
+  color: var(--color-hot-rose);
+}
+
+.tagAudit {
+  background: color-mix(in srgb, var(--color-warm-gold) 18%, transparent);
+  color: var(--color-warm-gold);
+}
+
+.tagDiscoverability {
+  background: color-mix(in srgb, var(--color-cool-sky) 12%, transparent);
+  color: var(--color-cool-sky);
+}
+
+.tagPromotion {
+  background: color-mix(in srgb, var(--color-cool-sky) 12%, transparent);
+  color: var(--color-cool-sky);
+}
+
+.tagScore {
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+}
+
+/* ── Body ── */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.row {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 56px 1fr;
+}
+
+.rowLabel {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  padding-top: 2px;
+  text-transform: uppercase;
+}
+
+.rowBody {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  margin: 0;
+}
+
+.evidence {
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  margin: var(--space-1) 0 0 56px;
+  padding: var(--space-1) var(--space-2);
+}
+
+.evidenceMetric {
+  color: var(--text-secondary);
+  font-weight: var(--font-semibold);
+}
+
+.evidenceValue {
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+}
+
+.evidenceBaseline {
+  color: var(--text-tertiary);
+}
+
+.doRow {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 56px 1fr;
+}
+
+.doList {
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--text-sm);
+  gap: var(--space-1);
+  line-height: var(--leading-normal);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.doList li {
+  padding-left: var(--space-3);
+  position: relative;
+}
+
+.doList li::before {
+  color: var(--color-cool-sky);
+  content: "·";
+  font-weight: var(--font-semibold);
+  left: 0;
+  position: absolute;
+}
+
+@media (max-width: 640px) {
+  .row,
+  .doRow {
+    grid-template-columns: 1fr;
+  }
+
+  .evidence {
+    margin-left: 0;
+  }
+}

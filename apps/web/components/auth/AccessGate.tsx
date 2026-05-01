@@ -91,16 +91,14 @@ export function AccessGate({
     return (
       <GateCard
         icon={signInIcon}
-        title="Sign in to get started"
-        description="Connect your YouTube channel to unlock analytics, AI-powered video suggestions, and growth insights."
+        title="Your Dashboard is waiting"
+        description="Sign in and connect your YouTube channel to get personalized growth insights, AI-powered video ideas, and performance tracking."
         actions={
           <>
             <Button as="a" href="/auth/login" variant="primary" className={`${s.gateButton} ${s.ctaButton}`}>
-              Sign in
+              Sign in with Google
             </Button>
-            <Button as="a" href="/auth/signup" variant="secondary" className={s.gateButton}>
-              Create account
-            </Button>
+            <p className={s.subtext}>Free forever. No credit card required.</p>
           </>
         }
       />

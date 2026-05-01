@@ -229,7 +229,7 @@ export type DiscoveredNiche = {
 // ── discoverCompetitors use-case I/O ────────────────────────────
 
 export type DiscoverCompetitorsInput = {
-  userId: number;
+  userId: number | null;
   listType?: DiscoveryListType;
   filters?: Partial<DiscoveryFilters>;
   queryText?: string;
@@ -265,10 +265,14 @@ export type SearchCompetitorsInput = {
 // ── analyzeVideo use-case I/O ───────────────────────────────────
 
 export type AnalyzeVideoInput = {
-  userId: number;
-  channelId: string;
+  /** User ID — undefined for anonymous (public) analysis */
+  userId?: number;
+  /** User's YouTube channel ID — undefined for anonymous analysis */
+  channelId?: string;
   videoId: string;
   includeMoreFromChannel?: boolean;
+  /** Client IP for anonymous rate limiting — required when userId is undefined */
+  clientIp?: string;
 };
 
 // Returns CompetitorVideoAnalysis (re-exported above)

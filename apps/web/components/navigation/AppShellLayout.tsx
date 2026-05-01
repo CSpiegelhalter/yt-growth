@@ -4,6 +4,7 @@ import {
   getAppBootstrapOptional,
   GUEST_SHELL_PROPS,
 } from "@/lib/server/bootstrap";
+import type { SerializableNavItem } from "@/lib/server/nav-config.server";
 import { getFilteredNavItems } from "@/lib/server/nav-config.server";
 
 import { AppShellServer } from "./AppShellServer";
@@ -11,31 +12,60 @@ import { AppShellServer } from "./AppShellServer";
 /**
  * Returns true if the sidebar should be shown for the given path and auth state.
  *
- * Rules:
- * - Always show sidebar if the user is authenticated
- * - Show sidebar for signed-out users only on /tags and /keywords (public tools)
- * - Hide sidebar on all other pages when signed out (Dashboard, Videos, Profile, etc.)
+ * Config-driven: checks guestAccessible flag on nav items instead of hardcoded paths.
+ * Respects GUEST_ACCESS_ENABLED env var as a kill switch.
  */
-function shouldShowSidebar(pathname: string, isAuthenticated: boolean): boolean {
-  if (isAuthenticated) {return true;}
-  return pathname.startsWith("/tags") || pathname.startsWith("/keywords");
+function shouldShowSidebar(
+  pathname: string,
+  isAuthenticated: boolean,
+  navItems: SerializableNavItem[],
+): boolean {
+  if (isAuthenticated) return true;
+  if (process.env.GUEST_ACCESS_ENABLED === "false") return false;
+  return navItems.some(
+    (item) => item.guestAccessible && pathname.startsWith(item.href),
+  );
 }
 
 /**
  * Shared layout for route groups that need the AppShell with optional auth.
  *
- * Handles both authenticated and unauthenticated states:
- * - Authenticated: full AppShell with sidebar
- * - Unauthenticated on Tags/Keywords: guest AppShell with sidebar
- * - Unauthenticated on other pages: no sidebar, just page content (AccessGate handles sign-in)
+ * Handles three states:
+ * - Authenticated: full AppShell with all nav items
+ * - Guest on guest-accessible route: guest AppShell with filtered nav items
+ * - Guest on other routes: no sidebar (AccessGate handles sign-in)
+ *
+ * @param forceGuestSidebar - If true, always show guest sidebar regardless of pathname detection.
+ *   Use this for layouts outside (app) that explicitly want guest sidebar (e.g., /dashboard).
  */
 export async function AppShellLayout({
   children,
+  forceGuestSidebar = false,
 }: {
   children: React.ReactNode;
+  forceGuestSidebar?: boolean;
 }) {
   const headersList = await headers();
-  const pathname = headersList.get("x-invoke-path") ?? "/";
+
+  // Extract pathname from headers — Next.js sets different headers in different contexts.
+  // x-invoke-path is set by App Router, x-pathname by middleware, referer as fallback.
+  let pathname =
+    headersList.get("x-invoke-path") ??
+    headersList.get("x-pathname") ??
+    headersList.get("x-next-pathname") ??
+    "/";
+
+  // If still "/", try parsing from referer URL (local dev fallback)
+  if (pathname === "/") {
+    const referer = headersList.get("referer");
+    if (referer) {
+      try {
+        pathname = new URL(referer).pathname;
+      } catch {
+        // ignore
+      }
+    }
+  }
 
   const [bootstrap, navItems] = await Promise.all([
     getAppBootstrapOptional(),
@@ -44,7 +74,7 @@ export async function AppShellLayout({
 
   const isAuthenticated = !!bootstrap;
 
-  if (!shouldShowSidebar(pathname, isAuthenticated)) {
+  if (!forceGuestSidebar && !shouldShowSidebar(pathname, isAuthenticated, navItems.primary)) {
     return <>{children}</>;
   }
 

@@ -19,7 +19,7 @@ export type UsageInfo = {
 export type ResearchMode = "overview" | "related" | "combined";
 
 export type ResearchKeywordsInput = {
-  userId: number;
+  userId: number | null;
   mode: ResearchMode;
   phrase?: string;
   phrases?: string[];
@@ -36,7 +36,7 @@ export type ResearchKeywordsResult =
 // ── getKeywordTrends ────────────────────────────────────────────
 
 export type GetKeywordTrendsInput = {
-  userId: number;
+  userId: number | null;
   keyword: string;
   database: string;
   dateFrom?: string;
@@ -52,7 +52,7 @@ export type GetKeywordTrendsResult =
 // ── getYoutubeSerp ──────────────────────────────────────────────
 
 export type GetYoutubeSerpInput = {
-  userId: number;
+  userId: number | null;
   keyword: string;
   location: string;
   limit: number;

@@ -1,0 +1,130 @@
+/* ── Score Strip ── */
+
+.strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tileGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .tileGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── Tile ── */
+
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  position: relative;
+}
+
+.toneAbove {
+  border-color: color-mix(in srgb, var(--color-leaf-green) 35%, var(--border));
+}
+
+.toneOnPar {
+  border-color: var(--border);
+}
+
+.toneBelow {
+  border-color: color-mix(in srgb, var(--color-warm-gold) 45%, var(--border));
+}
+
+.toneWellBelow {
+  border-color: color-mix(in srgb, var(--color-hot-rose) 45%, var(--border));
+}
+
+.toneUnknown {
+  border-color: var(--border);
+}
+
+.tileHead {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.tileLabel {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tileValue {
+  color: var(--text-primary);
+  font-size: var(--text-2xl, 24px);
+  font-weight: var(--font-semibold);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.tileDelta {
+  align-items: baseline;
+  color: var(--text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.tileDeltaValue {
+  font-weight: var(--font-semibold);
+}
+
+.toneAbove .tileDeltaValue {
+  color: var(--color-leaf-green);
+}
+
+.toneBelow .tileDeltaValue {
+  color: var(--color-warm-gold);
+}
+
+.toneWellBelow .tileDeltaValue {
+  color: var(--color-hot-rose);
+}
+
+.tileComparison {
+  color: var(--text-tertiary);
+}
+
+.sparkline {
+  color: var(--color-cool-sky);
+  height: 24px;
+  margin-top: var(--space-1);
+  width: 100%;
+}
+
+.toneAbove .sparkline {
+  color: var(--color-leaf-green);
+}
+
+.toneBelow .sparkline {
+  color: var(--color-warm-gold);
+}
+
+.toneWellBelow .sparkline {
+  color: var(--color-hot-rose);
+}
+
+.fallbackNote {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  margin: 0;
+}

@@ -1,5 +1,6 @@
 {
   "enabledPlugins": {
-    "figma@claude-plugins-official": true
+    "figma@claude-plugins-official": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true
   }
 }

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { AccessGate } from "@/components/auth/AccessGate";
 import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
 import { BRAND, CANONICAL_ORIGIN } from "@/lib/shared/brand";
 
 import { DashboardClient } from "./components/dashboard-client";
+import { DashboardPublicClient } from "./components/dashboard-public-client";
 
 export const metadata: Metadata = {
   title: `Dashboard | ${BRAND.name}`,
@@ -25,20 +25,25 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Dashboard page — two modes:
+ * - Guest: shows category-based trending video ideas (DashboardPublicClient)
+ * - Authenticated: shows personalized dashboard (DashboardClient)
+ */
 export default async function DashboardPage() {
   const bootstrap = await getAppBootstrapOptional();
 
+  if (!bootstrap) {
+    return <DashboardPublicClient />;
+  }
+
   return (
-    <AccessGate bootstrap={bootstrap}>
-      {(data) => (
-        <Suspense>
-          <DashboardClient
-            initialChannels={data.channels}
-            initialActiveChannelId={data.activeChannelId}
-            isPro={data.me.subscription?.isActive ?? false}
-          />
-        </Suspense>
-      )}
-    </AccessGate>
+    <Suspense>
+      <DashboardClient
+        initialChannels={bootstrap.channels}
+        initialActiveChannelId={bootstrap.activeChannelId}
+        isPro={bootstrap.me.subscription?.isActive ?? false}
+      />
+    </Suspense>
   );
 }

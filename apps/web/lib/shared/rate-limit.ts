@@ -152,6 +152,18 @@ export const RATE_LIMITS = {
   thumbnailGenerateV2: { limit: 30, windowSec: 86_400 },
   // Thumbnail img2img variations: 20 per day per user
   thumbnailImg2Img: { limit: 20, windowSec: 86_400 },
+  // Public analyze: 3 per day per IP (anonymous users)
+  publicAnalyze: { limit: 3, windowSec: 86_400 },
+  // Global daily cap for all anonymous analyses (denial-of-wallet protection)
+  anonymousGlobalDaily: { limit: 500, windowSec: 86_400 },
+  // Guest trending searches: 5 per day per IP
+  guestTrending: { limit: 5, windowSec: 86_400 },
+  // Guest idea generation: 2 per day per IP
+  guestIdeas: { limit: 2, windowSec: 86_400 },
+  // Free-tier creator brief generation: 3 per day per user
+  briefFree: { limit: 3, windowSec: 86_400 },
+  // Gap-to-idea generation: 20 per day per user (authenticated only)
+  gapIdeas: { limit: 20, windowSec: 86_400 },
 } as const;
 
 /**

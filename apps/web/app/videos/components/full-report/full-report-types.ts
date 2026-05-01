@@ -1,8 +1,13 @@
 import type {
   Discoverability,
   HookAnalysis,
+  PrioritiesList,
   PromotionAction,
   RetentionAnalysis,
+  RetentionCurveData,
+  ScoreStripData,
+  SignalsData,
+  Verdict,
   VideoAudit,
 } from "@/lib/features/full-report";
 
@@ -21,6 +26,11 @@ export type PartialFullReport = {
   promotionPlaybook: SectionState<PromotionAction[]>;
   retention: SectionState<RetentionAnalysis>;
   hookAnalysis: SectionState<HookAnalysis>;
+  scoreStrip: SectionState<ScoreStripData>;
+  retentionCurve: SectionState<RetentionCurveData>;
+  verdict: SectionState<Verdict>;
+  priorities: SectionState<PrioritiesList>;
+  signals: SectionState<SignalsData>;
 };
 
 export type StreamPhase = "idle" | "gathering" | "synthesizing" | "done" | "error";
@@ -36,5 +46,10 @@ export function createInitialReport(): PartialFullReport {
     promotionPlaybook: pending(),
     retention: pending(),
     hookAnalysis: pending(),
+    scoreStrip: pending(),
+    retentionCurve: pending(),
+    verdict: pending(),
+    priorities: pending(),
+    signals: pending(),
   };
 }

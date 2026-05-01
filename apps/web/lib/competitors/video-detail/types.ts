@@ -23,8 +23,8 @@ export type StageTiming = {
 export type RequestContext = {
   route: string;
   requestId: string;
-  userId: number;
-  channelId: string;
+  userId: number | undefined;
+  channelId: string | undefined;
   videoId: string;
   startTime: number;
   timings: StageTiming[];

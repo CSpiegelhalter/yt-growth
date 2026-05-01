@@ -49,6 +49,9 @@ export async function getKeywordTrends(
     locationInfo.region,
   );
 
+  // Guest usage info placeholder (actual rate limiting happens at the API layer)
+  const guestUsageInfo: UsageInfo = { used: 0, limit: 5, remaining: 5, resetAt: new Date(Date.now() + 86_400_000).toISOString() };
+
   if (cached) {
     logger.info("keywords.trends_cache_hit", {
       userId,
@@ -56,6 +59,9 @@ export async function getKeywordTrends(
       location: locationInfo.region,
     });
 
+    if (userId === null) {
+      return { type: "success", body: { ...cached.data, meta: { ...cached.data.meta, cached: true }, usage: guestUsageInfo } };
+    }
     const quota = await resolveQuota({ userId, isPro, featureKey: "keyword_research", cached: true });
     return {
       type: "success",
@@ -67,13 +73,17 @@ export async function getKeywordTrends(
     };
   }
 
-  // Check and increment usage quota
-  const quota = await resolveQuota({ userId, isPro, featureKey: "keyword_research", cached: false });
-  if (quota.type === "quota_exceeded") {
-    return { type: "quota_exceeded", usage: { ...quota.usage, plan: quota.plan } };
+  // Check and increment usage quota (skip for guests — API layer handles rate limiting)
+  let usageInfo: UsageInfo;
+  if (userId === null) {
+    usageInfo = guestUsageInfo;
+  } else {
+    const quota = await resolveQuota({ userId, isPro, featureKey: "keyword_research", cached: false });
+    if (quota.type === "quota_exceeded") {
+      return { type: "quota_exceeded", usage: { ...quota.usage, plan: quota.plan } };
+    }
+    usageInfo = quota.usage;
   }
-
-  const usageInfo = quota.usage;
 
   try {
     const response = await fetchGoogleTrends({

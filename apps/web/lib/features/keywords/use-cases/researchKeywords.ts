@@ -70,6 +70,9 @@ export async function researchKeywords(
     KeywordOverviewResponse | KeywordRelatedResponse | KeywordCombinedResponse
   >(mode, cleanPhrase, locationInfo.region);
 
+  // Guest usage info placeholder (actual rate limiting happens at the API layer)
+  const guestUsageInfo: UsageInfo = { used: 0, limit: 5, remaining: 5, resetAt: new Date(Date.now() + 86_400_000).toISOString() };
+
   if (cached) {
     logger.info("keywords.cache_hit", {
       userId,
@@ -78,30 +81,40 @@ export async function researchKeywords(
       location: locationInfo.region,
     });
 
+    if (userId === null) {
+      return buildCachedResult(mode, cached.data, cleanPhrase, locationInfo.region, guestUsageInfo);
+    }
     const quota = await resolveQuota({ userId, isPro, featureKey: "keyword_research", cached: true });
     return buildCachedResult(mode, cached.data, cleanPhrase, locationInfo.region, quota.usage);
   }
 
-  // Check and increment usage quota
-  const quota = await resolveQuota({ userId, isPro, featureKey: "keyword_research", cached: false });
-  if (quota.type === "quota_exceeded") {
-    return { type: "quota_exceeded", usage: { ...quota.usage, plan: quota.plan } };
+  // Check and increment usage quota (skip for guests — API layer handles rate limiting)
+  let usageInfo: UsageInfo;
+  if (userId === null) {
+    usageInfo = guestUsageInfo;
+  } else {
+    const quota = await resolveQuota({ userId, isPro, featureKey: "keyword_research", cached: false });
+    if (quota.type === "quota_exceeded") {
+      return { type: "quota_exceeded", usage: { ...quota.usage, plan: quota.plan } };
+    }
+    usageInfo = quota.usage;
   }
 
-  const usageInfo = quota.usage;
+  // Internal fetch helpers use userId for logging only — default to 0 for guests
+  const logUserId = userId ?? 0;
 
   try {
     if (mode === "combined") {
-      return await fetchCombined(userId, cleanPhrase, locationInfo.region, displayLimit, usageInfo);
+      return await fetchCombined(logUserId, cleanPhrase, locationInfo.region, displayLimit, usageInfo);
     } if (mode === "overview") {
-      return await fetchOverview(userId, cleanPhrase, locationInfo.region, usageInfo);
-    } 
-      return await fetchRelated(userId, cleanPhrase, cleanPhrases, locationInfo.region, displayLimit, usageInfo);
-    
+      return await fetchOverview(logUserId, cleanPhrase, locationInfo.region, usageInfo);
+    }
+      return await fetchRelated(logUserId, cleanPhrase, cleanPhrases, locationInfo.region, displayLimit, usageInfo);
+
   } catch (error) {
     if (error instanceof DataForSEOError) {
       logger.error("keywords.dataforseo_error", {
-        userId,
+        userId: logUserId,
         code: error.code,
         message: error.message,
         taskId: error.taskId,

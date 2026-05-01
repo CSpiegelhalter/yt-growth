@@ -39,10 +39,49 @@ type CacheReadResult = {
 export async function readCachesParallel(
   videoId: string,
   youtubeChannelId: string,
-  userId: number,
+  userId: number | undefined,
   ctx: RequestContext
 ): Promise<CacheReadResult> {
   const startTime = Date.now();
+
+  // Anonymous users: skip channel ownership check entirely.
+  // CRITICAL: Do NOT pass undefined userId to Prisma — it would skip the
+  // filter and match arbitrary records (data leak). Early return instead.
+  if (userId === undefined) {
+    // Still read video + comments cache (shared, keyed by videoId)
+    const [cachedVideo, cachedComments] = await prisma.$transaction([
+      prisma.competitorVideo.findUnique({
+        where: { videoId },
+        include: {
+          Snapshots: {
+            orderBy: { capturedAt: "desc" },
+            take: 5,
+          },
+        },
+      }),
+      prisma.competitorVideoComments.findUnique({
+        where: { videoId },
+      }),
+    ]);
+
+    ctx.timings.push({
+      stage: "db.cacheReads",
+      durationMs: Date.now() - startTime,
+    });
+
+    logger.info("Cache reads complete (anonymous)", {
+      videoId,
+      hasCachedVideo: !!cachedVideo,
+      hasCachedComments: !!cachedComments,
+      durationMs: Date.now() - startTime,
+    });
+
+    return {
+      cachedVideo: cachedVideo as CachedCompetitorVideo | null,
+      cachedComments: cachedComments as CachedComments | null,
+      channelOwnership: null,
+    };
+  }
 
   const [cachedVideo, cachedComments, channel] = await prisma.$transaction([
     // Get cached video with snapshots

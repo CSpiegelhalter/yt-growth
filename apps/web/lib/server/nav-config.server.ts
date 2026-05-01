@@ -19,7 +19,7 @@ import {
  */
 export type SerializableNavItem = Omit<NavItem, "match"> & {
   /** If item has a custom match pattern, encode it as a string identifier */
-  matchPattern?: "videos" | "tags" | "keywords";
+  matchPattern?: "videos" | "trending" | "analyzer" | "keywords";
 };
 
 /**
@@ -39,6 +39,7 @@ export async function getFilteredNavItems(): Promise<{
         href: item.href,
         icon: item.icon,
         channelScoped: item.channelScoped,
+        guestAccessible: item.guestAccessible,
       };
 
       switch (item.id) {
@@ -46,8 +47,12 @@ export async function getFilteredNavItems(): Promise<{
         serializable.matchPattern = "videos";
         break;
       }
-      case "tags": {
-        serializable.matchPattern = "tags";
+      case "trending": {
+        serializable.matchPattern = "trending";
+        break;
+      }
+      case "analyzer": {
+        serializable.matchPattern = "analyzer";
         break;
       }
       case "keywords": {

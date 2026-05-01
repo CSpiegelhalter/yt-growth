@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { formatCompactSafe, formatDateShort } from "@/lib/shared/format";
 
@@ -14,6 +14,8 @@ export type VideoHeaderSimpleProps = {
   views: number;
   likes: number;
   comments: number;
+  /** Optional action slot rendered below the stats, inside the info column. */
+  action?: ReactNode;
 };
 
 export function VideoHeaderSimple({
@@ -23,6 +25,7 @@ export function VideoHeaderSimple({
   views,
   likes,
   comments,
+  action,
 }: VideoHeaderSimpleProps) {
   const [imgError, setImgError] = useState(false);
   const showThumb = thumbnailUrl && !imgError;
@@ -73,6 +76,7 @@ export function VideoHeaderSimple({
             {formatCompactSafe(comments)} comments
           </li>
         </ul>
+        {action && <div className={s.actionSlot}>{action}</div>}
       </div>
     </div>
   );

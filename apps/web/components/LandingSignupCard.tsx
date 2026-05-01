@@ -1,19 +1,27 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useState } from "react";
 
 /**
  * LandingSignupCard — name + email capture card on the landing page hero.
  * Collects name and email, then navigates to /auth/signup with them pre-filled.
+ * For signed-in users, swaps to a "Go to dashboard" CTA after hydration.
  */
 export function LandingSignupCard() {
+  const { data: session } = useSession();
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (session) {
+      router.push("/dashboard");
+      return;
+    }
     const params = new URLSearchParams();
     if (name) {
       params.set("name", name);
@@ -23,6 +31,18 @@ export function LandingSignupCard() {
     }
     const qs = params.toString();
     router.push(`/auth/signup${qs ? `?${qs}` : ""}`);
+  }
+
+  if (session) {
+    return (
+      <div className="landingSignupCard">
+        <h2>Welcome back</h2>
+        <p>Pick up where you left off — your dashboard is ready.</p>
+        <Link href="/dashboard" className="landingSignupBtn">
+          Go to your dashboard
+        </Link>
+      </div>
+    );
   }
 
   return (

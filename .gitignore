@@ -159,3 +159,4 @@ blob-report/
 .agent/
 
 docs/
+.gstack/

@@ -1,9 +1,17 @@
 .gate {
   align-items: center;
+  animation: gateSlideIn 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
   display: flex;
   justify-content: center;
   min-height: calc(100dvh - 200px);
   padding-bottom: 10vh;
+}
+
+@keyframes gateSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
 }
 
 .card {
@@ -34,9 +42,16 @@
 
 .title {
   color: var(--color-imperial-blue);
-  font-size: var(--text-2xl);
-  font-weight: var(--font-semibold);
+  font-size: 1.75rem;
+  font-weight: var(--font-bold);
+  letter-spacing: -0.02em;
   margin: 0;
+}
+
+.subtext {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  margin-top: calc(-1 * var(--space-2));
 }
 
 .description {

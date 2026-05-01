@@ -1,0 +1,388 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.title {
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  margin: 0;
+}
+
+.legend {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.legendItem {
+  align-items: center;
+  color: var(--text-tertiary);
+  display: flex;
+  font-size: var(--text-xs);
+  gap: var(--space-1);
+}
+
+.legendDot {
+  border-radius: 50%;
+  display: inline-block;
+  height: 8px;
+  width: 8px;
+}
+
+.legendDotDrop {
+  background: var(--color-hot-rose);
+}
+
+.legendDotRebound {
+  background: var(--color-leaf-green);
+}
+
+.chartWrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  position: relative;
+  width: 100%;
+}
+
+/* ── Marker focus ring (keyboard nav) ── */
+
+.chartWrap :global(g[role="button"]):focus-visible {
+  outline: 2px solid var(--color-cool-sky);
+  outline-offset: 2px;
+}
+
+/* ── Floating marker tooltip ── */
+
+.markerTooltip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.12));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  left: 0;
+  max-width: 280px;
+  min-width: 200px;
+  padding: var(--space-2) var(--space-3);
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  transform: translate(-50%, calc(-100% - 14px));
+  z-index: 5;
+}
+
+.markerTooltipDrop {
+  border-color: color-mix(in srgb, var(--color-hot-rose) 35%, var(--border));
+}
+
+.markerTooltipRebound {
+  border-color: color-mix(in srgb, var(--color-leaf-green) 35%, var(--border));
+}
+
+.markerTooltipHead {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-2);
+  justify-content: space-between;
+}
+
+.markerTooltipBadge {
+  background: color-mix(in srgb, var(--color-hot-rose) 14%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--color-hot-rose);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.02em;
+  padding: 2px var(--space-2);
+}
+
+.markerTooltipBadgeRebound {
+  background: color-mix(in srgb, var(--color-leaf-green) 14%, transparent);
+  color: var(--color-leaf-green);
+}
+
+.markerTooltipTime {
+  color: var(--text-secondary);
+  font-feature-settings: "tnum";
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+}
+
+.markerTooltipBody {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  margin: 0;
+}
+
+.markerTooltipBodyMuted {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  margin: 0;
+}
+
+.markerTooltipAction {
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  margin: 0;
+}
+
+.markerTooltipHint {
+  color: var(--color-cool-sky);
+  font-size: 11px;
+  font-weight: var(--font-medium);
+  letter-spacing: 0.02em;
+  margin: 2px 0 0;
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+  padding: var(--space-4) 0;
+  text-align: center;
+}
+
+.emptyBox {
+  background: var(--surface-alt);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+}
+
+.emptyHeadline {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  margin: 0;
+}
+
+.emptyBody {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  margin: 0;
+}
+
+.hint {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  margin: 0;
+}
+
+.dropList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dropItem {
+  align-items: flex-start;
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  display: grid;
+  font-size: var(--text-sm);
+  gap: var(--space-1) var(--space-2);
+  grid-template-columns: 18px 56px 56px 1fr;
+  line-height: var(--leading-normal);
+  padding: var(--space-2) var(--space-3);
+}
+
+.dropMarker {
+  color: var(--color-hot-rose);
+}
+
+.dropTime {
+  color: var(--text-secondary);
+  font-feature-settings: "tnum";
+  font-weight: var(--font-medium);
+}
+
+.dropSeverity {
+  color: var(--color-hot-rose);
+  font-weight: var(--font-semibold);
+}
+
+.dropBody {
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dropWhy {
+  color: var(--text-primary);
+}
+
+.dropAction {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .dropItem {
+    grid-template-columns: 18px 1fr;
+  }
+
+  .dropTime,
+  .dropSeverity {
+    grid-column: 2 / -1;
+  }
+
+  .dropBody {
+    grid-column: 2 / -1;
+  }
+}
+
+/* ── Clippable moments ── */
+
+.clipsBlock {
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+}
+
+.clipsHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.clipsTitle {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  margin: 0;
+}
+
+.clipsSubtitle {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  margin: 0;
+}
+
+.clipsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.clipItem {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-leaf-green) 5%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--color-leaf-green) 25%, var(--border));
+  border-radius: var(--radius-sm);
+  display: grid;
+  font-size: var(--text-sm);
+  gap: var(--space-1) var(--space-2);
+  grid-template-columns: 18px 56px 56px 1fr auto;
+  line-height: var(--leading-normal);
+  padding: var(--space-2) var(--space-3);
+}
+
+.clipMarker {
+  color: var(--color-leaf-green);
+}
+
+.clipTime {
+  color: var(--text-secondary);
+  font-feature-settings: "tnum";
+  font-weight: var(--font-medium);
+}
+
+.clipLift {
+  color: var(--color-leaf-green);
+  font-weight: var(--font-semibold);
+}
+
+.clipBody {
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+.clipLabel {
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.clipLink {
+  align-items: center;
+  background: var(--color-leaf-green);
+  border-radius: var(--radius-sm);
+  color: var(--text-inverse);
+  display: inline-flex;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  gap: var(--space-1);
+  letter-spacing: 0.02em;
+  padding: var(--space-1) var(--space-2);
+  text-decoration: none;
+  transition: background var(--transition-base);
+  white-space: nowrap;
+}
+
+.clipLink:hover {
+  background: color-mix(in srgb, var(--color-leaf-green) 80%, black);
+}
+
+.clipLink:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+@media (max-width: 640px) {
+  .clipItem {
+    grid-template-columns: 18px 1fr auto;
+  }
+
+  .clipTime,
+  .clipLift {
+    grid-column: 2 / -2;
+  }
+
+  .clipBody {
+    grid-column: 2 / -2;
+  }
+
+  .clipLink {
+    grid-column: 3 / 4;
+    grid-row: 1 / span 3;
+    align-self: start;
+  }
+}

@@ -153,22 +153,30 @@
 /* ── Transcript Analysis ── */
 
 .transcriptBtn {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  align-items: center;
+  background: var(--color-hot-rose);
+  border: 1px solid var(--color-hot-rose);
   border-radius: var(--radius-md);
-  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-inverse, #fff);
   cursor: pointer;
+  display: inline-flex;
   font: inherit;
   font-size: var(--text-sm);
-  font-weight: var(--font-medium);
+  font-weight: var(--font-semibold);
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
   transition: all var(--transition-base);
   width: fit-content;
 }
 
 .transcriptBtn:hover:not(:disabled) {
-  background: var(--surface-alt);
-  border-color: var(--text-secondary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.transcriptBtn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .transcriptBtn:disabled {
@@ -177,6 +185,36 @@
 }
 
 .transcriptBtn:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* ── Back button (full report view) ── */
+
+.backBtn {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+  transition: all var(--transition-base);
+  width: fit-content;
+}
+
+.backBtn:hover {
+  background: var(--surface-alt);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.backBtn:focus-visible {
   box-shadow: var(--focus-ring);
   outline: none;
 }

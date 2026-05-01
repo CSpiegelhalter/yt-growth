@@ -1,3 +1,7 @@
+/**
+ * Competitors Page — UNUSED, revisit later.
+ * Hidden from nav as of 2026-03-25 PLG gating refactor.
+ */
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { z } from "zod";

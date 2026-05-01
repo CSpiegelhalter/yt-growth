@@ -9,7 +9,7 @@ import {
   fetchCommentsWithTimeout,
   fetchRecentChannelVideosWithTimeout,
   fetchVideoDetailsWithTimeout,
-  getGoogleAccountOrThrow,
+  getCredential,
   isAnalysisCacheFresh,
   isCommentsCacheFresh,
   normalizeAnalysis,
@@ -64,11 +64,12 @@ function toCompetitorError(err: VideoDetailError): CompetitorError {
 export async function analyzeVideo(
   input: AnalyzeVideoInput,
 ): Promise<CompetitorVideoAnalysis> {
-  const { userId, channelId, videoId, includeMoreFromChannel = true } = input;
+  const { userId, channelId, videoId, includeMoreFromChannel = true, clientIp } = input;
+  const isAnonymous = !userId;
   const startTime = Date.now();
 
   const ctx: RequestContext = {
-    route: "/api/competitors/video/[videoId]",
+    route: isAnonymous ? "/api/analyze/public" : "/api/competitors/video/[videoId]",
     requestId: crypto.randomUUID().slice(0, 8),
     userId,
     channelId,
@@ -79,9 +80,10 @@ export async function analyzeVideo(
 
   try {
     const { cachedVideo, cachedComments, channelOwnership } =
-      await readCachesParallel(videoId, channelId, userId, ctx);
+      await readCachesParallel(videoId, channelId ?? "", userId, ctx);
 
-    if (!channelOwnership) {
+    // Only require channel ownership for authenticated users
+    if (!channelOwnership && !isAnonymous) {
       throw new VideoDetailError(
         "Channel not found",
         "CHANNEL_NOT_FOUND",
@@ -90,8 +92,8 @@ export async function analyzeVideo(
       );
     }
 
-    const ga = await getGoogleAccountOrThrow(userId, channelId);
-    const videoDetails = await fetchVideoDetailsWithTimeout(ga, videoId, ctx);
+    const cred = await getCredential(userId, channelId);
+    const videoDetails = await fetchVideoDetailsWithTimeout(cred, videoId, ctx);
 
     await upsertCompetitorVideo(videoId, {
       channelId: videoDetails.channelId,
@@ -112,8 +114,9 @@ export async function analyzeVideo(
       now,
     );
 
-    // Decide whether to fetch fresh comments (respect per-user rate limit)
-    const commentsRlKey = rateLimitKey("competitorComments", userId);
+    // Decide whether to fetch fresh comments (respect rate limit — per-user or per-IP)
+    const commentsRlIdentifier = userId ?? clientIp ?? "unknown";
+    const commentsRlKey = rateLimitKey("competitorComments", commentsRlIdentifier);
     const commentsRlResult = await checkRateLimit(
       commentsRlKey,
       RATE_LIMITS.competitorComments,
@@ -124,10 +127,10 @@ export async function analyzeVideo(
 
     const [commentsResult, channelVideosResult] = await Promise.all([
       shouldFetchComments
-        ? fetchCommentsWithTimeout(ga, videoId, 50, ctx)
+        ? fetchCommentsWithTimeout(cred, videoId, 50, ctx)
         : Promise.resolve(null),
       includeMoreFromChannel
-        ? fetchRecentChannelVideosWithTimeout(ga, videoDetails.channelId, ctx)
+        ? fetchRecentChannelVideosWithTimeout(cred, videoDetails.channelId, ctx)
         : Promise.resolve([]),
     ]);
 
@@ -300,7 +303,7 @@ type AnalysisStageInput = {
   video: ReturnType<typeof buildVideoObject>;
   videoDetails: Awaited<ReturnType<typeof fetchVideoDetailsWithTimeout>>;
   cachedVideo: Awaited<ReturnType<typeof readCachesParallel>>["cachedVideo"];
-  channelOwnership: { id: number; title: string | null };
+  channelOwnership: { id: number; title: string | null } | null;
   commentsAnalysis: { current: CompetitorCommentsAnalysis | undefined };
   needsCommentsLLM: boolean;
   commentsForLLM: Array<{ text: string; likeCount: number; authorName: string }> | null;
@@ -356,8 +359,10 @@ async function generateFreshAnalysis(
 ): Promise<{ analysis: CompetitorVideoAnalysis["analysis"]; beatChecklist: BeatChecklistItem[] | undefined }> {
   const { video, videoDetails, channelOwnership, commentsAnalysis, needsCommentsLLM, commentsForLLM, commentsContentHash, ctx } = input;
 
+  // For anonymous users (no channelOwnership), use generic framing
+  const channelTitle = channelOwnership?.title ?? null;
   const result = await runParallelAnalysis(
-    video, videoDetails, channelOwnership.title ?? "Your Channel",
+    video, videoDetails, channelTitle,
     needsCommentsLLM ? commentsForLLM : null, commentsAnalysis.current, ctx,
   );
 

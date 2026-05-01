@@ -82,6 +82,106 @@ async function serpapiFetch<T>(params: Record<string, string>): Promise<T> {
   return json as T;
 }
 
+// ─── Google Trends Trending Now ──────────────────────────
+
+export type TrendingTopic = {
+  query: string;
+  searchVolume: number;
+  increasePercentage: number;
+  category: string;
+  relatedQueries: string[];
+  articles: { title: string; source: string; url: string }[];
+  /** @deprecated Use searchVolume instead. Kept for backward compat with TrendingNowBar. */
+  formattedTraffic: string;
+};
+
+type RawTrendingItem = {
+  query: string;
+  search_volume?: number;
+  increase_percentage?: number;
+  categories?: { id: number; name: string }[];
+  trend_breakdown?: string | string[];
+  formatted_traffic?: string | string[];
+  related_queries?: { query: string }[] | string[];
+  articles?: { title: string; source: string; link: string }[];
+};
+
+type RawTrendingNowResponse = {
+  trending_searches?: RawTrendingItem[];
+  daily_search_trends?: {
+    searches?: RawTrendingItem[];
+  }[];
+};
+
+// In-memory cache (1 hour TTL — SerpAPI caches free for 1 hour)
+let trendingCache: { data: TrendingTopic[]; expiresAt: number } | null = null;
+
+export async function getTrendingNow(geo = "US", forceRefresh = false): Promise<TrendingTopic[]> {
+  if (!forceRefresh && trendingCache && trendingCache.expiresAt > Date.now()) {
+    log.info("Trending now cache hit");
+    return trendingCache.data;
+  }
+
+  const raw = await serpapiFetch<RawTrendingNowResponse>({
+    engine: "google_trends_trending_now",
+    geo,
+    hl: "en",
+    hours: "24",
+  });
+
+  // The response can come in two shapes depending on the endpoint version
+  let rawSearches = raw.trending_searches ?? [];
+  if (rawSearches.length === 0 && raw.daily_search_trends) {
+    rawSearches = raw.daily_search_trends.flatMap((day) => day.searches ?? []);
+  }
+
+  const topics: TrendingTopic[] = rawSearches.slice(0, 20).map((item) => {
+    const searchVolume = item.search_volume ?? 0;
+    const increasePercentage = item.increase_percentage ?? 0;
+    const category = item.categories?.[0]?.name ?? "";
+
+    // trend_breakdown is an array of related queries in the new API shape
+    const breakdown = item.trend_breakdown;
+    let relatedQueries: string[] = [];
+    if (Array.isArray(breakdown)) {
+      relatedQueries = breakdown.slice(0, 5);
+    } else if (typeof breakdown === "string" && breakdown) {
+      relatedQueries = [breakdown];
+    }
+
+    // Fallback: related_queries field (old API shape)
+    if (relatedQueries.length === 0) {
+      const rawRelated = item.related_queries ?? [];
+      relatedQueries = rawRelated.map((q) => (typeof q === "string" ? q : q.query)).slice(0, 5);
+    }
+
+    // Format traffic for backward compat
+    let formattedTraffic = "";
+    if (searchVolume >= 1_000_000) formattedTraffic = `${(searchVolume / 1_000_000).toFixed(1)}M+`;
+    else if (searchVolume >= 1_000) formattedTraffic = `${Math.round(searchVolume / 1_000)}K+`;
+    else if (searchVolume > 0) formattedTraffic = `${searchVolume}+`;
+
+    return {
+      query: item.query,
+      searchVolume,
+      increasePercentage,
+      category,
+      formattedTraffic,
+      relatedQueries,
+      articles: (item.articles ?? []).slice(0, 2).map((a) => ({
+        title: a.title,
+        source: a.source,
+        url: a.link,
+      })),
+    };
+  });
+
+  trendingCache = { data: topics, expiresAt: Date.now() + 60 * 60 * 1000 };
+  log.info("Trending now fetched", { count: topics.length, geo });
+
+  return topics;
+}
+
 // ─── Raw Response Types ──────────────────────────────────
 
 interface RawTranscriptSegment {

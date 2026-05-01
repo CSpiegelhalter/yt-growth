@@ -34,11 +34,18 @@ type MarkerCluster = {
   centerLabel: string;
 };
 
+// Use the resolved hex of --color-cool-sky directly. Recharts 3.x passes the
+// stroke value to the underlying SVG <path> as a presentation attribute, and
+// CSS var() resolution is unreliable in SVG attributes across browsers — the
+// line silently fails to render while the activeDot (which gets its own
+// computed fill) still appears, looking like "just dots, no line".
+const CHART_COLOR = "#35A7FF"; // --color-cool-sky
+
 const METRICS = [
-  { key: "views" as const, label: "Views", color: "var(--color-cool-sky)" },
-  { key: "shares" as const, label: "Shares", color: "var(--color-cool-sky)" },
-  { key: "watchTimeMinutes" as const, label: "Watch Time", color: "var(--color-cool-sky)" },
-  { key: "netSubs" as const, label: "Subscribers", color: "var(--color-cool-sky)" },
+  { key: "views" as const, label: "Views", color: CHART_COLOR },
+  { key: "shares" as const, label: "Shares", color: CHART_COLOR },
+  { key: "watchTimeMinutes" as const, label: "Watch Time", color: CHART_COLOR },
+  { key: "netSubs" as const, label: "Subscribers", color: CHART_COLOR },
 ] as const;
 
 /** Minimum gap (in data points) between markers before they cluster. */

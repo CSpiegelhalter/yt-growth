@@ -11,6 +11,11 @@ const VALID_SECTION_KEYS = [
   "promotionPlaybook",
   "retention",
   "hookAnalysis",
+  "scoreStrip",
+  "retentionCurve",
+  "verdict",
+  "priorities",
+  "signals",
 ] as const;
 
 export const FullReportBodySchema = z.object({

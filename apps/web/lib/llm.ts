@@ -240,7 +240,7 @@ function cleanDescription(description: string | undefined): string {
  */
 function buildCompetitorContext(
   video: CompetitorVideoInput,
-  userChannelTitle: string,
+  userChannelTitle: string | null,
   commentsAnalysis?: CommentsAnalysisInput
 ): string {
   const commentsContext = commentsAnalysis ? buildCommentsContext(commentsAnalysis) : "";
@@ -258,7 +258,11 @@ function buildCompetitorContext(
       ? ((video.stats.likeCount / video.stats.viewCount) * 100).toFixed(2)
       : null;
 
-  return `Analyzing for channel: "${userChannelTitle}"
+  const channelContext = userChannelTitle
+    ? `Analyzing for channel: "${userChannelTitle}"`
+    : `Analyzing this video for creators in a similar niche`;
+
+  return `${channelContext}
 
 COMPETITOR VIDEO (PUBLIC DATA ONLY):
 Title: "${video.title}"
@@ -296,7 +300,7 @@ IMPORTANT - DATA LIMITATIONS:
  */
 async function generateCompetitorBasicAnalysis(
   video: CompetitorVideoInput,
-  userChannelTitle: string,
+  userChannelTitle: string | null,
   commentsAnalysis?: CommentsAnalysisInput
 ): Promise<{
   whatItsAbout: string;
@@ -356,7 +360,7 @@ For "whyItsWorking" (HYPOTHESES based on public signals):
  */
 async function generateCompetitorThemesPatterns(
   video: CompetitorVideoInput,
-  userChannelTitle: string,
+  userChannelTitle: string | null,
   commentsAnalysis?: CommentsAnalysisInput
 ): Promise<{
   themesToRemix: Array<{ theme: string; why: string }>;
@@ -414,7 +418,7 @@ FORBIDDEN phrases (we cannot measure these):
  */
 async function generateCompetitorRemixIdeas(
   video: CompetitorVideoInput,
-  userChannelTitle: string,
+  userChannelTitle: string | null,
   commentsAnalysis?: CommentsAnalysisInput
 ): Promise<{
   remixIdeasForYou: Array<{
@@ -424,6 +428,10 @@ async function generateCompetitorRemixIdeas(
     angle: string;
   }>;
 } | null> {
+  const tailoredFor = userChannelTitle
+    ? `Generate 3-4 remix ideas tailored for "${userChannelTitle}"`
+    : `Generate 3-4 remix ideas that a creator could adapt for their own channel`;
+
   const systemPrompt = `You are an expert YouTube creative strategist helping creators remix competitor content.
 
 Return ONLY valid JSON:
@@ -439,7 +447,7 @@ Return ONLY valid JSON:
 }
 
 RULES:
-- Generate 3-4 remix ideas tailored for "${userChannelTitle}"
+- ${tailoredFor}
 - Each idea should put a unique spin on the competitor's topic
 - Titles should be complete, ready-to-use
 - Hooks should be compelling opening lines
@@ -472,7 +480,7 @@ RULES:
  */
 async function generateCompetitorBeatChecklistParallel(
   video: CompetitorVideoInput,
-  userChannelTitle: string,
+  userChannelTitle: string | null,
   commentsAnalysis?: CommentsAnalysisInput
 ): Promise<Array<{
   action: string;
@@ -559,7 +567,7 @@ Good examples:
  */
 export async function generateCompetitorVideoAnalysisParallel(
   video: CompetitorVideoInput,
-  userChannelTitle: string,
+  userChannelTitle: string | null,
   commentsAnalysis?: CommentsAnalysisInput
 ): Promise<{
   whatItsAbout: string;
@@ -1158,4 +1166,337 @@ function fallbackNicheQueries(
     niche: personaNiche || categoryName || "General Content",
     queries: queries.length > 0 ? queries : ["youtube videos"],
   };
+}
+
+/**
+ * Generate category-based video ideas for the public dashboard.
+ * No channel context needed — produces generic trending ideas for a niche.
+ */
+export async function generateIdeas(opts: {
+  category: string;
+  count?: number;
+}): Promise<{ id: string; title: string; hook: string; category: string }[]> {
+  const count = opts.count ?? 6;
+  const prompt = withDateContext(
+    `You are a YouTube content strategist. Generate ${count} trending video ideas for the "${opts.category}" category on YouTube.
+
+For each idea, provide:
+- title: A compelling, click-worthy video title (under 60 characters)
+- hook: A 1-sentence description of why this idea would work right now (reference current trends)
+
+Return a JSON array of objects with "title" and "hook" fields. No markdown, just the JSON array.`,
+  );
+
+  const response = await complete({
+    messages: [
+      { role: "system", content: prompt },
+      { role: "user", content: `Generate ${count} video ideas for: ${opts.category}` },
+    ],
+    temperature: 0.9,
+    maxTokens: 2000,
+  });
+
+  try {
+    const cleaned = response.content.replaceAll(/```json\n?|\n?```/g, "").trim();
+    const ideas = JSON.parse(cleaned) as { title: string; hook: string }[];
+    return ideas.map((idea, i) => ({
+      id: `public-${Date.now()}-${i}`,
+      title: idea.title,
+      hook: idea.hook,
+      category: opts.category,
+    }));
+  } catch {
+    return Array.from({ length: count }, (_, i) => ({
+      id: `fallback-${Date.now()}-${i}`,
+      title: `${opts.category} video idea ${i + 1}`,
+      hook: "Try a fresh take on trending topics in this space.",
+      category: opts.category,
+    }));
+  }
+}
+
+// ============================================
+// "WHAT TO MAKE THIS WEEK" BRIEF
+// ============================================
+
+export type BriefAnchor = {
+  /** Real keyword the idea is built around */
+  keyword: string;
+  /** Monthly search volume */
+  searchVolume: number;
+  /** Keyword difficulty 0-100 (lower = easier to rank) */
+  keywordDifficulty: number;
+  /** Trend momentum tag */
+  trendMomentum: "hot" | "rising" | "steady";
+  /** Google Trends interest series over the last ~12 months (0-100 scale) */
+  trendData?: number[];
+  /** Optional top competitor video for the "see the winner" link */
+  competitorVideo?: {
+    videoId: string;
+    title: string;
+    channelTitle: string;
+  };
+};
+
+export type BriefIdea = {
+  /** Index into the anchor pool the LLM picked for this idea */
+  anchorIndex: number;
+  title: string;
+  hook: string;
+  thumbnailConcept: string;
+  /** 5 alternate titles in different styles */
+  titleVariants: string[];
+  format: "long-form" | "short" | "reaction" | "list" | "tutorial";
+  effort: "quick" | "medium" | "deep";
+};
+
+export type BriefOptimizeFor = "fast-subs" | "fast-views" | "evergreen" | "shortform";
+export type BriefChannelSize = "small" | "medium" | "large";
+
+const OPTIMIZE_FOR_GUIDANCE: Record<BriefOptimizeFor, string> = {
+  "fast-subs": "fast subscriber growth — strong identity, repeatable format, niche specificity",
+  "fast-views": "maximize views — broad appeal, trending topics, hook-forward",
+  "evergreen": "long-tail searchable — tutorials, comprehensive guides, how-to videos",
+  "shortform": "short-form clip-able — under 60s, pattern-interrupt, hook in first 3 seconds",
+};
+
+const CHANNEL_SIZE_GUIDANCE: Record<BriefChannelSize, string> = {
+  "small": "small channel (<10K subs) — pick easy-to-rank topics (low keyword difficulty), niche specificity, low production cost",
+  "medium": "medium channel (10K-100K subs) — balance reach with ranking; moderate competition is fine",
+  "large": "large channel (100K+ subs) — broader topics, higher production value, established formats",
+};
+
+/**
+ * Generate a "What to make this week" brief — 3 enriched video ideas anchored
+ * to real opportunity-gap keywords, tuned to the creator's optimization goal
+ * and channel size.
+ */
+export async function generateBrief(opts: {
+  niche: string;
+  optimizeFor: BriefOptimizeFor;
+  channelSize: BriefChannelSize;
+  anchors: BriefAnchor[];
+}): Promise<BriefIdea[]> {
+  const { niche, optimizeFor, channelSize, anchors } = opts;
+
+  const anchorPool = anchors.length > 0
+    ? anchors
+        .map((a, i) =>
+          `[${i}] "${a.keyword}" — ${a.searchVolume.toLocaleString()} mo searches · KD ${a.keywordDifficulty}/100 · ${a.trendMomentum}`,
+        )
+        .join("\n")
+    : "(no real-data anchors available — every idea MUST set anchorIndex: -1)";
+
+  const systemPrompt = `You are a YouTube content strategist. Generate 3 specific, actionable video ideas for a "${niche}" creator.
+
+Optimize for: ${OPTIMIZE_FOR_GUIDANCE[optimizeFor]}
+Channel size: ${CHANNEL_SIZE_GUIDANCE[channelSize]}
+
+ANCHOR POOL (real keyword data, pick the best fit for each idea):
+${anchorPool}
+
+For each of the 3 ideas, return:
+- anchorIndex: integer index of an anchor whose keyword **semantically relates to the niche**. If no anchor in the pool genuinely fits the niche, return -1. NEVER pretend an unrelated keyword is the trend behind your idea — the user will see this as data evidence, and a wrong match destroys trust.
+- title: <60 chars, compelling, click-worthy (no clickbait, no all-caps, no emojis)
+- hook: ONE sentence on why this video will perform right now
+- thumbnailConcept: a 10-15 word concrete visual concept (e.g. "Split-screen before/after with shocked face on the right")
+- titleVariants: array of EXACTLY 5 alternate titles, in this order: curiosity / list / transformation / contrarian / outcome-promise
+- format: one of 'long-form' | 'short' | 'reaction' | 'list' | 'tutorial' — pick what's currently winning for this topic
+- effort: one of 'quick' | 'medium' | 'deep' — production complexity
+
+RULES:
+- 3 ideas total, each anchored to a different keyword if possible
+- Do not repeat ideas
+- Do not make claims about CTR/retention/ranking
+- Do not use markdown
+
+Respond with JSON: { "ideas": [ ... ] }`;
+
+  const userPrompt = `Niche: ${niche}\nOptimize for: ${optimizeFor}\nChannel size: ${channelSize}`;
+
+  const response = await complete({
+    messages: [
+      { role: "system", content: withDateContext(systemPrompt) },
+      { role: "user", content: userPrompt },
+    ],
+    temperature: 0.85,
+    maxTokens: 2200,
+    responseFormat: "json_object",
+  });
+
+  try {
+    const parsed = JSON.parse(response.content) as { ideas?: BriefIdea[] };
+    const ideas = Array.isArray(parsed.ideas) ? parsed.ideas.slice(0, 3) : [];
+    // Defensive: clamp anchorIndex into bounds, pad titleVariants if short.
+    return ideas.map((idea) => ({
+      ...idea,
+      anchorIndex:
+        Number.isInteger(idea.anchorIndex) && idea.anchorIndex >= 0 && idea.anchorIndex < anchors.length
+          ? idea.anchorIndex
+          : -1,
+      titleVariants: Array.isArray(idea.titleVariants)
+        ? idea.titleVariants.slice(0, 5)
+        : [],
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ============================================
+// "STEAL THIS HOOK" — extract one hook line per video
+// ============================================
+
+export type HookSample = {
+  videoId: string;
+  title: string;
+  /** Concatenated transcript text from the video's first ~30 seconds. */
+  firstThirtySeconds: string;
+};
+
+export type ExtractedHook = {
+  videoId: string;
+  hookText: string;
+};
+
+/**
+ * Extract a single hook line per video from the first ~30 seconds of each
+ * sample's transcript. Hooks are quoted verbatim from the transcript when
+ * possible — never paraphrased — and may be empty when the sample is too
+ * short to contain a real hook.
+ */
+export async function extractHooks(opts: {
+  niche: string;
+  samples: HookSample[];
+}): Promise<ExtractedHook[]> {
+  const { niche, samples } = opts;
+  const usable = samples.filter((s) => s.firstThirtySeconds.trim().length > 0);
+  if (usable.length === 0) {return samples.map((s) => ({ videoId: s.videoId, hookText: "" }));}
+
+  const sampleBlocks = usable
+    .map(
+      (s) =>
+        `videoId: ${s.videoId}
+title: ${s.title}
+first_30s: ${s.firstThirtySeconds.replaceAll(/\s+/g, " ").slice(0, 800)}`,
+    )
+    .join("\n\n---\n\n");
+
+  const systemPrompt = `You extract real video hooks from YouTube transcripts.
+
+You will receive the first ~30 seconds of transcript text from several "${niche}" videos. For each video, return a SINGLE hook line — the most pattern-interrupt-y, promise-y, or curiosity-creating sentence the creator actually said.
+
+RULES:
+- Quote the creator. Use their exact wording from the transcript whenever possible. Light cleanup of filler words is OK; rewording the meaning is NOT.
+- One hook per video, max ~140 characters.
+- If a video's first-30s text is too short, generic, or contains no real hook, return hookText: "" for that videoId.
+- Do NOT paraphrase, summarize, or write a new hook.
+- Do NOT use markdown, quotation marks around the hook, or emojis.
+
+Respond with JSON: { "hooks": [ { "videoId": string, "hookText": string } ] }`;
+
+  const response = await complete({
+    messages: [
+      { role: "system", content: withDateContext(systemPrompt) },
+      { role: "user", content: sampleBlocks },
+    ],
+    temperature: 0.2,
+    maxTokens: 800,
+    responseFormat: "json_object",
+  });
+
+  let parsed: { hooks?: ExtractedHook[] };
+  try {
+    parsed = JSON.parse(response.content);
+  } catch {
+    return samples.map((s) => ({ videoId: s.videoId, hookText: "" }));
+  }
+  const byId = new Map<string, string>();
+  for (const h of parsed.hooks ?? []) {
+    if (h && typeof h.videoId === "string" && typeof h.hookText === "string") {
+      byId.set(h.videoId, h.hookText.trim());
+    }
+  }
+  // Always return one entry per input sample so the client knows which videos
+  // were intentionally hookless.
+  return samples.map((s) => ({
+    videoId: s.videoId,
+    hookText: byId.get(s.videoId) ?? "",
+  }));
+}
+
+// ============================================
+// OPPORTUNITY GAP → VIDEO IDEA
+// ============================================
+
+export type GapIdeaResult = {
+  title: string;
+  hook: string;
+  angle: string;
+  suggestedTags: string[];
+};
+
+/**
+ * Generate video ideas from an opportunity gap keyword.
+ * Uses the keyword, trend momentum, gap score, and category
+ * to produce contextual, actionable video ideas.
+ */
+export async function generateIdeaFromGap(opts: {
+  keyword: string;
+  gapScore: number;
+  trendMomentum: string;
+  category: string;
+  count?: number;
+}): Promise<GapIdeaResult[]> {
+  const count = opts.count ?? 3;
+
+  const systemPrompt = `You are a YouTube content strategist. Generate ${count} video ideas based on a trending keyword opportunity.
+
+RULES:
+- Each idea must be specific and actionable — a creator should be able to start filming immediately.
+- Titles must be under 60 characters, compelling, and click-worthy (no clickbait).
+- The hook explains WHY this video will perform well right now.
+- The angle describes the unique perspective or approach.
+- Suggested tags should be 3-5 relevant YouTube tags.
+- Do NOT use markdown in your response.
+- Do NOT make claims about CTR, retention, or ranking performance.
+
+Respond with a JSON object: { "ideas": [{ "title": string, "hook": string, "angle": string, "suggestedTags": string[] }] }`;
+
+  const userPrompt = `Keyword: "${opts.keyword}"
+Trend momentum: ${opts.trendMomentum} (${opts.trendMomentum === "hot" ? "spiking in searches" : opts.trendMomentum === "rising" ? "growing steadily" : "stable demand"})
+Gap score: ${opts.gapScore}/100 (${opts.gapScore >= 80 ? "very low competition" : opts.gapScore >= 50 ? "moderate competition" : "competitive"})
+Category: ${opts.category}
+
+Generate ${count} video ideas for this opportunity.`;
+
+  try {
+    const response = await callLLM(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      {
+        temperature: 0.9,
+        maxTokens: 1500,
+        responseFormat: "json_object",
+      },
+    );
+
+    const parsed = JSON.parse(response.content);
+    const ideas = parsed.ideas ?? parsed;
+
+    if (!Array.isArray(ideas)) {return [];}
+
+    return ideas.slice(0, count).map((idea: Record<string, unknown>) => ({
+      title: String(idea.title ?? ""),
+      hook: String(idea.hook ?? ""),
+      angle: String(idea.angle ?? ""),
+      suggestedTags: Array.isArray(idea.suggestedTags)
+        ? idea.suggestedTags.map(String)
+        : [],
+    }));
+  } catch {
+    return [];
+  }
 }

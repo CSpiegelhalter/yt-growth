@@ -7,6 +7,14 @@
     {
       "path": "/api/cron/keyword-snapshot",
       "schedule": "0 3 * * 1"
+    },
+    {
+      "path": "/api/cron/refresh-opportunities",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-youtube-rising",
+      "schedule": "0 * * * *"
     }
   ]
 }

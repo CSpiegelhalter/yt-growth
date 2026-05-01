@@ -14,6 +14,7 @@ import {
   FullReportParamsSchema,
   streamFullReport,
 } from "@/lib/features/full-report";
+import { resolveSubscription } from "@/lib/features/subscriptions/use-cases/resolveSubscription";
 import { runTranscriptAnalysis } from "@/lib/features/transcript-analysis";
 import { generateSeoAnalysis } from "@/lib/features/video-insights";
 import { callLLM } from "@/lib/llm";
@@ -60,6 +61,19 @@ export const POST = createApiRoute(
       async (_req, _ctx, api, { params, body }) => {
         const { channelId, videoId } = params!;
         const { range, sections: requestedSections } = body!;
+
+        // Subscription gate — Full Report is a paid feature.
+        const subscription = await resolveSubscription(api.userId!);
+        if (!subscription.isActive) {
+          return Response.json(
+            {
+              error: "Subscription required",
+              code: "SUBSCRIPTION_REQUIRED",
+              message: "Full Report requires an active subscription.",
+            },
+            { status: 402 },
+          );
+        }
 
         // T018: Reject if generation already in-flight for this video
         if (inFlightReports.has(videoId)) {

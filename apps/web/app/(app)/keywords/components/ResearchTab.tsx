@@ -368,6 +368,9 @@ function SearchInterestSection({ keyword, trends, loadingTrends }: { keyword: st
       {loadingTrends ? (
         <div className={s.insightCardBody}>
           <div className={s.skeleton} style={{ height: "180px", borderRadius: "8px" }} />
+          <p className={s.insightLoadingNote}>
+            Fetching live Google Trends data. Fresh keywords can take up to a minute.
+          </p>
         </div>
       ) : (trends && trends.interestOverTime.length > 0 ? (
         <div className={s.insightCardBody}>
@@ -817,8 +820,8 @@ export function ResearchTab({
 
       {activeTab === "insights" && (
         <div className={s.insightsTab}>
-          <SearchInterestSection keyword={keyword} trends={trends} loadingTrends={loadingTrends} />
           <YouTubeRankingsSection keyword={keyword} rankings={rankings} loadingRankings={loadingRankings} onSignInClick={onSignInClick} />
+          <SearchInterestSection keyword={keyword} trends={trends} loadingTrends={loadingTrends} />
         </div>
       )}
     </div>

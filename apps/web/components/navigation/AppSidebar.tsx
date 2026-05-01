@@ -28,13 +28,15 @@ type AppSidebarProps = {
   channels: Channel[];
   channelLimit: number;
   onChannelChange: (channelId: string) => void;
+  mobileOpen?: boolean;
 };
 
 /**
  * Desktop sidebar navigation component.
- * Shows primary nav items with icons and labels.
- * Can be collapsed to icons-only mode.
- * Includes channel selector and account link at the bottom.
+ *
+ * Two modes:
+ * - Guest: shows only guestAccessible items + warm sign-in footer
+ * - Authenticated: shows all items + channel selector + account link
  */
 export function AppSidebar({
   activeChannelId,
@@ -45,12 +47,18 @@ export function AppSidebar({
   channels,
   channelLimit,
   onChannelChange,
+  mobileOpen = false,
 }: AppSidebarProps) {
   const pathname = usePathname();
+  const isGuest = channels.length === 0;
+
+  const visibleNavItems = isGuest
+    ? primaryNavItems.filter((item) => item.guestAccessible)
+    : [...primaryNavItems, ...secondaryNavItems];
 
   return (
     <aside
-      className={`${s.sidebar} ${collapsed ? s.collapsed : ""}`}
+      className={`${s.sidebar} ${collapsed ? s.collapsed : ""} ${mobileOpen ? s.mobileOpen : ""}`}
       aria-label="Main navigation"
     >
       {/* Logo */}
@@ -65,7 +73,7 @@ export function AppSidebar({
       {/* Navigation */}
       <nav className={s.nav}>
         <ul className={s.navList}>
-          {[...primaryNavItems, ...secondaryNavItems].map((item) => (
+          {visibleNavItems.map((item) => (
             <NavItemLink
               key={item.id}
               item={item}
@@ -77,43 +85,66 @@ export function AppSidebar({
         </ul>
       </nav>
 
-      {/* Bottom section: Channel selector + Account nav */}
+      {/* Bottom section: different for guest vs authenticated */}
       <div className={s.bottomNav}>
-        {/* Channel Selector */}
-        <SidebarChannelSelector
-          channels={channels}
-          activeChannelId={activeChannelId}
-          channelLimit={channelLimit}
-          collapsed={collapsed}
-          onChannelChange={onChannelChange}
-        />
+        {isGuest ? (
+          /* Guest footer: warm sign-in CTA */
+          <div className={s.guestFooter}>
+            {!collapsed && (
+              <>
+                <p className={s.guestFooterText}>
+                  Have a channel? Sign in for personalized insights.
+                </p>
+                <Link href="/auth/login" className={s.guestFooterCta}>
+                  Sign in
+                </Link>
+              </>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Channel Selector */}
+            <SidebarChannelSelector
+              channels={channels}
+              activeChannelId={activeChannelId}
+              channelLimit={channelLimit}
+              collapsed={collapsed}
+              onChannelChange={onChannelChange}
+            />
 
-        {/* Account link */}
-        <nav aria-label="Account navigation">
-          <ul className={s.navList}>
-            {sidebarBottomItems.map((item) => {
-              const isActive = pathname === item.href;
-              const href = getNavHref(item, activeChannelId);
+            {/* Account link */}
+            <nav aria-label="Account navigation">
+              <ul className={s.navList}>
+                {sidebarBottomItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  const href = getNavHref(item, activeChannelId);
 
-              return (
-                <li key={item.id}>
-                  <Link
-                    href={href}
-                    className={`${s.navLink} ${isActive ? s.navLinkActive : ""}`}
-                    aria-current={isActive ? "page" : undefined}
-                    title={collapsed ? item.label : undefined}
-                    data-nav-id={item.id}
-                  >
-                    <span className={s.navIcon}>
-                      <SidebarIcon itemId={item.id} iconType={item.icon} size={20} />
-                    </span>
-                    {!collapsed && <span className={s.navLabel}>{item.label}</span>}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+                  return (
+                    <li key={item.id}>
+                      <Link
+                        href={href}
+                        className={`${s.navLink} ${isActive ? s.navLinkActive : ""}`}
+                        aria-current={isActive ? "page" : undefined}
+                        title={collapsed ? item.label : undefined}
+                        data-nav-id={item.id}
+                      >
+                        <span className={s.navIcon}>
+                          <SidebarIcon itemId={item.id} iconType={item.icon} size={20} />
+                        </span>
+                        {!collapsed && <span className={s.navLabel}>{item.label}</span>}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+
+            {/* Neutral plan label (no upgrade link) */}
+            {!collapsed && (
+              <div className={s.planLabel}>Free plan</div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Footer: Legal links + Collapse toggle */}

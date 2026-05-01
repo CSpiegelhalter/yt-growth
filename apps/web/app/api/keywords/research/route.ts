@@ -3,129 +3,88 @@
  *
  * Keyword research API using DataForSEO Standard task-based workflow.
  *
- * Auth: Optional (returns needsAuth if not authenticated)
+ * Auth: Optional — guests get real results, rate limited by IP (guestTrending: 5/day)
  * Rate Limited:
- *   - Free users: 5/day
- *   - Pro users: 100/day
+ *   - Guest: 5/day via guestTrending (IP-based)
+ *   - Free users: 5/day (quota-based)
+ *   - Pro users: 100/day (quota-based)
  *   - Cached responses don't consume quota
  */
 
 import { quotaExceededResponse } from "@/lib/api/quota";
-import { jsonError,jsonOk } from "@/lib/api/response";
+import { jsonOk } from "@/lib/api/response";
 import { createApiRoute } from "@/lib/api/route";
 import { type ApiAuthContext,withAuth } from "@/lib/api/withAuth";
+import { withRateLimit } from "@/lib/api/withRateLimit";
 import { withValidation } from "@/lib/api/withValidation";
 import { researchKeywords,ResearchKeywordsBodySchema } from "@/lib/features/keywords";
 import { hasActiveSubscription } from "@/lib/server/auth";
-import { logger } from "@/lib/shared/logger";
-
-// ── IP rate limiting (abuse prevention for unauthenticated) ─────
-
-const ipRateLimiter = new Map<string, { count: number; resetAt: number }>();
-const IP_RATE_LIMIT = 20;
-const IP_RATE_WINDOW_MS = 60 * 1000;
-
-function checkIpRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = ipRateLimiter.get(ip);
-
-  if (!entry || entry.resetAt < now) {
-    ipRateLimiter.set(ip, { count: 1, resetAt: now + IP_RATE_WINDOW_MS });
-    return true;
-  }
-
-  if (entry.count >= IP_RATE_LIMIT) {
-    return false;
-  }
-
-  entry.count++;
-  return true;
-}
-
-function cleanupIpLimiter() {
-  const now = Date.now();
-  for (const [ip, entry] of ipRateLimiter.entries()) {
-    if (entry.resetAt < now) {
-      ipRateLimiter.delete(ip);
-    }
-  }
-}
-
-// ── Route handler ───────────────────────────────────────────────
 
 export const POST = createApiRoute(
   { route: "/api/keywords/research" },
   withAuth(
     { mode: "optional" },
-    withValidation({ body: ResearchKeywordsBodySchema }, async (req, _ctx, api: ApiAuthContext, validated) => {
-      const user = api.user;
-      const { mode, phrase, phrases, database, displayLimit } = validated.body!;
+    withRateLimit(
+      {
+        operation: "guestTrending",
+        identifier: (api) => api.userId ?? api.ip,
+      },
+      withValidation({ body: ResearchKeywordsBodySchema }, async (_req, _ctx, api: ApiAuthContext, validated) => {
+        const user = api.user;
+        const { mode, phrase, phrases, database, displayLimit } = validated.body!;
 
-      // IP rate limiting
-      const forwardedFor = req.headers.get("x-forwarded-for");
-      const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
+        const isPro = user ? hasActiveSubscription(user.subscription) : false;
 
-      cleanupIpLimiter();
-      if (!checkIpRateLimit(ip)) {
-        logger.warn("keywords.ip_rate_limited", { ip });
-        return jsonError({
-          status: 429,
-          code: "RATE_LIMITED",
-          message: "Too many requests. Please slow down.",
-          requestId: api.requestId,
+        const result = await researchKeywords({
+          userId: user?.id ?? null,
+          mode,
+          phrase,
+          phrases,
+          database,
+          displayLimit,
+          isPro,
         });
-      }
 
-      // If not authenticated, return needsAuth
-      if (!user) {
-        return jsonOk(
-          { needsAuth: true, message: "Sign in to search keywords" },
-          { requestId: api.requestId },
-        );
-      }
+        switch (result.type) {
+          case "quota_exceeded": {
+            if (!user) {
+              // Guest hit API rate limit — handled by withRateLimit middleware
+              return jsonOk({ needsAuth: true, message: "Sign up for more keyword searches" }, { requestId: api.requestId });
+            }
+            return quotaExceededResponse({
+              logEvent: "keywords.quota_exceeded",
+              userId: user.id,
+              plan: result.usage.plan,
+              limit: result.usage.limit,
+              used: result.usage.used,
+              resetAt: result.usage.resetAt,
+              requestId: api.requestId,
+            });
+          }
 
-      const isPro = hasActiveSubscription(user.subscription);
+          case "pending": {
+            return jsonOk(result.body, { requestId: api.requestId });
+          }
 
-      const result = await researchKeywords({
-        userId: user.id,
-        mode,
-        phrase,
-        phrases,
-        database,
-        displayLimit,
-        isPro,
-      });
-
-      switch (result.type) {
-        case "quota_exceeded": {
-          return quotaExceededResponse({
-            logEvent: "keywords.quota_exceeded",
-            userId: user.id,
-            plan: result.usage.plan,
-            limit: result.usage.limit,
-            used: result.usage.used,
-            resetAt: result.usage.resetAt,
-            requestId: api.requestId,
-          });
+          case "success": {
+            const headers: Record<string, string> = {};
+            if (!user && api.rateLimitResult) {
+              headers["X-RateLimit-Remaining"] = String(api.rateLimitResult.remaining);
+              headers["X-RateLimit-Reset"] = new Date(api.rateLimitResult.resetAt).toISOString();
+            }
+            return jsonOk(
+              {
+                overview: result.overview,
+                rows: result.rows,
+                meta: result.meta,
+                usage: result.usage,
+              },
+              { requestId: api.requestId, headers },
+            );
+          }
         }
-
-        case "pending": {
-          return jsonOk(result.body, { requestId: api.requestId });
-        }
-
-        case "success": {
-          return jsonOk(
-            {
-              overview: result.overview,
-              rows: result.rows,
-              meta: result.meta,
-              usage: result.usage,
-            },
-            { requestId: api.requestId },
-          );
-        }
-      }
-    }),
+      }),
+    ),
   ),
 );
 

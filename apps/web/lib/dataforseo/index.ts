@@ -97,6 +97,7 @@ export function mapDataForSEOError(err: DataForSEOError): ApiError {
 
 // Re-export from adapter (server-only)
 export {
+  fetchBulkKeywordVolume,
   fetchCombinedKeywordData,
   fetchGoogleTrends,
   fetchKeywordOverview,
@@ -104,6 +105,7 @@ export {
   getGoogleTrendsTask,
   getKeywordsForKeywordsTask,
   getSearchVolumeTask,
+  type GoogleTrendsResponse,
   type KeywordCombinedResponse,
   type KeywordMetrics,
   type KeywordOverviewResponse,

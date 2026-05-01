@@ -1,64 +1,28 @@
 /**
- * Trending Search Page
+ * Trending Page — Command Center
  *
- * Server component that renders the trending niche discovery experience.
- * Protected by the "trending_search" feature flag.
+ * 4-zone discovery experience:
+ * Zone 1: Trending Now ticker (Google Trends)
+ * Zone 2: Opportunity Gaps hero (high volume + low competition)
+ * Zone 3: YouTube Rising Videos
+ * Zone 4: Deep Keyword Research (collapsible)
+ *
+ * Accessible to guests, free, and pro users with progressive depth.
  */
 
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { Suspense } from "react";
-import { z } from "zod";
 
-import { AccessGate } from "@/components/auth/AccessGate";
-import { getAppBootstrapOptional } from "@/lib/server/bootstrap";
 import { BRAND } from "@/lib/shared/brand";
-import { getFeatureFlag } from "@/lib/shared/feature-flags";
 
-import TrendingClient from "./TrendingClient";
+import TrendingCommandCenter from "./TrendingCommandCenter";
 
 export const metadata: Metadata = {
-  title: `Trending Search | ${BRAND.name}`,
+  title: `Trending | ${BRAND.name}`,
   description:
-    "Discover trending niches and rising videos. Find opportunities that match your channel goals.",
-  robots: { index: false, follow: false },
+    "Discover trending topics, opportunity gaps, and rising YouTube videos. Find high-volume, low-competition keywords to grow your channel.",
+  robots: { index: true, follow: true },
 };
 
-export const dynamic = "force-dynamic";
-
-const searchParamsSchema = z.object({
-  channelId: z.string().optional(),
-});
-
-type Props = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
-
-/**
- * TrendingPage - Server component
- *
- * Guards access behind the trending_search feature flag.
- * Returns 404 if flag is disabled.
- */
-export default async function TrendingPage({ searchParams }: Props) {
-  const isEnabled = await getFeatureFlag("trending_search");
-  if (!isEnabled) {
-    notFound();
-  }
-
-  const params = searchParamsSchema.parse(await searchParams);
-  const bootstrap = await getAppBootstrapOptional({ channelId: params.channelId });
-
-  return (
-    <AccessGate bootstrap={bootstrap} requireChannel={false}>
-      {(data) => (
-        <Suspense>
-          <TrendingClient
-            initialMe={data.me}
-            initialActiveChannelId={data.activeChannelId}
-          />
-        </Suspense>
-      )}
-    </AccessGate>
-  );
+export default function TrendingPage() {
+  return <TrendingCommandCenter />;
 }

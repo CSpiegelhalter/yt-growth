@@ -365,6 +365,18 @@ function videoAgeDays(publishedAt: string | undefined): number | null {
   return Math.max(0, Math.round(ms / 86_400_000));
 }
 
+/**
+ * A video is "fresh" if it has been published for less than this many days.
+ * Below this threshold, view counts / engagement / conversion metrics are
+ * not yet meaningful — YouTube hasn't finished distributing the video.
+ * Diagnosing "low views" or "low engagement" for fresh videos is a cop-out.
+ */
+const FRESH_VIDEO_DAYS = 7;
+
+function isFreshVideo(daysSincePublish: number | null): boolean {
+  return daysSincePublish != null && daysSincePublish < FRESH_VIDEO_DAYS;
+}
+
 // ── Prompt Building ─────────────────────────────────────────
 
 function buildBaselinesSection(baselines?: ChannelBaselinesData): string {
@@ -438,27 +450,73 @@ ${buildDemoSection(input.demographicBreakdown)}
 ${competitive ? `\n${competitive}` : ""}`;
 }
 
+// ── Fresh-video prompt (no traffic/engagement diagnoses) ────
+
+/**
+ * Build the system prompt used when a video is too new for traffic-driven
+ * analysis. Routes the LLM toward craft-only feedback (title, description,
+ * tags, duration, packaging) and explicitly bans the cop-out diagnoses
+ * that surface for 0-view fresh videos.
+ */
+function buildFreshVideoSystemPrompt(daysSincePublish: number): string {
+  return `You are a YouTube Growth Strategist analyzing a video that was published ${daysSincePublish} day${daysSincePublish === 1 ? "" : "s"} ago.
+
+--- CRITICAL CONTEXT (READ TWICE) ---
+This video is FRESH. YouTube has not finished distributing it. View counts, engagement rates, CTR, and retention metrics are NOT meaningful yet. Diagnosing them as "low" is a cop-out — the creator already knows the numbers are low; that's not why they opened this report.
+
+Your job: pivot to CRAFT. Evaluate ONLY the things the creator controls and can fix today, while waiting for distribution to play out.
+
+--- YOU MUST NOT ---
+- Produce any card titled "Visibility Crisis", "Engagement Black Hole", "Content Loneliness", "Dead Zone", "Audience Disconnect", or anything implying the problem is low traffic.
+- Use the phrases "low views," "low engagement," "lack of impressions," "lack of marketing," "viewers aren't reaching," "not reaching audience," "needs more time," "come back when," "wait for more views," "promote on social media," or "share on social media."
+- Diagnose the video as failing based on view count, engagement rate, CTR, AVD, retention %, or any volume-dependent metric.
+- Recommend "promote more" or "share with your audience" as a fix. The creator wants concrete craft feedback, not marketing busywork.
+
+--- YOU MUST ---
+- Evaluate title craft: keyword presence, curiosity gap, length, format (numbers / questions / promises). Compare to channel norms when baselines are present.
+- Evaluate description craft: word count, chapter timestamps, links, keyword inclusion. Top creators write 180+ word descriptions with chapters.
+- Evaluate tag coverage: variety, specificity, niche-keyword presence.
+- Evaluate duration fit: is the length appropriate for the format and topic? Compare to baseline if available.
+- Evaluate packaging coherence: do the title, tags, and description tell the same story?
+- For each insight, give a SPECIFIC actionable fix the creator can do today (rewrite the title to include "X", add a chapter timestamp at "Y", etc.).
+
+--- OUTPUT FORMAT (JSON ONLY, NO MARKDOWN) ---
+3-5 insights, each with:
+  - "title": A punchy 3-5 word verdict heading describing a CRAFT lever (e.g. "Title Buries the Hook", "Description Has No Chapters", "Tag Coverage Thin").
+  - "explanation": WHY this craft choice matters for THIS video, citing the specific data you see (the actual title text, the actual word count, the actual tags). 1-2 sentences. Do not lecture about general YouTube best practices — speak to what's in front of you.
+  - "fix": A tactical, specific 1-sentence instruction the creator can do in the YouTube Studio editor today. Be concrete: "Add a chapter at 0:30 labeled 'X'" beats "Add chapter timestamps."
+
+{
+  "insights": [
+    { "title": "...", "explanation": "...", "fix": "..." }
+  ]
+}
+
+CRITICAL: Return ONLY the JSON object. No markdown code blocks, no explanations.`;
+}
+
 // ── Main Use-Case ───────────────────────────────────────────
 
-export async function generateSummary(
-  input: GenerateSummaryInput,
-  callLlm: LlmCallFn,
-): Promise<CoreAnalysis> {
-  const relevantArchetypes = getRelevantArchetypes(
-    input.video,
-    input.derived,
-    input.comparison,
-    input.subscriberBreakdown,
-    input.competitiveContext,
-  );
+/**
+ * Card titles whose meaning depends on traffic volume being meaningful.
+ * Banned outright for fresh videos; permitted for mature videos but flagged
+ * if they appear without baseline backing.
+ */
+const BANNED_TITLES_FRESH = new Set([
+  "visibility crisis",
+  "engagement black hole",
+  "content loneliness",
+  "dead zone",
+  "audience disconnect",
+]);
 
-  const archetypeString = relevantArchetypes
-    .map((a) => `${a.label}: ${a.logic}`)
-    .join("\n");
+function isBannedFreshTitle(title: string): boolean {
+  const norm = title.toLowerCase().trim();
+  return BANNED_TITLES_FRESH.has(norm);
+}
 
-  const videoContext = buildVideoContext(input);
-
-  const systemPrompt = `You are a YouTube Growth Strategist. Your goal is to explain the CAUSAL RELATIONSHIP between data points.
+function buildMatureSystemPrompt(archetypeString: string): string {
+  return `You are a YouTube Growth Strategist. Your goal is to explain the CAUSAL RELATIONSHIP between data points.
 
 --- YOUR MENTAL MODELS (DO NOT REPEAT THESE LABELS) ---
 Use the following logic to shape your response. These archetypes explain how metrics interact. If the data fits one of these patterns, use that logic to write your explanation:
@@ -475,7 +533,10 @@ ${archetypeString}
 5. CONTEXTUAL CALIBRATION: Adjust advice based on channel size. A 5% CTR for a channel with 100 subscribers is a "High-Signal Win," while 5% for a 1M sub channel is "Saturation." Do not give enterprise-level advice to nano-creators.
 6. LIMIT TO 3-5 INSIGHTS: Focus on the most important findings. Quality over quantity.
 7. BASELINE AWARENESS: The user's 30-day baselines are provided. Use them to determine if metrics are outliers for THIS channel. A 2% CTR on a channel with 1.2% baseline is a "Breakthrough" — not "low CTR."
-8. RECENCY AWARENESS: You are given the video's publish date and today's date. A video posted 1-3 days ago has NOT had time to accumulate views — do NOT diagnose "low views" as a problem. Factor video age into every metric interpretation. Only flag view counts as concerning after 7+ days.
+
+--- BANNED COP-OUTS ---
+- Never produce a card titled "Visibility Crisis", "Engagement Black Hole", "Content Loneliness", "Dead Zone", or "Audience Disconnect". These are vague diagnoses that creators can't act on. Be specific.
+- Never recommend "promote on social media" or "share with your audience" as a fix. Suggest concrete craft changes — a different title, a clearer description, a tighter intro.
 
 --- OUTPUT FORMAT (JSON ONLY, NO MARKDOWN) ---
 Each insight MUST have exactly three parts:
@@ -490,6 +551,30 @@ Each insight MUST have exactly three parts:
 }
 
 CRITICAL: Return ONLY the JSON object. No markdown code blocks, no explanations.`;
+}
+
+export async function generateSummary(
+  input: GenerateSummaryInput,
+  callLlm: LlmCallFn,
+): Promise<CoreAnalysis> {
+  const ageDays = videoAgeDays(input.video.publishedAt);
+  const fresh = isFreshVideo(ageDays);
+
+  const systemPrompt = fresh
+    ? buildFreshVideoSystemPrompt(ageDays!)
+    : buildMatureSystemPrompt(
+        getRelevantArchetypes(
+          input.video,
+          input.derived,
+          input.comparison,
+          input.subscriberBreakdown,
+          input.competitiveContext,
+        )
+          .map((a) => `${a.label}: ${a.logic}`)
+          .join("\n"),
+      );
+
+  const videoContext = buildVideoContext(input);
 
   try {
     const result = await callLlm(
@@ -504,6 +589,7 @@ CRITICAL: Return ONLY the JSON object. No markdown code blocks, no explanations.
     const items = parsed.insights ?? [];
     return items
       .filter((i) => i.title && i.explanation && i.fix)
+      .filter((i) => !(fresh && isBannedFreshTitle(i.title)))
       .slice(0, 5);
   } catch (error) {
     throw new VideoInsightError(

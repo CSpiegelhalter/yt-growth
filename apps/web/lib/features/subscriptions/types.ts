@@ -17,8 +17,7 @@ export type FeatureKey =
   | "competitor_video_analysis"
   | "idea_generate"
   | "channel_sync"
-  | "keyword_research"
-  | "tag_generate";
+  | "keyword_research";
 
 // ── Plan Limits Configuration ───────────────────────────────
 
@@ -33,7 +32,6 @@ export const FREE_LIMITS: PlanLimits = {
   idea_generate: 10,
   channel_sync: 3,
   keyword_research: 5,
-  tag_generate: 5,
 };
 
 export const PRO_LIMITS: PlanLimits = {
@@ -43,7 +41,6 @@ export const PRO_LIMITS: PlanLimits = {
   idea_generate: 200,
   channel_sync: 50,
   keyword_research: 100,
-  tag_generate: 200,
 };
 
 /** Features completely locked on a given plan (not just usage-limited). */

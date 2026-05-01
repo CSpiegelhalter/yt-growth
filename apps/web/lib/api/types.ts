@@ -9,6 +9,8 @@ export type ApiRequestContext = {
   userId?: number;
   channelId?: string;
   videoId?: string;
+  /** Populated by withRateLimit — use to read remaining count without re-incrementing */
+  rateLimitResult?: { success: boolean; remaining: number; resetAt: number };
 };
 
 export type NextRouteContext<P> = {

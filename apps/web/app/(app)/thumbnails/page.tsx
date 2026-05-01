@@ -1,8 +1,9 @@
 /**
- * Thumbnail Generator Page
+ * Thumbnail Generator Page — UNUSED, revisit later.
  *
  * Server component that bootstraps data for ThumbnailsClient.
  * Protected by the "thumbnail_generation" feature flag.
+ * Hidden from nav as of 2026-03-25 PLG gating refactor.
  */
 
 import { notFound } from "next/navigation";

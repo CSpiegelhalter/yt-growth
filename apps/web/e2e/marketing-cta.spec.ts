@@ -67,34 +67,34 @@ test.describe("Marketing CTAs - Videos Preview Flow", () => {
     ).not.toBeVisible();
   });
 
-  test("static hero CTA on marketing pages links to /videos", async ({
+  test("static hero CTA on marketing pages links to /dashboard", async ({
     page,
   }) => {
     // Visit homepage
     await page.goto("/");
 
     // Look for the static CTA that should exist (HeroStaticCTAs component)
-    const staticCta = page.locator('a[href="/videos"]:has-text("analyzing")');
+    const staticCta = page.locator('a[href="/dashboard"]:has-text("analyzing")');
 
-    // If static CTA exists (some pages use it), verify it links to videos
+    // If static CTA exists (some pages use it), verify it links to dashboard
     if (await staticCta.count() > 0) {
       await expect(staticCta.first()).toBeVisible();
       const href = await staticCta.first().getAttribute("href");
-      expect(href).toBe("/videos");
+      expect(href).toBe("/dashboard");
     }
   });
 
-  test("learn page CTA links to /videos", async ({ page }) => {
+  test("learn page CTA links to /dashboard", async ({ page }) => {
     // Visit the learn page
     await page.goto("/learn");
     await page.waitForLoadState("networkidle");
 
     // Find the primary CTA button in the bottom CTA section
-    const ctaSection = page.locator('a[href="/videos"]:has-text("Get Started")');
+    const ctaSection = page.locator('a[href="/dashboard"]:has-text("Get Started")');
 
-    // Verify it exists and links to videos
+    // Verify it exists and links to dashboard
     await expect(ctaSection).toBeVisible();
     const href = await ctaSection.getAttribute("href");
-    expect(href).toBe("/videos");
+    expect(href).toBe("/dashboard");
   });
 });

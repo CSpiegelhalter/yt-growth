@@ -81,3 +81,8 @@
 .statLine {
   margin: 0;
 }
+
+.actionSlot {
+  display: flex;
+  margin-top: var(--space-1);
+}

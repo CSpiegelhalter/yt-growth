@@ -4,12 +4,14 @@ import { BRAND } from "@/lib/shared/brand";
 
 import { Logo } from "./Logo";
 import s from "./StaticNav.module.css";
+import { StaticNavCta } from "./StaticNavCta";
 
 /**
  * Marketing top nav for static pages (landing, learn, learn/*,
  * privacy, terms, contact).
  *
- * Server component — no client JS needed.
+ * Server component — CTA is a server component that reads the session
+ * and renders "Dashboard" → /dashboard for signed-in users from first paint.
  */
 export function StaticNav() {
   return (
@@ -26,9 +28,7 @@ export function StaticNav() {
           <Link href="/pricing" className={s.navLink}>
             Pricing
           </Link>
-          <Link href="/auth/login?callbackUrl=/dashboard" className={s.ctaBtn}>
-            Get Started
-          </Link>
+          <StaticNavCta />
         </div>
       </nav>
     </header>

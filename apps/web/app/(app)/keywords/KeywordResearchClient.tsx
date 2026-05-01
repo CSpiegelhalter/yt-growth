@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { AuthModal } from "@/components/auth";
 import { PageContainer } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
@@ -9,12 +11,54 @@ import { KeywordPaywall } from "./components/KeywordPaywall";
 import { KeywordSearchForm } from "./components/KeywordSearchForm";
 import { ResearchTab } from "./components/ResearchTab";
 import { SearchHistoryBar } from "./components/SearchHistoryBar";
+import { TrendingNowBar } from "./components/TrendingNowBar";
 import { DATABASE_OPTIONS } from "./constants";
 import s from "./keywords.module.css";
 import { handleKeyDown, useKeywordInput } from "./use-keyword-input";
 import { useKeywordSearch } from "./use-keyword-search";
 
-export function KeywordResearchClient() {
+type Props = {
+  hideTrendingBar?: boolean;
+  initialKeyword?: string;
+};
+
+function pickCurrentKeyword(searched: string[], current: string[]): string {
+  return searched[0] || current[0] || "";
+}
+
+/**
+ * Run an initial search exactly once when the page mounts with a `?q=` param.
+ * The latest executeSearch + database are stashed in refs (updated in effects,
+ * not during render) so the trigger effect's dep list stays just the keyword.
+ */
+function useAutoRunInitialKeyword(
+  initialKeyword: string | undefined,
+  executeSearch: (keywords: string[], database: string) => void,
+  database: string,
+) {
+  const executeSearchRef = useRef(executeSearch);
+  const databaseRef = useRef(database);
+  const ranRef = useRef(false);
+
+  useEffect(() => {
+    executeSearchRef.current = executeSearch;
+  });
+  useEffect(() => {
+    databaseRef.current = database;
+  });
+
+  useEffect(() => {
+    if (ranRef.current) {return;}
+    if (!initialKeyword) {return;}
+    ranRef.current = true;
+    executeSearchRef.current([initialKeyword], databaseRef.current);
+  }, [initialKeyword]);
+}
+
+export function KeywordResearchClient({
+  hideTrendingBar = false,
+  initialKeyword,
+}: Props = {}) {
   const { toast } = useToast();
 
   const input = useKeywordInput(toast);
@@ -73,8 +117,17 @@ export function KeywordResearchClient() {
     search.resetResults();
   }
 
+  function handleTrendingTopicClick(query: string) {
+    input.collectAndClearKeywords();
+    executeSearch([query], input.database);
+  }
+
+  useAutoRunInitialKeyword(initialKeyword, executeSearch, input.database);
+
   return (
     <PageContainer>
+      {!hideTrendingBar && <TrendingNowBar onTopicClick={handleTrendingTopicClick} />}
+
       <KeywordSearchForm
         inputRef={input.inputRef}
         inputValue={input.inputValue}
@@ -109,7 +162,7 @@ export function KeywordResearchClient() {
 
       {(search.hasResults || search.isLoading) && !search.error && (
         <ResearchTab
-          keyword={input.searchedKeywords[0] || input.currentSearch[0] || ""}
+          keyword={pickCurrentKeyword(input.searchedKeywords, input.currentSearch)}
           relatedKeywords={search.relatedKeywords}
           rankings={search.rankings}
           trends={search.trends}

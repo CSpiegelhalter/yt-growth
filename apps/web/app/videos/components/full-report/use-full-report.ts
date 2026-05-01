@@ -22,7 +22,16 @@ type Action =
   | { type: "fatalError" };
 
 const SECTION_KEYS: ReportSectionKey[] = [
-  "videoAudit", "discoverability", "promotionPlaybook", "retention", "hookAnalysis",
+  "videoAudit",
+  "discoverability",
+  "promotionPlaybook",
+  "retention",
+  "hookAnalysis",
+  "scoreStrip",
+  "retentionCurve",
+  "verdict",
+  "priorities",
+  "signals",
 ];
 
 function reducer(state: State, action: Action): State {

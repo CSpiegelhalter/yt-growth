@@ -3,11 +3,14 @@ import type { ReactNode } from "react";
 import type { ReportSectionKey } from "@/lib/features/full-report";
 
 import { DiscoverabilityAccordion } from "./components/discoverability/DiscoverabilityAccordion";
-import hookStyles from "./components/hook-analysis/hook-analysis.module.css";
-import { HookAnalysisSection } from "./components/hook-analysis/HookAnalysisSection";
+import { PrioritiesList } from "./components/priorities/PrioritiesList";
 import { PromotionSection } from "./components/reach/PromotionSection";
-import { RetentionTimeline } from "./components/retention/RetentionTimeline";
+import { RetentionCurveChart } from "./components/retention/RetentionCurveChart";
+import { ScoreStrip } from "./components/score-strip/ScoreStrip";
+import { SignalsPanel } from "./components/signals/SignalsPanel";
+import { VerdictBand } from "./components/verdict/VerdictBand";
 import { VideoAuditBar } from "./components/video-audit/VideoAuditBar";
+import { WinsBand } from "./components/wins/WinsBand";
 import s from "./full-report.module.css";
 import type { PartialFullReport, SectionState } from "./full-report-types";
 import { SectionError } from "./SectionError";
@@ -18,12 +21,6 @@ import { ReportAccordion } from "./ui/ReportAccordion";
 type VideoFullReportProps = {
   report: PartialFullReport;
   onRetrySection?: (key: ReportSectionKey) => void;
-};
-
-const SCORE_CLASS: Record<string, string> = {
-  Strong: "hookStrong",
-  "Needs Work": "hookNeedsWork",
-  Weak: "hookWeak",
 };
 
 function renderSection<T>(
@@ -48,54 +45,76 @@ function renderSection<T>(
 }
 
 export function VideoFullReport({ report, onRetrySection }: VideoFullReportProps) {
-  const hookData = report.hookAnalysis;
-  const hookScore = hookData.status === "done" && hookData.data
-    ? hookData.data.score
-    : null;
-
-  const scoreClass = hookScore
-    ? (hookStyles[SCORE_CLASS[hookScore] ?? "hookNeedsWork"] ?? "")
-    : "";
-
-  const hookBadge = hookScore
-    ? (
-        <span className={`${hookStyles.hookScoreBadge} ${scoreClass}`}>
-          {hookScore}
-        </span>
-      )
-    : null;
+  const auditDone =
+    report.videoAudit.status === "done" ? report.videoAudit.data : null;
+  const scoreStripDone =
+    report.scoreStrip.status === "done" ? report.scoreStrip.data : null;
 
   return (
     <div className={s.reportStack}>
-      {renderSection(report.videoAudit, "videoAudit", (data) => (
-        <VideoAuditBar audit={data} />
-      ), onRetrySection)}
+      {/* ── Verdict band ── */}
+      {renderSection(
+        report.verdict,
+        "verdict",
+        (data) => <VerdictBand verdict={data} />,
+        onRetrySection,
+      )}
 
-      <ReportAccordion title="Discoverability" variant="section">
+      {/* ── Score strip ── */}
+      {renderSection(
+        report.scoreStrip,
+        "scoreStrip",
+        (data) => <ScoreStrip data={data} />,
+        onRetrySection,
+      )}
+
+      {/* ── Top 3 priorities ── */}
+      {renderSection(
+        report.priorities,
+        "priorities",
+        (data) => <PrioritiesList priorities={data} />,
+        onRetrySection,
+      )}
+
+      {/* ── Patterns we noticed (deterministic cross-source signals) ── */}
+      {renderSection(
+        report.signals,
+        "signals",
+        (data) => <SignalsPanel data={data} />,
+        onRetrySection,
+      )}
+
+      {/* ── Retention curve (chart + annotated drop-offs) ── */}
+      {renderSection(
+        report.retentionCurve,
+        "retentionCurve",
+        (data) => <RetentionCurveChart data={data} />,
+        onRetrySection,
+      )}
+
+      {/* ── What's working (always visible) ── */}
+      <WinsBand audit={auditDone} scoreStrip={scoreStripDone} />
+
+      {/* ── Progressive disclosure ── */}
+      <ReportAccordion title="Title alternatives, description, tags" variant="section">
         {renderSection(report.discoverability, "discoverability", (data) => (
           <DiscoverabilityAccordion discoverability={data} />
         ), onRetrySection)}
       </ReportAccordion>
 
       <ReportAccordion
-        title="SEO & Social Reach"
+        title="Promotion drafts"
         variant="section"
-        badge={<InfoTooltip text="Recommendations for search optimization, social sharing, and community promotion" />}
+        badge={<InfoTooltip text="Pre-written share copy for social, community, collaboration, and SEO promotion." />}
       >
         {renderSection(report.promotionPlaybook, "promotionPlaybook", (data) => (
           <PromotionSection actions={data} />
         ), onRetrySection)}
       </ReportAccordion>
 
-      <ReportAccordion title="Why Viewers Leave" variant="section">
-        {renderSection(report.retention, "retention", (data) => (
-          <RetentionTimeline retention={data} />
-        ), onRetrySection)}
-      </ReportAccordion>
-
-      <ReportAccordion title="Opening Strategy" variant="section" badge={hookBadge}>
-        {renderSection(report.hookAnalysis, "hookAnalysis", (data) => (
-          <HookAnalysisSection hookAnalysis={data} />
+      <ReportAccordion title="Full audit checklist" variant="section">
+        {renderSection(report.videoAudit, "videoAudit", (data) => (
+          <VideoAuditBar audit={data} />
         ), onRetrySection)}
       </ReportAccordion>
     </div>

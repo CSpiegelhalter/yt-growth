@@ -140,6 +140,154 @@ export async function fetchVideoSnippetByApiKey(
 }
 
 // ============================================
+// API-Key Full Video Details (public/unauthenticated routes)
+// ============================================
+
+/**
+ * Fetch full video details using API-key auth (no OAuth required).
+ * Returns the same VideoDetails shape as the OAuth version.
+ * Used by the public analyze endpoint for anonymous users.
+ */
+export async function fetchVideoDetailsByApiKey(
+  videoId: string,
+): Promise<VideoDetails | null> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    throw new ApiError({
+      code: "INTERNAL",
+      status: 500,
+      message: "YouTube API is not configured.",
+    });
+  }
+
+  const cred = { kind: "apiKey" as const, apiKey };
+  const url = new URL(`${YOUTUBE_DATA_API}/videos`);
+  url.searchParams.set("part", "snippet,contentDetails,statistics");
+  url.searchParams.set("id", videoId);
+
+  const data = await youtubeFetch<{
+    items?: Array<{
+      id: string;
+      snippet: {
+        title: string;
+        description: string;
+        publishedAt: string;
+        channelId: string;
+        channelTitle: string;
+        tags?: string[];
+        categoryId: string;
+        thumbnails: {
+          maxres?: { url: string };
+          high?: { url: string };
+          default?: { url: string };
+        };
+      };
+      contentDetails: { duration: string };
+      statistics: {
+        viewCount?: string;
+        likeCount?: string;
+        commentCount?: string;
+      };
+    }>;
+  }>(cred, url.toString());
+
+  const item = data.items?.[0];
+  if (!item) {return null;}
+
+  return {
+    videoId: item.id,
+    title: decodeHtmlEntities(item.snippet.title),
+    description: decodeHtmlEntities(item.snippet.description),
+    publishedAt: item.snippet.publishedAt,
+    channelId: item.snippet.channelId,
+    channelTitle: decodeHtmlEntities(item.snippet.channelTitle),
+    tags: item.snippet.tags ?? [],
+    category: item.snippet.categoryId,
+    thumbnailUrl: pickBestThumbnail(item.snippet.thumbnails),
+    durationSec: parseDuration(item.contentDetails.duration),
+    viewCount: parseIntStat(item.statistics.viewCount),
+    likeCount: parseIntStat(item.statistics.likeCount),
+    commentCount: parseIntStat(item.statistics.commentCount),
+  };
+}
+
+// ============================================
+// API-Key Video Comments (public/unauthenticated routes)
+// ============================================
+
+/**
+ * Fetch video comments using API-key auth (no OAuth required).
+ * Returns the same FetchCommentsResult shape as the OAuth version.
+ */
+export async function fetchVideoCommentsByApiKey(
+  videoId: string,
+  maxResults: number = 50,
+): Promise<FetchCommentsResult> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    return { comments: [], error: "YouTube API not configured" };
+  }
+
+  const cred = { kind: "apiKey" as const, apiKey };
+  const url = new URL(`${YOUTUBE_DATA_API}/commentThreads`);
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("videoId", videoId);
+  url.searchParams.set("order", "relevance");
+  url.searchParams.set("maxResults", String(Math.min(maxResults, 100)));
+
+  try {
+    const data = await youtubeFetch<{
+      items?: Array<{
+        id: string;
+        snippet: {
+          topLevelComment: {
+            id: string;
+            snippet: {
+              textDisplay: string;
+              textOriginal: string;
+              likeCount: number;
+              authorDisplayName: string;
+              authorChannelId?: { value: string };
+              publishedAt: string;
+            };
+          };
+          totalReplyCount: number;
+        };
+      }>;
+      error?: {
+        code: number;
+        message: string;
+        errors?: Array<{ reason: string }>;
+      };
+    }>(cred, url.toString());
+
+    if (!data.items) {
+      if (data.error?.errors?.some((e) => e.reason === "commentsDisabled")) {
+        return { comments: [], commentsDisabled: true };
+      }
+      return {
+        comments: [],
+        error: data.error?.message || "No comments found",
+      };
+    }
+
+    const comments = data.items.map((item) => ({
+      commentId: item.snippet.topLevelComment.id,
+      text: item.snippet.topLevelComment.snippet.textOriginal,
+      likeCount: item.snippet.topLevelComment.snippet.likeCount,
+      authorName: item.snippet.topLevelComment.snippet.authorDisplayName,
+      authorChannelId: item.snippet.topLevelComment.snippet.authorChannelId?.value,
+      publishedAt: item.snippet.topLevelComment.snippet.publishedAt,
+      replyCount: item.snippet.totalReplyCount,
+    }));
+
+    return { comments };
+  } catch {
+    return { comments: [], error: "Failed to fetch comments" };
+  }
+}
+
+// ============================================
 // Channel Operations
 // ============================================
 
@@ -787,4 +935,131 @@ export async function fetchVideoComments(
 
     return { comments: [], error: message };
   }
+}
+
+// ============================================
+// Trending / Most Popular Videos (API-key, public)
+// ============================================
+
+function formatDurationForDisplay(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+export type TrendingVideo = {
+  videoId: string;
+  title: string;
+  channelName: string;
+  channelId: string;
+  thumbnailUrl: string;
+  duration: string;
+  publishedAt: string;
+  viewCount: number;
+  viewVelocity: number;
+  categoryId: string;
+};
+
+type MostPopularItem = {
+  id: string;
+  snippet: {
+    title: string;
+    channelTitle: string;
+    channelId: string;
+    publishedAt: string;
+    thumbnails?: { medium?: { url: string }; high?: { url: string } };
+    categoryId?: string;
+  };
+  statistics: {
+    viewCount?: string;
+    likeCount?: string;
+    commentCount?: string;
+  };
+  contentDetails: {
+    duration: string;
+  };
+};
+
+type MostPopularResponse = {
+  items: MostPopularItem[];
+  pageInfo: { totalResults: number };
+};
+
+/**
+ * Fetch YouTube's most popular (trending) videos.
+ * Uses API key mode — no OAuth needed.
+ * Costs 1 quota unit per call.
+ */
+export async function fetchTrendingVideos(options?: {
+  regionCode?: string;
+  videoCategoryId?: string;
+  maxResults?: number;
+}): Promise<TrendingVideo[]> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) throw new ApiError({ code: "INTERNAL", status: 500, message: "YOUTUBE_API_KEY not set" });
+
+  const params = new URLSearchParams({
+    part: "snippet,statistics,contentDetails",
+    chart: "mostPopular",
+    regionCode: options?.regionCode ?? "US",
+    maxResults: String(options?.maxResults ?? 50),
+  });
+  if (options?.videoCategoryId) {
+    params.set("videoCategoryId", options.videoCategoryId);
+  }
+
+  const url = `${YOUTUBE_DATA_API}/videos?${params.toString()}`;
+  const cred = { kind: "apiKey" as const, apiKey };
+  const data = await youtubeFetch<MostPopularResponse>(cred, url);
+
+  const now = Date.now();
+  return (data.items ?? [])
+    .map((item): TrendingVideo | null => {
+      const publishedMs = new Date(item.snippet.publishedAt).getTime();
+      const hoursOld = (now - publishedMs) / 3_600_000;
+
+      // Exclude videos < 1 hour or > 72 hours old
+      if (hoursOld < 1 || hoursOld > 72) return null;
+
+      const viewCount = Number(item.statistics.viewCount ?? 0);
+      return {
+        videoId: item.id,
+        title: decodeHtmlEntities(item.snippet.title),
+        channelName: item.snippet.channelTitle,
+        channelId: item.snippet.channelId,
+        thumbnailUrl: item.snippet.thumbnails?.high?.url ?? item.snippet.thumbnails?.medium?.url ?? "",
+        duration: formatDurationForDisplay(parseDuration(item.contentDetails.duration)),
+        publishedAt: item.snippet.publishedAt,
+        viewCount,
+        viewVelocity: Math.round(viewCount / hoursOld),
+        categoryId: item.snippet.categoryId ?? "",
+      };
+    })
+    .filter((v): v is TrendingVideo => v !== null)
+    .sort((a, b) => b.viewVelocity - a.viewVelocity);
+}
+
+export type VideoCategory = { id: string; title: string };
+
+type CategoryListResponse = {
+  items: Array<{ id: string; snippet: { title: string } }>;
+};
+
+/** Fetch YouTube video category names. Cache-safe — categories rarely change. */
+export async function fetchVideoCategories(
+  regionCode = "US",
+): Promise<VideoCategory[]> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) throw new ApiError({ code: "INTERNAL", status: 500, message: "YOUTUBE_API_KEY not set" });
+
+  const url = `${YOUTUBE_DATA_API}/videoCategories?part=snippet&regionCode=${regionCode}`;
+  const cred = { kind: "apiKey" as const, apiKey };
+  const data = await youtubeFetch<CategoryListResponse>(cred, url);
+
+  return (data.items ?? []).map((item) => ({
+    id: item.id,
+    title: item.snippet.title,
+  }));
 }

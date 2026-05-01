@@ -75,6 +75,7 @@ export async function gatherReportData(
     competitiveContext: competitiveResult,
     hasCaptions: transcriptResult.hasCaptions,
     videoSignals,
+    retentionCurveRaw: retentionCurve,
   };
 }
 

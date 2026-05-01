@@ -16,6 +16,19 @@ export type GoogleAccount = {
 };
 
 /**
+ * Credential for YouTube API calls — either OAuth (user-specific) or API key (anonymous).
+ *
+ *   ┌─────────────────────────────────────────────┐
+ *   │            YouTubeCredential                 │
+ *   │  kind: "oauth"  → GoogleAccount (per-user)  │
+ *   │  kind: "apiKey" → system API key (anonymous) │
+ *   └─────────────────────────────────────────────┘
+ */
+export type YouTubeCredential =
+  | { kind: "oauth"; account: GoogleAccount }
+  | { kind: "apiKey"; apiKey: string };
+
+/**
  * Video from channel uploads with full details.
  */
 export type YouTubeVideo = {

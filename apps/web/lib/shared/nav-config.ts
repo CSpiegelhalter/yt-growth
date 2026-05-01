@@ -2,9 +2,8 @@
  * Centralized navigation configuration for the app shell.
  * All nav items, their routes, icons, and matching logic are defined here.
  *
- * Some nav items are gated behind feature flags. Use the async
- * `getFilteredNavItems()` function to get nav items with feature-gated
- * items filtered out.
+ * Guest-accessible items are shown to unauthenticated users in the
+ * guest sidebar variant. All other items require authentication.
  */
 
 export type NavItem = {
@@ -14,6 +13,8 @@ export type NavItem = {
   icon: NavIconType;
   /** If true, this item requires channel context (channelId query param) */
   channelScoped?: boolean;
+  /** If true, this item is accessible to unauthenticated guests */
+  guestAccessible?: boolean;
   /** Custom match function for highlighting active state */
   match?: (pathname: string) => boolean;
 };
@@ -46,6 +47,7 @@ export const primaryNavItems: NavItem[] = [
     href: "/dashboard",
     icon: "home",
     channelScoped: true,
+    guestAccessible: true,
   },
   {
     id: "videos",
@@ -62,22 +64,27 @@ export const primaryNavItems: NavItem[] = [
     href: "/analyze",
     icon: "search",
     channelScoped: false,
-    match: (pathname) => pathname === "/analyze",
+    guestAccessible: true,
+    match: (pathname) =>
+      pathname === "/analyze" || pathname.startsWith("/analyze/"),
   },
   {
-    id: "tags",
-    label: "Tags",
-    href: "/tags",
-    icon: "tag",
+    id: "trending",
+    label: "Trending",
+    href: "/trending",
+    icon: "trending",
     channelScoped: false,
-    match: (pathname) => pathname === "/tags" || pathname.startsWith("/tags/"),
+    guestAccessible: true,
+    match: (pathname) =>
+      pathname === "/trending" || pathname.startsWith("/trending/"),
   },
   {
     id: "keywords",
     label: "Keywords",
     href: "/keywords",
-    icon: "search",
+    icon: "tag",
     channelScoped: false,
+    guestAccessible: true,
     match: (pathname) =>
       pathname === "/keywords" || pathname.startsWith("/keywords/"),
   },
@@ -121,4 +128,3 @@ export function getNavHref(
   }
   return `${item.href}?channelId=${activeChannelId}`;
 }
-

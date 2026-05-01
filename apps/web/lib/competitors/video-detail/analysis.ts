@@ -154,7 +154,7 @@ export async function runCommentsAnalysis(
 async function runMainAnalysis(
   video: CompetitorVideo,
   videoDetails: VideoDetailsResult,
-  channelTitle: string,
+  channelTitle: string | null,
   commentsAnalysis: CompetitorCommentsAnalysis | undefined,
   ctx: RequestContext
 ): Promise<{
@@ -243,7 +243,7 @@ async function runMainAnalysis(
 export async function runParallelAnalysis(
   video: CompetitorVideo,
   videoDetails: VideoDetailsResult,
-  channelTitle: string,
+  channelTitle: string | null,
   commentsForLLM: Array<{ text: string; likeCount: number; authorName: string }> | null,
   partialCommentsAnalysis: CompetitorCommentsAnalysis | undefined,
   ctx: RequestContext

@@ -49,8 +49,12 @@ const BASE_RETRY_DELAY_MS = 1000;
 const TASK_POLL_MAX_WAIT_MS = 8000;
 const TASK_POLL_INTERVALS_MS = [500, 1000, 2000, 3000];
 
-const TRENDS_POLL_MAX_WAIT_MS = 30_000;
-const TRENDS_POLL_INTERVALS_MS = [1000, 2000, 3000, 4000, 5000];
+// Keep the server-side wait short — DataForSEO's Google Trends task can take
+// 10–60s, and tying up our HTTP connection for that long both feels slow on
+// the wire and risks LB/edge timeouts. Bail fast and let the client take over
+// via task polling against /api/keywords/task/[id].
+const TRENDS_POLL_MAX_WAIT_MS = 4_000;
+const TRENDS_POLL_INTERVALS_MS = [1000, 2000, 3000];
 
 // ============================================
 // TYPES
@@ -1328,4 +1332,71 @@ async function fetchWithRetry<T>(
   }
 
   throw lastError || new DataForSEOError("Request failed", "NETWORK_ERROR");
+}
+
+// ============================================
+// BULK KEYWORD VOLUME (for Trending Command Center cron)
+// ============================================
+
+/**
+ * Fetch search volume + metrics for a batch of keywords.
+ * Uses the same task-based flow as fetchKeywordOverview but accepts
+ * multiple keywords (up to 1000) and uses a longer polling window
+ * suitable for cron job execution (not interactive UI).
+ *
+ * Returns KeywordMetrics[] with volume, difficulty, competition,
+ * CPC, trend[], categories, and intent for each keyword.
+ */
+export async function fetchBulkKeywordVolume(
+  keywords: string[],
+  location = "us",
+  maxWaitMs = 25_000,
+): Promise<KeywordMetrics[]> {
+  if (keywords.length === 0) return [];
+
+  const locationInfo = validateLocation(location);
+
+  const postResult = await postSearchVolumeTask({
+    keywords,
+    location: locationInfo.region,
+  });
+
+  const taskId = postResult.taskId;
+  const pollIntervals = [1000, 2000, 3000, 4000, 5000];
+  const startTime = Date.now();
+  let attemptIndex = 0;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const waitTime = pollIntervals[attemptIndex] ?? pollIntervals.at(-1);
+    await sleep(waitTime ?? 2000);
+
+    const result = await getSearchVolumeTask(taskId);
+
+    if (result.status === "completed") {
+      logger.info("dataforseo.bulk_volume_completed", {
+        taskId,
+        keywordCount: result.data?.length ?? 0,
+        waitTimeMs: Date.now() - startTime,
+      });
+      return result.data ?? [];
+    }
+
+    if (result.status === "error") {
+      throw new DataForSEOError(
+        result.error || "Bulk volume task failed",
+        "API_ERROR",
+        taskId,
+      );
+    }
+
+    attemptIndex++;
+  }
+
+  logger.warn("dataforseo.bulk_volume_timeout", {
+    taskId,
+    waitTimeMs: Date.now() - startTime,
+    keywordCount: keywords.length,
+  });
+
+  return [];
 }

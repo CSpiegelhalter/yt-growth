@@ -395,7 +395,10 @@ function resolveListType(
 export async function discoverCompetitors(
   input: DiscoverCompetitorsInput,
 ): Promise<DiscoverCompetitorsResult> {
-  await assertActiveSubscription(input.userId);
+  // Skip subscription check for anonymous guests (rate-limited at API layer)
+  if (input.userId !== null) {
+    await assertActiveSubscription(input.userId);
+  }
 
   const filters: DiscoveryFilters = { ...DEFAULT_FILTERS, ...input.filters };
   const window = filters.timeWindow;

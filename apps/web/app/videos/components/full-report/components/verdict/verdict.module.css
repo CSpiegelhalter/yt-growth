@@ -1,0 +1,52 @@
+/* ── Verdict Band ──
+   No card chrome — verdict reads as a headline, not a unit. */
+
+.band {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-2) 0 var(--space-4);
+}
+
+.dot {
+  border-radius: 50%;
+  flex-shrink: 0;
+  height: 12px;
+  margin-top: 6px;
+  width: 12px;
+}
+
+.dotCritical {
+  background: var(--color-hot-rose);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-hot-rose) 18%, transparent);
+}
+
+.dotUnder {
+  background: var(--color-warm-gold);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-warm-gold) 18%, transparent);
+}
+
+.dotOnTrack {
+  background: var(--color-cool-sky);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-cool-sky) 18%, transparent);
+}
+
+.dotOver {
+  background: var(--color-leaf-green);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-leaf-green) 18%, transparent);
+}
+
+.headline {
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .headline {
+    font-size: var(--text-xl);
+  }
+}

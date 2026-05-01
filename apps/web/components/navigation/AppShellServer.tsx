@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiFetchJson, isApiClientError } from "@/lib/client/api";
 import { safeGetItem, safeSetItem } from "@/lib/client/safeLocalStorage";
+import { useToast } from "@/components/ui/Toast";
 import type { SerializableNavItem } from "@/lib/server/nav-config.server";
 import { useSyncActiveChannel } from "@/lib/use-sync-active-channel";
 
@@ -49,6 +50,7 @@ export function AppShellServer({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { toast } = useToast();
 
   const urlChannelId = searchParams.get("channelId");
 
@@ -64,6 +66,9 @@ export function AppShellServer({
 
   // Sidebar collapse state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Mobile menu state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Track if we've done initial URL sync
   const didInitialSync = useRef(false);
@@ -127,6 +132,8 @@ export function AppShellServer({
             next.set("channelId", newChannelId);
           }
           router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+
+          toast("Welcome to ChannelBoost! Your results are now personalized to your channel.", "success");
         }
       } catch (error) {
         if (isApiClientError(error) && error.status === 401) {
@@ -163,9 +170,37 @@ export function AppShellServer({
     }
   }, [pathname, searchParams, router, setActiveChannelId]);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
   return (
     <div className={s.shell}>
-      {/* Desktop Sidebar */}
+      {/* Mobile Header */}
+      <header className={s.mobileHeader}>
+        <button
+          type="button"
+          className={s.mobileMenuBtn}
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+        >
+          <span className={`${s.hamburger} ${mobileMenuOpen ? s.hamburgerOpen : ""}`} />
+        </button>
+        <span className={s.mobileTitle}>ChannelBoost</span>
+      </header>
+
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className={s.mobileOverlay}
+          onClick={() => setMobileMenuOpen(false)}
+          onKeyDown={() => {}}
+          role="presentation"
+        />
+      )}
+
+      {/* Sidebar (desktop always, mobile as overlay when open) */}
       <AppSidebar
         activeChannelId={activeChannelId}
         collapsed={sidebarCollapsed}
@@ -175,6 +210,7 @@ export function AppShellServer({
         channels={channels}
         channelLimit={channelLimit}
         onChannelChange={handleChannelChange}
+        mobileOpen={mobileMenuOpen}
       />
 
       {/* Main Content Area */}

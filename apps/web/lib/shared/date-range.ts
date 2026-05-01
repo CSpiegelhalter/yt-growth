@@ -30,8 +30,15 @@ export function getDateRange(range: AnalyticsRange): {
   // YouTube Analytics data has a ~2-day processing delay;
   // requesting recent dates causes Google API 500 errors.
   endDate.setDate(endDate.getDate() - 2);
-  const startDate = new Date();
-  startDate.setDate(endDate.getDate() - RANGE_DAYS[range]);
+
+  // Derive startDate from endDate (NOT from `new Date()`) so day-arithmetic
+  // stays within the same month context. The previous version used
+  // `new Date(); startDate.setDate(endDate.getDate() - N)` — when today was
+  // the 1st or 2nd of a month, endDate.getDate() came from the previous
+  // month while startDate was still in the current month, producing a
+  // 1-day window instead of the requested N-day window.
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - RANGE_DAYS[range]);
 
   return {
     startDate: toLocalDateStr(startDate),

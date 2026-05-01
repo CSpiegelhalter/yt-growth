@@ -61,7 +61,6 @@ export function getFeatureDisplayName(feature: FeatureKey): string {
     idea_generate: "Idea Generation",
     channel_sync: "Channel Sync",
     keyword_research: "Keyword Research",
-    tag_generate: "Tag Generation",
   };
   return names[feature];
 }

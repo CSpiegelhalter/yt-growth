@@ -685,6 +685,17 @@ model UserFaceReference {
 }
 
 // ============================================
+// TRENDING COMMAND CENTER CACHE (cron-refreshed)
+// ============================================
+
+model TrendingCache {
+  key       String   @id @db.VarChar(64) // "opportunities" | "youtube-rising"
+  data      Json // Pre-computed response payload
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  expiresAt DateTime @db.Timestamptz(6)
+}
+
+// ============================================
 // KEYWORD RESEARCH CACHE (Semrush API responses)
 // ============================================
 

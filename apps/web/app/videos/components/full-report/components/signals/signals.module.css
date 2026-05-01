@@ -1,0 +1,152 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sectionTitle {
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  margin: 0;
+}
+
+.sectionSubtitle {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  margin: 0;
+}
+
+/* Single column — these cards are reading material; let them breathe. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── Card ── */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+/* Severity carried entirely by the saturated left border. */
+.sevCritical {
+  border-left-color: var(--color-hot-rose);
+}
+
+.sevImprovement {
+  border-left-color: var(--color-warm-gold);
+}
+
+.sevNeutral {
+  border-left-color: var(--color-cool-sky);
+}
+
+.sevGood {
+  border-left-color: var(--color-leaf-green);
+}
+
+/* ── Overline (category · confidence) ── */
+
+.overline {
+  align-items: center;
+  color: var(--text-tertiary);
+  display: flex;
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  gap: var(--space-2);
+  letter-spacing: 0.05em;
+  line-height: 1;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.overlineDot {
+  color: var(--text-tertiary);
+  opacity: 0.6;
+}
+
+/* ── Headline (load-bearing element) ── */
+
+.headline {
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+  margin: 0;
+}
+
+/* ── Body prose ── */
+
+.body {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  margin: 0;
+}
+
+/* ── Inline metric chips (replaces the dl evidence box) ── */
+
+.evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.evidenceChip {
+  align-items: baseline;
+  background: var(--surface-alt);
+  border-radius: var(--radius-full, 9999px);
+  display: inline-flex;
+  font-size: var(--text-xs);
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+}
+
+.evidenceChipLabel {
+  color: var(--text-tertiary);
+  font-weight: var(--font-medium);
+}
+
+.evidenceChipValue {
+  color: var(--text-primary);
+  font-feature-settings: "tnum";
+  font-weight: var(--font-semibold);
+}
+
+/* ── Arrow-led action (recommendation) ── */
+
+.action {
+  border-top: 1px solid var(--border);
+  color: var(--text-primary);
+  display: flex;
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+  line-height: var(--leading-normal);
+  margin: 0;
+  padding-top: var(--space-3);
+}
+
+.actionArrow {
+  color: var(--color-cool-sky);
+  flex-shrink: 0;
+  font-weight: var(--font-semibold);
+}

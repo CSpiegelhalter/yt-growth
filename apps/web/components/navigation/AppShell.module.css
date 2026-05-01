@@ -23,9 +23,97 @@
   padding: var(--space-6) var(--page-padding) 0;
 }
 
+/* ── Mobile Header ── */
+
+.mobileHeader {
+  align-items: center;
+  background: var(--sidebar-bg);
+  border-bottom: 1px solid var(--color-border);
+  display: none;
+  gap: var(--space-sm);
+  min-height: 52px;
+  padding: 0 var(--space-md);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.mobileMenuBtn {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  height: 36px;
+  justify-content: center;
+  padding: 0;
+  width: 36px;
+}
+
+.hamburger {
+  display: block;
+  height: 2px;
+  position: relative;
+  width: 18px;
+  background: var(--color-text);
+  transition: all 0.2s;
+}
+
+.hamburger::before,
+.hamburger::after {
+  background: var(--color-text);
+  content: "";
+  display: block;
+  height: 2px;
+  left: 0;
+  position: absolute;
+  transition: all 0.2s;
+  width: 18px;
+}
+
+.hamburger::before { top: -6px; }
+.hamburger::after { top: 6px; }
+
+.hamburgerOpen {
+  background: transparent;
+}
+
+.hamburgerOpen::before {
+  top: 0;
+  transform: rotate(45deg);
+}
+
+.hamburgerOpen::after {
+  top: 0;
+  transform: rotate(-45deg);
+}
+
+.mobileTitle {
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.mobileOverlay {
+  background: rgb(0 0 0 / 50%);
+  display: none;
+  inset: 0;
+  position: fixed;
+  z-index: 44;
+}
+
 /* Responsive adjustments */
 @media (width <= 767px) {
   .shell {
     flex-direction: column;
+  }
+
+  .mobileHeader {
+    display: flex;
+  }
+
+  .mobileOverlay {
+    display: block;
   }
 }

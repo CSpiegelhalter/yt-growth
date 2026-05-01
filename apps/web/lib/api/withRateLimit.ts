@@ -29,6 +29,8 @@ export function withRateLimit<P>(
         details: { resetAt: new Date(result.resetAt).toISOString() },
       });
     }
+    // Expose rate limit result so handlers can read remaining count without re-calling checkRateLimit
+    api.rateLimitResult = result;
     return handler(req, ctx, api);
   };
 }

@@ -13,6 +13,11 @@ const HEIGHT_MAP: Record<ReportSectionKey, string> = {
   promotionPlaybook: "52px",
   retention: "52px",
   hookAnalysis: "52px",
+  scoreStrip: "92px",
+  retentionCurve: "200px",
+  verdict: "44px",
+  priorities: "240px",
+  signals: "180px",
 };
 
 export function SectionSkeleton({ variant }: SectionSkeletonProps) {

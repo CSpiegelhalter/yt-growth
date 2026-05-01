@@ -172,6 +172,7 @@ export function DashboardClient({
             selectedVideo={selectedVideo}
             videosLoading={videosLoading}
             showDetail={showDetail}
+            isSubscribed={isSubscribed}
             onSelect={handleSelect}
             onBack={handleBack}
             plannedLeftContent={

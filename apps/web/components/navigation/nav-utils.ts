@@ -4,7 +4,7 @@ const SIDEBAR_ICON_MAP: Record<string, string> = {
   dashboard: "/sidebar/dashboard.svg",
   videos: "/sidebar/videos.svg",
   analyzer: "/sidebar/analyze.svg",
-  tags: "/sidebar/tags.svg",
+  trending: "/sidebar/trending.svg",
   keywords: "/sidebar/keywords.svg",
   "sidebar-account": "/sidebar/settings.svg",
 };
@@ -21,8 +21,11 @@ export function isNavItemActive(
     case "videos": {
       return pathname === "/videos" || pathname.startsWith("/video/");
     }
-    case "tags": {
-      return pathname === "/tags" || pathname.startsWith("/tags/");
+    case "trending": {
+      return pathname === "/trending" || pathname.startsWith("/trending/");
+    }
+    case "analyzer": {
+      return pathname === "/analyze" || pathname.startsWith("/analyze/");
     }
     case "keywords": {
       return pathname === "/keywords" || pathname.startsWith("/keywords/");

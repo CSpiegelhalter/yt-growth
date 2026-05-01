@@ -10,6 +10,10 @@ function getOrCreateRequestId(req: NextRequest) {
 }
 
 function getIp(req: NextRequest): string | undefined {
+  // Prefer Vercel's trusted header (cannot be spoofed by clients)
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) {return realIp.trim();}
+  // Fallback to x-forwarded-for (first entry) for local dev / non-Vercel
   const xff = req.headers.get("x-forwarded-for");
   if (!xff) {return undefined;}
   return xff.split(",")[0]?.trim() || undefined;
